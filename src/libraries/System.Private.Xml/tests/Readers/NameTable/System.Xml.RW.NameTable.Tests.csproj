@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CNameTableTestModule.cs" />
@@ -10,7 +10,7 @@
     <Compile Include="TCUserNameTable.cs" />
     <Compile Include="TestFiles.cs" />
     <Compile Include="XmlNameTable.cs" />
-    <Compile Include="$(CommonTestPath)System\Xml\DisableParallelization.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelizationPerAssembly.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)System\Xml\ModuleCore\ModuleCore.csproj" />

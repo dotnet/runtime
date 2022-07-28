@@ -3,8 +3,7 @@
     <!-- Must match version supported by frameworks which support 4.0.* inbox.
          Can be removed when API is added and this assembly is versioned to 4.1.* -->
     <AssemblyVersion>4.0.3.0</AssemblyVersion>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.ValueTuple.TypeForwards.cs" />

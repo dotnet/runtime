@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <IsPackable>true</IsPackable>
     <PackageDescription>Abstractions of files and directories.
 
 Commonly Used Types:
@@ -20,5 +21,4 @@ Microsoft.Extensions.FileProviders.IFileProvider</PackageDescription>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>
-
 </Project>

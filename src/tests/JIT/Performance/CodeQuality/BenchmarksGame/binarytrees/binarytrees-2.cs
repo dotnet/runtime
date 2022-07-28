@@ -14,10 +14,6 @@
 */
 
 using System;
-using Microsoft.Xunit.Performance;
-
-[assembly: OptimizeForBenchmarks]
-[assembly: MeasureGCCounts]
 
 namespace BenchmarksGame
 {
@@ -35,12 +31,6 @@ namespace BenchmarksGame
 
             // Return 100 on success, anything else on failure.
             return check - expected + 100;
-        }
-
-        [Benchmark(InnerIterationCount = 7)]
-        public static void RunBench()
-        {
-            Benchmark.Iterate(() => Bench(16, false));
         }
 
         static int Bench(int n, bool verbose)

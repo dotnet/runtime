@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations", RuntimeConfiguration.Checked)]
+    [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations", ~RuntimeConfiguration.Release)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerAuthenticationTests : IDisposable
@@ -102,7 +102,7 @@ namespace System.Net.Tests
         {
             yield return new object[] { string.Empty, HttpStatusCode.Unauthorized };
             yield return new object[] { null, HttpStatusCode.Unauthorized };
-            yield return new object[] { Convert.ToBase64String(Encoding.ASCII.GetBytes("username")), HttpStatusCode.BadRequest };
+            yield return new object[] { Convert.ToBase64String("username"u8), HttpStatusCode.BadRequest };
             yield return new object[] { "abc", HttpStatusCode.InternalServerError };
         }
 

@@ -8,19 +8,23 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'ldlen'
+.assembly 'isinst_ldlen'
 {
   
   
 }
-.namespace JitTest
+.assembly extern xunit.core {}
+.namespace JitTest_isinst_ldlen_array_il
 {
-  .class private auto ansi beforefieldinit Test
+  .class public auto ansi beforefieldinit Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  4
       .locals (class [mscorlib]System.Array)

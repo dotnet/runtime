@@ -24,11 +24,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 #ifdef DEBUG
 
-/*****************************************************************************
- *
- *  Returns the string representation of the given CPU instruction.
- */
-
+//-----------------------------------------------------------------------------
+// genInsName: Returns the string representation of the given CPU instruction, as
+// it exists in the instruction table. Note that some architectures don't encode the
+// name completely in the table: xarch sometimes prepends a "v", and arm sometimes
+// appends a "s". Use `genInsDisplayName()` to get a fully-formed name.
+//
 const char* CodeGen::genInsName(instruction ins)
 {
     // clang-format off
@@ -65,57 +66,89 @@ const char* CodeGen::genInsName(instruction ins)
         #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9 ) nm,
         #include "instrs.h"
 
+#elif defined(TARGET_LOONGARCH64)
+        #define INST(id, nm, ldst, e1) nm,
+        #include "instrs.h"
+
 #else
 #error "Unknown TARGET"
 #endif
     };
     // clang-format on
 
-    assert((unsigned)ins < _countof(insNames));
+    assert((unsigned)ins < ArrLen(insNames));
     assert(insNames[ins] != nullptr);
 
     return insNames[ins];
 }
 
-void __cdecl CodeGen::instDisp(instruction ins, bool noNL, const char* fmt, ...)
+//-----------------------------------------------------------------------------
+// genInsDisplayName: Get a fully-formed instruction display name. This only handles
+// the xarch case of prepending a "v", not the arm case of appending an "s".
+// This can be called up to four times in a single 'printf' before the static buffers
+// get reused.
+//
+// Returns:
+//    String with instruction name
+//
+const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
 {
-    if (compiler->opts.dspCode)
+    instruction ins     = id->idIns();
+    const char* insName = genInsName(ins);
+
+#ifdef TARGET_XARCH
+    const int       TEMP_BUFFER_LEN = 40;
+    static unsigned curBuf          = 0;
+    static char     buf[4][TEMP_BUFFER_LEN];
+    const char*     retbuf;
+
+    if (GetEmitter()->IsAVXInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins))
     {
-        /* Display the instruction offset within the emit block */
-
-        //      printf("[%08X:%04X]", GetEmitter().emitCodeCurBlock(), GetEmitter().emitCodeOffsInBlock());
-
-        /* Display the FP stack depth (before the instruction is executed) */
-
-        //      printf("[FP=%02u] ", genGetFPstkLevel());
-
-        /* Display the instruction mnemonic */
-        printf("        ");
-
-        printf("            %-8s", genInsName(ins));
-
-        if (fmt)
-        {
-            va_list args;
-            va_start(args, fmt);
-            vprintf(fmt, args);
-            va_end(args);
-        }
-
-        if (!noNL)
-        {
-            printf("\n");
-        }
+        sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
+        retbuf = buf[curBuf];
+        curBuf = (curBuf + 1) % 4;
+        return retbuf;
     }
+
+    // Some instructions have different mnemonics depending on the size.
+    switch (ins)
+    {
+        case INS_cdq:
+            switch (id->idOpSize())
+            {
+                case EA_8BYTE:
+                    return "cqo";
+                case EA_4BYTE:
+                    return "cdq";
+                case EA_2BYTE:
+                    return "cwd";
+                default:
+                    unreached();
+            }
+
+        case INS_cwde:
+            switch (id->idOpSize())
+            {
+                case EA_8BYTE:
+                    return "cdqe";
+                case EA_4BYTE:
+                    return "cwde";
+                case EA_2BYTE:
+                    return "cbw";
+                default:
+                    unreached();
+            }
+
+        default:
+            break;
+    }
+#endif // TARGET_XARCH
+
+    return insName;
 }
 
 /*****************************************************************************/
 #endif // DEBUG
-/*****************************************************************************/
-
-void CodeGen::instInit()
-{
-}
 
 /*****************************************************************************
  *
@@ -214,39 +247,13 @@ void CodeGen::instGen(instruction ins)
 // static inline
 bool CodeGenInterface::instIsFP(instruction ins)
 {
-    assert((unsigned)ins < _countof(instInfo));
+    assert((unsigned)ins < ArrLen(instInfo));
 
 #ifdef TARGET_XARCH
     return (instInfo[ins] & INS_FLAGS_x87Instr) != 0;
 #else
     return (instInfo[ins] & INST_FP) != 0;
 #endif
-}
-
-/*****************************************************************************
- *
- *  Generate a jump instruction.
- */
-
-void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
-{
-#if !FEATURE_FIXED_OUT_ARGS
-    // On the x86 we are pushing (and changing the stack level), but on x64 and other archs we have
-    // a fixed outgoing args area that we store into and we never change the stack level when calling methods.
-    //
-    // Thus only on x86 do we need to assert that the stack level at the target block matches the current stack level.
-    //
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef UNIX_X86_ABI
-    // bbTgtStkDepth is a (pure) argument count (stack alignment padding should be excluded).
-    assert((tgtBlock->bbTgtStkDepth * sizeof(int) == (genStackLevel - curNestedAlignment)) || isFramePointerUsed());
-#else
-    assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
-#endif
-#endif // !FEATURE_FIXED_OUT_ARGS
-
-    GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
 }
 
 /*****************************************************************************
@@ -391,7 +398,12 @@ void CodeGen::inst_RV(instruction ins, regNumber reg, var_types type, emitAttr s
         size = emitActualTypeSize(type);
     }
 
+#ifdef TARGET_LOONGARCH64
+    // inst_RV is not used for LoongArch64, so there is no need to define `emitIns_R`.
+    NYI_LOONGARCH64("inst_RV-----unused on LOONGARCH64----");
+#else
     GetEmitter()->emitIns_R(ins, size, reg);
+#endif
 }
 
 /*****************************************************************************
@@ -405,6 +417,31 @@ void CodeGen::inst_Mov(var_types dstType,
                        emitAttr  size,
                        insFlags  flags /* = INS_FLAGS_DONT_CARE */)
 {
+#ifdef TARGET_LOONGARCH64
+    if (isFloatRegType(dstType) != genIsValidFloatReg(dstReg))
+    {
+        if (dstType == TYP_FLOAT)
+        {
+            dstType = TYP_INT;
+        }
+        else if (dstType == TYP_DOUBLE)
+        {
+            dstType = TYP_LONG;
+        }
+        else if (dstType == TYP_INT)
+        {
+            dstType = TYP_FLOAT;
+        }
+        else if (dstType == TYP_LONG)
+        {
+            dstType = TYP_DOUBLE;
+        }
+        else
+        {
+            NYI_LOONGARCH64("CodeGen::inst_Mov dstType");
+        }
+    }
+#endif
     instruction ins = ins_Copy(srcReg, dstType);
 
     if (size == EA_UNKNOWN)
@@ -494,7 +531,7 @@ void CodeGen::inst_RV_RV_RV(instruction ins,
 {
 #ifdef TARGET_ARM
     GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3, flags);
-#elif defined(TARGET_XARCH)
+#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
     GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3);
 #else
     NYI("inst_RV_RV_RV");
@@ -570,6 +607,8 @@ void CodeGen::inst_RV_IV(
     assert(ins != INS_tst);
     assert(ins != INS_mov);
     GetEmitter()->emitIns_R_R_I(ins, size, reg, reg, val);
+#elif defined(TARGET_LOONGARCH64)
+    GetEmitter()->emitIns_R_R_I(ins, size, reg, reg, val);
 #else // !TARGET_ARM
 #ifdef TARGET_AMD64
     // Instead of an 8-byte immediate load, a 4-byte immediate will do fine
@@ -589,113 +628,6 @@ void CodeGen::inst_RV_IV(
         GetEmitter()->emitIns_R_I(ins, size, reg, val);
     }
 #endif // !TARGET_ARM
-}
-
-/*****************************************************************************
- *
- *  Generate an instruction that has one operand given by a tree (which has
- *  been made addressable).
- */
-
-void CodeGen::inst_TT(instruction ins, GenTree* tree, unsigned offs, int shfv, emitAttr size)
-{
-    bool sizeInferred = false;
-
-    if (size == EA_UNKNOWN)
-    {
-        sizeInferred = true;
-        if (instIsFP(ins))
-        {
-            size = EA_ATTR(genTypeSize(tree->TypeGet()));
-        }
-        else
-        {
-            size = emitTypeSize(tree->TypeGet());
-        }
-    }
-
-AGAIN:
-
-    /* Is this a spilled value? */
-
-    if (tree->gtFlags & GTF_SPILLED)
-    {
-        assert(!"ISSUE: If this can happen, we need to generate 'ins [ebp+spill]'");
-    }
-
-    switch (tree->gtOper)
-    {
-        unsigned varNum;
-
-        case GT_LCL_VAR:
-
-            inst_set_SV_var(tree);
-            goto LCL;
-
-        case GT_LCL_FLD:
-            offs += tree->AsLclFld()->GetLclOffs();
-            goto LCL;
-
-        LCL:
-            varNum = tree->AsLclVarCommon()->GetLclNum();
-            assert(varNum < compiler->lvaCount);
-
-            if (shfv)
-            {
-                GetEmitter()->emitIns_S_I(ins, size, varNum, offs, shfv);
-            }
-            else
-            {
-                GetEmitter()->emitIns_S(ins, size, varNum, offs);
-            }
-
-            return;
-
-        case GT_CLS_VAR:
-            // Make sure FP instruction size matches the operand size
-            // (We optimized constant doubles to floats when we can, just want to
-            // make sure that we don't mistakenly use 8 bytes when the
-            // constant.
-            assert(!isFloatRegType(tree->gtType) || genTypeSize(tree->gtType) == EA_SIZE_IN_BYTES(size));
-
-            if (shfv)
-            {
-                GetEmitter()->emitIns_C_I(ins, size, tree->AsClsVar()->gtClsVarHnd, offs, shfv);
-            }
-            else
-            {
-                GetEmitter()->emitIns_C(ins, size, tree->AsClsVar()->gtClsVarHnd, offs);
-            }
-            return;
-
-        case GT_IND:
-        case GT_NULLCHECK:
-        case GT_ARR_ELEM:
-        {
-            assert(!"inst_TT not supported for GT_IND, GT_NULLCHECK or GT_ARR_ELEM");
-        }
-        break;
-
-#ifdef TARGET_X86
-        case GT_CNS_INT:
-            // We will get here for GT_MKREFANY from CodeGen::genPushArgList
-            assert(offs == 0);
-            assert(!shfv);
-            if (tree->IsIconHandle())
-                inst_IV_handle(ins, tree->AsIntCon()->gtIconVal);
-            else
-                inst_IV(ins, tree->AsIntCon()->gtIconVal);
-            break;
-#endif
-
-        case GT_COMMA:
-            //     tree->AsOp()->gtOp1 - already processed by genCreateAddrMode()
-            tree = tree->AsOp()->gtOp2;
-            goto AGAIN;
-
-        default:
-            assert(!"invalid address");
-    }
 }
 
 //------------------------------------------------------------------------
@@ -734,188 +666,6 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
     assert(GetEmitter()->emitInsIsStore(ins));
 #endif
     GetEmitter()->emitIns_S_R(ins, size, reg, varNum, 0);
-}
-
-/*****************************************************************************
- *
- *  Generate an instruction that has one operand given by a register and the
- *  other one by a tree (which has been made addressable).
- */
-
-void CodeGen::inst_RV_TT(instruction ins,
-                         regNumber   reg,
-                         GenTree*    tree,
-                         unsigned    offs,
-                         emitAttr    size,
-                         insFlags    flags /* = INS_FLAGS_DONT_CARE */)
-{
-    assert(reg != REG_STK);
-
-    if (size == EA_UNKNOWN)
-    {
-        if (!instIsFP(ins))
-        {
-            size = emitTypeSize(tree->TypeGet());
-        }
-        else
-        {
-            size = EA_ATTR(genTypeSize(tree->TypeGet()));
-        }
-    }
-
-#ifdef TARGET_XARCH
-#ifdef DEBUG
-    // If it is a GC type and the result is not, then either
-    // 1) it is an LEA
-    // 2) optOptimizeBools() optimized if (ref != 0 && ref != 0) to if (ref & ref)
-    // 3) optOptimizeBools() optimized if (ref == 0 || ref == 0) to if (ref | ref)
-    // 4) byref - byref = int
-    if (tree->gtType == TYP_REF && !EA_IS_GCREF(size))
-    {
-        assert((EA_IS_BYREF(size) && ins == INS_add) || (ins == INS_lea || ins == INS_and || ins == INS_or));
-    }
-    if (tree->gtType == TYP_BYREF && !EA_IS_BYREF(size))
-    {
-        assert(ins == INS_lea || ins == INS_and || ins == INS_or || ins == INS_sub);
-    }
-#endif
-#endif
-
-#if CPU_LOAD_STORE_ARCH
-    if (ins == INS_mov)
-    {
-#if defined(TARGET_ARM64) || defined(TARGET_ARM64)
-        ins = ins_Move_Extend(tree->TypeGet(), false);
-#else
-        NYI("CodeGen::inst_RV_TT with INS_mov");
-#endif
-    }
-#endif // CPU_LOAD_STORE_ARCH
-
-AGAIN:
-
-    /* Is this a spilled value? */
-
-    if (tree->gtFlags & GTF_SPILLED)
-    {
-        assert(!"ISSUE: If this can happen, we need to generate 'ins [ebp+spill]'");
-    }
-
-    switch (tree->gtOper)
-    {
-        unsigned varNum;
-
-        case GT_LCL_VAR:
-        case GT_LCL_VAR_ADDR:
-
-            inst_set_SV_var(tree);
-            goto LCL;
-
-        case GT_LCL_FLD_ADDR:
-        case GT_LCL_FLD:
-            offs += tree->AsLclFld()->GetLclOffs();
-            goto LCL;
-
-        LCL:
-            varNum = tree->AsLclVarCommon()->GetLclNum();
-            assert(varNum < compiler->lvaCount);
-
-#ifdef TARGET_ARM
-            switch (ins)
-            {
-                case INS_mov:
-                    ins = ins_Load(tree->TypeGet());
-                    FALLTHROUGH;
-
-                case INS_lea:
-                case INS_ldr:
-                case INS_ldrh:
-                case INS_ldrb:
-                case INS_ldrsh:
-                case INS_ldrsb:
-                case INS_vldr:
-                    assert(flags != INS_FLAGS_SET);
-                    GetEmitter()->emitIns_R_S(ins, size, reg, varNum, offs);
-                    return;
-
-                default:
-                    regNumber regTmp;
-                    regTmp = tree->GetRegNum();
-
-                    GetEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), size, regTmp, varNum, offs);
-                    GetEmitter()->emitIns_R_R(ins, size, reg, regTmp, flags);
-
-                    regSet.verifyRegUsed(regTmp);
-                    return;
-            }
-#else  // !TARGET_ARM
-            GetEmitter()->emitIns_R_S(ins, size, reg, varNum, offs);
-            return;
-#endif // !TARGET_ARM
-
-        case GT_CLS_VAR:
-            // Make sure FP instruction size matches the operand size
-            // (We optimized constant doubles to floats when we can, just want to
-            // make sure that we don't mistakenly use 8 bytes when the
-            // constant.
-            assert(!isFloatRegType(tree->gtType) || genTypeSize(tree->gtType) == EA_SIZE_IN_BYTES(size));
-
-#if CPU_LOAD_STORE_ARCH
-            assert(!"GT_CLS_VAR not supported in ARM backend");
-#else // CPU_LOAD_STORE_ARCH
-            GetEmitter()->emitIns_R_C(ins, size, reg, tree->AsClsVar()->gtClsVarHnd, offs);
-#endif // CPU_LOAD_STORE_ARCH
-            return;
-
-        case GT_IND:
-        case GT_NULLCHECK:
-        case GT_ARR_ELEM:
-        case GT_LEA:
-        {
-            assert(!"inst_RV_TT not supported for GT_IND, GT_NULLCHECK, GT_ARR_ELEM or GT_LEA");
-        }
-        break;
-
-        case GT_CNS_INT:
-
-            assert(offs == 0);
-
-            // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
-            inst_RV_IV(ins, reg, (target_ssize_t)tree->AsIntCon()->gtIconVal, emitActualTypeSize(tree->TypeGet()),
-                       flags);
-            break;
-
-        case GT_CNS_LNG:
-
-            assert(size == EA_4BYTE || size == EA_8BYTE);
-
-#ifdef TARGET_AMD64
-            assert(offs == 0);
-#endif // TARGET_AMD64
-
-            target_ssize_t constVal;
-            emitAttr       size;
-            if (offs == 0)
-            {
-                constVal = (target_ssize_t)(tree->AsLngCon()->gtLconVal);
-                size     = EA_PTRSIZE;
-            }
-            else
-            {
-                constVal = (target_ssize_t)(tree->AsLngCon()->gtLconVal >> 32);
-                size     = EA_4BYTE;
-            }
-
-            inst_RV_IV(ins, reg, constVal, size, flags);
-            break;
-
-        case GT_COMMA:
-            tree = tree->AsOp()->gtOp2;
-            goto AGAIN;
-
-        default:
-            assert(!"invalid address");
-    }
 }
 
 /*****************************************************************************
@@ -959,52 +709,263 @@ void CodeGen::inst_RV_SH(
 #endif // TARGET*
 }
 
-/*****************************************************************************
- *
- *  Generate a "shift [r/m], icon" instruction.
- */
-
-void CodeGen::inst_TT_SH(instruction ins, GenTree* tree, unsigned val, unsigned offs)
+#if defined(TARGET_XARCH)
+//------------------------------------------------------------------------
+// genOperandDesc: Create an operand descriptor for the given operand node.
+//
+// The XARCH emitter requires codegen to use different methods for different
+// kinds of operands. However, the logic for determining which ones, in
+// general, is not simple (due to the fact that "memory" in the emitter can
+// be represented in more than one way). This helper method encapsulated the
+// logic for determining what "kind" of operand "op" is.
+//
+// Arguments:
+//    op - The operand node for which to obtain the descriptor
+//
+// Return Value:
+//    The operand descriptor for "op".
+//
+// Notes:
+//    This method is not idempotent - it can only be called once for a
+//    given node.
+//
+CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 {
-#ifdef TARGET_XARCH
-    if (val == 0)
+    if (!op->isContained() && !op->isUsedFromSpillTemp())
     {
-        // Shift by 0 - why are you wasting our precious time????
-        return;
+        return OperandDesc(op->GetRegNum());
     }
 
-    ins = genMapShiftInsToShiftByConstantIns(ins, val);
-    if (val == 1)
+    emitter* emit   = GetEmitter();
+    TempDsc* tmpDsc = nullptr;
+    unsigned varNum = BAD_VAR_NUM;
+    uint16_t offset = UINT16_MAX;
+
+    if (op->isUsedFromSpillTemp())
     {
-        inst_TT(ins, tree, offs, 0, emitTypeSize(tree->TypeGet()));
+        assert(op->IsRegOptional());
+
+        tmpDsc = getSpillTempDsc(op);
+        varNum = tmpDsc->tdTempNum();
+        offset = 0;
+
+        regSet.tmpRlsTemp(tmpDsc);
+    }
+    else if (op->isIndir() || op->OperIsHWIntrinsic())
+    {
+        GenTree*      addr;
+        GenTreeIndir* memIndir = nullptr;
+
+        if (op->isIndir())
+        {
+            memIndir = op->AsIndir();
+            addr     = memIndir->Addr();
+        }
+        else
+        {
+#if defined(FEATURE_HW_INTRINSICS)
+            assert(op->AsHWIntrinsic()->OperIsMemoryLoad());
+            assert(op->AsHWIntrinsic()->GetOperandCount() == 1);
+            addr = op->AsHWIntrinsic()->Op(1);
+#else
+            unreached();
+#endif // FEATURE_HW_INTRINSICS
+        }
+
+        switch (addr->OperGet())
+        {
+            case GT_LCL_VAR_ADDR:
+            case GT_LCL_FLD_ADDR:
+            {
+                assert(addr->isContained());
+                varNum = addr->AsLclVarCommon()->GetLclNum();
+                offset = addr->AsLclVarCommon()->GetLclOffs();
+                break;
+            }
+
+            case GT_CLS_VAR_ADDR:
+                return OperandDesc(addr->AsClsVar()->gtClsVarHnd);
+
+            default:
+                return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
+        }
     }
     else
     {
-        inst_TT(ins, tree, offs, val, emitTypeSize(tree->TypeGet()));
+        switch (op->OperGet())
+        {
+            case GT_LCL_FLD:
+                varNum = op->AsLclFld()->GetLclNum();
+                offset = op->AsLclFld()->GetLclOffs();
+                break;
+
+            case GT_LCL_VAR:
+                assert(op->IsRegOptional() || !compiler->lvaGetDesc(op->AsLclVar())->lvIsRegCandidate());
+                varNum = op->AsLclVar()->GetLclNum();
+                offset = 0;
+                break;
+
+            case GT_CNS_DBL:
+                return OperandDesc(emit->emitFltOrDblConst(op->AsDblCon()->gtDconVal, emitTypeSize(op)));
+
+            case GT_CNS_INT:
+                assert(op->isContainedIntOrIImmed());
+                return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(compiler));
+
+            case GT_CNS_VEC:
+            {
+                switch (op->TypeGet())
+                {
+#if defined(FEATURE_SIMD)
+                    case TYP_SIMD8:
+                    {
+                        simd8_t constValue = op->AsVecCon()->gtSimd8Val;
+                        return OperandDesc(emit->emitSimd8Const(constValue));
+                    }
+
+                    case TYP_SIMD12:
+                    case TYP_SIMD16:
+                    {
+                        simd16_t constValue = op->AsVecCon()->gtSimd16Val;
+                        return OperandDesc(emit->emitSimd16Const(constValue));
+                    }
+
+                    case TYP_SIMD32:
+                    {
+                        simd32_t constValue = op->AsVecCon()->gtSimd32Val;
+                        return OperandDesc(emit->emitSimd32Const(constValue));
+                    }
+#endif // FEATURE_SIMD
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+            }
+
+            default:
+                unreached();
+        }
     }
-#endif // TARGET_XARCH
 
-#ifdef TARGET_ARM
-    inst_TT(ins, tree, offs, val, emitTypeSize(tree->TypeGet()));
-#endif
+    // Ensure we got a good varNum and offset.
+    // We also need to check for `tmpDsc != nullptr` since spill temp numbers
+    // are negative and start with -1, which also happens to be BAD_VAR_NUM.
+    assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
+    assert(offset != UINT16_MAX);
+
+    return OperandDesc(varNum, offset);
 }
 
-/*****************************************************************************
- *
- *  Generate a "shift [addr], cl" instruction.
- */
-
-void CodeGen::inst_TT_CL(instruction ins, GenTree* tree, unsigned offs)
+//------------------------------------------------------------------------
+// inst_TT: Generates an instruction with one operand.
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    size      -- The emit size attribute
+//    op1       -- The operand, which may be a memory node or a node producing a register,
+//                 or a contained immediate node
+//
+void CodeGen::inst_TT(instruction ins, emitAttr size, GenTree* op1)
 {
-    inst_TT(ins, tree, offs, 0, emitTypeSize(tree->TypeGet()));
+    emitter*    emit    = GetEmitter();
+    OperandDesc op1Desc = genOperandDesc(op1);
+
+    switch (op1Desc.GetKind())
+    {
+        case OperandKind::ClsVar:
+            emit->emitIns_C(ins, size, op1Desc.GetFieldHnd(), 0);
+            break;
+
+        case OperandKind::Local:
+            emit->emitIns_S(ins, size, op1Desc.GetVarNum(), op1Desc.GetLclOffset());
+            break;
+
+        case OperandKind::Indir:
+        {
+            // Until we improve the handling of addressing modes in the emitter, we'll create a
+            // temporary GT_IND to generate code with.
+            GenTreeIndir  indirForm;
+            GenTreeIndir* indir = op1Desc.GetIndirForm(&indirForm);
+            emit->emitIns_A(ins, size, indir);
+        }
+        break;
+
+        case OperandKind::Imm:
+            emit->emitIns_I(ins, op1Desc.GetEmitAttrForImmediate(size), op1Desc.GetImmediate());
+            break;
+
+        case OperandKind::Reg:
+            emit->emitIns_R(ins, size, op1Desc.GetReg());
+            break;
+
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// inst_RV_TT: Generates an instruction with two operands, the first of which
+//             is a register.
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    size      -- The emit size attribute
+//    op1Reg    -- The first operand, a register
+//    op2       -- The operand, which may be a memory node or a node producing a register,
+//                 or a contained immediate node
+//
+void CodeGen::inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree* op2)
+{
+    emitter*    emit    = GetEmitter();
+    OperandDesc op2Desc = genOperandDesc(op2);
+
+    switch (op2Desc.GetKind())
+    {
+        case OperandKind::ClsVar:
+            emit->emitIns_R_C(ins, size, op1Reg, op2Desc.GetFieldHnd(), 0);
+            break;
+
+        case OperandKind::Local:
+            emit->emitIns_R_S(ins, size, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset());
+            break;
+
+        case OperandKind::Indir:
+        {
+            // Until we improve the handling of addressing modes in the emitter, we'll create a
+            // temporary GT_IND to generate code with.
+            GenTreeIndir  indirForm;
+            GenTreeIndir* indir = op2Desc.GetIndirForm(&indirForm);
+            emit->emitIns_R_A(ins, size, op1Reg, indir);
+        }
+        break;
+
+        case OperandKind::Imm:
+            emit->emitIns_R_I(ins, op2Desc.GetEmitAttrForImmediate(size), op1Reg, op2Desc.GetImmediate());
+            break;
+
+        case OperandKind::Reg:
+            if (emit->IsMovInstruction(ins))
+            {
+                emit->emitIns_Mov(ins, size, op1Reg, op2Desc.GetReg(), /* canSkip */ true);
+            }
+            else
+            {
+                emit->emitIns_R_R(ins, size, op1Reg, op2Desc.GetReg());
+            }
+            break;
+
+        default:
+            unreached();
+    }
 }
 
 /*****************************************************************************
- *
- *  Generate an instruction of the form "op reg1, reg2, icon".
- */
+*
+*  Generate an instruction of the form "op reg1, reg2, icon".
+*/
 
-#if defined(TARGET_XARCH)
 void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival)
 {
     assert(ins == INS_shld || ins == INS_shrd || ins == INS_shufps || ins == INS_shufpd || ins == INS_pshufd ||
@@ -1028,113 +989,37 @@ void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regN
 //
 void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival)
 {
-    noway_assert(GetEmitter()->emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
+    emitter* emit = GetEmitter();
+    noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
 
-    if (rmOp->isContained() || rmOp->isUsedFromSpillTemp())
+    OperandDesc rmOpDesc = genOperandDesc(rmOp);
+
+    switch (rmOpDesc.GetKind())
     {
-        TempDsc* tmpDsc = nullptr;
-        unsigned varNum = BAD_VAR_NUM;
-        unsigned offset = (unsigned)-1;
+        case OperandKind::ClsVar:
+            emit->emitIns_R_C_I(ins, attr, reg1, rmOpDesc.GetFieldHnd(), 0, ival);
+            break;
 
-        if (rmOp->isUsedFromSpillTemp())
+        case OperandKind::Local:
+            emit->emitIns_R_S_I(ins, attr, reg1, rmOpDesc.GetVarNum(), rmOpDesc.GetLclOffset(), ival);
+            break;
+
+        case OperandKind::Indir:
         {
-            assert(rmOp->IsRegOptional());
-
-            tmpDsc = getSpillTempDsc(rmOp);
-            varNum = tmpDsc->tdTempNum();
-            offset = 0;
-
-            regSet.tmpRlsTemp(tmpDsc);
+            // Until we improve the handling of addressing modes in the emitter, we'll create a
+            // temporary GT_IND to generate code with.
+            GenTreeIndir  indirForm;
+            GenTreeIndir* indir = rmOpDesc.GetIndirForm(&indirForm);
+            emit->emitIns_R_A_I(ins, attr, reg1, indir, ival);
         }
-        else if (rmOp->isIndir() || rmOp->OperIsHWIntrinsic())
-        {
-            GenTree*      addr;
-            GenTreeIndir* memIndir = nullptr;
+        break;
 
-            if (rmOp->isIndir())
-            {
-                memIndir = rmOp->AsIndir();
-                addr     = memIndir->Addr();
-            }
-            else
-            {
-#if defined(FEATURE_HW_INTRINSICS)
-                assert(rmOp->AsHWIntrinsic()->OperIsMemoryLoad());
-                assert(HWIntrinsicInfo::lookupNumArgs(rmOp->AsHWIntrinsic()) == 1);
-                addr = rmOp->gtGetOp1();
-#else
-                unreached();
-#endif // FEATURE_HW_INTRINSICS
-            }
+        case OperandKind::Reg:
+            emit->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOp->GetRegNum(), ival);
+            break;
 
-            switch (addr->OperGet())
-            {
-                case GT_LCL_VAR_ADDR:
-                case GT_LCL_FLD_ADDR:
-                {
-                    assert(addr->isContained());
-                    varNum = addr->AsLclVarCommon()->GetLclNum();
-                    offset = addr->AsLclVarCommon()->GetLclOffs();
-                    break;
-                }
-
-                case GT_CLS_VAR_ADDR:
-                {
-                    GetEmitter()->emitIns_R_C_I(ins, attr, reg1, addr->AsClsVar()->gtClsVarHnd, 0, ival);
-                    return;
-                }
-
-                default:
-                {
-                    GenTreeIndir load = indirForm(rmOp->TypeGet(), addr);
-
-                    if (memIndir == nullptr)
-                    {
-                        // This is the HW intrinsic load case.
-                        // Until we improve the handling of addressing modes in the emitter, we'll create a
-                        // temporary GT_IND to generate code with.
-                        memIndir = &load;
-                    }
-                    GetEmitter()->emitIns_R_A_I(ins, attr, reg1, memIndir, ival);
-                    return;
-                }
-            }
-        }
-        else
-        {
-            switch (rmOp->OperGet())
-            {
-                case GT_LCL_FLD:
-                    varNum = rmOp->AsLclFld()->GetLclNum();
-                    offset = rmOp->AsLclFld()->GetLclOffs();
-                    break;
-
-                case GT_LCL_VAR:
-                {
-                    assert(rmOp->IsRegOptional() ||
-                           !compiler->lvaGetDesc(rmOp->AsLclVar()->GetLclNum())->lvIsRegCandidate());
-                    varNum = rmOp->AsLclVar()->GetLclNum();
-                    offset = 0;
-                    break;
-                }
-
-                default:
-                    unreached();
-            }
-        }
-
-        // Ensure we got a good varNum and offset.
-        // We also need to check for `tmpDsc != nullptr` since spill temp numbers
-        // are negative and start with -1, which also happens to be BAD_VAR_NUM.
-        assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
-        assert(offset != (unsigned)-1);
-
-        GetEmitter()->emitIns_R_S_I(ins, attr, reg1, varNum, offset, ival);
-    }
-    else
-    {
-        regNumber rmOpReg = rmOp->GetRegNum();
-        GetEmitter()->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpReg, ival);
+        default:
+            unreached();
     }
 }
 
@@ -1154,163 +1039,59 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
 void CodeGen::inst_RV_RV_TT(
     instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW)
 {
-    noway_assert(GetEmitter()->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
+    emitter* emit = GetEmitter();
+    noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
 
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
-    if (op2->isContained() || op2->isUsedFromSpillTemp())
+    OperandDesc op2Desc = genOperandDesc(op2);
+    switch (op2Desc.GetKind())
     {
-        TempDsc* tmpDsc = nullptr;
-        unsigned varNum = BAD_VAR_NUM;
-        unsigned offset = (unsigned)-1;
+        case OperandKind::ClsVar:
+            emit->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0);
+            break;
 
-        if (op2->isUsedFromSpillTemp())
+        case OperandKind::Local:
+            emit->emitIns_SIMD_R_R_S(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset());
+            break;
+
+        case OperandKind::Indir:
         {
-            assert(op2->IsRegOptional());
-
-            tmpDsc = getSpillTempDsc(op2);
-            varNum = tmpDsc->tdTempNum();
-            offset = 0;
-
-            regSet.tmpRlsTemp(tmpDsc);
+            // Until we improve the handling of addressing modes in the emitter, we'll create a
+            // temporary GT_IND to generate code with.
+            GenTreeIndir  indirForm;
+            GenTreeIndir* indir = op2Desc.GetIndirForm(&indirForm);
+            emit->emitIns_SIMD_R_R_A(ins, size, targetReg, op1Reg, indir);
         }
-        else if (op2->isIndir() || op2->OperIsHWIntrinsic())
+        break;
+
+        case OperandKind::Reg:
         {
-            GenTree*      addr;
-            GenTreeIndir* memIndir = nullptr;
+            regNumber op2Reg = op2->GetRegNum();
 
-            if (op2->isIndir())
+            if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
             {
-                memIndir = op2->AsIndir();
-                addr     = memIndir->Addr();
-            }
-            else
-            {
-#if defined(FEATURE_HW_INTRINSICS)
-                assert(op2->AsHWIntrinsic()->OperIsMemoryLoad());
-                assert(HWIntrinsicInfo::lookupNumArgs(op2->AsHWIntrinsic()) == 1);
-                addr = op2->gtGetOp1();
-#else
-                unreached();
-#endif // FEATURE_HW_INTRINSICS
+                // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW instruction.
+                //
+                // For non-commutative instructions, we should have ensured that op2 was marked
+                // delay free in order to prevent it from getting assigned the same register
+                // as target. However, for commutative instructions, we can just swap the operands
+                // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
+
+                op2Reg = op1Reg;
+                op1Reg = targetReg;
             }
 
-            switch (addr->OperGet())
-            {
-                case GT_LCL_VAR_ADDR:
-                case GT_LCL_FLD_ADDR:
-                {
-                    assert(addr->isContained());
-                    varNum = addr->AsLclVarCommon()->GetLclNum();
-                    offset = addr->AsLclVarCommon()->GetLclOffs();
-                    break;
-                }
-
-                case GT_CLS_VAR_ADDR:
-                {
-                    GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, addr->AsClsVar()->gtClsVarHnd, 0);
-                    return;
-                }
-
-                default:
-                {
-                    GenTreeIndir load = indirForm(op2->TypeGet(), addr);
-
-                    if (memIndir == nullptr)
-                    {
-                        // This is the HW intrinsic load case.
-                        // Until we improve the handling of addressing modes in the emitter, we'll create a
-                        // temporary GT_IND to generate code with.
-                        memIndir = &load;
-                    }
-                    GetEmitter()->emitIns_SIMD_R_R_A(ins, size, targetReg, op1Reg, memIndir);
-                    return;
-                }
-            }
+            emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg);
         }
-        else
-        {
-            switch (op2->OperGet())
-            {
-                case GT_LCL_FLD:
-                {
-                    varNum = op2->AsLclFld()->GetLclNum();
-                    offset = op2->AsLclFld()->GetLclOffs();
-                    break;
-                }
+        break;
 
-                case GT_LCL_VAR:
-                {
-                    assert(op2->IsRegOptional() ||
-                           !compiler->lvaGetDesc(op2->AsLclVar()->GetLclNum())->lvIsRegCandidate());
-                    varNum = op2->AsLclVar()->GetLclNum();
-                    offset = 0;
-                    break;
-                }
-
-                case GT_CNS_DBL:
-                {
-                    GenTreeDblCon*       dblCns = op2->AsDblCon();
-                    CORINFO_FIELD_HANDLE cnsDblHnd =
-                        GetEmitter()->emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns));
-                    GetEmitter()->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, cnsDblHnd, 0);
-                    return;
-                }
-
-                default:
-                {
-                    unreached();
-                }
-            }
-        }
-
-        // Ensure we got a good varNum and offset.
-        // We also need to check for `tmpDsc != nullptr` since spill temp numbers
-        // are negative and start with -1, which also happens to be BAD_VAR_NUM.
-        assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
-        assert(offset != (unsigned)-1);
-
-        GetEmitter()->emitIns_SIMD_R_R_S(ins, size, targetReg, op1Reg, varNum, offset);
-    }
-    else
-    {
-        regNumber op2Reg = op2->GetRegNum();
-
-        if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
-        {
-            // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW instruction.
-            //
-            // For non-commutative instructions, we should have ensured that op2 was marked
-            // delay free in order to prevent it from getting assigned the same register
-            // as target. However, for commutative instructions, we can just swap the operands
-            // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
-
-            op2Reg = op1Reg;
-            op1Reg = targetReg;
-        }
-
-        GetEmitter()->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg);
+        default:
+            unreached();
     }
 }
 #endif // TARGET_XARCH
-
-/*****************************************************************************
- *
- *  Generate an instruction with two registers, the second one being a byte
- *  or word register (i.e. this is something like "movzx eax, cl").
- */
-
-void CodeGen::inst_RV_RR(instruction ins, emitAttr size, regNumber reg1, regNumber reg2)
-{
-    assert(size == EA_1BYTE || size == EA_2BYTE);
-#ifdef TARGET_XARCH
-    assert(ins == INS_movsx || ins == INS_movzx);
-    assert(size != EA_1BYTE || (genRegMask(reg2) & RBM_BYTE_REGS));
-#endif
-
-    GetEmitter()->emitIns_R_R(ins, size, reg1, reg2);
-}
 
 /*****************************************************************************
  *
@@ -1322,66 +1103,6 @@ void CodeGen::inst_ST_RV(instruction ins, TempDsc* tmp, unsigned ofs, regNumber 
     GetEmitter()->emitIns_S_R(ins, emitActualTypeSize(type), reg, tmp->tdTempNum(), ofs);
 }
 
-void CodeGen::inst_ST_IV(instruction ins, TempDsc* tmp, unsigned ofs, int val, var_types type)
-{
-    GetEmitter()->emitIns_S_I(ins, emitActualTypeSize(type), tmp->tdTempNum(), ofs, val);
-}
-
-#if FEATURE_FIXED_OUT_ARGS
-/*****************************************************************************
- *
- *  Generate an instruction that references the outgoing argument space
- *  like "str r3, [sp+0x04]"
- */
-
-void CodeGen::inst_SA_RV(instruction ins, unsigned ofs, regNumber reg, var_types type)
-{
-    assert(ofs < compiler->lvaOutgoingArgSpaceSize);
-
-    GetEmitter()->emitIns_S_R(ins, emitActualTypeSize(type), reg, compiler->lvaOutgoingArgSpaceVar, ofs);
-}
-
-void CodeGen::inst_SA_IV(instruction ins, unsigned ofs, int val, var_types type)
-{
-    assert(ofs < compiler->lvaOutgoingArgSpaceSize);
-
-    GetEmitter()->emitIns_S_I(ins, emitActualTypeSize(type), compiler->lvaOutgoingArgSpaceVar, ofs, val);
-}
-#endif // FEATURE_FIXED_OUT_ARGS
-
-/*****************************************************************************
- *
- *  Generate an instruction with one register and one operand that is byte
- *  or short (e.g. something like "movzx eax, byte ptr [edx]").
- */
-
-void CodeGen::inst_RV_ST(instruction ins, emitAttr size, regNumber reg, GenTree* tree)
-{
-    assert(size == EA_1BYTE || size == EA_2BYTE);
-
-    inst_RV_TT(ins, reg, tree, 0, size);
-}
-
-void CodeGen::inst_mov_RV_ST(regNumber reg, GenTree* tree)
-{
-    /* Figure out the size of the value being loaded */
-
-    emitAttr    size    = EA_ATTR(genTypeSize(tree->gtType));
-    instruction loadIns = ins_Move_Extend(tree->TypeGet(), false);
-
-    if (size < EA_4BYTE)
-    {
-        /* Generate the "movsx/movzx" opcode */
-
-        inst_RV_ST(loadIns, size, reg, tree);
-    }
-    else
-    {
-        /* Compute op1 into the target register */
-
-        inst_RV_TT(loadIns, reg, tree);
-    }
-}
 #ifdef TARGET_XARCH
 void CodeGen::inst_FS_ST(instruction ins, emitAttr size, TempDsc* tmp, unsigned ofs)
 {
@@ -1483,38 +1204,22 @@ bool CodeGenInterface::validDispForLdSt(target_ssize_t disp, var_types type)
             return false;
     }
 }
-bool CodeGen::arm_Valid_Disp_For_LdSt(target_ssize_t disp, var_types type)
-{
-    return validDispForLdSt(disp, type);
-}
 
 bool CodeGenInterface::validImmForAlu(target_ssize_t imm)
 {
     return emitter::emitIns_valid_imm_for_alu(imm);
-}
-bool CodeGen::arm_Valid_Imm_For_Alu(target_ssize_t imm)
-{
-    return validImmForAlu(imm);
 }
 
 bool CodeGenInterface::validImmForMov(target_ssize_t imm)
 {
     return emitter::emitIns_valid_imm_for_mov(imm);
 }
-bool CodeGen::arm_Valid_Imm_For_Mov(target_ssize_t imm)
-{
-    return validImmForMov(imm);
-}
-
-bool CodeGen::arm_Valid_Imm_For_Small_Mov(regNumber reg, target_ssize_t imm, insFlags flags)
-{
-    return emitter::emitIns_valid_imm_for_small_mov(reg, imm, flags);
-}
 
 bool CodeGenInterface::validImmForAdd(target_ssize_t imm, insFlags flags)
 {
     return emitter::emitIns_valid_imm_for_add(imm, flags);
 }
+
 bool CodeGen::arm_Valid_Imm_For_Add(target_ssize_t imm, insFlags flags)
 {
     return emitter::emitIns_valid_imm_for_add(imm, flags);
@@ -1534,28 +1239,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
         (!compiler->info.compMatchedVM && compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)) ||
         (compiler->eeGetRelocTypeHint((void*)addr) == IMAGE_REL_BASED_THUMB_BRANCH24);
 }
-bool CodeGen::arm_Valid_Imm_For_BL(ssize_t addr)
-{
-    return validImmForBL(addr);
-}
 
-// Returns true if this instruction writes to a destination register
-//
-bool CodeGen::ins_Writes_Dest(instruction ins)
-{
-    switch (ins)
-    {
-
-        case INS_cmp:
-        case INS_cmn:
-        case INS_tst:
-        case INS_teq:
-            return false;
-
-        default:
-            return true;
-    }
-}
 #endif // TARGET_ARM
 
 #if defined(TARGET_ARM64)
@@ -1579,6 +1263,8 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
  */
 instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
 {
+    NYI_LOONGARCH64("ins_Move_Extend");
+
     instruction ins = INS_invalid;
 
     if (varTypeIsSIMD(srcType))
@@ -1784,6 +1470,19 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         return INS_ldr;
 #elif defined(TARGET_ARM)
         return INS_vldr;
+#elif defined(TARGET_LOONGARCH64)
+        if (srcType == TYP_DOUBLE)
+        {
+            return INS_fld_d;
+        }
+        else if (srcType == TYP_FLOAT)
+        {
+            return INS_fld_s;
+        }
+        else
+        {
+            assert(!"unhandled floating type");
+        }
 #else
         assert(!varTypeIsFloating(srcType));
 #endif
@@ -1821,6 +1520,29 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
             ins = INS_ldrh;
         else
             ins = INS_ldrsh;
+    }
+#elif defined(TARGET_LOONGARCH64)
+    if (varTypeIsByte(srcType))
+    {
+        if (varTypeIsUnsigned(srcType))
+            ins = INS_ld_bu;
+        else
+            ins = INS_ld_b;
+    }
+    else if (varTypeIsShort(srcType))
+    {
+        if (varTypeIsUnsigned(srcType))
+            ins = INS_ld_hu;
+        else
+            ins = INS_ld_h;
+    }
+    else if (TYP_INT == srcType)
+    {
+        ins = INS_ld_w;
+    }
+    else
+    {
+        ins = INS_ld_d; // default ld_d.
     }
 #else
     NYI("ins_Load");
@@ -1873,6 +1595,15 @@ instruction CodeGen::ins_Copy(var_types dstType)
     {
         return INS_mov;
     }
+#elif defined(TARGET_LOONGARCH64)
+    if (varTypeIsFloating(dstType))
+    {
+        return dstType == TYP_FLOAT ? INS_fmov_s : INS_fmov_d;
+    }
+    else
+    {
+        return INS_mov;
+    }
 #else // TARGET_*
 #error "Unknown TARGET_"
 #endif
@@ -1910,15 +1641,32 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         return INS_mov;
     }
 #elif defined(TARGET_ARM)
-    // No SIMD support yet
+    // No SIMD support yet.
     assert(!varTypeIsSIMD(dstType));
     if (dstIsFloatReg)
     {
-        return (dstType == TYP_DOUBLE) ? INS_vmov_i2d : INS_vmov_i2f;
+        // Can't have LONG in a register.
+        assert(dstType == TYP_FLOAT);
+        return INS_vmov_i2f;
     }
     else
     {
-        return (dstType == TYP_LONG) ? INS_vmov_d2i : INS_vmov_f2i;
+        // Can't have LONG in a register.
+        assert(dstType == TYP_INT);
+        return INS_vmov_f2i;
+    }
+#elif defined(TARGET_LOONGARCH64)
+    // TODO-LoongArch64-CQ: supporting SIMD.
+    assert(!varTypeIsSIMD(dstType));
+    if (dstIsFloatReg)
+    {
+        assert(!genIsValidFloatReg(srcReg));
+        return dstType == TYP_FLOAT ? INS_movgr2fr_w : INS_movgr2fr_d;
+    }
+    else
+    {
+        assert(genIsValidFloatReg(srcReg));
+        return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_movfr2gr_s : INS_movfr2gr_d;
     }
 #else // TARGET*
 #error "Unknown TARGET"
@@ -1932,6 +1680,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
  *  Parameters
  *      dstType   - destination type
  *      aligned   - whether destination is properly aligned if dstType is a SIMD type
+ *                - for LoongArch64 aligned is used for store-index.
  */
 instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false*/)
 {
@@ -1986,6 +1735,19 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
     {
         return INS_vstr;
     }
+#elif defined(TARGET_LOONGARCH64)
+    assert(!varTypeIsSIMD(dstType));
+    if (varTypeIsFloating(dstType))
+    {
+        if (dstType == TYP_DOUBLE)
+        {
+            return aligned ? INS_fstx_d : INS_fst_d;
+        }
+        else if (dstType == TYP_FLOAT)
+        {
+            return aligned ? INS_fstx_s : INS_fst_s;
+        }
+    }
 #else
     assert(!varTypeIsSIMD(dstType));
     assert(!varTypeIsFloating(dstType));
@@ -2000,6 +1762,15 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         ins = INS_strb;
     else if (varTypeIsShort(dstType))
         ins = INS_strh;
+#elif defined(TARGET_LOONGARCH64)
+    if (varTypeIsByte(dstType))
+        ins = aligned ? INS_stx_b : INS_st_b;
+    else if (varTypeIsShort(dstType))
+        ins = aligned ? INS_stx_h : INS_st_h;
+    else if (TYP_INT == dstType)
+        ins = aligned ? INS_stx_w : INS_st_w;
+    else
+        ins = aligned ? INS_stx_d : INS_st_d;
 #else
     NYI("ins_Store");
 #endif
@@ -2019,63 +1790,41 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 // Return Value:
 //   the instruction to use
 //
-// Notes:
-//   The function currently does not expect float srcReg with integral dstType and will assert on such cases.
-//
 instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstType, bool aligned /*=false*/)
 {
+    assert(srcReg != REG_NA);
+
     bool dstIsFloatType = isFloatRegType(dstType);
     bool srcIsFloatReg  = genIsValidFloatReg(srcReg);
     if (srcIsFloatReg == dstIsFloatType)
     {
         return ins_Store(dstType, aligned);
     }
-
-    assert(!srcIsFloatReg && dstIsFloatType && "not expecting an integer type passed in a float reg");
-    assert(!varTypeIsSmall(dstType) && "not expecting small float types");
-
-    instruction ins = INS_invalid;
-#if defined(TARGET_XARCH)
-    ins = INS_mov;
-#elif defined(TARGET_ARMARCH)
-    ins     = INS_str;
-#else
-    NYI("ins_Store");
-#endif
-    assert(ins != INS_invalid);
-    return ins;
+    else
+    {
+        // We know that we are writing to memory, so make the destination type same
+        // as the source type.
+        var_types dstTypeForStore = TYP_UNDEF;
+        unsigned  dstSize         = genTypeSize(dstType);
+        switch (dstSize)
+        {
+            case 4:
+                dstTypeForStore = srcIsFloatReg ? TYP_FLOAT : TYP_INT;
+                break;
+#if defined(TARGET_64BIT)
+            case 8:
+                dstTypeForStore = srcIsFloatReg ? TYP_DOUBLE : TYP_LONG;
+                break;
+#endif // TARGET_64BIT
+            default:
+                assert(!"unexpected write to the stack.");
+                break;
+        }
+        return ins_Store(dstTypeForStore, aligned);
+    }
 }
 
 #if defined(TARGET_XARCH)
-
-bool CodeGen::isMoveIns(instruction ins)
-{
-    return (ins == INS_mov);
-}
-
-instruction CodeGenInterface::ins_FloatLoad(var_types type)
-{
-    // Do Not use this routine in RyuJIT backend. Instead use ins_Load()/ins_Store()
-    unreached();
-}
-
-// everything is just an addressing mode variation on x64
-instruction CodeGen::ins_FloatStore(var_types type)
-{
-    // Do Not use this routine in RyuJIT backend. Instead use ins_Store()
-    unreached();
-}
-
-instruction CodeGen::ins_FloatCopy(var_types type)
-{
-    // Do Not use this routine in RyuJIT backend. Instead use ins_Load().
-    unreached();
-}
-
-instruction CodeGen::ins_FloatCompare(var_types type)
-{
-    return (type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
-}
 
 instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 {
@@ -2092,27 +1841,6 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
         default:
             unreached();
     }
-}
-
-instruction CodeGen::ins_FloatSqrt(var_types type)
-{
-    instruction ins = INS_invalid;
-
-    if (type == TYP_DOUBLE)
-    {
-        ins = INS_sqrtsd;
-    }
-    else if (type == TYP_FLOAT)
-    {
-        ins = INS_sqrtss;
-    }
-    else
-    {
-        assert(!"ins_FloatSqrt: Unsupported type");
-        unreached();
-    }
-
-    return ins;
 }
 
 // Conversions to or from floating point values
@@ -2174,39 +1902,6 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
 }
 
 #elif defined(TARGET_ARM)
-
-bool CodeGen::isMoveIns(instruction ins)
-{
-    return (ins == INS_vmov) || (ins == INS_mov);
-}
-
-instruction CodeGenInterface::ins_FloatLoad(var_types type)
-{
-    assert(type == TYP_DOUBLE || type == TYP_FLOAT);
-    return INS_vldr;
-}
-instruction CodeGen::ins_FloatStore(var_types type)
-{
-    assert(type == TYP_DOUBLE || type == TYP_FLOAT);
-    return INS_vstr;
-}
-instruction CodeGen::ins_FloatCopy(var_types type)
-{
-    assert(type == TYP_DOUBLE || type == TYP_FLOAT);
-    return INS_vmov;
-}
-
-instruction CodeGen::ins_FloatCompare(var_types type)
-{
-    // Not used and not implemented
-    unreached();
-}
-
-instruction CodeGen::ins_FloatSqrt(var_types type)
-{
-    // Not used and not implemented
-    unreached();
-}
 
 instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 {
@@ -2343,153 +2038,22 @@ void CodeGen::instGen_Return(unsigned stkArgSize)
 
 /*****************************************************************************
  *
- *  Emit a MemoryBarrier instruction
- *
- *     Note: all MemoryBarriers instructions can be removed by
- *           SET COMPlus_JitNoMemoryBarriers=1
- */
-void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
-{
-#ifdef DEBUG
-    if (JitConfig.JitNoMemoryBarriers() == 1)
-    {
-        return;
-    }
-#endif // DEBUG
-
-#if defined(TARGET_XARCH)
-    // only full barrier needs to be emitted on Xarch
-    if (barrierKind != BARRIER_FULL)
-    {
-        return;
-    }
-
-    instGen(INS_lock);
-    GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0);
-#elif defined(TARGET_ARM)
-    // ARM has only full barriers, so all barriers need to be emitted as full.
-    GetEmitter()->emitIns_I(INS_dmb, EA_4BYTE, 0xf);
-#elif defined(TARGET_ARM64)
-    GetEmitter()->emitIns_BARR(INS_dmb, barrierKind == BARRIER_LOAD_ONLY ? INS_BARRIER_ISHLD : INS_BARRIER_ISH);
-#else
-#error "Unknown TARGET"
-#endif
-}
-
-/*****************************************************************************
- *
  *  Machine independent way to move a Zero value into a register
  */
 void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags)
 {
 #if defined(TARGET_XARCH)
     GetEmitter()->emitIns_R_R(INS_xor, size, reg, reg);
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARM)
     GetEmitter()->emitIns_R_I(INS_mov, size, reg, 0 ARM_ARG(flags));
+#elif defined(TARGET_ARM64)
+    GetEmitter()->emitIns_Mov(INS_mov, size, reg, REG_ZR, /* canSkip */ true);
+#elif defined(TARGET_LOONGARCH64)
+    GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);
 #else
 #error "Unknown TARGET"
 #endif
     regSet.verifyRegUsed(reg);
-}
-
-/*****************************************************************************
- *
- *  Machine independent way to set the flags based on
- *   comparing a register with zero
- */
-void CodeGen::instGen_Compare_Reg_To_Zero(emitAttr size, regNumber reg)
-{
-#if defined(TARGET_XARCH)
-    GetEmitter()->emitIns_R_R(INS_test, size, reg, reg);
-#elif defined(TARGET_ARMARCH)
-    GetEmitter()->emitIns_R_I(INS_cmp, size, reg, 0);
-#else
-#error "Unknown TARGET"
-#endif
-}
-
-/*****************************************************************************
- *
- *  Machine independent way to set the flags based upon
- *   comparing a register with another register
- */
-void CodeGen::instGen_Compare_Reg_To_Reg(emitAttr size, regNumber reg1, regNumber reg2)
-{
-#if defined(TARGET_XARCH) || defined(TARGET_ARMARCH)
-    GetEmitter()->emitIns_R_R(INS_cmp, size, reg1, reg2);
-#else
-#error "Unknown TARGET"
-#endif
-}
-
-/*****************************************************************************
- *
- *  Machine independent way to set the flags based upon
- *   comparing a register with an immediate
- */
-void CodeGen::instGen_Compare_Reg_To_Imm(emitAttr size, regNumber reg, target_ssize_t imm)
-{
-    if (imm == 0)
-    {
-        instGen_Compare_Reg_To_Zero(size, reg);
-    }
-    else
-    {
-#if defined(TARGET_XARCH)
-#if defined(TARGET_AMD64)
-        if ((EA_SIZE(size) == EA_8BYTE) && (((int)imm != (ssize_t)imm) || EA_IS_CNS_RELOC(size)))
-        {
-            assert(!"Invalid immediate for instGen_Compare_Reg_To_Imm");
-        }
-        else
-#endif // TARGET_AMD64
-        {
-            GetEmitter()->emitIns_R_I(INS_cmp, size, reg, imm);
-        }
-#elif defined(TARGET_ARM)
-        if (arm_Valid_Imm_For_Alu(imm) || arm_Valid_Imm_For_Alu(-imm))
-        {
-            GetEmitter()->emitIns_R_I(INS_cmp, size, reg, imm);
-        }
-        else // We need a scratch register
-        {
-            assert(!"Invalid immediate for instGen_Compare_Reg_To_Imm");
-        }
-#elif defined(TARGET_ARM64)
-        if (true) // TODO-ARM64-NYI: arm_Valid_Imm_For_Alu(imm) || arm_Valid_Imm_For_Alu(-imm))
-        {
-            GetEmitter()->emitIns_R_I(INS_cmp, size, reg, imm);
-        }
-        else // We need a scratch register
-        {
-            assert(!"Invalid immediate for instGen_Compare_Reg_To_Imm");
-        }
-#else
-#error "Unknown TARGET"
-#endif
-    }
-}
-
-/*****************************************************************************
- *
- *  Machine independent way to move a stack based local variable into a register
- */
-void CodeGen::instGen_Load_Reg_From_Lcl(var_types srcType, regNumber dstReg, int varNum, int offs)
-{
-    emitAttr size = emitTypeSize(srcType);
-
-    GetEmitter()->emitIns_R_S(ins_Load(srcType), size, dstReg, varNum, offs);
-}
-
-/*****************************************************************************
- *
- *  Machine independent way to move a register into a stack based local variable
- */
-void CodeGen::instGen_Store_Reg_Into_Lcl(var_types dstType, regNumber srcReg, int varNum, int offs)
-{
-    emitAttr size = emitTypeSize(dstType);
-
-    GetEmitter()->emitIns_S_R(ins_Store(dstType), size, srcReg, varNum, offs);
 }
 
 /*****************************************************************************/

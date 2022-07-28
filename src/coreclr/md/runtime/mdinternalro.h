@@ -70,14 +70,6 @@ public:
     STDMETHODIMP SetOptimizeAccessForSpeed(
         BOOL fOptSpeed)
     {
-#ifdef FEATURE_PREJIT
-        // The metadata cache of hot items is an optional working-set optimization
-        // that has a large speed cost relative to direct table lookup
-        if (fOptSpeed)
-        {   // We want to disable usage of hot data (e.g. in ngen compilation process)
-            m_LiteWeightStgdb.m_MiniMd.DisableHotDataUsage();
-        }
-#endif
         return S_OK;
     }
 
@@ -345,7 +337,7 @@ public:
         mdMethodDef mb);                    // The method for which to get props.
 
     //*****************************************
-    // return method implementation informaiton, like RVA and implflags
+    // return method implementation information, like RVA and implflags
     //*****************************************
     __checkReturn
     STDMETHODIMP GetMethodImplProps(

@@ -1,18 +1,6 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; ==++==
-;
-
-;
-; ==--==
-;
-; FILE: asmhelpers.asm
-;
-
-;
-; ======================================================================================
-
 include AsmMacros.inc
 include asmconstants.inc
 
@@ -239,30 +227,6 @@ NESTED_ENTRY JIT_RareDisableHelper, _TEXT
 NESTED_END JIT_RareDisableHelper, _TEXT
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; PrecodeFixupThunk
-;;
-;; The call in fixup precode initally points to this function.
-;; The pupose of this function is to load the MethodDesc and forward the call the prestub.
-;;
-; EXTERN_C VOID __stdcall PrecodeFixupThunk();
-LEAF_ENTRY PrecodeFixupThunk, _TEXT
-
-        pop     rax         ; Pop the return address. It points right after the call instruction in the precode.
-
-        ; Inline computation done by FixupPrecode::GetMethodDesc()
-        movzx   r10,byte ptr [rax+2]    ; m_PrecodeChunkIndex
-        movzx   r11,byte ptr [rax+1]    ; m_MethodDescChunkIndex
-        mov     rax,qword ptr [rax+r10*8+3]
-        lea     METHODDESC_REGISTER,[rax+r11*8]
-
-        ; Tail call to prestub
-        jmp     ThePreStub
-
-LEAF_END PrecodeFixupThunk, _TEXT
-
-
 ; extern "C" void setFPReturn(int fpSize, INT64 retVal);
 LEAF_ENTRY setFPReturn, _TEXT
         cmp     ecx, 4
@@ -432,13 +396,15 @@ endif ; _DEBUG
 NESTED_ENTRY OnHijackTripThread, _TEXT
 
         ; Don't fiddle with this unless you change HijackFrame::UpdateRegDisplay
-        ; and HijackObjectArgs
+        ; and HijackArgs
+        mov                 rdx, rsp
         push                rax ; make room for the real return address (Rip)
+        push                rdx
         PUSH_CALLEE_SAVED_REGISTERS
         push_vol_reg        rax
         mov                 rcx, rsp
 
-        alloc_stack         30h ; make extra room for xmm0
+        alloc_stack         38h ; make extra room for xmm0, argument home slots and align the SP
         save_xmm128_postrsp xmm0, 20h
 
 
@@ -448,9 +414,10 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
 
         movdqa              xmm0, [rsp + 20h]
 
-        add                 rsp, 30h
+        add                 rsp, 38h
         pop                 rax
         POP_CALLEE_SAVED_REGISTERS
+        pop                 rdx
         ret                 ; return to the correct place, adjusted by our caller
 NESTED_END OnHijackTripThread, _TEXT
 
@@ -718,13 +685,7 @@ ifdef FEATURE_TIERED_COMPILATION
 
 extern OnCallCountThresholdReached:proc
 
-LEAF_ENTRY OnCallCountThresholdReachedStub, _TEXT
-        ; Pop the return address (the stub-identifying token) into a non-argument volatile register that can be trashed
-        pop     rax
-        jmp     OnCallCountThresholdReachedStub2
-LEAF_END OnCallCountThresholdReachedStub, _TEXT
-
-NESTED_ENTRY OnCallCountThresholdReachedStub2, _TEXT
+NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT
         PROLOG_WITH_TRANSITION_BLOCK
 
         lea     rcx, [rsp + __PWTB_TransitionBlock] ; TransitionBlock *
@@ -733,7 +694,7 @@ NESTED_ENTRY OnCallCountThresholdReachedStub2, _TEXT
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         TAILJMP_RAX
-NESTED_END OnCallCountThresholdReachedStub2, _TEXT
+NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 endif ; FEATURE_TIERED_COMPILATION
 

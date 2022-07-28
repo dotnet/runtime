@@ -5,7 +5,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
-
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
 namespace System.Net.Http
@@ -13,18 +12,17 @@ namespace System.Net.Http
     internal sealed class WinHttpChannelBinding : ChannelBinding
     {
         private int _size;
-        private string _cachedToString;
+        private string? _cachedToString;
 
         internal WinHttpChannelBinding(SafeWinHttpHandle requestHandle)
         {
-            IntPtr data = IntPtr.Zero;
             uint dataSize = 0;
 
             if (!Interop.WinHttp.WinHttpQueryOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_SERVER_CBT, IntPtr.Zero, ref dataSize))
             {
                 if (Marshal.GetLastWin32Error() == Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER)
                 {
-                    data = Marshal.AllocHGlobal((int)dataSize);
+                    IntPtr data = Marshal.AllocHGlobal((int)dataSize);
 
                     if (Interop.WinHttp.WinHttpQueryOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_SERVER_CBT, data, ref dataSize))
                     {
@@ -55,7 +53,7 @@ namespace System.Net.Http
             }
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             if (_cachedToString == null && !IsInvalid)
             {

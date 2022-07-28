@@ -16,6 +16,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a value indicating whether the component was modified.
         /// </summary>
-        public abstract bool EditComponent(ITypeDescriptorContext context, object component);
+        public abstract bool EditComponent(ITypeDescriptorContext? context, object component);
     }
 }

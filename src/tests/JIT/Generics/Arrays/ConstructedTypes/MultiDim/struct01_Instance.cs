@@ -41,7 +41,7 @@ public class ArrayHolder
     public Gen<int>[, ,] GenArray = new Gen<int>[10, 10, 10];
 }
 
-public class Test
+public class Test_struct01_Instance
 {
     public static int counter = 0;
     public static bool result = true;

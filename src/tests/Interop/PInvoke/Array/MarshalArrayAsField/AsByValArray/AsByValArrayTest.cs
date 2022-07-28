@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 #region Sequential
 #region sequential struct definition
@@ -605,10 +605,10 @@ class Test
 
     [DllImport("MarshalArrayByValArrayNative", CallingConvention = CallingConvention.Cdecl)]
     static extern bool TakeLPSTRArrayExpStructByVal([In]S_LPSTRArray_Exp s, int size);
-    
+
     [DllImport("MarshalArrayByValArrayNative", CallingConvention = CallingConvention.Cdecl)]
     static extern bool TakeLPCSTRArrayExpStructByVal([In]S_LPCSTRArray_Exp s, int size);
-    
+
     [DllImport("MarshalArrayByValArrayNative", CallingConvention = CallingConvention.Cdecl)]
     static extern bool TakeBSTRArrayExpStructByVal([In]S_BSTRArray_Exp s, int size);
 
@@ -805,62 +805,62 @@ class Test
 
         S_INTArray_Seq s1 = new S_INTArray_Seq();
         s1.arr = InitArray<int>(ARRAY_SIZE);
-        Assert.IsTrue(TakeIntArraySeqStructByVal(s1, s1.arr.Length), "TakeIntArraySeqStructByVal");
+        Assert.True(TakeIntArraySeqStructByVal(s1, s1.arr.Length));
 
         S_UINTArray_Seq s2 = new S_UINTArray_Seq();
         s2.arr = InitArray<uint>(ARRAY_SIZE);
-        Assert.IsTrue(TakeUIntArraySeqStructByVal(s2, s2.arr.Length), "TakeUIntArraySeqStructByVal");
+        Assert.True(TakeUIntArraySeqStructByVal(s2, s2.arr.Length));
 
         S_SHORTArray_Seq s3 = new S_SHORTArray_Seq();
         s3.arr = InitArray<short>(ARRAY_SIZE);
-        Assert.IsTrue(TakeShortArraySeqStructByVal(s3, s3.arr.Length), "TakeShortArraySeqStructByVal");
+        Assert.True(TakeShortArraySeqStructByVal(s3, s3.arr.Length));
 
         S_WORDArray_Seq s4 = new S_WORDArray_Seq();
         s4.arr = InitArray<ushort>(ARRAY_SIZE);
-        Assert.IsTrue(TakeWordArraySeqStructByVal(s4, s4.arr.Length), "TakeWordArraySeqStructByVal");
+        Assert.True(TakeWordArraySeqStructByVal(s4, s4.arr.Length));
 
         S_LONG64Array_Seq s5 = new S_LONG64Array_Seq();
         s5.arr = InitArray<long>(ARRAY_SIZE);
-        Assert.IsTrue(TakeLong64ArraySeqStructByVal(s5, s5.arr.Length), "TakeLong64ArraySeqStructByVal");
+        Assert.True(TakeLong64ArraySeqStructByVal(s5, s5.arr.Length));
 
         S_ULONG64Array_Seq s6 = new S_ULONG64Array_Seq();
         s6.arr = InitArray<ulong>(ARRAY_SIZE);
-        Assert.IsTrue(TakeULong64ArraySeqStructByVal(s6, s6.arr.Length), "TakeULong64ArraySeqStructByVal");
+        Assert.True(TakeULong64ArraySeqStructByVal(s6, s6.arr.Length));
 
         S_DOUBLEArray_Seq s7 = new S_DOUBLEArray_Seq();
         s7.arr = InitArray<double>(ARRAY_SIZE);
-        Assert.IsTrue(TakeDoubleArraySeqStructByVal(s7, s7.arr.Length), "TakeDoubleArraySeqStructByVal");
+        Assert.True(TakeDoubleArraySeqStructByVal(s7, s7.arr.Length));
 
         S_FLOATArray_Seq s8 = new S_FLOATArray_Seq();
         s8.arr = InitArray<float>(ARRAY_SIZE);
-        Assert.IsTrue(TakeFloatArraySeqStructByVal(s8, s8.arr.Length), "TakeFloatArraySeqStructByVal");
+        Assert.True(TakeFloatArraySeqStructByVal(s8, s8.arr.Length));
 
         S_BYTEArray_Seq s9 = new S_BYTEArray_Seq();
         s9.arr = InitArray<byte>(ARRAY_SIZE);
-        Assert.IsTrue(TakeByteArraySeqStructByVal(s9, s9.arr.Length), "TakeByteArraySeqStructByVal");
+        Assert.True(TakeByteArraySeqStructByVal(s9, s9.arr.Length));
 
         S_CHARArray_Seq s10 = new S_CHARArray_Seq();
         s10.arr = InitArray<char>(ARRAY_SIZE);
-        Assert.IsTrue(TakeCharArraySeqStructByVal(s10, s10.arr.Length), "TakeCharArraySeqStructByVal");
+        Assert.True(TakeCharArraySeqStructByVal(s10, s10.arr.Length));
 
         S_LPSTRArray_Seq s11 = new S_LPSTRArray_Seq();
         s11.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.IsTrue(TakeLPSTRArraySeqStructByVal(s11, s11.arr.Length),"TakeLPSTRArraySeqStructByVal");
+        Assert.True(TakeLPSTRArraySeqStructByVal(s11, s11.arr.Length),"TakeLPSTRArraySeqStructByVal");
 
         S_LPCSTRArray_Seq s12 = new S_LPCSTRArray_Seq();
         s12.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.IsTrue(TakeLPCSTRArraySeqStructByVal(s12, s12.arr.Length),"TakeLPCSTRArraySeqStructByVal");
+        Assert.True(TakeLPCSTRArraySeqStructByVal(s12, s12.arr.Length),"TakeLPCSTRArraySeqStructByVal");
 
         if (OperatingSystem.IsWindows())
         {
             S_BSTRArray_Seq s13 = new S_BSTRArray_Seq();
             s13.arr = InitArray<string>(ARRAY_SIZE);
-            Assert.IsTrue(TakeBSTRArraySeqStructByVal(s13, s13.arr.Length),"TakeBSTRArraySeqStructByVal");
+            Assert.True(TakeBSTRArraySeqStructByVal(s13, s13.arr.Length),"TakeBSTRArraySeqStructByVal");
         }
 
         S_StructArray_Seq s14 = new S_StructArray_Seq();
         s14.arr = InitStructArray(ARRAY_SIZE);
-        Assert.IsTrue(TakeStructArraySeqStructByVal(s14, s14.arr.Length),"TakeStructArraySeqStructByVal");
+        Assert.True(TakeStructArraySeqStructByVal(s14, s14.arr.Length),"TakeStructArraySeqStructByVal");
 
         EnregisterableNonBlittable_Seq s15 = new EnregisterableNonBlittable_Seq
         {
@@ -872,7 +872,7 @@ class Test
             }
         };
 
-        Assert.IsTrue(TakeEnregistrableNonBlittableSeqStructByVal(s15, s15.arr), "EnregisterableNonBlittableSeqStructByVal");
+        Assert.True(TakeEnregistrableNonBlittableSeqStructByVal(s15, s15.arr));
 
         EnregisterableUserType s16 = new EnregisterableUserType
         {
@@ -884,7 +884,7 @@ class Test
             }
         };
 
-        Assert.IsTrue(TakeEnregisterableUserTypeStructByVal(s16, s16.arr), "TakeEnregisterableUserTypeStructByVal");
+        Assert.True(TakeEnregisterableUserTypeStructByVal(s16, s16.arr));
     }
 
     static void RunTest2(string report)
@@ -893,62 +893,62 @@ class Test
 
         C_INTArray_Seq c1 = new C_INTArray_Seq();
         c1.arr = InitArray<int>(ARRAY_SIZE);
-        Assert.IsTrue(TakeIntArraySeqClassByVal(c1, c1.arr.Length));
+        Assert.True(TakeIntArraySeqClassByVal(c1, c1.arr.Length));
 
         C_UINTArray_Seq c2 = new C_UINTArray_Seq();
         c2.arr = InitArray<uint>(ARRAY_SIZE);
-        Assert.IsTrue(TakeUIntArraySeqClassByVal(c2, c2.arr.Length));
+        Assert.True(TakeUIntArraySeqClassByVal(c2, c2.arr.Length));
 
         C_SHORTArray_Seq c3 = new C_SHORTArray_Seq();
         c3.arr = InitArray<short>(ARRAY_SIZE);
-        Assert.IsTrue(TakeShortArraySeqClassByVal(c3, c3.arr.Length));
+        Assert.True(TakeShortArraySeqClassByVal(c3, c3.arr.Length));
 
         C_WORDArray_Seq c4 = new C_WORDArray_Seq();
         c4.arr = InitArray<ushort>(ARRAY_SIZE);
-        Assert.IsTrue(TakeWordArraySeqClassByVal(c4, c4.arr.Length));
+        Assert.True(TakeWordArraySeqClassByVal(c4, c4.arr.Length));
 
         C_LONG64Array_Seq c5 = new C_LONG64Array_Seq();
         c5.arr = InitArray<long>(ARRAY_SIZE);
-        Assert.IsTrue(TakeLong64ArraySeqClassByVal(c5, c5.arr.Length));
+        Assert.True(TakeLong64ArraySeqClassByVal(c5, c5.arr.Length));
 
         C_ULONG64Array_Seq c6 = new C_ULONG64Array_Seq();
         c6.arr = InitArray<ulong>(ARRAY_SIZE);
-        Assert.IsTrue(TakeULong64ArraySeqClassByVal(c6, c6.arr.Length));
+        Assert.True(TakeULong64ArraySeqClassByVal(c6, c6.arr.Length));
 
         C_DOUBLEArray_Seq c7 = new C_DOUBLEArray_Seq();
         c7.arr = InitArray<double>(ARRAY_SIZE);
-        Assert.IsTrue(TakeDoubleArraySeqClassByVal(c7, c7.arr.Length));
+        Assert.True(TakeDoubleArraySeqClassByVal(c7, c7.arr.Length));
 
         C_FLOATArray_Seq c8 = new C_FLOATArray_Seq();
         c8.arr = InitArray<float>(ARRAY_SIZE);
-        Assert.IsTrue(TakeFloatArraySeqClassByVal(c8, c8.arr.Length));
+        Assert.True(TakeFloatArraySeqClassByVal(c8, c8.arr.Length));
 
         C_BYTEArray_Seq c9 = new C_BYTEArray_Seq();
         c9.arr = InitArray<byte>(ARRAY_SIZE);
-        Assert.IsTrue(TakeByteArraySeqClassByVal(c9, c9.arr.Length));
+        Assert.True(TakeByteArraySeqClassByVal(c9, c9.arr.Length));
 
         C_CHARArray_Seq c10 = new C_CHARArray_Seq();
         c10.arr = InitArray<char>(ARRAY_SIZE);
-        Assert.IsTrue(TakeCharArraySeqClassByVal(c10, c10.arr.Length));
+        Assert.True(TakeCharArraySeqClassByVal(c10, c10.arr.Length));
 
         C_LPSTRArray_Seq c11 = new C_LPSTRArray_Seq();
         c11.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.IsTrue(TakeLPSTRArraySeqClassByVal(c11, c11.arr.Length));
+        Assert.True(TakeLPSTRArraySeqClassByVal(c11, c11.arr.Length));
 
         C_LPCSTRArray_Seq c12 = new C_LPCSTRArray_Seq();
         c12.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.IsTrue(TakeLPCSTRArraySeqClassByVal(c12, c12.arr.Length));
+        Assert.True(TakeLPCSTRArraySeqClassByVal(c12, c12.arr.Length));
 
         if (OperatingSystem.IsWindows())
         {
             C_BSTRArray_Seq c13 = new C_BSTRArray_Seq();
             c13.arr = InitArray<string>(ARRAY_SIZE);
-            Assert.IsTrue(TakeBSTRArraySeqClassByVal(c13, c13.arr.Length));
+            Assert.True(TakeBSTRArraySeqClassByVal(c13, c13.arr.Length));
         }
 
         C_StructArray_Seq c14 = new C_StructArray_Seq();
         c14.arr = InitStructArray(ARRAY_SIZE);
-        Assert.IsTrue(TakeStructArraySeqClassByVal(c14, c14.arr.Length));
+        Assert.True(TakeStructArraySeqClassByVal(c14, c14.arr.Length));
     }
 
     static void RunTest3(string report)
@@ -957,63 +957,62 @@ class Test
 
         S_INTArray_Exp s1 = new S_INTArray_Exp();
         s1.arr = InitArray<int>(ARRAY_SIZE);
-        Assert.IsTrue(TakeIntArrayExpStructByVal(s1, s1.arr.Length), "TakeIntArrayExpStructByVal");
+        Assert.True(TakeIntArrayExpStructByVal(s1, s1.arr.Length));
 
         S_UINTArray_Exp s2 = new S_UINTArray_Exp();
         s2.arr = InitArray<uint>(ARRAY_SIZE);
-        Assert.IsTrue(TakeUIntArrayExpStructByVal(s2, s2.arr.Length), "TakeUIntArrayExpStructByVal");
+        Assert.True(TakeUIntArrayExpStructByVal(s2, s2.arr.Length));
 
         S_SHORTArray_Exp s3 = new S_SHORTArray_Exp();
         s3.arr = InitArray<short>(ARRAY_SIZE);
-        Assert.IsTrue(TakeShortArrayExpStructByVal(s3, s3.arr.Length), "TakeShortArrayExpStructByVal");
+        Assert.True(TakeShortArrayExpStructByVal(s3, s3.arr.Length));
 
         S_WORDArray_Exp s4 = new S_WORDArray_Exp();
         s4.arr = InitArray<ushort>(ARRAY_SIZE);
-        Assert.IsTrue(TakeWordArrayExpStructByVal(s4, s4.arr.Length), "TakeWordArrayExpStructByVal");
+        Assert.True(TakeWordArrayExpStructByVal(s4, s4.arr.Length));
 
         S_LONG64Array_Exp s5 = new S_LONG64Array_Exp();
         s5.arr = InitArray<long>(ARRAY_SIZE);
-        Assert.IsTrue(TakeLong64ArrayExpStructByVal(s5, s5.arr.Length), "TakeLong64ArrayExpStructByVal");
+        Assert.True(TakeLong64ArrayExpStructByVal(s5, s5.arr.Length));
 
         S_ULONG64Array_Exp s6 = new S_ULONG64Array_Exp();
         s6.arr = InitArray<ulong>(ARRAY_SIZE);
-        Assert.IsTrue(TakeULong64ArrayExpStructByVal(s6, s6.arr.Length), "TakeULong64ArrayExpStructByVal");
+        Assert.True(TakeULong64ArrayExpStructByVal(s6, s6.arr.Length));
 
         S_DOUBLEArray_Exp s7 = new S_DOUBLEArray_Exp();
         s7.arr = InitArray<double>(ARRAY_SIZE);
-        Assert.IsTrue(TakeDoubleArrayExpStructByVal(s7, s7.arr.Length), "TakeDoubleArrayExpStructByVal");
+        Assert.True(TakeDoubleArrayExpStructByVal(s7, s7.arr.Length));
 
         S_FLOATArray_Exp s8 = new S_FLOATArray_Exp();
         s8.arr = InitArray<float>(ARRAY_SIZE);
-        Assert.IsTrue(TakeFloatArrayExpStructByVal(s8, s8.arr.Length), "TakeFloatArrayExpStructByVal");
+        Assert.True(TakeFloatArrayExpStructByVal(s8, s8.arr.Length));
 
         S_BYTEArray_Exp s9 = new S_BYTEArray_Exp();
         s9.arr = InitArray<byte>(ARRAY_SIZE);
-        Assert.IsTrue(TakeByteArrayExpStructByVal(s9, s9.arr.Length), "TakeByteArrayExpStructByVal");
+        Assert.True(TakeByteArrayExpStructByVal(s9, s9.arr.Length));
 
         S_CHARArray_Exp s10 = new S_CHARArray_Exp();
         s10.arr = InitArray<char>(ARRAY_SIZE);
-        Assert.IsTrue(TakeCharArrayExpStructByVal(s10, s10.arr.Length), "TakeCharArrayExpStructByVal");
+        Assert.True(TakeCharArrayExpStructByVal(s10, s10.arr.Length));
 
         S_LPSTRArray_Exp s11 = new S_LPSTRArray_Exp();
         s11.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.IsTrue(TakeLPSTRArrayExpStructByVal(s11, s11.arr.Length));
+        Assert.True(TakeLPSTRArrayExpStructByVal(s11, s11.arr.Length));
 
         S_LPCSTRArray_Exp s12 = new S_LPCSTRArray_Exp();
         s12.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.IsTrue(TakeLPCSTRArrayExpStructByVal(s12, s12.arr.Length));
-
+        Assert.True(TakeLPCSTRArrayExpStructByVal(s12, s12.arr.Length));
 
         if (OperatingSystem.IsWindows())
         {
             S_BSTRArray_Exp c13 = new S_BSTRArray_Exp();
             c13.arr = InitArray<string>(ARRAY_SIZE);
-            Assert.IsTrue(TakeBSTRArrayExpStructByVal(c13, c13.arr.Length));
+            Assert.True(TakeBSTRArrayExpStructByVal(c13, c13.arr.Length));
         }
 
         S_StructArray_Exp s14 = new S_StructArray_Exp();
         s14.arr = InitStructArray(ARRAY_SIZE);
-        Assert.IsTrue(TakeStructArrayExpStructByVal(s14, s14.arr.Length));
+        Assert.True(TakeStructArrayExpStructByVal(s14, s14.arr.Length));
     }
 
     static void RunTest4(string report)
@@ -1022,112 +1021,112 @@ class Test
 
         C_INTArray_Exp c1 = new C_INTArray_Exp();
         c1.arr = InitArray<int>(ARRAY_SIZE);
-        Assert.IsTrue(TakeIntArrayExpClassByVal(c1, c1.arr.Length));
+        Assert.True(TakeIntArrayExpClassByVal(c1, c1.arr.Length));
 
         C_UINTArray_Exp c2 = new C_UINTArray_Exp();
         c2.arr = InitArray<uint>(ARRAY_SIZE);
-        Assert.IsTrue(TakeUIntArrayExpClassByVal(c2, c2.arr.Length));
+        Assert.True(TakeUIntArrayExpClassByVal(c2, c2.arr.Length));
 
         C_SHORTArray_Exp c3 = new C_SHORTArray_Exp();
         c3.arr = InitArray<short>(ARRAY_SIZE);
-        Assert.IsTrue(TakeShortArrayExpClassByVal(c3, c3.arr.Length));
+        Assert.True(TakeShortArrayExpClassByVal(c3, c3.arr.Length));
 
         C_WORDArray_Exp c4 = new C_WORDArray_Exp();
         c4.arr = InitArray<ushort>(ARRAY_SIZE);
-        Assert.IsTrue(TakeWordArrayExpClassByVal(c4, c4.arr.Length));
+        Assert.True(TakeWordArrayExpClassByVal(c4, c4.arr.Length));
 
         C_LONG64Array_Exp c5 = new C_LONG64Array_Exp();
         c5.arr = InitArray<long>(ARRAY_SIZE);
-        Assert.IsTrue(TakeLong64ArrayExpClassByVal(c5, c5.arr.Length));
+        Assert.True(TakeLong64ArrayExpClassByVal(c5, c5.arr.Length));
 
         C_ULONG64Array_Exp c6 = new C_ULONG64Array_Exp();
         c6.arr = InitArray<ulong>(ARRAY_SIZE);
-        Assert.IsTrue(TakeULong64ArrayExpClassByVal(c6, c6.arr.Length));
+        Assert.True(TakeULong64ArrayExpClassByVal(c6, c6.arr.Length));
 
         C_DOUBLEArray_Exp c7 = new C_DOUBLEArray_Exp();
         c7.arr = InitArray<double>(ARRAY_SIZE);
-        Assert.IsTrue(TakeDoubleArrayExpClassByVal(c7, c7.arr.Length));
+        Assert.True(TakeDoubleArrayExpClassByVal(c7, c7.arr.Length));
 
         C_FLOATArray_Exp c8 = new C_FLOATArray_Exp();
         c8.arr = InitArray<float>(ARRAY_SIZE);
-        Assert.IsTrue(TakeFloatArrayExpClassByVal(c8, c8.arr.Length));
+        Assert.True(TakeFloatArrayExpClassByVal(c8, c8.arr.Length));
 
         C_BYTEArray_Exp c9 = new C_BYTEArray_Exp();
         c9.arr = InitArray<byte>(ARRAY_SIZE);
-        Assert.IsTrue(TakeByteArrayExpClassByVal(c9, c9.arr.Length));
+        Assert.True(TakeByteArrayExpClassByVal(c9, c9.arr.Length));
 
         C_CHARArray_Exp c10 = new C_CHARArray_Exp();
         c10.arr = InitArray<char>(ARRAY_SIZE);
-        Assert.IsTrue(TakeCharArrayExpClassByVal(c10, c10.arr.Length));
+        Assert.True(TakeCharArrayExpClassByVal(c10, c10.arr.Length));
 
         C_LPSTRArray_Exp c11 = new C_LPSTRArray_Exp();
         c11.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.IsTrue(TakeLPSTRArrayExpClassByVal(c11, c11.arr.Length));
+        Assert.True(TakeLPSTRArrayExpClassByVal(c11, c11.arr.Length));
 
         C_LPCSTRArray_Exp c12 = new C_LPCSTRArray_Exp();
         c12.arr = InitArray<string>(ARRAY_SIZE);
-        Assert.IsTrue(TakeLPCSTRArrayExpClassByVal(c12, c12.arr.Length));
+        Assert.True(TakeLPCSTRArrayExpClassByVal(c12, c12.arr.Length));
 
         if (OperatingSystem.IsWindows())
         {
             C_BSTRArray_Exp c13 = new C_BSTRArray_Exp();
             c13.arr = InitArray<string>(ARRAY_SIZE);
-            Assert.IsTrue(TakeBSTRArrayExpClassByVal(c13, c13.arr.Length));
+            Assert.True(TakeBSTRArrayExpClassByVal(c13, c13.arr.Length));
         }
 
         C_StructArray_Exp c14 = new C_StructArray_Exp();
         c14.arr = InitStructArray(ARRAY_SIZE);
-        Assert.IsTrue(TakeStructArrayExpClassByVal(c14, c14.arr.Length));
+        Assert.True(TakeStructArrayExpClassByVal(c14, c14.arr.Length));
     }
 
     static void RunTest5(string report)
     {
         Console.WriteLine(report);
-        
+
         S_INTArray_Seq retval = S_INTArray_Ret_ByValue();
-        Assert.IsTrue(Equals(InitArray<int>(ARRAY_SIZE), retval.arr));
+        Assert.True(Equals(InitArray<int>(ARRAY_SIZE), retval.arr));
 
         C_INTArray_Seq retval1 = S_INTArray_Ret();
-        Assert.IsTrue(Equals(InitArray<int>(ARRAY_SIZE), retval1.arr));
+        Assert.True(Equals(InitArray<int>(ARRAY_SIZE), retval1.arr));
 
         C_UINTArray_Seq retval2 = S_UINTArray_Ret();
-        Assert.IsTrue(Equals(InitArray<uint>(ARRAY_SIZE), retval2.arr));
+        Assert.True(Equals(InitArray<uint>(ARRAY_SIZE), retval2.arr));
 
         C_SHORTArray_Seq retval3 = S_SHORTArray_Ret();
-        Assert.IsTrue(Equals(InitArray<short>(ARRAY_SIZE), retval3.arr));
+        Assert.True(Equals(InitArray<short>(ARRAY_SIZE), retval3.arr));
 
         C_WORDArray_Seq retval4 = S_WORDArray_Ret();
-        Assert.IsTrue(Equals(InitArray<ushort>(ARRAY_SIZE), retval4.arr));
+        Assert.True(Equals(InitArray<ushort>(ARRAY_SIZE), retval4.arr));
 
         C_LONG64Array_Seq retval5 = S_LONG64Array_Ret();
-        Assert.IsTrue(Equals(InitArray<long>(ARRAY_SIZE), retval5.arr));
+        Assert.True(Equals(InitArray<long>(ARRAY_SIZE), retval5.arr));
 
         C_ULONG64Array_Seq retval6 = S_ULONG64Array_Ret();
-        Assert.IsTrue(Equals(InitArray<ulong>(ARRAY_SIZE), retval6.arr));
+        Assert.True(Equals(InitArray<ulong>(ARRAY_SIZE), retval6.arr));
 
         C_DOUBLEArray_Seq retval7 = S_DOUBLEArray_Ret();
-        Assert.IsTrue(Equals(InitArray<double>(ARRAY_SIZE), retval7.arr));
+        Assert.True(Equals(InitArray<double>(ARRAY_SIZE), retval7.arr));
 
         C_FLOATArray_Seq retval8 = S_FLOATArray_Ret();
-        Assert.IsTrue(Equals(InitArray<float>(ARRAY_SIZE), retval8.arr));
+        Assert.True(Equals(InitArray<float>(ARRAY_SIZE), retval8.arr));
 
         C_BYTEArray_Seq retval9 = S_BYTEArray_Ret();
-        Assert.IsTrue(Equals(InitArray<byte>(ARRAY_SIZE), retval9.arr));
+        Assert.True(Equals(InitArray<byte>(ARRAY_SIZE), retval9.arr));
 
         C_CHARArray_Seq retval10 = S_CHARArray_Ret();
-        Assert.IsTrue(Equals(InitArray<char>(ARRAY_SIZE), retval10.arr));
+        Assert.True(Equals(InitArray<char>(ARRAY_SIZE), retval10.arr));
 
         C_LPSTRArray_Seq retval11 = S_LPSTRArray_Ret();
-        Assert.IsTrue(Equals(InitArray<string>(ARRAY_SIZE), retval11.arr));
+        Assert.True(Equals(InitArray<string>(ARRAY_SIZE), retval11.arr));
 
         if (OperatingSystem.IsWindows())
         {
             C_BSTRArray_Seq retval12 = S_BSTRArray_Ret();
-            Assert.IsTrue(Equals(InitArray<string>(ARRAY_SIZE), retval12.arr));
+            Assert.True(Equals(InitArray<string>(ARRAY_SIZE), retval12.arr));
         }
 
         C_StructArray_Seq retval13 = S_StructArray_Ret();
-        Assert.IsTrue(TestStructEquals(InitStructArray(ARRAY_SIZE), retval13.arr));
+        Assert.True(TestStructEquals(InitStructArray(ARRAY_SIZE), retval13.arr));
     }
 
     static void RunTest6(string report)
@@ -1135,46 +1134,46 @@ class Test
         Console.WriteLine(report);
 
         C_INTArray_Exp retval1 = S_INTArray_Ret2();
-        Assert.IsTrue(Equals(InitArray<int>(ARRAY_SIZE), retval1.arr));
+        Assert.True(Equals(InitArray<int>(ARRAY_SIZE), retval1.arr));
 
         C_UINTArray_Exp retval2 = S_UINTArray_Ret2();
-        Assert.IsTrue(Equals(InitArray<uint>(ARRAY_SIZE), retval2.arr));
+        Assert.True(Equals(InitArray<uint>(ARRAY_SIZE), retval2.arr));
 
         C_SHORTArray_Exp retval3 = S_SHORTArray_Ret2();
-        Assert.IsTrue(Equals(InitArray<short>(ARRAY_SIZE), retval3.arr));
+        Assert.True(Equals(InitArray<short>(ARRAY_SIZE), retval3.arr));
 
         C_WORDArray_Exp retval4 = S_WORDArray_Ret2();
-        Assert.IsTrue(Equals(InitArray<ushort>(ARRAY_SIZE), retval4.arr));
+        Assert.True(Equals(InitArray<ushort>(ARRAY_SIZE), retval4.arr));
 
         C_LONG64Array_Exp retval5 = S_LONG64Array_Ret2();
-        Assert.IsTrue(Equals(InitArray<long>(ARRAY_SIZE), retval5.arr));
+        Assert.True(Equals(InitArray<long>(ARRAY_SIZE), retval5.arr));
 
         C_ULONG64Array_Exp retval6 = S_ULONG64Array_Ret2();
-        Assert.IsTrue(Equals(InitArray<ulong>(ARRAY_SIZE), retval6.arr));
+        Assert.True(Equals(InitArray<ulong>(ARRAY_SIZE), retval6.arr));
 
         C_DOUBLEArray_Exp retval7 = S_DOUBLEArray_Ret2();
-        Assert.IsTrue(Equals(InitArray<double>(ARRAY_SIZE), retval7.arr));
+        Assert.True(Equals(InitArray<double>(ARRAY_SIZE), retval7.arr));
 
         C_FLOATArray_Exp retval8 = S_FLOATArray_Ret2();
-        Assert.IsTrue(Equals(InitArray<float>(ARRAY_SIZE), retval8.arr));
+        Assert.True(Equals(InitArray<float>(ARRAY_SIZE), retval8.arr));
 
         C_BYTEArray_Exp retval9 = S_BYTEArray_Ret2();
-        Assert.IsTrue(Equals(InitArray<byte>(ARRAY_SIZE), retval9.arr));
+        Assert.True(Equals(InitArray<byte>(ARRAY_SIZE), retval9.arr));
 
         C_CHARArray_Exp retval10 = S_CHARArray_Ret2();
-        Assert.IsTrue(Equals(InitArray<char>(ARRAY_SIZE), retval10.arr));
+        Assert.True(Equals(InitArray<char>(ARRAY_SIZE), retval10.arr));
 
         C_LPSTRArray_Exp retval11 = S_LPSTRArray_Ret2();
-        Assert.IsTrue(Equals(InitArray<string>(ARRAY_SIZE), retval11.arr));
+        Assert.True(Equals(InitArray<string>(ARRAY_SIZE), retval11.arr));
 
         if (OperatingSystem.IsWindows())
         {
             C_BSTRArray_Exp retval12 = S_BSTRArray_Ret2();
-            Assert.IsTrue(Equals(InitArray<string>(ARRAY_SIZE), retval12.arr));
+            Assert.True(Equals(InitArray<string>(ARRAY_SIZE), retval12.arr));
         }
 
         C_StructArray_Exp retval13 = S_StructArray_Ret2();
-        Assert.IsTrue(TestStructEquals(InitStructArray(ARRAY_SIZE), retval13.arr));
+        Assert.True(TestStructEquals(InitStructArray(ARRAY_SIZE), retval13.arr));
     }
 
     static int Main(string[] args)
@@ -1183,14 +1182,11 @@ class Test
         {
             RunTest1("RunTest1 : Marshal array as field as ByValArray in sequential struct as parameter.");
             RunTest2("RunTest2 : Marshal array as field as ByValArray in sequential class as parameter.");
-            if (OperatingSystem.IsWindows())
-            {
-                RunTest3("RunTest3 : Marshal array as field as ByValArray in explicit struct as parameter.");
-            }
+            RunTest3("RunTest3 : Marshal array as field as ByValArray in explicit struct as parameter.");
             RunTest4("RunTest4 : Marshal array as field as ByValArray in explicit class as parameter.");
             RunTest5("RunTest5 : Marshal array as field as ByValArray in sequential class as return type.");
             RunTest6("RunTest6 : Marshal array as field as ByValArray in explicit class as return type.");
-        
+
             Console.WriteLine("\nTest PASS.");
             return 100;
         }

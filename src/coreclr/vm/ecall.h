@@ -37,7 +37,6 @@ enum {
     FCFuncFlag_EndOfArray   = 0x01,
     FCFuncFlag_HasSignature = 0x02,
     FCFuncFlag_Unreferenced = 0x04, // Suppress unused fcall check
-    FCFuncFlag_QCall        = 0x08, // QCall - CoreLib to VM transition implemented as PInvoke
 };
 
 struct ECFunc {
@@ -51,8 +50,6 @@ struct ECFunc {
     bool                IsEndOfArray()  { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_EndOfArray); }
     bool                HasSignature()  { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_HasSignature); }
     bool                IsUnreferenced(){ LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_Unreferenced); }
-    bool                IsQCall()       { LIMITED_METHOD_CONTRACT; return !!(m_dwFlags & FCFuncFlag_QCall); }
-    CorInfoIntrinsics   IntrinsicID()   { LIMITED_METHOD_CONTRACT; return (CorInfoIntrinsics)((INT8)(m_dwFlags >> 16)); }
     int                 DynamicID()     { LIMITED_METHOD_CONTRACT; return (int)              ((INT8)(m_dwFlags >> 24)); }
 
     ECFunc*             NextInArray()
@@ -85,7 +82,6 @@ class ECall
         static PCODE GetFCallImpl(MethodDesc* pMD, BOOL * pfSharedOrDynamicFCallImpl = NULL);
         static MethodDesc* MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoint = NULL);
         static DWORD GetIDForMethod(MethodDesc *pMD);
-        static CorInfoIntrinsics GetIntrinsicID(MethodDesc *pMD);
 
         // Some fcalls (delegate ctors and tlbimpl ctors) shared one implementation.
         // We should never patch vtable for these since they have 1:N mapping between
@@ -129,11 +125,15 @@ class ECall
             NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS,
             InvalidDynamicFCallId = -1
         };
-
-
-        static LPVOID GetQCallImpl(MethodDesc * pMD);
 };
 
 extern "C" FCDECL1(VOID, FCComCtor, LPVOID pV);
+
+class GCReporting final
+{
+public:
+    static FCDECL1(void, Register, GCFrame*);
+    static FCDECL1(void, Unregister, GCFrame*);
+};
 
 #endif // _ECALL_H_

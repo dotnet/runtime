@@ -14,10 +14,7 @@ namespace System
 
         public static bool IsNormalized(this string strInput, NormalizationForm normalizationForm)
         {
-            if (strInput == null)
-            {
-                throw new ArgumentNullException(nameof(strInput));
-            }
+            ArgumentNullException.ThrowIfNull(strInput);
 
             return strInput.IsNormalized(normalizationForm);
         }
@@ -30,10 +27,7 @@ namespace System
 
         public static string Normalize(this string strInput, NormalizationForm normalizationForm)
         {
-            if (strInput == null)
-            {
-                throw new ArgumentNullException(nameof(strInput));
-            }
+            ArgumentNullException.ThrowIfNull(strInput);
 
             return strInput.Normalize(normalizationForm);
         }

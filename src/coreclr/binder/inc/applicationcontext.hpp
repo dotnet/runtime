@@ -16,7 +16,6 @@
 
 #include "bindertypes.hpp"
 #include "failurecache.hpp"
-#include "assemblyidentitycache.hpp"
 #include "stringarraylist.h"
 
 namespace BINDER_SPACE
@@ -80,32 +79,19 @@ namespace BINDER_SPACE
     typedef SHash<SimpleNameToFileNameMapTraits> SimpleNameToFileNameMap;
 
     class ApplicationContext
-        : public IUnknown
     {
     public:
-        // IUnknown methods
-        STDMETHOD(QueryInterface)(REFIID   riid,
-                                  void   **ppv);
-        STDMETHOD_(ULONG, AddRef)();
-        STDMETHOD_(ULONG, Release)();
-
         // ApplicationContext methods
         ApplicationContext();
-        virtual ~ApplicationContext();
-        HRESULT Init(UINT_PTR binderID);
+        ~ApplicationContext();
+        HRESULT Init();
 
         inline SString &GetApplicationName();
-        inline DWORD GetAppDomainId();
-        inline void SetAppDomainId(DWORD dwAppDomainId);
 
         HRESULT SetupBindingPaths(/* in */ SString &sTrustedPlatformAssemblies,
                                   /* in */ SString &sPlatformResourceRoots,
                                   /* in */ SString &sAppPaths,
-                                  /* in */ SString &sAppNiPaths,
                                   /* in */ BOOL     fAcquireLock);
-
-        HRESULT GetAssemblyIdentity(/* in */ LPCSTR                szTextualIdentity,
-                                    /* in */ AssemblyIdentityUTF8 **ppAssemblyIdentity);
 
         // Getters/Setter
         inline ExecutionContext *GetExecutionContext();
@@ -115,7 +101,6 @@ namespace BINDER_SPACE
         inline StringArrayList *GetAppPaths();
         inline SimpleNameToFileNameMap *GetTpaList();
         inline StringArrayList *GetPlatformResourceRoots();
-        inline StringArrayList *GetAppNiPaths();
 
         // Using a host-configured Trusted Platform Assembly list
         bool IsTpaListProvided();
@@ -123,26 +108,17 @@ namespace BINDER_SPACE
         inline LONG GetVersion();
         inline void IncrementVersion();
 
-        UINT_PTR GetBinderID() { return m_binderID; }
-
-    protected:
-        LONG               m_cRef;
+    private:
         Volatile<LONG>     m_cVersion;
         SString            m_applicationName;
-        DWORD              m_dwAppDomainId;
         ExecutionContext  *m_pExecutionContext;
         FailureCache      *m_pFailureCache;
         CRITSEC_COOKIE     m_contextCS;
 
-        AssemblyIdentityCache m_assemblyIdentityCache;
-
         StringArrayList    m_platformResourceRoots;
         StringArrayList    m_appPaths;
-        StringArrayList    m_appNiPaths;
 
         SimpleNameToFileNameMap * m_pTrustedPlatformAssemblyMap;
-
-        UINT_PTR m_binderID;
     };
 
 #include "applicationcontext.inl"

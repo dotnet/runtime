@@ -11,8 +11,8 @@
   .publickeytoken = (CC 7B 13 FF CD 2D DD 51 )                         // .{...-.Q
   .ver 5:0:0:0
 }
-.assembly projs { }
-.module projs.dll
+.assembly 'GitHub_35821' { }
+.assembly extern xunit.core {}
 // MVID: {379016DB-73C2-41D4-9E5F-5B727BC70E2C}
 .custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
@@ -34,6 +34,9 @@
   .method private hidebysig static int32 
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       48 (0x30)
     .maxstack  8

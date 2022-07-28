@@ -37,7 +37,7 @@ class TypeKey
             Module *       m_pModule;
             mdToken        m_typeDef;
             DWORD          m_numGenericArgs; // 0 for non-generic types
-            FixupPointer<TypeHandle> * m_pGenericArgs;   // NULL for non-generic types
+            TypeHandle *   m_pGenericArgs;   // NULL for non-generic types
             // Note that for DAC builds, m_pGenericArgs is a host allocated buffer (eg. by in SigPointer::GetTypeHandleThrowing),
             // not a copy of an object marshalled by DAC.
         } asClass;
@@ -213,7 +213,6 @@ public:
         return TypeKey::Equals(this, pKey);
     }
 
-    // Comparison and hashing
     static BOOL Equals(const TypeKey *pKey1, const TypeKey *pKey2)
     {
         WRAPPER_NO_CONTRACT;
@@ -231,7 +230,7 @@ public:
             }
             for (DWORD i = 0; i < pKey1->u.asClass.m_numGenericArgs; i++)
             {
-                if (pKey1->u.asClass.m_pGenericArgs[i].GetValue() != pKey2->u.asClass.m_pGenericArgs[i].GetValue())
+                if (pKey1->u.asClass.m_pGenericArgs[i] != pKey2->u.asClass.m_pGenericArgs[i])
                     return FALSE;
             }
             return TRUE;
@@ -256,33 +255,6 @@ public:
             }
             return TRUE;
         }
-    }
-
-    DWORD ComputeHash() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        DWORD_PTR hashLarge;
-
-        if (m_kind == ELEMENT_TYPE_CLASS)
-        {
-            hashLarge = ((DWORD_PTR)u.asClass.m_pModule ^ (DWORD_PTR)u.asClass.m_numGenericArgs ^ (DWORD_PTR)u.asClass.m_typeDef);
-        }
-        else if (CorTypeInfo::IsModifier_NoThrow(m_kind) || m_kind == ELEMENT_TYPE_VALUETYPE)
-        {
-            hashLarge = (u.asParamType.m_paramType ^ (DWORD_PTR) u.asParamType.m_rank);
-        }
-        else hashLarge = 0;
-
-#if POINTER_BITS == 32
-        return hashLarge;
-#else
-        DWORD hash = *(DWORD *)&hashLarge;
-        for (unsigned i = 1; i < POINTER_BITS / 32; i++)
-        {
-            hash ^= ((DWORD *)&hashLarge)[i];
-        }
-        return hash;
-#endif
     }
 };
 

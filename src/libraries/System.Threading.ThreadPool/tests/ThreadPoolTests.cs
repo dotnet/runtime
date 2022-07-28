@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Tracing;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -183,6 +186,24 @@ namespace System.Threading.ThreadPools.Tests
                     VerifyMinThreads(minw, minc);
                 }
             }).Dispose();
+
+            // Verify that SetMinThreads() and SetMaxThreads() return false when trying to set a different value from what is
+            // configured through config
+            var options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions["System.Threading.ThreadPool.MinThreads"] = "1";
+            options.RuntimeConfigurationOptions["System.Threading.ThreadPool.MaxThreads"] = "2";
+            RemoteExecutor.Invoke(() =>
+            {
+                int w, c;
+                ThreadPool.GetMinThreads(out w, out c);
+                Assert.Equal(1, w);
+                ThreadPool.GetMaxThreads(out w, out c);
+                Assert.Equal(2, w);
+                Assert.True(ThreadPool.SetMinThreads(1, 1));
+                Assert.True(ThreadPool.SetMaxThreads(2, 1));
+                Assert.False(ThreadPool.SetMinThreads(2, 1));
+                Assert.False(ThreadPool.SetMaxThreads(1, 1));
+            }, options).Dispose();
         }
 
         private static void VerifyMinThreads(int expectedMinw, int expectedMinc)
@@ -807,7 +828,6 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        // See https://github.com/dotnet/corert/pull/6822
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ThreadPoolCanProcessManyWorkItemsInParallelWithoutDeadlocking()
         {
@@ -904,6 +924,7 @@ namespace System.Threading.ThreadPools.Tests
                 int workItemCount = processorCount + 120;
                 SetBlockingConfigValue("ThreadsToAddWithoutDelay_ProcCountFactor", 1);
                 SetBlockingConfigValue("MaxDelayMs", 1);
+                SetBlockingConfigValue("IgnoreMemoryUsage", true);
 
                 var allWorkItemsUnblocked = new AutoResetEvent(false);
 
@@ -934,18 +955,203 @@ namespace System.Threading.ThreadPools.Tests
                     Assert.True(allWorkItemsUnblocked.WaitOne(30_000));
                 }
 
-                void SetBlockingConfigValue(string name, int value) =>
+                void SetBlockingConfigValue(string name, object value) =>
                     AppContextSetData("System.Threading.ThreadPool.Blocking." + name, value);
 
                 void AppContextSetData(string name, object value)
                 {
-                    typeof(AppContext).InvokeMember(
-                        "SetData",
-                        BindingFlags.ExactBinding | BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static,
-                        null,
-                        null,
-                        new object[] { name, value });
+                    if (value is bool boolValue)
+                    {
+                        AppContext.SetSwitch(name, boolValue);
+                    }
+                    else
+                    {
+                        AppContext.SetData(name, value);
+                    }
                 }
+            }).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public static void CooperativeBlockingWithProcessingThreadsAndGoalThreadsAndAddWorkerRaceTest()
+        {
+            // Avoid contaminating the main process' environment
+            RemoteExecutor.Invoke(() =>
+            {
+                try
+                {
+                    // The test is run affinitized to at most 2 processors for more frequent repros. The actual test process below
+                    // will inherit the affinity.
+                    Process testParentProcess = Process.GetCurrentProcess();
+                    testParentProcess.ProcessorAffinity = (nint)testParentProcess.ProcessorAffinity & 0x3;
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    // Processor affinity is not supported on some platforms, try to run the test anyway
+                }
+
+                RemoteExecutor.Invoke(() =>
+                {
+                    const uint TestDurationMs = 4000;
+
+                    var done = new ManualResetEvent(false);
+                    int startTimeMs = Environment.TickCount;
+                    Action<object> completingTask = data => ((TaskCompletionSource<int>)data).SetResult(0);
+                    Action repeatingTask = null;
+                    repeatingTask = () =>
+                    {
+                        if ((uint)(Environment.TickCount - startTimeMs) >= TestDurationMs)
+                        {
+                            done.Set();
+                            return;
+                        }
+
+                        Task.Run(repeatingTask);
+
+                        var tcs = new TaskCompletionSource<int>();
+                        Task.Factory.StartNew(completingTask, tcs);
+                        tcs.Task.Wait();
+                    };
+
+                    for (int i = 0; i < Environment.ProcessorCount; ++i)
+                    {
+                        Task.Run(repeatingTask);
+                    }
+
+                    done.CheckedWait();
+                }).Dispose();
+            }).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public void FileStreamFlushAsyncThreadPoolDeadlockTest()
+        {
+            // This test was occasionally causing the deadlock described in https://github.com/dotnet/runtime/pull/68171. Run it
+            // in a remote process to test it with a dedicated thread pool.
+            RemoteExecutor.Invoke(async () =>
+            {
+                const int OneKibibyte = 1 << 10;
+                const int FourKibibytes = OneKibibyte << 2;
+                const int FileSize = 1024;
+
+                using var destinationTempFile = TempFile.Create(CreateArray(FileSize));
+
+                static byte[] CreateArray(int count)
+                {
+                    var result = new byte[count];
+                    const int Seed = 12345;
+                    var random = new Random(Seed);
+                    random.NextBytes(result);
+                    return result;
+                }
+
+                for (int j = 0; j < 100; j++)
+                {
+                    using var fileStream =
+                        new FileStream(
+                            destinationTempFile.Path,
+                            FileMode.Create,
+                            FileAccess.Write,
+                            FileShare.Read,
+                            FourKibibytes,
+                            FileOptions.None);
+                    for (int i = 0; i < FileSize; i++)
+                    {
+                        fileStream.WriteByte(default);
+                        await fileStream.FlushAsync();
+                    }
+                }
+            }).Dispose();
+        }
+
+        private class ClrMinMaxThreadsEventListener : EventListener
+        {
+            private const string ClrProviderName = "Microsoft-Windows-DotNETRuntime";
+            private const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
+            private const int ThreadPoolMinMaxThreadsEventId = 59;
+
+            private readonly int _expectedEventCount;
+
+            public List<object[]> Payloads { get; } = new List<object[]>();
+            public AutoResetEvent AllEventsReceived { get; } = new AutoResetEvent(false);
+            public ClrMinMaxThreadsEventListener(int expectedEventCount) => _expectedEventCount = expectedEventCount;
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == ClrProviderName)
+                {
+                    EnableEvents(eventSource, EventLevel.Informational, ThreadingKeyword);
+                }
+
+                base.OnEventSourceCreated(eventSource);
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (eventData.EventId == ThreadPoolMinMaxThreadsEventId)
+                {
+                    var payloads = new object[eventData.Payload.Count];
+                    eventData.Payload?.CopyTo(payloads, 0);
+                    Payloads.Add(payloads);
+                    if (Payloads.Count == _expectedEventCount)
+                    {
+                        AllEventsReceived.Set();
+                    }
+
+                }
+
+                base.OnEventWritten(eventData);
+            }
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public void ThreadPoolMinMaxThreadsEventTest()
+        {
+            // The ThreadPoolMinMaxThreads event is fired when the ThreadPool is created
+            // or when SetMinThreads/SetMaxThreads are called
+            // Each time the event is fired, it is verified that it recorded the correct values
+            RemoteExecutor.Invoke(() =>
+            {
+                const int ExpectedEventCount = 3;
+
+                using var el = new ClrMinMaxThreadsEventListener(ExpectedEventCount);
+
+                int newMinWorkerThreads = 3;
+                int newMinIOCompletionThreads = 4;
+
+                int newMaxWorkerThreads = 10;
+                int newMaxIOCompletionThreads = 11;
+
+                ThreadPool.SetMinThreads(newMinWorkerThreads, newMinIOCompletionThreads);
+                ThreadPool.SetMaxThreads(newMaxWorkerThreads, newMaxIOCompletionThreads);
+
+                el.AllEventsReceived.CheckedWait();
+
+                Assert.Equal(ExpectedEventCount, el.Payloads.Count);
+
+                // Basic validation for all events
+                foreach (object[] payload in el.Payloads)
+                {
+                    Assert.Equal(5, payload.Length);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        Assert.IsType<ushort>(payload[i]);
+                        if (i < 4)
+                        {
+                            Assert.NotEqual((ushort)0, (ushort)payload[i]);
+                        }
+                    }
+                }
+
+                // Based on change from SetMinThreads:
+                Assert.Equal(newMinWorkerThreads, (ushort)el.Payloads[1][0]);
+                Assert.Equal(newMinIOCompletionThreads, (ushort)el.Payloads[1][2]);
+
+                // Based on change from SetMaxThreads:
+                Assert.Equal(newMinWorkerThreads, (ushort)el.Payloads[2][0]);
+                Assert.Equal(newMinIOCompletionThreads, (ushort)el.Payloads[2][2]);
+                Assert.Equal(newMaxWorkerThreads, (ushort)el.Payloads[2][1]);
+                Assert.Equal(newMaxIOCompletionThreads, (ushort)el.Payloads[2][3]);
             }).Dispose();
         }
 

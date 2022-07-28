@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Gdi32
     {
-        [DllImport(Libraries.Gdi32, ExactSpelling = true)]
-        public static extern IntPtr CreateCompatibleDC(IntPtr hdc);
+        [LibraryImport(Libraries.Gdi32)]
+        public static partial IntPtr CreateCompatibleDC(IntPtr hdc);
     }
 }

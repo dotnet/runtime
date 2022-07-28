@@ -1,8 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <!-- We don't ship a stable package, enable whenever this package is no longer experimental. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <PackageDescription>Tensor class which represents and extends multi-dimensional arrays.
+
+Commonly Used Types:
+System.Numerics.Tensors.Tensor&lt;T&gt;
+System.Numerics.Tensors.CompressedSparseTensor&lt;T&gt;
+System.Numerics.Tensors.DenseTensor&lt;T&gt;
+System.Numerics.Tensors.SparseTensor&lt;T&gt;</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,15 +24,7 @@
     <Compile Include="System\Numerics\Tensors\Tensor.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-  </ItemGroup>
-
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
   </ItemGroup>
 </Project>

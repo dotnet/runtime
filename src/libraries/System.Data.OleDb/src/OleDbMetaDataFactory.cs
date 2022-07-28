@@ -49,7 +49,7 @@ namespace System.Data.OleDb
                  new SchemaRowsetName(OleDbMetaDataCollectionNames.Tables, OleDbSchemaGuid.Tables),
                  new SchemaRowsetName(OleDbMetaDataCollectionNames.Views, OleDbSchemaGuid.Views)};
 
-            // verify the existance of the table in the data set
+            // verify the existence of the table in the data set
             DataTable? metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections];
             if (metaDataCollectionsTable == null)
             {
@@ -59,7 +59,7 @@ namespace System.Data.OleDb
             // copy the table filtering out any rows that don't apply to the current version of the provider
             metaDataCollectionsTable = CloneAndFilterCollection(DbMetaDataCollectionNames.MetaDataCollections, null);
 
-            // verify the existance of the table in the data set
+            // verify the existence of the table in the data set
             DataTable? restrictionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions];
             if (restrictionsTable != null)
             {
@@ -175,7 +175,7 @@ namespace System.Data.OleDb
 
         }
 
-        private string BuildRegularExpression(string invalidChars, string invalidStartingChars)
+        private static string BuildRegularExpression(string invalidChars, string invalidStartingChars)
         {
             StringBuilder regularExpression = new StringBuilder("[^");
             ADP.EscapeSpecialCharacters(invalidStartingChars, regularExpression);
@@ -319,10 +319,7 @@ namespace System.Data.OleDb
             {
                 // if the quote suffix is null assume that it is the same as the prefix (See OLEDB spec
                 // IDBInfo::GetLiteralInfo DBLITERAL_QUOTE_SUFFIX.)
-                if (quoteSuffix == null)
-                {
-                    quoteSuffix = quotePrefix;
-                }
+                quoteSuffix ??= quotePrefix;
 
                 // only know how to build the parttern if the suffix is 1 character
                 // in all other cases just leave the field null
@@ -352,7 +349,7 @@ namespace System.Data.OleDb
 
         private DataTable GetDataTypesTable(OleDbConnection connection)
         {
-            // verify the existance of the table in the data set
+            // verify the existence of the table in the data set
             DataTable? dataTypesTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataTypes];
             if (dataTypesTable == null)
             {
@@ -427,7 +424,7 @@ namespace System.Data.OleDb
                 newRow[clrType] = nativeType.dataType!.FullName;
                 newRow[providerDbType] = nativeType.enumOleDbType;
 
-                // searchable has to be special cased becasue it is not an eaxct mapping
+                // searchable has to be special cased because it is not an eaxct mapping
                 if ((isSearchable != null) && (isSearchableWithLike != null) && (searchable != null))
                 {
                     newRow[isSearchable] = DBNull.Value;
@@ -471,7 +468,7 @@ namespace System.Data.OleDb
 
         private DataTable GetReservedWordsTable(OleDbConnectionInternal internalConnection)
         {
-            // verify the existance of the table in the data set
+            // verify the existence of the table in the data set
             DataTable? reservedWordsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.ReservedWords];
             if (null == reservedWordsTable)
             {
@@ -540,7 +537,7 @@ namespace System.Data.OleDb
                             DataTable metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]!;
                             int numberOfSupportedRestictions = -1;
                             // prepare colletion is called with the exact collection name so
-                            // we can do an exact string comparision here
+                            // we can do an exact string comparison here
                             foreach (DataRow row in metaDataCollectionsTable.Rows)
                             {
                                 string candidateCollectionName = ((string)row[DbMetaDataColumnNames.CollectionName, DataRowVersion.Current]);
@@ -656,7 +653,7 @@ namespace System.Data.OleDb
             return resultTable;
         }
 
-        private void SetIdentifierCase(string columnName, int propertyID, DataRow row, OleDbConnection connection)
+        private static void SetIdentifierCase(string columnName, int propertyID, DataRow row, OleDbConnection connection)
         {
             object? property = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, propertyID);
             IdentifierCase identifierCase = IdentifierCase.Unknown;

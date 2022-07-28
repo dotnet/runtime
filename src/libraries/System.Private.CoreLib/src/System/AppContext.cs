@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -31,8 +32,7 @@ namespace System
 
         public static object? GetData(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (s_dataStore == null)
                 return null;
@@ -45,10 +45,15 @@ namespace System
             return data;
         }
 
+        /// <summary>
+        /// Sets the value of the named data element assigned to the current application domain.
+        /// </summary>
+        /// <param name="name">The name of the data element</param>
+        /// <param name="data">The value of <paramref name="name"/></param>
+        /// <exception cref="ArgumentNullException">If <paramref name="name"/> is <see langword="null"/></exception>
         public static void SetData(string name, object? data)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (s_dataStore == null)
             {
@@ -62,8 +67,10 @@ namespace System
         }
 
 #pragma warning disable CS0067 // events raised by the VM
+        [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(UnhandledExceptionEventArgs))]
         public static event UnhandledExceptionEventHandler? UnhandledException;
 
+        [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(FirstChanceExceptionEventArgs))]
         public static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
 
@@ -88,10 +95,7 @@ namespace System
         /// <returns>A return value of true represents that the switch was set and <paramref name="isEnabled"/> contains the value of the switch</returns>
         public static bool TryGetSwitch(string switchName, out bool isEnabled)
         {
-            if (switchName == null)
-                throw new ArgumentNullException(nameof(switchName));
-            if (switchName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(switchName));
+            ArgumentException.ThrowIfNullOrEmpty(switchName);
 
             if (s_switches != null)
             {
@@ -118,10 +122,7 @@ namespace System
         /// <param name="isEnabled">The value to assign</param>
         public static void SetSwitch(string switchName, bool isEnabled)
         {
-            if (switchName == null)
-                throw new ArgumentNullException(nameof(switchName));
-            if (switchName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(switchName));
+            ArgumentException.ThrowIfNullOrEmpty(switchName);
 
             if (s_switches == null)
             {
@@ -135,7 +136,7 @@ namespace System
             }
         }
 
-#if !CORERT
+#if !NATIVEAOT
         internal static unsafe void Setup(char** pNames, char** pValues, int count)
         {
             Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");

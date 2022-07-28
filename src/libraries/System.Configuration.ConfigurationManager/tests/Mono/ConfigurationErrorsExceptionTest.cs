@@ -49,7 +49,7 @@ namespace MonoTests.System.Configuration
             // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
             // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
             // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
-            Assert.True(Regex.IsMatch(cee.BareMessage, @"[\p{Pi}\p{Po}]" + Regex.Escape(typeof(ConfigurationErrorsException).FullName) + @"[\p{Pf}\p{Po}]"), "#2:" + cee.BareMessage);
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + Regex.Escape(typeof(ConfigurationErrorsException).FullName) + @"[\p{Pf}\p{Po}]", cee.BareMessage);
 
             Assert.NotNull(cee.Data);
             Assert.Equal(0, cee.Data.Count);

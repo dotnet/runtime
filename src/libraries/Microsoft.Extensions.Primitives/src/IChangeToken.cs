@@ -28,6 +28,6 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="callback">The <see cref="Action{Object}"/> to invoke.</param>
         /// <param name="state">State to be passed into the callback.</param>
         /// <returns>An <see cref="IDisposable"/> that is used to unregister the callback.</returns>
-        IDisposable RegisterChangeCallback(Action<object> callback, object state);
+        IDisposable RegisterChangeCallback(Action<object?> callback, object? state);
     }
 }

@@ -7,16 +7,19 @@ internal static partial class Interop
 {
     internal static partial class Globalization
     {
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_ChangeCase")]
-        internal static extern unsafe void ChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_ChangeCase", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial void ChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, [MarshalAs(UnmanagedType.Bool)] bool bToUpper);
 
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_ChangeCaseInvariant")]
-        internal static extern unsafe void ChangeCaseInvariant(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_ChangeCaseInvariant", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial void ChangeCaseInvariant(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, [MarshalAs(UnmanagedType.Bool)] bool bToUpper);
 
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_ChangeCaseTurkish")]
-        internal static extern unsafe void ChangeCaseTurkish(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper);
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_ChangeCaseTurkish", StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial void ChangeCaseTurkish(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, [MarshalAs(UnmanagedType.Bool)] bool bToUpper);
 
-        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_InitOrdinalCasingPage")]
-        internal static extern unsafe void InitOrdinalCasingPage(int pageNumber, char* pTarget);
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_InitOrdinalCasingPage", StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial void InitOrdinalCasingPage(int pageNumber, char* pTarget);
     }
 }

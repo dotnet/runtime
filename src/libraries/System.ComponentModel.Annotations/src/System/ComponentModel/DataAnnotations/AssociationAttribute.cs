@@ -10,7 +10,7 @@ namespace System.ComponentModel.DataAnnotations
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false,
         Inherited = true)]
-    [Obsolete("This attribute is no longer in use and will be ignored if applied.")]
+    [Obsolete("AssociationAttribute has been deprecated and is not supported.")]
     public sealed class AssociationAttribute : Attribute
     {
         /// <summary>

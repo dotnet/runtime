@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const float ceilingSingleDelta = 0.0004f;
         private const float ceilingSingleExpectedResult = 2502.0f;
-
-        [Benchmark(InnerIterationCount = CeilingSingleIterations)]
-        public static void CeilingSingleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        CeilingSingleTest();
-                    }
-                }
-            }
-        }
 
         public static void CeilingSingleTest()
         {

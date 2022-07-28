@@ -27,10 +27,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
 
         public IPattern Build(string pattern)
         {
-            if (pattern == null)
-            {
-                throw new ArgumentNullException(nameof(pattern));
-            }
+            ThrowHelper.ThrowIfNull(pattern);
 
             pattern = pattern.TrimStart(_slashes);
 
@@ -44,9 +41,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
             var allSegments = new List<IPathSegment>();
             bool isParentSegmentLegal = true;
 
-            IList<IPathSegment> segmentsPatternStartsWith = null;
-            IList<IList<IPathSegment>> segmentsPatternContains = null;
-            IList<IPathSegment> segmentsPatternEndsWith = null;
+            IList<IPathSegment>? segmentsPatternStartsWith = null;
+            IList<IList<IPathSegment>>? segmentsPatternContains = null;
+            IList<IPathSegment>? segmentsPatternEndsWith = null;
 
             int endPattern = pattern.Length;
             for (int scanPattern = 0; scanPattern < endPattern;)
@@ -54,7 +51,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                 int beginSegment = scanPattern;
                 int endSegment = NextIndex(pattern, _slashes, scanPattern, endPattern);
 
-                IPathSegment segment = null;
+                IPathSegment? segment = null;
 
                 if (segment == null && endSegment - beginSegment == 3)
                 {
@@ -157,13 +154,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                         scanSegment = endLiteral + 1;
                     }
 
-                    if (segment == null)
-                    {
-                        segment = new WildcardPathSegment(beginsWith, contains, endsWith, ComparisonType);
-                    }
+                    segment ??= new WildcardPathSegment(beginsWith, contains, endsWith, ComparisonType);
                 }
 
-                if (!(segment is ParentPathSegment))
+                if (segment is not ParentPathSegment)
                 {
                     isParentSegmentLegal = false;
                 }
@@ -182,15 +176,15 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                             segmentsPatternEndsWith = new List<IPathSegment>();
                             segmentsPatternContains = new List<IList<IPathSegment>>();
                         }
-                        else if (segmentsPatternEndsWith.Count != 0)
+                        else if (segmentsPatternEndsWith!.Count != 0)
                         {
-                            segmentsPatternContains.Add(segmentsPatternEndsWith);
+                            segmentsPatternContains!.Add(segmentsPatternEndsWith);
                             segmentsPatternEndsWith = new List<IPathSegment>();
                         }
                     }
-                    else if (segmentsPatternEndsWith != null)
+                    else
                     {
-                        segmentsPatternEndsWith.Add(segment);
+                        segmentsPatternEndsWith?.Add(segment);
                     }
 
                     allSegments.Add(segment);
@@ -205,7 +199,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
             }
             else
             {
-                return new RaggedPattern(allSegments, segmentsPatternStartsWith, segmentsPatternEndsWith, segmentsPatternContains);
+                return new RaggedPattern(allSegments, segmentsPatternStartsWith, segmentsPatternEndsWith!, segmentsPatternContains!);
             }
         }
 

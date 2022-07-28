@@ -13,30 +13,35 @@
 .assembly extern mscorlib
 {
 }
-.assembly extern common{}
+.assembly extern eh_common{}
 
-.assembly badtest
+.assembly 'endfinallyinloop'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module badtest.exe
+.assembly extern xunit.core {}
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512
 .corflags 0x00000001
 
 
-.class private auto ansi beforefieldinit foo
+.namespace Test_endfinallyinloop_il
+{
+.class public auto ansi beforefieldinit foo
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
      .locals init (
 	  class [mscorlib]System.IO.StringWriter expectedOut,
-	  class [common]TestUtil.TestLog testLog
+	  class [eh_common]TestUtil.TestLog testLog
 	)
 
     newobj     instance void [mscorlib]System.IO.StringWriter::.ctor()
@@ -51,11 +56,11 @@
     ldstr      "Done!"
     callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
     ldloc.s    expectedOut
-    newobj     instance void [common]TestUtil.TestLog::.ctor(object)
+    newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
     stloc.s    testLog
 
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+    callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
     .try
     {
       IL_0000:  ldstr      "In try..."
@@ -82,10 +87,10 @@
     IL_0030:  ldstr      "Done!"
     IL_0035:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0039:  ldloc.s    testLog
-			  callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+			  callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
   
 			  ldloc.s    testLog
-			  callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+			  callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
     IL_003a:  ret
   } 
 
@@ -99,3 +104,4 @@
   } 
 
 } 
+}

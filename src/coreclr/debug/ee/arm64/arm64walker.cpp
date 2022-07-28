@@ -127,15 +127,22 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
             offset = offset | 0xFFFFFFFFFFE00000;
         }
 
+        PCODE finalAddr;
         if ((opcode & 0x80000000) != 0) //ADRP
         {
             offset = offset << 12;
-            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to ADRP X%d %p\n", opcode, RegNum, offset));
+            finalAddr = (PCODE)(address + offset) & ~0xFFF;
+            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to ADRP X%d %p finalAddr = %p\n", opcode, RegNum, offset, finalAddr));
         }
         else
         {
-            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to ADR X%d %p\n", opcode, RegNum, offset));
+            finalAddr = (PCODE)(address + offset);
+            LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x to ADR X%d %p finalAddr = %p\n", opcode, RegNum, offset, finalAddr));
         }
+
+        CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patchBypass, 0xd503201f); //Add Nop in buffer
+        SetReg(context, RegNum, finalAddr);
+        return patchBypass;
     }
 
     else if ((opcode & 0x3B000000) == 0x18000000) //LDR Literal (General or SIMD)
@@ -171,7 +178,14 @@ BYTE*  NativeWalker::SetupOrSimulateInstructionForPatchSkip(T_CONTEXT * context,
     {
         CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patchBypass, 0xd503201f); //Add Nop in buffer
 
-        m_pSharedPatchBypassBuffer->RipTargetFixup = ip; //Control Flow simulation alone is done DebuggerPatchSkip::TriggerExceptionHook
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        ExecutableWriterHolder<UINT_PTR> ripTargetFixupWriterHolder(&m_pSharedPatchBypassBuffer->RipTargetFixup, sizeof(UINT_PTR));
+        UINT_PTR *pRipTargetFixupRW = ripTargetFixupWriterHolder.GetRW();
+#else // HOST_OSX && HOST_ARM64
+        UINT_PTR *pRipTargetFixupRW = &m_pSharedPatchBypassBuffer->RipTargetFixup;
+#endif // HOST_OSX && HOST_ARM64
+
+        *pRipTargetFixupRW = ip; //Control Flow simulation alone is done DebuggerPatchSkip::TriggerExceptionHook
         LOG((LF_CORDB, LL_INFO100000, "Arm64Walker::Simulate opcode: %x  is a Control Flow instr \n", opcode));
 
         if (walk == WALK_CALL) //initialize Lr

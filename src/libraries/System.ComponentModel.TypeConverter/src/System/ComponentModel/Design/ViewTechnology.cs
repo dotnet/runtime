@@ -18,7 +18,7 @@ namespace System.ComponentModel.Design
         /// COM2 interface technologies such as doc objects and ActiveX
         /// controls.
         /// </summary>
-        [Obsolete("This value has been deprecated. Use ViewTechnology.Default instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("ViewTechnology.Passthrough has been deprecated. Use ViewTechnology.Default instead.")]
         Passthrough = 0,
 
         /// <summary>
@@ -26,7 +26,7 @@ namespace System.ComponentModel.Design
         /// a Windows Forms control object. The designer host will fill the
         /// development environment's document window with this control.
         /// </summary>
-        [Obsolete("This value has been deprecated. Use ViewTechnology.Default instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("ViewTechnology.WindowsForms has been deprecated. Use ViewTechnology.Default instead.")]
         WindowsForms = 1,
 
         /// <summary>

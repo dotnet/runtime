@@ -210,5 +210,17 @@ namespace System.Globalization.Tests
                 Assert.Equal(i + 1, ci.DateTimeFormat.GetEra(eraNames[i]));
             }
         }
+
+        [Fact]
+        public void TestFrenchCanadaTimeFormat()
+        {
+            CultureInfo ci = CultureInfo.GetCultureInfo("fr-CA");
+            Assert.Equal(":", ci.DateTimeFormat.TimeSeparator);
+
+            DateTime time = new DateTime(2021, 10, 1, 5, 36, 50);
+            string formattedTime = time.ToString("HH 'h' mm 'min' ss 's'", ci);
+            DateTime dt = DateTime.Parse(formattedTime, ci);
+            Assert.Equal(time.TimeOfDay, dt.TimeOfDay);
+        }
     }
 }

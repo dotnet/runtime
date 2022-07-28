@@ -18,12 +18,18 @@ namespace Internal.Pgo
             _data = type;
         }
 
+        public TypeSystemEntityOrUnknown(MethodDesc method)
+        {
+            _data = method;
+        }
+
         readonly object _data;
         public TypeDesc AsType => _data as TypeDesc;
         public MethodDesc AsMethod => _data as MethodDesc;
         public FieldDesc AsField => _data as FieldDesc;
         public int AsUnknown => (!(_data is int)) || _data == null ? 0 : (int)_data;
         public bool IsNull => _data == null;
+        public bool IsUnknown => _data is int;
 
         public bool Equals(TypeSystemEntityOrUnknown other)
         {
@@ -37,7 +43,7 @@ namespace Internal.Pgo
             }
         }
 
-        public override int GetHashCode() => _data.GetHashCode();
+        public override int GetHashCode() => _data?.GetHashCode() ?? 0;
 
         public override bool Equals(object obj) => obj is TypeSystemEntityOrUnknown other && other.Equals(this);
 

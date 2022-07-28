@@ -113,7 +113,7 @@ enum {
 enum {
 	ROOT_DESC_CONSERVATIVE, /* 0, so matches NULL value */
 	ROOT_DESC_BITMAP,
-	ROOT_DESC_RUN_LEN, 
+	ROOT_DESC_RUN_LEN,
 	ROOT_DESC_COMPLEX,
 	ROOT_DESC_VECTOR,
 	ROOT_DESC_USER,
@@ -186,7 +186,7 @@ sgen_gc_descr_has_references (SgenDescriptor desc)
 	} while (0)
 
 /* a bitmap desc means that there are pointer references or we'd have
- * choosen run-length, instead: add an assert to check.
+ * chosen run-length, instead: add an assert to check.
  */
 #ifdef __GNUC__
 #define OBJ_BITMAP_FOREACH_PTR(desc,obj)	do {		\

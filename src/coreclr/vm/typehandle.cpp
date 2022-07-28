@@ -16,10 +16,6 @@
 #include "array.h"
 #include "castcache.h"
 
-#ifdef FEATURE_PREJIT
-#include "zapsig.h"
-#endif
-
 #ifdef _DEBUG_IMPL
 
 BOOL TypeHandle::Verify()
@@ -33,11 +29,6 @@ BOOL TypeHandle::Verify()
 
     if (IsNull())
         return(TRUE);
-
-    // If you try to do IBC logging of a type being created, the type
-    // will look inconsistent. IBC logging knows to filter out such types.
-    if (g_IBCLogger.InstrEnabled())
-        return TRUE;
 
     if (!IsRestored_NoLogging())
         return TRUE;
@@ -299,16 +290,6 @@ PTR_Module TypeHandle::GetLoaderModule() const
         return AsTypeDesc()->GetLoaderModule();
     else
         return AsMethodTable()->GetLoaderModule();
-}
-
-PTR_Module TypeHandle::GetZapModule() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (IsTypeDesc())
-        return AsTypeDesc()->GetZapModule();
-    else
-        return AsMethodTable()->GetZapModule();
 }
 
 PTR_BaseDomain TypeHandle::GetDomain() const
@@ -640,7 +621,6 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
         if (IsTypeDesc())
             return AsTypeDesc()->CanCastTo(type, pVisited);
 
-#ifndef CROSSGEN_COMPILE
         // we check nullable case first because it is not cacheable.
         // object castability and type castability disagree on T --> Nullable<T>,
         // so we can't put this in the cache
@@ -649,7 +629,6 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
             // do not allow type T to be cast to Nullable<T>
             return FALSE;
         }
-#endif  //!CROSSGEN_COMPILE
 
         return AsMethodTable()->CanCastTo(type.AsMethodTable(), pVisited);
     }
@@ -1019,13 +998,6 @@ BOOL TypeHandle::IsRestored() const
     }
 }
 
-BOOL TypeHandle::IsEncodedFixup() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return CORCOMPILE_IS_POINTER_TAGGED(m_asTAddr);
-}
-
 BOOL TypeHandle::HasUnrestoredTypeKey()  const
 {
     WRAPPER_NO_CONTRACT;
@@ -1037,53 +1009,12 @@ BOOL TypeHandle::HasUnrestoredTypeKey()  const
         return AsMethodTable()->HasUnrestoredTypeKey();
 }
 
-#ifdef FEATURE_PREJIT
-void TypeHandle::DoRestoreTypeKey()
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(!IsEncodedFixup());
-    }
-    CONTRACT_END
-
-#ifndef DACCESS_COMPILE
-    if (IsTypeDesc())
-    {
-        AsTypeDesc()->DoRestoreTypeKey();
-    }
-    else
-    {
-        MethodTable* pMT = AsMethodTable();
-        PREFIX_ASSUME(pMT != NULL);
-        pMT->DoRestoreTypeKey();
-    }
-#endif
-
-#ifdef _DEBUG
-#ifndef DACCESS_COMPILE
-    if (LoggingOn(LF_CLASSLOADER, LL_INFO10000))
-    {
-        StackSString name;
-        TypeString::AppendTypeDebug(name, *this);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "GENERICS:RestoreTypeKey: type %S at %p\n", name.GetUnicode(), AsPtr()));
-    }
-#endif
-#endif
-
-
-    RETURN;
-}
-#endif
-
 void TypeHandle::CheckRestore() const
 {
     CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        PRECONDITION(!IsEncodedFixup());
     }
     CONTRACTL_END
 
@@ -1092,25 +1023,9 @@ void TypeHandle::CheckRestore() const
         ClassLoader::EnsureLoaded(*this);
         _ASSERTE(IsFullyLoaded());
     }
-
-    g_IBCLogger.LogTypeMethodTableAccess(this);
 }
 
 #ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-BOOL TypeHandle::ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited) const
-{
-    STATIC_STANDARD_VM_CONTRACT;
-
-    _ASSERTE(GetAppDomain()->IsCompilationDomain());
-
-    if (!IsTypeDesc())
-        return AsMethodTable()->ComputeNeedsRestore(image, pVisited);
-    else
-        return AsTypeDesc()->ComputeNeedsRestore(image, pVisited);
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
 
 BOOL
 TypeHandle::IsExternallyVisible() const
@@ -1147,7 +1062,6 @@ TypeHandle::IsExternallyVisible() const
     return paramType.IsExternallyVisible();
 } // TypeHandle::IsExternallyVisible
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF TypeHandle::GetManagedClassObject() const
 {
     CONTRACTL
@@ -1161,7 +1075,7 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
     CONTRACTL_END;
 
 #ifdef _DEBUG
-    // Force a GC here because GetManagedClassObject could trigger GC nondeterminsticaly
+    // Force a GC here because GetManagedClassObject could trigger GC nondeterministicaly
     GCStress<cfg_any, PulseGcTriggerPolicy>::MaybeTrigger();
 #endif // _DEBUG
 
@@ -1193,7 +1107,6 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
         }
     }
 }
-#endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -1426,9 +1339,6 @@ BOOL SatisfiesClassConstraints(TypeHandle instanceTypeHnd, TypeHandle typicalTyp
         SigTypeContext typeContext;
         SigTypeContext::InitTypeContext(instanceTypeHnd, &typeContext);
 
-        // Log the TypeVarTypeDesc access
-        g_IBCLogger.LogTypeMethodTableWriteableAccess(&thActualArg);
-
         BOOL bSatisfiesConstraints =
             formalInst[i].AsGenericVariable()->SatisfiesConstraints(&typeContext, thActualArg, pInstContext);
 
@@ -1635,13 +1545,8 @@ CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
                 {
                     for (DWORD i = 0; i < pMT->GetNumGenericArgs(); i++)
                     {
-#ifdef FEATURE_PREJIT
-                        CHECK_MSGF(ZapSig::CompareTypeHandleFieldToTypeHandle(pMT->GetInstantiation().GetRawArgs()[i].GetValuePtr(), pKey->GetInstantiation()[i]),
-                               ("Generic argument %d in MethodTable does not match key %S", i, typeKeyString.GetUnicode()));
-#else
                         CHECK_MSGF(pMT->GetInstantiation()[i] == pKey->GetInstantiation()[i],
                                ("Generic argument %d in MethodTable does not match key %S", i, typeKeyString.GetUnicode()));
-#endif
                     }
                 }
             }
@@ -1667,7 +1572,7 @@ CHECK TypeHandle::CheckLoadLevel(ClassLoadLevel requiredLevel)
 {
     CHECK(!IsNull());
     //    CHECK_MSGF(!IsNull(), ("Type is null, required load level is %s", classLoadLevelName[requiredLevel]));
-    static_assert_no_msg(NumItems(classLoadLevelName) == (1 + CLASS_LOAD_LEVEL_FINAL));
+    static_assert_no_msg(ARRAY_SIZE(classLoadLevelName) == (1 + CLASS_LOAD_LEVEL_FINAL));
 
     // Quick check to avoid creating debug string
     ClassLoadLevel actualLevel = GetLoadLevel();

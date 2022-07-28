@@ -2,23 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.Systemd
 {
-    public class SystemdLifetime : IHostLifetime, IDisposable
+    [UnsupportedOSPlatform("android")]
+    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("maccatalyst")]
+    [UnsupportedOSPlatform("tvos")]
+    public partial class SystemdLifetime : IHostLifetime, IDisposable
     {
-        private readonly ManualResetEvent _shutdownBlock = new ManualResetEvent(false);
         private CancellationTokenRegistration _applicationStartedRegistration;
         private CancellationTokenRegistration _applicationStoppingRegistration;
 
         public SystemdLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ISystemdNotifier systemdNotifier, ILoggerFactory loggerFactory)
         {
-            Environment = environment ?? throw new ArgumentNullException(nameof(environment));
-            ApplicationLifetime = applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime));
-            SystemdNotifier = systemdNotifier ?? throw new ArgumentNullException(nameof(systemdNotifier));
+            ThrowHelper.ThrowIfNull(environment);
+            ThrowHelper.ThrowIfNull(applicationLifetime);
+            ThrowHelper.ThrowIfNull(systemdNotifier);
+
+            Environment = environment;
+            ApplicationLifetime = applicationLifetime;
+            SystemdNotifier = systemdNotifier;
             Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");
         }
 
@@ -36,20 +45,21 @@ namespace Microsoft.Extensions.Hosting.Systemd
         {
             _applicationStartedRegistration = ApplicationLifetime.ApplicationStarted.Register(state =>
             {
-                ((SystemdLifetime)state).OnApplicationStarted();
+                ((SystemdLifetime)state!).OnApplicationStarted();
             },
             this);
             _applicationStoppingRegistration = ApplicationLifetime.ApplicationStopping.Register(state =>
             {
-                ((SystemdLifetime)state).OnApplicationStopping();
+                ((SystemdLifetime)state!).OnApplicationStopping();
             },
             this);
 
-            // systemd sends SIGTERM to stop the service.
-            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
+            RegisterShutdownHandlers();
 
             return Task.CompletedTask;
         }
+
+        private partial void RegisterShutdownHandlers();
 
         private void OnApplicationStarted()
         {
@@ -66,25 +76,14 @@ namespace Microsoft.Extensions.Hosting.Systemd
             SystemdNotifier.Notify(ServiceState.Stopping);
         }
 
-        private void OnProcessExit(object sender, EventArgs e)
-        {
-            ApplicationLifetime.StopApplication();
-
-            _shutdownBlock.WaitOne();
-
-            // On Linux if the shutdown is triggered by SIGTERM then that's signaled with the 143 exit code.
-            // Suppress that since we shut down gracefully. https://github.com/dotnet/aspnetcore/issues/6526
-            System.Environment.ExitCode = 0;
-        }
-
         public void Dispose()
         {
-            _shutdownBlock.Set();
-
-            AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
+            UnregisterShutdownHandlers();
 
             _applicationStartedRegistration.Dispose();
             _applicationStoppingRegistration.Dispose();
         }
+
+        private partial void UnregisterShutdownHandlers();
     }
 }

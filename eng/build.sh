@@ -17,7 +17,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --arch (-a)                     Target platform: x86, x64, arm, armel, arm64, s390x or wasm."
+  echo "  --arch (-a)                     Target platform: x86, x64, arm, armv6, armel, arm64, loongarch64, s390x, ppc64le or wasm."
   echo "                                  [Default: Your machine's architecture.]"
   echo "  --binaryLog (-bl)               Output binary log."
   echo "  --cross                         Optional argument to signify cross compilation."
@@ -62,8 +62,8 @@ usage()
   echo "Libraries settings:"
   echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net6.0 or net48."
-  echo "                             [Default: net6.0]"
+  echo "  --framework (-f)           Build framework: net7.0 or net48."
+  echo "                             [Default: net7.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -166,7 +166,7 @@ while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
 
   if [[ $firstArgumentChecked -eq 0 && $opt =~ ^[a-zA-Z.+]+$ ]]; then
-    if [ $opt == "help" ]; then
+    if [[ "$opt" == "help" ]]; then
       showSubsetHelp
       exit 0
     fi
@@ -190,7 +190,7 @@ while [[ $# > 0 ]]; do
         exit 0
       else
         passedSubset="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-        if [ $passedSubset == "help" ]; then
+        if [[ "$passedSubset" == "help" ]]; then
           showSubsetHelp
           exit 0
         fi
@@ -206,12 +206,12 @@ while [[ $# > 0 ]]; do
       fi
       passedArch="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       case "$passedArch" in
-        x64|x86|arm|armel|arm64|s390x|wasm)
+        x64|x86|arm|armv6|armel|arm64|loongarch64|s390x|ppc64le|wasm)
           arch=$passedArch
           ;;
         *)
           echo "Unsupported target architecture '$2'."
-          echo "The allowed values are x86, x64, arm, armel, arm64, s390x, and wasm."
+          echo "The allowed values are x86, x64, arm, armv6, armel, arm64, loongarch64, s390x, ppc64le and wasm."
           exit 1
           ;;
       esac
@@ -382,7 +382,8 @@ while [[ $# > 0 ]]; do
       ;;
 
      -clang*)
-      arguments="$arguments /p:Compiler=$opt"
+      compiler="${opt/#-/}" # -clang-9 => clang-9 or clang-9 => (unchanged)
+      arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
       shift 1
       ;;
 
@@ -391,12 +392,13 @@ while [[ $# > 0 ]]; do
         echo "No cmake args supplied." 1>&2
         exit 1
       fi
-      cmakeargs="${cmakeargs} ${opt} $2"
+      cmakeargs="${cmakeargs} $2"
       shift 2
       ;;
 
      -gcc*)
-      arguments="$arguments /p:Compiler=$opt"
+      compiler="${opt/#-/}" # -gcc-9 => gcc-9 or gcc-9 => (unchanged)
+      arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
       shift 1
       ;;
 
@@ -461,12 +463,16 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
-if [ "$os" = "Browser" ] && [ "$arch" != "wasm" ]; then
+if [[ "$os" == "Browser" && "$arch" != "wasm" ]]; then
     # override default arch for Browser, we only support wasm
     arch=wasm
 fi
 
 initDistroRid $os $arch $crossBuild $portableBuild
+
+# Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
+# The later changes are ignored when using the cache.
+export DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.

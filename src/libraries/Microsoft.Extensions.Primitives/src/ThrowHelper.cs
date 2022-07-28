@@ -3,31 +3,37 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.Primitives
 {
     internal static class ThrowHelper
     {
+        [DoesNotReturn]
         internal static void ThrowArgumentNullException(ExceptionArgument argument)
         {
             throw new ArgumentNullException(GetArgumentName(argument));
         }
 
+        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument)
         {
             throw new ArgumentOutOfRangeException(GetArgumentName(argument));
         }
 
+        [DoesNotReturn]
         internal static void ThrowArgumentException(ExceptionResource resource)
         {
             throw new ArgumentException(GetResourceText(resource));
         }
 
+        [DoesNotReturn]
         internal static void ThrowInvalidOperationException(ExceptionResource resource)
         {
             throw new InvalidOperationException(GetResourceText(resource));
         }
 
+        [DoesNotReturn]
         internal static void ThrowInvalidOperationException(ExceptionResource resource, params object[] args)
         {
             string message = string.Format(GetResourceText(resource), args);
@@ -84,7 +90,11 @@ namespace Microsoft.Extensions.Primitives
         value,
         capacity,
         separators,
-        comparisonType
+        comparisonType,
+        changeTokens,
+        changeTokenProducer,
+        changeTokenConsumer,
+        array,
     }
 
     internal enum ExceptionResource

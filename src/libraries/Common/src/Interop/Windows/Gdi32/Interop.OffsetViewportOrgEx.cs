@@ -9,8 +9,9 @@ internal static partial class Interop
 {
     internal static partial class Gdi32
     {
-        [DllImport(Libraries.Gdi32, ExactSpelling = true)]
-        public static extern bool OffsetViewportOrgEx(IntPtr hdc, int x, int y, ref Point lppt);
+        [LibraryImport(Libraries.Gdi32)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool OffsetViewportOrgEx(IntPtr hdc, int x, int y, ref Point lppt);
 
         public static bool OffsetViewportOrgEx(HandleRef hdc, int x, int y, ref Point lppt)
         {

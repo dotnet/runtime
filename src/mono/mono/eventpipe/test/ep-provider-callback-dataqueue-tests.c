@@ -46,23 +46,26 @@ test_provider_callback_data_queue (void)
 	EventPipeProviderCallbackDataQueue callback_data_queue;
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
 
-	EventPipeProviderCallbackData enqueue_callback_data;
-	EventPipeProviderCallbackData *provider_enqueue_callback_data = ep_provider_callback_data_init (
-		&enqueue_callback_data,
-		"",
-		provider_callback,
-		NULL,
-		1,
-		EP_EVENT_LEVEL_LOGALWAYS,
-		true);
-
-	for (uint32_t i = 0; i < 1000; ++i)
+	for (uint32_t i = 0; i < 1000; ++i) {
+		EventPipeProviderCallbackData enqueue_callback_data;
+		EventPipeProviderCallbackData *provider_enqueue_callback_data = ep_provider_callback_data_init (
+			&enqueue_callback_data,
+			"",
+			provider_callback,
+			NULL,
+			1,
+			EP_EVENT_LEVEL_LOGALWAYS,
+			true);
 		ep_provider_callback_data_queue_enqueue (provider_callback_data_queue, provider_enqueue_callback_data);
+		ep_provider_callback_data_fini (provider_enqueue_callback_data);
+	}
 
 	EventPipeProviderCallbackData dequeue_callback_data;
 	uint32_t deque_counter = 0;
-	while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &dequeue_callback_data))
+	while (ep_provider_callback_data_queue_try_dequeue(provider_callback_data_queue, &dequeue_callback_data)) {
 		deque_counter++;
+		ep_provider_callback_data_fini (&dequeue_callback_data);
+	}
 
 	if (deque_counter != 1000) {
 		result = FAILED ("Unexpected number of provider callback invokes");

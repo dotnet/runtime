@@ -7,6 +7,7 @@
     <CreateIntermediateRunSettingsFile Condition="'$(CreateIntermediateRunSettingsFile)' == ''">false</CreateIntermediateRunSettingsFile>
     <RunSettingsOutputFilePath Condition="'$(CreateIntermediateRunSettingsFile)' == 'true'">$(RunSettingsIntermediateOutputFilePath)</RunSettingsOutputFilePath>
     <RunSettingsOutputFilePath Condition="'$(CreateIntermediateRunSettingsFile)' != 'true'">$(RunSettingsAppOutputFilePath)</RunSettingsOutputFilePath>
+    <VsCodeRunSettingsOutputFilePath>$(ArtifactsObjDir)vscode/.runsettings</VsCodeRunSettingsOutputFilePath>
 
     <!-- Set RunSettingsFilePath property which is read by VSTest. -->
     <RunSettingsFilePath Condition="Exists('$(RunSettingsAppOutputFilePath)')">$(RunSettingsAppOutputFilePath)</RunSettingsFilePath>
@@ -45,6 +46,12 @@
                       Lines="$(RunSettingsFileContent)"
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true" />
+    
+    <WriteLinesToFile File="$(VsCodeRunSettingsOutputFilePath)"
+                      Lines="$(RunSettingsFileContent)"
+                      WriteOnlyWhenDifferent="true"
+                      Overwrite="true"
+                      Condition="'$(CreateVsCodeRunSettingsFile)' == 'true'" />
     
     <!-- Set RunSettingsFilePath property which is read by VSTest. -->
     <PropertyGroup>

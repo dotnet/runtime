@@ -177,6 +177,7 @@ namespace System.Net.Http.Tests
         [InlineData("Content-Type", "application/javascript")]
         [InlineData("Content-Type", "application/octet-stream")]
         [InlineData("Content-Type", "text/html; charset=utf-8")]
+        [InlineData("Content-Type", "text/html; charset=UTF-8")]
         [InlineData("Content-Type", "text/plain; charset=utf-8")]
         [InlineData("Content-Type", "application/json; charset=utf-8")]
         [InlineData("Content-Type", "application/x-www-form-urlencoded")]
@@ -213,27 +214,46 @@ namespace System.Net.Http.Tests
         [InlineData("X-XSS-Protection", "1; mode=block")]
         public void GetKnownHeaderValue_Known_Found(string name, string value)
         {
-            foreach (string casedValue in new[] { value, value.ToUpperInvariant(), value.ToLowerInvariant() })
+            KnownHeader knownHeader = KnownHeaders.TryGetKnownHeader(name);
+            Assert.NotNull(knownHeader);
+
+            string v1 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray(), valueEncoding: null);
+            Assert.NotNull(v1);
+            Assert.Equal(value, v1);
+
+            string v2 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray(), valueEncoding: null);
+            Assert.Same(v1, v2);
+
+            if (TryChangeCasing(value, out string newValue)) // Doesn't make sense for values that are just numbers
             {
-                Validate(KnownHeaders.TryGetKnownHeader(name), casedValue);
+                GetKnownHeaderValue_Unknown_NotFound(name, newValue);
             }
 
-            static void Validate(KnownHeader knownHeader, string value)
+            static bool TryChangeCasing(string value, out string newValue)
             {
-                Assert.NotNull(knownHeader);
+                string upper = value.ToUpperInvariant();
+                if (upper != value)
+                {
+                    newValue = upper;
+                    return true;
+                }
 
-                string v1 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray(), valueEncoding: null);
-                Assert.NotNull(v1);
-                Assert.Equal(value, v1, StringComparer.OrdinalIgnoreCase);
+                string lower = value.ToLowerInvariant();
+                if (lower != value)
+                {
+                    newValue = lower;
+                    return true;
+                }
 
-                string v2 = knownHeader.Descriptor.GetHeaderValue(value.Select(c => (byte)c).ToArray(), valueEncoding: null);
-                Assert.Same(v1, v2);
+                newValue = null;
+                return false;
             }
         }
 
         [Theory]
         [InlineData("Content-Type", "application/jsot")]
         [InlineData("Content-Type", "application/jsons")]
+        [InlineData("Transfer-Encoding", "foo")]
         public void GetKnownHeaderValue_Unknown_NotFound(string name, string value)
         {
             KnownHeader knownHeader = KnownHeaders.TryGetKnownHeader(name);

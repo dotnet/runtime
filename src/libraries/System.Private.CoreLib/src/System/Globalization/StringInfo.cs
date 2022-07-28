@@ -58,7 +58,8 @@ namespace System.Globalization
             [MemberNotNull(nameof(_str))]
             set
             {
-                _str = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                _str = value;
                 _indexes = null;
             }
         }
@@ -97,6 +98,9 @@ namespace System.Globalization
         /// <summary>
         /// Returns the first text element (extended grapheme cluster) that occurs in the input string.
         /// </summary>
+        /// <remarks>
+        /// A grapheme cluster is a sequence of one or more Unicode code points that should be treated as a single unit.
+        /// </remarks>
         /// <param name="str">The input string to analyze.</param>
         /// <returns>The substring corresponding to the first text element within <paramref name="str"/>,
         /// or the empty string if <paramref name="str"/> is empty.</returns>
@@ -107,6 +111,9 @@ namespace System.Globalization
         /// Returns the first text element (extended grapheme cluster) that occurs in the input string
         /// starting at the specified index.
         /// </summary>
+        /// <remarks>
+        /// A grapheme cluster is a sequence of one or more Unicode code points that should be treated as a single unit.
+        /// </remarks>
         /// <param name="str">The input string to analyze.</param>
         /// <param name="index">The char offset in <paramref name="str"/> at which to begin analysis.</param>
         /// <returns>The substring corresponding to the first text element within <paramref name="str"/> starting
@@ -123,6 +130,9 @@ namespace System.Globalization
         /// <summary>
         /// Returns the length of the first text element (extended grapheme cluster) that occurs in the input string.
         /// </summary>
+        /// <remarks>
+        /// A grapheme cluster is a sequence of one or more Unicode code points that should be treated as a single unit.
+        /// </remarks>
         /// <param name="str">The input string to analyze.</param>
         /// <returns>The length (in chars) of the substring corresponding to the first text element within <paramref name="str"/>,
         /// or 0 if <paramref name="str"/> is empty.</returns>
@@ -133,6 +143,9 @@ namespace System.Globalization
         /// Returns the length of the first text element (extended grapheme cluster) that occurs in the input string
         /// starting at the specified index.
         /// </summary>
+        /// <remarks>
+        /// A grapheme cluster is a sequence of one or more Unicode code points that should be treated as a single unit.
+        /// </remarks>
         /// <param name="str">The input string to analyze.</param>
         /// <param name="index">The char offset in <paramref name="str"/> at which to begin analysis.</param>
         /// <returns>The length (in chars) of the substring corresponding to the first text element within <paramref name="str"/> starting
@@ -147,7 +160,7 @@ namespace System.Globalization
             }
             if ((uint)index > (uint)str.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             return GetNextTextElementLength(str.AsSpan(index));
@@ -156,6 +169,9 @@ namespace System.Globalization
         /// <summary>
         /// Returns the length of the first text element (extended grapheme cluster) that occurs in the input span.
         /// </summary>
+        /// <remarks>
+        /// A grapheme cluster is a sequence of one or more Unicode code points that should be treated as a single unit.
+        /// </remarks>
         /// <param name="str">The input span to analyze.</param>
         /// <returns>The length (in chars) of the substring corresponding to the first text element within <paramref name="str"/>,
         /// or 0 if <paramref name="str"/> is empty.</returns>
@@ -171,7 +187,7 @@ namespace System.Globalization
             }
             if ((uint)index > (uint)str.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             return new TextElementEnumerator(str, index);

@@ -24,7 +24,7 @@ namespace System.Timers
         /// <summary>
         /// Constructs a new localized sys description.
         /// </summary>
-        internal TimersDescriptionAttribute(string description, string unused) : base(SR.GetResourceString(description))
+        internal TimersDescriptionAttribute(string description, string? unused) : base(SR.GetResourceString(description))
         {
             // Needed for overload resolution
             Debug.Assert(unused == null);
@@ -40,7 +40,10 @@ namespace System.Timers
                 if (!_replaced)
                 {
                     _replaced = true;
-                    DescriptionValue = SR.Format(base.Description);
+
+                    // We call string.Format here only to keep the original behavior which throws when having null description.
+                    // That will keep the exception is thrown from same original place with the exact parameters.
+                    DescriptionValue = string.Format(base.Description);
                 }
                 return base.Description;
             }

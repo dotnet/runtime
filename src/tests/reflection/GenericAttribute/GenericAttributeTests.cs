@@ -17,6 +17,16 @@ class Program
         Assert(((ICustomAttributeProvider)assembly).IsDefined(typeof(SingleAttribute<int>), true));
         Assert(CustomAttributeExtensions.IsDefined(assembly, typeof(SingleAttribute<bool>)));
         Assert(((ICustomAttributeProvider)assembly).IsDefined(typeof(SingleAttribute<bool>), true));
+        Assert(CustomAttributeExtensions.GetCustomAttributes(assembly, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
+        Assert(CustomAttributeExtensions.GetCustomAttributes(assembly, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
+
+        // Uncomment when https://github.com/dotnet/runtime/issues/66168 is resolved
+        // Module module = programTypeInfo.Module;
+        // AssertAny(CustomAttributeExtensions.GetCustomAttributes(module), a => a is SingleAttribute<long>);
+        // Assert(CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<long>)).GetEnumerator().MoveNext());
+        // Assert(CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<long>)).GetEnumerator().MoveNext());
+        // Assert(CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());
+        // Assert(CustomAttributeExtensions.GetCustomAttributes(module, typeof(SingleAttribute<>)).GetEnumerator().MoveNext());	
 
         TypeInfo programTypeInfo = typeof(Class).GetTypeInfo();
         Assert(CustomAttributeExtensions.GetCustomAttribute<SingleAttribute<int>>(programTypeInfo) != null);
@@ -149,9 +159,27 @@ class Program
         AssertAny(b10, a => (a as MultiAttribute<Type>)?.Value == typeof(Class));
         AssertAny(b10, a => (a as MultiAttribute<Type>)?.Value == typeof(Class.Derive));
 
-        Assert(CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), false) == null);
-        Assert(CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), true) == null);
-        Assert(!((ICustomAttributeProvider)programTypeInfo).GetCustomAttributes(typeof(MultiAttribute<>), true).GetEnumerator().MoveNext());
+        Assert(CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), false).GetEnumerator().MoveNext());
+        Assert(CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), true).GetEnumerator().MoveNext());
+        Assert(((ICustomAttributeProvider)programTypeInfo).GetCustomAttributes(typeof(MultiAttribute<>), true).GetEnumerator().MoveNext());
+
+        // Test coverage for CustomAttributeData api surface
+        var a1_data = CustomAttributeData.GetCustomAttributes(programTypeInfo);
+        AssertAny(a1_data, a => a.AttributeType == typeof(SingleAttribute<int>));
+        AssertAny(a1_data, a => a.AttributeType == typeof(SingleAttribute<bool>));
+
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<int>) && a.ConstructorArguments.Count == 0 && a.NamedArguments.Count == 0);
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<int>) && a.ConstructorArguments.Count == 1 && a.NamedArguments.Count == 0 && a.ConstructorArguments[0].ArgumentType == typeof(int) &&  ((int)a.ConstructorArguments[0].Value) == 1);
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<int>) && a.ConstructorArguments.Count == 0 && a.NamedArguments.Count == 1 && a.NamedArguments[0].TypedValue.ArgumentType == typeof(int) &&  ((int)a.NamedArguments[0].TypedValue.Value) == 2);
+
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<bool>) && a.ConstructorArguments.Count == 0 && a.NamedArguments.Count == 0);
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<bool>) && a.ConstructorArguments.Count == 1 && a.NamedArguments.Count == 0 && a.ConstructorArguments[0].ArgumentType == typeof(bool) &&  ((bool)a.ConstructorArguments[0].Value) == true);
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<bool>) && a.ConstructorArguments.Count == 0 && a.NamedArguments.Count == 1 && a.NamedArguments[0].TypedValue.ArgumentType == typeof(bool) &&  ((bool)a.NamedArguments[0].TypedValue.Value) == true);
+
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<bool?>) && a.ConstructorArguments.Count == 0 && a.NamedArguments.Count == 0);
+
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<Type>) && a.ConstructorArguments.Count == 1 && a.NamedArguments.Count == 0 && a.ConstructorArguments[0].ArgumentType == typeof(Type) &&  ((Type)a.ConstructorArguments[0].Value) == typeof(Class));
+        AssertAny(a1_data, a => a.AttributeType == typeof(MultiAttribute<Type>) && a.ConstructorArguments.Count == 0 && a.NamedArguments.Count == 1 && a.NamedArguments[0].TypedValue.ArgumentType == typeof(Type) &&  ((Type)a.NamedArguments[0].TypedValue.Value) == typeof(Class.Derive));
 
         return 100;
     }
@@ -170,6 +198,19 @@ class Program
         while (enumerator.MoveNext())
         {
             if(condition(enumerator.Current as Attribute) && --count == 0)
+            {
+                return;
+            }
+        }
+        throw new Exception($"Error in line: {line}");
+    }
+
+    static void AssertAny(IEnumerable<CustomAttributeData> source, Func<CustomAttributeData, bool> condition, int count = 1, [CallerLineNumberAttribute]int line = 0)
+    {
+        var enumerator = source.GetEnumerator();
+        while (enumerator.MoveNext())
+        {
+            if(condition(enumerator.Current) && --count == 0)
             {
                 return;
             }

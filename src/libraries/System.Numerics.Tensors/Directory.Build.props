@@ -1,16 +1,8 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <StrongNameKeyId>Open</StrongNameKeyId>
     <!-- This is a preview package. Do not mark as stable. -->
     <SuppressFinalPackageVersion>true</SuppressFinalPackageVersion>
     <IsShippingAssembly>false</IsShippingAssembly>
-    <PackageDescription>Tensor class which represents and extends multi-dimensional arrays.
-
-Commonly Used Types:
-System.Numerics.Tensors.Tensor&lt;T&gt;
-System.Numerics.Tensors.CompressedSparseTensor&lt;T&gt;
-System.Numerics.Tensors.DenseTensor&lt;T&gt;
-System.Numerics.Tensors.SparseTensor&lt;T&gt;</PackageDescription>
   </PropertyGroup>
 </Project>

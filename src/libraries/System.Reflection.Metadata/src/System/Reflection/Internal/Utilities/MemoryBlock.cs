@@ -32,7 +32,7 @@ namespace System.Reflection.Internal
 
             if (buffer == null && length != 0)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                Throw.ArgumentNull(nameof(buffer));
             }
 
             return new MemoryBlock(buffer, length);
@@ -59,8 +59,7 @@ namespace System.Reflection.Internal
                 return "<null>";
             }
 
-            int displayedBytes;
-            return GetDebuggerDisplay(out displayedBytes);
+            return GetDebuggerDisplay(out _);
         }
 
         internal string GetDebuggerDisplay(out int displayedBytes)
@@ -375,13 +374,11 @@ namespace System.Reflection.Internal
         // comparison stops at null terminator, terminator parameter, or end-of-block -- whichever comes first.
         internal bool Utf8NullTerminatedEquals(int offset, string text, MetadataStringDecoder utf8Decoder, char terminator, bool ignoreCase)
         {
-            int firstDifference;
-            FastComparisonResult result = Utf8NullTerminatedFastCompare(offset, text, 0, out firstDifference, terminator, ignoreCase);
+            FastComparisonResult result = Utf8NullTerminatedFastCompare(offset, text, 0, out _, terminator, ignoreCase);
 
             if (result == FastComparisonResult.Inconclusive)
             {
-                int bytesRead;
-                string decoded = PeekUtf8NullTerminated(offset, null, utf8Decoder, out bytesRead, terminator);
+                string decoded = PeekUtf8NullTerminated(offset, null, utf8Decoder, out _, terminator);
                 return decoded.Equals(text, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
             }
 
@@ -391,8 +388,7 @@ namespace System.Reflection.Internal
         // comparison stops at null terminator, terminator parameter, or end-of-block -- whichever comes first.
         internal bool Utf8NullTerminatedStartsWith(int offset, string text, MetadataStringDecoder utf8Decoder, char terminator, bool ignoreCase)
         {
-            int endIndex;
-            FastComparisonResult result = Utf8NullTerminatedFastCompare(offset, text, 0, out endIndex, terminator, ignoreCase);
+            FastComparisonResult result = Utf8NullTerminatedFastCompare(offset, text, 0, out _, terminator, ignoreCase);
 
             switch (result)
             {
@@ -406,8 +402,7 @@ namespace System.Reflection.Internal
 
                 default:
                     Debug.Assert(result == FastComparisonResult.Inconclusive);
-                    int bytesRead;
-                    string decoded = PeekUtf8NullTerminated(offset, null, utf8Decoder, out bytesRead, terminator);
+                    string decoded = PeekUtf8NullTerminated(offset, null, utf8Decoder, out _, terminator);
                     return decoded.StartsWith(text, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
             }
         }

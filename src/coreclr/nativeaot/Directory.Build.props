@@ -1,0 +1,120 @@
+<Project>
+  <Import Project="../Directory.Build.props" />
+
+  <PropertyGroup>
+    <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
+    <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+
+    <DebugType>Portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+
+    <OutputPath Condition="$(MSBuildProjectName.StartsWith('System.Private.'))">$(RuntimeBinDir)/aotsdk/</OutputPath>
+    <Configurations>Debug;Release;Checked</Configurations>
+    <Platforms>x64;x86;arm;arm64</Platforms>
+
+    <Platform Condition=" '$(Platform)' == '' ">$(TargetArchitecture)</Platform>
+    <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+    <!-- These prevent the default MsBuild targets from referencing System.dll and mscorlib.dll -->
+    <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn),0419,0649,CA2249,CA1830</NoWarn>
+
+    <!-- Disable nullability-related warnings -->
+    <NoWarn>$(NoWarn);CS8602;CS8603;CS8604;CS8618;CS8625;CS8632;CS8765</NoWarn>
+
+    <!-- we should just fix -->
+    <NoWarn>$(NoWarn);CA1810;CA1823;CA1825;CA1852;CA2208;SA1129;SA1205;SA1400;SA1517;IDE0065</NoWarn>
+
+    <!-- Arrays as attribute arguments is not CLS-compliant -->
+    <NoWarn>$(NoWarn);CS3016</NoWarn>
+
+    <!-- Ignore all previous constants since we are sensitive to what is defined and the Sdk adds some by default -->
+    <DefineConstants>NATIVEAOT;NETCOREAPP</DefineConstants>
+
+    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
+
+    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+
+    <!-- Send .deps.json to intermediate directory to avoid polluting published package -->
+    <ProjectDepsFilePath>$(IntermediateOutputPath)$(MSBuildProjectName).deps.json</ProjectDepsFilePath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <FeatureCominterop>false</FeatureCominterop>
+    <FeatureCominterop Condition="'$(TargetsWindows)' == 'true'">true</FeatureCominterop>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">FEATURE_COMINTEROP;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup>
+    <FeatureComWrappers>false</FeatureComWrappers>
+    <FeatureComWrappers Condition="'$(TargetsWindows)' == 'true'">true</FeatureComWrappers>
+  </PropertyGroup>
+
+  <!-- Platform specific properties -->
+  <PropertyGroup Condition="'$(Platform)' == 'x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DefineConstants>TARGET_64BIT;TARGET_AMD64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <DefineConstants>TARGET_32BIT;TARGET_X86;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'arm'">
+    <PlatformTarget>arm</PlatformTarget>
+    <DefineConstants>TARGET_32BIT;TARGET_ARM;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'arm64'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>TARGET_64BIT;TARGET_ARM64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants Condition="'$(TargetsWindows)'=='true'">TARGET_WINDOWS;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(TargetsUnix)'=='true'">TARGET_UNIX;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Configuration specific properties -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">
+    <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Debug'">false</Optimize>
+    <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
+    <DefineConstants>_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+  </PropertyGroup>
+
+  <!-- Assembly attributes -->
+  <PropertyGroup>
+    <Description>$(AssemblyName)</Description>
+  </PropertyGroup>
+
+  <!-- Signing -->
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
+  </PropertyGroup>
+
+  <!--
+    Helper Paths
+  -->
+  <PropertyGroup>
+    <CommonPath>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', 'src'))</CommonPath>
+    <AotCommonPath>$(MSBuildThisFileDirectory)Common\src\</AotCommonPath>
+    <CompilerCommonPath>$(MSBuildThisFileDirectory)..\tools\Common\</CompilerCommonPath>
+  </PropertyGroup>
+
+  <Import Condition="'$(MSBuildProjectName)' != 'System.Private.CoreLib'" Project="$(RepositoryEngineeringDir)versioning.targets" />
+</Project>

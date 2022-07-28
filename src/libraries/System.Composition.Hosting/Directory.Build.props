@@ -1,9 +1,0 @@
-﻿<Project>
-  <Import Project="..\System.Composition\Directory.Build.props" />
-  <PropertyGroup>
-    <PackageDescription>Provides Managed Extensibility Framework types that are useful to developers of extensible applications, or hosts.
-
-Commonly Used Types:
-System.Composition.Hosting.CompositionHost</PackageDescription>
-  </PropertyGroup>
-</Project>

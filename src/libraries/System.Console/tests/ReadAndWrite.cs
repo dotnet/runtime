@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -28,13 +29,6 @@ public class ReadAndWrite
         {
             Console.SetOut(savedStandardOutput);
         }
-    }
-
-    [Fact]
-    public static void WriteToOutputStream_EmptyArray()
-    {
-        Stream outStream = Console.OpenStandardOutput();
-        outStream.Write(new byte[] { }, 0, 0);
     }
 
     [Fact]
@@ -192,6 +186,25 @@ public class ReadAndWrite
         {
             Console.SetOut(savedStandardOutput);
         }
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+    public void TestConsoleWrite()
+    {
+        Stream s = new MemoryStream();
+        TextWriter w = new StreamWriter(s);
+        ((StreamWriter)w).AutoFlush = true;
+        TextReader r = new StreamReader(s);
+        Console.SetOut(w);
+
+        Console.Write("A");
+        Console.Write("B");
+        Console.Write("C");
+
+        s.Position = 0;
+        string line = r.ReadToEnd();
+        Assert.Equal("ABC", line);
     }
 
     private static unsafe void ValidateConsoleEncoding(Encoding encoding)
@@ -413,5 +426,21 @@ public class ReadAndWrite
     public static void OpenStandardError_NegativeBufferSize_ThrowsArgumentOutOfRangeException()
     {
         AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => Console.OpenStandardError(-1));
+    }
+
+    [Fact]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
+    public static async Task FlushOnStreams_Nop()
+    {
+        using Stream input = Console.OpenStandardInput();
+        using Stream output = Console.OpenStandardOutput();
+        using Stream error = Console.OpenStandardError();
+
+        foreach (Stream s in new[] { input, output, error })
+        {
+            s.Flush();
+            await s.FlushAsync();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await s.FlushAsync(new CancellationToken(canceled: true)));
+        }
     }
 }

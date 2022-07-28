@@ -635,8 +635,8 @@ namespace System.Linq.Expressions
                 throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
             if (ParameterIsAssignable(pms[0], left.Type) && ParameterIsAssignable(pms[1], right.Type))
             {
-                ValidateParamswithOperandsOrThrow(pms[0].ParameterType, left.Type, binaryType, method.Name);
-                ValidateParamswithOperandsOrThrow(pms[1].ParameterType, right.Type, binaryType, method.Name);
+                ValidateParamsWithOperandsOrThrow(pms[0].ParameterType, left.Type, binaryType, method.Name);
+                ValidateParamsWithOperandsOrThrow(pms[1].ParameterType, right.Type, binaryType, method.Name);
                 return new MethodBinaryExpression(binaryType, left, right, method.ReturnType, method);
             }
             // check for lifted call
@@ -683,8 +683,8 @@ namespace System.Linq.Expressions
             if (b != null)
             {
                 ParameterInfo[] pis = b.Method!.GetParametersCached();
-                ValidateParamswithOperandsOrThrow(pis[0].ParameterType, left.Type, binaryType, name);
-                ValidateParamswithOperandsOrThrow(pis[1].ParameterType, right.Type, binaryType, name);
+                ValidateParamsWithOperandsOrThrow(pis[0].ParameterType, left.Type, binaryType, name);
+                ValidateParamsWithOperandsOrThrow(pis[1].ParameterType, right.Type, binaryType, name);
                 return b;
             }
             throw Error.BinaryOperatorNotDefined(binaryType, left.Type, right.Type);
@@ -710,6 +710,8 @@ namespace System.Linq.Expressions
             return b;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+            Justification = "The trimmer doesn't remove operators when System.Linq.Expressions is used. See https://github.com/mono/linker/pull/2125.")]
         private static MethodInfo? GetUserDefinedBinaryOperator(ExpressionType binaryType, Type leftType, Type rightType, string name)
         {
             // This algorithm is wrong, we should be checking for uniqueness and erroring if
@@ -746,7 +748,7 @@ namespace System.Linq.Expressions
             return TypeUtils.AreReferenceAssignable(pType, argType);
         }
 
-        private static void ValidateParamswithOperandsOrThrow(Type paramType, Type operandType, ExpressionType exprType, string name)
+        private static void ValidateParamsWithOperandsOrThrow(Type paramType, Type operandType, ExpressionType exprType, string name)
         {
             if (paramType.IsNullableType() && !operandType.IsNullableType())
             {
@@ -2762,8 +2764,8 @@ namespace System.Linq.Expressions
                     }
 
                     ParameterInfo[] pis = b.Method!.GetParametersCached();
-                    ValidateParamswithOperandsOrThrow(pis[0].ParameterType, left.Type, ExpressionType.Power, name);
-                    ValidateParamswithOperandsOrThrow(pis[1].ParameterType, right.Type, ExpressionType.Power, name);
+                    ValidateParamsWithOperandsOrThrow(pis[0].ParameterType, left.Type, ExpressionType.Power, name);
+                    ValidateParamsWithOperandsOrThrow(pis[1].ParameterType, right.Type, ExpressionType.Power, name);
                     return b;
                 }
             }

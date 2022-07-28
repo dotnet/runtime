@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class NCrypt
     {
-        [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
-        internal static extern ErrorCode NCryptFreeObject(IntPtr hObject);
+        [LibraryImport(Interop.Libraries.NCrypt)]
+        internal static partial ErrorCode NCryptFreeObject(IntPtr hObject);
     }
 }

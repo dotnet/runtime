@@ -43,14 +43,27 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_ByteArrayNull()
+    {
+        Assert.Null(SerializeAndDeserialize<byte[]>(null,
+@"<?xml version=""1.0""?>
+<base64Binary d1p1:nil=""true"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"" />"));
+        byte[] x = new byte[] { 1, 2 };
+        byte[] y = SerializeAndDeserialize<byte[]>(x,
+@"<?xml version=""1.0""?>
+<base64Binary>AQI=</base64Binary>");
+        Assert.Equal(x, y);
+    }
+
+    [Fact]
     public static void Xml_CharAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MinValue,
+        Assert.StrictEqual(char.MinValue, SerializeAndDeserialize<char>(char.MinValue,
 @"<?xml version=""1.0""?>
-<char>0</char>"), char.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MaxValue,
+<char>0</char>"));
+        Assert.StrictEqual(char.MaxValue, SerializeAndDeserialize<char>(char.MaxValue,
 @"<?xml version=""1.0""?>
-<char>65535</char>"), char.MaxValue);
+<char>65535</char>"));
         Assert.StrictEqual('a', SerializeAndDeserialize<char>('a',
 @"<?xml version=""1.0""?>
 <char>97</char>"));
@@ -68,12 +81,12 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(10, SerializeAndDeserialize<byte>(10,
 @"<?xml version=""1.0""?>
 <unsignedByte>10</unsignedByte>"));
-        Assert.StrictEqual(SerializeAndDeserialize<byte>(byte.MinValue,
+        Assert.StrictEqual(byte.MinValue, SerializeAndDeserialize<byte>(byte.MinValue,
 @"<?xml version=""1.0""?>
-<unsignedByte>0</unsignedByte>"), byte.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<byte>(byte.MaxValue,
+<unsignedByte>0</unsignedByte>"));
+        Assert.StrictEqual(byte.MaxValue, SerializeAndDeserialize<byte>(byte.MaxValue,
 @"<?xml version=""1.0""?>
-<unsignedByte>255</unsignedByte>"), byte.MaxValue);
+<unsignedByte>255</unsignedByte>"));
     }
 
     [Fact]
@@ -115,46 +128,46 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DoubleAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<double>(-1.2,
+        Assert.StrictEqual(-1.2, SerializeAndDeserialize<double>(-1.2,
 @"<?xml version=""1.0""?>
-<double>-1.2</double>"), -1.2);
+<double>-1.2</double>"));
         Assert.StrictEqual(0, SerializeAndDeserialize<double>(0,
 @"<?xml version=""1.0""?>
 <double>0</double>"));
         Assert.StrictEqual(2.3, SerializeAndDeserialize<double>(2.3,
 @"<?xml version=""1.0""?>
 <double>2.3</double>"));
-        Assert.StrictEqual(SerializeAndDeserialize<double>(double.MinValue,
+        Assert.StrictEqual(double.MinValue, SerializeAndDeserialize<double>(double.MinValue,
 @"<?xml version=""1.0""?>
-<double>-1.7976931348623157E+308</double>"), double.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<double>(double.MaxValue,
+<double>-1.7976931348623157E+308</double>"));
+        Assert.StrictEqual(double.MaxValue, SerializeAndDeserialize<double>(double.MaxValue,
 @"<?xml version=""1.0""?>
-<double>1.7976931348623157E+308</double>"), double.MaxValue);
+<double>1.7976931348623157E+308</double>"));
     }
 
     [Fact]
     public static void Xml_FloatAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<float>((float)-1.2,
+        Assert.StrictEqual((float)-1.2, SerializeAndDeserialize<float>((float)-1.2,
 @"<?xml version=""1.0""?>
-<float>-1.2</float>"), (float)-1.2);
-        Assert.StrictEqual(SerializeAndDeserialize<float>((float)0,
+<float>-1.2</float>"));
+        Assert.StrictEqual((float)0, SerializeAndDeserialize<float>((float)0,
 @"<?xml version=""1.0""?>
-<float>0</float>"), (float)0);
-        Assert.StrictEqual(SerializeAndDeserialize<float>((float)2.3,
+<float>0</float>"));
+        Assert.StrictEqual((float)2.3, SerializeAndDeserialize<float>((float)2.3,
 @"<?xml version=""1.0""?>
-<float>2.3</float>"), (float)2.3);
+<float>2.3</float>"));
     }
 
     [Fact]
     public static void Xml_FloatAsRoot_NotNetFramework()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MinValue,
+        Assert.StrictEqual(float.MinValue, SerializeAndDeserialize<float>(float.MinValue,
 @"<?xml version=""1.0""?>
-<float>-3.4028235E+38</float>"), float.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MaxValue,
+<float>-3.4028235E+38</float>"));
+        Assert.StrictEqual(float.MaxValue, SerializeAndDeserialize<float>(float.MaxValue,
 @"<?xml version=""1.0""?>
-<float>3.4028235E+38</float>"), float.MaxValue);
+<float>3.4028235E+38</float>"));
     }
 
     [Fact]
@@ -216,8 +229,8 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(SerializeAndDeserialize<XmlQualifiedName>(new XmlQualifiedName("abc", "def"),
 @"<?xml version=""1.0""?>
 <QName xmlns:q1=""def"">q1:abc</QName>"), new XmlQualifiedName("abc", "def"));
-        Assert.StrictEqual(SerializeAndDeserialize<XmlQualifiedName>(XmlQualifiedName.Empty,
-@"<?xml version=""1.0""?><QName xmlns="""" />"), XmlQualifiedName.Empty);
+        Assert.StrictEqual(XmlQualifiedName.Empty, SerializeAndDeserialize<XmlQualifiedName>(XmlQualifiedName.Empty,
+@"<?xml version=""1.0""?><QName xmlns="""" />"));
     }
 
     [Fact]
@@ -260,6 +273,13 @@ public static partial class XmlSerializerTests
 <string> </string>"), string.Empty);
         Assert.Equal("Hello World! \u6F22 \u00F1", SerializeAndDeserialize<string>("Hello World! \u6F22 \u00F1",
 "<?xml version=\"1.0\"?><string>Hello World! \u6F22 \u00F1</string>"));
+    }
+
+    [Fact]
+    public static void Xml_StringWithNullChar()
+    {
+        Assert.Throws<InvalidOperationException>(() => SerializeWithDefaultValue<string>("Sample\0String", null));
+        Assert.Throws<InvalidOperationException>(() => DeserializeFromXmlString<string>("<?xml version=\"1.0\"?><string>Sample&#x0;String</string>"));
     }
 
     [Fact]
@@ -480,6 +500,21 @@ public static partial class XmlSerializerTests
 
         VerifyXElementObject(original.e1, actual.e1);
         VerifyXElementObject((XElement)original.e1.FirstNode, (XElement)actual.e1.FirstNode);
+    }
+
+    [Fact]
+    public static void Xml_WithXElementWithEmptyNestedElement()
+    {
+        var original = new WithXmlElement(true);
+        original.xml.InnerXml = "<empty></empty>";
+
+        MemoryStream ms = new MemoryStream();
+        new XmlSerializer(typeof(WithXmlElement)).Serialize(ms, original);
+
+        ms.Position = 0;
+        StreamReader sr = new StreamReader(ms);
+        string output = sr.ReadToEnd();
+        Assert.Contains("<empty></empty>", output);   // Self-closed, or completely empty is OK. No added space.
     }
 
     [Fact]
@@ -1277,6 +1312,19 @@ public static partial class XmlSerializerTests
 
         Assert.NotNull(actual);
         Assert.True(Enumerable.SequenceEqual(value.XmlAttributeForms, actual.XmlAttributeForms));
+    }
+
+    [Fact]
+    public static void XML_TypeWithNullableByteArray()
+    {
+        var value = new TypeWithNullableByteArray(); // XmlAttributeForms == null
+
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <XmlAttributeForms xsi:nil=\"true\" />\r\n</MyXmlType>");
+
+        Assert.NotNull(actual);
+        Assert.Null(value.XmlAttributeForms);
+        Assert.Null(actual.XmlAttributeForms);
     }
 
     [Fact]
@@ -2796,6 +2844,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DerivedTypeWithDifferentOverrides()
     {
         DerivedTypeWithDifferentOverrides value = new DerivedTypeWithDifferentOverrides() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5" };
@@ -2808,15 +2857,17 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DerivedTypeWithDifferentOverrides2()
     {
-        DerivedTypeWithDifferentOverrides2 value = new DerivedTypeWithDifferentOverrides2() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5", Name6 = "Name6" };
+        DerivedTypeWithDifferentOverrides2 value = new DerivedTypeWithDifferentOverrides2() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5", Name6 = "Name6", Name7 = "Name7" };
         ((DerivedTypeWithDifferentOverrides)value).Name5 = "MidLevelName5";
         ((DerivedTypeWithDifferentOverrides)value).Name4 = "MidLevelName4";
         ((SerializationTypes.BaseType)value).Name4 = "BaseLevelName4";
         ((DerivedTypeWithDifferentOverrides)value).Name6 = "MidLevelName6";
         ((SerializationTypes.BaseType)value).Name6 = "BaseLevelName6";
-        DerivedTypeWithDifferentOverrides2 actual = SerializeAndDeserialize<DerivedTypeWithDifferentOverrides2>(value, @"<?xml version=""1.0""?><DerivedTypeWithDifferentOverrides2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Name1>Name1</Name1><Name2>Name2</Name2><Name3>Name3</Name3><Name4>BaseLevelName4</Name4><Name5>MidLevelName5</Name5><Name6>BaseLevelName6</Name6></DerivedTypeWithDifferentOverrides2>");
+        ((DerivedTypeWithDifferentOverrides)value).Name7 = "MidLevelName7";
+        DerivedTypeWithDifferentOverrides2 actual = SerializeAndDeserialize<DerivedTypeWithDifferentOverrides2>(value, @"<?xml version=""1.0""?><DerivedTypeWithDifferentOverrides2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Name1>Name1</Name1><Name2>Name2</Name2><Name3>Name3</Name3><Name4>BaseLevelName4</Name4><Name5>MidLevelName5</Name5><Name6>BaseLevelName6</Name6><Name7>MidLevelName7</Name7></DerivedTypeWithDifferentOverrides2>");
         Assert.Equal(value.Name1, actual.Name1);
         Assert.Equal(value.Name2, actual.Name2);
         Assert.Equal(value.Name3, actual.Name3);
@@ -2829,6 +2880,8 @@ public static partial class XmlSerializerTests
         Assert.Null(actual.Name6);
         Assert.Equal(((DerivedTypeWithDifferentOverrides)actual).Name6, ((SerializationTypes.BaseType)actual).Name6);
         Assert.Equal(((SerializationTypes.BaseType)actual).Name6, ((SerializationTypes.BaseType)actual).Name6);
+        Assert.Equal(((DerivedTypeWithDifferentOverrides)actual).Name7, ((SerializationTypes.BaseType)actual).Name7);
+        Assert.Equal(actual.Name7, ((SerializationTypes.BaseType)actual).Name7);
     }
 
     [Fact]

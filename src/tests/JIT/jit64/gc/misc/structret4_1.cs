@@ -85,7 +85,7 @@ struct S
     }
 }
 
-class Test
+class Test_structret4_1
 {
     public static S c(S s1, S s2, S s3)
     {

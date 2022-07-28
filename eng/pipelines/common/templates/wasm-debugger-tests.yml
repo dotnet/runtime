@@ -1,0 +1,45 @@
+parameters:
+  alwaysRun: false
+  isExtraPlatformsBuild: false
+  browser: 'chrome'
+  shouldContinueOnError: false
+  platforms: []
+
+jobs:
+
+# Wasm debugger tests - windows
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    variables:
+      # map dependencies variables to local variables
+      - name: wasmdebuggertestsContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'] ]
+      - name: allWasmContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
+      - name: alwaysRunVar
+        value: ${{ parameters.alwaysRun }}
+    jobParameters:
+      testGroup: innerloop
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:DebuggerHost=${{ parameters.browser }}
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(variables['alwaysRunVar'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_${{ parameters.browser }}_$(_BuildConfig)
+        extraHelixArguments: /p:BrowserHost=$(_hostedOs) /p:_DebuggerHosts=${{ parameters.browser }}
+        scenarios:
+        - wasmdebuggertests

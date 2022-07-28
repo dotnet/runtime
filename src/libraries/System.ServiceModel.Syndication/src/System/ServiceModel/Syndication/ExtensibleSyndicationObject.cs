@@ -38,12 +38,12 @@ namespace System.ServiceModel.Syndication
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions
         {
-            get => _attributeExtensions ?? (_attributeExtensions = new Dictionary<XmlQualifiedName, string>());
+            get => _attributeExtensions ??= new Dictionary<XmlQualifiedName, string>();
         }
 
         public SyndicationElementExtensionCollection ElementExtensions
         {
-            get => _elementExtensions ?? (_elementExtensions = new SyndicationElementExtensionCollection());
+            get => _elementExtensions ??= new SyndicationElementExtensionCollection();
         }
 
         private static XmlBuffer CreateXmlBuffer(XmlDictionaryReader unparsedExtensionsReader, int maxExtensionSize)
@@ -65,10 +65,11 @@ namespace System.ServiceModel.Syndication
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
         {
-            if (readerOverUnparsedExtensions == null)
+            if (readerOverUnparsedExtensions is null)
             {
                 throw new ArgumentNullException(nameof(readerOverUnparsedExtensions));
             }
+
             if (maxExtensionSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxExtensionSize));
@@ -86,7 +87,7 @@ namespace System.ServiceModel.Syndication
 
         internal void WriteAttributeExtensions(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
@@ -103,15 +104,12 @@ namespace System.ServiceModel.Syndication
 
         internal void WriteElementExtensions(XmlWriter writer, Func<string, string, bool> shouldSkipElement = null)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            if (_elementExtensions != null)
-            {
-                _elementExtensions.WriteTo(writer, shouldSkipElement);
-            }
+            _elementExtensions?.WriteTo(writer, shouldSkipElement);
         }
 
         public ExtensibleSyndicationObject Clone() => new ExtensibleSyndicationObject(this);

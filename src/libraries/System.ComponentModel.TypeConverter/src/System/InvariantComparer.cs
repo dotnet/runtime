@@ -16,7 +16,7 @@ namespace System
             _compareInfo = CultureInfo.InvariantCulture.CompareInfo;
         }
 
-        public int Compare(object a, object b)
+        public int Compare(object? a, object? b)
         {
             if (a is string sa && b is string sb)
             {

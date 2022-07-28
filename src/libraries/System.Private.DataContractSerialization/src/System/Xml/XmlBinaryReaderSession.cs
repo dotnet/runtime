@@ -24,17 +24,15 @@ namespace System.Xml
         {
             if (id < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(id), SR.XmlInvalidID));
-            if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
             XmlDictionaryString? xmlString;
-            if (TryLookup(id, out xmlString))
+            if (TryLookup(id, out _))
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIDDefined));
 
             xmlString = new XmlDictionaryString(this, value, id);
             if (id >= MaxArrayEntries)
             {
-                if (_stringDict == null)
-                    _stringDict = new Dictionary<int, XmlDictionaryString>();
+                _stringDict ??= new Dictionary<int, XmlDictionaryString>();
 
                 _stringDict.Add(id, xmlString);
             }
@@ -73,8 +71,7 @@ namespace System.Xml
 
         public bool TryLookup(string value, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
-            if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             if (_strings != null)
             {
@@ -107,8 +104,8 @@ namespace System.Xml
 
         public bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
-            if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
+            ArgumentNullException.ThrowIfNull(value);
+
             if (value.Dictionary != this)
             {
                 result = null;
@@ -123,8 +120,7 @@ namespace System.Xml
             if (_strings != null)
                 Array.Clear(_strings);
 
-            if (_stringDict != null)
-                _stringDict.Clear();
+            _stringDict?.Clear();
         }
     }
 }

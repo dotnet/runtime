@@ -119,7 +119,7 @@ namespace System.Net.Http.Headers
         /// </summary>
         private static int ParseWithoutValidation(string value, int startIndex, out object? parsedValue)
         {
-            if (HttpRuleParser.ContainsInvalidNewLine(value, startIndex))
+            if (HttpRuleParser.ContainsNewLine(value, startIndex))
             {
                 parsedValue = null;
                 return 0;
@@ -133,9 +133,9 @@ namespace System.Net.Http.Headers
 
         private static int ParseHost(string value, int startIndex, out object? parsedValue)
         {
-            int hostLength = HttpRuleParser.GetHostLength(value, startIndex, false, out string? host);
+            int hostLength = HttpRuleParser.GetHostLength(value, startIndex, false);
 
-            parsedValue = host;
+            parsedValue = value.Substring(startIndex, hostLength);
             return hostLength;
         }
 

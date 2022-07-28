@@ -202,7 +202,7 @@ namespace System.IO.Pipes
             // cross-platform with Windows (which has only '\' as an invalid char).
             if (Path.IsPathRooted(pipeName))
             {
-                if (pipeName.IndexOfAny(s_invalidPathNameChars) >= 0 || pipeName[pipeName.Length - 1] == Path.DirectorySeparatorChar)
+                if (pipeName.IndexOfAny(s_invalidPathNameChars) >= 0 || pipeName.EndsWith(Path.DirectorySeparatorChar))
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_InvalidPipeNameChars);
 
                 // Caller is in full control of file location.
@@ -226,6 +226,7 @@ namespace System.IO.Pipes
             return s_pipePrefix + pipeName;
         }
 
+#pragma warning disable CA1822
         /// <summary>Throws an exception if the supplied handle does not represent a valid pipe.</summary>
         /// <param name="safePipeHandle">The handle to validate.</param>
         internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
@@ -241,11 +242,11 @@ namespace System.IO.Pipes
                 }
             }
         }
+#pragma warning restore CA1822
 
         /// <summary>Initializes the handle to be used asynchronously.</summary>
         /// <param name="handle">The handle.</param>
-        private void InitializeAsyncHandle(SafePipeHandle handle)
-        { }
+        partial void InitializeAsyncHandle(SafePipeHandle handle);
 
         internal virtual void DisposeCore(bool disposing)
         {
@@ -434,23 +435,6 @@ namespace System.IO.Pipes
             return LazyInitializer.EnsureInitialized(ref _asyncActiveSemaphore, () => new SemaphoreSlim(1, 1));
         }
 
-        private static void CreateDirectory(string directoryPath)
-        {
-            int result = Interop.Sys.MkDir(directoryPath, (int)Interop.Sys.Permissions.Mask);
-
-            // If successful created, we're done.
-            if (result >= 0)
-                return;
-
-            // If the directory already exists, consider it a success.
-            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-            if (errorInfo.Error == Interop.Error.EEXIST)
-                return;
-
-            // Otherwise, fail.
-            throw Interop.GetExceptionForIoErrno(errorInfo, directoryPath, isDirectory: true);
-        }
-
         /// <summary>Creates an anonymous pipe.</summary>
         /// <param name="reader">The resulting reader end of the pipe.</param>
         /// <param name="writer">The resulting writer end of the pipe.</param>
@@ -472,7 +456,7 @@ namespace System.IO.Pipes
             writer.SetHandle(new IntPtr(fds[Interop.Sys.WriteEndOfPipe]));
         }
 
-        internal int CheckPipeCall(int result)
+        private int CheckPipeCall(int result)
         {
             if (result == -1)
             {

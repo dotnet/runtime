@@ -1,12 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestExecutionArguments>-unittest</CLRTestExecutionArguments>
     <GenerateRunScript>false</GenerateRunScript>
     <IsLongRunningGCTest>true</IsLongRunningGCTest>
-    <CLRTestPriority>0</CLRTestPriority>
-    <DefineConstants>$(DefineConstants);PROJECTK_BUILD</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DetourHelpers.cs" />

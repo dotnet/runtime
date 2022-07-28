@@ -22,7 +22,7 @@ namespace System.Text.Encodings.Web
         {
             if (settings is null)
             {
-                throw new ArgumentNullException(nameof(settings));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.settings);
             }
 
             // '\' (U+005C REVERSE SOLIDUS) must always be escaped in Javascript / ECMAScript / JSON.

@@ -7,27 +7,53 @@ using Xunit;
 namespace System.IO.Tests
 {
     // to avoid a lot of code duplication, we reuse FileStream tests
-    public class File_OpenHandle : FileStream_ctor_options_as
+    public class File_OpenHandle : FileStream_ctor_options
     {
         protected override string GetExpectedParamName(string paramName) => paramName;
 
-        protected override FileStream CreateFileStream(string path, FileMode mode)
-        {
-            FileAccess access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite;
-            return new FileStream(File.OpenHandle(path, mode, access, preallocationSize: PreallocationSize), access);
-        }
+        protected override FileStream CreateFileStream(string path, FileMode mode) =>
+            CreateFileStream(path, mode, mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite);
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
-            => new FileStream(File.OpenHandle(path, mode, access, preallocationSize: PreallocationSize), access);
+        {
+            SafeFileHandle handle = File.OpenHandle(path, mode, access);
+            try
+            {
+                return new FileStream(handle, access);
+            }
+            catch
+            {
+                handle.Dispose();
+                throw;
+            }
+        }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new FileStream(File.OpenHandle(path, mode, access, share, options, PreallocationSize), access, bufferSize, (options & FileOptions.Asynchronous) != 0);
-
-        [Fact]
-        public override void NegativePreallocationSizeThrows()
         {
-            ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(
-                () => File.OpenHandle("validPath", FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize: -1));
+            SafeFileHandle handle = File.OpenHandle(path, mode, access, share, options);
+            try
+            {
+                return new FileStream(handle, access, bufferSize, (options & FileOptions.Asynchronous) != 0);
+            }
+            catch
+            {
+                handle.Dispose();
+                throw;
+            }
+        }
+
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
+        {
+            SafeFileHandle handle = File.OpenHandle(path, mode, access, share, options, preallocationSize);
+            try
+            {
+                return new FileStream(handle, access, bufferSize, (options & FileOptions.Asynchronous) != 0);
+            }
+            catch
+            {
+                handle.Dispose();
+                throw;
+            }
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/53432")]
@@ -56,15 +82,18 @@ namespace System.IO.Tests
             }
         }
 
-        // Unix doesn't directly support DeleteOnClose
-        // For FileStream created out of path, we mimic it by closing the handle first
-        // and then unlinking the path
-        // Since SafeFileHandle does not always have the path and we can't find path for given file descriptor on Unix
-        // this test runs only on Windows
-        [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
         [InlineData(FileOptions.DeleteOnClose)]
         [InlineData(FileOptions.DeleteOnClose | FileOptions.Asynchronous)]
-        public override void DeleteOnClose_FileDeletedAfterClose(FileOptions options) => base.DeleteOnClose_FileDeletedAfterClose(options);
+        public void DeleteOnClose_FileDeletedAfterSafeHandleDispose(FileOptions options)
+        {
+            string path = GetTestFilePath();
+            Assert.False(File.Exists(path));
+            using (SafeFileHandle sfh = File.OpenHandle(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, options))
+            {
+                Assert.True(File.Exists(path));
+            }
+            Assert.False(File.Exists(path));
+        }
     }
 }

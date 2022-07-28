@@ -7,7 +7,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ctor_null1 { }
+.assembly 'b415164' { }
+.assembly extern xunit.core {}
  
 .class private auto ansi sealed MyDelegate
        extends [mscorlib]System.MulticastDelegate
@@ -38,6 +39,9 @@
   }
   .method public hidebysig static int32 Main(class System.String[] args) il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  3
     .locals init (class MyDelegate V_0)

@@ -133,7 +133,9 @@ namespace System.IO.Hashing
         public static byte[] Hash(byte[] source)
         {
             if (source is null)
+            {
                 throw new ArgumentNullException(nameof(source));
+            }
 
             return Hash(new ReadOnlySpan<byte>(source));
         }
@@ -150,7 +152,9 @@ namespace System.IO.Hashing
         public static byte[] Hash(byte[] source, long seed)
         {
             if (source is null)
+            {
                 throw new ArgumentNullException(nameof(source));
+            }
 
             return Hash(new ReadOnlySpan<byte>(source), seed);
         }
@@ -215,7 +219,7 @@ namespace System.IO.Hashing
             int totalLength = source.Length;
             State state = new State((ulong)seed);
 
-            while (source.Length > StripeSize)
+            while (source.Length >= StripeSize)
             {
                 state.ProcessStripe(source);
                 source = source.Slice(StripeSize);

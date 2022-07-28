@@ -9,9 +9,10 @@
 
 .assembly extern mscorlib { }
 .assembly 'simple' { }
-.namespace JitTest
+.assembly extern xunit.core {}
+.namespace JitTest_simple_boxunbox
 {
-  .class private auto ansi beforefieldinit App
+  .class public auto ansi beforefieldinit App
          extends [mscorlib]System.Object
   {
     .method private hidebysig static void 
@@ -171,16 +172,19 @@
       IL_01e9:  ret
     } // end of method App::Test
 
-    .method private hidebysig static int32 
+    .method public hidebysig static int32 
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  1
       .locals (int32 V_0)
       IL_0000:  ldc.i4.0
-      IL_0001:  call       void JitTest.App::Test(bool)
+      IL_0001:  call       void JitTest_simple_boxunbox.App::Test(bool)
       IL_0006:  ldc.i4.1
-      IL_0007:  call       void JitTest.App::Test(bool)
+      IL_0007:  call       void JitTest_simple_boxunbox.App::Test(bool)
       IL_000c:  ldstr      "=== TEST PASSED ==="
       IL_0011:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0016:  ldc.i4.s   100
@@ -202,5 +206,5 @@
 
   } // end of class App
 
-} // end of namespace JitTest
+} // end of namespace JitTest_simple_boxunbox
 

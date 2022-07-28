@@ -42,6 +42,9 @@
 #if defined(HOST_ARM64)
 #error Cannot define both HOST_X86 and HOST_ARM64
 #endif
+#if defined(HOST_LOONGARCH64)
+#error Cannot define both HOST_X86 and HOST_LOONGARCH64
+#endif
 #elif defined(HOST_AMD64)
 #if defined(HOST_X86)
 #error Cannot define both HOST_AMD64 and HOST_X86
@@ -51,6 +54,9 @@
 #endif
 #if defined(HOST_ARM64)
 #error Cannot define both HOST_AMD64 and HOST_ARM64
+#endif
+#if defined(HOST_LOONGARCH64)
+#error Cannot define both HOST_AMD64 and HOST_LOONGARCH64
 #endif
 #elif defined(HOST_ARM)
 #if defined(HOST_X86)
@@ -62,6 +68,9 @@
 #if defined(HOST_ARM64)
 #error Cannot define both HOST_ARM and HOST_ARM64
 #endif
+#if defined(HOST_LOONGARCH64)
+#error Cannot define both HOST_ARM and HOST_LOONGARCH64
+#endif
 #elif defined(HOST_ARM64)
 #if defined(HOST_X86)
 #error Cannot define both HOST_ARM64 and HOST_X86
@@ -71,6 +80,22 @@
 #endif
 #if defined(HOST_ARM)
 #error Cannot define both HOST_ARM64 and HOST_ARM
+#endif
+#if defined(HOST_LOONGARCH64)
+#error Cannot define both HOST_ARM64 and HOST_LOONGARCH64
+#endif
+#elif defined(HOST_LOONGARCH64)
+#if defined(HOST_X86)
+#error Cannot define both HOST_LOONGARCH64 and HOST_X86
+#endif
+#if defined(HOST_AMD64)
+#error Cannot define both HOST_LOONGARCH64 and HOST_AMD64
+#endif
+#if defined(HOST_ARM)
+#error Cannot define both HOST_LOONGARCH64 and HOST_ARM
+#endif
+#if defined(HOST_ARM64)
+#error Cannot define both HOST_LOONGARCH64 and HOST_ARM64
 #endif
 #else
 #error Unsupported or unset host architecture
@@ -86,6 +111,9 @@
 #if defined(TARGET_ARM64)
 #error Cannot define both TARGET_X86 and TARGET_ARM64
 #endif
+#if defined(TARGET_LOONGARCH64)
+#error Cannot define both TARGET_X86 and TARGET_LOONGARCH64
+#endif
 #elif defined(TARGET_AMD64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_AMD64 and TARGET_X86
@@ -95,6 +123,9 @@
 #endif
 #if defined(TARGET_ARM64)
 #error Cannot define both TARGET_AMD64 and TARGET_ARM64
+#endif
+#if defined(TARGET_LOONGARCH64)
+#error Cannot define both TARGET_AMD64 and TARGET_LOONGARCH64
 #endif
 #elif defined(TARGET_ARM)
 #if defined(TARGET_X86)
@@ -106,6 +137,9 @@
 #if defined(TARGET_ARM64)
 #error Cannot define both TARGET_ARM and TARGET_ARM64
 #endif
+#if defined(TARGET_LOONGARCH64)
+#error Cannot define both TARGET_ARM and TARGET_LOONGARCH64
+#endif
 #elif defined(TARGET_ARM64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_ARM64 and TARGET_X86
@@ -115,6 +149,22 @@
 #endif
 #if defined(TARGET_ARM)
 #error Cannot define both TARGET_ARM64 and TARGET_ARM
+#endif
+#if defined(TARGET_LOONGARCH64)
+#error Cannot define both TARGET_ARM64 and TARGET_LOONGARCH64
+#endif
+#elif defined(TARGET_LOONGARCH64)
+#if defined(TARGET_X86)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_X86
+#endif
+#if defined(TARGET_AMD64)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_AMD64
+#endif
+#if defined(TARGET_ARM)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_ARM
+#endif
+#if defined(TARGET_ARM64)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_ARM64
 #endif
 #else
 #error Unsupported or unset target architecture
@@ -163,6 +213,8 @@
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_ARMNT
 #elif defined(TARGET_ARM64)
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_ARM64 // 0xAA64
+#elif defined(TARGET_LOONGARCH64)
+#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_LOONGARCH64 // 0x6264
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -183,6 +235,7 @@
 #include "utilcode.h" // this defines assert as _ASSERTE
 #include "host.h"     // this redefines assert for the JIT to use assertAbort
 #include "utils.h"
+#include "targetosarch.h"
 
 #ifdef DEBUG
 #define INDEBUG(x) x
@@ -206,24 +259,15 @@
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(DEBUG) && !defined(OSX_ARM64_ABI)
-// On all platforms except Arm64 OSX arguments on the stack are taking
-// register size slots. On these platforms we could check that stack slots count
-// matches our new byte size calculations.
-#define DEBUG_ARG_SLOTS
-#endif
+#if defined(TARGET_LOONGARCH64)
+#define UNIX_LOONGARCH64_ONLY_ARG(x) , x
+#define UNIX_LOONGARCH64_ONLY(x) x
+#else // !TARGET_LOONGARCH64
+#define UNIX_LOONGARCH64_ONLY_ARG(x)
+#define UNIX_LOONGARCH64_ONLY(x)
+#endif // TARGET_LOONGARCH64
 
-#if defined(DEBUG_ARG_SLOTS)
-#define DEBUG_ARG_SLOTS_ARG(x) , x
-#define DEBUG_ARG_SLOTS_ONLY(x) x
-#define DEBUG_ARG_SLOTS_ASSERT(x) assert(x)
-#else
-#define DEBUG_ARG_SLOTS_ARG(x)
-#define DEBUG_ARG_SLOTS_ONLY(x)
-#define DEBUG_ARG_SLOTS_ASSERT(x)
-#endif
-
-#if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64)
+#if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 #define FEATURE_PUT_STRUCT_ARG_STK 1
 #endif
 
@@ -235,7 +279,7 @@
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 #define MULTIREG_HAS_SECOND_GC_RET 1
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(x) , x
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY(x) x
@@ -248,11 +292,11 @@
 // Arm64 Windows supports FEATURE_ARG_SPLIT, note this is different from
 // the official Arm64 ABI.
 // Case: splitting 16 byte struct between x7 and stack
-#if (defined(TARGET_ARM) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64)))
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
 #define FEATURE_ARG_SPLIT 1
 #else
 #define FEATURE_ARG_SPLIT 0
-#endif // (defined(TARGET_ARM) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64)))
+#endif
 
 // To get rid of warning 4701 : local variable may be used without being initialized
 #define DUMMY_INIT(x) (x)
@@ -283,47 +327,18 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 typedef class ICorJitInfo* COMP_HANDLE;
 
-const CORINFO_CLASS_HANDLE NO_CLASS_HANDLE = (CORINFO_CLASS_HANDLE) nullptr;
+const CORINFO_CLASS_HANDLE  NO_CLASS_HANDLE  = nullptr;
+const CORINFO_FIELD_HANDLE  NO_FIELD_HANDLE  = nullptr;
+const CORINFO_METHOD_HANDLE NO_METHOD_HANDLE = nullptr;
 
 /*****************************************************************************/
 
-// We define two IL offset types, as follows:
-//
-// IL_OFFSET:  either a distinguished value, or an IL offset.
-// IL_OFFSETX: either a distinguished value, or the top two bits are a flags, and the remaining bottom
-//             bits are a IL offset.
-//
-// In both cases, the set of legal distinguished values is:
-//     BAD_IL_OFFSET             -- A unique illegal IL offset number. Note that it must be different from
-//                                  the ICorDebugInfo values, below, and must also not be a legal IL offset.
-//     ICorDebugInfo::NO_MAPPING -- The IL offset corresponds to no source code (such as EH step blocks).
-//     ICorDebugInfo::PROLOG     -- The IL offset indicates a prolog
-//     ICorDebugInfo::EPILOG     -- The IL offset indicates an epilog
-//
-// The IL offset must be in the range [0 .. 0x3fffffff]. This is because we steal
-// the top two bits in IL_OFFSETX for flags, but we want the maximum range to be the same
-// for both types. The IL value can't be larger than the maximum IL offset of the function
-// being compiled.
-//
-// Blocks and statements never store one of the ICorDebugInfo values, even for IL_OFFSETX types. These are
-// only stored in the IPmappingDsc struct, ipmdILoffsx field.
-
 typedef unsigned IL_OFFSET;
 
-const IL_OFFSET BAD_IL_OFFSET = 0x80000000;
-const IL_OFFSET MAX_IL_OFFSET = 0x3fffffff;
+const IL_OFFSET BAD_IL_OFFSET = 0xffffffff;
 
-typedef unsigned IL_OFFSETX;                                 // IL_OFFSET with stack-empty or call-instruction bit
-const IL_OFFSETX IL_OFFSETX_STKBIT             = 0x80000000; // Note: this bit is set when the stack is NOT empty!
-const IL_OFFSETX IL_OFFSETX_CALLINSTRUCTIONBIT = 0x40000000; // Set when the IL offset is for a call instruction.
-const IL_OFFSETX IL_OFFSETX_BITS               = IL_OFFSETX_STKBIT | IL_OFFSETX_CALLINSTRUCTIONBIT;
-
-IL_OFFSET jitGetILoffs(IL_OFFSETX offsx);
-IL_OFFSET jitGetILoffsAny(IL_OFFSETX offsx);
-bool jitIsStackEmpty(IL_OFFSETX offsx);
-bool jitIsCallInstruction(IL_OFFSETX offsx);
-
-const unsigned BAD_VAR_NUM = UINT_MAX;
+const unsigned BAD_VAR_NUM    = UINT_MAX;
+const uint16_t BAD_LCL_OFFSET = UINT16_MAX;
 
 // Code can't be more than 2^31 in any direction.  This is signed, so it should be used for anything that is
 // relative to something else.
@@ -334,6 +349,9 @@ typedef int NATIVE_OFFSET;
 typedef unsigned UNATIVE_OFFSET;
 
 typedef ptrdiff_t ssize_t;
+
+// Type used for weights (e.g. block and edge weights)
+typedef double weight_t;
 
 // For the following specially handled FIELD_HANDLES we need
 //   values that are negative and have the low two bits zero
@@ -381,22 +399,8 @@ public:
 /*****************************************************************************/
 
 #define CSE_INTO_HANDLERS 0
-
-#define LARGE_EXPSET 1   // Track 64 or 32 assertions/copies/consts/rangechecks
-#define ASSERTION_PROP 1 // Enable value/assertion propagation
-
-#define LOCAL_ASSERTION_PROP ASSERTION_PROP // Enable local assertion propagation
-
-//=============================================================================
-
-#define OPT_BOOL_OPS 1 // optimize boolean operations
-
-//=============================================================================
-
-#define REDUNDANT_LOAD 1      // track locals in regs, suppress loads
-#define DUMP_FLOWGRAPHS DEBUG // Support for creating Xml Flowgraph reports in *.fgx files
-
-#define HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION 1 // if 1 we must have all handler entry points in the Hot code section
+#define DUMP_FLOWGRAPHS DEBUG                  // Support for creating Xml Flowgraph reports in *.fgx files
+#define HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION 0 // if 1 we must have all handler entry points in the Hot code section
 
 /*****************************************************************************/
 
@@ -437,6 +441,7 @@ public:
 #define MEASURE_MEM_ALLOC 1 // Collect memory allocation stats.
 #define LOOP_HOIST_STATS 1  // Collect loop hoisting stats.
 #define TRACK_LSRA_STATS 1  // Collect LSRA stats
+#define TRACK_ENREG_STATS 1 // Collect enregistration stats
 #else
 #define MEASURE_MEM_ALLOC 0 // You can set this to 1 to get memory stats in retail, as well
 #define LOOP_HOIST_STATS 0  // You can set this to 1 to get loop hoist stats in retail, as well
@@ -487,6 +492,11 @@ const bool dspGCtbls = true;
         if (JitTls::GetCompiler()->verbose)                                                                            \
             logf(__VA_ARGS__);                                                                                         \
     }
+#define JITDUMPEXEC(x)                                                                                                 \
+    {                                                                                                                  \
+        if (JitTls::GetCompiler()->verbose)                                                                            \
+            x;                                                                                                         \
+    }
 #define JITLOG(x)                                                                                                      \
     {                                                                                                                  \
         JitLogEE x;                                                                                                    \
@@ -519,8 +529,12 @@ const bool dspGCtbls = true;
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->fgTableDispBasicBlock(b);
 #define VERBOSE JitTls::GetCompiler()->verbose
+// Development-time only macros, simplify guards for specified IL methods one wants to debug/add log messages for
+#define ISMETHOD(name) (strcmp(JitTls::GetCompiler()->impInlineRoot()->info.compMethodName, name) == 0)
+#define ISMETHODHASH(hash) (JitTls::GetCompiler()->impInlineRoot()->info.compMethodHash() == hash)
 #else // !DEBUG
 #define JITDUMP(...)
+#define JITDUMPEXEC(x)
 #define JITLOG(x)
 #define JITLOG_THIS(t, x)
 #define DBEXEC(flg, expr)
@@ -623,9 +637,9 @@ inline size_t unsigned_abs(ssize_t x)
 
 /*****************************************************************************/
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
-
 #define HISTOGRAM_MAX_SIZE_COUNT 64
+
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
 class Histogram
 {
@@ -687,7 +701,7 @@ private:
 #define CLFLG_STRUCTPROMOTE 0x00000
 #endif
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 #define FEATURE_LOOP_ALIGN 1
 #else
 #define FEATURE_LOOP_ALIGN 0
@@ -826,12 +840,25 @@ T dspOffset(T o)
 
 #endif // !defined(DEBUG)
 
-extern "C" CORINFO_CLASS_HANDLE WINAPI getLikelyClass(ICorJitInfo::PgoInstrumentationSchema* schema,
-                                                      UINT32                                 countSchemaItems,
-                                                      BYTE*                                  pInstrumentationData,
-                                                      int32_t                                ilOffset,
-                                                      UINT32*                                pLikelihood,
-                                                      UINT32*                                pNumberOfClasses);
+struct LikelyClassMethodRecord
+{
+    intptr_t handle;
+    UINT32   likelihood;
+};
+
+extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassMethodRecord*               pLikelyClasses,
+                                          UINT32                                 maxLikelyClasses,
+                                          ICorJitInfo::PgoInstrumentationSchema* schema,
+                                          UINT32                                 countSchemaItems,
+                                          BYTE*                                  pInstrumentationData,
+                                          int32_t                                ilOffset);
+
+extern "C" UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*               pLikelyMethods,
+                                          UINT32                                 maxLikelyMethods,
+                                          ICorJitInfo::PgoInstrumentationSchema* schema,
+                                          UINT32                                 countSchemaItems,
+                                          BYTE*                                  pInstrumentationData,
+                                          int32_t                                ilOffset);
 
 /*****************************************************************************/
 #endif //_JIT_H_

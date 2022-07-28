@@ -106,7 +106,7 @@ struct S
     }
 }
 
-class Test
+class Test_struct7_1
 {
     public static void c(S s1, S s2, S s3, S s4, S s5)
     {

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -8,16 +9,11 @@ using System.Security;
 
 namespace System.Data.Common
 {
-    internal static class UnsafeNativeMethods
+    internal static partial class UnsafeNativeMethods
     {
         //
         // Oleaut32
         //
-
-        [DllImport(Interop.Libraries.OleAut32, CharSet = CharSet.Unicode, PreserveSig = true)]
-        internal static extern System.Data.OleDb.OleDbHResult GetErrorInfo(
-            [In] int dwReserved,
-            [Out, MarshalAs(UnmanagedType.Interface)] out IErrorInfo ppIErrorInfo);
 
         [Guid("00000567-0000-0010-8000-00AA006D2EA4"), InterfaceType(ComInterfaceType.InterfaceIsDual), ComImport, SuppressUnmanagedCodeSecurity]
         internal interface ADORecordConstruction
@@ -518,11 +514,11 @@ namespace System.Data.Common
 
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetSource(
-                [Out, MarshalAs(UnmanagedType.BStr)] out string pBstrSource);
+                [MarshalAs(UnmanagedType.BStr)] out string? pBstrSource);
 
             [PreserveSig]
             System.Data.OleDb.OleDbHResult GetDescription(
-                [Out, MarshalAs(UnmanagedType.BStr)] out string pBstrDescription);
+                [MarshalAs(UnmanagedType.BStr)] out string? pBstrDescription);
 
             //[ Obsolete("not used", true)] void GetHelpFile(/*deleted parameter signature*/);
 
@@ -777,20 +773,20 @@ namespace System.Data.Common
 
         // dangerous delegate around IUnknown::QueryInterface (0th vtable entry)
         [SuppressUnmanagedCodeSecurity]
-        internal delegate int IUnknownQueryInterface(
+        internal unsafe delegate int IUnknownQueryInterface(
                 IntPtr pThis,
-                ref Guid riid,
-                ref IntPtr ppInterface);
+                Guid* riid,
+                IntPtr* ppInterface);
 
         // dangerous delegate around IDataInitialize::GetDataSource (4th vtable entry)
         [SuppressUnmanagedCodeSecurity]
-        internal delegate System.Data.OleDb.OleDbHResult IDataInitializeGetDataSource(
+        internal unsafe delegate System.Data.OleDb.OleDbHResult IDataInitializeGetDataSource(
                 IntPtr pThis, // first parameter is always the 'this' value, must use use result from QI
                 IntPtr pUnkOuter,
                 int dwClsCtx,
-                [MarshalAs(UnmanagedType.LPWStr)] string pwszInitializationString,
-                ref Guid riid,
-                ref System.Data.OleDb.DataSourceWrapper ppDataSource);
+                char* pwszInitializationString,
+                Guid* riid,
+                IntPtr* ppDataSource);
 
         // dangerous wrapper around IDBInitialize::Initialize (4th vtable entry)
         [SuppressUnmanagedCodeSecurity]
@@ -799,19 +795,19 @@ namespace System.Data.Common
 
         // dangerous wrapper around IDBCreateSession::CreateSession (4th vtable entry)
         [SuppressUnmanagedCodeSecurity]
-        internal delegate System.Data.OleDb.OleDbHResult IDBCreateSessionCreateSession(
+        internal unsafe delegate System.Data.OleDb.OleDbHResult IDBCreateSessionCreateSession(
                 IntPtr pThis, // first parameter is always the 'this' value, must use use result from QI
                 IntPtr pUnkOuter,
-                ref Guid riid,
-                ref System.Data.OleDb.SessionWrapper ppDBSession);
+                Guid* riid,
+                IntPtr* ppDBSession);
 
         // dangerous wrapper around IDBCreateCommand::CreateCommand (4th vtable entry)
         [SuppressUnmanagedCodeSecurity]
-        internal delegate System.Data.OleDb.OleDbHResult IDBCreateCommandCreateCommand(
+        internal unsafe delegate System.Data.OleDb.OleDbHResult IDBCreateCommandCreateCommand(
                 IntPtr pThis, // first parameter is always the 'this' value, must use use result from QI
                 IntPtr pUnkOuter,
-                ref Guid riid,
-                [MarshalAs(UnmanagedType.Interface)] ref object? ppCommand);
+                Guid* riid,
+                IntPtr* ppCommand);
 
         //
         // Advapi32.dll Integrated security functions
@@ -836,12 +832,5 @@ namespace System.Data.Common
                 _name = name;
             }
         }
-
-        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "CreateWellKnownSid", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern int CreateWellKnownSid(
-            int sidType,
-            byte[]? domainSid,
-            [Out] byte[] resultSid,
-            ref uint resultSidLength);
     }
 }

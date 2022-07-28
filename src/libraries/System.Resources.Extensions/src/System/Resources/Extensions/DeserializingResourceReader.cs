@@ -37,13 +37,10 @@ namespace System.Resources.Extensions
 #pragma warning disable SYSLIB0011
         private object ReadBinaryFormattedObject()
         {
-            if (_formatter == null)
+            _formatter ??= new BinaryFormatter()
             {
-                _formatter = new BinaryFormatter()
-                {
-                    Binder = new UndoTruncatedTypeNameSerializationBinder()
-                };
-            }
+                Binder = new UndoTruncatedTypeNameSerializationBinder()
+            };
 
             return _formatter.Deserialize(_store.BaseStream);
         }
@@ -168,7 +165,7 @@ namespace System.Resources.Extensions
                             throw new TypeLoadException(SR.Format(SR.TypeLoadException_CannotLoadConverter, type));
                         }
 
-                        value = converter.ConvertFrom(data);
+                        value = converter.ConvertFrom(data)!;
                         break;
                     }
                 case SerializationFormat.TypeConverterString:
@@ -182,7 +179,7 @@ namespace System.Resources.Extensions
                             throw new TypeLoadException(SR.Format(SR.TypeLoadException_CannotLoadConverter, type));
                         }
 
-                        value = converter.ConvertFromInvariantString(stringData);
+                        value = converter.ConvertFromInvariantString(stringData)!;
                         break;
                     }
                 case SerializationFormat.ActivatorStream:

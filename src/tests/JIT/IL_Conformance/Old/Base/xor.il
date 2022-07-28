@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly xor.exe{}
+.assembly 'xor'{}
 
 .class public _xor {
 

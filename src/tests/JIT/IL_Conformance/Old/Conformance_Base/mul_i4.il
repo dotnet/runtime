@@ -276,4 +276,4 @@ FAIL:
 	ret
 }
 }
-.assembly mul_i4.exe{}
+.assembly mul_i4{}

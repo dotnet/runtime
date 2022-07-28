@@ -35,11 +35,8 @@ namespace System.DirectoryServices.Protocols
 
         internal DirectoryAttribute(string name, object value) : this()
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
 
             Name = name;
             Add(value);
@@ -47,11 +44,8 @@ namespace System.DirectoryServices.Protocols
 
         public DirectoryAttribute(string name, params object[] values) : this()
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (values == null)
-                throw new ArgumentNullException(nameof(values));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(values);
 
             Name = name;
 
@@ -168,10 +162,8 @@ namespace System.DirectoryServices.Protocols
 
         internal int Add(object value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
+
             if (!(value is string) && !(value is byte[]) && !(value is Uri))
             {
                 throw new ArgumentException(SR.ValidValueType, nameof(value));
@@ -182,10 +174,8 @@ namespace System.DirectoryServices.Protocols
 
         public void AddRange(object[] values)
         {
-            if (values == null)
-            {
-                throw new ArgumentNullException(nameof(values));
-            }
+            ArgumentNullException.ThrowIfNull(values);
+
             if (!(values is string[]) && !(values is byte[][]) && !(values is Uri[]))
             {
                 throw new ArgumentException(SR.ValidValuesType, nameof(values));
@@ -216,10 +206,7 @@ namespace System.DirectoryServices.Protocols
 
         private void Insert(int index, object value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             List.Insert(index, value);
         }
@@ -228,10 +215,8 @@ namespace System.DirectoryServices.Protocols
 
         protected override void OnValidate(object value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
+
             if (!(value is string) && !(value is byte[]) && !(value is Uri))
             {
                 throw new ArgumentException(SR.ValidValueType, nameof(value));
@@ -291,10 +276,7 @@ namespace System.DirectoryServices.Protocols
 
         public bool Contains(string attributeName)
         {
-            if (attributeName == null)
-            {
-                throw new ArgumentNullException(nameof(attributeName));
-            }
+            ArgumentNullException.ThrowIfNull(attributeName);
 
             object objectName = attributeName.ToLowerInvariant();
             return Dictionary.Contains(objectName);
@@ -327,10 +309,7 @@ namespace System.DirectoryServices.Protocols
 
         public void AddRange(DirectoryAttribute[] attributes)
         {
-            if (attributes == null)
-            {
-                throw new ArgumentNullException(nameof(attributes));
-            }
+            ArgumentNullException.ThrowIfNull(attributes);
 
             foreach (DirectoryAttribute attribute in attributes)
             {
@@ -345,10 +324,7 @@ namespace System.DirectoryServices.Protocols
 
         public void AddRange(DirectoryAttributeCollection attributeCollection)
         {
-            if (attributeCollection == null)
-            {
-                throw new ArgumentNullException(nameof(attributeCollection));
-            }
+            ArgumentNullException.ThrowIfNull(attributeCollection);
 
             int currentCount = attributeCollection.Count;
             for (int i = 0; i < currentCount; i = ((i) + (1)))
@@ -412,10 +388,7 @@ namespace System.DirectoryServices.Protocols
 
         public void AddRange(DirectoryAttributeModification[] attributes)
         {
-            if (attributes == null)
-            {
-                throw new ArgumentNullException(nameof(attributes));
-            }
+            ArgumentNullException.ThrowIfNull(attributes);
 
             foreach (DirectoryAttributeModification attribute in attributes)
             {
@@ -430,10 +403,7 @@ namespace System.DirectoryServices.Protocols
 
         public void AddRange(DirectoryAttributeModificationCollection attributeCollection)
         {
-            if (attributeCollection == null)
-            {
-                throw new ArgumentNullException(nameof(attributeCollection));
-            }
+            ArgumentNullException.ThrowIfNull(attributeCollection);
 
             int currentCount = attributeCollection.Count;
             for (int i = 0; i < currentCount; i = ((i) + (1)))

@@ -393,13 +393,13 @@ struct LsraBlockInfo
 {
     // bbNum of the predecessor to use for the register location of live-in variables.
     // 0 for fgFirstBB.
-    unsigned int         predBBNum;
-    BasicBlock::weight_t weight;
-    bool                 hasCriticalInEdge : 1;
-    bool                 hasCriticalOutEdge : 1;
-    bool                 hasEHBoundaryIn : 1;
-    bool                 hasEHBoundaryOut : 1;
-    bool                 hasEHPred : 1;
+    unsigned int predBBNum;
+    weight_t     weight;
+    bool         hasCriticalInEdge : 1;
+    bool         hasCriticalOutEdge : 1;
+    bool         hasEHBoundaryIn : 1;
+    bool         hasEHBoundaryOut : 1;
+    bool         hasEHPred : 1;
 
 #if TRACK_LSRA_STATS
     // Per block maintained LSRA statistics.
@@ -468,7 +468,7 @@ public:
     RefPosition* lastRefPosition;
 
     // Get the position of the next reference which is at or greater than
-    // the current location (relies upon recentRefPosition being udpated
+    // the current location (relies upon recentRefPosition being updated
     // during traversal).
     RefPosition* getNextRefPosition();
     LsraLocation getNextRefLocation();
@@ -577,7 +577,7 @@ inline bool leafAddInRange(GenTree* leaf, int lower, int upper, int multiple = 1
     return leafInRange(leaf->gtGetOp2(), lower, upper, multiple);
 }
 
-inline bool isCandidateVar(LclVarDsc* varDsc)
+inline bool isCandidateVar(const LclVarDsc* varDsc)
 {
     return varDsc->lvLRACandidate;
 }
@@ -693,10 +693,16 @@ public:
                                 regNumberSmall* location,
                                 regNumber       toReg,
                                 regNumber       fromReg,
-                                ResolveType     resolveType);
+                                ResolveType resolveType DEBUG_ARG(BasicBlock* fromBlock)
+                                    DEBUG_ARG(BasicBlock* toBlock));
 #endif
-    void addResolution(
-        BasicBlock* block, GenTree* insertionPoint, Interval* interval, regNumber outReg, regNumber inReg);
+
+    void addResolution(BasicBlock* block,
+                       GenTree*    insertionPoint,
+                       Interval*   interval,
+                       regNumber   outReg,
+                       regNumber inReg DEBUG_ARG(BasicBlock* fromBlock) DEBUG_ARG(BasicBlock* toBlock)
+                           DEBUG_ARG(const char* reason));
 
     void handleOutgoingCriticalEdges(BasicBlock* block);
 
@@ -762,6 +768,9 @@ private:
 #elif defined(TARGET_X86)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
+#elif defined(TARGET_LOONGARCH64)
+    static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
+    static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
 #else
 #error Unsupported or unset target architecture
 #endif // target
@@ -983,7 +992,7 @@ private:
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
     bool isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
     bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation);
-    float getSpillWeight(RegRecord* physRegRecord);
+    weight_t getSpillWeight(RegRecord* physRegRecord);
 
     // insert refpositions representing prolog zero-inits which will be added later
     void insertZeroInitRefPositions();
@@ -997,16 +1006,22 @@ private:
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet);
-    void buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node);
+    void buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
+                                            LsraLocation currentLoc,
+                                            GenTree*     node,
+                                            bool         isUse);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
-#if defined(UNIX_AMD64_ABI)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
     // For AMD64 on SystemV machines. This method
     // is called as replacement for raUpdateRegStateForArg
     // that is used on Windows. On System V systems a struct can be passed
     // partially using registers from the 2 register files.
-    void unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc);
-#endif // defined(UNIX_AMD64_ABI)
+    //
+    // For LoongArch64's ABI, a struct can be passed
+    // partially using registers from the 2 register files.
+    void UpdateRegStateForStructArg(LclVarDsc* argDsc);
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
 
     // Update reg state for an incoming register argument
     void updateRegStateForArg(LclVarDsc* argDsc);
@@ -1015,10 +1030,7 @@ private:
     {
         if (tree->IsLocal())
         {
-            unsigned int lclNum = tree->AsLclVarCommon()->GetLclNum();
-            assert(lclNum < compiler->lvaCount);
-            LclVarDsc* varDsc = compiler->lvaTable + tree->AsLclVarCommon()->GetLclNum();
-
+            const LclVarDsc* varDsc = compiler->lvaGetDesc(tree->AsLclVarCommon());
             return isCandidateVar(varDsc);
         }
         return false;
@@ -1097,7 +1109,7 @@ private:
 
     Interval* getIntervalForLocalVarNode(GenTreeLclVarCommon* tree)
     {
-        LclVarDsc* varDsc = &compiler->lvaTable[tree->GetLclNum()];
+        const LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
         assert(varDsc->lvTracked);
         return getIntervalForLocalVar(varDsc->lvVarIndex);
     }
@@ -1129,7 +1141,7 @@ private:
 
     void associateRefPosWithInterval(RefPosition* rp);
 
-    BasicBlock::weight_t getWeight(RefPosition* refPos);
+    weight_t getWeight(RefPosition* refPos);
 
     /*****************************************************************************
      * Register management
@@ -1353,7 +1365,7 @@ private:
     //     tree nodes are consumed.
     //   - In LSRA_DUMP_REFPOS, which is after the intervals are built, but before
     //     register allocation, each node is dumped, along with all of the RefPositions,
-    //     The Intervals are identifed as Lnnn for lclVar intervals, Innn for for other
+    //     The Intervals are identifed as Lnnn for lclVar intervals, Innn for other
     //     intervals, and Tnnn for internal temps.
     //   - In LSRA_DUMP_POST, which is after register allocation, the registers are
     //     shown.
@@ -1714,7 +1726,7 @@ private:
 #endif
         return loc;
     }
-    float spillCost[REG_COUNT];
+    weight_t spillCost[REG_COUNT];
 
     regMaskTP regsBusyUntilKill;
     regMaskTP regsInUseThisLocation;
@@ -1775,7 +1787,7 @@ private:
 
     // The following keep track of information about internal (temporary register) intervals
     // during the building of a single node.
-    static const int MaxInternalCount = 4;
+    static const int MaxInternalCount = 5;
     RefPosition*     internalDefs[MaxInternalCount];
     int              internalCount = 0;
     bool             setInternalRegsDelayFree;
@@ -1804,13 +1816,13 @@ private:
     void setDelayFree(RefPosition* use);
     int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
 #ifdef TARGET_XARCH
-    int BuildRMWUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
+    int BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskTP candidates = RBM_NONE);
 #endif // !TARGET_XARCH
     // This is the main entry point for building the RefPositions for a node.
     // These methods return the number of sources.
     int BuildNode(GenTree* tree);
 
-    void getTgtPrefOperands(GenTreeOp* tree, bool& prefOp1, bool& prefOp2);
+    void getTgtPrefOperands(GenTree* tree, GenTree* op1, GenTree* op2, bool* prefOp1, bool* prefOp2);
     bool supportsSpecialPutArg();
 
     int BuildSimple(GenTree* tree);
@@ -1879,7 +1891,7 @@ private:
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-    int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree);
+    int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
 #endif // FEATURE_HW_INTRINSICS
 
     int BuildPutArgStk(GenTreePutArgStk* argNode);
@@ -1928,6 +1940,7 @@ public:
         , isPartiallySpilled(false)
 #endif
         , isWriteThru(false)
+        , isSingleDef(false)
 #ifdef DEBUG
         , intervalIndex(0)
 #endif
@@ -2022,6 +2035,9 @@ public:
 
     // True if this interval is associated with a lclVar that is written to memory at each definition.
     bool isWriteThru : 1;
+
+    // True if this interval has a single definition.
+    bool isSingleDef : 1;
 
 #ifdef DEBUG
     unsigned int intervalIndex;
@@ -2212,7 +2228,7 @@ public:
     // Used by RefTypeDef/Use positions of a multi-reg call node.
     // Indicates the position of the register that this ref position refers to.
     // The max bits needed is based on max value of MAX_RET_REG_COUNT value
-    // across all targets and that happens 4 on on Arm.  Hence index value
+    // across all targets and that happened to be 4 on Arm.  Hence index value
     // would be 0..MAX_RET_REG_COUNT-1.
     unsigned char multiRegIdx : 2;
 
@@ -2222,6 +2238,10 @@ public:
     // Spill and Copy info
     //   reload indicates that the value was spilled, and must be reloaded here.
     //   spillAfter indicates that the value is spilled here, so a spill must be added.
+    //   singleDefSpill indicates that it is associated with a single-def var and if it
+    //      is decided to get spilled, it will be spilled at firstRefPosition def. That
+    //      way, the value of stack will always be up-to-date and no more spills or
+    //      resolutions (from reg to stack) will be needed for such single-def var.
     //   copyReg indicates that the value needs to be copied to a specific register,
     //      but that it will also retain its current assigned register.
     //   moveReg indicates that the value needs to be moved to a different register,
@@ -2240,6 +2260,7 @@ public:
 
     unsigned char reload : 1;
     unsigned char spillAfter : 1;
+    unsigned char singleDefSpill : 1;
     unsigned char writeThru : 1; // true if this var is defined in a register and also spilled. spillAfter must NOT be
                                  // set.
 
@@ -2264,6 +2285,11 @@ public:
     // register from a predecessor that is not the most recently allocated BasicBlock.
     unsigned char outOfOrder : 1;
 
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+    // If upper vector save/restore can be avoided.
+    unsigned char skipSaveRestore : 1;
+#endif
+
 #ifdef DEBUG
     // Minimum number registers that needs to be ensured while
     // constraining candidates for this ref position under
@@ -2287,6 +2313,7 @@ public:
         , lastUse(false)
         , reload(false)
         , spillAfter(false)
+        , singleDefSpill(false)
         , writeThru(false)
         , copyReg(false)
         , moveReg(false)

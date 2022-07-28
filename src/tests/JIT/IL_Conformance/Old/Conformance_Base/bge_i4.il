@@ -307,4 +307,4 @@ FAIL:
 	ret
 }
 }
-.assembly bge_i4.exe{}
+.assembly bge_i4{}

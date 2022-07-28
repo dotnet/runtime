@@ -16,6 +16,7 @@ namespace Microsoft.Extensions.Http
         /// Applies additional initialization to the <see cref="HttpMessageHandlerBuilder"/>
         /// </summary>
         /// <param name="next">A delegate which will run the next <see cref="IHttpMessageHandlerBuilderFilter"/>.</param>
+        /// <returns>The configured <see cref="HttpMessageHandlerBuilder"/>.</returns>
         Action<HttpMessageHandlerBuilder> Configure(Action<HttpMessageHandlerBuilder> next);
     }
 }

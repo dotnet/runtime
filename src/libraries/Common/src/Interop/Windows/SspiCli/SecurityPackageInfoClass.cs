@@ -59,14 +59,7 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, this.ToString());
         }
 
-        public override string ToString()
-        {
-            return "Capabilities:" + string.Format(CultureInfo.InvariantCulture, "0x{0:x}", Capabilities)
-                + " Version:" + Version.ToString(NumberFormatInfo.InvariantInfo)
-                + " RPCID:" + RPCID.ToString(NumberFormatInfo.InvariantInfo)
-                + " MaxToken:" + MaxToken.ToString(NumberFormatInfo.InvariantInfo)
-                + " Name:" + ((Name == null) ? "(null)" : Name)
-                + " Comment:" + ((Comment == null) ? "(null)" : Comment);
-        }
+        public override string ToString() =>
+            $"Capabilities:0x{Capabilities:x} Version:{Version} RPCID:{RPCID} MaxToken:{MaxToken} Name:{Name ?? "(null)"} Comment: {Comment ?? "(null)"}";
     }
 }

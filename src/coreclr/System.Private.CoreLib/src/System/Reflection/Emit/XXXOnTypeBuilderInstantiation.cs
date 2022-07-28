@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
@@ -60,6 +61,8 @@ namespace System.Reflection.Emit
         public override MethodInfo GetGenericMethodDefinition() { return m_method; }
         public override bool IsGenericMethodDefinition => m_method.IsGenericMethodDefinition;
         public override bool ContainsGenericParameters => m_method.ContainsGenericParameters;
+
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArgs)
         {
             if (!IsGenericMethodDefinition)

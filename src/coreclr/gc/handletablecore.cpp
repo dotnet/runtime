@@ -516,7 +516,7 @@ BOOL SegmentInitialize(TableSegment *pSegment, HandleTable *pTable)
         return FALSE;
     }
 
-    // remember how many blocks we commited
+    // remember how many blocks we committed
     pSegment->bCommitLine = (uint8_t)((dwCommit - HANDLE_HEADER_SIZE) / HANDLE_BYTES_PER_BLOCK);
 
     // now preinitialize the 0xFF guys
@@ -829,7 +829,7 @@ void SegmentRemoveFreeBlocks(TableSegment *pSegment, uint32_t uType, BOOL *pfSca
  *
  * Inserts a block into a block list within a segment.  Blocks are obtained from the
  * segment's free list.  Returns the index of the block inserted, or BLOCK_INVALID
- * if no blocks were avaliable.
+ * if no blocks were available.
  *
  * This routine is the core implementation for SegmentInsertBlockFromFreeList.
  *
@@ -873,7 +873,7 @@ uint32_t SegmentInsertBlockFromFreeListWorker(TableSegment *pSegment, uint32_t u
                 // use the previous commit line as the new decommit line
                 pSegment->bDecommitLine = (uint8_t)uCommitLine;
 
-                // adjust the commit line by the number of blocks we commited
+                // adjust the commit line by the number of blocks we committed
                 pSegment->bCommitLine = (uint8_t)(uCommitLine + (dwCommit / HANDLE_BYTES_PER_BLOCK));
             }
 
@@ -928,7 +928,7 @@ uint32_t SegmentInsertBlockFromFreeListWorker(TableSegment *pSegment, uint32_t u
  *
  * Inserts a block into a block list within a segment.  Blocks are obtained from the
  * segment's free list.  Returns the index of the block inserted, or BLOCK_INVALID
- * if no blocks were avaliable.
+ * if no blocks were available.
  *
  * This routine does the work of securing a parallel user data block if required.
  *
@@ -2181,7 +2181,7 @@ void TableFreeBulkUnpreparedHandles(HandleTable *pTable, uint32_t uType, const O
     OBJECTHANDLE rgStackHandles[HANDLE_HANDLES_PER_BLOCK];
     OBJECTHANDLE *pScratchBuffer  = rgStackHandles;
     OBJECTHANDLE *pLargeScratchBuffer  = NULL;
-    uint32_t     uFreeGranularity = _countof(rgStackHandles);
+    uint32_t     uFreeGranularity = ARRAY_SIZE(rgStackHandles);
 
     // if there are more handles than we can put on the stack then try to allocate a sorting buffer
     if (uCount > uFreeGranularity)

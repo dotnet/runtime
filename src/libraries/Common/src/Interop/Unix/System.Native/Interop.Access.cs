@@ -15,7 +15,7 @@ internal static partial class Interop
             R_OK = 4,   /* Check for read */
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Access", SetLastError = true)]
-        internal static extern int Access(string path, AccessMode mode);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Access", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        internal static partial int Access(string path, AccessMode mode);
     }
 }

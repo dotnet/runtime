@@ -13,6 +13,8 @@ namespace System.Runtime.Serialization
 {
     public static class JsonFormatGeneratorStatics
     {
+        private static MethodInfo? s_boxPointer;
+
         private static PropertyInfo? s_collectionItemNameProperty;
 
         private static ConstructorInfo? s_extensionDataObjectCtor;
@@ -59,6 +61,8 @@ namespace System.Runtime.Serialization
 
         private static PropertyInfo? s_typeHandleProperty;
 
+        private static MethodInfo? s_unboxPointer;
+
         private static PropertyInfo? s_useSimpleDictionaryFormatReadProperty;
 
         private static PropertyInfo? s_useSimpleDictionaryFormatWriteProperty;
@@ -81,6 +85,19 @@ namespace System.Runtime.Serialization
 
         private static MethodInfo? s_getJsonMemberNameMethod;
 
+        public static MethodInfo BoxPointer
+        {
+            get
+            {
+                if (s_boxPointer == null)
+                {
+                    s_boxPointer = typeof(Pointer).GetMethod("Box");
+                    Debug.Assert(s_boxPointer != null);
+                }
+                return s_boxPointer;
+            }
+        }
+
         public static PropertyInfo CollectionItemNameProperty
         {
             get
@@ -99,8 +116,7 @@ namespace System.Runtime.Serialization
                                                                  (s_extensionDataObjectCtor =
                                                                      typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes))!;
 
-        public static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??
-                                                            (s_extensionDataProperty = typeof(IExtensibleDataObject).GetProperty("ExtensionData")!);
+        public static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??= typeof(IExtensibleDataObject).GetProperty("ExtensionData")!;
 
         public static MethodInfo GetCurrentMethod
         {
@@ -302,17 +318,7 @@ namespace System.Runtime.Serialization
                 return s_serializationExceptionCtor;
             }
         }
-        public static Type[] SerInfoCtorArgs
-        {
-            get
-            {
-                if (s_serInfoCtorArgs == null)
-                {
-                    s_serInfoCtorArgs = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
-                }
-                return s_serInfoCtorArgs;
-            }
-        }
+        public static Type[] SerInfoCtorArgs => s_serInfoCtorArgs ??= new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
         public static MethodInfo ThrowDuplicateMemberExceptionMethod
         {
             get
@@ -347,6 +353,18 @@ namespace System.Runtime.Serialization
                     Debug.Assert(s_typeHandleProperty != null);
                 }
                 return s_typeHandleProperty;
+            }
+        }
+        public static MethodInfo UnboxPointer
+        {
+            get
+            {
+                if (s_unboxPointer == null)
+                {
+                    s_unboxPointer = typeof(Pointer).GetMethod("Unbox");
+                    Debug.Assert(s_unboxPointer != null);
+                }
+                return s_unboxPointer;
             }
         }
         public static PropertyInfo UseSimpleDictionaryFormatReadProperty

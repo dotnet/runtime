@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const float tanSingleDelta = 0.0004f;
         private const float tanSingleExpectedResult = 1.66717815f;
-
-        [Benchmark(InnerIterationCount = TanSingleIterations)]
-        public static void TanSingleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        TanSingleTest();
-                    }
-                }
-            }
-        }
 
         public static void TanSingleTest()
         {

@@ -2024,5 +2024,5 @@ END:
 }
 
 
-.assembly ldc_sub_ovf_i4.exe{}
+.assembly ldc_sub_ovf_i4{}
 

@@ -45,6 +45,8 @@ void ForceEEShutdown(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownCom
 // Notification of a DLL_THREAD_DETACH or a Thread Terminate.
 void ThreadDetaching();
 
+void EnsureTlsDestructionMonitor();
+
 void SetLatchedExitCode (INT32 code);
 INT32 GetLatchedExitCode (void);
 

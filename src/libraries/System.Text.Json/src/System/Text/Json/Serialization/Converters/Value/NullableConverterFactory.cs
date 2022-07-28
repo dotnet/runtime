@@ -4,9 +4,11 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
 {
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class NullableConverterFactory : JsonConverterFactory
     {
         public override bool CanConvert(Type typeToConvert)

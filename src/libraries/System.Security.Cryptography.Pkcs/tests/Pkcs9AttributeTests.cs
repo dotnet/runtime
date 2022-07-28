@@ -178,7 +178,6 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45168", TargetFrameworkMonikers.NetFramework)]
         public static void DocumentDescriptionMissingTerminator()
         {
             byte[] rawData = "041e4d00790020004400650073006300720069007000740069006f006e002100".HexToByteArray();
@@ -252,7 +251,6 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45168", TargetFrameworkMonikers.NetFramework)]
         public static void DocumentNameMissingTerminator()
         {
             byte[] rawData = "04104d00790020004e0061006d0065002100".HexToByteArray();

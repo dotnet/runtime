@@ -8,7 +8,6 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    [Trait("category", "FlakyAppHostTests")]
     public class SingleFileApiTests : BundleTestBase, IClassFixture<SingleFileSharedState>
     {
         private SingleFileSharedState sharedTestState;

@@ -45,10 +45,7 @@ namespace System.Text
 
         internal static void AddProvider(EncodingProvider provider)
         {
-            if (provider is null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
+            ArgumentNullException.ThrowIfNull(provider);
 
             // Few providers are added in a typical app (typically just CodePagesEncodingProvider.Instance), and when they are,
             // they're generally not added concurrently.  So use an optimistic concurrency scheme rather than paying for a lock
@@ -71,7 +68,7 @@ namespace System.Text
 
                 var newProviders = new EncodingProvider[providers.Length + 1];
                 Array.Copy(providers, newProviders, providers.Length);
-                providers[^1] = provider;
+                newProviders[^1] = provider;
 
                 if (Interlocked.CompareExchange(ref s_providers, newProviders, providers) == providers)
                 {

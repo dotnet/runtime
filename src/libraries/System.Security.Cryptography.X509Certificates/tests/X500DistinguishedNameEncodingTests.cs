@@ -106,7 +106,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("CN=\"unterminated", InvalidX500NameFragment)]
         // Non-ASCII values in an E field
         [InlineData("E=\u65E5\u672C\u8A9E", InvalidIA5StringFragment)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50937", TestPlatforms.Android)]
         public static void InvalidInput(string input, string messageFragment)
         {
             CryptographicException exception =
@@ -125,6 +124,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X500DistinguishedName dn = new X500DistinguishedName(testCase.Input, X500DistinguishedNameFlags.None);
 
             ProcessTestCase(testCase, dn);
+        }
+
+        [Theory]
+        [InlineData("OID.STREET=abbeyroad")] // A real friendly name.
+        [InlineData("OID.AGHHHH=internet")] // Not a real friendly name.
+        [InlineData("OID.=internet")] // Blank OID.
+        [InlineData("OID.99.99=sun")] // Invalid OID, bad arc.
+        [InlineData("OID.99.a=sun")] // Invalid OID, not numeric.
+        public static void ParseWithInvalidObjectIdentifiers(string distinguishedName)
+        {
+            Assert.ThrowsAny<CryptographicException>(() => new X500DistinguishedName(distinguishedName));
         }
 
         private static void ProcessTestCase(SimpleEncoderTestCase testCase, X500DistinguishedName dn)

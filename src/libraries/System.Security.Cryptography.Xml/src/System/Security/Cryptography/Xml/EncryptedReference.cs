@@ -41,12 +41,7 @@ namespace System.Security.Cryptography.Xml
 
         public TransformChain TransformChain
         {
-            get
-            {
-                if (_transformChain == null)
-                    _transformChain = new TransformChain();
-                return _transformChain;
-            }
+            get => _transformChain ??= new TransformChain();
             set
             {
                 _transformChain = value;
@@ -105,8 +100,10 @@ namespace System.Security.Cryptography.Xml
 
         public virtual void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
 
             ReferenceType = value.LocalName;
 

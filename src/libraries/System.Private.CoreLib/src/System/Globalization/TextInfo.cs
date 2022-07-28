@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.Unicode;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -92,10 +91,7 @@ namespace System.Globalization
         /// </summary>
         public static TextInfo ReadOnly(TextInfo textInfo)
         {
-            if (textInfo == null)
-            {
-                throw new ArgumentNullException(nameof(textInfo));
-            }
+            ArgumentNullException.ThrowIfNull(textInfo);
 
             if (textInfo.IsReadOnly)
             {
@@ -128,10 +124,7 @@ namespace System.Globalization
             get => _listSeparator ??= _cultureData.ListSeparator;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _listSeparator = value;
@@ -144,7 +137,12 @@ namespace System.Globalization
         /// </summary>
         public char ToLower(char c)
         {
-            if (GlobalizationMode.Invariant || (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToLower(c);
+            }
+
+            if (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant)
             {
                 return ToLowerAsciiInvariant(c);
             }
@@ -154,7 +152,12 @@ namespace System.Globalization
 
         internal static char ToLowerInvariant(char c)
         {
-            if (GlobalizationMode.Invariant || UnicodeUtility.IsAsciiCodePoint(c))
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToLower(c);
+            }
+
+            if (UnicodeUtility.IsAsciiCodePoint(c))
             {
                 return ToLowerAsciiInvariant(c);
             }
@@ -164,14 +167,11 @@ namespace System.Globalization
 
         public string ToLower(string str)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (GlobalizationMode.Invariant)
             {
-                return ToLowerAsciiInvariant(str);
+                return InvariantModeCasing.ToLower(str);
             }
 
             return ChangeCaseCommon<ToLowerConversion>(str);
@@ -431,7 +431,7 @@ namespace System.Globalization
                 int i = 0;
                 while (i < s.Length)
                 {
-                    if ((uint)(pSource[i] - 'A') <= (uint)('Z' - 'A'))
+                    if (char.IsAsciiLetterUpper(pSource[i]))
                     {
                         break;
                     }
@@ -487,7 +487,7 @@ namespace System.Globalization
                 int i = 0;
                 while (i < s.Length)
                 {
-                    if ((uint)(pSource[i] - 'a') <= (uint)('z' - 'a'))
+                    if (char.IsAsciiLetterLower(pSource[i]))
                     {
                         break;
                     }
@@ -534,7 +534,7 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char ToLowerAsciiInvariant(char c)
         {
-            if (UnicodeUtility.IsInRangeInclusive(c, 'A', 'Z'))
+            if (char.IsAsciiLetterUpper(c))
             {
                 // on x86, extending BYTE -> DWORD is more efficient than WORD -> DWORD
                 c = (char)(byte)(c | 0x20);
@@ -548,7 +548,12 @@ namespace System.Globalization
         /// </summary>
         public char ToUpper(char c)
         {
-            if (GlobalizationMode.Invariant || (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToUpper(c);
+            }
+
+            if (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant)
             {
                 return ToUpperAsciiInvariant(c);
             }
@@ -558,7 +563,12 @@ namespace System.Globalization
 
         internal static char ToUpperInvariant(char c)
         {
-            if (GlobalizationMode.Invariant || UnicodeUtility.IsAsciiCodePoint(c))
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToUpper(c);
+            }
+
+            if (UnicodeUtility.IsAsciiCodePoint(c))
             {
                 return ToUpperAsciiInvariant(c);
             }
@@ -568,14 +578,11 @@ namespace System.Globalization
 
         public string ToUpper(string str)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (GlobalizationMode.Invariant)
             {
-                return ToUpperAsciiInvariant(str);
+                return InvariantModeCasing.ToUpper(str);
             }
 
             return ChangeCaseCommon<ToUpperConversion>(str);
@@ -584,7 +591,7 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char ToUpperAsciiInvariant(char c)
         {
-            if (UnicodeUtility.IsInRangeInclusive(c, 'a', 'z'))
+            if (char.IsAsciiLetterLower(c))
             {
                 c = (char)(c & 0x5F); // = low 7 bits of ~0x20
             }
@@ -646,10 +653,7 @@ namespace System.Globalization
         /// </summary>
         public unsafe string ToTitleCase(string str)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (str.Length == 0)
             {
@@ -704,10 +708,7 @@ namespace System.Globalization
                             i++;
                             if (hasLowerCase)
                             {
-                                if (lowercaseData == null)
-                                {
-                                    lowercaseData = ToLower(str);
-                                }
+                                lowercaseData ??= ToLower(str);
                                 result.Append(lowercaseData, lowercaseStart, i - lowercaseStart);
                             }
                             else
@@ -720,7 +721,7 @@ namespace System.Globalization
                         else if (!IsWordSeparator(charType))
                         {
                             // This category is considered to be part of the word.
-                            // This is any category that is marked as false in wordSeprator array.
+                            // This is any category that is marked as false in wordSeparator array.
                             i += charLen;
                         }
                         else
@@ -736,10 +737,7 @@ namespace System.Globalization
                     {
                         if (hasLowerCase)
                         {
-                            if (lowercaseData == null)
-                            {
-                                lowercaseData = ToLower(str);
-                            }
+                            lowercaseData ??= ToLower(str);
                             result.Append(lowercaseData, lowercaseStart, count);
                         }
                         else
@@ -789,7 +787,9 @@ namespace System.Globalization
                 ReadOnlySpan<char> src = input.AsSpan(inputIndex, 2);
                 if (GlobalizationMode.Invariant)
                 {
-                    result.Append(src); // surrogate pair in invariant mode, so changing case is a nop
+                    SurrogateCasing.ToUpper(src[0], src[1], out char h, out char l);
+                    result.Append(h);
+                    result.Append(l);
                 }
                 else
                 {
@@ -825,7 +825,7 @@ namespace System.Globalization
                         result.Append((char)0x01F2);
                         break;
                     default:
-                        result.Append(ToUpper(input[inputIndex]));
+                        result.Append(GlobalizationMode.Invariant ? InvariantModeCasing.ToUpper(input[inputIndex]) : ToUpper(input[inputIndex]));
                         break;
                 }
             }
@@ -846,7 +846,7 @@ namespace System.Globalization
 
         // Used in ToTitleCase():
         // When we find a starting letter, the following array decides if a category should be
-        // considered as word seprator or not.
+        // considered as word separator or not.
         private const int c_wordSeparatorMask =
             /* false */ (0 <<  0) | // UppercaseLetter = 0,
             /* false */ (0 <<  1) | // LowercaseLetter = 1,

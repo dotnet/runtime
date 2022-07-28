@@ -2,13 +2,14 @@
 #ifndef __DIAGNOSTICS_RT_MONO_H__
 #define __DIAGNOSTICS_RT_MONO_H__
 
-#include "ds-rt-config.h"
+#include <eventpipe/ds-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
-#include "ds-process-protocol.h"
-#include "ds-profiler-protocol.h"
-#include "ds-dump-protocol.h"
+#include <clrconfignocache.h>
+#include <eventpipe/ds-process-protocol.h>
+#include <eventpipe/ds-profiler-protocol.h>
+#include <eventpipe/ds-dump-protocol.h>
 
 #undef DS_LOG_ALWAYS_0
 #define DS_LOG_ALWAYS_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n")
@@ -188,17 +189,29 @@ ds_rt_config_value_get_default_port_suspend (void)
 
 static
 ds_ipc_result_t
-ds_rt_generate_core_dump (DiagnosticsGenerateCoreDumpCommandPayload *payload)
+ds_rt_generate_core_dump (
+	DiagnosticsDumpCommandId commandId,
+	DiagnosticsGenerateCoreDumpCommandPayload *payload,
+	ep_char8_t *errorMessageBuffer,
+	int32_t cbErrorMessageBuffer)
 {
 	STATIC_CONTRACT_NOTHROW;
 
 	ds_ipc_result_t result = DS_IPC_E_FAIL;
 	EX_TRY
 	{
-		if (GenerateDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
-			static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
-			(ds_generate_core_dump_command_payload_get_diagnostics (payload) != 0) ? true : false))
+		uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
+		if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP)
+		{
+			// For the old commmand, this payload field is a bool of whether to enable logging
+			flags = flags != 0 ? GenerateDumpFlagsLoggingEnabled : 0;
+		}
+		LPCWSTR dumpName = reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload));
+		int32_t dumpType = static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload));
+		if (GenerateDump(dumpName, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer))
+		{
 			result = DS_IPC_S_OK;
+		}
 	}
 	EX_CATCH {}
 	EX_END_CATCH(SwallowAllExceptions);
@@ -300,7 +313,7 @@ ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
 	STATIC_CONTRACT_NOTHROW;
 
 	HRESULT hr = S_OK;
-	EX_TRY {        
+	EX_TRY {
 		StoredProfilerNode *profilerData = new StoredProfilerNode();
 		profilerData->guid = *(reinterpret_cast<const CLSID *>(ds_startup_profiler_command_payload_get_profiler_guid_cref (payload)));
 		profilerData->path.Set(reinterpret_cast<LPCWSTR>(ds_startup_profiler_command_payload_get_profiler_path (payload)));
@@ -330,13 +343,19 @@ ds_rt_server_log_pause_message (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	CLRConfigStringHolder ports(CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_DOTNET_DiagnosticPorts));
-	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend ();
+	const char diagPortsName[] = "DOTNET_DiagnosticPorts";
+	CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
+	LPCSTR ports = nullptr;
+	if (diagPorts.IsSet())
+	{
+		ports = diagPorts.AsString();
+	}
 
-	DWORD dotnetDiagnosticPortSuspend = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DefaultDiagnosticPortSuspend);
-	wprintf(W("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n"));
-	wprintf(W("DOTNET_DiagnosticPorts=\"%s\"\n"), ports == nullptr ? W("") : ports.GetValue());
-	wprintf(W("DOTNET_DefaultDiagnosticPortSuspend=%d\n"), port_suspended);
+	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend();
+
+	printf("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n");
+	printf("%s=\"%s\"\n", diagPortsName, ports == nullptr ? "" : ports);
+	printf("DOTNET_DefaultDiagnosticPortSuspend=%u\n", port_suspended);
 	fflush(stdout);
 }
 

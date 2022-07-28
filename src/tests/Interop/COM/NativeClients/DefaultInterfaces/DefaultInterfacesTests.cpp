@@ -4,6 +4,7 @@
 #include <xplatform.h>
 #include <cassert>
 #include <Server.Contracts.h>
+#include <windows_version_helpers.h>
 
 // COM headers
 #include <objbase.h>
@@ -39,6 +40,12 @@ void FailToQueryInterfaceForDefaultInterface();
 
 int __cdecl main()
 {
+    if (is_windows_nano() == S_OK)
+    {
+        ::puts("RegFree COM is not supported on Windows Nano. Auto-passing this test.\n");
+        return 100;
+    }
+
     ComMTA init;
     if (FAILED(init.Result))
         return -1;

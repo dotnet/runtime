@@ -11,6 +11,10 @@ namespace System.Drawing.Drawing2D
 {
     internal sealed class SafeCustomLineCapHandle : SafeHandle
     {
+        public SafeCustomLineCapHandle() : base(IntPtr.Zero, true)
+        {
+        }
+
         // Create a SafeHandle, informing the base class
         // that this SafeHandle instance "owns" the handle,
         // and therefore SafeHandle should call
@@ -44,7 +48,7 @@ namespace System.Drawing.Drawing2D
                 {
                     handle = IntPtr.Zero;
                 }
-                Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                Debug.Assert(status == Gdip.Ok, $"GDI+ returned an error status: {status.ToString(CultureInfo.InvariantCulture)}");
             }
             return status == Gdip.Ok;
         }

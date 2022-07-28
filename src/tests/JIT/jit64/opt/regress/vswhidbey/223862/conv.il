@@ -6,11 +6,15 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
-.assembly Class_test {}
+.assembly 'conv' {}
 .assembly extern mscorlib{auto}
 .class Class_test {
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	5
 

@@ -69,4 +69,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldarga_r8.exe{}
+.assembly ldarga_r8{}

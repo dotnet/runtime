@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -171,8 +168,8 @@ namespace System.Net.Http.Tests
             // of 0. The caller needs to validate if that's OK or not.
             Assert.Equal(0, TransferCodingHeaderValue.GetTransferCodingLength("\u4F1A", 0, DummyCreator, out result));
 
-            Assert.Equal(45, TransferCodingHeaderValue.GetTransferCodingLength(
-                "  custom ; name1 =\r\n \"value1\" ; name2 = value2 , next", 2, DummyCreator, out result));
+            Assert.Equal(43, TransferCodingHeaderValue.GetTransferCodingLength(
+                "  custom ; name1 = \"value1\" ; name2 = value2 , next", 2, DummyCreator, out result));
             Assert.Equal("custom", result.Value);
             Assert.Equal(2, result.Parameters.Count);
             Assert.Equal("name1", result.Parameters.ElementAt(0).Name);
@@ -218,20 +215,23 @@ namespace System.Net.Http.Tests
             Assert.Equal(0, TransferCodingHeaderValue.GetTransferCodingLength(string.Empty, 0, DummyCreator,
                 out result));
             Assert.Null(result);
+            Assert.Equal(0, TransferCodingHeaderValue.GetTransferCodingLength("\r\nchunked", 0, DummyCreator,
+                out result));
+            Assert.Null(result);
         }
 
         [Fact]
         public void Parse_SetOfValidValueStrings_ParsedCorrectly()
         {
             TransferCodingHeaderValue expected = new TransferCodingHeaderValue("custom");
-            CheckValidParse("\r\n custom  ", expected);
+            CheckValidParse(" custom  ", expected);
             CheckValidParse("custom", expected);
 
             // We don't have to test all possible input strings, since most of the pieces are handled by other parsers.
             // The purpose of this test is to verify that these other parsers are combined correctly to build a
             // transfer-coding parser.
             expected.Parameters.Add(new NameValueHeaderValue("name", "value"));
-            CheckValidParse("\r\n custom ;  name =   value ", expected);
+            CheckValidParse(" custom ;  name =   value ", expected);
             CheckValidParse("  custom;name=value", expected);
             CheckValidParse("  custom ; name=value", expected);
         }
@@ -247,45 +247,12 @@ namespace System.Net.Http.Tests
             CheckInvalidParse("\r\n custom  , , , chunked");
             CheckInvalidParse("custom , \u4F1A");
             CheckInvalidParse("\r\n , , custom ;  name =   value ");
+            CheckInvalidParse(" custom ; \r\n name =   value ");
 
             CheckInvalidParse(null);
             CheckInvalidParse(string.Empty);
             CheckInvalidParse("  ");
             CheckInvalidParse("  ,,");
-        }
-
-        [Fact]
-        public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
-        {
-            TransferCodingHeaderValue expected = new TransferCodingHeaderValue("custom");
-            CheckValidTryParse("\r\n custom  ", expected);
-            CheckValidTryParse("custom", expected);
-
-            // We don't have to test all possible input strings, since most of the pieces are handled by other parsers.
-            // The purpose of this test is to verify that these other parsers are combined correctly to build a
-            // transfer-coding parser.
-            expected.Parameters.Add(new NameValueHeaderValue("name", "value"));
-            CheckValidTryParse("\r\n custom ;  name =   value ", expected);
-            CheckValidTryParse("  custom;name=value", expected);
-            CheckValidTryParse("  custom ; name=value", expected);
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
-        {
-            CheckInvalidTryParse("custom; name=value;");
-            CheckInvalidTryParse("custom; name1=value1; name2=value2;");
-            CheckInvalidTryParse(",,custom");
-            CheckInvalidTryParse(" , , custom");
-            CheckInvalidTryParse("\r\n custom  , chunked");
-            CheckInvalidTryParse("\r\n custom  , , , chunked");
-            CheckInvalidTryParse("custom , \u4F1A");
-            CheckInvalidTryParse("\r\n , , custom ;  name =   value ");
-
-            CheckInvalidTryParse(null);
-            CheckInvalidTryParse(string.Empty);
-            CheckInvalidTryParse("  ");
-            CheckInvalidTryParse("  ,,");
         }
 
         #region Helper methods
@@ -294,24 +261,16 @@ namespace System.Net.Http.Tests
         {
             TransferCodingHeaderValue result = TransferCodingHeaderValue.Parse(input);
             Assert.Equal(expectedResult, result);
+
+            Assert.True(TransferCodingHeaderValue.TryParse(input, out result));
+            Assert.Equal(expectedResult, result);
         }
 
         private void CheckInvalidParse(string input)
         {
             Assert.Throws<FormatException>(() => { TransferCodingHeaderValue.Parse(input); });
-        }
 
-        private void CheckValidTryParse(string input, TransferCodingHeaderValue expectedResult)
-        {
-            TransferCodingHeaderValue result = null;
-            Assert.True(TransferCodingHeaderValue.TryParse(input, out result));
-            Assert.Equal(expectedResult, result);
-        }
-
-        private void CheckInvalidTryParse(string input)
-        {
-            TransferCodingHeaderValue result = null;
-            Assert.False(TransferCodingHeaderValue.TryParse(input, out result));
+            Assert.False(TransferCodingHeaderValue.TryParse(input, out TransferCodingHeaderValue result));
             Assert.Null(result);
         }
 

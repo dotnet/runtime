@@ -68,8 +68,8 @@ namespace System
         internal long _index;
         internal int _generation;
         internal int _pauseTimePercentage;
-        internal bool _compacted;
-        internal bool _concurrent;
+        internal byte _compacted;
+        internal byte _concurrent;
 
         private GCGenerationInfo _generationInfo0;
         private GCGenerationInfo _generationInfo1;
@@ -104,17 +104,17 @@ namespace System
         }
 
         /// <summary>
-        /// High memory load threshold when this GC occured
+        /// High memory load threshold when this GC occurred
         /// </summary>
         public long HighMemoryLoadThresholdBytes => _data._highMemoryLoadThresholdBytes;
 
         /// <summary>
-        /// Memory load when this GC ocurred
+        /// Memory load when this GC occurred
         /// </summary>
         public long MemoryLoadBytes => _data._memoryLoadBytes;
 
         /// <summary>
-        /// Total available memory for the GC to use when this GC ocurred.
+        /// Total available memory for the GC to use when this GC occurred.
         ///
         /// If the environment variable COMPlus_GCHeapHardLimit is set,
         /// or "Server.GC.HeapHardLimit" is in runtimeconfig.json, this will come from that.
@@ -124,12 +124,12 @@ namespace System
         public long TotalAvailableMemoryBytes => _data._totalAvailableMemoryBytes;
 
         /// <summary>
-        /// The total heap size when this GC ocurred
+        /// The total heap size when this GC occurred
         /// </summary>
         public long HeapSizeBytes => _data._heapSizeBytes;
 
         /// <summary>
-        /// The total fragmentation when this GC ocurred
+        /// The total fragmentation when this GC occurred
         ///
         /// Let's take the example below:
         ///  | OBJ_A |     OBJ_B     | OBJ_C |   OBJ_D   | OBJ_E |
@@ -158,12 +158,12 @@ namespace System
         /// <summary>
         /// Is this a compacting GC or not.
         /// </summary>
-        public bool Compacted => _data._compacted;
+        public bool Compacted => _data._compacted != 0;
 
         /// <summary>
         /// Is this a concurrent GC (BGC) or not.
         /// </summary>
-        public bool Concurrent => _data._concurrent;
+        public bool Concurrent => _data._concurrent != 0;
 
         /// <summary>
         /// Total committed bytes of the managed heap.

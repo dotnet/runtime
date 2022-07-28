@@ -3,7 +3,6 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
-    <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicTest.cs" />

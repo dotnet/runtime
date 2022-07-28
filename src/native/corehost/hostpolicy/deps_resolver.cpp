@@ -45,7 +45,7 @@ namespace
     {
         // To optimize startup time, we avoid calling realpath here.
         // Because of this, there might be duplicates in the output
-        // whenever path is eiter non-normalized or a symbolic link.
+        // whenever path is either non-normalized or a symbolic link.
         if (existing->count(path))
         {
             return;
@@ -90,27 +90,28 @@ namespace
   // "asset_name" be part of the "items" paths.
   //
 void deps_resolver_t::add_tpa_asset(
-    const deps_resolved_asset_t& resolved_asset,
+    const deps_asset_t& asset,
+    const pal::string_t& resolved_path,
     name_to_resolved_asset_map_t* items)
 {
-    name_to_resolved_asset_map_t::iterator existing = items->find(resolved_asset.asset.name);
+    name_to_resolved_asset_map_t::iterator existing = items->find(asset.name);
     if (existing == items->end())
     {
         if (trace::is_enabled())
         {
             trace::verbose(_X("Adding tpa entry: %s, AssemblyVersion: %s, FileVersion: %s"),
-                resolved_asset.resolved_path.c_str(),
-                resolved_asset.asset.assembly_version.as_str().c_str(),
-                resolved_asset.asset.file_version.as_str().c_str());
+                resolved_path.c_str(),
+                asset.assembly_version.as_str().c_str(),
+                asset.file_version.as_str().c_str());
         }
 
-        items->emplace(resolved_asset.asset.name, resolved_asset);
+        items->emplace(asset.name, deps_resolved_asset_t(asset, resolved_path));
     }
 }
 
 // -----------------------------------------------------------------------------
 // Load local assemblies by priority order of their file extensions and
-// unique-fied  by their simple name.
+// uniquified by their simple name.
 //
 void deps_resolver_t::get_dir_assemblies(
     const pal::string_t& dir,
@@ -171,8 +172,7 @@ void deps_resolver_t::get_dir_assemblies(
                 file_path.c_str());
 
             deps_asset_t asset(file_name, file, empty, empty);
-            deps_resolved_asset_t resolved_asset(asset, file_path);
-            add_tpa_asset(resolved_asset, items);
+            add_tpa_asset(asset, file_path, items);
         }
     }
 }
@@ -229,7 +229,7 @@ void deps_resolver_t::setup_probe_config(
     if (pal::directory_exists(args.core_servicing))
     {
         pal::string_t ext_ni = args.core_servicing;
-        append_path(&ext_ni, get_arch());
+        append_path(&ext_ni, get_current_arch_name());
         if (pal::directory_exists(ext_ni))
         {
             // Servicing NI probe.
@@ -464,8 +464,7 @@ bool deps_resolver_t::resolve_tpa_list(
                 // The runtime directly probes the bundle-manifest using a host-callback.
                 if (!found_in_bundle)
                 {
-                    deps_resolved_asset_t resolved_asset(entry.asset, resolved_path);
-                    add_tpa_asset(resolved_asset, &items);
+                    add_tpa_asset(entry.asset, resolved_path, &items);
                 }
 
                 return true;
@@ -511,8 +510,7 @@ bool deps_resolver_t::resolve_tpa_list(
                         if (!found_in_bundle)
                         {
                             deps_asset_t asset(entry.asset.name, entry.asset.relative_path, entry.asset.assembly_version, entry.asset.file_version);
-                            deps_resolved_asset_t resolved_asset(asset, resolved_path);
-                            add_tpa_asset(resolved_asset, &items);
+                            add_tpa_asset(asset, resolved_path, &items);
                         }
                     }
                 }
@@ -544,8 +542,7 @@ bool deps_resolver_t::resolve_tpa_list(
             bundle::runner_t::app()->probe(managed_app_name) == nullptr)
         {
             deps_asset_t asset(get_filename_without_ext(m_managed_app), managed_app_name, version_t(), version_t());
-            deps_resolved_asset_t resolved_asset(asset, m_managed_app);
-            add_tpa_asset(resolved_asset, &items);
+            add_tpa_asset(asset, m_managed_app, &items);
         }
 
         // Add the app's entries

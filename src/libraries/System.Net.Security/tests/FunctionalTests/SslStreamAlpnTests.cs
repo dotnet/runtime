@@ -130,6 +130,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_StreamToStream_Alpn_NonMatchingProtocols_Fail()
         {
             (SslStream clientStream, SslStream serverStream) = TestHelper.GetConnectedSslStreams();
@@ -154,8 +155,7 @@ namespace System.Net.Security.Tests
                 if (BackendSupportsAlpn)
                 {
                     Task t1 = Assert.ThrowsAsync<AuthenticationException>(() => clientStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions));
-
-                    await Assert.ThrowsAsync<AuthenticationException>(() => serverStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions));
+                    await Assert.ThrowsAsync<AuthenticationException>(() => serverStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions).WaitAsync(TestConfiguration.PassingTestTimeout));
                     serverStream.Dispose();
 
                     await t1.WaitAsync(TestConfiguration.PassingTestTimeout);
@@ -211,8 +211,12 @@ namespace System.Net.Security.Tests
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
                 yield return new object[] { null, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null };
+                yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol>(), null };
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null, null };
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 }, null };
+                yield return new object[] { new List<SslApplicationProtocol>(), new List<SslApplicationProtocol>(), null };
+                yield return new object[] { null, new List<SslApplicationProtocol>(), null };
+                yield return new object[] { new List<SslApplicationProtocol>(), null, null };
                 yield return new object[] { null, null, null };
             }
             else
@@ -221,7 +225,11 @@ namespace System.Net.Security.Tests
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, BackendSupportsAlpn ? SslApplicationProtocol.Http11 : default };
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, BackendSupportsAlpn ? SslApplicationProtocol.Http11 : default };
                 yield return new object[] { null, new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, default(SslApplicationProtocol) };
+                yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, new List<SslApplicationProtocol>(), default(SslApplicationProtocol) };
                 yield return new object[] { new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 }, null, default(SslApplicationProtocol) };
+                yield return new object[] { new List<SslApplicationProtocol>(), new List<SslApplicationProtocol>(), default(SslApplicationProtocol) };
+                yield return new object[] { null, new List<SslApplicationProtocol>(), default(SslApplicationProtocol) };
+                yield return new object[] { new List<SslApplicationProtocol>(), null, default(SslApplicationProtocol) };
                 yield return new object[] { null, null, default(SslApplicationProtocol) };
             }
         }

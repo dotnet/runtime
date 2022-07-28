@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // model revision #1
 // to compile: ilasm nesting31.il
 
@@ -13,7 +14,7 @@
 // Nesting module: Pure Managed
 // Nesting location: MainModule
 
-// enclosing type 
+// enclosing type
 // kind: class
 // flag: abstract
 // visibility: public
@@ -24,7 +25,7 @@
 .class abstract public EnclType extends EnclType/NestedType
 {
 
-  // nested type 
+  // nested type
   // kind: class
   // flag: none
   // visibility: public
@@ -34,7 +35,7 @@
   .class nested public NestedType
   {
 
-     // nested memeber visibility: assembly
+     // nested member visibility: assembly
     .field assembly int32 i
 
     .method public specialname instance void .ctor() cil managed
@@ -46,15 +47,18 @@
     }
   }
 
-  // enclosing memeber visibility: assembly
+  // enclosing member visibility: assembly
   .field assembly int32 i
 
 
   // entrypoint location: Enclosing type
   .method public static int32 Main()
   {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
- 
+
       .locals init (class Client V_0,
                class [mscorlib]System.Exception V_1,
                int32 V_2)
@@ -64,14 +68,14 @@
         stloc.0
         ldloc.0
         call instance void Client::method4()
-       
+
         ldstr      "PASS"
         call       void [System.Console]System.Console::WriteLine(string)
         ldc.i4.s   100
         stloc.2
         leave.s    end
-      }  
-      catch [mscorlib]System.Exception 
+      }
+      catch [mscorlib]System.Exception
       {
         stloc.1
         ldstr      "{0}Caught unexpected exception."
@@ -85,7 +89,7 @@
       }
       end: ldloc.2
       ret
-  }    
+  }
 }
 
 // Client module: Pure Managed

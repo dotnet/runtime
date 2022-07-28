@@ -50,11 +50,7 @@ namespace System.IO.Pipelines
             }
             catch (Exception ex)
             {
-                if (exceptions == null)
-                {
-                    exceptions = new List<Exception>();
-                }
-
+                exceptions ??= new List<Exception>();
                 exceptions.Add(ex);
             }
         }

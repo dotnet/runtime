@@ -35,7 +35,7 @@ static void *logUserData = NULL;
 
 /**
  * mapSyslogLevel:
- * 	
+ *
  * 	@level - GLogLevelFlags value
  * 	@returns The equivalent character identifier
  */
@@ -80,7 +80,7 @@ mono_log_open_logfile(const char *path, void *userData)
 		}
 #endif
 		if (logFile == NULL) {
-			g_warning("opening of log file %s failed with %s - defaulting to stdout", 
+			g_warning("opening of log file %s failed with %s - defaulting to stdout",
 				  path, strerror(errno));
 			logFile = stdout;
 		}
@@ -110,7 +110,17 @@ mono_log_write_logfile (const char *log_domain, GLogLevelFlags level, mono_bool 
 
 #ifdef HAVE_LOCALTIME_R
 		struct tm tod;
+#ifdef HOST_WASI
+		// In the WASI prototype, this is being compiled using WASI SDK which says that time() returns int64, but is
+		// linked with libSystem.Native.a which was built with Emscripten which says time() returns int32. As a temporary
+		// workaround, avoid the conflict by using clock_gettime() instead of time() here.
+		// TODO: For WASI builds, build libSystem.Native.a using WASI SDK instead of Emscripten.
+		struct timespec time_info;
+		clock_gettime(CLOCK_REALTIME, &time_info);
+		t = time_info.tv_sec;
+#else
 		time(&t);
+#endif
 		localtime_r(&t, &tod);
 		strftime(logTime, sizeof(logTime), MONO_STRFTIME_F " " MONO_STRFTIME_T, &tod);
 #else

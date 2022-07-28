@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+#include <config.h>
 #include <glib.h>
 #include <mono/metadata/components.h>
 #include "debugger-agent-external.h"
+#include <mono/metadata/external-only.h>
 
 #ifndef DISABLE_SDB
 
@@ -48,7 +50,7 @@ mono_debugger_agent_parse_options (char *options)
 }
 
 DebuggerTransport *
-mono_debugger_agent_get_transports (int *ntrans) 
+mono_debugger_agent_get_transports (int *ntrans)
 {
 	*ntrans = ntransports;
 	return transports;
@@ -58,5 +60,13 @@ char *
 mono_debugger_agent_get_sdb_options (void)
 {
 	return sdb_options;
+}
+
+void
+mono_debugger_agent_unhandled_exception (MonoException *e)
+{
+	MONO_ENTER_GC_UNSAFE;
+	MONO_EXTERNAL_ONLY_VOID (mono_component_debugger ()->unhandled_exception (e));
+	MONO_EXIT_GC_UNSAFE;
 }
 #endif /* DISABLE_SDB */

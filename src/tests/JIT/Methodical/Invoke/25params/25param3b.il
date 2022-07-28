@@ -7,8 +7,11 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly '20param3c' {}
-.class private auto ansi beforefieldinit test
+.assembly '25param3b' {}
+.assembly extern xunit.core {}
+.namespace Test_25param3b_il
+{
+.class public auto ansi beforefieldinit test
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 
@@ -44,7 +47,7 @@
              int32 V_1)
     IL_0000:  ldarg.0
     IL_0001:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp       int32 test::f2(int32,
+    jmp       int32 Test_25param3b_il.test::f2(int32,
                                         int32,
                                         int32,
                                         int32,
@@ -69,7 +72,7 @@
                                         int32,
                                         int32,
                                         int32)
-  } // end of method test::f1
+  } // end of method Test_25param3b_il.test::f1
 
   .method private hidebysig static int32 
           f2(int32 a1,
@@ -104,7 +107,7 @@
              int32 V_1)
     IL_0000:  ldarg.1
     IL_0001:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp       int32 test::f3(int32,
+    jmp       int32 Test_25param3b_il.test::f3(int32,
                                         int32,
                                         int32,
                                         int32,
@@ -129,7 +132,7 @@
                                         int32,
                                         int32,
                                         int32)
-  } // end of method test::f2
+  } // end of method Test_25param3b_il.test::f2
 
   .method private hidebysig static int32 
           f3(int32 a1,
@@ -164,7 +167,7 @@
              int32 V_1)
     IL_0000:  ldarg.2
     IL_0001:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp       int32 test::f4(int32,
+    jmp       int32 Test_25param3b_il.test::f4(int32,
                                         int32,
                                         int32,
                                         int32,
@@ -189,7 +192,7 @@
                                         int32,
                                         int32,
                                         int32)
-  } // end of method test::f3
+  } // end of method Test_25param3b_il.test::f3
 
   .method private hidebysig static int32 
           f4(int32 a1,
@@ -224,7 +227,7 @@
              int32 V_1)
     IL_0000:  ldarg.3
     IL_0001:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f5(int32,
+    jmp      int32 Test_25param3b_il.test::f5(int32,
                                         int32,
                                         int32,
                                         int32,
@@ -249,7 +252,7 @@
                                         int32,
                                         int32,
                                         int32)
-  } // end of method test::f4
+  } // end of method Test_25param3b_il.test::f4
 
   .method private hidebysig static int32 
           f5(int32 a1,
@@ -284,7 +287,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a5
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f6(int32,
+    jmp      int32 Test_25param3b_il.test::f6(int32,
                                         int32,
                                         int32,
                                         int32,
@@ -309,7 +312,7 @@
                                         int32,
                                         int32,
                                         int32)
-      } // end of method test::f5
+      } // end of method Test_25param3b_il.test::f5
 
   .method private hidebysig static int32 
           f6(int32 a1,
@@ -344,7 +347,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a6
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f7(int32,
+    jmp      int32 Test_25param3b_il.test::f7(int32,
                                         int32,
                                         int32,
                                         int32,
@@ -369,7 +372,7 @@
                                         int32,
                                         int32,
                                         int32)
-      } // end of method test::f6
+      } // end of method Test_25param3b_il.test::f6
 
   .method private hidebysig static int32 
           f7(int32 a1,
@@ -404,7 +407,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a7
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f8(int32,
+    jmp      int32 Test_25param3b_il.test::f8(int32,
                                         int32,
                                         int32,
                                         int32,
@@ -429,7 +432,7 @@
                                         int32,
                                         int32,
                                         int32)
-      } // end of method test::f7
+      } // end of method Test_25param3b_il.test::f7
 
   .method private hidebysig static int32 
           f8(int32 a1,
@@ -464,7 +467,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a8
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f9(int32,
+    jmp      int32 Test_25param3b_il.test::f9(int32,
                                         int32,
                                         int32,
                                         int32,
@@ -489,7 +492,7 @@
                                         int32,
                                         int32,
                                         int32)
-      } // end of method test::f8
+      } // end of method Test_25param3b_il.test::f8
 
   .method private hidebysig static int32 
           f9(int32 a1,
@@ -524,7 +527,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a9
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f10(int32,
+    jmp      int32 Test_25param3b_il.test::f10(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -549,7 +552,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f9
+      } // end of method Test_25param3b_il.test::f9
 
   .method private hidebysig static int32 
           f10(int32 a1,
@@ -584,7 +587,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a10
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f11(int32,
+    jmp      int32 Test_25param3b_il.test::f11(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -609,7 +612,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f10
+      } // end of method Test_25param3b_il.test::f10
 
   .method private hidebysig static int32 
           f11(int32 a1,
@@ -644,7 +647,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a11
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f12(int32,
+    jmp      int32 Test_25param3b_il.test::f12(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -669,7 +672,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f11
+      } // end of method Test_25param3b_il.test::f11
 
   .method private hidebysig static int32 
           f12(int32 a1,
@@ -704,7 +707,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a12
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f13(int32,
+    jmp      int32 Test_25param3b_il.test::f13(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -729,7 +732,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f12
+      } // end of method Test_25param3b_il.test::f12
 
   .method private hidebysig static int32 
           f13(int32 a1,
@@ -764,7 +767,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a13
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f14(int32,
+    jmp      int32 Test_25param3b_il.test::f14(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -789,7 +792,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f13
+      } // end of method Test_25param3b_il.test::f13
 
   .method private hidebysig static int32 
           f14(int32 a1,
@@ -824,7 +827,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a14
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f15(int32,
+    jmp      int32 Test_25param3b_il.test::f15(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -849,7 +852,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f14
+      } // end of method Test_25param3b_il.test::f14
 
   .method private hidebysig static int32 
           f15(int32 a1,
@@ -884,7 +887,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a15
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f16(int32,
+    jmp      int32 Test_25param3b_il.test::f16(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -909,7 +912,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f15
+      } // end of method Test_25param3b_il.test::f15
 
   .method private hidebysig static int32 
           f16(int32 a1,
@@ -944,7 +947,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a16
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f17(int32,
+    jmp      int32 Test_25param3b_il.test::f17(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -969,7 +972,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f16
+      } // end of method Test_25param3b_il.test::f16
 
   .method private hidebysig static int32 
           f17(int32 a1,
@@ -1004,7 +1007,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a17
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f18(int32,
+    jmp      int32 Test_25param3b_il.test::f18(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -1029,7 +1032,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f17
+      } // end of method Test_25param3b_il.test::f17
 
   .method private hidebysig static int32 
           f18(int32 a1,
@@ -1064,7 +1067,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a18
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f19(int32,
+    jmp      int32 Test_25param3b_il.test::f19(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -1089,7 +1092,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f18
+      } // end of method Test_25param3b_il.test::f18
 
   .method private hidebysig static int32 
           f19(int32 a1,
@@ -1124,7 +1127,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a19
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f20(int32,
+    jmp      int32 Test_25param3b_il.test::f20(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -1149,7 +1152,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f19
+      } // end of method Test_25param3b_il.test::f19
 
   .method private hidebysig static int32 
           f20(int32 a1,
@@ -1184,7 +1187,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a20
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f21(int32,
+    jmp      int32 Test_25param3b_il.test::f21(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -1209,7 +1212,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f20
+      } // end of method Test_25param3b_il.test::f20
 
   .method private hidebysig static int32 
           f21(int32 a1,
@@ -1244,7 +1247,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a21
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f22(int32,
+    jmp      int32 Test_25param3b_il.test::f22(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -1269,7 +1272,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f21
+      } // end of method Test_25param3b_il.test::f21
 
   .method private hidebysig static int32 
           f22(int32 a1,
@@ -1304,7 +1307,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a22
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f23(int32,
+    jmp      int32 Test_25param3b_il.test::f23(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -1329,7 +1332,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f22
+      } // end of method Test_25param3b_il.test::f22
 
   .method private hidebysig static int32 
           f23(int32 a1,
@@ -1364,7 +1367,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a23
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f24(int32,
+    jmp      int32 Test_25param3b_il.test::f24(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -1389,7 +1392,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f23
+      } // end of method Test_25param3b_il.test::f23
 
   .method private hidebysig static int32 
           f24(int32 a1,
@@ -1424,7 +1427,7 @@
              int32 V_1)
     IL_0000:  ldarg.s    a24
     IL_0002:  call       void [System.Console]System.Console::WriteLine(int32)
-    jmp      int32 test::f25(int32,
+    jmp      int32 Test_25param3b_il.test::f25(int32,
                                          int32,
                                          int32,
                                          int32,
@@ -1449,7 +1452,7 @@
                                          int32,
                                          int32,
                                          int32)
-      } // end of method test::f24
+      } // end of method Test_25param3b_il.test::f24
 
   .method private hidebysig static int32 
           f25(int32 a1,
@@ -1540,7 +1543,7 @@
 
     IL_0052:  ldloc.1
     IL_0053:  ret
-  } // end of method test::f25
+  } // end of method Test_25param3b_il.test::f25
 
   .method private hidebysig static int32 
           f(int32 a1,
@@ -1598,7 +1601,7 @@
     IL_0028:  ldarg.s    a23
     IL_002a:  ldarg.s    a24
     IL_002c:  ldarg.s    a25
-    IL_002e:  call       int32 test::f1(int32,
+    IL_002e:  call       int32 Test_25param3b_il.test::f1(int32,
                                         int32,
                                         int32,
                                         int32,
@@ -1630,11 +1633,14 @@
 
     IL_0038:  ldloc.1
     IL_0039:  ret
-  } // end of method test::f
+  } // end of method Test_25param3b_il.test::f
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       83 (0x53)
     .maxstack  25
@@ -1667,7 +1673,7 @@ call void [System.Console]System.Console::WriteLine(string)
     IL_0024:  ldc.i4.s   23
     IL_0026:  ldc.i4.s   24
     IL_0028:  ldc.i4.s   25
-    IL_002a:  call       int32 test::f(int32,
+    IL_002a:  call       int32 Test_25param3b_il.test::f(int32,
                                        int32,
                                        int32,
                                        int32,
@@ -1712,7 +1718,7 @@ call void [System.Console]System.Console::WriteLine(string)
 
     IL_0051:  ldloc.1
     IL_0052:  ret
-  } // end of method test::Main
+  } // end of method Test_25param3b_il.test::Main
 
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
@@ -1722,6 +1728,7 @@ call void [System.Console]System.Console::WriteLine(string)
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
-  } // end of method test::.ctor
+  } // end of method Test_25param3b_il.test::.ctor
 
+}
 }

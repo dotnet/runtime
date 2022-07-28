@@ -195,7 +195,7 @@ namespace MS.Internal.Xml.XPath
         int IComparer<SortKey>.Compare(SortKey? x, SortKey? y)
         {
             Debug.Assert(x != null && y != null, "Oops!! what happened?");
-            int result = 0;
+            int result;
             for (int i = 0; i < x.NumKeys; i++)
             {
                 result = _comparers[i].Compare(x[i], y[i]);

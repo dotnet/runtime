@@ -16,9 +16,6 @@
 using System;
 using System.IO;
 using System.Text;
-using Microsoft.Xunit.Performance;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
@@ -30,12 +27,6 @@ namespace BenchmarksGame
 
             Bench(n, true);
             return 100;
-        }
-
-        [Benchmark(InnerIterationCount = 2500)]
-        public static void RunBench()
-        {
-            Benchmark.Iterate(() => Bench(5000, false));
         }
 
         static void Bench(int n, bool verbose)

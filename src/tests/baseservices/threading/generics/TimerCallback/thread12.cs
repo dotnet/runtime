@@ -16,14 +16,14 @@ class Gen<T> : IGen<T>
 
 	public virtual void Target(object p)
 	{			
-		if (Test.Xcounter>=Test.nThreads)
+		if (Test_thread12.Xcounter>=Test_thread12.nThreads)
 		{
 			ManualResetEvent evt = (ManualResetEvent) p;	
 			evt.Set();
 		}
 		else
 		{
-			Interlocked.Increment(ref Test.Xcounter);	
+			Interlocked.Increment(ref Test_thread12.Xcounter);	
 		}
 	}
 	
@@ -34,16 +34,16 @@ class Gen<T> : IGen<T>
 		IGen<T> obj = new Gen<T>();
 
 		TimerCallback tcb = new TimerCallback(obj.Target);
-		Timer timer = new Timer(tcb,evt,Test.delay,Test.period);
+		Timer timer = new Timer(tcb,evt,Test_thread12.delay,Test_thread12.period);
 	
 		evt.WaitOne();
 		timer.Dispose();
-		Test.Eval(Test.Xcounter>=Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread12.Eval(Test_thread12.Xcounter>=Test_thread12.nThreads);
+		Test_thread12.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread12
 {
 	public static int delay = 0;
 	public static int period = 2;

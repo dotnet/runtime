@@ -10,8 +10,6 @@ namespace System.Buffers.ArrayPool.Tests
 {
     public abstract class ArrayPoolTest
     {
-        protected const string TrimSwitchName = "DOTNET_SYSTEM_BUFFERS_ARRAYPOOL_TRIMSHARED";
-
         protected static class EventIds
         {
             public const int BufferRented = 1;
@@ -35,16 +33,7 @@ namespace System.Buffers.ArrayPool.Tests
             }
         }
 
-        protected static void RemoteInvokeWithTrimming(Action action, bool trim = false)
-        {
-            RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.StartInfo.UseShellExecute = false;
-            options.StartInfo.EnvironmentVariables.Add(TrimSwitchName, trim.ToString());
-
-            RemoteExecutor.Invoke(action).Dispose();
-        }
-
-        protected static void RemoteInvokeWithTrimming(Action<string> method, bool trim = false, int timeout = RemoteExecutor.FailWaitTimeoutMilliseconds)
+        protected static void RemoteInvokeWithTrimming(Action method, int timeout = RemoteExecutor.FailWaitTimeoutMilliseconds)
         {
             var options = new RemoteInvokeOptions
             {
@@ -52,9 +41,8 @@ namespace System.Buffers.ArrayPool.Tests
             };
 
             options.StartInfo.UseShellExecute = false;
-            options.StartInfo.EnvironmentVariables.Add(TrimSwitchName, trim.ToString());
 
-            RemoteExecutor.Invoke(method, trim.ToString(), options).Dispose();
+            RemoteExecutor.Invoke(method, options).Dispose();
         }
     }
 }

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,12 +12,28 @@ namespace System.Net.NetworkInformation
 {
     internal abstract class UnixIPGlobalProperties : IPGlobalProperties
     {
+        [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public override string DhcpScopeName { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override string DomainName { get { return HostInformation.DomainName; } }
 
         public override string HostName { get { return HostInformation.HostName; } }
 
+        [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public override bool IsWinsProxy { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override NetBiosNodeType NodeType { get { return NetBiosNodeType.Unknown; } }
@@ -45,10 +62,7 @@ namespace System.Net.NetworkInformation
 
             internal void AddException(Exception e)
             {
-                if (_exceptions == null)
-                {
-                    _exceptions = new List<Exception>();
-                }
+                _exceptions ??= new List<Exception>();
                 _exceptions.Add(e);
             }
         }
@@ -89,7 +103,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        public unsafe override UnicastIPAddressInformationCollection GetUnicastAddresses()
+        public override unsafe UnicastIPAddressInformationCollection GetUnicastAddresses()
         {
             Context context;
             context._collection = new UnicastIPAddressInformationCollection();

@@ -22,7 +22,7 @@ public:
         _metadataCache()
     {}
 
-    virtual GUID GetClsid();
+    static GUID GetClsid();
 
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
 

@@ -7,12 +7,16 @@
 .assembly extern System.Runtime { auto }
 .assembly extern mscorlib { auto }
 .assembly GitHub_25027 {}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit X
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init ([0] int32 result)
     ldc.i4.m1

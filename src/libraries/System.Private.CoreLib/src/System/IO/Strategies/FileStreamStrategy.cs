@@ -17,14 +17,12 @@ namespace System.IO.Strategies
 
         internal abstract bool IsClosed { get; }
 
-        internal virtual bool IsPipe => false;
-
         internal abstract void Lock(long position, long length);
 
         internal abstract void Unlock(long position, long length);
 
         internal abstract void Flush(bool flushToDisk);
 
-        internal abstract void DisposeInternal(bool disposing);
+        internal void DisposeInternal(bool disposing) => Dispose(disposing);
     }
 }

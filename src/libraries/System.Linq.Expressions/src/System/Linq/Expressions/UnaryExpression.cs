@@ -279,8 +279,6 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="operand">The <see cref="Operand"/> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "A UnaryExpression has already been created. The original creator will get a warning that it is not trim compatible.")]
         public UnaryExpression Update(Expression operand)
         {
             if (operand == Operand)
@@ -302,7 +300,6 @@ namespace System.Linq.Expressions
         /// <returns>The <see cref="UnaryExpression"/> that results from calling the appropriate factory method.</returns>
         /// <exception cref="ArgumentException">Thrown when <paramref name="unaryType"/> does not correspond to a unary expression.</exception>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="operand"/> is null.</exception>
-        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static UnaryExpression MakeUnary(ExpressionType unaryType, Expression operand, Type type)
         {
             return MakeUnary(unaryType, operand, type, method: null);
@@ -318,7 +315,6 @@ namespace System.Linq.Expressions
         /// <returns>The <see cref="UnaryExpression"/> that results from calling the appropriate factory method.</returns>
         /// <exception cref="ArgumentException">Thrown when <paramref name="unaryType"/> does not correspond to a unary expression.</exception>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="operand"/> is null.</exception>
-        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static UnaryExpression MakeUnary(ExpressionType unaryType, Expression operand, Type type, MethodInfo? method) =>
             unaryType switch
             {
@@ -350,12 +346,14 @@ namespace System.Linq.Expressions
             UnaryExpression? u = GetUserDefinedUnaryOperator(unaryType, name, operand);
             if (u != null)
             {
-                ValidateParamswithOperandsOrThrow(u.Method!.GetParametersCached()[0].ParameterType, operand.Type, unaryType, name);
+                ValidateParamsWithOperandsOrThrow(u.Method!.GetParametersCached()[0].ParameterType, operand.Type, unaryType, name);
                 return u;
             }
             throw Error.UnaryOperatorNotDefined(unaryType, operand.Type);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+            Justification = "The trimmer doesn't remove operators when System.Linq.Expressions is used. See https://github.com/mono/linker/pull/2125.")]
         private static UnaryExpression? GetUserDefinedUnaryOperator(ExpressionType unaryType, string name, Expression operand)
         {
             Type operandType = operand.Type;
@@ -388,7 +386,7 @@ namespace System.Linq.Expressions
                 throw Error.IncorrectNumberOfMethodCallArguments(method, nameof(method));
             if (ParameterIsAssignable(pms[0], operand.Type))
             {
-                ValidateParamswithOperandsOrThrow(pms[0].ParameterType, operand.Type, unaryType, method.Name);
+                ValidateParamsWithOperandsOrThrow(pms[0].ParameterType, operand.Type, unaryType, method.Name);
                 return new UnaryExpression(unaryType, operand, method.ReturnType, method);
             }
             // check for lifted call
@@ -402,7 +400,6 @@ namespace System.Linq.Expressions
             throw Error.OperandTypesDoNotMatchParameters(unaryType, method.Name);
         }
 
-        [RequiresUnreferencedCode(Expression.ExpressionRequiresUnreferencedCode)]
         private static UnaryExpression GetUserDefinedCoercionOrThrow(ExpressionType coercionType, Expression expression, Type convertToType)
         {
             UnaryExpression? u = GetUserDefinedCoercion(coercionType, expression, convertToType);
@@ -413,7 +410,6 @@ namespace System.Linq.Expressions
             throw Error.CoercionOperatorNotDefined(expression.Type, convertToType);
         }
 
-        [RequiresUnreferencedCode(Expression.ExpressionRequiresUnreferencedCode)]
         private static UnaryExpression? GetUserDefinedCoercion(ExpressionType coercionType, Expression expression, Type convertToType)
         {
             MethodInfo? method = TypeUtils.GetUserDefinedCoercionMethod(expression.Type, convertToType);
@@ -694,7 +690,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression TypeAs(Expression expression, Type type)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             if (type.IsValueType && !type.IsNullableType())
             {
@@ -713,7 +709,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression Unbox(Expression expression, Type type)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             if (!expression.Type.IsInterface && expression.Type != typeof(object))
             {
                 throw Error.InvalidUnboxType(nameof(expression));
@@ -746,11 +742,10 @@ namespace System.Linq.Expressions
         /// <paramref name="method"/> is not null and the method it represents returns void, is not static (Shared in Visual Basic), or does not take exactly one argument.</exception>
         /// <exception cref="AmbiguousMatchException">More than one method that matches the <paramref name="method"/> description was found.</exception>
         /// <exception cref="InvalidOperationException">No conversion operator is defined between <paramref name="expression"/>.Type and <paramref name="type"/>.-or-<paramref name="expression"/>.Type is not assignable to the argument type of the method represented by <paramref name="method"/>.-or-The return type of the method represented by <paramref name="method"/> is not assignable to <paramref name="type"/>.-or-<paramref name="expression"/>.Type or <paramref name="type"/> is a nullable value type and the corresponding non-nullable value type does not equal the argument type or the return type, respectively, of the method represented by <paramref name="method"/>.</exception>
-        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static UnaryExpression Convert(Expression expression, Type type, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             if (method == null)
             {
@@ -771,7 +766,6 @@ namespace System.Linq.Expressions
         /// <exception cref="ArgumentNullException">
         /// <paramref name="expression"/> or <paramref name="type"/> is null.</exception>
         /// <exception cref="InvalidOperationException">No conversion operator is defined between <paramref name="expression"/>.Type and <paramref name="type"/>.</exception>
-        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static UnaryExpression ConvertChecked(Expression expression, Type type)
         {
             return ConvertChecked(expression, type, method: null);
@@ -788,11 +782,10 @@ namespace System.Linq.Expressions
         /// <paramref name="method"/> is not null and the method it represents returns void, is not static (Shared in Visual Basic), or does not take exactly one argument.</exception>
         /// <exception cref="AmbiguousMatchException">More than one method that matches the <paramref name="method"/> description was found.</exception>
         /// <exception cref="InvalidOperationException">No conversion operator is defined between <paramref name="expression"/>.Type and <paramref name="type"/>.-or-<paramref name="expression"/>.Type is not assignable to the argument type of the method represented by <paramref name="method"/>.-or-The return type of the method represented by <paramref name="method"/> is not assignable to <paramref name="type"/>.-or-<paramref name="expression"/>.Type or <paramref name="type"/> is a nullable value type and the corresponding non-nullable value type does not equal the argument type or the return type, respectively, of the method represented by <paramref name="method"/>.</exception>
-        [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
         public static UnaryExpression ConvertChecked(Expression expression, Type type, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             if (method == null)
             {
@@ -886,7 +879,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="UnaryExpression"/> that represents the exception.</returns>
         public static UnaryExpression Throw(Expression? value, Type type)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             if (value != null)
             {

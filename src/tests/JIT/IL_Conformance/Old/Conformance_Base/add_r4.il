@@ -498,4 +498,4 @@ FAIL:
 	ret
 }
 }
-.assembly add_r4.exe{}
+.assembly add_r4{}

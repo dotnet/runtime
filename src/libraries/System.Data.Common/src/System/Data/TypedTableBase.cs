@@ -28,6 +28,8 @@ namespace System.Data
         /// </summary>
         /// <param name="info">SerializationInfo containing data to construct the object.</param>
         /// <param name="context">The streaming context for the object being deserialized.</param>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "DataTable.CreateInstance's use of GetType uses only the parameterless constructor, not this serialization related constructor.")]
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected TypedTableBase(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }

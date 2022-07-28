@@ -75,7 +75,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        public static void TestAllignmentNoMatchLastIndexOf_Byte()
+        public static void TestAlignmentNoMatchLastIndexOf_Byte()
         {
             byte[] array = new byte[4 * Vector<byte>.Count];
             for (var i = 0; i < Vector<byte>.Count; i++)
@@ -91,7 +91,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        public static void TestAllignmentMatchLastIndexOf_Byte()
+        public static void TestAlignmentMatchLastIndexOf_Byte()
         {
             byte[] array = new byte[4 * Vector<byte>.Count];
             for (int i = 0; i < array.Length; i++)

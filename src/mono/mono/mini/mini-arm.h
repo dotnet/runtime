@@ -119,7 +119,7 @@
 #define MONO_ARCH_FRAME_ALIGNMENT 8
 #endif
 
-/* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
+/* fixme: align to 16byte instead of 32byte (we align to 32byte to get
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
@@ -273,7 +273,7 @@ typedef enum {
 
 /* keep the size of the structure a multiple of 8 */
 struct MonoLMF {
-	/* 
+	/*
 	 * If the second lowest bit is set to 1, then this is a MonoLMFExt structure, and
 	 * the other fields are not valid.
 	 */

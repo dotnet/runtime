@@ -3,10 +3,9 @@
 
 
 using System;
-using System.Runtime.CompilerServices;
+using Xunit;
 
-
-// This test represent deep execution tree that could case C stack overflow 
+// This test represent deep execution tree that could case C stack overflow
 // in recursive tree walkers. It should work if the compiler spills deep tree periodically or
 // recursive walkers are replaced with non-recursive versions.
 class GitHub_10215
@@ -461,6 +460,10 @@ class GitHub_10215
 
     }
 
+    // Use the [Fact] attribute directly on Main like an IL test since we can't run the generator on this project.
+    // The above expression creates a deep enough syntax tree that running a tree traversal of the syntax causes a stack overflow.
+    // As a result, running any generator on this project causes the compilation to crash.
+    [Fact]
     public static int Main()
     {
         if (CalcBigExpressionWithoutStores() == 100)

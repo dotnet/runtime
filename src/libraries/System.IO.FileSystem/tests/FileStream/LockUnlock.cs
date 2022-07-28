@@ -38,7 +38,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.FreeBSD)]
         public void LockUnlock_Unsupported_OSX()
         {
             string path = GetTestFilePath();
@@ -58,7 +58,7 @@ namespace System.IO.Tests
         [InlineData(200, 50, 150)]
         [InlineData(200, 100, 100)]
         [InlineData(20, 2000, 1000)]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS | TestPlatforms.FreeBSD, "Not supported on macOS/iOS/tvOS/MacCatalyst/FreeBSD.")]
         public void Lock_Unlock_Successful(long fileLength, long position, long length)
         {
             string path = GetTestFilePath();
@@ -75,7 +75,7 @@ namespace System.IO.Tests
         [InlineData(FileAccess.Read)]
         [InlineData(FileAccess.Write)]
         [InlineData(FileAccess.ReadWrite)]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS | TestPlatforms.FreeBSD, "Not supported on macOS/iOS/tvOS/MacCatalyst/FreeBSD.")]
         public void Lock_Unlock_Successful_AlternateFileAccess(FileAccess fileAccess)
         {
             string path = GetTestFilePath();
@@ -89,7 +89,7 @@ namespace System.IO.Tests
 
         [Theory]
         [InlineData(10, 0, 2, 3, 5)]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS| TestPlatforms.FreeBSD, "Not supported on macOS/iOS/tvOS/MacCatalyst/FreeBSD.")]
         public void NonOverlappingRegions_Success(long fileLength, long firstPosition, long firstLength, long secondPosition, long secondLength)
         {
             string path = GetTestFilePath();
@@ -176,7 +176,7 @@ namespace System.IO.Tests
         [InlineData(10, 3, 5, 2, 6)]
         [InlineData(10, 3, 5, 2, 4)]
         [InlineData(10, 3, 5, 4, 6)]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.FreeBSD, "Not supported on macOS/iOS/tvOS/MacCatalyst/FreeBSD.")]
         public void OverlappingRegionsFromOtherProcess_ThrowsException(long fileLength, long firstPosition, long firstLength, long secondPosition, long secondLength)
         {
             string path = GetTestFilePath();
@@ -224,14 +224,14 @@ namespace System.IO.Tests
 
             }, path).Dispose();
 
-            fs1.Unlock(0, 100);            
+            fs1.Unlock(0, 100);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(FileAccess.Read)]
         [InlineData(FileAccess.Write)]
         [InlineData(FileAccess.ReadWrite)]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on macOS/iOS/tvOS/MacCatalyst.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.FreeBSD, "Not supported on macOS/iOS/tvOS/MacCatalyst/FreeBSD.")]
         public void OverlappingRegionsFromOtherProcess_With_WriteLock_ThrowsException(FileAccess fileAccess)
         {
             string path = GetTestFilePath();

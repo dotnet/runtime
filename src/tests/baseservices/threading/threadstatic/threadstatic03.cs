@@ -36,14 +36,14 @@ public class MyData
 
 }
 
-public class Test
+public class Test_threadstatic03
 {
 
     private int retVal = 0;
 
     public static int Main()
     {
-        Test staticsTest = new Test();        
+        Test_threadstatic03 staticsTest = new Test_threadstatic03();        
         staticsTest.RunTest();
         Console.WriteLine(100 == staticsTest.retVal ? "Test Passed":"Test Failed");
         return staticsTest.retVal;

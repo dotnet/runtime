@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
-    internal static class DataflowTestHelpers
+    internal static partial class DataflowTestHelpers
     {
         internal static bool[] BooleanValues = { true, false };
         internal static Func<int, IEnumerable<int>> ToEnumerable = item => Enumerable.Repeat(item, 1);

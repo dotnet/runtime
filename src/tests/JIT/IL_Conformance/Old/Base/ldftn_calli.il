@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly ldftn_calli.exe{}
+.assembly ldftn_calli{}
 
 
 .method public public static int32 test() {

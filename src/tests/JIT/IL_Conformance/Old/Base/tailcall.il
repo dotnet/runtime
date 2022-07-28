@@ -6,7 +6,7 @@
 .assembly extern legacy library mscorlib { auto }
 
 
-.assembly tailcall.exe{}
+.assembly tailcall{}
 
 .method public static int32 main(string[]) {
 .locals     (class [mscorlib]System.IO.TextWriter,class _tailcall)

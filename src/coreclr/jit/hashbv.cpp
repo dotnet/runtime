@@ -534,7 +534,7 @@ void hashBv::Resize(int newSize)
 
     hashBvNode** newNodes = this->getNewVector(newSize);
 
-    hashBvNode*** insertionPoints = (hashBvNode***)alloca(sizeof(hashBvNode*) * newSize);
+    hashBvNode*** insertionPoints = (hashBvNode***)_alloca(sizeof(hashBvNode*) * newSize);
     memset(insertionPoints, 0, sizeof(hashBvNode*) * newSize);
 
     for (int i = 0; i < newSize; i++)
@@ -1277,7 +1277,7 @@ bool hashBv::MultiTraverseLHSBigger(hashBv* other)
     // this is larger
     hashBvNode*** cursors;
     int           expansionFactor = hts / ots;
-    cursors                       = (hashBvNode***)alloca(expansionFactor * sizeof(void*));
+    cursors                       = (hashBvNode***)_alloca(expansionFactor * sizeof(void*));
 
     for (int h = 0; h < other->hashtable_size(); h++)
     {
@@ -1684,7 +1684,7 @@ void hashBv::InorderTraverse(nodeAction n)
 
     {
         // keep an array of the current pointers
-        // into each of the the bitvector lists
+        // into each of the bitvector lists
         // in the hashtable
         for (int i = 0; i < hts; i++)
         {

@@ -578,7 +578,7 @@ bool Compiler::bbIsTryBeg(BasicBlock* block)
     return (ehDsc != nullptr) && (block == ehDsc->ebdTryBeg);
 }
 
-// bbIsHanderBeg() returns true if "block" is the start of any handler or filter.
+// bbIsHandlerBeg() returns true if "block" is the start of any handler or filter.
 // Note that if a block is the beginning of a handler or filter, it must be the beginning
 // of the most nested handler or filter region it is in. Thus, we only need to look at the EH
 // descriptor corresponding to the handler index on the block.
@@ -888,7 +888,7 @@ unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTr
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
 #else
     *inTryRegion = true;
@@ -1405,7 +1405,12 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
     if (compHndBBtabCount == 0)
     {
         // No more entries remaining.
-        compHndBBtab = nullptr;
+        //
+        // We used to null out compHndBBtab here, but with OSR + Synch method
+        // we may remove all the initial EH entries if not reachable in the
+        // OSR portion, then need to add one for the synchronous exit.
+        //
+        // So now we just leave it be.
     }
     else
     {
@@ -1658,7 +1663,7 @@ void Compiler::fgRemoveEH()
     assert(!fgDomsComputed);
     assert(!fgFuncletsCreated);
     assert(fgFirstFuncletBB == nullptr); // this should follow from "!fgFuncletsCreated"
-    assert(!optLoopsMarked);
+    assert(!optLoopTableValid);
 
     unsigned  XTnum;
     EHblkDsc* HBtab;
@@ -1681,7 +1686,7 @@ void Compiler::fgRemoveEH()
             // just deleting the blocks is sufficient. Note, however, that for every
             // BBJ_EHCATCHRET we delete, we need to fix up the reference count of the
             // block it points to (by subtracting one from its reference count).
-            // Note that the blocks for a filter immediately preceed the blocks for its associated filter-handler.
+            // Note that the blocks for a filter immediately precede the blocks for its associated filter-handler.
 
             BasicBlock* blkBeg  = HBtab->HasFilter() ? HBtab->ebdFilter : HBtab->ebdHndBeg;
             BasicBlock* blkLast = HBtab->ebdHndLast;
@@ -2345,6 +2350,7 @@ bool Compiler::fgNormalizeEHCase2()
 
                         BasicBlock* newTryStart = bbNewBasicBlock(BBJ_NONE);
                         fgInsertBBbefore(insertBeforeBlk, newTryStart);
+                        insertBeforeBlk->bbRefs++;
 
 #ifdef DEBUG
                         if (verbose)
@@ -2371,7 +2377,12 @@ bool Compiler::fgNormalizeEHCase2()
                         // start.
                         newTryStart->bbFlags |= (BBF_TRY_BEG | BBF_DONT_REMOVE | BBF_INTERNAL);
 
-                        // Now we need to split any flow edges targetting the old try begin block between the old
+                        if (insertBeforeBlk->bbFlags & BBF_BACKWARD_JUMP_TARGET)
+                        {
+                            newTryStart->bbFlags |= BBF_BACKWARD_JUMP_TARGET;
+                        }
+
+                        // Now we need to split any flow edges targeting the old try begin block between the old
                         // and new block. Note that if we are handling a multiply-nested 'try', we may have already
                         // split the inner set. So we need to split again, from the most enclosing block that we've
                         // already created, namely, insertBeforeBlk.
@@ -3107,7 +3118,7 @@ void Compiler::fgVerifyHandlerTab()
     // between debug and non-debug code paths. So, create a renumbered block mapping: map the
     // existing block number to a renumbered block number that is ordered by block list order.
 
-    unsigned bbNumMax = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
+    unsigned bbNumMax = impInlineRoot()->fgBBNumMax;
 
     // blockNumMap[old block number] => new block number
     size_t    blockNumBytes = (bbNumMax + 1) * sizeof(unsigned);
@@ -4410,7 +4421,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #endif // DEBUG
 
             // The first block of a handler has an artificial extra refcount. Transfer that to the new block.
-            assert(block->bbRefs > 0);
+            noway_assert(block->countOfInEdges() > 0);
             block->bbRefs--;
 
             HBtab->ebdHndBeg = bPrev;
@@ -4428,8 +4439,8 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             bPrev->bbRefs++;
 
             // If this is a handler for a filter, the last block of the filter will end with
-            // a BBJ_EJFILTERRET block that has a bbJumpDest that jumps to the first block of
-            // it's handler.  So we need to update it to keep things in sync.
+            // a BBJ_EHFILTERRET block that has a bbJumpDest that jumps to the first block of
+            // its handler. So we need to update it to keep things in sync.
             //
             if (HBtab->HasFilter())
             {
@@ -4459,7 +4470,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #endif // DEBUG
 
             // The first block of a filter has an artificial extra refcount. Transfer that to the new block.
-            assert(block->bbRefs > 0);
+            noway_assert(block->countOfInEdges() > 0);
             block->bbRefs--;
 
             HBtab->ebdFilter = bPrev;
@@ -4507,7 +4518,7 @@ void Compiler::fgExtendEHRegionAfter(BasicBlock* block)
 // inserting the block and properly extending some EH regions (if necessary)
 // puts the block in the correct region. We only consider the case of extending
 // an EH region after 'blk' (that is, to include 'blk' and the newly insert block);
-// we don't consider inserting a block as the the first block of an EH region following 'blk'.
+// we don't consider inserting a block as the first block of an EH region following 'blk'.
 //
 // Consider this example:
 //
@@ -4611,4 +4622,32 @@ bool Compiler::fgCheckEHCanInsertAfterBlock(BasicBlock* blk, unsigned regionInde
     } // end of for(;;)
 
     return insertOK;
+}
+
+//------------------------------------------------------------------------
+// fgIsFirstBlockOfFilterOrHandler: return true if the given block is the first block of an EH handler
+// or filter.
+//
+// Arguments:
+//    block - the BasicBlock in question
+//
+// Return Value:
+//    As described above.
+//
+bool Compiler::fgIsFirstBlockOfFilterOrHandler(BasicBlock* block)
+{
+    if (!block->hasHndIndex())
+    {
+        return false;
+    }
+    EHblkDsc* ehDsc = ehGetDsc(block->getHndIndex());
+    if (ehDsc->ebdHndBeg == block)
+    {
+        return true;
+    }
+    if (ehDsc->HasFilter() && (ehDsc->ebdFilter == block))
+    {
+        return true;
+    }
+    return false;
 }

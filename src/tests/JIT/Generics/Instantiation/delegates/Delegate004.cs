@@ -15,7 +15,7 @@ internal class Foo<T>
     }
 }
 
-internal class Test
+internal class Test_Delegate004
 {
     public static int Main()
     {
@@ -26,7 +26,7 @@ internal class Test
 
         if ((i != 10) || (j != 10))
         {
-            Console.WriteLine("Failed Sync Invokation");
+            Console.WriteLine("Failed Sync Invocation");
             return 1;
         }
 

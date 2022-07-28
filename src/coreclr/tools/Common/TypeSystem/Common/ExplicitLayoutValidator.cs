@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Internal.TypeSystem
@@ -13,11 +14,47 @@ namespace Internal.TypeSystem
             Empty,
             NonORef,
             ORef,
+            ByRef,
+        }
+
+        private struct FieldLayoutInterval : IComparable<FieldLayoutInterval>
+        {
+            public FieldLayoutInterval(int start, int size, FieldLayoutTag tag)
+            {
+                Start = start;
+                Size = size;
+                Tag = tag;
+            }
+
+            public int Start;
+            public int Size;
+
+            public int EndSentinel
+            {
+                get
+                {
+                    return Start + Size;
+                }
+                set
+                {
+                    Size = value - Start;
+                    Debug.Assert(Size >= 0);
+                }
+            }
+
+            public FieldLayoutTag Tag;
+
+            public int CompareTo(FieldLayoutInterval other)
+            {
+                return Start.CompareTo(other.Start);
+            }
         }
 
         private readonly int _pointerSize;
 
-        private readonly FieldLayoutTag[] _fieldLayout;
+        // Represent field layout bits as a series of intervals to prevent pathological bad behavior
+        // involving excessively large explicit layout structures.
+        private readonly List<FieldLayoutInterval> _fieldLayout;
 
         private readonly MetadataType _typeBeingValidated;
 
@@ -25,12 +62,14 @@ namespace Internal.TypeSystem
         {
             _typeBeingValidated = type;
             _pointerSize = type.Context.Target.PointerSize;
-            _fieldLayout = new FieldLayoutTag[typeSizeInBytes];
+            _fieldLayout = new List<FieldLayoutInterval>();
         }
 
         public static void Validate(MetadataType type, ComputedInstanceFieldLayout layout)
         {
-            ExplicitLayoutValidator validator = new ExplicitLayoutValidator(type, layout.ByteCountUnaligned.AsInt);
+            int typeSizeInBytes = layout.ByteCountUnaligned.AsInt;
+            ExplicitLayoutValidator validator = new ExplicitLayoutValidator(type, typeSizeInBytes);
+
             foreach (FieldAndOffset fieldAndOffset in layout.Offsets)
             {
                 validator.AddToFieldLayout(fieldAndOffset.Offset.AsInt, fieldAndOffset.Field.FieldType);
@@ -54,15 +93,9 @@ namespace Internal.TypeSystem
             }
             else if (fieldType.IsValueType)
             {
-                if (fieldType.IsByRefLike && offset % _pointerSize != 0)
-                {
-                    // Misaligned ByRefLike
-                    ThrowFieldLayoutError(offset);
-                }
-
                 MetadataType mdType = (MetadataType)fieldType;
                 int fieldSize = mdType.InstanceByteCountUnaligned.AsInt;
-                if (!mdType.ContainsGCPointers)
+                if (!mdType.ContainsGCPointers && !mdType.IsByRefLike)
                 {
                     // Plain value type, mark the entire range as NonORef
                     SetFieldLayout(offset, fieldSize, FieldLayoutTag.NonORef);
@@ -71,15 +104,29 @@ namespace Internal.TypeSystem
                 {
                     if (offset % _pointerSize != 0)
                     {
-                        // Misaligned struct with GC pointers
+                        // Misaligned struct with GC pointers or ByRef
                         ThrowFieldLayoutError(offset);
                     }
 
-                    bool[] fieldORefMap = new bool[fieldSize];
-                    MarkORefLocations(mdType, fieldORefMap, offset: 0);
-                    for (int index = 0; index < fieldSize; index++)
+                    List<FieldLayoutInterval> fieldRefMap = new();
+                    MarkByRefAndORefLocations(mdType, fieldRefMap, offset: 0);
+
+                    // Merge in fieldRefMap from structure specifying not attributed intervals as NonORef
+                    int lastGCRegionReportedEnd = 0;
+
+                    foreach (var gcRegion in fieldRefMap)
                     {
-                        SetFieldLayout(offset + index, fieldORefMap[index] ? FieldLayoutTag.ORef : FieldLayoutTag.NonORef);
+                        SetFieldLayout(offset + lastGCRegionReportedEnd, gcRegion.Start - lastGCRegionReportedEnd, FieldLayoutTag.NonORef);
+                        Debug.Assert(gcRegion.Tag == FieldLayoutTag.ORef || gcRegion.Tag == FieldLayoutTag.ByRef);
+                        SetFieldLayout(offset + gcRegion.Start, gcRegion.Size, gcRegion.Tag);
+                        lastGCRegionReportedEnd = gcRegion.EndSentinel;
+                    }
+
+                    if (fieldRefMap.Count > 0)
+                    {
+                        int trailingRegionStart = fieldRefMap[fieldRefMap.Count - 1].EndSentinel;
+                        int trailingRegionSize = fieldSize - trailingRegionStart;
+                        SetFieldLayout(offset + trailingRegionStart, trailingRegionSize, FieldLayoutTag.NonORef);
                     }
                 }
             }
@@ -90,7 +137,7 @@ namespace Internal.TypeSystem
                     // Misaligned pointer field
                     ThrowFieldLayoutError(offset);
                 }
-                SetFieldLayout(offset, _pointerSize, FieldLayoutTag.NonORef);
+                SetFieldLayout(offset, _pointerSize, FieldLayoutTag.ByRef);
             }
             else
             {
@@ -98,7 +145,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private void MarkORefLocations(MetadataType type, bool[] orefMap, int offset)
+        private void MarkByRefAndORefLocations(MetadataType type, List<FieldLayoutInterval> refMap, int offset)
         {
             // Recurse into struct fields
             foreach (FieldDesc field in type.GetFields())
@@ -108,42 +155,149 @@ namespace Internal.TypeSystem
                     int fieldOffset = offset + field.Offset.AsInt;
                     if (field.FieldType.IsGCPointer)
                     {
-                        for (int index = 0; index < _pointerSize; index++)
-                        {
-                            orefMap[fieldOffset + index] = true;
-                        }
+                        SetFieldLayout(refMap, offset, _pointerSize, FieldLayoutTag.ORef);
+                    }
+                    else if (field.FieldType.IsByRef)
+                    {
+                        SetFieldLayout(refMap, offset, _pointerSize, FieldLayoutTag.ByRef);
                     }
                     else if (field.FieldType.IsValueType)
                     {
                         MetadataType mdFieldType = (MetadataType)field.FieldType;
-                        if (mdFieldType.ContainsGCPointers)
+                        if (mdFieldType.ContainsGCPointers || mdFieldType.IsByRefLike)
                         {
-                            MarkORefLocations(mdFieldType, orefMap, fieldOffset);
+                            MarkByRefAndORefLocations(mdFieldType, refMap, fieldOffset);
                         }
                     }
+                }
+            }
+        }
+
+        private void SetFieldLayout(List<FieldLayoutInterval> fieldLayoutInterval, int offset, int count, FieldLayoutTag tag)
+        {
+            if (count == 0)
+                return;
+
+            var newInterval = new FieldLayoutInterval(offset, count, tag);
+
+            int binarySearchIndex = fieldLayoutInterval.BinarySearch(newInterval);
+
+            if (binarySearchIndex >= 0)
+            {
+                var existingInterval = fieldLayoutInterval[binarySearchIndex];
+
+                // Exact match found for start of interval.
+                if (tag != existingInterval.Tag)
+                {
+                    ThrowFieldLayoutError(offset);
+                }
+
+                if (existingInterval.Size >= count)
+                {
+                    // Existing interval is big enough.
+                }
+                else
+                {
+                    // Expand existing interval, and then check to see if that's valid.
+                    existingInterval.Size = count;
+                    fieldLayoutInterval[binarySearchIndex] = existingInterval;
+
+                    ValidateAndMergeIntervalWithFollowingIntervals(fieldLayoutInterval, binarySearchIndex);
+                }
+            }
+            else
+            {
+                // No exact start match found.
+
+                int newIntervalLocation = ~binarySearchIndex;
+
+                // Check for previous interval overlaps cases
+                if (newIntervalLocation > 0)
+                {
+                    var previousInterval = fieldLayoutInterval[newIntervalLocation - 1];
+                    bool tagMatches = previousInterval.Tag == tag;
+
+                    if (previousInterval.EndSentinel > offset)
+                    {
+                        // Previous interval overlaps.
+                        if (!tagMatches)
+                        {
+                            ThrowFieldLayoutError(offset);
+                        }
+                    }
+
+                    if (previousInterval.EndSentinel > offset || (tagMatches && previousInterval.EndSentinel == offset))
+                    {
+                        // Previous interval overlaps, or exactly matches up with new interval and tag matches. Instead
+                        // of expanding interval set, simply expand the previous interval.
+                        previousInterval.EndSentinel = newInterval.EndSentinel;
+
+                        fieldLayoutInterval[newIntervalLocation - 1] = previousInterval;
+                        newIntervalLocation--;
+                    }
+                    else
+                    {
+                        fieldLayoutInterval.Insert(newIntervalLocation, newInterval);
+                    }
+                }
+                else
+                {
+                    // New interval added at start
+                    fieldLayoutInterval.Insert(newIntervalLocation, newInterval);
+                }
+
+                ValidateAndMergeIntervalWithFollowingIntervals(fieldLayoutInterval, newIntervalLocation);
+            }
+        }
+
+        private void ValidateAndMergeIntervalWithFollowingIntervals(List<FieldLayoutInterval> fieldLayoutInterval, int intervalIndex)
+        {
+            while (true)
+            {
+                if (intervalIndex + 1 == fieldLayoutInterval.Count)
+                {
+                    // existing interval is last interval. Expansion always succeeds
+                    break;
+                }
+                else
+                {
+                    var nextInterval = fieldLayoutInterval[intervalIndex + 1];
+                    var expandedInterval = fieldLayoutInterval[intervalIndex];
+                    var tag = expandedInterval.Tag;
+
+                    if (nextInterval.Start > expandedInterval.EndSentinel)
+                    {
+                        // Next interval does not contact existing interval. Expansion succeeded
+                        break;
+                    }
+
+                    if ((nextInterval.Start == expandedInterval.EndSentinel) && nextInterval.Tag != tag)
+                    {
+                        // Next interval starts just after existing interval, but does not match tag. Expansion succeeded
+                        break;
+                    }
+
+                    Debug.Assert(nextInterval.Start <= expandedInterval.EndSentinel);
+                    // Next interval overlaps with expanded interval.
+
+                    if (nextInterval.Tag != tag)
+                    {
+                        ThrowFieldLayoutError(nextInterval.Start);
+                    }
+
+                    // Expand existing interval to cover region of next interval
+                    expandedInterval.EndSentinel = nextInterval.EndSentinel;
+                    fieldLayoutInterval[intervalIndex] = expandedInterval;
+
+                    // Remove next interval
+                    fieldLayoutInterval.RemoveAt(intervalIndex + 1);
                 }
             }
         }
 
         private void SetFieldLayout(int offset, int count, FieldLayoutTag tag)
         {
-            for (int index = 0; index < count; index++)
-            {
-                SetFieldLayout(offset + index, tag);
-            }
-        }
-
-        private void SetFieldLayout(int offset, FieldLayoutTag tag)
-        {
-            FieldLayoutTag existingTag = _fieldLayout[offset];
-            if (existingTag != tag)
-            {
-                if (existingTag != FieldLayoutTag.Empty)
-                {
-                    ThrowFieldLayoutError(offset);
-                }
-                _fieldLayout[offset] = tag;
-            }
+            SetFieldLayout(_fieldLayout, offset, count, tag);
         }
 
         private void ThrowFieldLayoutError(int offset)

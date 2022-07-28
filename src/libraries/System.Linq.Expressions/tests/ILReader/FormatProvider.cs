@@ -37,11 +37,11 @@ namespace System.Linq.Expressions.Tests
             int length = offsets.Length;
             for (int i = 0; i < length; i++)
             {
-                if (i == 0) sb.AppendFormat("(");
-                else sb.AppendFormat(", ");
+                if (i == 0) sb.Append('(');
+                else sb.Append(", ");
                 sb.Append(Label(offsets[i]));
             }
-            sb.AppendFormat(")");
+            sb.Append(')');
             return sb.ToString();
         }
 
@@ -57,7 +57,7 @@ namespace System.Linq.Expressions.Tests
                 else if (ch == '\r') sb.Append("\\r");
                 else if (ch == '\"') sb.Append("\\\"");
                 else if (ch == '\\') sb.Append("\\");
-                else if (ch < 0x20 || ch >= 0x7f) sb.AppendFormat("\\u{0:x4}", (int)ch);
+                else if (ch < 0x20 || ch >= 0x7f) sb.Append($"\\u{(int)ch:x4}");
                 else sb.Append(ch);
             }
             return "\"" + sb.ToString() + "\"";
@@ -69,11 +69,11 @@ namespace System.Linq.Expressions.Tests
             int length = sig.Length;
             for (int i = 0; i < length; i++)
             {
-                if (i == 0) sb.AppendFormat("SIG [");
-                else sb.AppendFormat(" ");
+                if (i == 0) sb.Append("SIG [");
+                else sb.Append(' ');
                 sb.Append(Int8ToHex(sig[i]));
             }
-            sb.AppendFormat("]");
+            sb.Append(']');
             return sb.ToString();
         }
     }

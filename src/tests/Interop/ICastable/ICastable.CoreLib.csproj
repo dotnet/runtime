@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    ICastable.CoreLib provides a "shim" definition of ICastable in System.Private.CoreLib for the Castable test suite.
+    The Castable test suite references this project at compile time but does not get deployed with the test.
+    As a result, the Castable test suite has a direct reference to System.Private.CoreLib for the ICastable interface,
+    which enables us to avoid using Reflection.Emit to provide the implementations.
+  -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
+    <AssemblyName>System.Private.CoreLib</AssemblyName>
+    <Nullable>annotations</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(RepoRoot)/src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/ICastable.cs" />
+  </ItemGroup>
+</Project>

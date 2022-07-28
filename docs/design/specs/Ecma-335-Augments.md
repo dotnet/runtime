@@ -2,6 +2,25 @@
 
 This is a list of additions and edits to be made in ECMA-335 specifications. It includes both documentation of new runtime features and issues encountered during development. Some of the issues are definite spec errors while others could be reasoned as Microsoft implementation quirks.
 
+## Changes by feature area
+
+- [Signatures](#signatures)
+- [Heap sizes](#heap-sizes)
+- [Metadata merging](#metadata-merging)
+- [Metadata logical format](#metadata-logical-format)
+- [Module Initializer](#module-initializer)
+- [Default Interface Methods](#default-interface-methods)
+- [Static Interface Methods](#static-interface-methods)
+- [Covariant Return Types](#covariant-return-types)
+- [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
+- [Ref field support](#ref-fields)
+- [Rules for IL rewriters](#rules-for-il-rewriters)
+- [Checked user-defined operators](#checked-user-defined-operators)
+- [Atomic reads and writes](#atomic-reads-and-writes)
+- [Backward branch constraints](#backward-branch-constraints)
+- [API documentation](#api-documentation)
+- [Debug Interchange Format](#debug-interchange-format)
+
 ## Signatures
 
 There is a general philosophical issue whereby the spec defines the
@@ -351,6 +370,14 @@ This text should be deleted, and the _metadata merging_ entry should be removed 
 > * ~~If there are duplicates and two or more have an accessibility other than
 >   **compilercontrolled**, an error has occurred.~~
 
+## Metadata logical format
+
+The requirement to sort InterfaceImpl table using the Interface column as a secondary key in § II.22 _Metadata logical format: tables_ is a spec bug. The interface declaration order affects resolution and a requirement to sort it would make it impossible to emit certain sequences of interfaces (e.g. not possible to have an interface list I1, I2, while also having interface list I2, I1 elsewhere in the module).
+
+The text should be deleted:
+
+> Furthermore, ~~the InterfaceImpl table is sorted using the Interface column as a secondary key, and~~ the GenericParam table is sorted using the Number column as a secondary key.
+
 ## Module Initializer
 
 All modules may have a module initializer. A module initializer is defined as the type initializer (§ II.10.5.3) of the `<Module>` type (§ II.10.8).
@@ -432,7 +459,7 @@ https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 
 (Add second paragraph)
 
-Static interface methods may be marked as virtual. Valid object types implementing such interfaces shall provide implementations
+Static interface methods may be marked as virtual. Valid object types implementing such interfaces may provide implementations
 for these methods by means of Method Implementations (II.15.1.4). Polymorphic behavior of calls to these methods is facilitated
 by the constrained. call IL instruction where the constrained. prefix specifies the type to use for lookup of the static interface
 method.
@@ -457,7 +484,7 @@ static or instance members) or overrides (for virtual instance methods) a member
 simply substitute each generic parameter with its generic argument, and compare the resulting member
 signatures. [*Example*: The following illustrates this point:
 
-### II.9.11, Constrains on Generic Parameters
+### II.9.11, Constraints on Generic Parameters
 
 (Change first paragraph)
 
@@ -510,7 +537,6 @@ or static method actually implemented directly on the type.
 (Add to the end of the 1st paragraph)
 
 Interfaces may define static virtual methods that get resolved at runtime based on actual types involved.
-These static virtual methods must be marked as abstract in the defining interfaces.
 
 ### II.12.2 Implementing virtual methods on interfaces
 
@@ -699,7 +725,7 @@ operations.
 T Exponential<T, TFloat>(T exponent) where
     T : IArithmetic<T>,
     T : IMultiplicationBy<T, TFloat>
-        
+
 {
     T result = T.One();
     T powerOfValue = exponent;
@@ -733,7 +759,7 @@ the call itself doesn't involve any instance or `this` pointer.
 (Edit bulleted section "This contains informative text only" starting at the bottom of page
 233):
 
-Edit section *7.b*: Static | Virtual | !Abstract
+Remove section *7.b*: ~~Static | Virtual~~
 
 (Add new section 41 after the last section 40:)
 
@@ -810,3 +836,204 @@ Bullet 2: It is valid to call a virtual method using `call` (rather than `callvi
 the method is to be resolved using the class specified by method rather than as
 specified dynamically from the object being invoked. This is used, for example, to
 compile calls to “methods on `base`” (i.e., the statically known parent class) or to virtual static methods.
+
+## Covariant Return Types
+
+Covariant return methods is a runtime feature designed to support the [covariant return types](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-9.0/covariant-returns.md) and [records](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-9.0/records.md) C# language features implemented in C# 9.0.
+
+This feature allows an overriding method to have a return type that is different than the one on the method it overrides, but compatible with it. The type compatibility rules are defined in ECMA I.8.7.1.
+
+Example:
+```
+class Base
+{
+  public virtual object VirtualMethod() { return null; }
+}
+
+class Derived : Base
+{
+  // Note that the VirtualMethod here overrides the VirtualMethod defined on Base even though the
+  // return types are not the same. However, the return types are compatible in a covariant fashion.
+  public override string VirtualMethod() { return null;}
+}
+```
+
+Covariant return methods can only be described through MethodImpl records, and are only applicable to methods on non-interface reference types. In addition the covariant override is only applicable for overriding methods also defined on a non-interface reference type.
+
+See [Implementation Design](../features/covariant-return-methods.md) for notes from the implementation in CoreCLR.
+
+Changes to the spec. These changes are relative to the 6th edition (June 2012) of the ECMA-335 specification published by ECMA available at:
+
+https://www.ecma-international.org/publications-and-standards/standards/ecma-335/
+
+### I.8.7.1 Assignment compatibility for signature types
+
+Add a new signature type relation.
+
+"A method signature type T is *covariant-return-compatible-with* with a method signature type U if and only if:
+1. The calling conventions of T and U shall match exactly, ignoring the distinction between static and instance methods (i.e., the this parameter, if any, is not treated specially).
+2. For each parameter type of P of T, and corresponding type Q of U, P is identical Q.
+3. For the return type P of T, and return type Q of U, Q is *compatible-with* P and is a *reference type* OR Q is identical to P.
+
+### II.10.3.2 The .override directive (page 147)
+
+Edit the first paragraph "The .override directive specifies that a virtual method shall be implemented (overridden), in this type, by a virtual method with a different name, but with a *covariant-return-compatible-with* signature (§I.8.7.1). This directive can be used to provide an implementation for a virtual method inherited from a base class, or a virtual method specified in an interface implemented by this type and all other. If not used to provide an implementation for a virtual method inherited from a base class the signature must be identical."
+
+### II.10.3.4 Impact of overrides on derived classes
+Add a third bullet
+"- If a virtual method is overridden via an .override directive or if a derived class provides an implementation and that virtual method in parent class was overridden with an .override directive where the method body of that second .override directive is decorated with `System.Runtime.CompilerServices.PreserveBaseOverridesAttribute` then the implementation of the virtual method shall be the implementation of the method body of the second .override directive as well. If this results in the implementor of the virtual method in the parent class not having a signature which is *covariant-return-compatible-with* the virtual method in the parent class, the program is not valid.
+
+
+```
+.class A {
+  .method newslot virtual RetType VirtualFunction() { ... }
+}
+.class B extends A {
+  .method virtual DerivedRetType VirtualFunction() {
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 )
+    .override A.VirtualFunction
+    ...
+  }
+}
+.class C extends B {
+  .method virtual MoreDerivedRetType VirtualFunction()
+  {
+    .override A.VirtualFunction
+    ...
+  }
+}
+.class D extends C
+{
+  .method virtual DerivedRetTypeNotDerivedFromMoreDerivedRetType VirtualFunction() {
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 )
+    .override A.VirtualFunction
+    ...
+  }
+}
+```
+For this example, the behavior of calls on objects of various types is presented in the following table:
+| Type of object | Method Invocation | Method Called | Notes |
+| ---  | --- | --- | --- |
+| A | A::VirtualFunction() | A::VirtualFunction | |
+| B | A::VirtualFunction() | B::VirtualFunction | |
+| B | B::VirtualFunction() | B::VirtualFunction | |
+| C | A::VirtualFunction() | C::VirtualFunction | |
+| C | B::VirtualFunction() | C::VirtualFunction | |
+| C | C::VirtualFunction() | C::VirtualFunction | |
+| D | B::VirtualFunction() | ERROR | A program containing type D is not valid, as B::VirtualFunction would be implemented by D::VirtualFunction which is not *covariant-return-compatible-with* (§I.8.7.1) B::VirtualFunction |
+"
+### II.22.27
+Edit rule 12 to specify that "The method signature defined by *MethodBody* shall match those defined by *MethodDeclaration* exactly if *MethodDeclaration* defines a method on an interface or be *covariant-return-compatible-with* (§I.8.7.1) if *MethodDeclaration* represents a method on a class."
+
+## Unsigned data conversion with overflow detection
+
+`conv.ovf.<to type>.un` opcode is purposed for converting a value on the stack to an integral value while treating the stack source as unsigned. Ecma does not distinguish signed and unsigned values on the stack so such opcode is needed as a complement for `conv.ovf.<to type>`.
+So if the value on the stack is 4-byte size integral created by `Ldc_I4 0xFFFFFFFF` the results of different conversion opcodes will be:
+
+* conv.ovf.i4 -> -1 (0xFFFFFFFF)
+* conv.ovf.u4 -> overflow
+* conv.ovf.i4.un -> overflow
+* conv.ovf.u4.un -> uint.MaxValue (0xFFFFFFFF)
+
+However, the source of these opcodes can be a float value and it was not clear how in such case .un should be treated. The ECMA was saying: "The item on the top of the stack is treated as an unsigned value before the conversion." but there was no definition of "treated" so the result of:
+
+```
+ldc.r4 -1
+conv.ovf.i4.un
+```
+was ambiguous, it could treat -1 as 0xFFFFFFFF and return 0xFFFFFFFF or it could throw an overflow exception.
+
+### III.3.19, conv.ovf.to type.un (page 354)
+(Edit 1st Description paragraph:)
+Convert the value on top of the stack to the type specified in the opcode, and leave that converted
+value on the top of the stack. If the value cannot be represented, an exception is thrown.
+
+(Edit 2nd Description paragraph:)
+
+Conversions from floating-point numbers to integral values truncate the number toward zero and used as-is ignoring .un suffix. The integral item
+on the top of the stack is reinterpreted as an unsigned value before the conversion.
+Note that integer values of less than 4 bytes are extended to int32 (not native int) on the
+evaluation stack.
+
+## Ref Fields
+To improve the usefulness of ref structs, support for fields which are defined as ByRefs is needed. Currently their functionality can be approximated by Span<T> fields, but not all types can be converted into Span<T> types simply. In order to support these scenarios, support for generalizing ByRef fields, and converting TypedReference, ArgIterator and RuntimeArgumentHandle into following the normal rules of C# ref structs is desired. With this set of changes, it becomes possible to have ByRef fields of T, but support for pointers to ByRef fields or ByRefs to ByRefs is not added to the ECMA specification.
+
+Changes to the spec. These changes are relative to the 6th edition (June 2012) of the ECMA-335 specification published by ECMA available at:
+
+https://www.ecma-international.org/publications-and-standards/standards/ecma-335/
+
+### I.8.2.1.1 Managed pointers and related types
+- First paragraph. Replace “Managed pointer types are only allowed for local variable (§I.8.6.1.3) and parameter signatures (§I.8.6.1.4); they cannot be used for field signatures (§I.8.6.1.2), as the element type of an array (§I.8.9.1), and boxing a value of managed pointer type is disallowed (§I.8.2.4).” with “Managed pointer types are only allowed for local variable (§I.8.6.1.3), parameter signatures (§I.8.6.1.4), and instance fields of byref-like types; they cannot be used for field signatures(§I.8.6.1.2) of static fields, or of instance fields of types which are not byref-like, as the element type of an array (§I.8.9.1), and boxing a value of managed pointer type is disallowed (§I.8.2.4).”
+- Add a new paragraph before the paragraph on the three special types. “Byref-like types are value types which may contain managed pointers, or pointers onto the VES stack. Byref-like types have the same restrictions as byrefs. Value types which are marked with the System.Runtime.CompilerServices.IsByRefLikeAttribute attribute are considered to be byref-like types.”
+- Replace “Typed references have the same restrictions as byrefs.” With “Typed references are byref-like types and have the same restrictions as normal byref-like types.”
+- Replace “They can be used for local variable and parameter signatures. The use of these types for fields, method return types, the element type of an array, or in boxing is not verifiable (§I.8.8). These two types are referred to as byref-like types.” With “If a function uses these types only for local variable and parameter signatures, then the use of those types is verifiable. Otherwise these types have the same restrictions as normal byref-like types.”
+
+### I.8.6.1.1
+- Add to the first paragraph a modified version of the third paragraph of I.8.6.1.3. "The typed reference ~~local variable signature~~ type signature states that the type is a structure which will contain both a managed pointer to a location and a runtime representation of the type that can be stored at that location. A typed reference signature is similar to a byref constraint(§I.8.6.1.2), but while the byref specifies the type as part of the byref constraint (and hence statically as part of the type description), a typed reference provides the type information dynamically."
+- Add a second paragraph which is a slight modification of the former fourth paragraph in section I.8.6.1.3. "The typed reference signature is actually represented as a built-in value type, like the integer and floating-point types. In the Base Class Library (see Partition IV Library) the type is known as System.TypedReference and in the assembly language used in Partition II it is designated by the keyword typedref. This type shall only be used for parameters, the type of a field, return values and local variables. It shall not be boxed, nor shall it be used as the type of an element of an array.
+- Move CLS Rule 14 to this section.
+
+### I.8.6.1.2
+- Move the contents of the byref constraint paragraph from Section I.8.6.1.3 to a bullet point.
+“- The byref constraint states that the content of the corresponding location is a managed pointer. A managed pointer can point to a local variable, parameter, field of a compound type, or element of an array. However, when a call crosses a remoting boundary (see §I.12.5) a conforming implementation can use a copy-in/copy-out mechanism instead of a managed pointer. Thus programs shall not rely on the aliasing behavior of true pointers. A managed pointer cannot point to another managed pointer, but a managed pointer can point to a byref-like type.”
+
+### I.8.6.1.3
+- Edit the second sentence of the first paragraph. "A local signature specifies the contract on a local variable allocated during the running of a method. A local signature contains a full location signature~~, plus it can specify one additional constraint:~~."
+- Remove the rest of this section. Its contents have been moved into sections I.8.6.1.1 and I.8.6.1.2
+
+### I.8.7
+- In the section about type compatibility when determining a type from a signature: The byref constraint is to be referenced from section I8.6.1.2 instead of I.8.6.1.3
+
+### I.8.9.2
+- Insert at the end of the first paragraph “An unmanaged pointer type cannot point to a managed pointer.”
+
+Changes to signatures:
+### II.23.2.10
+- Remove special case for TYPEDBYREF
+
+### II.23.2.11
+- Remove special case for TYPEDBYREF
+
+### II.23.2.12
+- Add TYPEDBYREF as a form of Type
+
+## Rules for IL Rewriters
+
+There are apis such as `System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<T>(...)` which require that the PE file have a particular structure. In particular, that api requires that the associated RVA of a FieldDef which is used to create a span must be naturally aligned over the data type that `CreateSpan` is instantiated over. There are 2 major concerns.
+
+1. That the RVA be aligned when the PE file is constructed. This may be achieved by whatever means is most convenient for the compiler.
+2. That in the presence of IL rewriters that the RVA remains aligned. This section describes metadata which will be processed by IL rewriters in order to maintain the required alignment.
+
+In order to maintain alignment, if the field needs alignment to be preserved, the field must be of a type locally defined within the module which has a Pack (§II.10.7) value of the desired alignment. Unlike other uses of the .pack directive, in this circumstance the .pack specifies a minimum alignment.
+
+## Checked user-defined operators
+
+Section "I.10.3.1 Unary operators" of ECMA-335 adds *op_CheckedIncrement*, *op_CheckedDecrement*, *op_CheckedUnaryNegation* as the names for methods implementing checked `++`, `--` and `-` unary operators.
+
+Section "I.10.3.2 Binary operators" of ECMA-335 adds *op_CheckedAddition*, *op_CheckedSubtraction*,
+*op_CheckedMultiply*, *op_CheckedDivision* as the names for methods implementing checked `+`, `-`, `*`, and `/` binary operators.
+
+Section "I.10.3.3 Conversion operators" of ECMA-335 adds *op_CheckedExplicit* as the name for a method
+implementing checked explicit conversion operator.
+
+A checked user-defined operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is a System.OverflowException.
+
+## Atomic reads and writes
+
+Section "I.12.6.6 Atomic reads and writes" adds clarification that the atomicity guarantees apply to built-in primitive value types and pointers only.
+
+A conforming CLI shall guarantee that read and write access of *built-in primitive value types and pointers* to properly aligned memory locations no larger than the native word size (the size of type native int) is atomic (see §I.12.6.2) when all the write accesses to a location are the same size.
+
+## Backward branch constraints
+
+Section "II.1.7.5 Backward branch constraints" is deleted. These constraints were not enforced by any mainstream .NET runtime and they are not respected by .NET compilers. It means that it is not possible to infer the exact state of the evaluation stack at every instruction with a single forward-pass through the CIL instruction stream.
+
+## API documentation
+
+API documentation included in partition IV: Profiles and Libraries is superseded by the actively maintained API documentation in https://github.com/dotnet/dotnet-api-docs repo. The documentation is  published at https://docs.microsoft.com/en-us/dotnet/api/.
+
+The incorrect description of `System.Array.Initialize` API in section "II.13.2 Initializing value types" is replaced with "The Base Class Library provides the method System.Array.Initialize (see Partition IV) to initialize every element of an array of unboxed value types by calling its parameterless instance constructor."
+
+## Debug Interchange Format
+
+The Debug Interchange Format described in partition V is superseded by the [Portable PDB Format](PortablePdb-Metadata.md).

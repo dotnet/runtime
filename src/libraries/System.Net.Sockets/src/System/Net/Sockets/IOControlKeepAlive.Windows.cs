@@ -71,7 +71,7 @@ namespace System.Net.Sockets
                 ioControlKeepAlive._intervalMs = SecondsToMilliseconds(optionValueSeconds);
             }
 
-            byte[] buffer = s_keepAliveValuesBuffer ?? (s_keepAliveValuesBuffer = new byte[3 * sizeof(uint)]);
+            byte[] buffer = s_keepAliveValuesBuffer ??= new byte[3 * sizeof(uint)];
             ioControlKeepAlive.Fill(buffer);
             int realOptionLength = 0;
             Debug.Assert(OperatingSystem.IsWindows());

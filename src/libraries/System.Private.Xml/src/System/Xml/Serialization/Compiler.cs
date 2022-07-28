@@ -1,13 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
+using System.Buffers.Binary;
 using System.Collections;
-using System.IO;
 using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace System.Xml.Serialization
 {
@@ -74,14 +77,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        // SxS: This method does not take any resource name and does not expose any resources to the caller.
-        // It's OK to suppress the SxS warning.
-        internal void AddImport(Assembly assembly)
-        {
-        }
-
-        internal void Close() { }
-
         internal TextWriter Source
         {
             get { return _writer; }
@@ -89,7 +84,16 @@ namespace System.Xml.Serialization
 
         internal static string GetTempAssemblyName(AssemblyName parent, string? ns)
         {
-            return parent.Name + ".XmlSerializers" + (ns == null || ns.Length == 0 ? "" : "." + ns.GetHashCode());
+            return string.IsNullOrEmpty(ns) ?
+                $"{parent.Name}.XmlSerializers" :
+                $"{parent.Name}.XmlSerializers.{GetPersistentHashCode(ns)}";
+        }
+
+        private static uint GetPersistentHashCode(string value)
+        {
+            byte[] valueBytes = Encoding.UTF8.GetBytes(value);
+            byte[] hash = SHA512.HashData(valueBytes);
+            return BinaryPrimitives.ReadUInt32BigEndian(hash);
         }
     }
 }

@@ -18,6 +18,7 @@
 
 import argparse
 import asyncio
+import csv
 import datetime
 import locale
 import logging
@@ -33,14 +34,15 @@ import re
 import urllib
 import urllib.request
 import zipfile
+import time
 
 from coreclr_arguments import *
+from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_nonzero_length_file, \
+    make_safe_filename, find_file, download_one_url, download_files, report_azure_error, \
+    require_azure_storage_libraries, authenticate_using_azure, \
+    create_unique_directory_name, create_unique_file_name, get_files_from_path
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
-
-# Decide if we're going to download and enumerate Azure Storage using anonymous
-# read access and urllib functions (False), or Azure APIs including authentication (True).
-authenticate_using_azure = False
 
 ################################################################################
 # Azure Storage information
@@ -55,12 +57,16 @@ authenticate_using_azure = False
 #    library is not found in the Core_Root directory, we download a cached copy.
 #    Note: it would be better to download and use the official coredistools
 #    NuGet packages (like the setup-stress-dependencies scripts do).
+# 4. A copy of pintools, used to do throughput measurements.
 
 az_account_name = "clrjit2"
+
 az_superpmi_container_name = "superpmi"
-az_collections_root_folder = "collections"
 az_blob_storage_account_uri = "https://" + az_account_name + ".blob.core.windows.net/"
 az_blob_storage_superpmi_container_uri = az_blob_storage_account_uri + az_superpmi_container_name
+az_collections_root_folder = "collections"
+az_pintools_root_folder = "pintools"
+pintools_current_version = "1.0"
 
 az_jitrollingbuild_container_name = "jitrollingbuild"
 az_builds_root_folder = "builds"
@@ -87,6 +93,10 @@ Run SuperPMI replay on one or more collections.
 
 asm_diff_description = """\
 Run SuperPMI ASM diffs on one or more collections.
+"""
+
+throughput_description = """\
+Measure throughput using PIN on one or more collections.
 """
 
 upload_description = """\
@@ -133,6 +143,8 @@ target_arch_help = "Target architecture, for use with cross-compilation JIT (x64
 mch_arch_help = "Architecture of MCH files to download, used for cross-compilation altjit (x64, x86, arm, arm64). Default: target architecture."
 
 build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
+
+throughput_build_type_help = "Build type (Debug, Checked, Release). Default: Release."
 
 core_root_help = "Core_Root location. Optional; it will be deduced if possible from runtime repo root."
 
@@ -194,6 +206,10 @@ Normally, we don't download if the target directory exists. This forces download
 target directory already exists.
 """
 
+download_no_progress_help = """\
+If specified, then download progress will not be shown.
+"""
+
 merge_mch_pattern_help = """\
 A pattern to describing files to merge, passed through directly to `mcs -merge`.
 Acceptable patterns include `*.mch`, `file*.mch`, and `c:\\my\\directory\\*.mch`.
@@ -203,6 +219,10 @@ Only the final component can contain a `*` wildcard; the directory path cannot.
 error_limit_help = """
 Specify the failure `limit` after which replay and asmdiffs will exit if it sees
 more than `limit` failures.
+"""
+
+compile_help = """\
+Compile only specified method contexts, e.g., `-compile 20,25`. This is passed directly to the superpmi.exe `-compile` argument. See `superpmi.exe -?` for full documentation about allowed formats.
 """
 
 # Start of parser object creation.
@@ -223,17 +243,20 @@ subparsers.required = True
 # You normally use the default host OS, but for Azure Storage upload and other
 # operations, it can be useful to allow it to be specified.
 
+def add_core_root_arguments(parser, build_type_default, build_type_help):
+    parser.add_argument("-arch", help=arch_help)
+    parser.add_argument("-build_type", default=build_type_default, help=build_type_help)
+    parser.add_argument("-host_os", help=host_os_help)
+    parser.add_argument("-core_root", help=core_root_help)
+    parser.add_argument("-log_level", help=log_level_help)
+    parser.add_argument("-log_file", help=log_file_help)
+    parser.add_argument("-spmi_location", help=spmi_location_help)
+    parser.add_argument("--no_progress", action="store_true", help=download_no_progress_help)
+
 core_root_parser = argparse.ArgumentParser(add_help=False)
+add_core_root_arguments(core_root_parser, "Checked", build_type_help)
 
-core_root_parser.add_argument("-arch", help=arch_help)
-core_root_parser.add_argument("-build_type", default="Checked", help=build_type_help)
-core_root_parser.add_argument("-host_os", help=host_os_help)
-core_root_parser.add_argument("-core_root", help=core_root_help)
-core_root_parser.add_argument("-log_level", help=log_level_help)
-core_root_parser.add_argument("-log_file", help=log_file_help)
-core_root_parser.add_argument("-spmi_location", help=spmi_location_help)
-
-# Create a set of arguments common to target specification. Used for replay, upload, upload-private, download, list-collections.
+# Create a set of arguments common to target specification. Used for collect, replay, asmdiffs, upload, upload-private, download, list-collections.
 
 target_parser = argparse.ArgumentParser(add_help=False)
 
@@ -250,7 +273,7 @@ superpmi_common_parser.add_argument("--break_on_error", action="store_true", hel
 superpmi_common_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 superpmi_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode. Default is to run in parallel for faster runs.")
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
-superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_win_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
+superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_universal_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
 superpmi_common_parser.add_argument("-error_limit", help=error_limit_help)
 
@@ -266,6 +289,7 @@ collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossg
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
+collect_parser.add_argument("-pmi_path", metavar="PMIPATH_DIR", nargs='*', help="Specify a \"load path\" where assemblies can be found during pmi.dll run. Optional; the argument values are translated to PMIPATH environment variable.")
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file.")
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
 collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
@@ -291,6 +315,7 @@ replay_common_parser.add_argument("-product_location", help=product_location_hel
 replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 replay_common_parser.add_argument("-private_store", action="append", help=private_store_help)
+replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -298,20 +323,30 @@ replay_parser = subparsers.add_parser("replay", description=replay_description, 
 replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_Root JIT.")
 replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading COMPlus_")
 
-# subparser for asmdiffs
-asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
+# common subparser for asmdiffs and throughput
+base_diff_parser = argparse.ArgumentParser(add_help=False)
+base_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
+base_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
+base_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
+base_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
+base_diff_parser.add_argument("-jitoption", action="append", help="Option to pass to both baseline and diff JIT. Format is key=value, where key is the option name without leading COMPlus_")
+base_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
+base_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 
-asm_diff_parser.add_argument("-base_jit_path", help="Path to baseline clrjit. Defaults to baseline JIT from rolling build, by computing baseline git hash.")
-asm_diff_parser.add_argument("-diff_jit_path", help="Path to diff clrjit. Defaults to Core_Root JIT.")
-asm_diff_parser.add_argument("-git_hash", help="Use this git hash as the current hash for use to find a baseline JIT. Defaults to current git hash of source tree.")
-asm_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the baseline JIT hash. Default: search for the baseline hash.")
+# subparser for asmdiffs
+asm_diff_parser = subparsers.add_parser("asmdiffs", description=asm_diff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
-asm_diff_parser.add_argument("-temp_dir", help="Specify a temporary directory used for a previous ASM diffs run (for which --skip_cleanup was used) to view the results. The replay command is skipped.")
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
-asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
-asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
+asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets COMPlus_JitDebugDump/COMPlus_NgenDebugDump).")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
+asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Retain only top .dasm files with largest improvements or regressions and delete remaining files.")
+asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
+asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a '.diff' file from 'base' and 'diff' folders if there were any differences.")
+
+# subparser for throughput
+throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
+add_core_root_arguments(throughput_parser, "Release", throughput_build_type_help)
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -356,344 +391,6 @@ merge_mch_parser.add_argument("-pattern", required=True, help=merge_mch_pattern_
 ################################################################################
 # Helper functions
 ################################################################################
-
-def remove_prefix(text, prefix):
-    """ Helper method to remove a prefix `prefix` from a string `text`
-    """
-    if text.startswith(prefix):
-        return text[len(prefix):]
-    return text
-
-# Have we checked whether we have the Azure Storage libraries yet?
-azure_storage_libraries_check = False
-
-
-def require_azure_storage_libraries(need_azure_storage_blob=True, need_azure_identity=True):
-    """ Check for and import the Azure libraries.
-        We do this lazily, only when we decide we're actually going to need them.
-        Once we've done it once, we don't do it again.
-    """
-    global azure_storage_libraries_check, BlobServiceClient, BlobClient, ContainerClient, AzureCliCredential
-
-    if azure_storage_libraries_check:
-        return
-
-    azure_storage_libraries_check = True
-
-    azure_storage_blob_import_ok = True
-    if need_azure_storage_blob:
-        try:
-            from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
-        except:
-            azure_storage_blob_import_ok = False
-
-    azure_identity_import_ok = True
-    if need_azure_identity:
-        try:
-            from azure.identity import AzureCliCredential
-        except:
-            azure_identity_import_ok = False
-
-    if not azure_storage_blob_import_ok or not azure_identity_import_ok:
-        logging.error("One or more required Azure Storage packages is missing.")
-        logging.error("")
-        logging.error("Please install:")
-        logging.error("  pip install azure-storage-blob azure-identity")
-        logging.error("or (Windows):")
-        logging.error("  py -3 -m pip install azure-storage-blob azure-identity")
-        logging.error("See also https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-python")
-        raise RuntimeError("Missing Azure Storage package.")
-
-    # The Azure packages spam all kinds of output to the logging channels.
-    # Restrict this to only ERROR and CRITICAL.
-    for name in logging.Logger.manager.loggerDict.keys():
-        if 'azure' in name:
-            logging.getLogger(name).setLevel(logging.ERROR)
-
-
-def download_progress_hook(count, block_size, total_size):
-    """ A hook for urlretrieve to report download progress
-
-    Args:
-        count (int)               : current block index
-        block_size (int)          : size of a block
-        total_size (int)          : total size of a payload
-    """
-    sys.stdout.write("\rDownloading %d/%d..." % (count - 1, total_size / max(block_size, 1)))
-    sys.stdout.flush()
-
-
-def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=True):
-    """ Do an URI download using urllib.request.urlretrieve with a progress hook.
-
-    Args:
-        uri (string)              : URI to download
-        target_location (string)  : local path to put the downloaded object
-        fail_if_not_found (bool)  : if True, fail if a download fails due to file not found (HTTP error 404).
-                                    Otherwise, ignore the failure.
-
-    Returns True if successful, False on failure
-    """
-    logging.info("Download: %s -> %s", uri, target_location)
-
-    ok = True
-    try:
-        urllib.request.urlretrieve(uri, target_location, reporthook=download_progress_hook)
-    except urllib.error.HTTPError as httperror:
-        if (httperror == 404) and fail_if_not_found:
-            logging.error("HTTP 404 error")
-            raise httperror
-        ok = False
-
-    sys.stdout.write("\n") # Add newline after progress hook
-    return ok
-
-
-def report_azure_error():
-    """ Report an Azure error
-    """
-    logging.error("A problem occurred accessing Azure. Are you properly authenticated using the Azure CLI?")
-    logging.error("Install the Azure CLI from https://docs.microsoft.com/en-us/cli/azure/install-azure-cli.")
-    logging.error("Then log in to Azure using `az login`.")
-
-
-def download_with_azure(uri, target_location, fail_if_not_found=True):
-    """ Do an URI download using Azure blob storage API. Compared to urlretrieve,
-        there is no progress hook. Maybe if converted to use the async APIs we
-        could have some kind of progress?
-
-    Args:
-        uri (string)              : URI to download
-        target_location (string)  : local path to put the downloaded object
-        fail_if_not_found (bool)  : if True, fail if a download fails due to file not found (HTTP error 404).
-                                    Otherwise, ignore the failure.
-
-    Returns True if successful, False on failure
-    """
-
-    require_azure_storage_libraries()
-
-    logging.info("Download: %s -> %s", uri, target_location)
-
-    ok = True
-    az_credential = AzureCliCredential()
-    blob = BlobClient.from_blob_url(uri, credential=az_credential)
-    with open(target_location, "wb") as my_blob:
-        try:
-            download_stream = blob.download_blob(retry_total=0)
-            try:
-                my_blob.write(download_stream.readall())
-            except Exception as ex1:
-                logging.error("Error writing data to %s", target_location)
-                report_azure_error()
-                ok = False
-        except Exception as ex2:
-            logging.error("Azure error downloading %s", uri)
-            report_azure_error()
-            ok = False
-
-    if not ok and fail_if_not_found:
-        raise RuntimeError("Azure failed to download")
-    return ok
-
-
-def download_one_url(uri, target_location, fail_if_not_found=True):
-    """ Do an URI download using urllib.request.urlretrieve or Azure Storage APIs.
-
-    Args:
-        uri (string)              : URI to download
-        target_location (string)  : local path to put the downloaded object
-        fail_if_not_found (bool)  : if True, fail if a download fails due to file not found (HTTP error 404).
-                                    Otherwise, ignore the failure.
-
-    Returns True if successful, False on failure
-    """
-    if authenticate_using_azure:
-        return download_with_azure(uri, target_location, fail_if_not_found)
-    else:
-        return download_with_progress_urlretrieve(uri, target_location, fail_if_not_found)
-
-
-def is_zero_length_file(fpath):
-    """ Determine if a file system path refers to an existing file that is zero length
-
-    Args:
-        fpath (str) : file system path to test
-
-    Returns:
-        bool : true if the path is an existing file that is zero length
-    """
-    return os.path.isfile(fpath) and os.stat(fpath).st_size == 0
-
-
-def is_nonzero_length_file(fpath):
-    """ Determine if a file system path refers to an existing file that is non-zero length
-
-    Args:
-        fpath (str) : file system path to test
-
-    Returns:
-        bool : true if the path is an existing file that is non-zero length
-    """
-    return os.path.isfile(fpath) and os.stat(fpath).st_size != 0
-
-
-def make_safe_filename(s):
-    """ Turn a string into a string usable as a single file name component; replace illegal characters with underscores.
-
-    Args:
-        s (str) : string to convert to a file name
-
-    Returns:
-        (str) : The converted string
-    """
-    def safe_char(c):
-        if c.isalnum():
-            return c
-        else:
-            return "_"
-    return "".join(safe_char(c) for c in s)
-
-
-def find_in_path(name, pathlist, match_func=os.path.isfile):
-    """ Find a name (e.g., directory name or file name) in the file system by searching the directories
-        in a `pathlist` (e.g., PATH environment variable that has been semi-colon
-        split into a list).
-
-    Args:
-        name (str)               : name to search for
-        pathlist (list)          : list of directory names to search
-        match_func (str -> bool) : determines if the name is a match
-
-    Returns:
-        (str) The pathname of the object, or None if not found.
-    """
-    for dirname in pathlist:
-        candidate = os.path.join(dirname, name)
-        if match_func(candidate):
-            return candidate
-    return None
-
-
-def find_file(filename, pathlist):
-    """ Find a filename in the file system by searching the directories
-        in a `pathlist` (e.g., PATH environment variable that has been semi-colon
-        split into a list).
-
-    Args:
-        filename (str)          : name to search for
-        pathlist (list)         : list of directory names to search
-
-    Returns:
-        (str) The pathname of the object, or None if not found.
-    """
-    return find_in_path(filename, pathlist)
-
-
-def find_dir(dirname, pathlist):
-    """ Find a directory name in the file system by searching the directories
-        in a `pathlist` (e.g., PATH environment variable that has been semi-colon
-        split into a list).
-
-    Args:
-        dirname (str)           : name to search for
-        pathlist (list)         : list of directory names to search
-
-    Returns:
-        (str) The pathname of the object, or None if not found.
-    """
-    return find_in_path(dirname, pathlist, match_func=os.path.isdir)
-
-
-def create_unique_directory_name(root_directory, base_name):
-    """ Create a unique directory name by joining `root_directory` and `base_name`.
-        If this name already exists, append ".1", ".2", ".3", etc., to the final
-        name component until the full directory name is not found.
-
-    Args:
-        root_directory (str)     : root directory in which a new directory will be created
-        base_name (str)          : the base name of the new directory name component to be added
-
-    Returns:
-        (str) The full absolute path of the new directory. The directory has been created.
-    """
-
-    root_directory = os.path.abspath(root_directory)
-    full_path = os.path.join(root_directory, base_name)
-
-    count = 1
-    while os.path.isdir(full_path):
-        new_full_path = os.path.join(root_directory, base_name + "." + str(count))
-        count += 1
-        full_path = new_full_path
-
-    os.makedirs(full_path)
-    return full_path
-
-
-def create_unique_file_name(directory, base_name, extension):
-    """ Create a unique file name in the specified directory by joining `base_name` and `extension`.
-        If this name already exists, append ".1", ".2", ".3", etc., to the `base_name`
-        name component until the full file name is not found.
-
-    Args:
-        directory (str)  : directory in which a new file will be created
-        base_name (str)  : the base name of the new filename to be added
-        extension (str)  : the filename extension of the new filename to be added
-
-    Returns:
-        (str) The full absolute path of the new filename.
-    """
-
-    directory = os.path.abspath(directory)
-    if not os.path.isdir(directory):
-        try:
-            os.makedirs(directory)
-        except Exception as exception:
-            logging.critical(exception)
-            raise exception
-
-    full_path = os.path.join(directory, base_name + "." + extension)
-
-    count = 1
-    while os.path.isfile(full_path):
-        new_full_path = os.path.join(directory, base_name + "." + str(count) + "." + extension)
-        count += 1
-        full_path = new_full_path
-
-    return full_path
-
-
-def get_files_from_path(path, match_func=lambda path: True):
-    """ Return all files in a directory tree matching a criteria.
-
-    Args:
-        path (str)               : Either a single file to include, or a directory to traverse looking for matching
-                                   files.
-        match_func (str -> bool) : Criteria function determining if a file is added to the list
-
-    Returns:
-        Array of absolute paths of matching files
-    """
-
-    if not(os.path.isdir(path) or os.path.isfile(path)):
-        logging.warning("Warning: \"%s\" is not a file or directory", path)
-        return []
-
-    path = os.path.abspath(path)
-
-    files = []
-
-    if os.path.isdir(path):
-        for item in os.listdir(path):
-            files += get_files_from_path(os.path.join(path, item), match_func)
-    else:
-        if match_func(path):
-            files.append(path)
-
-    return files
-
-
 def run_and_log(command, log_level=logging.DEBUG):
     """ Return a command and log its output to the debug logger
 
@@ -780,64 +477,43 @@ def create_artifacts_base_name(coreclr_args, mch_file):
     return artifacts_base_name
 
 
-def is_url(path):
-    """ Return True if this looks like a URL
+def read_csv_metrics(path):
+    """ Read a metrics summary file produced by superpmi, and return the single row containing the information as a dictionary.
 
     Args:
-        path (str) : name to check
+        path (str) : path to .csv file
 
     Returns:
-        True it it looks like an URL, False otherwise.
+        A dictionary with each metric
     """
-    # Probably could use urllib.parse to be more precise.
-    # If it doesn't look like an URL, treat it like a file, possibly a UNC file.
-    return path.lower().startswith("http:") or path.lower().startswith("https:")
 
+    with open(path) as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            return row
+
+    return None
+
+def determine_clrjit_compiler_version(clrjit_path):
+    """ Obtain the version of the compiler that was used to compile the clrjit at the specified path.
+
+    Returns:
+        A string extract from the binary or "unknown" if the string could not be found.
+        See 'jitBuildString' in buildstring.cpp in the JIT to see where this is defined.
+    """
+
+    with open(clrjit_path, "rb") as fh:
+        contents = fh.read()
+
+    match = re.search(b'RyuJIT built by ([^\0]*)? targeting ([^\0]*)-([^\0]*)\0', contents)
+    if match is None:
+        return "unknown"
+
+    return match.group(1).decode("ascii")
 
 ################################################################################
 # Helper classes
 ################################################################################
-
-
-class TempDir:
-    """ Class to create a temporary working directory, or use one that is passed as an argument.
-
-        Use with: "with TempDir() as temp_dir" to change to that directory and then automatically
-        change back to the original working directory afterwards and remove the temporary
-        directory and its contents (if skip_cleanup is False).
-    """
-
-    def __init__(self, path=None, skip_cleanup=False):
-        self.mydir = tempfile.mkdtemp() if path is None else path
-        self.cwd = None
-        self._skip_cleanup = skip_cleanup
-
-    def __enter__(self):
-        self.cwd = os.getcwd()
-        os.chdir(self.mydir)
-        return self.mydir
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.cwd)
-        if not self._skip_cleanup:
-            shutil.rmtree(self.mydir)
-
-
-class ChangeDir:
-    """ Class to temporarily change to a given directory. Use with "with".
-    """
-
-    def __init__(self, mydir):
-        self.mydir = mydir
-        self.cwd = None
-
-    def __enter__(self):
-        self.cwd = os.getcwd()
-        os.chdir(self.mydir)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.cwd)
-
 
 class AsyncSubprocessHelper:
     """ Class to help with async multiprocessing tasks.
@@ -893,7 +569,7 @@ class AsyncSubprocessHelper:
             tasks.append(self.__get_item__(item, count, size, async_callback, *extra_args))
             count += 1
 
-        # Inovke all the calls to __get_item__ concurrently and wait for them all to finish.
+        # Invoke all the calls to __get_item__ concurrently and wait for them all to finish.
         await asyncio.gather(*tasks)
 
     def run_to_completion(self, async_callback, *extra_args):
@@ -936,6 +612,8 @@ class SuperPMICollect:
 
         """
 
+        self.core_root = coreclr_args.core_root
+
         if coreclr_args.host_os == "OSX":
             self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
             self.corerun_tool_name = "corerun"
@@ -948,11 +626,11 @@ class SuperPMICollect:
         else:
             raise RuntimeError("Unsupported OS.")
 
+        self.collection_shim_path = os.path.join(self.core_root, self.collection_shim_name)
+
         self.jit_path = os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args))
         self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
         self.mcs_path = determine_mcs_tool_path(coreclr_args)
-
-        self.core_root = coreclr_args.core_root
 
         self.collection_command = coreclr_args.collection_command
         self.collection_args = coreclr_args.collection_args
@@ -1012,7 +690,7 @@ class SuperPMICollect:
         passed = False
 
         try:
-            with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
+            with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup, change_dir=False) as temp_location:
                 # Setup all of the temp locations
                 self.base_fail_mcl_file = os.path.join(temp_location, "basefail.mcl")
                 self.base_mch_file = os.path.join(temp_location, "base.mch")
@@ -1123,9 +801,14 @@ class SuperPMICollect:
             ################################################################################################ Do collection using given collection command (e.g., script)
             if self.collection_command is not None:
                 logging.debug("Starting collection using command")
+                begin_time = datetime.datetime.now()
 
                 collection_command_env = env_copy.copy()
                 collection_complus_env = complus_env.copy()
+                # In debug/checked builds we have the JitPath variable that the runtime will prefer.
+                # We still specify JitName for release builds, but this requires the user to manually
+                # copy the shim next to coreclr.
+                collection_complus_env["JitPath"] = self.collection_shim_path
                 collection_complus_env["JitName"] = self.collection_shim_name
                 set_and_report_env(collection_command_env, root_env, collection_complus_env)
 
@@ -1140,6 +823,9 @@ class SuperPMICollect:
                 stdout_output, _ = proc.communicate()
                 for line in stdout_output.decode('utf-8', errors='replace').splitlines():  # There won't be any stderr output since it was piped to stdout
                     logging.debug(line)
+
+                elapsed_time = datetime.datetime.now() - begin_time
+                logging.debug("Done. Elapsed time: %s", elapsed_time)
             ################################################################################################ end of "self.collection_command is not None"
 
             ################################################################################################ Do collection using PMI
@@ -1153,6 +839,8 @@ class SuperPMICollect:
                     command = [self.corerun, self.pmi_location, "DRIVEALL", assembly]
                     command_string = " ".join(command)
                     logging.debug("%s%s", print_prefix, command_string)
+
+                    begin_time = datetime.datetime.now()
 
                     # Save the stdout and stderr to files, so we can see if PMI wrote any interesting messages.
                     # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
@@ -1191,11 +879,25 @@ class SuperPMICollect:
                         else:
                             raise ose
 
+                    elapsed_time = datetime.datetime.now() - begin_time
+                    logging.debug("%sDone. Elapsed time: %s", print_prefix, elapsed_time)
+
                 # Set environment variables.
                 pmi_command_env = env_copy.copy()
                 pmi_complus_env = complus_env.copy()
+                # In debug/checked builds we have the JitPath variable that the runtime will prefer.
+                # We still specify JitName for release builds, but this requires the user to manually
+                # copy the shim next to coreclr.
+                pmi_complus_env["JitPath"] = self.collection_shim_path
                 pmi_complus_env["JitName"] = self.collection_shim_name
-                set_and_report_env(pmi_command_env, root_env, pmi_complus_env)
+
+                if self.coreclr_args.pmi_path is not None:
+                    pmi_root_env = root_env.copy()
+                    pmi_root_env["PMIPATH"] = ";".join(self.coreclr_args.pmi_path)
+                else:
+                    pmi_root_env = root_env
+
+                set_and_report_env(pmi_command_env, pmi_root_env, pmi_complus_env)
 
                 old_env = os.environ.copy()
                 os.environ.update(pmi_command_env)
@@ -1270,6 +972,8 @@ class SuperPMICollect:
                     command_string = " ".join(command)
                     logging.debug("%s%s", print_prefix, command_string)
 
+                    begin_time = datetime.datetime.now()
+
                     # Save the stdout and stderr to files, so we can see if crossgen2 wrote any interesting messages.
                     # Use the name of the assembly as the basename of the file. mkstemp() will ensure the file
                     # is unique.
@@ -1309,6 +1013,9 @@ class SuperPMICollect:
                     # Delete the response file unless we are skipping cleanup
                     if not self.coreclr_args.skip_cleanup:
                         os.remove(rsp_filepath)
+
+                    elapsed_time = datetime.datetime.now() - begin_time
+                    logging.debug("%sDone. Elapsed time: %s", print_prefix, elapsed_time)
 
                 # Set environment variables.
                 crossgen2_command_env = env_copy.copy()
@@ -1447,7 +1154,7 @@ class SuperPMICollect:
 ################################################################################
 
 
-def print_superpmi_failure_code(return_code, coreclr_args):
+def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics):
     """ Print a description of a superpmi return (error) code. If the return code is
         zero, meaning success, don't print anything.
         Note that Python treats process return codes (at least on Windows) as
@@ -1455,8 +1162,7 @@ def print_superpmi_failure_code(return_code, coreclr_args):
         those return codes.
     """
     if return_code == 0:
-        # Don't print anything if the code is zero, which is success.
-        pass
+        logging.info("Clean SuperPMI {} ({} contexts processed)".format("replay" if diff_metrics is None else "diff", base_metrics["Successful compiles"]))
     elif return_code == -1 or return_code == 4294967295:
         logging.error("General fatal error")
     elif return_code == -2 or return_code == 4294967294:
@@ -1466,7 +1172,15 @@ def print_superpmi_failure_code(return_code, coreclr_args):
     elif return_code == 2:
         logging.warning("Asm diffs found")
     elif return_code == 3:
-        logging.warning("SuperPMI missing data encountered")
+        missing_base = int(base_metrics["Missing compiles"])
+        total_contexts = int(base_metrics["Successful compiles"]) + int(base_metrics["Failing compiles"])
+
+        if diff_metrics is None:
+            logging.warning("SuperPMI encountered missing data for {} out of {} contexts".format(missing_base, total_contexts))
+        else:
+            missing_diff = int(diff_metrics["Missing compiles"])
+            logging.warning("SuperPMI encountered missing data. Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
+
     elif return_code == 139 and coreclr_args.host_os != "windows":
         logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
     else:
@@ -1574,7 +1288,7 @@ class SuperPMIReplay:
             if self.coreclr_args.arch != self.coreclr_args.target_arch:
                 repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
-            if not self.coreclr_args.sequential:
+            if not self.coreclr_args.sequential and not self.coreclr_args.compile:
                 common_flags += [ "-p" ]
 
             if self.coreclr_args.break_on_assert:
@@ -1582,6 +1296,9 @@ class SuperPMIReplay:
 
             if self.coreclr_args.break_on_error:
                 common_flags += [ "-boe" ]
+
+            if self.coreclr_args.compile:
+                common_flags += [ "-c", self.coreclr_args.compile ]
 
             if self.coreclr_args.spmi_log_file is not None:
                 common_flags += [ "-w", self.coreclr_args.spmi_log_file ]
@@ -1612,31 +1329,35 @@ class SuperPMIReplay:
                 flags = common_flags.copy()
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
+                metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_metrics.csv")
+
                 flags += [
-                    "-f", fail_mcl_file  # Failing mc List
+                    "-f", fail_mcl_file,  # Failing mc List
+                    "-metricsSummary", metrics_summary_file
                 ]
 
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
                 return_code = run_and_log(command)
-                print_superpmi_failure_code(return_code, self.coreclr_args)
-                if return_code == 0:
-                    logging.info("Clean SuperPMI replay")
-                else:
-                    result = False
+
+                metrics = read_csv_metrics(metrics_summary_file)
+
+                print_superpmi_result(return_code, self.coreclr_args, metrics, None)
+                if return_code != 0:
                     # Don't report as replay failure missing data (return code 3).
                     # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
                     # reported as a replay failure.
                     if return_code != 3:
+                        result = False
                         files_with_replay_failures.append(mch_file)
 
-                if is_nonzero_length_file(fail_mcl_file):
-                    # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
-                    if return_code == 0:
-                        logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
-                    print_fail_mcl_file_method_numbers(fail_mcl_file)
-                    repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(repro_flags), self.jit_path)
-                    artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
-                    save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
+                        if is_nonzero_length_file(fail_mcl_file):
+                            # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
+                            if return_code == 0:
+                                logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
+                            print_fail_mcl_file_method_numbers(fail_mcl_file)
+                            repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(repro_flags), self.jit_path)
+                            artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
+                            save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
                 if not self.coreclr_args.skip_cleanup:
                     if os.path.isfile(fail_mcl_file):
@@ -1718,6 +1439,12 @@ class SuperPMIReplayAsmDiffs:
                 "COMPlus_JitGCDump": "*",
                 "COMPlus_NgenGCDump": "*" })
 
+        if self.coreclr_args.debuginfo:
+            asm_complus_vars.update({
+                "COMPlus_JitDebugDump": "*",
+                "COMPlus_NgenDebugDump": "*",
+                "COMPlus_JitDisasmWithDebugInfo": "1" })
+
         jit_dump_complus_vars = asm_complus_vars.copy()
         jit_dump_complus_vars.update({
             "COMPlus_JitDump": "*",
@@ -1740,12 +1467,19 @@ class SuperPMIReplayAsmDiffs:
         if self.coreclr_args.base_jit_option:
             for o in self.coreclr_args.base_jit_option:
                 base_option_flags += "-jitoption", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
+                base_option_flags += "-jitoption", o
         base_option_flags_for_diff_artifact = base_option_flags
 
         diff_option_flags = []
         diff_option_flags_for_diff_artifact = []
         if self.coreclr_args.diff_jit_option:
             for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+                diff_option_flags_for_diff_artifact += "-jitoption", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
                 diff_option_flags_for_diff_artifact += "-jitoption", o
 
@@ -1769,7 +1503,7 @@ class SuperPMIReplayAsmDiffs:
         # List of all Markdown summary files
         all_md_summary_files = []
 
-        with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
+        with TempDir(None, self.coreclr_args.skip_cleanup) as temp_location:
             logging.debug("")
             logging.debug("Temp Location: %s", temp_location)
             logging.debug("")
@@ -1788,75 +1522,81 @@ class SuperPMIReplayAsmDiffs:
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
                 diff_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_diff.mcl")
 
-                # If the user passed -temp_dir, we skip the SuperPMI replay process,
-                # and rely on what we find from a previous run.
-                if self.coreclr_args.temp_dir is not None:
-                    return_code = 1
-                else:
-                    flags = [
-                        "-a",  # Asm diffs
-                        "-v", "ewmi",  # display errors, warnings, missing, jit info
-                        "-f", fail_mcl_file,  # Failing mc List
-                        "-diffMCList", diff_mcl_file,  # Create all of the diffs in an mcl file
-                        "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
-                    ]
-                    flags += altjit_asm_diffs_flags
-                    flags += base_option_flags
-                    flags += diff_option_flags
+                base_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_base_metrics.csv")
+                diff_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_diff_metrics.csv")
 
-                    if not self.coreclr_args.sequential:
-                        flags += [ "-p" ]
+                flags = [
+                    "-a",  # Asm diffs
+                    "-v", "ewmi",  # display errors, warnings, missing, jit info
+                    "-f", fail_mcl_file,  # Failing mc List
+                    "-diffMCList", diff_mcl_file,  # Create all of the diffs in an mcl file
+                    "-r", os.path.join(temp_location, "repro"),  # Repro name, create .mc repro files
+                    "-baseMetricsSummary", base_metrics_summary_file, # Create summary of metrics we can use to get total code size impact
+                    "-diffMetricsSummary", diff_metrics_summary_file,
+                ]
+                flags += altjit_asm_diffs_flags
+                flags += base_option_flags
+                flags += diff_option_flags
 
-                    if self.coreclr_args.break_on_assert:
-                        flags += [ "-boa" ]
+                if not self.coreclr_args.sequential and not self.coreclr_args.compile:
+                    flags += [ "-p" ]
 
-                    if self.coreclr_args.break_on_error:
-                        flags += [ "-boe" ]
+                if self.coreclr_args.break_on_assert:
+                    flags += [ "-boa" ]
 
-                    if self.coreclr_args.spmi_log_file is not None:
-                        flags += [ "-w", self.coreclr_args.spmi_log_file ]
+                if self.coreclr_args.break_on_error:
+                    flags += [ "-boe" ]
 
-                    if self.coreclr_args.error_limit is not None:
-                        flags += ["-failureLimit", self.coreclr_args.error_limit]
+                if self.coreclr_args.compile:
+                    flags += [ "-c", self.coreclr_args.compile ]
 
-                    # Change the working directory to the Core_Root we will call SuperPMI from.
-                    # This is done to allow libcoredistools to be loaded correctly on unix
-                    # as the loadlibrary path will be relative to the current directory.
-                    with ChangeDir(self.coreclr_args.core_root):
-                        command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
-                        return_code = run_and_log(command)
-                        print_superpmi_failure_code(return_code, self.coreclr_args)
-                        if return_code == 0:
-                            logging.info("Clean SuperPMI replay")
-                        else:
-                            result = False
-                            # Don't report as replay failure asm diffs (return code 2) or missing data (return code 3).
-                            # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
-                            # reported as a replay failure.
-                            if return_code != 2 and return_code != 3:
-                                files_with_replay_failures.append(mch_file)
+                if self.coreclr_args.spmi_log_file is not None:
+                    flags += [ "-w", self.coreclr_args.spmi_log_file ]
 
+                if self.coreclr_args.error_limit is not None:
+                    flags += ["-failureLimit", self.coreclr_args.error_limit]
+
+                # Change the working directory to the Core_Root we will call SuperPMI from.
+                # This is done to allow libcoredistools to be loaded correctly on unix
+                # as the loadlibrary path will be relative to the current directory.
+                with ChangeDir(self.coreclr_args.core_root):
+                    command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
+                    return_code = run_and_log(command)
+                    logging.debug("return_code: %s", return_code)
+
+                base_metrics = read_csv_metrics(base_metrics_summary_file)
+                diff_metrics = read_csv_metrics(diff_metrics_summary_file)
+
+                print_superpmi_result(return_code, self.coreclr_args, base_metrics, diff_metrics)
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
 
-                if is_nonzero_length_file(fail_mcl_file):
-                    # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
-                    if return_code == 0:
-                        logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
-                    print_fail_mcl_file_method_numbers(fail_mcl_file)
-                    repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
-                    save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
+                if return_code != 0:
+
+                    # Don't report as replay failure asm diffs (return code 2) if not checking diffs with Release build or missing data (return code 3).
+                    # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
+                    # reported as a replay failure.
+                    if (return_code != 2 or self.coreclr_args.diff_with_release) and return_code != 3:
+                        result = False
+                        files_with_replay_failures.append(mch_file)
+
+                        if is_nonzero_length_file(fail_mcl_file):
+                            # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
+                            print_fail_mcl_file_method_numbers(fail_mcl_file)
+                            repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
+                            save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
+
+                # This file had asm diffs; keep track of that.
+                if is_nonzero_length_file(diff_mcl_file):
+                    files_with_asm_diffs.append(mch_file)
 
                 # There were diffs. Go through each method that created diffs and
                 # create a base/diff asm file with diffable asm. In addition, create
                 # a standalone .mc for easy iteration.
-                if is_nonzero_length_file(diff_mcl_file):
+                if is_nonzero_length_file(diff_mcl_file) and not self.coreclr_args.diff_with_release:
                     # AsmDiffs. Save the contents of the fail.mcl file to dig into failures.
 
                     if return_code == 0:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
-
-                    # This file had asm diffs; keep track of that.
-                    files_with_asm_diffs.append(mch_file)
 
                     self.diff_mcl_contents = None
                     with open(diff_mcl_file) as file_handle:
@@ -1949,6 +1689,14 @@ class SuperPMIReplayAsmDiffs:
                         logging.debug(item)
                     logging.debug("")
 
+                    if base_metrics is not None and diff_metrics is not None:
+                        base_bytes = int(base_metrics["Diffed code bytes"])
+                        diff_bytes = int(diff_metrics["Diffed code bytes"])
+                        logging.info("Total bytes of base: {}".format(base_bytes))
+                        logging.info("Total bytes of diff: {}".format(diff_bytes))
+                        delta_bytes = diff_bytes - base_bytes
+                        logging.info("Total bytes of delta: {} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
+
                     try:
                         current_text_diff = text_differences.get_nowait()
                     except:
@@ -1959,11 +1707,11 @@ class SuperPMIReplayAsmDiffs:
                     if current_text_diff is not None:
                         logging.info("Textual differences found in generated asm.")
 
-                        # Find jit-analyze.bat/sh on PATH, if it exists, then invoke it.
+                        # Find jit-analyze on PATH, if it exists, then invoke it.
                         ran_jit_analyze = False
                         path_var = os.environ.get("PATH")
                         if path_var is not None:
-                            jit_analyze_file = "jit-analyze.bat" if platform.system() == "Windows" else "jit-analyze.sh"
+                            jit_analyze_file = "jit-analyze.exe" if platform.system() == "Windows" else "jit-analyze"
                             jit_analyze_path = find_file(jit_analyze_file, path_var.split(os.pathsep))
                             if jit_analyze_path is not None:
                                 # It appears we have a built jit-analyze on the path, so try to run it.
@@ -1971,14 +1719,33 @@ class SuperPMIReplayAsmDiffs:
                                 summary_file_info = ( mch_file, md_summary_file )
                                 all_md_summary_files.append(summary_file_info)
                                 command = [ jit_analyze_path, "--md", md_summary_file, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
+                                if self.coreclr_args.retainOnlyTopFiles:
+                                    command += [ "--retainOnlyTopFiles" ]
                                 if self.coreclr_args.metrics:
                                     command += [ "--metrics", ",".join(self.coreclr_args.metrics) ]
+                                elif base_bytes is not None and diff_bytes is not None:
+                                    command += [ "--override-total-base-metric", str(base_bytes), "--override-total-diff-metric", str(diff_bytes) ]
+
                                 run_and_log(command, logging.INFO)
                                 ran_jit_analyze = True
 
                         if not ran_jit_analyze:
                             logging.info("jit-analyze not found on PATH. Generate a diff analysis report by building jit-analyze from https://github.com/dotnet/jitutils and running:")
                             logging.info("    jit-analyze -r --base %s --diff %s", base_asm_location, diff_asm_location)
+
+                        if self.coreclr_args.git_diff:
+                            asm_diffs_location = os.path.join(asm_root_dir, "asm_diffs.diff")
+                            git_diff_command = [ "git", "diff", "--output=" + asm_diffs_location, "--no-index", "--", base_asm_location, diff_asm_location ]
+                            git_diff_time = time.time() * 1000
+                            git_diff_proc = subprocess.Popen(git_diff_command, stdout=subprocess.PIPE)
+                            git_diff_proc.communicate()
+                            git_diff_elapsed_time = round((time.time() * 1000) - git_diff_time, 1)
+                            git_diff_return_code = git_diff_proc.returncode
+                            if git_diff_return_code == 0 or git_diff_return_code == 1: # 0 means no differences and 1 means differences
+                                logging.info("Created git diff file at %s in %s ms", asm_diffs_location, git_diff_elapsed_time)
+                                logging.info("-------")
+                            else:
+                                raise RuntimeError("Couldn't create git diff")
 
                     else:
                         logging.warning("No textual differences. Is this an issue with coredistools?")
@@ -1996,12 +1763,29 @@ class SuperPMIReplayAsmDiffs:
                         else:
                             logging.warning("No textual differences found in generated JitDump. Is this an issue with coredistools?")
 
+                    if base_metrics is not None and diff_metrics is not None:
+                        missing_base = int(base_metrics["Missing compiles"])
+                        missing_diff = int(diff_metrics["Missing compiles"])
+                        total_contexts = int(base_metrics["Successful compiles"]) + int(base_metrics["Failing compiles"])
+
+                        if missing_base > 0 or missing_diff > 0:
+                            logging.warning("Warning: SuperPMI encountered missing data during the diff. The diff summary printed above may be misleading.")
+                            logging.warning("Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
+
                 ################################################################################################ end of processing asm diffs (if is_nonzero_length_file(diff_mcl_file)...
 
                 if not self.coreclr_args.skip_cleanup:
                     if os.path.isfile(fail_mcl_file):
                         os.remove(fail_mcl_file)
                         fail_mcl_file = None
+
+                    if os.path.isfile(base_metrics_summary_file):
+                        os.remove(base_metrics_summary_file)
+                        base_metrics_summary_file = None
+
+                    if os.path.isfile(diff_metrics_summary_file):
+                        os.remove(diff_metrics_summary_file)
+                        diff_metrics_summary_file = None
 
             ################################################################################################ end of for mch_file in self.mch_files
 
@@ -2011,7 +1795,7 @@ class SuperPMIReplayAsmDiffs:
 
         # Construct an overall Markdown summary file.
 
-        if len(all_md_summary_files) > 0:
+        if len(all_md_summary_files) > 0 and not self.coreclr_args.diff_with_release:
             overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
             if not os.path.isdir(self.coreclr_args.spmi_location):
                 os.makedirs(self.coreclr_args.spmi_location)
@@ -2045,6 +1829,207 @@ class SuperPMIReplayAsmDiffs:
 
         return result
         ################################################################################################ end of replay_with_asm_diffs()
+
+################################################################################
+# SuperPMI Replay/TP diff
+################################################################################
+
+
+class SuperPMIReplayThroughputDiff:
+    """ SuperPMI Replay throughput diff class
+
+    Notes:
+        The object is responsible for replaying the mch files given to the
+        instance of the class and doing TP measurements of the two passed jits.
+    """
+
+    def __init__(self, coreclr_args, mch_files, base_jit_path, diff_jit_path):
+        """ Constructor
+
+        Args:
+            coreclr_args (CoreclrArguments) : parsed args
+            mch_files (list)                : list of MCH files to replay
+            base_jit_path (str)             : path to baseline clrjit
+            diff_jit_path (str)             : path to diff clrjit
+
+        """
+
+        self.base_jit_path = base_jit_path
+        self.diff_jit_path = diff_jit_path
+        self.mch_files = mch_files
+        self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
+        self.pin_path = get_pin_exe_path(coreclr_args)
+        self.inscount_pintool_path = get_inscount_pintool_path(coreclr_args)
+
+        self.coreclr_args = coreclr_args
+        self.diff_mcl_contents = None
+
+    ############################################################################
+    # Instance Methods
+    ############################################################################
+
+    def replay_with_throughput_diff(self):
+        """ Replay SuperPMI collections measuring throughput differences.
+
+        Returns:
+            (bool) True on success; False otherwise
+        """
+
+        # Set up some settings we'll use below.
+
+        target_flags = []
+        if self.coreclr_args.arch != self.coreclr_args.target_arch:
+            target_flags += [ "-target", self.coreclr_args.target_arch ]
+
+        base_option_flags = []
+        if self.coreclr_args.base_jit_option:
+            for o in self.coreclr_args.base_jit_option:
+                base_option_flags += "-jitoption", o
+
+        diff_option_flags = []
+        if self.coreclr_args.diff_jit_option:
+            for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+
+        base_jit_compiler_version = determine_clrjit_compiler_version(self.base_jit_path)
+        diff_jit_compiler_version = determine_clrjit_compiler_version(self.diff_jit_path)
+
+        if base_jit_compiler_version != diff_jit_compiler_version:
+            logging.warning("Warning: Different compilers used for base and diff JITs. Results may be misleading.")
+            logging.warning("  Base JIT's compiler: {}".format(base_jit_compiler_version))
+            logging.warning("  Diff JIT's compiler: {}".format(diff_jit_compiler_version))
+
+        tp_diffs = []
+
+        with TempDir(None, self.coreclr_args.skip_cleanup) as temp_location:
+            logging.debug("")
+            logging.debug("Temp Location: %s", temp_location)
+            logging.debug("")
+
+            for mch_file in self.mch_files:
+
+                logging.info("Running throughput diff of %s", mch_file)
+
+                base_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_base_metrics.csv")
+                diff_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_diff_metrics.csv")
+
+                pin_options = [
+                    "-follow_execv", # attach to child processes
+                    "-t", self.inscount_pintool_path, "-quiet",
+                ]
+                flags = [
+                    "-applyDiff",
+                    "-baseMetricsSummary", base_metrics_summary_file, # Instruction counts are stored in these
+                    "-diffMetricsSummary", diff_metrics_summary_file,
+                ]
+                flags += target_flags
+                flags += base_option_flags
+                flags += diff_option_flags
+
+                if not self.coreclr_args.sequential and not self.coreclr_args.compile:
+                    flags += [ "-p" ]
+
+                if self.coreclr_args.break_on_assert:
+                    flags += [ "-boa" ]
+
+                if self.coreclr_args.break_on_error:
+                    flags += [ "-boe" ]
+
+                if self.coreclr_args.compile:
+                    flags += [ "-c", self.coreclr_args.compile ]
+
+                if self.coreclr_args.spmi_log_file is not None:
+                    flags += [ "-w", self.coreclr_args.spmi_log_file ]
+
+                if self.coreclr_args.error_limit is not None:
+                    flags += ["-failureLimit", self.coreclr_args.error_limit]
+
+                # Change the working directory to the Core_Root we will call SuperPMI from.
+                # This is done to allow libcoredistools to be loaded correctly on unix
+                # as the loadlibrary path will be relative to the current directory.
+                with ChangeDir(self.coreclr_args.core_root):
+                    command = [self.pin_path] + pin_options + ["--"] + [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
+                    return_code = run_and_log(command)
+                    logging.debug("return_code: %s", return_code)
+
+                base_metrics = read_csv_metrics(base_metrics_summary_file)
+                diff_metrics = read_csv_metrics(diff_metrics_summary_file)
+
+                if base_metrics is not None and diff_metrics is not None:
+                    base_instructions = int(base_metrics["Diff executed instructions"])
+                    diff_instructions = int(diff_metrics["Diff executed instructions"])
+
+                    logging.info("Total instructions executed by base: {}".format(base_instructions))
+                    logging.info("Total instructions executed by diff: {}".format(diff_instructions))
+                    delta_instructions = diff_instructions - base_instructions
+                    logging.info("Total instructions executed delta: {} ({:.2%} of base)".format(delta_instructions, delta_instructions / base_instructions))
+                    tp_diffs.append((os.path.basename(mch_file), base_instructions, diff_instructions))
+                else:
+                    logging.warning("No metric files present?")
+
+                if not self.coreclr_args.skip_cleanup:
+                    if os.path.isfile(base_metrics_summary_file):
+                        os.remove(base_metrics_summary_file)
+                        base_metrics_summary_file = None
+
+                    if os.path.isfile(diff_metrics_summary_file):
+                        os.remove(diff_metrics_summary_file)
+                        diff_metrics_summary_file = None
+
+            ################################################################################################ end of for mch_file in self.mch_files
+
+        # Report the overall results summary of the tpdiff run
+
+        logging.info("Throughput diff summary:")
+
+        # Construct an overall Markdown summary file.
+
+        if len(tp_diffs) > 0:
+            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_summary", "md")
+            if not os.path.isdir(self.coreclr_args.spmi_location):
+                os.makedirs(self.coreclr_args.spmi_location)
+            if os.path.isfile(overall_md_summary_file):
+                os.remove(overall_md_summary_file)
+
+            with open(overall_md_summary_file, "w") as write_fh:
+                if base_jit_compiler_version != diff_jit_compiler_version:
+                    write_fh.write("Warning: Different compilers used for base and diff JITs. Results may be misleading.\n")
+                    write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
+                    write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
+
+                # We write two tables, an overview one with just significantly
+                # impacted collections and a detailed one that includes raw
+                # instruction count and all collections.
+                def is_significant(base, diff):
+                    return round((diff - base) / base * 100, 2) != 0
+
+                if any(is_significant(base, diff) for (_, base, diff) in tp_diffs):
+                    write_fh.write("|Collection|PDIFF|\n")
+                    write_fh.write("|---|---|\n")
+                    for mch_file, base_instructions, diff_instructions in tp_diffs:
+                        if is_significant(base_instructions, diff_instructions):
+                            write_fh.write("|{}|{}{:.2f}%|\n".format(
+                                mch_file,
+                                "+" if diff_instructions > base_instructions else "",
+                                (diff_instructions - base_instructions) / base_instructions * 100))
+                else:
+                    write_fh.write("No significant throughput differences found\n")
+
+                write_fh.write("\n<details>\n")
+                write_fh.write("<summary>Details</summary>\n\n")
+                write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
+                write_fh.write("|---|---|---|---|\n")
+                for mch_file, base_instructions, diff_instructions in tp_diffs:
+                    write_fh.write("|{}|{:,d}|{:,d}|{}{:.2f}%|\n".format(
+                        mch_file, base_instructions, diff_instructions,
+                        "+" if diff_instructions > base_instructions else "",
+                        (diff_instructions - base_instructions) / base_instructions * 100))
+                write_fh.write("\n</details>\n")
+
+            logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+        return True
+        ################################################################################################ end of replay_with_throughput_diff()
 
 ################################################################################
 # Argument handling helpers
@@ -2091,7 +2076,8 @@ def determine_coredis_tools(coreclr_args):
             logging.warning("Warning: Core_Root does not exist at \"%s\"; creating it now", coreclr_args.core_root)
             os.makedirs(coreclr_args.core_root)
         coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
-        download_one_url(coredistools_uri, coredistools_location)
+        skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+        download_one_url(coredistools_uri, coredistools_location, is_azure_storage=True, display_progress=not skip_progress)
 
     assert os.path.isfile(coredistools_location)
     return coredistools_location
@@ -2127,7 +2113,8 @@ def determine_pmi_location(coreclr_args):
                 logging.info("Using PMI found at %s", pmi_location)
             else:
                 pmi_uri = az_blob_storage_superpmi_container_uri + "/pmi/pmi.dll"
-                download_one_url(pmi_uri, pmi_location)
+                skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+                download_one_url(pmi_uri, pmi_location, is_azure_storage=True, display_progress=not skip_progress)
 
     assert os.path.isfile(pmi_location)
     return pmi_location
@@ -2150,6 +2137,21 @@ def determine_jit_name(coreclr_args):
         return coreclr_args.jit_name
 
     jit_base_name = "clrjit"
+
+    if coreclr_args.arch != coreclr_args.target_arch or coreclr_args.host_os != coreclr_args.target_os:
+        # If `-target_arch` or `-target_os` was specified, then figure out the name of the cross-compiler JIT to use.
+
+        if coreclr_args.target_arch.startswith("arm"):
+            os_name = "universal"
+        elif coreclr_args.target_os == "OSX" or coreclr_args.target_os == "Linux":
+            os_name = "unix"
+        elif coreclr_args.target_os == "windows":
+            os_name = "win"
+        else:
+            raise RuntimeError("Unknown OS.")
+
+        jit_base_name = 'clrjit_{}_{}_{}'.format(os_name, coreclr_args.target_arch, coreclr_args.arch)
+
     if coreclr_args.host_os == "OSX":
         return "lib" + jit_base_name + ".dylib"
     elif coreclr_args.host_os == "Linux":
@@ -2347,7 +2349,6 @@ def determine_jit_ee_version(coreclr_args):
     logging.info("Using default JIT/EE Version: %s", default_jit_ee_version)
     return default_jit_ee_version
 
-
 def print_platform_specific_environment_vars(loglevel, coreclr_args, var, value):
     """ Print environment variables as set {}={} or export {}={}
 
@@ -2460,6 +2461,7 @@ def list_superpmi_collections_container_via_azure_api(path_filter=lambda unused:
     """
 
     require_azure_storage_libraries()
+    from jitutil import ContainerClient, AzureCliCredential
 
     superpmi_container_url = az_blob_storage_superpmi_container_uri
 
@@ -2526,7 +2528,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     for item in mch_files:
         # On Windows only, see if any of the mch_files are UNC paths (i.e., "\\server\share\...").
         # If so, download and cache all the files found there to our usual local cache location, to avoid future network access.
-        if coreclr_args.host_os == "windows" and item.startswith("\\\\"):
+        if coreclr_args.host_os == "windows":# and item.startswith("\\\\"):
             # Special case: if the user specifies a .mch file, we'll also look for and cache a .mch.mct file next to it, if one exists.
             # This happens naturally if a directory is passed and we search for all .mch and .mct files in that directory.
             mch_file = os.path.abspath(item)
@@ -2551,8 +2553,9 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     urls = [url for url in urls if filter_local_path(url)]
 
     # Download all the urls at once, and add the local cache filenames to our accumulated list of local file names.
+    skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
     if len(urls) != 0:
-        local_mch_files += download_files(urls, mch_cache_dir)
+        local_mch_files += download_files(urls, mch_cache_dir, is_azure_storage=True, display_progress=not skip_progress)
 
     # Special case: walk the URLs list and for every ".mch" or ".mch.zip" file, check to see that either the associated ".mct" file is already
     # in the list, or add it to a new list to attempt to download (but don't fail the download if it doesn't exist).
@@ -2563,7 +2566,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
             if mct_url not in urls:
                 mct_urls.append(mct_url)
     if len(mct_urls) != 0:
-        local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False)
+        local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False, is_azure_storage=True, display_progress=not skip_progress)
 
     # Even though we might have downloaded MCT files, only return the set of MCH files.
     local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch"])]
@@ -2639,7 +2642,7 @@ def download_mch_from_azure(coreclr_args, target_dir):
         list containing the local path of files downloaded
     """
 
-    blob_filter_string = "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
+    blob_filter_string =  "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
 
     # Determine if a URL in Azure Storage should be allowed. The path looks like:
     #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
@@ -2658,95 +2661,8 @@ def download_mch_from_azure(coreclr_args, target_dir):
     blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
     urls = [blob_url_prefix + path for path in paths]
 
-    return download_files(urls, target_dir)
-
-
-def download_files(paths, target_dir, verbose=True, fail_if_not_found=True):
-    """ Download a set of files, specified as URLs or paths (such as Windows UNC paths),
-        to a target directory. If a file is a .ZIP file, then uncompress the file and
-        copy all its contents to the target directory.
-
-    Args:
-        paths (list): the URLs and paths to download
-        target_dir (str): target directory where files are copied.
-        verbse (bool): if True, do verbose logging.
-        fail_if_not_found (bool): if True, fail if a download fails due to file not found (HTTP error 404).
-                                  Otherwise, ignore the failure.
-
-    Returns:
-        list of full paths of local filenames of downloaded files in the target directory
-    """
-
-    if len(paths) == 0:
-        logging.warning("No files specified to download")
-        return None
-
-    if verbose:
-        logging.info("Downloading:")
-        for item_path in paths:
-            logging.info("  %s", item_path)
-
-    # Create the target directory now, if it doesn't already exist.
-    target_dir = os.path.abspath(target_dir)
-    if not os.path.isdir(target_dir):
-        os.makedirs(target_dir)
-
-    local_paths = []
-
-    # In case we'll need a temp directory for ZIP file processing, create it first.
-    with TempDir() as temp_location:
-        for item_path in paths:
-            is_item_url = is_url(item_path)
-            item_name = item_path.split("/")[-1] if is_item_url else os.path.basename(item_path)
-
-            if item_path.lower().endswith(".zip"):
-                # Delete everything in the temp_location (from previous iterations of this loop, so previous URL downloads).
-                temp_location_items = [os.path.join(temp_location, item) for item in os.listdir(temp_location)]
-                for item in temp_location_items:
-                    if os.path.isdir(item):
-                        shutil.rmtree(item)
-                    else:
-                        os.remove(item)
-
-                download_path = os.path.join(temp_location, item_name)
-                if is_item_url:
-                    ok = download_one_url(item_path, download_path, fail_if_not_found)
-                    if not ok:
-                        continue
-                else:
-                    if fail_if_not_found or os.path.isfile(item_path):
-                        if verbose:
-                            logging.info("Download: %s -> %s", item_path, download_path)
-                        shutil.copy2(item_path, download_path)
-
-                if verbose:
-                    logging.info("Uncompress %s", download_path)
-                with zipfile.ZipFile(download_path, "r") as file_handle:
-                    file_handle.extractall(temp_location)
-
-                # Copy everything that was extracted to the target directory.
-                items = [ os.path.join(temp_location, item) for item in os.listdir(temp_location) if not item.endswith(".zip") ]
-                for item in items:
-                    target_path = os.path.join(target_dir, os.path.basename(item))
-                    if verbose:
-                        logging.info("Copy %s -> %s", item, target_path)
-                    shutil.copy2(item, target_dir)
-                    local_paths.append(target_path)
-            else:
-                # Not a zip file; download directory to target directory
-                download_path = os.path.join(target_dir, item_name)
-                if is_item_url:
-                    ok = download_one_url(item_path, download_path, fail_if_not_found)
-                    if not ok:
-                        continue
-                else:
-                    if fail_if_not_found or os.path.isfile(item_path):
-                        if verbose:
-                            logging.info("Download: %s -> %s", item_path, download_path)
-                        shutil.copy2(item_path, download_path)
-                local_paths.append(download_path)
-
-    return local_paths
+    skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+    return download_files(urls, target_dir, is_azure_storage=True, display_progress=not skip_progress)
 
 
 def upload_mch(coreclr_args):
@@ -2757,6 +2673,7 @@ def upload_mch(coreclr_args):
     """
 
     require_azure_storage_libraries(need_azure_identity=False)
+    from jitutil import BlobServiceClient
 
     def upload_blob(file, blob_name):
         blob_client = blob_service_client.get_blob_client(container=az_superpmi_container_name, blob=blob_name)
@@ -3033,8 +2950,8 @@ def process_base_jit_path_arg(coreclr_args):
         1. Determine the current git hash using:
              git rev-parse HEAD
            or use the `-git_hash` argument (call the result `git_hash`).
-        2. Determine the baseline: where does this hash meet `main` using:
-             git merge-base `git_hash` main
+        2. Determine the baseline: where does this hash meet the newest `main` branch of any remote using:
+             git branch -r --sort=-committerdate -v --list "*/main" followed by git merge-base
            or use the `-base_git_hash` argument (call the result `base_git_hash`).
         3. If the `-base_git_hash` argument is used, use that directly as the exact git
            hash of the baseline JIT to use.
@@ -3090,16 +3007,28 @@ def process_base_jit_path_arg(coreclr_args):
 
         if coreclr_args.base_git_hash is None:
             # We've got the current hash; figure out the baseline hash.
-            command = [ "git", "merge-base", current_hash, "main" ]
+            # First find the newest hash for any branch matching */main.
+            command = [ "git", "branch", "-r", "--sort=-committerdate", "-v", "--list", "*/main" ]
+            logging.debug("Invoking: %s", " ".join(command))
+            proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+            stdout_git_main_branch, _ = proc.communicate()
+            return_code = proc.returncode
+            if return_code != 0:
+                raise RuntimeError("Couldn't determine newest 'main' git hash")
+
+            main_hash = stdout_git_main_branch.decode('utf-8').strip().split()[1]
+
+            # Get the merge-base between the newest main and our current rev
+            command = [ "git", "merge-base", current_hash, main_hash ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_git_merge_base, _ = proc.communicate()
             return_code = proc.returncode
-            if return_code == 0:
-                baseline_hash = stdout_git_merge_base.decode('utf-8').strip()
-                logging.info("Baseline hash: %s", current_hash)
-            else:
+            if return_code != 0:
                 raise RuntimeError("Couldn't determine baseline git hash")
+
+            baseline_hash = stdout_git_merge_base.decode('utf-8').strip()
+            logging.info("Baseline hash: %s", baseline_hash)
         else:
             baseline_hash = coreclr_args.base_git_hash
 
@@ -3141,7 +3070,7 @@ def process_base_jit_path_arg(coreclr_args):
             blob_folder_name = "{}/{}/{}/{}/{}/{}".format(az_builds_root_folder, git_hash, coreclr_args.host_os, coreclr_args.arch, coreclr_args.build_type, jit_name)
             blob_uri = "{}/{}".format(az_blob_storage_jitrollingbuild_container_uri, blob_folder_name)
             urls = [ blob_uri ]
-            local_files = download_files(urls, basejit_dir, verbose=False, fail_if_not_found=False)
+            local_files = download_files(urls, basejit_dir, verbose=False, is_azure_storage=True, fail_if_not_found=False)
 
             if len(local_files) > 0:
                 if hashnum > 1:
@@ -3163,6 +3092,53 @@ def process_base_jit_path_arg(coreclr_args):
 
     raise RuntimeError("No baseline JIT found")
 
+def get_pintools_path(coreclr_args):
+    """ Get the local path where we expect pintools for this OS to be located
+    
+    Returns:
+        A path to the folder.
+    """
+    return os.path.join(coreclr_args.spmi_location, "pintools", pintools_current_version, coreclr_args.host_os.lower())
+
+def get_pin_exe_path(coreclr_args):
+    """ Get the local path where we expect the pin executable to be located
+    
+    Returns:
+        A path to the executable.
+    """
+    root = get_pintools_path(coreclr_args)
+    exe = "pin.exe" if coreclr_args.host_os.lower() == "windows" else "pin"
+    return os.path.join(root, exe)
+
+def get_inscount_pintool_path(coreclr_args):
+    """ Get the local path where we expect the clrjit inscount pintool to be located
+    
+    Returns:
+        A path to the pintool library.
+    """
+    if coreclr_args.host_os.lower() == "osx":
+        pintool_filename = "libclrjit_inscount.dylib"
+    elif coreclr_args.host_os.lower() == "windows":
+        pintool_filename = "clrjit_inscount.dll"
+    else:
+        pintool_filename = "libclrjit_inscount.so"
+
+    return os.path.join(get_pintools_path(coreclr_args), "clrjit_inscount_" + coreclr_args.arch, pintool_filename)
+
+def download_clrjit_pintool(coreclr_args):
+    """ Download the pintool package for doing measurements of the JIT from Azure Storage.
+    """
+
+    if os.path.isfile(get_pin_exe_path(coreclr_args)):
+        return
+
+    pin_dir_path = get_pintools_path(coreclr_args)
+    pintools_rel_path = "{}/{}/{}.zip".format(az_pintools_root_folder, pintools_current_version, coreclr_args.host_os.lower())
+    pintool_uri = "{}/{}".format(az_blob_storage_superpmi_container_uri, pintools_rel_path)
+    local_files = download_files([pintool_uri], pin_dir_path, verbose=False, is_azure_storage=True, fail_if_not_found=False)
+    if len(local_files) <= 0:
+        logging.error("Error: {} not found".format(pintools_rel_path))
+        raise RuntimeError("{} not found".format(pintools_rel_path))
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -3182,8 +3158,11 @@ def setup_args(args):
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
+    formatter = logging.Formatter("[%(asctime)s] %(message)s", datefmt="%H:%M:%S")
+
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(logging.DEBUG)
+    stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
 
     # Parse the arguments
@@ -3221,6 +3200,11 @@ def setup_args(args):
                         "Unable to set spmi_location",
                         modify_arg=setup_spmi_location_arg)
 
+    coreclr_args.verify(args,
+                        "no_progress",
+                        lambda unused: True,
+                        "Unable to set no_progress")
+
     # Finish setting up logging.
     # The spmi_location is the root directory where we put the log file.
     # Log everything to the log file and only the specified verbosity to the console logger.
@@ -3249,6 +3233,7 @@ def setup_args(args):
             os.remove(log_file)
         file_handler = logging.FileHandler(log_file, encoding='utf8')
         file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
         logging.critical("================ Logging to %s", log_file)
 
@@ -3367,10 +3352,54 @@ def setup_args(args):
                             "Unable to set mch_files")
 
         coreclr_args.verify(args,
+                            "compile",
+                            lambda unused: True,
+                            "Method context not valid")
+
+        coreclr_args.verify(args,
                             "private_store",
                             lambda item: True,
                             "Specify private_store or set environment variable SUPERPMI_PRIVATE_STORE to use a private store.",
                             modify_arg=lambda arg: os.environ["SUPERPMI_PRIVATE_STORE"].split(";") if arg is None and "SUPERPMI_PRIVATE_STORE" in os.environ else arg)
+
+    def verify_base_diff_args():
+
+        coreclr_args.verify(args,
+                            "base_jit_path",
+                            lambda unused: True,
+                            "Unable to set base_jit_path")
+
+        coreclr_args.verify(args,
+                            "diff_jit_path",
+                            os.path.isfile,
+                            "Error: JIT not found at diff_jit_path {}".format,
+                            modify_arg=setup_jit_path_arg)
+
+        coreclr_args.verify(args,
+                            "git_hash",
+                            lambda unused: True,
+                            "Unable to set git_hash")
+
+        coreclr_args.verify(args,
+                            "base_git_hash",
+                            lambda unused: True,
+                            "Unable to set base_git_hash")
+
+        coreclr_args.verify(args,
+                            "jitoption",
+                            lambda unused: True,
+                            "Unable to set jitoption")
+
+        coreclr_args.verify(args,
+                            "base_jit_option",
+                            lambda unused: True,
+                            "Unable to set base_jit_option.")
+
+        coreclr_args.verify(args,
+                            "diff_jit_option",
+                            lambda unused: True,
+                            "Unable to set diff_jit_option.")
+
 
     if coreclr_args.mode == "collect":
 
@@ -3391,6 +3420,11 @@ def setup_args(args):
                             "jitoption",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Unable to set jitoption")
+
+        coreclr_args.verify(args,
+                            "compile",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Method context not valid")
 
         coreclr_args.verify(args,
                             "collection_command",
@@ -3480,6 +3514,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set tiered_compilation")
 
+        coreclr_args.verify(args,
+                            "pmi_path",
+                            lambda unused: True,
+                            "Unable to set pmi_path")
+
         if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False):
             print("Either a collection command or `--pmi` or `--crossgen2` must be specified")
             sys.exit(1)
@@ -3495,6 +3534,12 @@ def setup_args(args):
         if ((args.pmi is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
             print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
             sys.exit(1)
+
+        if not args.pmi:
+            if args.pmi_path is not None:
+                logging.warning("Warning: -pmi_path is set but --pmi is not.")
+            if args.pmi_location is not None:
+                logging.warning("Warning: -pmi_location is set but --pmi is not.")
 
         if args.collection_command is None and args.merge_mch_files is not True:
             assert args.collection_args is None
@@ -3603,32 +3648,7 @@ def setup_args(args):
         verify_target_args()
         verify_superpmi_common_args()
         verify_replay_common_args()
-
-        coreclr_args.verify(args,
-                            "base_jit_path",
-                            lambda unused: True,
-                            "Unable to set base_jit_path")
-
-        coreclr_args.verify(args,
-                            "diff_jit_path",
-                            os.path.isfile,
-                            "Error: JIT not found at diff_jit_path {}".format,
-                            modify_arg=setup_jit_path_arg)
-
-        coreclr_args.verify(args,
-                            "git_hash",
-                            lambda unused: True,
-                            "Unable to set git_hash")
-
-        coreclr_args.verify(args,
-                            "base_git_hash",
-                            lambda unused: True,
-                            "Unable to set base_git_hash")
-
-        coreclr_args.verify(args,
-                            "temp_dir",
-                            lambda unused: True,
-                            "Unable to set temp_dir.")
+        verify_base_diff_args()
 
         coreclr_args.verify(args,
                             "gcinfo",
@@ -3636,19 +3656,14 @@ def setup_args(args):
                             "Unable to set gcinfo.")
 
         coreclr_args.verify(args,
+                            "debuginfo",
+                            lambda unused: True,
+                            "Unable to set debuginfo.")
+
+        coreclr_args.verify(args,
                             "diff_jit_dump",
                             lambda unused: True,
                             "Unable to set diff_jit_dump.")
-
-        coreclr_args.verify(args,
-                            "base_jit_option",
-                            lambda unused: True,
-                            "Unable to set base_jit_option.")
-
-        coreclr_args.verify(args,
-                            "diff_jit_option",
-                            lambda unused: True,
-                            "Unable to set diff_jit_option.")
 
         coreclr_args.verify(args,
                             "tag",
@@ -3660,6 +3675,21 @@ def setup_args(args):
                             "metrics",
                             lambda unused: True,
                             "Unable to set metrics.")
+
+        coreclr_args.verify(args,
+                            "retainOnlyTopFiles",
+                            lambda unused: True,
+                            "Unable to set retainOnlyTopFiles.")
+
+        coreclr_args.verify(args,
+                            "diff_with_release",
+                            lambda unused: True,
+                            "Unable to set diff_with_release.")
+
+        coreclr_args.verify(args,
+                            "git_diff",
+                            lambda unused: True,
+                            "Unable to set git_diff.")
 
         process_base_jit_path_arg(coreclr_args)
 
@@ -3708,9 +3738,20 @@ def setup_args(args):
                             os.path.isfile,
                             "Unable to find coredistools.")
 
-        if coreclr_args.temp_dir is not None:
-            coreclr_args.temp_dir = os.path.abspath(coreclr_args.temp_dir)
-            logging.debug("Using temp_dir %s", coreclr_args.temp_dir)
+    elif coreclr_args.mode == "tpdiff":
+
+        verify_target_args()
+        verify_superpmi_common_args()
+        verify_replay_common_args()
+        verify_base_diff_args()
+
+        coreclr_args.verify(coreclr_args.arch,
+                            "arch",
+                            lambda arch: arch == "x86" or arch == "x64",
+                            "Throughput measurements not supported on platform {}".format(coreclr_args.arch))
+
+        process_base_jit_path_arg(coreclr_args)
+        download_clrjit_pintool(coreclr_args)
 
     elif coreclr_args.mode == "upload":
 
@@ -3807,7 +3848,7 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set pattern")
 
-    if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "download":
+    if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "tpdiff" or coreclr_args.mode == "download":
         if hasattr(coreclr_args, "private_store") and coreclr_args.private_store is not None:
             logging.info("Using private stores:")
             for path in coreclr_args.private_store:
@@ -3910,6 +3951,8 @@ def main(args):
         base_jit_path = coreclr_args.base_jit_path
         diff_jit_path = coreclr_args.diff_jit_path
 
+        if coreclr_args.diff_with_release:
+            logging.info("Diff between Checked and Release.")
         logging.info("Base JIT Path: %s", base_jit_path)
         logging.info("Diff JIT Path: %s", diff_jit_path)
 
@@ -3919,6 +3962,37 @@ def main(args):
 
         asm_diffs = SuperPMIReplayAsmDiffs(coreclr_args, mch_files, base_jit_path, diff_jit_path)
         success = asm_diffs.replay_with_asm_diffs()
+
+        end_time = datetime.datetime.now()
+        elapsed_time = end_time - begin_time
+
+        logging.debug("Finish time: %s", end_time.strftime("%H:%M:%S"))
+        logging.debug("Elapsed time: %s", elapsed_time)
+
+    elif coreclr_args.mode == "tpdiff":
+        local_mch_paths = process_mch_files_arg(coreclr_args)
+        mch_files = get_mch_files_for_replay(local_mch_paths, coreclr_args.filter)
+        if mch_files is None:
+            return 1
+
+        begin_time = datetime.datetime.now()
+
+        logging.info("SuperPMI throughput diff")
+        logging.debug("------------------------------------------------------------")
+        logging.debug("Start time: %s", begin_time.strftime("%H:%M:%S"))
+        
+        base_jit_path = coreclr_args.base_jit_path
+        diff_jit_path = coreclr_args.diff_jit_path
+
+        logging.info("Base JIT Path: %s", base_jit_path)
+        logging.info("Diff JIT Path: %s", diff_jit_path)
+
+        logging.info("Using MCH files:")
+        for mch_file in mch_files:
+            logging.info("  %s", mch_file)
+
+        tp_diff = SuperPMIReplayThroughputDiff(coreclr_args, mch_files, base_jit_path, diff_jit_path)
+        success = tp_diff.replay_with_throughput_diff()
 
         end_time = datetime.datetime.now()
         elapsed_time = end_time - begin_time

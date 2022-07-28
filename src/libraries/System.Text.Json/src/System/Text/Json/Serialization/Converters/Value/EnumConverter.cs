@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,7 +16,7 @@ namespace System.Text.Json.Serialization.Converters
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
 
         // Odd type codes are conveniently signed types (for enum backing types).
-        private static readonly string? s_negativeSign = ((int)s_enumTypeCode % 2) == 0 ? null : NumberFormatInfo.CurrentInfo.NegativeSign;
+        private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
 
         private const string ValueSeparator = ", ";
 
@@ -24,6 +25,8 @@ namespace System.Text.Json.Serialization.Converters
         private readonly JsonNamingPolicy? _namingPolicy;
 
         private readonly ConcurrentDictionary<ulong, JsonEncodedText> _nameCache;
+
+        private ConcurrentDictionary<ulong, JsonEncodedText>? _dictionaryKeyPolicyCache;
 
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
@@ -45,8 +48,13 @@ namespace System.Text.Json.Serialization.Converters
             _namingPolicy = namingPolicy;
             _nameCache = new ConcurrentDictionary<ulong, JsonEncodedText>();
 
+#if NETCOREAPP
+            string[] names = Enum.GetNames<T>();
+            T[] values = Enum.GetValues<T>();
+#else
             string[] names = Enum.GetNames(TypeToConvert);
             Array values = Enum.GetValues(TypeToConvert);
+#endif
             Debug.Assert(names.Length == values.Length);
 
             JavaScriptEncoder? encoder = serializerOptions.Encoder;
@@ -58,7 +66,11 @@ namespace System.Text.Json.Serialization.Converters
                     break;
                 }
 
+#if NETCOREAPP
+                T value = values[i];
+#else
                 T value = (T)values.GetValue(i)!;
+#endif
                 ulong key = ConvertToUInt64(value);
                 string name = names[i];
 
@@ -82,7 +94,7 @@ namespace System.Text.Json.Serialization.Converters
                     return default;
                 }
 
-                return ReadWithQuotes(ref reader);
+                return ReadAsPropertyNameCore(ref reader, typeToConvert, options);
             }
 
             if (token != JsonTokenType.Number || !_converterOptions.HasFlag(EnumConverterOptions.AllowNumbers))
@@ -167,6 +179,8 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     // We are dealing with a combination of flag constants since
                     // all constant values were cached during warm-up.
+                    Debug.Assert(original.Contains(ValueSeparator));
+
                     JavaScriptEncoder? encoder = options.Encoder;
 
                     if (_nameCache.Count < NameCacheSizeSoftLimit)
@@ -261,7 +275,7 @@ namespace System.Text.Json.Serialization.Converters
             // so we'll just pick the first valid one and check for a negative sign
             // if needed.
             return (value[0] >= 'A' &&
-                (s_negativeSign == null || !value.StartsWith(s_negativeSign)));
+                (!s_isSignedEnum || !value.StartsWith(NumberFormatInfo.CurrentInfo.NegativeSign)));
         }
 
         private JsonEncodedText FormatEnumValue(string value, JavaScriptEncoder? encoder)
@@ -302,13 +316,33 @@ namespace System.Text.Json.Serialization.Converters
             return converted;
         }
 
-        internal override T ReadWithQuotes(ref Utf8JsonReader reader)
+        internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            string? enumString = reader.GetString();
+#if NETCOREAPP
+            char[]? rentedBuffer = null;
+            int bufferLength = reader.ValueLength;
+
+            Span<char> charBuffer = bufferLength <= JsonConstants.StackallocCharThreshold
+                ? stackalloc char[JsonConstants.StackallocCharThreshold]
+                : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
+
+            int charsWritten = reader.CopyString(charBuffer);
+            ReadOnlySpan<char> source = charBuffer.Slice(0, charsWritten);
 
             // Try parsing case sensitive first
-            if (!Enum.TryParse(enumString, out T value)
-                && !Enum.TryParse(enumString, ignoreCase: true, out value))
+            bool success = Enum.TryParse(source, out T value) || Enum.TryParse(source, ignoreCase: true, out value);
+
+            if (rentedBuffer != null)
+            {
+                charBuffer.Slice(0, charsWritten).Clear();
+                ArrayPool<char>.Shared.Return(rentedBuffer);
+            }
+#else
+            string? enumString = reader.GetString();
+            // Try parsing case sensitive first
+            bool success = Enum.TryParse(enumString, out T value) || Enum.TryParse(enumString, ignoreCase: true, out value);
+#endif
+            if (!success)
             {
                 ThrowHelper.ThrowJsonException();
             }
@@ -316,7 +350,7 @@ namespace System.Text.Json.Serialization.Converters
             return value;
         }
 
-        internal override void WriteWithQuotes(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             // An EnumConverter that invokes this method
             // can only be created by JsonSerializerOptions.GetDictionaryKeyConverter
@@ -325,35 +359,83 @@ namespace System.Text.Json.Serialization.Converters
 
             ulong key = ConvertToUInt64(value);
 
-            if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
+            // Try to obtain values from caches
+            if (options.DictionaryKeyPolicy != null)
+            {
+                Debug.Assert(!isWritingExtensionDataProperty);
+
+                if (_dictionaryKeyPolicyCache != null && _dictionaryKeyPolicyCache.TryGetValue(key, out JsonEncodedText formatted))
+                {
+                    writer.WritePropertyName(formatted);
+                    return;
+                }
+            }
+            else if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
             {
                 writer.WritePropertyName(formatted);
                 return;
             }
 
+            // if there are not cached values
             string original = value.ToString();
             if (IsValidIdentifier(original))
             {
-                // We are dealing with a combination of flag constants since
-                // all constant values were cached during warm-up.
-                JavaScriptEncoder? encoder = options.Encoder;
+                Debug.Assert(original.Contains(ValueSeparator));
 
-                if (_nameCache.Count < NameCacheSizeSoftLimit)
+                if (options.DictionaryKeyPolicy != null)
                 {
-                    formatted = JsonEncodedText.Encode(original, encoder);
+                    original = options.DictionaryKeyPolicy.ConvertName(original);
 
-                    writer.WritePropertyName(formatted);
+                    if (original == null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(options.DictionaryKeyPolicy);
+                    }
 
-                    _nameCache.TryAdd(key, formatted);
+                    _dictionaryKeyPolicyCache ??= new ConcurrentDictionary<ulong, JsonEncodedText>();
+
+                    if (_dictionaryKeyPolicyCache.Count < NameCacheSizeSoftLimit)
+                    {
+                        JavaScriptEncoder? encoder = options.Encoder;
+
+                        JsonEncodedText formatted = JsonEncodedText.Encode(original, encoder);
+
+                        writer.WritePropertyName(formatted);
+
+                        _dictionaryKeyPolicyCache.TryAdd(key, formatted);
+                    }
+                    else
+                    {
+                        // We also do not create a JsonEncodedText instance here because passing the string
+                        // directly to the writer is cheaper than creating one and not caching it for reuse.
+                        writer.WritePropertyName(original);
+                    }
+
+                    return;
                 }
                 else
                 {
-                    // We also do not create a JsonEncodedText instance here because passing the string
-                    // directly to the writer is cheaper than creating one and not caching it for reuse.
-                    writer.WritePropertyName(original);
-                }
+                    // We might be dealing with a combination of flag constants since all constant values were
+                    // likely cached during warm - up(assuming the number of constants <= NameCacheSizeSoftLimit).
 
-                return;
+                    JavaScriptEncoder? encoder = options.Encoder;
+
+                    if (_nameCache.Count < NameCacheSizeSoftLimit)
+                    {
+                        JsonEncodedText formatted = JsonEncodedText.Encode(original, encoder);
+
+                        writer.WritePropertyName(formatted);
+
+                        _nameCache.TryAdd(key, formatted);
+                    }
+                    else
+                    {
+                        // We also do not create a JsonEncodedText instance here because passing the string
+                        // directly to the writer is cheaper than creating one and not caching it for reuse.
+                        writer.WritePropertyName(original);
+                    }
+
+                    return;
+                }
             }
 
             switch (s_enumTypeCode)

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting.Internal;
+using Microsoft.Extensions.Hosting.Systemd;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting
@@ -12,15 +12,30 @@ namespace Microsoft.Extensions.Hosting
         [Fact]
         public void DefaultsToOffOutsideOfService()
         {
-            var host = new HostBuilder()
+            using IHost host = new HostBuilder()
                 .UseSystemd()
                 .Build();
 
-            using (host)
+            var lifetime = host.Services.GetRequiredService<IHostLifetime>();
+            Assert.NotNull(lifetime);
+            Assert.IsNotType<SystemdLifetime>(lifetime);
+        }
+
+        [Fact]
+        public void ServiceCollectionExtensionMethodDefaultsToOffOutsideOfService()
+        {
+            var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
             {
-                var lifetime = host.Services.GetRequiredService<IHostLifetime>();
-                Assert.IsType<ConsoleLifetime>(lifetime);
-            }
+                // Disable defaults that may not be supported on the testing platform like EventLogLoggerProvider.
+                DisableDefaults = true,
+            });
+
+            builder.Services.AddSystemd();
+            using IHost host = builder.Build();
+
+            var lifetime = host.Services.GetRequiredService<IHostLifetime>();
+            Assert.NotNull(lifetime);
+            Assert.IsNotType<SystemdLifetime>(lifetime);
         }
     }
 }

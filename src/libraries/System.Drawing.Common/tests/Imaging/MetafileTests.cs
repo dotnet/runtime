@@ -43,7 +43,6 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(IntPtr.Zero, false));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_IntPtrToWmf_ThrowsExternalException()
         {
@@ -112,7 +111,6 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentNullException, ArgumentException>("stream", null, () => new Metafile((Stream)null));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Ctor_EmptyStream_ThrowsExternalException()
@@ -192,7 +190,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(InvalidPath_TestData))]
         public void Ctor_ZeroPointerEmfTypeInvalidString_ThrowsArgumentException(string description)
@@ -852,6 +849,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55655", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_IntPtrZeroIV_ThrowsArgumentException()
         {
@@ -866,6 +864,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55655", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(MetafileFrameUnit_Invalid_TestData))]
         public void Ctor_InvalidFrameUnitIII_ThrowsArgumentException(MetafileFrameUnit frameUnit)
@@ -883,6 +882,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55655", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(EmfType_Invalid_TestData))]
         public void Ctor_InvalidEmfTypeIII_ThrowsArgumentException(EmfType emfType)
@@ -963,7 +963,6 @@ namespace System.Drawing.Imaging.Tests
             Assert.Throws<NullReferenceException>(() => Metafile.GetMetafileHeader((Stream)null));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Static_GetMetafileHeader_EmptyStream_ArgumentException()
@@ -1004,7 +1003,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHenhmetafile_Disposed_ThrowsArgumentException()
         {

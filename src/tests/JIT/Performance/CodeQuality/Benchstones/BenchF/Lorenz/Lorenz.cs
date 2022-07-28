@@ -3,12 +3,8 @@
 //
 // This program solves the "lorenz" equations using Runge-Kutta 4
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.BenchF
 {
@@ -108,27 +104,9 @@ public static class Lorenz
         return (x * y - (8.0 * z) / 3.0);
     }
 
-    [Benchmark]
-    public static void Test()
-    {
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                Bench();
-            }
-        }
-    }
-
-    private static bool TestBase()
-    {
-        bool result = Bench();
-        return result;
-    }
-
     public static int Main()
     {
-        bool result = TestBase();
+        bool result = Bench();
         return (result ? 100 : -1);
     }
 }

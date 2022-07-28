@@ -2,26 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
-    internal class ConstructorInfoWrapper : ConstructorInfo
+    internal sealed class ConstructorInfoWrapper : ConstructorInfo
     {
         private readonly IMethodSymbol _ctor;
         private readonly MetadataLoadContextInternal _metadataLoadContext;
 
         public ConstructorInfoWrapper(IMethodSymbol ctor, MetadataLoadContextInternal metadataLoadContext)
         {
+            Debug.Assert(ctor != null);
             _ctor = ctor;
             _metadataLoadContext = metadataLoadContext;
         }
 
         public override Type DeclaringType => _ctor.ContainingType.AsType(_metadataLoadContext);
 
-        public override MethodAttributes Attributes => throw new NotImplementedException();
+        private MethodAttributes? _attributes;
+
+        public override MethodAttributes Attributes => _attributes ??= _ctor.GetMethodAttributes();
 
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException();
 

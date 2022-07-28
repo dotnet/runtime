@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <assert.h>
 #include "../profiler.h"
 
 class EventPipeWritingProfiler : public Profiler
@@ -17,7 +18,7 @@ public:
         _simpleEvent(0)
     {}
 
-    virtual GUID GetClsid();
+    static GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
     virtual HRESULT STDMETHODCALLTYPE JITCompilationStarted(FunctionID functionId, BOOL fIsSafeToBlock);
@@ -37,7 +38,7 @@ private:
     template<typename T>
     static void WriteToBuffer(BYTE *pBuffer, size_t bufferLength, size_t *pOffset, T value)
     {
-        _ASSERTE(bufferLength >= (*pOffset + sizeof(T)));
+        assert(bufferLength >= (*pOffset + sizeof(T)));
 
         *(T*)(pBuffer + *pOffset) = value;
         *pOffset += sizeof(T);

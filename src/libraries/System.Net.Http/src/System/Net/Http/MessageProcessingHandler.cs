@@ -30,10 +30,7 @@ namespace System.Net.Http
         protected internal sealed override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
+            ArgumentNullException.ThrowIfNull(request);
 
             // Since most of the SendAsync code is just Task handling, there's no reason to share the code.
             HttpRequestMessage newRequestMessage = ProcessRequest(request, cancellationToken);
@@ -45,10 +42,7 @@ namespace System.Net.Http
         protected internal sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
+            ArgumentNullException.ThrowIfNull(request);
 
             // ProcessRequest() and ProcessResponse() are supposed to be fast, so we call ProcessRequest() on the same
             // thread SendAsync() was invoked to avoid context switches. However, if ProcessRequest() throws, we have
@@ -63,7 +57,7 @@ namespace System.Net.Http
 
                 // We schedule a continuation task once the inner handler completes in order to trigger the response
                 // processing method. ProcessResponse() is only called if the task wasn't canceled before.
-                sendAsyncTask.ContinueWithStandard(tcs, static (task, state) =>
+                sendAsyncTask.ContinueWith(static (task, state) =>
                 {
                     var sendState = (SendState)state!;
                     MessageProcessingHandler self = sendState._handler;
@@ -106,7 +100,7 @@ namespace System.Net.Http
                     // if the operation was canceled: We'll set the Task returned to the user to canceled. Passing the
                     // cancellation token here would result in the continuation task to not be called at all. I.e. we
                     // would never complete the task returned to the caller of SendAsync().
-                });
+                }, tcs, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
             catch (OperationCanceledException e)
             {

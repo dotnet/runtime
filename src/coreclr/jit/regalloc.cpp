@@ -61,11 +61,8 @@ DWORD Compiler::getCanDoubleAlign()
 //    Otherwise, we compare the weighted ref count of ebp-enregistered variables against double the
 //    ref count for double-aligned values.
 //
-bool Compiler::shouldDoubleAlign(unsigned             refCntStk,
-                                 unsigned             refCntEBP,
-                                 BasicBlock::weight_t refCntWtdEBP,
-                                 unsigned             refCntStkParam,
-                                 BasicBlock::weight_t refCntWtdStkDbl)
+bool Compiler::shouldDoubleAlign(
+    unsigned refCntStk, unsigned refCntEBP, weight_t refCntWtdEBP, unsigned refCntStkParam, weight_t refCntWtdStkDbl)
 {
     bool           doDoubleAlign        = false;
     const unsigned DBL_ALIGN_SETUP_SIZE = 7;
@@ -84,7 +81,7 @@ bool Compiler::shouldDoubleAlign(unsigned             refCntStk,
     JITDUMP("  Sum of weighted ref counts for EBP enregistered variables: %f\n", refCntWtdEBP);
     JITDUMP("  Sum of weighted ref counts for weighted stack based doubles: %f\n", refCntWtdStkDbl);
 
-    if (((BasicBlock::weight_t)bytesUsed) > ((refCntWtdStkDbl * misaligned_weight) / BB_UNITY_WEIGHT))
+    if (((weight_t)bytesUsed) > ((refCntWtdStkDbl * misaligned_weight) / BB_UNITY_WEIGHT))
     {
         JITDUMP("    Predicting not to double-align ESP to save %d bytes of code.\n", bytesUsed);
     }
@@ -259,6 +256,16 @@ bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
     }
 #endif // TARGET_ARM64
 
+#ifdef TARGET_LOONGARCH64
+    // TODO-LOONGARCH64-NYI: This is temporary: force a frame pointer-based frame until genFnProlog
+    // can handle non-frame pointer frames.
+    if (!result)
+    {
+        INDEBUG(reason = "Temporary LOONGARCH64 force frame pointer");
+        result = true;
+    }
+#endif // TARGET_LOONGARCH64
+
 #ifdef DEBUG
     if ((result == true) && (wbReason != nullptr))
     {
@@ -310,7 +317,7 @@ void Compiler::raMarkStkVars()
 
             if (!stkFixedArgInVarArgs)
             {
-                needSlot |= varDsc->lvAddrExposed;
+                needSlot |= varDsc->IsAddressExposed();
             }
 
 #if FEATURE_FIXED_OUT_ARGS

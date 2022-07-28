@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Disconnect")]
-        internal static extern Error Disconnect(IntPtr socket);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Disconnect")]
+        internal static partial Error Disconnect(IntPtr socket);
     }
 }

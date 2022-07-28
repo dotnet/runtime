@@ -8,6 +8,6 @@ namespace Microsoft.Extensions.FileProviders
 {
     internal interface IPollingChangeToken : IChangeToken
     {
-        CancellationTokenSource CancellationTokenSource { get; }
+        CancellationTokenSource? CancellationTokenSource { get; }
     }
 }

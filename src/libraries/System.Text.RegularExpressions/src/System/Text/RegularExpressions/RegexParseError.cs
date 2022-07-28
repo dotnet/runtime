@@ -10,7 +10,12 @@ namespace System.Text.RegularExpressions
     /// <remarks>
     /// This information is made available through <see cref="RegexParseException.Error"/>.
     /// </remarks>
-    public enum RegexParseError
+#if REGEXGENERATOR
+    internal
+#else
+    public
+#endif
+    enum RegexParseError
     {
         /// <summary>
         /// An unknown regular expression parse error.

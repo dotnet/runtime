@@ -9,7 +9,7 @@ namespace System.ComponentModel
     {
         void ApplySort(ListSortDescriptionCollection sorts);
 
-        string Filter { get; set; }
+        string? Filter { get; [RequiresUnreferencedCode("Members of types used in the filter expression might be trimmed.")] set; }
 
         ListSortDescriptionCollection SortDescriptions { get; }
 

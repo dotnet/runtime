@@ -444,13 +444,13 @@ SharedMemoryId::SharedMemoryId(LPCSTR name)
     if (strncmp(name, "Global\\", 7) == 0)
     {
         m_isSessionScope = false;
-        name += _countof("Global\\") - 1;
+        name += STRING_LENGTH("Global\\");
     }
     else
     {
         if (strncmp(name, "Local\\", 6) == 0)
         {
-            name += _countof("Local\\") - 1;
+            name += STRING_LENGTH("Local\\");
         }
         m_isSessionScope = true;
     }
@@ -519,9 +519,14 @@ bool SharedMemoryId::AppendSessionDirectoryName(PathCharString& path) const
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SharedMemorySharedDataHeader
 
-SIZE_T SharedMemorySharedDataHeader::DetermineTotalByteCount(SIZE_T dataByteCount)
+SIZE_T SharedMemorySharedDataHeader::GetUsedByteCount(SIZE_T dataByteCount)
 {
-    return SharedMemoryHelpers::AlignUp(sizeof(SharedMemorySharedDataHeader) + dataByteCount, GetVirtualPageSize());
+    return sizeof(SharedMemorySharedDataHeader) + dataByteCount;
+}
+
+SIZE_T SharedMemorySharedDataHeader::GetTotalByteCount(SIZE_T dataByteCount)
+{
+    return SharedMemoryHelpers::AlignUp(GetUsedByteCount(dataByteCount), GetVirtualPageSize());
 }
 
 SharedMemorySharedDataHeader::SharedMemorySharedDataHeader(SharedMemoryType type, UINT8 version)
@@ -642,7 +647,7 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
     {
         _ASSERTE(
             processDataHeader->GetSharedDataTotalByteCount() ==
-            SharedMemorySharedDataHeader::DetermineTotalByteCount(sharedDataByteCount));
+            SharedMemorySharedDataHeader::GetTotalByteCount(sharedDataByteCount));
         processDataHeader->IncRefCount();
         return processDataHeader;
     }
@@ -697,14 +702,23 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
     }
 
     // Set or validate the file length
-    SIZE_T sharedDataTotalByteCount = SharedMemorySharedDataHeader::DetermineTotalByteCount(sharedDataByteCount);
+    SIZE_T sharedDataUsedByteCount = SharedMemorySharedDataHeader::GetUsedByteCount(sharedDataByteCount);
+    SIZE_T sharedDataTotalByteCount = SharedMemorySharedDataHeader::GetTotalByteCount(sharedDataByteCount);
     if (createdFile)
     {
         SharedMemoryHelpers::SetFileSize(fileDescriptor, sharedDataTotalByteCount);
     }
-    else if (SharedMemoryHelpers::GetFileSize(fileDescriptor) != sharedDataTotalByteCount)
+    else
     {
-        throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::HeaderMismatch));
+        SIZE_T currentFileSize = SharedMemoryHelpers::GetFileSize(fileDescriptor);
+        if (currentFileSize < sharedDataUsedByteCount)
+        {
+            throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::HeaderMismatch));
+        }
+        if (currentFileSize < sharedDataTotalByteCount)
+        {
+            SharedMemoryHelpers::SetFileSize(fileDescriptor, sharedDataTotalByteCount);
+        }
     }
 
     // Acquire and hold a shared file lock on the shared memory file as long as it is open, to indicate that this process is
@@ -726,7 +740,7 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
     {
         if (clearContents)
         {
-            memset(mappedBuffer, 0, sharedDataTotalByteCount);
+            memset(mappedBuffer, 0, sharedDataUsedByteCount);
         }
         sharedDataHeader = new(mappedBuffer) SharedMemorySharedDataHeader(requiredSharedDataHeader);
     }

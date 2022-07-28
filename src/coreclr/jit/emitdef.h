@@ -12,6 +12,8 @@
 #include "emitarm.h"
 #elif defined(TARGET_ARM64)
 #include "emitarm64.h"
+#elif defined(TARGET_LOONGARCH64)
+#include "emitloongarch64.h"
 #else
 #error Unsupported or unset target architecture
 #endif

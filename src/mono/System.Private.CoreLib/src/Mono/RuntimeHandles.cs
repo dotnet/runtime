@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace Mono
 {
-    internal unsafe struct RuntimeClassHandle
+    internal unsafe struct RuntimeClassHandle : IEquatable<RuntimeClassHandle>
     {
         private readonly RuntimeStructs.MonoClass* value;
 
@@ -107,7 +107,7 @@ namespace Mono
             for (int i = 0; i < n; i++)
             {
                 RuntimeClassHandle c = new RuntimeClassHandle(value->constraints[i]);
-                a[i] = Type.GetTypeFromHandle(c.GetTypeHandle());
+                a[i] = Type.GetTypeFromHandle(c.GetTypeHandle())!;
             }
 
             return a;
@@ -125,7 +125,7 @@ namespace Mono
         }
     }
 
-    internal struct RuntimeEventHandle
+    internal struct RuntimeEventHandle : IEquatable<RuntimeEventHandle>
     {
         private readonly IntPtr value;
 
@@ -165,7 +165,7 @@ namespace Mono
         }
     }
 
-    internal struct RuntimePropertyHandle
+    internal struct RuntimePropertyHandle : IEquatable<RuntimePropertyHandle>
     {
         private readonly IntPtr value;
 

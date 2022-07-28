@@ -9,7 +9,7 @@ using System.Text;
 namespace System
 {
     [Serializable]
-    public struct RuntimeMethodHandle : ISerializable
+    public struct RuntimeMethodHandle : IEquatable<RuntimeMethodHandle>, ISerializable
     {
         private readonly IntPtr value;
 
@@ -56,6 +56,10 @@ namespace System
             return value.GetHashCode();
         }
 
+        public static RuntimeMethodHandle FromIntPtr(IntPtr value) => new RuntimeMethodHandle(value);
+
+        public static IntPtr ToIntPtr(RuntimeMethodHandle value) => value.Value;
+
         public static bool operator ==(RuntimeMethodHandle left, RuntimeMethodHandle right)
         {
             return left.Equals(right);
@@ -66,7 +70,7 @@ namespace System
             return !left.Equals(right);
         }
 
-        internal static string ConstructInstantiation(RuntimeMethodInfo method, TypeNameFormatFlags format)
+        internal static string ConstructInstantiation(RuntimeMethodInfo method)
         {
             var sb = new StringBuilder();
             Type[]? gen_params = method.GetGenericArguments();
@@ -85,5 +89,8 @@ namespace System
         {
             return value == IntPtr.Zero;
         }
+
+        // Temporary placeholder until Mono adds support for supporting boxing true Nullables.
+        internal static object? ReboxFromNullable(object? src) => src;
     }
 }

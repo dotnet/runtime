@@ -20,7 +20,7 @@ Y/TpEwCD1kSHs1wZQemLArbVqSlyKTdCODxizK+5lurXGh310DgO//JbpgsjOjkh
 D9fVWpuVzYpEDfZm");
 
             Pkcs8PrivateKeyInfo pkcs8Info = Pkcs8PrivateKeyInfo.DecryptAndDecode(
-                "Test",
+                (ReadOnlySpan<char>)"Test",
                 windowsEcdsaKey,
                 out int bytesRead);
 
@@ -224,7 +224,7 @@ D9fVWpuVzYpEDfZm");
             using (RSA rsa = RSA.Create())
             {
                 byte[] encryptedKey = rsa.ExportEncryptedPkcs8PrivateKey(
-                    nameof(DecryptionFailures),
+                    (ReadOnlySpan<char>)nameof(DecryptionFailures),
                     new PbeParameters(
                         PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
                         HashAlgorithmName.SHA1,
@@ -232,7 +232,7 @@ D9fVWpuVzYpEDfZm");
 
                 // Wrong password
                 Assert.Throws<CryptographicException>(
-                    () => Pkcs8PrivateKeyInfo.DecryptAndDecode("wrong", encryptedKey, out _));
+                    () => Pkcs8PrivateKeyInfo.DecryptAndDecode((ReadOnlySpan<char>)"wrong", encryptedKey, out _));
 
                 // Wrong password
                 Assert.Throws<CryptographicException>(
@@ -240,13 +240,13 @@ D9fVWpuVzYpEDfZm");
 
                 // Corrupted data
                 Assert.Throws<CryptographicException>(
-                    () => Pkcs8PrivateKeyInfo.DecryptAndDecode("initial", encryptedKey.AsMemory(1), out _));
+                    () => Pkcs8PrivateKeyInfo.DecryptAndDecode((ReadOnlySpan<char>)"initial", encryptedKey.AsMemory(1), out _));
 
                 Assert.Throws<CryptographicException>(
-                    () => Pkcs8PrivateKeyInfo.DecryptAndDecode("initial", encryptedKey.AsMemory(0, encryptedKey.Length - 1), out _));
+                    () => Pkcs8PrivateKeyInfo.DecryptAndDecode((ReadOnlySpan<char>)"initial", encryptedKey.AsMemory(0, encryptedKey.Length - 1), out _));
 
                 Pkcs8PrivateKeyInfo privateKey = Pkcs8PrivateKeyInfo.DecryptAndDecode(
-                    nameof(DecryptionFailures),
+                    (ReadOnlySpan<char>)nameof(DecryptionFailures),
                     encryptedKey,
                     out int bytesRead);
 
@@ -270,7 +270,7 @@ D9fVWpuVzYpEDfZm");
                 encryptedData = rsa.Encrypt(secret, encryptionPadding);
 
                 bool exported = rsa.TryExportEncryptedPkcs8PrivateKey(
-                    "initial",
+                    (ReadOnlySpan<char>)"initial",
                     new PbeParameters(
                         PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
                         HashAlgorithmName.SHA1,
@@ -281,7 +281,7 @@ D9fVWpuVzYpEDfZm");
                 Assert.True(exported, "Key exported");
 
                 Pkcs8PrivateKeyInfo privateKey = Pkcs8PrivateKeyInfo.DecryptAndDecode(
-                    "initial",
+                    (ReadOnlySpan<char>)"initial",
                     buf,
                     out int bytesRead);
 
@@ -351,11 +351,11 @@ D9fVWpuVzYpEDfZm");
                 HashAlgorithmName.SHA256,
                 1024);
 
-            Assert.ThrowsAny<CryptographicException>(() => info.Encrypt("hi", pbeParameters));
+            Assert.ThrowsAny<CryptographicException>(() => info.Encrypt((ReadOnlySpan<char>)"hi", pbeParameters));
             Assert.ThrowsAny<CryptographicException>(() => info.Encrypt(new byte[3], pbeParameters));
 
             Assert.ThrowsAny<CryptographicException>(
-                () => info.TryEncrypt("hello", pbeParameters, Span<byte>.Empty, out _));
+                () => info.TryEncrypt((ReadOnlySpan<char>)"hello", pbeParameters, Span<byte>.Empty, out _));
 
             Assert.ThrowsAny<CryptographicException>(
                 () => info.TryEncrypt(new byte[3], pbeParameters, Span<byte>.Empty, out _));

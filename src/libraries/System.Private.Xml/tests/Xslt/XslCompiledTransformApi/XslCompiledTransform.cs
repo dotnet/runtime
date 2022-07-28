@@ -28,14 +28,14 @@ namespace System.Xml.Tests
         public static MethodInfo GetInstanceMethod(Type type, string methName)
         {
             MethodInfo methInfo = type.GetMethod(methName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            Debug.Assert(methInfo != null, "Instance method " + type.Name + "." + methName + " not found");
+            Debug.Assert(methInfo != null, $"Instance method {type.Name}.{methName} not found");
             return methInfo;
         }
 
         public static MethodInfo GetStaticMethod(Type type, string methName)
         {
             MethodInfo methInfo = type.GetMethod(methName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            Debug.Assert(methInfo != null, "Static method " + type.Name + "." + methName + " not found");
+            Debug.Assert(methInfo != null, $"Static method {type.Name}.{methName} not found");
             return methInfo;
         }
 
@@ -544,7 +544,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 3, Desc = "Default XmlResolver, load style sheet with document function, should resolve during transform", Pri = 1, Param = "DefaultResolver.txt")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51911", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [InlineData("DefaultResolver.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("DefaultResolver.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("DefaultResolver.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2409,7 +2408,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass null XmlResolver, load style sheet with document function, should not resolve during transform", Param = "xmlResolver_document_function.txt")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51911", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [InlineData("xmlResolver_document_function.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("xmlResolver_document_function.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("xmlResolver_document_function.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2445,7 +2443,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Default XmlResolver, load style sheet with document function, should resolve during transform", Param = "DefaultResolver.txt")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51911", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [InlineData("DefaultResolver.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData("DefaultResolver.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("DefaultResolver.txt", XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
@@ -2872,7 +2869,7 @@ namespace System.Xml.Tests
 
             if (iCount.Equals(2))
                 return;
-            _output.WriteLine("Exception not generated for invalid ouput destinations");
+            _output.WriteLine("Exception not generated for invalid output destinations");
             Assert.True(false);
         }
 
@@ -2892,7 +2889,7 @@ namespace System.Xml.Tests
                     return;
             }
 
-            _output.WriteLine("Exception not generated for invalid ouput destinations");
+            _output.WriteLine("Exception not generated for invalid output destinations");
             Assert.True(false);
         }
 
@@ -2973,7 +2970,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass null XmlResolver, load style sheet with document function, should not resolve during transform")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51911", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -3033,10 +3029,10 @@ namespace System.Xml.Tests
 
     //[TestCase(Name = "XslCompiledTransform.Transform(IXPathNavigable, XsltArgumentList, XmlWriter, XmlResolver)", Desc = "Constructor Tests", Param = "IXPathNavigable")]
     //[TestCase(Name = "XslCompiledTransform.Transform(XmlReader, XsltArgumentList, XmlWriter, XmlResolver)", Desc = "Constructor Tests", Param = "XmlReader")]
-    public class CTransformConstructorWihtFourParametersTest : XsltApiTestCaseBase2
+    public class CTransformConstructorWithFourParametersTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
-        public CTransformConstructorWihtFourParametersTest(ITestOutputHelper output) : base(output)
+        public CTransformConstructorWithFourParametersTest(ITestOutputHelper output) : base(output)
         {
             _output = output;
         }
@@ -3336,7 +3332,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
         }
 
         //[Variation("Bug398968 - Globalization is broken for document() function")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51244", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [Theory]
         public void RegressionTest1(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)

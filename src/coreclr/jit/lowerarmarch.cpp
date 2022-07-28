@@ -48,13 +48,22 @@ bool Lowering::IsCallTargetInRange(void* addr)
 //    True if the immediate can be folded into an instruction,
 //    for example small enough and non-relocatable.
 //
-// TODO-CQ: we can contain a floating point 0.0 constant in a compare instruction
-// (vcmp on arm, fcmp on arm64).
-//
 bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 {
     if (!varTypeIsFloating(parentNode->TypeGet()))
     {
+#ifdef TARGET_ARM64
+        if (parentNode->OperIsCompare() && childNode->IsFloatPositiveZero())
+        {
+            // Contain 0.0 constant in fcmp on arm64
+            // TODO: Enable for arm too (vcmp)
+
+            // We currently don't emit these for floating points
+            assert(!parentNode->OperIs(GT_TEST_EQ, GT_TEST_NE));
+            return true;
+        }
+#endif
+
         // Make sure we have an actual immediate
         if (!childNode->IsCnsIntOrI())
             return false;
@@ -74,6 +83,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_ADD:
             case GT_SUB:
 #ifdef TARGET_ARM64
+                return emitter::emitIns_valid_imm_for_add(immVal, size);
             case GT_CMPXCHG:
             case GT_LOCKADD:
             case GT_XORR:
@@ -94,13 +104,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_LE:
             case GT_GE:
             case GT_GT:
-            case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-            case GT_SIMD_CHK:
-#endif
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
-#endif
+            case GT_CMP:
+            case GT_BOUNDS_CHECK:
                 return emitter::emitIns_valid_imm_for_cmp(immVal, size);
             case GT_AND:
             case GT_OR:
@@ -140,6 +145,58 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
     return false;
 }
+
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// IsContainableBinaryOp: Is the child node a binary op that is containable from the parent node?
+//
+// Return Value:
+//    True if the child node can be contained.
+//
+// Notes:
+//    This can handle the decision to emit 'madd' or 'msub'.
+//
+bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const
+{
+    if (parentNode->isContained())
+        return false;
+
+    if (!varTypeIsIntegral(parentNode))
+        return false;
+
+    if (parentNode->gtFlags & GTF_SET_FLAGS)
+        return false;
+
+    GenTree* op1 = parentNode->gtGetOp1();
+    GenTree* op2 = parentNode->gtGetOp2();
+
+    if (op2 != childNode)
+        return false;
+
+    if (op1->isContained() || op2->isContained())
+        return false;
+
+    if (!varTypeIsIntegral(op2))
+        return false;
+
+    if (op2->gtFlags & GTF_SET_FLAGS)
+        return false;
+
+    // Find "a + b * c" or "a - b * c".
+    if (parentNode->OperIs(GT_ADD, GT_SUB) && op2->OperIs(GT_MUL))
+    {
+        if (parentNode->gtOverflow())
+            return false;
+
+        if (op2->gtOverflow())
+            return false;
+
+        return !op2->gtGetOp1()->isContained() && !op2->gtGetOp2()->isContained();
+    }
+
+    return false;
+}
+#endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
 // LowerStoreLoc: Lower a store of a lclVar
@@ -190,11 +247,9 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
                 }
             }
 
-            // A local stack slot is at least 4 bytes in size, regardless of
-            // what the local var is typed as, so auto-promote it here
-            // unless it is a field of a promoted struct
-            // TODO-CQ: if the field is promoted shouldn't we also be able to do this?
-            if (!varDsc->lvIsStructField)
+            // TODO-CQ: if the field is promoted independently shouldn't we
+            // also be able to do this?
+            if (!varDsc->lvIsStructField && (varDsc->GetStackSlotHomeType() == TYP_INT))
             {
                 storeLoc->gtType = TYP_INT;
                 con->SetIconValue(ival);
@@ -218,9 +273,103 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 // Return Value:
 //    None.
 //
-void Lowering::LowerStoreIndir(GenTreeIndir* node)
+void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
     ContainCheckStoreIndir(node);
+}
+
+//------------------------------------------------------------------------
+// LowerMul: Lower a GT_MUL/GT_MULHI/GT_MUL_LONG node.
+//
+// For ARM64 recognized GT_MULs that can be turned into GT_MUL_LONGs, as
+// those are cheaper. Performs contaiment checks.
+//
+// Arguments:
+//    mul - The node to lower
+//
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerMul(GenTreeOp* mul)
+{
+    assert(mul->OperIsMul());
+
+#ifdef TARGET_ARM64
+    if (comp->opts.OptimizationEnabled() && mul->OperIs(GT_MUL) && mul->IsValidLongMul())
+    {
+        GenTreeCast* op1 = mul->gtGetOp1()->AsCast();
+        GenTree*     op2 = mul->gtGetOp2();
+
+        mul->ClearOverflow();
+        mul->ClearUnsigned();
+        if (op1->IsUnsigned())
+        {
+            mul->SetUnsigned();
+        }
+
+        mul->gtOp1 = op1->CastOp();
+        BlockRange().Remove(op1);
+
+        if (op2->OperIs(GT_CAST))
+        {
+            mul->gtOp2 = op2->AsCast()->CastOp();
+            BlockRange().Remove(op2);
+        }
+        else
+        {
+            assert(op2->IsIntegralConst());
+            assert(FitsIn<int32_t>(op2->AsIntConCommon()->IntegralValue()));
+
+            op2->ChangeType(TYP_INT);
+        }
+
+        mul->ChangeOper(GT_MUL_LONG);
+    }
+#endif // TARGET_ARM64
+
+    ContainCheckMul(mul);
+
+    return mul->gtNext;
+}
+
+//------------------------------------------------------------------------
+// LowerBinaryArithmetic: lowers the given binary arithmetic node.
+//
+// Arguments:
+//    node - the arithmetic node to lower
+//
+// Returns:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
+{
+    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND))
+    {
+        GenTree* opNode  = nullptr;
+        GenTree* notNode = nullptr;
+        if (binOp->gtGetOp1()->OperIs(GT_NOT))
+        {
+            notNode = binOp->gtGetOp1();
+            opNode  = binOp->gtGetOp2();
+        }
+        else if (binOp->gtGetOp2()->OperIs(GT_NOT))
+        {
+            notNode = binOp->gtGetOp2();
+            opNode  = binOp->gtGetOp1();
+        }
+
+        if (notNode != nullptr)
+        {
+            binOp->gtOp1 = opNode;
+            binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
+            binOp->ChangeOper(GT_AND_NOT);
+            BlockRange().Remove(notNode);
+        }
+    }
+
+    ContainCheckBinary(binOp);
+
+    return binOp->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -235,6 +384,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     GenTree* src     = blkNode->Data();
     unsigned size    = blkNode->Size();
 
+    const bool isDstAddrLocal = dstAddr->OperIsLocalAddr();
+
     if (blkNode->OperIsInitBlkOp())
     {
         if (src->OperIs(GT_INIT_VAL))
@@ -248,7 +399,18 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             blkNode->SetOper(GT_STORE_BLK);
         }
 
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= INITBLK_UNROLL_LIMIT) && src->OperIs(GT_CNS_INT))
+        unsigned initBlockUnrollLimit = INITBLK_UNROLL_LIMIT;
+
+#ifdef TARGET_ARM64
+        if (isDstAddrLocal)
+        {
+            // Since dstAddr points to the stack CodeGen can use more optimal
+            // quad-word store SIMD instructions for InitBlock.
+            initBlockUnrollLimit = INITBLK_LCL_UNROLL_LIMIT;
+        }
+#endif
+
+        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= initBlockUnrollLimit) && src->OperIs(GT_CNS_INT))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -295,13 +457,39 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
         src->SetContained();
 
+        bool isSrcAddrLocal = false;
+
         if (src->OperIs(GT_IND))
         {
+            GenTree* srcAddr = src->AsIndir()->Addr();
             // TODO-Cleanup: Make sure that GT_IND lowering didn't mark the source address as contained.
             // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
             // address, not knowing that GT_IND is part of a block op that has containment restrictions.
-            src->AsIndir()->Addr()->ClearContained();
+            srcAddr->ClearContained();
+            isSrcAddrLocal = srcAddr->OperIsLocalAddr();
         }
+        else
+        {
+            isSrcAddrLocal = true;
+
+            if (src->OperIs(GT_LCL_VAR))
+            {
+                // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+                const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+                comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
+            }
+        }
+
+        unsigned copyBlockUnrollLimit = CPBLK_UNROLL_LIMIT;
+
+#ifdef TARGET_ARM64
+        if (isSrcAddrLocal && isDstAddrLocal)
+        {
+            // Since both srcAddr and dstAddr point to the stack CodeGen can use more optimal
+            // quad-word load and store SIMD instructions for CopyBlock.
+            copyBlockUnrollLimit = CPBLK_LCL_UNROLL_LIMIT;
+        }
+#endif
 
         if (blkNode->OperIs(GT_STORE_OBJ))
         {
@@ -309,11 +497,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             {
                 blkNode->SetOper(GT_STORE_BLK);
             }
-            else if (dstAddr->OperIsLocalAddr() && (size <= CPBLK_UNROLL_LIMIT))
+            else if (isDstAddrLocal && (size <= copyBlockUnrollLimit))
             {
-                // If the size is small enough to unroll then we need to mark the block as non-interruptible
-                // to actually allow unrolling. The generated code does not report GC references loaded in the
-                // temporary register(s) used for copying.
                 blkNode->SetOper(GT_STORE_BLK);
                 blkNode->gtBlkOpGcUnsafe = true;
             }
@@ -325,7 +510,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
         }
-        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= CPBLK_UNROLL_LIMIT))
+        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -372,24 +557,14 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     GenTreeIntCon* offsetNode = addr->AsOp()->gtGetOp2()->AsIntCon();
     ssize_t        offset     = offsetNode->IconValue();
 
-    // All integer load/store instructions on both ARM32 and ARM64 support
-    // offsets in range -255..255. Of course, this is a rather conservative
-    // check. For example, if the offset and size are a multiple of 8 we
-    // could allow a combined offset of up to 32760 on ARM64.
+#ifdef TARGET_ARM
+    // All integer load/store instructions on Arm support offsets in range -255..255.
+    // Of course, this is a rather conservative check.
     if ((offset < -255) || (offset > 255) || (offset + static_cast<int>(size) > 256))
     {
         return;
     }
-
-#ifdef TARGET_ARM64
-    // If we're going to use LDP/STP we need to ensure that the offset is
-    // a multiple of 8 since these instructions do not have an unscaled
-    // offset variant.
-    if ((size >= 2 * REGSIZE_BYTES) && (offset % REGSIZE_BYTES != 0))
-    {
-        return;
-    }
-#endif
+#endif // TARGET_ARM
 
     if (!IsSafeToContainMem(blkNode, addr))
     {
@@ -403,6 +578,45 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     addr->AsAddrMode()->SetScale(0);
     addr->AsAddrMode()->SetOffset(static_cast<int>(offset));
     addr->SetContained();
+}
+
+//------------------------------------------------------------------------
+// LowerPutArgStkOrSplit: Lower a GT_PUTARG_STK/GT_PUTARG_SPLIT.
+//
+// Arguments:
+//    putArgStk - The node to lower
+//
+void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
+{
+    GenTree* src = putArgNode->Data();
+
+    if (src->TypeIs(TYP_STRUCT))
+    {
+        // STRUCT args (FIELD_LIST / OBJ / LCL_VAR / LCL_FLD) will always be contained.
+        MakeSrcContained(putArgNode, src);
+
+        // TODO-ADDR: always perform this transformation in local morph and delete this code.
+        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
+        {
+            GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
+            unsigned             lclNum      = lclAddrNode->GetLclNum();
+            unsigned             lclOffs     = lclAddrNode->GetLclOffs();
+            ClassLayout*         layout      = src->AsObj()->GetLayout();
+
+            src->ChangeOper(GT_LCL_FLD);
+            src->AsLclFld()->SetLclNum(lclNum);
+            src->AsLclFld()->SetLclOffs(lclOffs);
+            src->AsLclFld()->SetLayout(layout);
+
+            BlockRange().Remove(lclAddrNode);
+        }
+        else if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type for
+            // the non-split case.
+            comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -436,7 +650,6 @@ void Lowering::LowerCast(GenTree* tree)
     GenTree*  op1     = tree->AsOp()->gtOp1;
     var_types dstType = tree->CastToType();
     var_types srcType = genActualType(op1->TypeGet());
-    var_types tmpType = TYP_UNDEF;
 
     if (varTypeIsFloating(srcType))
     {
@@ -446,16 +659,6 @@ void Lowering::LowerCast(GenTree* tree)
     }
 
     assert(!varTypeIsSmall(srcType));
-
-    if (tmpType != TYP_UNDEF)
-    {
-        GenTree* tmp = comp->gtNewCastNode(tmpType, op1, tree->IsUnsigned(), tmpType);
-        tmp->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-
-        tree->gtFlags &= ~GTF_UNSIGNED;
-        tree->AsOp()->gtOp1 = tmp;
-        BlockRange().InsertAfter(op1, tmp);
-    }
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
@@ -496,27 +699,203 @@ void Lowering::LowerRotate(GenTree* tree)
     ContainCheckShiftRotate(tree->AsOp());
 }
 
-#ifdef FEATURE_SIMD
-//----------------------------------------------------------------------------------------------
-// Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// LowerModPow2: Lower GT_MOD if the second operand is a constant power of 2.
 //
-//  Arguments:
-//     simdNode - The SIMD intrinsic node.
+// Arguments:
+//    tree - the node to lower
 //
-void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
+// Notes:
+//     TODO: We could do this optimization in morph but we do not have
+//           a conditional select op in HIR. At some point, we may
+//           introduce such an op.
+void Lowering::LowerModPow2(GenTree* node)
 {
-    assert(simdNode->gtType != TYP_SIMD32);
+    assert(node->OperIs(GT_MOD));
+    GenTreeOp* mod      = node->AsOp();
+    GenTree*   dividend = mod->gtGetOp1();
+    GenTree*   divisor  = mod->gtGetOp2();
 
-    if (simdNode->TypeGet() == TYP_SIMD12)
+    JITDUMP("Lower: optimize X MOD POW2");
+
+    assert(divisor->IsIntegralConstPow2());
+
+    const var_types type = mod->TypeGet();
+    assert((type == TYP_INT) || (type == TYP_LONG));
+
+    ssize_t divisorCnsValue         = static_cast<ssize_t>(divisor->AsIntConCommon()->IntegralValue());
+    ssize_t divisorCnsValueMinusOne = divisorCnsValue - 1;
+
+    BlockRange().Remove(divisor);
+
+    // We need to use the dividend node multiple times so its value needs to be
+    // computed once and stored in a temp variable.
+    LIR::Use opDividend(BlockRange(), &mod->AsOp()->gtOp1, mod);
+    dividend = ReplaceWithLclVar(opDividend);
+
+    GenTree* dividend2 = comp->gtClone(dividend);
+    BlockRange().InsertAfter(dividend, dividend2);
+
+    GenTreeIntCon* cns = comp->gtNewIconNode(divisorCnsValueMinusOne, type);
+    BlockRange().InsertAfter(dividend2, cns);
+
+    GenTree* const trueExpr = comp->gtNewOperNode(GT_AND, type, dividend, cns);
+    BlockRange().InsertAfter(cns, trueExpr);
+    LowerNode(trueExpr);
+
+    if (divisorCnsValue == 2)
     {
-        // GT_SIMD node requiring to produce TYP_SIMD12 in fact
-        // produces a TYP_SIMD16 result
-        simdNode->gtType = TYP_SIMD16;
+        // {expr} % 2
+        // Logically turns into:
+        //     let a = {expr}
+        //     if a < 0 then -(a & 1) else (a & 1)
+        // which then turns into:
+        //     and   reg1, reg0, #1
+        //     cmp   reg0, #0
+        //     cneg  reg0, reg1, lt
+
+        GenTreeIntCon* cnsZero = comp->gtNewIconNode(0, type);
+        BlockRange().InsertAfter(trueExpr, cnsZero);
+
+        GenTree* const cmp = comp->gtNewOperNode(GT_CMP, type, dividend2, cnsZero);
+        cmp->gtFlags |= GTF_SET_FLAGS;
+        BlockRange().InsertAfter(cnsZero, cmp);
+        LowerNode(cmp);
+
+        mod->ChangeOper(GT_CNEG_LT);
+        mod->gtOp1 = trueExpr;
+    }
+    else
+    {
+        // {expr} % {cns}
+        // Logically turns into:
+        //     let a = {expr}
+        //     if a > 0 then (a & ({cns} - 1)) else -(-a & ({cns} - 1))
+        // which then turns into:
+        //     and   reg1, reg0, #({cns} - 1)
+        //     negs  reg0, reg0
+        //     and   reg0, reg0, #({cns} - 1)
+        //     csneg reg0, reg1, reg0, mi
+
+        GenTree* const neg = comp->gtNewOperNode(GT_NEG, type, dividend2);
+        neg->gtFlags |= GTF_SET_FLAGS;
+        BlockRange().InsertAfter(trueExpr, neg);
+
+        GenTreeIntCon* cns2 = comp->gtNewIconNode(divisorCnsValueMinusOne, type);
+        BlockRange().InsertAfter(neg, cns2);
+
+        GenTree* const falseExpr = comp->gtNewOperNode(GT_AND, type, neg, cns2);
+        BlockRange().InsertAfter(cns2, falseExpr);
+        LowerNode(falseExpr);
+
+        mod->ChangeOper(GT_CSNEG_MI);
+        mod->gtOp1 = trueExpr;
+        mod->gtOp2 = falseExpr;
     }
 
-    ContainCheckSIMD(simdNode);
+    ContainCheckNode(mod);
 }
-#endif // FEATURE_SIMD
+
+//------------------------------------------------------------------------
+// LowerAddForPossibleContainment: Tries to lower GT_ADD in such a way
+//                                 that would allow one of its operands
+//                                 to be contained.
+//
+// Arguments:
+//    node - the node to lower
+//
+GenTree* Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_ADD));
+
+    if (!comp->opts.OptimizationEnabled())
+        return nullptr;
+
+    if (node->isContained())
+        return nullptr;
+
+    if (!varTypeIsIntegral(node))
+        return nullptr;
+
+    if (node->gtFlags & GTF_SET_FLAGS)
+        return nullptr;
+
+    if (node->gtOverflow())
+        return nullptr;
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    // If the second operand is a containable immediate,
+    // then we do not want to risk moving it around
+    // in this transformation.
+    if (IsContainableImmed(node, op2))
+        return nullptr;
+
+    GenTree* mul = nullptr;
+    GenTree* c   = nullptr;
+    if (op1->OperIs(GT_MUL))
+    {
+        // Swap
+        mul = op1;
+        c   = op2;
+    }
+    else
+    {
+        mul = op2;
+        c   = op1;
+    }
+
+    if (mul->OperIs(GT_MUL) && !(mul->gtFlags & GTF_SET_FLAGS) && varTypeIsIntegral(mul) && !mul->gtOverflow() &&
+        !mul->isContained() && !c->isContained())
+    {
+        GenTree* a = mul->gtGetOp1();
+        GenTree* b = mul->gtGetOp2();
+
+        // Transform "-a * b + c" to "c - a * b"
+        if (a->OperIs(GT_NEG) && !(a->gtFlags & GTF_SET_FLAGS) && !b->OperIs(GT_NEG) && !a->isContained() &&
+            !a->gtGetOp1()->isContained())
+        {
+            mul->AsOp()->gtOp1 = a->gtGetOp1();
+            BlockRange().Remove(a);
+            node->gtOp1 = c;
+            node->gtOp2 = mul;
+            node->ChangeOper(GT_SUB);
+
+            ContainCheckNode(node);
+
+            return node->gtNext;
+        }
+        // Transform "a * -b + c" to "c - a * b"
+        else if (b->OperIs(GT_NEG) && !(b->gtFlags & GTF_SET_FLAGS) && !a->OperIs(GT_NEG) && !b->isContained() &&
+                 !b->gtGetOp1()->isContained())
+        {
+            mul->AsOp()->gtOp2 = b->gtGetOp1();
+            BlockRange().Remove(b);
+            node->gtOp1 = c;
+            node->gtOp2 = mul;
+            node->ChangeOper(GT_SUB);
+
+            ContainCheckNode(node);
+
+            return node->gtNext;
+        }
+        // Transform "a * b + c" to "c + a * b"
+        else if (op1->OperIs(GT_MUL))
+        {
+            node->gtOp1 = c;
+            node->gtOp2 = mul;
+
+            ContainCheckNode(node);
+
+            return node->gtNext;
+        }
+    }
+
+    return nullptr;
+}
+#endif
 
 #ifdef FEATURE_HW_INTRINSICS
 
@@ -539,27 +918,25 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 //
 void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
 {
-    assert(node->gtHWIntrinsicId == NI_AdvSimd_FusedMultiplyAddScalar);
+    assert(node->GetHWIntrinsicId() == NI_AdvSimd_FusedMultiplyAddScalar);
 
-    const HWIntrinsic intrin(node);
-
-    GenTree* op1 = intrin.op1;
-    GenTree* op2 = intrin.op2;
-    GenTree* op3 = intrin.op3;
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+    GenTree* op3 = node->Op(3);
 
     auto lowerOperand = [this](GenTree* op) {
         bool wasNegated = false;
 
         if (op->OperIsHWIntrinsic() &&
-            ((op->AsHWIntrinsic()->gtHWIntrinsicId == NI_AdvSimd_Arm64_DuplicateToVector64) ||
-             (op->AsHWIntrinsic()->gtHWIntrinsicId == NI_Vector64_CreateScalarUnsafe)))
+            ((op->AsHWIntrinsic()->GetHWIntrinsicId() == NI_AdvSimd_Arm64_DuplicateToVector64) ||
+             (op->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector64_CreateScalarUnsafe)))
         {
             GenTreeHWIntrinsic* createVector64 = op->AsHWIntrinsic();
-            GenTree*            valueOp        = createVector64->gtGetOp1();
+            GenTree*            valueOp        = createVector64->Op(1);
 
             if (valueOp->OperIs(GT_NEG))
             {
-                createVector64->gtOp1 = valueOp->gtGetOp1();
+                createVector64->Op(1) = valueOp->gtGetOp1();
                 BlockRange().Remove(valueOp);
                 wasNegated = true;
             }
@@ -576,16 +953,16 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
     {
         if (op2WasNegated != op3WasNegated)
         {
-            node->gtHWIntrinsicId = NI_AdvSimd_FusedMultiplyAddNegatedScalar;
+            node->ChangeHWIntrinsicId(NI_AdvSimd_FusedMultiplyAddNegatedScalar);
         }
         else
         {
-            node->gtHWIntrinsicId = NI_AdvSimd_FusedMultiplySubtractNegatedScalar;
+            node->ChangeHWIntrinsicId(NI_AdvSimd_FusedMultiplySubtractNegatedScalar);
         }
     }
     else if (op2WasNegated != op3WasNegated)
     {
-        node->gtHWIntrinsicId = NI_AdvSimd_FusedMultiplySubtractScalar;
+        node->ChangeHWIntrinsicId(NI_AdvSimd_FusedMultiplySubtractScalar);
     }
 }
 
@@ -595,7 +972,7 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
 //  Arguments:
 //     node - The hardware intrinsic node.
 //
-void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
+GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     assert(node->TypeGet() != TYP_SIMD32);
 
@@ -606,7 +983,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         node->gtType = TYP_SIMD16;
     }
 
-    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
     switch (intrinsicId)
     {
@@ -618,31 +995,25 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // that the node is modified to either not be a HWIntrinsic node or that it is no longer
             // the same intrinsic as when it came in.
 
-            LowerHWIntrinsicCreate(node);
-            assert(!node->OperIsHWIntrinsic() || (node->gtHWIntrinsicId != intrinsicId));
-            LowerNode(node);
-            return;
+            return LowerHWIntrinsicCreate(node);
         }
 
         case NI_Vector64_Dot:
         case NI_Vector128_Dot:
         {
-            LowerHWIntrinsicDot(node);
-            return;
+            return LowerHWIntrinsicDot(node);
         }
 
         case NI_Vector64_op_Equality:
         case NI_Vector128_op_Equality:
         {
-            LowerHWIntrinsicCmpOp(node, GT_EQ);
-            return;
+            return LowerHWIntrinsicCmpOp(node, GT_EQ);
         }
 
         case NI_Vector64_op_Inequality:
         case NI_Vector128_op_Inequality:
         {
-            LowerHWIntrinsicCmpOp(node, GT_NE);
-            return;
+            return LowerHWIntrinsicCmpOp(node, GT_NE);
         }
 
         case NI_AdvSimd_FusedMultiplyAddScalar:
@@ -654,6 +1025,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     ContainCheckHWIntrinsic(node);
+    return node->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -669,18 +1041,19 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //     This check may end up modifying node->gtOp1 if it is a cast node that can be removed
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
-    assert((node->gtHWIntrinsicId == NI_Vector64_Create) || (node->gtHWIntrinsicId == NI_Vector128_Create) ||
-           (node->gtHWIntrinsicId == NI_Vector64_CreateScalarUnsafe) ||
-           (node->gtHWIntrinsicId == NI_Vector128_CreateScalarUnsafe) ||
-           (node->gtHWIntrinsicId == NI_AdvSimd_DuplicateToVector64) ||
-           (node->gtHWIntrinsicId == NI_AdvSimd_DuplicateToVector128) ||
-           (node->gtHWIntrinsicId == NI_AdvSimd_Arm64_DuplicateToVector64) ||
-           (node->gtHWIntrinsicId == NI_AdvSimd_Arm64_DuplicateToVector128));
-    assert(HWIntrinsicInfo::lookupNumArgs(node) == 1);
+    assert((node->GetHWIntrinsicId() == NI_Vector64_Create) || (node->GetHWIntrinsicId() == NI_Vector128_Create) ||
+           (node->GetHWIntrinsicId() == NI_Vector64_CreateScalarUnsafe) ||
+           (node->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe) ||
+           (node->GetHWIntrinsicId() == NI_AdvSimd_DuplicateToVector64) ||
+           (node->GetHWIntrinsicId() == NI_AdvSimd_DuplicateToVector128) ||
+           (node->GetHWIntrinsicId() == NI_AdvSimd_Arm64_DuplicateToVector64) ||
+           (node->GetHWIntrinsicId() == NI_AdvSimd_Arm64_DuplicateToVector128));
+    assert(node->GetOperandCount() == 1);
 
-    GenTree* op1    = node->gtOp1;
+    GenTree* op1    = node->Op(1);
     GenTree* castOp = nullptr;
 
+    // TODO-Casts: why don't we fold the casts? MinOpts?
     if (varTypeIsIntegral(node->GetSimdBaseType()) && op1->OperIs(GT_CAST))
     {
         // We will sometimes get a cast around a constant value (such as for
@@ -703,8 +1076,8 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
                 // We found a containable immediate under
                 // a cast, so remove the cast from the LIR.
 
-                BlockRange().Remove(node->gtOp1);
-                node->gtOp1 = op1;
+                BlockRange().Remove(node->Op(1));
+                node->Op(1) = op1;
             }
             return true;
         }
@@ -728,9 +1101,9 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 //     node  - The hardware intrinsic node.
 //     cmpOp - The comparison operation, currently must be GT_EQ or GT_NE
 //
-void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
+GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 {
-    NamedIntrinsic intrinsicId     = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
     CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
     var_types      simdBaseType    = node->GetSimdBaseType();
     unsigned       simdSize        = node->GetSimdSize();
@@ -750,8 +1123,56 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     //          /--*  op1  simd
     //   node = *  HWINTRINSIC   simd   T op_Equality
 
-    GenTree* op1 = node->gtGetOp1();
-    GenTree* op2 = node->gtGetOp2();
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+
+    // Optimize comparison against Vector64/128<>.Zero via UMAX:
+    //
+    //   bool eq = v == Vector128<integer>.Zero
+    //
+    // to:
+    //
+    //   bool eq = AdvSimd.Arm64.MaxAcross(v.AsUInt16()).ToScalar() == 0;
+    //
+    GenTree* op     = nullptr;
+    GenTree* opZero = nullptr;
+    if (op1->IsVectorZero())
+    {
+        op     = op2;
+        opZero = op1;
+    }
+    else if (op2->IsVectorZero())
+    {
+        op     = op1;
+        opZero = op2;
+    }
+
+    if (!varTypeIsFloating(simdBaseType) && (op != nullptr))
+    {
+        // Use USHORT for V64 and UINT for V128 due to better latency/TP on some CPUs
+        CorInfoType maxType = (simdSize == 8) ? CORINFO_TYPE_USHORT : CORINFO_TYPE_UINT;
+        GenTree*    cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op, NI_AdvSimd_Arm64_MaxAcross, maxType, simdSize);
+        BlockRange().InsertBefore(node, cmp);
+        LowerNode(cmp);
+        BlockRange().Remove(opZero);
+
+        GenTree* val = comp->gtNewSimdHWIntrinsicNode(TYP_INT, cmp, NI_Vector128_ToScalar, CORINFO_TYPE_UINT, simdSize);
+        BlockRange().InsertAfter(cmp, val);
+        LowerNode(val);
+
+        GenTree* cmpZeroCns = comp->gtNewIconNode(0, TYP_INT);
+        BlockRange().InsertAfter(val, cmpZeroCns);
+
+        node->ChangeOper(cmpOp);
+        node->gtType        = TYP_INT;
+        node->AsOp()->gtOp1 = val;
+        node->AsOp()->gtOp2 = cmpZeroCns;
+        LowerNodeCC(node, (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE);
+        node->gtType = TYP_VOID;
+        node->ClearUnusedValue();
+        LowerNode(node);
+        return node->gtNext;
+    }
 
     NamedIntrinsic cmpIntrinsic;
 
@@ -773,7 +1194,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
         case TYP_ULONG:
         case TYP_DOUBLE:
         {
-            cmpIntrinsic = NI_AdvSimd_Arm64_CompareEqual;
+            cmpIntrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareEqualScalar : NI_AdvSimd_Arm64_CompareEqual;
             break;
         }
 
@@ -799,8 +1220,8 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
         GenTree* insCns = comp->gtNewIconNode(-1, TYP_INT);
         BlockRange().InsertAfter(idxCns, insCns);
 
-        GenTree* tmp = comp->gtNewSimdAsHWIntrinsicNode(simdType, cmp, idxCns, insCns, NI_AdvSimd_Insert,
-                                                        CORINFO_TYPE_INT, simdSize);
+        GenTree* tmp = comp->gtNewSimdHWIntrinsicNode(simdType, cmp, idxCns, insCns, NI_AdvSimd_Insert,
+                                                      CORINFO_TYPE_INT, simdSize);
         BlockRange().InsertAfter(insCns, tmp);
         LowerNode(tmp);
 
@@ -816,7 +1237,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     BlockRange().InsertAfter(msk, zroCns);
 
     GenTree* val =
-        comp->gtNewSimdAsHWIntrinsicNode(TYP_UBYTE, msk, zroCns, NI_AdvSimd_Extract, CORINFO_TYPE_UBYTE, simdSize);
+        comp->gtNewSimdHWIntrinsicNode(TYP_UBYTE, msk, zroCns, NI_AdvSimd_Extract, CORINFO_TYPE_UBYTE, simdSize);
     BlockRange().InsertAfter(zroCns, val);
     LowerNode(val);
 
@@ -825,9 +1246,9 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 
     node->ChangeOper(cmpOp);
 
-    node->gtType = TYP_INT;
-    node->gtOp1  = val;
-    node->gtOp2  = zroCns;
+    node->gtType        = TYP_INT;
+    node->AsOp()->gtOp1 = val;
+    node->AsOp()->gtOp2 = zroCns;
 
     // The CompareEqual will set (condition is true) or clear (condition is false) all bits of the respective element
     // The MinAcross then ensures we get either all bits set (all conditions are true) or clear (any condition is false)
@@ -840,22 +1261,30 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
     node->ClearUnusedValue();
 
     LowerNode(node);
+    return node->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
 // Lowering::LowerHWIntrinsicCreate: Lowers a Vector64 or Vector128 Create call
 //
+// Performs the following transformations:
+//  1. If all the arguments are constant (including the broadcast case), the vector
+//     will be loaded from the data section, or turned into Zero/AllBitsSet, if possible.
+//  2. Non-constant broadcasts (argCnt == 1) are turned into DuplicateToVector intrinsics.
+//  3. Remaining cases get a chain of "Insert"s, from the second element to the last, where
+//     the vector to be inserted into is created with CreateUnsafeScalar from the first element.
+//
 //  Arguments:
 //     node - The hardware intrinsic node.
 //
-void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
+GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicId     = node->gtHWIntrinsicId;
-    var_types      simdType        = node->gtType;
+    NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
+    var_types      simdType        = node->TypeGet();
     CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
     var_types      simdBaseType    = node->GetSimdBaseType();
     unsigned       simdSize        = node->GetSimdSize();
-    VectorConstant vecCns          = {};
+    simd32_t       simd32Val       = {};
 
     if ((simdSize == 8) && (simdType == TYP_DOUBLE))
     {
@@ -868,151 +1297,46 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
 
-    GenTreeArgList* argList = nullptr;
-    GenTree*        op1     = node->gtGetOp1();
-    GenTree*        op2     = node->gtGetOp2();
+    bool   isConstant = GenTreeVecCon::IsHWIntrinsicCreateConstant(node, simd32Val);
+    size_t argCnt     = node->GetOperandCount();
 
-    // Spare GenTrees to be used for the lowering logic below
-    // Defined upfront to avoid naming conflicts, etc...
-    GenTree* idx  = nullptr;
-    GenTree* tmp1 = nullptr;
-    GenTree* tmp2 = nullptr;
-    GenTree* tmp3 = nullptr;
-
-    assert(op1 != nullptr);
-
-    unsigned argCnt    = 0;
-    unsigned cnsArgCnt = 0;
-
-    if (op1->OperIsList())
+    // Check if we have a cast that we can remove. Note that "IsValidConstForMovImm"
+    // will reset Op(1) if it finds such a cast, so we do not need to handle it here.
+    // TODO-Casts: why are casts from constants checked for here?
+    if (isConstant && (argCnt == 1) && IsValidConstForMovImm(node))
     {
-        assert(op2 == nullptr);
-
-        for (argList = op1->AsArgList(); argList != nullptr; argList = argList->Rest())
-        {
-            if (HandleArgForHWIntrinsicCreate(argList->Current(), argCnt, vecCns, simdBaseType))
-            {
-                cnsArgCnt += 1;
-            }
-            argCnt += 1;
-        }
-    }
-    else
-    {
-        if (HandleArgForHWIntrinsicCreate(op1, argCnt, vecCns, simdBaseType))
-        {
-            cnsArgCnt += 1;
-        }
-        argCnt += 1;
-
-        if (op2 != nullptr)
-        {
-            if (HandleArgForHWIntrinsicCreate(op2, argCnt, vecCns, simdBaseType))
-            {
-                cnsArgCnt += 1;
-            }
-            argCnt += 1;
-        }
-        else if (cnsArgCnt == 1)
-        {
-            // These intrinsics are meant to set the same value to every element
-            // so we'll just specially handle it here and copy it into the remaining
-            // indices.
-
-            for (unsigned i = 1; i < simdSize / genTypeSize(simdBaseType); i++)
-            {
-                HandleArgForHWIntrinsicCreate(op1, i, vecCns, simdBaseType);
-            }
-        }
-    }
-    assert((argCnt == 1) || (argCnt == (simdSize / genTypeSize(simdBaseType))));
-
-    if ((argCnt == cnsArgCnt) && (argCnt == 1))
-    {
-        GenTree* castOp = nullptr;
-
-        if (varTypeIsIntegral(simdBaseType) && op1->OperIs(GT_CAST))
-        {
-            // We will sometimes get a cast around a constant value (such as for
-            // certain long constants) which would block the below containment.
-            // So we will temporarily check what the cast is from instead so we
-            // can catch those cases as well.
-
-            castOp = op1->AsCast()->CastOp();
-            op1    = castOp;
-        }
-
-        if (IsValidConstForMovImm(node))
-        {
-            // Set the cnsArgCnt to zero so we get lowered to a DuplicateToVector
-            // intrinsic, which will itself mark the node as contained.
-            cnsArgCnt = 0;
-
-            // Reacquire op1 as the above check may have removed a cast node and
-            // changed op1.
-            op1 = node->gtOp1;
-        }
+        // Set isConstant to false so we get lowered to a DuplicateToVector
+        // intrinsic, which will itself mark the node as contained.
+        isConstant = false;
     }
 
-    if (argCnt == cnsArgCnt)
+    if (isConstant)
     {
-        if (op1->OperIsList())
+        assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16));
+
+        for (GenTree* arg : node->Operands())
         {
-            for (argList = op1->AsArgList(); argList != nullptr; argList = argList->Rest())
-            {
-                BlockRange().Remove(argList->Current());
-            }
+            BlockRange().Remove(arg);
+        }
+
+        GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType, simdBaseJitType);
+
+        vecCon->gtSimd32Val = simd32Val;
+        BlockRange().InsertBefore(node, vecCon);
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            use.ReplaceWith(vecCon);
         }
         else
         {
-            BlockRange().Remove(op1);
-
-            if (op2 != nullptr)
-            {
-                BlockRange().Remove(op2);
-            }
+            vecCon->SetUnusedValue();
         }
 
-        assert((simdSize == 8) || (simdSize == 16));
+        BlockRange().Remove(node);
 
-        if (VectorConstantIsBroadcastedI64(vecCns, simdSize / 8))
-        {
-            // If we are a single constant or if all parts are the same, we might be able to optimize
-            // this even further for certain values, such as Zero or AllBitsSet.
-
-            if (vecCns.i64[0] == 0)
-            {
-                node->gtOp1           = nullptr;
-                node->gtOp2           = nullptr;
-                node->gtHWIntrinsicId = (simdSize == 8) ? NI_Vector64_get_Zero : NI_Vector128_get_Zero;
-                return;
-            }
-            else if (vecCns.i64[0] == -1)
-            {
-                node->gtOp1           = nullptr;
-                node->gtOp2           = nullptr;
-                node->gtHWIntrinsicId = (simdSize == 8) ? NI_Vector64_get_AllBitsSet : NI_Vector128_get_AllBitsSet;
-                return;
-            }
-        }
-
-        unsigned  cnsSize  = (simdSize == 12) ? 16 : simdSize;
-        unsigned  cnsAlign = cnsSize;
-        var_types dataType = Compiler::getSIMDTypeForSize(simdSize);
-
-        UNATIVE_OFFSET       cnum = comp->GetEmitter()->emitDataConst(&vecCns, cnsSize, cnsAlign, dataType);
-        CORINFO_FIELD_HANDLE hnd  = comp->eeFindJitDataOffs(cnum);
-        GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
-        BlockRange().InsertBefore(node, clsVarAddr);
-
-        node->ChangeOper(GT_IND);
-        node->gtOp1 = clsVarAddr;
-
-        // TODO-ARM64-CQ: We should be able to modify at least the paths that use Insert to trivially support partial
-        // vector constants. With this, we can create a constant if say 50% of the inputs are also constant and just
-        // insert the non-constant values which should still allow some gains.
-
-        return;
+        return LowerNode(vecCon);
     }
     else if (argCnt == 1)
     {
@@ -1029,15 +1353,16 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
         {
-            node->gtHWIntrinsicId =
-                (simdType == TYP_SIMD8) ? NI_AdvSimd_Arm64_DuplicateToVector64 : NI_AdvSimd_Arm64_DuplicateToVector128;
+            node->ChangeHWIntrinsicId((simdType == TYP_SIMD8) ? NI_AdvSimd_Arm64_DuplicateToVector64
+                                                              : NI_AdvSimd_Arm64_DuplicateToVector128);
         }
         else
         {
-            node->gtHWIntrinsicId =
-                (simdType == TYP_SIMD8) ? NI_AdvSimd_DuplicateToVector64 : NI_AdvSimd_DuplicateToVector128;
+            node->ChangeHWIntrinsicId((simdType == TYP_SIMD8) ? NI_AdvSimd_DuplicateToVector64
+                                                              : NI_AdvSimd_DuplicateToVector128);
         }
-        return;
+
+        return LowerNode(node);
     }
 
     // We have the following (where simd is simd8 or simd16):
@@ -1045,13 +1370,6 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     //          +--*  ... T
     //          +--*  opN T
     //   node = *  HWINTRINSIC   simd   T Create
-
-    if (op1->OperIsList())
-    {
-        argList = op1->AsArgList();
-        op1     = argList->Current();
-        argList = argList->Rest();
-    }
 
     // We will be constructing the following parts:
     //          /--*  op1  T
@@ -1062,67 +1380,52 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     //   var tmp1 = Vector64.CreateScalarUnsafe(op1);
     //   ...
 
-    NamedIntrinsic createScalarUnsafe =
+    NamedIntrinsic createScalar =
         (simdType == TYP_SIMD8) ? NI_Vector64_CreateScalarUnsafe : NI_Vector128_CreateScalarUnsafe;
 
-    tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, createScalarUnsafe, simdBaseJitType, simdSize);
-    BlockRange().InsertAfter(op1, tmp1);
+    GenTree* tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), createScalar, simdBaseJitType, simdSize);
+    BlockRange().InsertAfter(node->Op(1), tmp1);
     LowerNode(tmp1);
 
-    unsigned N   = 0;
-    GenTree* opN = nullptr;
-
-    for (N = 1; N < argCnt - 1; N++)
-    {
-        // We will be constructing the following parts:
-        //   ...
-        //   idx  =    CNS_INT       int    N
-        //          /--*  tmp1 simd
-        //          +--*  idx  int
-        //          +--*  opN  T
-        //   tmp1 = *  HWINTRINSIC   simd   T Insert
-        //   ...
-
-        // This is roughly the following managed code:
-        //   ...
-        //   tmp1 = AdvSimd.Insert(tmp1, N, opN);
-        //   ...
-
-        opN = argList->Current();
-
-        idx = comp->gtNewIconNode(N, TYP_INT);
-        BlockRange().InsertBefore(opN, idx);
-
-        tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, opN, NI_AdvSimd_Insert, simdBaseJitType, simdSize);
-        BlockRange().InsertAfter(opN, tmp1);
-        LowerNode(tmp1);
-
-        argList = argList->Rest();
-    }
-
-    assert(N == (argCnt - 1));
-
     // We will be constructing the following parts:
+    //   ...
     //   idx  =    CNS_INT       int    N
     //          /--*  tmp1 simd
     //          +--*  idx  int
     //          +--*  opN  T
-    //   node = *  HWINTRINSIC   simd   T Insert
+    //   tmp1 = *  HWINTRINSIC   simd   T Insert
+    //   ...
 
     // This is roughly the following managed code:
     //   ...
     //   tmp1 = AdvSimd.Insert(tmp1, N, opN);
     //   ...
 
-    opN = (argCnt == 2) ? op2 : argList->Current();
+    unsigned N   = 0;
+    GenTree* opN = nullptr;
+    GenTree* idx = nullptr;
 
-    idx = comp->gtNewIconNode(N, TYP_INT);
+    for (N = 1; N < argCnt - 1; N++)
+    {
+        opN = node->Op(N + 1);
+        idx = comp->gtNewIconNode(N);
+        BlockRange().InsertBefore(opN, idx);
+
+        tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, opN, NI_AdvSimd_Insert, simdBaseJitType, simdSize);
+        BlockRange().InsertAfter(opN, tmp1);
+        LowerNode(tmp1);
+    }
+
+    assert(N == (argCnt - 1));
+
+    // For the last insert, we will reuse the existing node and so handle it here, outside the loop.
+    opN = node->Op(argCnt);
+    idx = comp->gtNewIconNode(N);
     BlockRange().InsertBefore(opN, idx);
 
-    node->gtOp1 = comp->gtNewArgList(tmp1, idx, opN);
-    node->gtOp2 = nullptr;
+    node->ResetHWIntrinsicId(NI_AdvSimd_Insert, comp, tmp1, idx, opN);
 
-    node->gtHWIntrinsicId = NI_AdvSimd_Insert;
+    return LowerNode(node);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -1131,9 +1434,9 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 //  Arguments:
 //     node - The hardware intrinsic node.
 //
-void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
+GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicId     = node->gtHWIntrinsicId;
+    NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
     CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
     var_types      simdBaseType    = node->GetSimdBaseType();
     unsigned       simdSize        = node->GetSimdSize();
@@ -1144,12 +1447,8 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
 
-    GenTree* op1 = node->gtGetOp1();
-    GenTree* op2 = node->gtGetOp2();
-
-    assert(op1 != nullptr);
-    assert(op2 != nullptr);
-    assert(!op1->OperIsList());
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
 
     // Spare GenTrees to be used for the lowering logic below
     // Defined upfront to avoid naming conflicts, etc...
@@ -1181,9 +1480,20 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         BlockRange().InsertAfter(idx, tmp1);
         LowerNode(tmp1);
 
-        op1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, op1, idx, tmp1, NI_AdvSimd_Insert, simdBaseJitType, simdSize);
+        op1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, idx, tmp1, NI_AdvSimd_Insert, simdBaseJitType, simdSize);
         BlockRange().InsertAfter(tmp1, op1);
         LowerNode(op1);
+
+        idx = comp->gtNewIconNode(0x03, TYP_INT);
+        BlockRange().InsertAfter(op2, idx);
+
+        tmp2 = comp->gtNewZeroConNode(TYP_FLOAT);
+        BlockRange().InsertAfter(idx, tmp2);
+        LowerNode(tmp2);
+
+        op2 = comp->gtNewSimdHWIntrinsicNode(simdType, op2, idx, tmp2, NI_AdvSimd_Insert, simdBaseJitType, simdSize);
+        BlockRange().InsertAfter(tmp2, op2);
+        LowerNode(op2);
     }
 
     // We will be constructing the following parts:
@@ -1198,56 +1508,69 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     //   var tmp1 = AdvSimd.Multiply(op1, op2);
     //   ...
 
-    NamedIntrinsic multiply = (simdBaseType == TYP_DOUBLE) ? NI_AdvSimd_Arm64_Multiply : NI_AdvSimd_Multiply;
+    NamedIntrinsic multiply = NI_AdvSimd_Multiply;
+
+    if (simdBaseType == TYP_DOUBLE)
+    {
+        multiply = (simdSize == 8) ? NI_AdvSimd_MultiplyScalar : NI_AdvSimd_Arm64_Multiply;
+    }
     assert(!varTypeIsLong(simdBaseType));
 
-    tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, op1, op2, multiply, simdBaseJitType, simdSize);
+    tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, multiply, simdBaseJitType, simdSize);
     BlockRange().InsertBefore(node, tmp1);
     LowerNode(tmp1);
 
     if (varTypeIsFloating(simdBaseType))
     {
-        // We will be constructing the following parts:
-        //   ...
-        //          /--*  tmp1 simd16
-        //          *  STORE_LCL_VAR simd16
-        //   tmp1 =    LCL_VAR       simd16
-        //   tmp2 =    LCL_VAR       simd16
-        //   ...
-
-        // This is roughly the following managed code:
-        //   ...
-        //   var tmp2 = tmp1;
-        //   ...
-
-        node->gtOp1 = tmp1;
-        LIR::Use tmp1Use(BlockRange(), &node->gtOp1, node);
-        ReplaceWithLclVar(tmp1Use);
-        tmp1 = node->gtOp1;
-
-        tmp2 = comp->gtClone(tmp1);
-        BlockRange().InsertAfter(tmp1, tmp2);
-
-        if (simdSize == 8)
+        if ((simdSize != 8) || (simdBaseType == TYP_FLOAT))
         {
-            assert(simdBaseType == TYP_FLOAT);
-
             // We will be constructing the following parts:
             //   ...
-            //          /--*  tmp1 simd8
-            //          +--*  tmp2 simd8
-            //   tmp1 = *  HWINTRINSIC   simd8  T AddPairwise
+            //          /--*  tmp1 simd16
+            //          *  STORE_LCL_VAR simd16
+            //   tmp1 =    LCL_VAR       simd16
+            //   tmp2 =    LCL_VAR       simd16
             //   ...
 
             // This is roughly the following managed code:
             //   ...
-            //   var tmp1 = AdvSimd.AddPairwise(tmp1, tmp2);
+            //   var tmp2 = tmp1;
             //   ...
 
-            tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_AddPairwise, simdBaseJitType,
-                                                    simdSize);
-            BlockRange().InsertAfter(tmp2, tmp1);
-            LowerNode(tmp1);
+            node->Op(1) = tmp1;
+            LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
+            ReplaceWithLclVar(tmp1Use);
+            tmp1 = node->Op(1);
+
+            tmp2 = comp->gtClone(tmp1);
+            BlockRange().InsertAfter(tmp1, tmp2);
+        }
+
+        if (simdSize == 8)
+        {
+            if (simdBaseType == TYP_FLOAT)
+            {
+                // We will be constructing the following parts:
+                //   ...
+                //          /--*  tmp1 simd8
+                //          +--*  tmp2 simd8
+                //   tmp1 = *  HWINTRINSIC   simd8  T AddPairwise
+                //   ...
+
+                // This is roughly the following managed code:
+                //   ...
+                //   var tmp1 = AdvSimd.AddPairwise(tmp1, tmp2);
+                //   ...
+
+                tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_AddPairwise, simdBaseJitType,
+                                                      simdSize);
+                BlockRange().InsertAfter(tmp2, tmp1);
+                LowerNode(tmp1);
+            }
+            else
+            {
+                // No pairs to add for double, as its a single element
+            }
         }
         else
         {
@@ -1265,8 +1588,8 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             //   var tmp1 = AdvSimd.Arm64.AddPairwise(tmp1, tmp2);
             //   ...
 
-            tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_Arm64_AddPairwise, simdBaseJitType,
-                                                    simdSize);
+            tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_Arm64_AddPairwise, simdBaseJitType,
+                                                  simdSize);
             BlockRange().InsertAfter(tmp2, tmp1);
             LowerNode(tmp1);
 
@@ -1296,16 +1619,16 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 //   var tmp1 = AdvSimd.Arm64.AddPairwise(tmp1, tmp2);
                 //   ...
 
-                node->gtOp1 = tmp1;
-                LIR::Use tmp1Use(BlockRange(), &node->gtOp1, node);
+                node->Op(1) = tmp1;
+                LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
                 ReplaceWithLclVar(tmp1Use);
-                tmp1 = node->gtOp1;
+                tmp1 = node->Op(1);
 
                 tmp2 = comp->gtClone(tmp1);
                 BlockRange().InsertAfter(tmp1, tmp2);
 
-                tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_Arm64_AddPairwise,
-                                                        simdBaseJitType, simdSize);
+                tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_Arm64_AddPairwise,
+                                                      simdBaseJitType, simdSize);
                 BlockRange().InsertAfter(tmp2, tmp1);
                 LowerNode(tmp1);
             }
@@ -1317,20 +1640,66 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     {
         assert(varTypeIsIntegral(simdBaseType));
 
-        // We will be constructing the following parts:
-        //   ...
-        //          /--*  tmp1 simd16
-        //   tmp2 = *  HWINTRINSIC   simd16 T AddAcross
-        //   ...
+        if ((simdSize == 8) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)))
+        {
+            // We will be constructing the following parts:
+            //   ...
+            //          /--*  tmp1 simd16
+            //          *  STORE_LCL_VAR simd16
+            //   tmp1 =    LCL_VAR       simd16
+            //   tmp2 =    LCL_VAR       simd16
+            //   ...
 
-        // This is roughly the following managed code:
-        //   ...
-        //   var tmp2 = AdvSimd.Arm64.AddAcross(tmp1);
-        //   ...
+            // This is roughly the following managed code:
+            //   ...
+            //   var tmp2 = tmp1;
+            //   ...
 
-        tmp2 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, simdSize);
-        BlockRange().InsertAfter(tmp1, tmp2);
-        LowerNode(tmp2);
+            node->Op(1) = tmp1;
+            LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
+            ReplaceWithLclVar(tmp1Use);
+            tmp1 = node->Op(1);
+
+            tmp2 = comp->gtClone(tmp1);
+            BlockRange().InsertAfter(tmp1, tmp2);
+
+            // We will be constructing the following parts:
+            //   ...
+            //          /--*  tmp1 simd16
+            //          /--*  tmp2 simd16
+            //   tmp2 = *  HWINTRINSIC   simd8 T AddPairwise
+            //   ...
+
+            // This is roughly the following managed code:
+            //   ...
+            //   var tmp2 = AdvSimd.AddPairwise(tmp1, tmp2);
+            //   ...
+
+            tmp1 =
+                comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_AddPairwise, simdBaseJitType, simdSize);
+            BlockRange().InsertAfter(tmp2, tmp1);
+            LowerNode(tmp1);
+
+            tmp2 = tmp1;
+        }
+        else
+        {
+            // We will be constructing the following parts:
+            //   ...
+            //          /--*  tmp1 simd16
+            //   tmp2 = *  HWINTRINSIC   simd16 T AddAcross
+            //   ...
+
+            // This is roughly the following managed code:
+            //   ...
+            //   var tmp2 = AdvSimd.Arm64.AddAcross(tmp1);
+            //   ...
+
+            tmp2 =
+                comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, simdSize);
+            BlockRange().InsertAfter(tmp1, tmp2);
+            LowerNode(tmp2);
+        }
     }
 
     // We will be constructing the following parts:
@@ -1342,13 +1711,10 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     //   ...
     //   return tmp2.ToScalar();
 
-    node->gtOp1 = tmp2;
-    node->gtOp2 = nullptr;
+    node->ResetHWIntrinsicId((simdSize == 8) ? NI_Vector64_ToScalar : NI_Vector128_ToScalar, tmp2);
 
-    node->gtHWIntrinsicId = (simdSize == 8) ? NI_Vector64_ToScalar : NI_Vector128_ToScalar;
     LowerNode(node);
-
-    return;
+    return node->gtNext;
 }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -1376,11 +1742,11 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckStoreIndir(GenTreeIndir* node)
+void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 {
 #ifdef TARGET_ARM64
-    GenTree* src = node->AsOp()->gtOp2;
-    if (!varTypeIsFloating(src->TypeGet()) && src->IsIntegralConst(0))
+    GenTree* src = node->Data();
+    if (src->IsIntegralConst(0))
     {
         // an integer zero for 'src' can be contained.
         MakeSrcContained(node, src);
@@ -1484,8 +1850,55 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 //
 void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
     // Check and make op2 contained (if it is a containable immediate)
-    CheckImmedAndMakeContained(node, node->gtOp2);
+    CheckImmedAndMakeContained(node, op2);
+
+#ifdef TARGET_ARM64
+    if (comp->opts.OptimizationEnabled() && IsContainableBinaryOp(node, op2))
+    {
+        MakeSrcContained(node, op2);
+    }
+
+    // Change ADD TO ADDEX for ADD(X, CAST(Y)) or ADD(CAST(X), Y) where CAST is int->long
+    // or for ADD(LSH(X, CNS), X) or ADD(X, LSH(X, CNS)) where CNS is in the (0..typeWidth) range
+    if (node->OperIs(GT_ADD) && !op1->isContained() && !op2->isContained() && varTypeIsIntegral(node) &&
+        !node->gtOverflow())
+    {
+        assert(!node->isContained());
+
+        if (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST))
+        {
+            GenTree* cast = op1->OperIs(GT_CAST) ? op1 : op2;
+            if (cast->gtGetOp1()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) && !cast->gtOverflow())
+            {
+                node->ChangeOper(GT_ADDEX);
+                MakeSrcContained(node, cast);
+            }
+        }
+        else if (op1->OperIs(GT_LSH) || op2->OperIs(GT_LSH))
+        {
+            GenTree* lsh     = op1->OperIs(GT_LSH) ? op1 : op2;
+            GenTree* shiftBy = lsh->gtGetOp2();
+
+            if (shiftBy->IsCnsIntOrI())
+            {
+                const ssize_t shiftByCns = shiftBy->AsIntCon()->IconValue();
+                const ssize_t maxShift   = (ssize_t)genTypeSize(node) * BITS_IN_BYTE;
+
+                if ((shiftByCns > 0) && (shiftByCns < maxShift))
+                {
+                    // shiftBy is small so it has to be contained at this point.
+                    assert(shiftBy->isContained());
+                    node->ChangeOper(GT_ADDEX);
+                    MakeSrcContained(node, lsh);
+                }
+            }
+        }
+    }
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1507,7 +1920,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 //
 void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 {
-    assert(node->OperIs(GT_DIV, GT_UDIV));
+    assert(node->OperIs(GT_DIV, GT_UDIV, GT_MOD));
 
     // ARM doesn't have a div instruction with an immediate operand
 }
@@ -1549,9 +1962,6 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
-#if 0
-    // TODO-ARMARCH-CQ: support contained bitcast under STORE_LCL_VAR/FLD,
-    // currently codegen does not expect it.
     if (op1->OperIs(GT_BITCAST))
     {
         // If we know that the source of the bitcast will be in a register, then we can make
@@ -1564,21 +1974,16 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
             return;
         }
     }
-#endif
 
     const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
 
 #ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(storeLoc))
+    if (storeLoc->TypeIs(TYP_SIMD8, TYP_SIMD12))
     {
         // If this is a store to memory, we can initialize a zero vector in memory from REG_ZR.
-        if ((op1->IsIntegralConst(0) || op1->IsSIMDZero()) && varDsc->lvDoNotEnregister)
+        if ((op1->IsIntegralConst(0) || op1->IsVectorZero()) && varDsc->lvDoNotEnregister)
         {
             MakeSrcContained(storeLoc, op1);
-            if (op1->IsSIMDZero())
-            {
-                MakeSrcContained(op1, op1->gtGetOp1());
-            }
         }
         return;
     }
@@ -1645,10 +2050,10 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 {
-    assert(node->OperIsBoundsCheck());
-    if (!CheckImmedAndMakeContained(node, node->gtIndex))
+    assert(node->OperIs(GT_BOUNDS_CHECK));
+    if (!CheckImmedAndMakeContained(node, node->GetIndex()))
     {
-        CheckImmedAndMakeContained(node, node->gtArrLen);
+        CheckImmedAndMakeContained(node, node->GetArrayLength());
     }
 }
 
@@ -1661,11 +2066,11 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 //
 void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 {
-    switch (simdNode->gtSIMDIntrinsicID)
+    switch (simdNode->GetSIMDIntrinsicId())
     {
         case SIMDIntrinsicInit:
         {
-            GenTree* op1 = simdNode->AsOp()->gtOp1;
+            GenTree* op1 = simdNode->Op(1);
             if (op1->IsIntegralConst(0))
             {
                 MakeSrcContained(simdNode, op1);
@@ -1675,7 +2080,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 
         case SIMDIntrinsicInitArray:
             // We have an array and an index, which may be contained.
-            CheckImmedAndMakeContained(simdNode, simdNode->gtGetOp2());
+            CheckImmedAndMakeContained(simdNode, simdNode->Op(2));
             break;
 
         default:
@@ -1792,6 +2197,47 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 MakeSrcContained(node, intrin.op4);
                 break;
 
+            case NI_AdvSimd_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqualScalar:
+            {
+                if (intrin.op1->IsVectorZero())
+                {
+                    GenTree* op1 = intrin.op1;
+                    GenTree* op2 = intrin.op2;
+
+                    assert(HWIntrinsicInfo::IsCommutative(intrin.id));
+                    MakeSrcContained(node, op1);
+
+                    // Swap the operands here to make the containment checks in codegen simpler
+                    node->Op(1) = op2;
+                    node->Op(2) = op1;
+                }
+                else if (intrin.op2->IsVectorZero())
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+                break;
+            }
+
+            case NI_AdvSimd_CompareGreaterThan:
+            case NI_AdvSimd_CompareGreaterThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareGreaterThan:
+            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
+            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
+            {
+                // Containment is not supported for unsigned base types as the corresponding instructions:
+                //    - cmhi
+                //    - cmhs
+                // require both operands; they do not have a 'with zero'.
+                if (intrin.op2->IsVectorZero() && !varTypeIsUnsigned(intrin.baseType))
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+                break;
+            }
+
             case NI_Vector64_CreateScalarUnsafe:
             case NI_Vector128_CreateScalarUnsafe:
             case NI_AdvSimd_DuplicateToVector64:
@@ -1800,10 +2246,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Arm64_DuplicateToVector128:
                 if (IsValidConstForMovImm(node))
                 {
-                    // Use node->gtOp1 as the above check may
-                    // have removed a cast node and changed op1
-
-                    MakeSrcContained(node, node->gtOp1);
+                    MakeSrcContained(node, node->Op(1));
                 }
                 break;
 
@@ -1832,6 +2275,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
             default:
                 unreached();
+        }
+    }
+    else if ((intrin.id == NI_AdvSimd_LoadVector128) || (intrin.id == NI_AdvSimd_LoadVector64))
+    {
+        assert(intrin.numOperands == 1);
+        assert(HWIntrinsicInfo::lookupCategory(intrin.id) == HW_Category_MemoryLoad);
+
+        GenTree* addr = node->Op(1);
+        if (TryCreateAddrMode(addr, true, node) && IsSafeToContainMem(node, addr))
+        {
+            assert(addr->OperIs(GT_LEA));
+            MakeSrcContained(node, addr);
         }
     }
 }

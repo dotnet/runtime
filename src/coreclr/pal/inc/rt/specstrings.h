@@ -97,7 +97,7 @@ __ANNOTATION(SAL_failureDefault(enum __SAL_failureKind));
 #endif // ]
 
 #define __xcount(size)                                          __notnull __inexpressible_writableTo(size)
-#define __in_xcount(size)                                       __in _Pre_ __inexpressible_readableTo(size)
+#define __in_xcount(size)                                       _In_ _Pre_ __inexpressible_readableTo(size)
 #define __out_xcount(size)                                      __xcount(size) _Post_ __valid __refparam
 #define __out_xcount_part(size,length)                          __out_xcount(size) _Post_ __inexpressible_readableTo(length)
 #define __out_xcount_full(size)                                 __out_xcount_part(size,size)
@@ -113,7 +113,7 @@ __ANNOTATION(SAL_failureDefault(enum __SAL_failureKind));
 #define __inout_xcount_part_opt(size,length)                    __inout_xcount_part(size,length)            __exceptthat __maybenull
 #define __inout_xcount_full_opt(size)                           __inout_xcount_full(size)                   __exceptthat __maybenull
 #define __deref_xcount(size)                                    __ecount(1) _Post_ __elem_readableTo(1) _Post_ __deref __notnull _Post_ __deref __inexpressible_writableTo(size)
-#define __deref_in                                              __in _Pre_ __deref __deref __readonly
+#define __deref_in                                              _In_ _Pre_ __deref __deref __readonly
 #define __deref_in_ecount(size)                                 __deref_in _Pre_ __deref __elem_readableTo(size)
 #define __deref_in_bcount(size)                                 __deref_in _Pre_ __deref __byte_readableTo(size)
 #define __deref_in_xcount(size)                                 __deref_in _Pre_ __deref __inexpressible_readableTo(size)
@@ -125,7 +125,7 @@ __ANNOTATION(SAL_failureDefault(enum __SAL_failureKind));
 #define __inout_xcount_part_opt(size,length)                    __inout_xcount_part(size,length)            __exceptthat __maybenull
 #define __inout_xcount_full_opt(size)                           __inout_xcount_full(size)                   __exceptthat __maybenull
 #define __deref_xcount(size)                                    __ecount(1) _Post_ __elem_readableTo(1) _Post_ __deref __notnull _Post_ __deref __inexpressible_writableTo(size)
-#define __deref_in                                              __in _Pre_ __deref __deref __readonly
+#define __deref_in                                              _In_ _Pre_ __deref __deref __readonly
 #define __deref_in_ecount(size)                                 __deref_in _Pre_ __deref __elem_readableTo(size)
 #define __deref_in_bcount(size)                                 __deref_in _Pre_ __deref __byte_readableTo(size)
 #define __deref_in_xcount(size)                                 __deref_in _Pre_ __deref __inexpressible_readableTo(size)
@@ -217,7 +217,7 @@ __ANNOTATION(SAL_failureDefault(enum __SAL_failureKind));
 #define __analysis_hint(hint)               _SA_annotes1(SAL_analysisHint, hint)
 // For "breakpoint": doesn't return as far as analysis is concerned.
 #define __analysis_noreturn                 __declspec(noreturn)
-/* Internal defintions */
+/* Internal definitions */
 #define __inner_data_source(src_raw)        _SA_annotes1(SAL_untrusted_data_source,src_raw)
 #define __inner_this_data_source(src_raw)   _SA_annotes1(SAL_untrusted_data_source_this,src_raw)
 #define __inner_out_validated(typ_raw)      _Post_ _SA_annotes1(SAL_validated,typ_raw)
@@ -250,7 +250,7 @@ __ANNOTATION(SAL_failureDefault(enum __SAL_failureKind));
 #define __analysis_assert(e)
 #define __analysis_hint(hint)
 #define __analysis_noreturn
-/* Internal defintions */
+/* Internal definitions */
 #define __inner_data_source(src_raw)
 #define __inner_this_data_source(src_raw)
 #define __inner_out_validated(typ_raw)
@@ -469,8 +469,8 @@ __inner_analysis_assume_nullterminated_dec
 
 #ifdef _PREFIX_
 /**************************************************************************
-* Defintion of __pfx_assume and __pfx_assert. Thse should be the only
-* defintions of these functions.
+* Definition of __pfx_assume and __pfx_assert. Thse should be the only
+* definitions of these functions.
 ***************************************************************************/
 #if __cplusplus
 extern "C" void __pfx_assert(bool, const char *);
@@ -480,7 +480,7 @@ void __pfx_assert(int, const char *);
 void __pfx_assume(int, const char *);
 #endif
 /**************************************************************************
-* Redefintion of __analysis_assume and __analysis_assert for PREFIX build
+* Redefinition of __analysis_assume and __analysis_assert for PREFIX build
 **************************************************************************/
 #undef  __analysis_assume
 #undef  __analysis_assert

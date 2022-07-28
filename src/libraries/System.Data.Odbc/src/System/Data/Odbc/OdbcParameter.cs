@@ -225,8 +225,7 @@ namespace System.Data.Odbc
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
-                string? parameterName = _parameterName;
-                return ((null != parameterName) ? parameterName : string.Empty);
+                return _parameterName ?? string.Empty;
             }
             set
             {
@@ -527,7 +526,7 @@ namespace System.Data.Odbc
                     }
                 }
             }
-            Debug.Assert((0 <= ccb) && (ccb < 0x3fffffff), "GetParameterSize: out of range " + ccb);
+            Debug.Assert((0 <= ccb) && (ccb < 0x3fffffff), $"GetParameterSize: out of range {ccb}");
             return ccb;
         }
 
@@ -792,7 +791,7 @@ namespace System.Data.Odbc
         {
             Debug.Assert(command.Connection != null);
 
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
             ODBC32.SQL_C sql_c_type = _prepared_Sql_C_Type;
             ODBC32.SQL_PARAM sqldirection = SqlDirectionFromParameterDirection();
 
@@ -871,7 +870,7 @@ namespace System.Data.Odbc
                                     (IntPtr)_preparedBufferSize,
                                     intBuffer);                 // StrLen_or_IndPtr
 
-            if (ODBC32.RetCode.SUCCESS != retcode)
+            if (ODBC32.SQLRETURN.SUCCESS != retcode)
             {
                 if ("07006" == command.GetDiagSqlState())
                 {
@@ -902,7 +901,7 @@ namespace System.Data.Odbc
                 //SQLSetDescField(hdesc, i+1, SQL_DESC_TYPE, (void *)SQL_C_NUMERIC, 0);
                 retcode = hdesc.SetDescriptionField1(ordinal, ODBC32.SQL_DESC.TYPE, (IntPtr)ODBC32.SQL_C.NUMERIC);
 
-                if (ODBC32.RetCode.SUCCESS != retcode)
+                if (ODBC32.SQLRETURN.SUCCESS != retcode)
                 {
                     command.Connection.HandleError(hstmt, retcode);
                 }
@@ -914,7 +913,7 @@ namespace System.Data.Odbc
                 //SQLSetDescField(hdesc, i+1, SQL_DESC_PRECISION, (void *)precision, 0);
                 retcode = hdesc.SetDescriptionField1(ordinal, ODBC32.SQL_DESC.PRECISION, (IntPtr)cbActual);
 
-                if (ODBC32.RetCode.SUCCESS != retcode)
+                if (ODBC32.SQLRETURN.SUCCESS != retcode)
                 {
                     command.Connection.HandleError(hstmt, retcode);
                 }
@@ -926,7 +925,7 @@ namespace System.Data.Odbc
                 cbActual = (int)scale;
                 retcode = hdesc.SetDescriptionField1(ordinal, ODBC32.SQL_DESC.SCALE, (IntPtr)cbActual);
 
-                if (ODBC32.RetCode.SUCCESS != retcode)
+                if (ODBC32.SQLRETURN.SUCCESS != retcode)
                 {
                     command.Connection.HandleError(hstmt, retcode);
                 }
@@ -936,7 +935,7 @@ namespace System.Data.Odbc
                 // SQLSetDescField(hdesc, i+1, SQL_DESC_DATA_PTR,  (void *)&numeric, 0);
                 retcode = hdesc.SetDescriptionField2(ordinal, ODBC32.SQL_DESC.DATA_PTR, valueBuffer);
 
-                if (ODBC32.RetCode.SUCCESS != retcode)
+                if (ODBC32.SQLRETURN.SUCCESS != retcode)
                 {
                     command.Connection.HandleError(hstmt, retcode);
                 }
@@ -1082,7 +1081,7 @@ namespace System.Data.Odbc
             }
             else
             {
-                // always set ouput only and return value parameter values to null when executing
+                // always set output only and return value parameter values to null when executing
                 _internalValue = null;
 
                 //Always initialize the intbuffer (for output params).  Since we need to know
@@ -1124,17 +1123,17 @@ namespace System.Data.Odbc
             }
         }
 
-        private byte ValuePrecision(object? value)
+        private static byte ValuePrecision(object? value)
         {
             return ValuePrecisionCore(value);
         }
 
-        private byte ValueScale(object? value)
+        private static byte ValueScale(object? value)
         {
             return ValueScaleCore(value);
         }
 
-        private int ValueSize(object? value)
+        private static int ValueSize(object? value)
         {
             return ValueSizeCore(value);
         }

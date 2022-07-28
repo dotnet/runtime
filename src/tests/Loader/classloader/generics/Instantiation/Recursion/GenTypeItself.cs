@@ -10,7 +10,7 @@
 
 using System;
 
-public class Test {
+public class Test_GenTypeItself {
    public static int Main() {
       MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<int>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> obj = new MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<MyClass<int>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>();
 

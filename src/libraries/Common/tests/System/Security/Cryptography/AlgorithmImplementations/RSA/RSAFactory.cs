@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         bool SupportsLargeExponent { get; }
         bool SupportsSha2Oaep { get; }
         bool SupportsPss { get; }
+        bool SupportsSha1Signatures { get; }
     }
 
     public static partial class RSAFactory
@@ -39,5 +40,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         public static bool SupportsSha2Oaep => s_provider.SupportsSha2Oaep;
 
         public static bool SupportsPss => s_provider.SupportsPss;
+
+        public static bool SupportsSha1Signatures => s_provider.SupportsSha1Signatures;
     }
 }

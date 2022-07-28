@@ -7,10 +7,14 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0xa2df15de {}
+.assembly 'bug5' {}
+.assembly extern xunit.core {}
 .class ILGEN_0xa2df15de {
 .field static native int[] field_0x0
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 
  .locals init (native int[] LOCAL_0x2,float32 LOCAL_0x17,object LOCAL_0x19)

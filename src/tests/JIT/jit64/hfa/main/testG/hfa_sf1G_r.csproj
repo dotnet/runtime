@@ -11,7 +11,7 @@
     <Compile Include="hfa_testG.cs" />
     <ProjectReference Include="..\dll\common.csproj" />
     <ProjectReference Include="..\dll\hfa_simple_f32_managed.csproj" />
-    <ProjectReference Include="..\dll\CMakeLists.txt" />
+    <CMakeProjectReference Include="..\dll\CMakeLists.txt" />
     <ProjectReference Include="..\dll\hfa_simple_f32_common.csproj" />
   </ItemGroup>
 </Project>

@@ -6,12 +6,6 @@
 #ifndef _METHOD_INL_
 #define _METHOD_INL_
 
-inline BOOL MethodDesc::HasTemporaryEntryPoint()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetMethodDescChunk()->HasTemporaryEntryPoints();
-}
-
 inline InstantiatedMethodDesc* MethodDesc::AsInstantiatedMethodDesc() const
 {
     WRAPPER_NO_CONTRACT;
@@ -19,23 +13,6 @@ inline InstantiatedMethodDesc* MethodDesc::AsInstantiatedMethodDesc() const
 
     _ASSERTE(GetClassification() == mcInstantiated);
     return dac_cast<PTR_InstantiatedMethodDesc>(this);
-}
-
-inline BOOL MethodDesc::IsZapped()
-{
-    WRAPPER_NO_CONTRACT;
-#ifdef FEATURE_PREJIT
-    return GetMethodDescChunk()->IsZapped();
-#else
-    return FALSE;
-#endif
-}
-
-inline PTR_DynamicResolver DynamicMethodDesc::GetResolver()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_pResolver;
 }
 
 inline SigParser MethodDesc::GetSigParser()
@@ -58,6 +35,13 @@ inline SigPointer MethodDesc::GetSigPointer()
     GetSig(&pSig, &cSig);
 
     return SigPointer(pSig, cSig);
+}
+
+inline PTR_DynamicResolver DynamicMethodDesc::GetResolver()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return m_pResolver;
 }
 
 inline PTR_LCGMethodResolver DynamicMethodDesc::GetLCGMethodResolver()
@@ -118,8 +102,6 @@ inline bool MethodDesc::IsLCGMethod()
 inline bool MethodDesc::IsILStub()
 {
     WRAPPER_NO_CONTRACT;
-
-    g_IBCLogger.LogMethodDescAccess(this);
     return ((mcDynamic == GetClassification()) && dac_cast<PTR_DynamicMethodDesc>(this)->IsILStub());
 }
 
@@ -177,13 +159,11 @@ inline CodeVersionManager * MethodDesc::GetCodeVersionManager()
 }
 #endif
 
-#ifndef CROSSGEN_COMPILE
 inline MethodDescBackpatchInfoTracker * MethodDesc::GetBackpatchInfoTracker()
 {
     LIMITED_METHOD_CONTRACT;
     return GetLoaderAllocator()->GetMethodDescBackpatchInfoTracker();
 }
-#endif
 
 #endif  // _METHOD_INL_
 

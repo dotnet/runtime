@@ -21,7 +21,7 @@ namespace System.Data.SqlTypes
     [StructLayout(LayoutKind.Sequential)]
     [XmlSchemaProvider("GetXsdType")]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct SqlDateTime : INullable, IComparable, IXmlSerializable
+    public struct SqlDateTime : INullable, IComparable, IXmlSerializable, IEquatable<SqlDateTime>
     {
         private bool m_fNotNull;    // false if null. Do not rename (binary serialization)
         private int m_day;      // Day from 1900/1/1, could be negative. Range: Jan 1 1753 - Dec 31 9999. Do not rename (binary serialization)
@@ -597,10 +597,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlDateTime)
+            if (value is SqlDateTime i)
             {
-                SqlDateTime i = (SqlDateTime)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlDateTime));
@@ -621,26 +619,18 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals([NotNullWhen(true)] object? value)
-        {
-            if (!(value is SqlDateTime))
-            {
-                return false;
-            }
+        public override bool Equals([NotNullWhen(true)] object? value) =>
+            value is SqlDateTime other && Equals(other);
 
-            SqlDateTime i = (SqlDateTime)value;
-
-            if (i.IsNull || IsNull)
-                return (i.IsNull && IsNull);
-            else
-                return (this == i).Value;
-        }
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(SqlDateTime other) =>
+            other.IsNull || IsNull ? other.IsNull && IsNull :
+            (this == other).Value;
 
         // For hashing purpose
-        public override int GetHashCode()
-        {
-            return IsNull ? 0 : Value.GetHashCode();
-        }
+        public override int GetHashCode() => IsNull ? 0 : Value.GetHashCode();
 
         XmlSchema? IXmlSerializable.GetSchema() { return null; }
 

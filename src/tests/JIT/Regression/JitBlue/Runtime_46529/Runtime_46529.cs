@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public unsafe class Test
+public unsafe class Test_Runtime_46529
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Foo(byte* bytes) => (int)(((ulong)bytes[0]) << 56);

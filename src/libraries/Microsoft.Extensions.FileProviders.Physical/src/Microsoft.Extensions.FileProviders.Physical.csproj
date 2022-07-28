@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <IsPackable>true</IsPackable>
     <PackageDescription>File provider for physical files for Microsoft.Extensions.FileProviders.</PackageDescription>
   </PropertyGroup>
 
@@ -13,6 +14,8 @@
              Link="Common\src\Extensions\EmptyDisposable.cs" />
     <Compile Include="$(CommonPath)Extensions\NonCapturingTimer\NonCapturingTimer.cs"
              Link="Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
+             Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,8 +25,7 @@
   </ItemGroup>
 
   <!-- For IncrementalHash -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Security.Cryptography.Algorithms" Version="$(SystemSecurityCryptographyAlgorithmsVersion)" />
   </ItemGroup>
-
 </Project>

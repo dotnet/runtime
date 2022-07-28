@@ -55,7 +55,7 @@ namespace System.Net
 
         private void DisposeCore()
         {
-            byte[]? bytes = null;
+            byte[]? bytes;
             MemoryStream? ms = GetHeaders(true);
             bool chunked = _response.SendChunked;
             if (_stream.CanWrite)
@@ -91,8 +91,7 @@ namespace System.Net
 
         internal async Task WriteWebSocketHandshakeHeadersAsync()
         {
-            if (_closed)
-                throw new ObjectDisposedException(GetType().ToString());
+            ObjectDisposedException.ThrowIf(_closed, this);
 
             if (_stream.CanWrite)
             {
@@ -128,7 +127,7 @@ namespace System.Net
             }
         }
 
-        private static byte[] s_crlf = new byte[] { 13, 10 };
+        private static readonly byte[] s_crlf = "\r\n"u8.ToArray();
         private static byte[] GetChunkSizeBytes(int size, bool final) =>
             Encoding.ASCII.GetBytes($"{size:x}\r\n{(final ? "\r\n" : "")}");
 
@@ -169,7 +168,7 @@ namespace System.Net
             if (size == 0)
                 return;
 
-            byte[]? bytes = null;
+            byte[]? bytes;
             MemoryStream? ms = GetHeaders(false);
             bool chunked = _response.SendChunked;
             if (ms != null)

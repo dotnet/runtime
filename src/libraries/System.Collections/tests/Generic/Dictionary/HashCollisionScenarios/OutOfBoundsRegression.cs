@@ -90,6 +90,17 @@ namespace System.Collections.Tests
                 expectedPublicComparerBeforeCollisionThreshold: StringComparer.InvariantCulture,
                 expectedInternalComparerTypeAfterCollisionThreshold: StringComparer.InvariantCulture.GetType());
 
+            // CollectionsMarshal.GetValueRefOrAddDefault
+
+            RunCollectionTestCommon(
+                () => new Dictionary<string, object>(StringComparer.Ordinal),
+                (dictionary, key) => CollectionsMarshal.GetValueRefOrAddDefault(dictionary, key, out _) = null,
+                (dictionary, key) => dictionary.ContainsKey(key),
+                dictionary => dictionary.Comparer,
+                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedOrdinalComparerType,
+                expectedPublicComparerBeforeCollisionThreshold: StringComparer.Ordinal,
+                expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalComparerType);
+
             static void RunDictionaryTest(
                 IEqualityComparer<string> equalityComparer,
                 Type expectedInternalComparerTypeBeforeCollisionThreshold,

@@ -74,8 +74,8 @@ Design
   find any other sync object with a timed wait with the necessary properties, so polling is done for timed waits.
 
 Shared memory files
-- Session-scoped mutexes (name not prefixed, or prefixed with Local) go in /tmp/coreclr/shm/session<sessionId>/<mutexName>
-- Globally-scoped mutexes (name prefixed with Global) go in /tmp/coreclr/shm/global/<mutexName>
+- Session-scoped mutexes (name not prefixed, or prefixed with Local) go in /tmp/.dotnet/shm/session<sessionId>/<mutexName>
+- Globally-scoped mutexes (name prefixed with Global) go in /tmp/.dotnet/shm/global/<mutexName>
 - Contains shared state, and is mmap'ped into the process, see SharedMemorySharedDataHeader and NamedMutexSharedData for data
   stored
 - Creation and deletion is synchronized using an exclusive file lock on the shm directory
@@ -84,7 +84,7 @@ Shared memory files
   valid. If no other processes have the mutex open, the file is reinitialized.
 - Upon releasing the last reference to a mutex in a process, it will try to get an exclusive lock on the shared memory file to
   see if any other processes have the mutex opened. If not, the file is deleted, along with the session directory if it's empty.
-  The coreclr and shm directories are not deleted.
+  The .dotnet and shm directories are not deleted.
 - This allows managing the lifetime of mutex state based on active processes that have the mutex open. Depending on how the
   process terminated, the file may still be left over in the tmp directory, I haven't found anything that can be done about
   that.
@@ -92,7 +92,7 @@ Shared memory files
 Lock files when using file locks:
 - In addition to the shared memory file, we need another file for the actual synchronization file lock, since a file lock on the
   shared memory file is used for lifetime purposes.
-- These files go in /tmp/coreclr/lockfiles/session<sessionId>|global/<mutexName>
+- These files go in /tmp/.dotnet/lockfiles/session<sessionId>|global/<mutexName>
 - The file is empty, and is only used for file locks
 
 Process data
@@ -120,9 +120,14 @@ Miscellaneous
   existing shared memory, naming, and waiting infrastructure is not suitable for this purpose, and is not used.
 */
 
-// Temporarily disabling usage of pthread process-shared mutexes on ARM/ARM64 due to functional issues that cannot easily be
-// detected with code due to hangs. See https://github.com/dotnet/runtime/issues/6014.
-#if HAVE_FULLY_FEATURED_PTHREAD_MUTEXES && HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES && !(defined(HOST_ARM) || defined(HOST_ARM64) || defined(__FreeBSD__))
+// - On FreeBSD, pthread process-shared robust mutexes cannot be placed in shared memory mapped independently by the processes
+//   involved. See https://github.com/dotnet/runtime/issues/10519.
+// - On OSX, pthread robust mutexes were/are not available at the time of this writing. In case they are made available in the
+//   future, their use is disabled for compatibility.
+#if HAVE_FULLY_FEATURED_PTHREAD_MUTEXES && \
+    HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES && \
+    !(defined(__FreeBSD__) || defined(TARGET_OSX))
+
     #define NAMED_MUTEX_USE_PTHREAD_MUTEX 1
 #else
     #define NAMED_MUTEX_USE_PTHREAD_MUTEX 0

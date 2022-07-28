@@ -319,7 +319,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
                 GetFinalizerThread()->EnablePreemptiveGC();
                 __SwitchToThread (0, ++dwSwitchCount);
                 GetFinalizerThread()->DisablePreemptiveGC();
-                // If no GCs happended, then we assume we are quiescent
+                // If no GCs happened, then we assume we are quiescent
                 GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
             } while (GCHeapUtilities::GetGCHeap()->CollectionCount(0) - last_gc_count > 0);
         }
@@ -378,11 +378,6 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
         INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
         {
             GetFinalizerThread()->SetBackground(TRUE);
-
-            {
-                GCX_PREEMP();
-                EnsureYieldProcessorNormalizedInitialized();
-            }
 
             while (!fQuitFinalizer)
             {
@@ -478,7 +473,7 @@ void FinalizerThread::SignalFinalizationDone(BOOL fFinalizer)
 
     if (fFinalizer)
     {
-        FastInterlockAnd((DWORD*)&g_FinalizerWaiterStatus, ~FWS_WaitInterrupt);
+        InterlockedAnd((LONG*)&g_FinalizerWaiterStatus, ~FWS_WaitInterrupt);
     }
     hEventFinalizerDone->Set();
 }

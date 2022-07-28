@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -26,6 +27,8 @@ namespace System.Numerics
 
         /// <summary>The Z component of the vector.</summary>
         public float Z;
+
+        internal const int Count = 3;
 
         /// <summary>Creates a new <see cref="System.Numerics.Vector3" /> object whose three elements have the same value.</summary>
         /// <param name="value">The value to assign to all three elements.</param>
@@ -60,7 +63,7 @@ namespace System.Numerics
         {
             if (values.Length < 3)
             {
-                Vector.ThrowInsufficientNumberOfElementsException(3);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
 
             this = Unsafe.ReadUnaligned<Vector3>(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(values)));
@@ -101,6 +104,60 @@ namespace System.Numerics
         public static Vector3 UnitZ
         {
             get => new Vector3(0.0f, 0.0f, 1.0f);
+        }
+
+        public float this[int index]
+        {
+            get => GetElement(this, index);
+            set => this = WithElement(this, index, value);
+        }
+
+        /// <summary>Gets the element at the specified index.</summary>
+        /// <param name="vector">The vector of the element to get.</param>
+        /// <param name="index">The index of the element to get.</param>
+        /// <returns>The value of the element at <paramref name="index" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
+        internal static float GetElement(Vector3 vector, int index)
+        {
+            if ((uint)index >= Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
+
+            return GetElementUnsafe(ref vector, index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float GetElementUnsafe(ref Vector3 vector, int index)
+        {
+            Debug.Assert(index is >= 0 and < Count);
+            return Unsafe.Add(ref Unsafe.As<Vector3, float>(ref vector), index);
+        }
+
+        /// <summary>Sets the element at the specified index.</summary>
+        /// <param name="vector">The vector of the element to get.</param>
+        /// <param name="index">The index of the element to set.</param>
+        /// <param name="value">The value of the element to set.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
+        internal static Vector3 WithElement(Vector3 vector, int index, float value)
+        {
+            if ((uint)index >= Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
+
+            Vector3 result = vector;
+            SetElementUnsafe(ref result, index, value);
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void SetElementUnsafe(ref Vector3 vector, int index, float value)
+        {
+            Debug.Assert(index is >= 0 and < Count);
+            Unsafe.Add(ref Unsafe.As<Vector3, float>(ref vector), index) = value;
         }
 
         /// <summary>Adds two vectors together.</summary>
@@ -371,6 +428,7 @@ namespace System.Numerics
         /// <param name="value2">The second vector.</param>
         /// <returns>The minimized vector.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Min(Vector3 value1, Vector3 value2)
         {
             return new Vector3(
@@ -522,7 +580,7 @@ namespace System.Numerics
         /// <summary>Copies the elements of the vector to a specified array.</summary>
         /// <param name="array">The destination array.</param>
         /// <remarks><paramref name="array" /> must have at least three elements. The method copies the vector's elements starting at index 0.</remarks>
-        /// <exception cref="System.ArgumentNullException"><paramref name="array" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.NullReferenceException"><paramref name="array" /> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException">The number of elements in the current instance is greater than in the array.</exception>
         /// <exception cref="System.RankException"><paramref name="array" /> is multidimensional.</exception>
         [Intrinsic]
@@ -536,7 +594,7 @@ namespace System.Numerics
         /// <param name="array">The destination array.</param>
         /// <param name="index">The index at which to copy the first element of the vector.</param>
         /// <remarks><paramref name="array" /> must have a sufficient number of elements to accommodate the three vector elements. In other words, elements <paramref name="index" />, <paramref name="index" /> + 1, and <paramref name="index" /> + 2 must already exist in <paramref name="array" />.</remarks>
-        /// <exception cref="System.ArgumentNullException"><paramref name="array" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.NullReferenceException"><paramref name="array" /> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException">The number of elements in the current instance is greater than in the array.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="index" /> is less than zero.
         /// -or-
@@ -548,18 +606,17 @@ namespace System.Numerics
         {
             if (array is null)
             {
-                // Match the JIT's exception type here. For perf, a NullReference is thrown instead of an ArgumentNull.
-                throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
+                ThrowHelper.ThrowNullReferenceException();
             }
 
             if ((index < 0) || (index >= array.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.Format(SR.Arg_ArgumentOutOfRangeException, index));
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
             }
 
             if ((array.Length - index) < 3)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_ElementsInSourceIsGreaterThanDestination, index));
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
             array[index] = X;
@@ -609,10 +666,25 @@ namespace System.Numerics
         /// <param name="other">The other vector.</param>
         /// <returns><see langword="true" /> if the two vectors are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two vectors are equal if their <see cref="System.Numerics.Vector3.X" />, <see cref="System.Numerics.Vector3.Y" />, and <see cref="System.Numerics.Vector3.Z" /> elements are equal.</remarks>
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Vector3 other)
         {
-            return this == other;
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            if (Vector128.IsHardwareAccelerated)
+            {
+                return this.AsVector128().Equals(other.AsVector128());
+            }
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Vector3 self, Vector3 other)
+            {
+                return self.X.Equals(other.X)
+                    && self.Y.Equals(other.Y)
+                    && self.Z.Equals(other.Z);
+            }
         }
 
         /// <summary>Returns the hash code for this instance.</summary>
@@ -656,7 +728,7 @@ namespace System.Numerics
         /// <remarks>This method returns a string in which each element of the vector is formatted using <paramref name="format" /> and the current culture's formatting conventions. The "&lt;" and "&gt;" characters are used to begin and end the string, and the current culture's <see cref="System.Globalization.NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
         /// <related type="Article" href="/dotnet/standard/base-types/standard-numeric-format-strings">Standard Numeric Format Strings</related>
         /// <related type="Article" href="/dotnet/standard/base-types/custom-numeric-format-strings">Custom Numeric Format Strings</related>
-        public readonly string ToString(string? format)
+        public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return ToString(format, CultureInfo.CurrentCulture);
         }
@@ -668,20 +740,11 @@ namespace System.Numerics
         /// <remarks>This method returns a string in which each element of the vector is formatted using <paramref name="format" /> and <paramref name="formatProvider" />. The "&lt;" and "&gt;" characters are used to begin and end the string, and the format provider's <see cref="System.Globalization.NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
         /// <related type="Article" href="/dotnet/standard/base-types/standard-numeric-format-strings">Standard Numeric Format Strings</related>
         /// <related type="Article" href="/dotnet/standard/base-types/custom-numeric-format-strings">Custom Numeric Format Strings</related>
-        public readonly string ToString(string? format, IFormatProvider? formatProvider)
+        public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
-            StringBuilder sb = new StringBuilder();
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
-            sb.Append('<');
-            sb.Append(X.ToString(format, formatProvider));
-            sb.Append(separator);
-            sb.Append(' ');
-            sb.Append(Y.ToString(format, formatProvider));
-            sb.Append(separator);
-            sb.Append(' ');
-            sb.Append(Z.ToString(format, formatProvider));
-            sb.Append('>');
-            return sb.ToString();
+
+            return $"<{X.ToString(format, formatProvider)}{separator} {Y.ToString(format, formatProvider)}{separator} {Z.ToString(format, formatProvider)}>";
         }
     }
 }

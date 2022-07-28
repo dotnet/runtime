@@ -1294,5 +1294,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_conv_ovf_u8_i8.exe{}
+.assembly ldc_conv_ovf_u8_i8{}
 

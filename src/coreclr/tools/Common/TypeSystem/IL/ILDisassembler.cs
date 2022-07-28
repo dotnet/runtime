@@ -227,8 +227,7 @@ namespace Internal.IL
 
         public static void AppendOffset(StringBuilder sb, int offset)
         {
-            sb.Append("IL_");
-            sb.AppendFormat("{0:X4}", offset);
+            sb.Append($"IL_{offset:X4}");
         }
 
         private static void PadForInstructionArgument(StringBuilder sb)

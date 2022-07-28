@@ -55,12 +55,9 @@ namespace System
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType is null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
@@ -68,7 +65,7 @@ namespace System
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributesInternal(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         // GetDefaultMembers
@@ -98,12 +95,11 @@ namespace System
 
         public override string? GetEnumName(object value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            Type valueType = value.GetType();
+            RuntimeType valueType = (RuntimeType)value.GetType();
 
-            if (!(valueType.IsEnum || IsIntegerType(valueType)))
+            if (!(valueType.IsActualEnum || IsIntegerType(valueType)))
                 throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
 
             ulong ulValue = Enum.ToUInt64(value);
@@ -113,7 +109,7 @@ namespace System
 
         public override string[] GetEnumNames()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             string[] ret = Enum.InternalGetNames(this);
@@ -122,9 +118,10 @@ namespace System
             return new ReadOnlySpan<string>(ret).ToArray();
         }
 
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
         public override Array GetEnumValues()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             // Get all of the values
@@ -144,7 +141,7 @@ namespace System
 
         public override Type GetEnumUnderlyingType()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             return Enum.InternalGetUnderlyingType(this);
@@ -205,7 +202,7 @@ namespace System
                         typeCode = TypeCode.Decimal;
                     else if (ReferenceEquals(this, typeof(DateTime)))
                         typeCode = TypeCode.DateTime;
-                    else if (IsEnum)
+                    else if (IsActualEnum)
                         typeCode = GetTypeCode(Enum.InternalGetUnderlyingType(this));
                     else
                         typeCode = TypeCode.Object;
@@ -242,12 +239,9 @@ namespace System
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType is null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
@@ -255,17 +249,16 @@ namespace System
 
         public override bool IsEnumDefined(object value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             // Check if both of them are of the same type
             RuntimeType valueType = (RuntimeType)value.GetType();
 
             // If the value is an Enum then we need to extract the underlying value from it
-            if (valueType.IsEnum)
+            if (valueType.IsActualEnum)
             {
                 if (!valueType.IsEquivalentTo(this))
                     throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, valueType, this));
@@ -297,17 +290,6 @@ namespace System
             {
                 throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
-        }
-
-        protected override bool IsValueTypeImpl()
-        {
-            // We need to return true for generic parameters with the ValueType constraint.
-            // So we cannot use the faster RuntimeTypeHandle.IsValueType because it returns
-            // false for all generic parameters.
-            if (this == typeof(ValueType) || this == typeof(Enum))
-                return false;
-
-            return IsSubclassOf(typeof(ValueType));
         }
 
         protected override bool IsByRefImpl() => RuntimeTypeHandle.IsByRef(this);
@@ -376,6 +358,8 @@ namespace System
             string name, BindingFlags bindingFlags, Binder? binder, object? target,
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             const BindingFlags MemberBindingMask = (BindingFlags)0x000000FF;
             const BindingFlags InvocationMask = (BindingFlags)0x0000FF00;
             const BindingFlags BinderGetSetField = BindingFlags.GetField | BindingFlags.SetField;
@@ -439,8 +423,7 @@ namespace System
                 if ((bindingFlags & BindingFlags.PutRefDispProperty) != 0 && (bindingFlags & ClassicBindingMask & ~BindingFlags.PutRefDispProperty) != 0)
                     throw new ArgumentException(SR.Arg_COMPropSetPut, nameof(bindingFlags));
 
-                if (name == null)
-                    throw new ArgumentNullException(nameof(name));
+                ArgumentNullException.ThrowIfNull(name);
 
                 bool[]? isByRef = modifiers?[0].IsByRefArray;
 
@@ -463,7 +446,7 @@ namespace System
             }
 #endif // FEATURE_COMINTEROP
 
-            if (namedParams != null && Array.IndexOf(namedParams, null!) != -1)
+            if (namedParams != null && Array.IndexOf(namedParams, null!) >= 0)
                 throw new ArgumentException(SR.Arg_NamedParamNull, nameof(namedParams));
 
             int argCnt = (providedArgs != null) ? providedArgs.Length : 0;
@@ -483,10 +466,6 @@ namespace System
             // PutDispProperty and\or PutRefDispProperty ==> SetProperty.
             if ((bindingFlags & (BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty)) != 0)
                 bindingFlags |= BindingFlags.SetProperty;
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             if (name.Length == 0 || name.Equals("[DISPID=0]"))
             {
                 // in InvokeMember we always pretend there is a default member if none is provided and we make it ToString
@@ -511,8 +490,7 @@ namespace System
                 {
                     Debug.Assert(IsSetField);
 
-                    if (providedArgs == null)
-                        throw new ArgumentNullException(nameof(providedArgs));
+                    ArgumentNullException.ThrowIfNull(providedArgs);
 
                     if ((bindingFlags & BindingFlags.GetProperty) != 0)
                         throw new ArgumentException(SR.Arg_FldSetPropGet, nameof(bindingFlags));
@@ -795,14 +773,11 @@ namespace System
 
         internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments, RuntimeType[] genericParameters)
         {
-            if (genericArguments == null)
-                throw new ArgumentNullException();
+            ArgumentNullException.ThrowIfNull(genericArguments);
 
             for (int i = 0; i < genericArguments.Length; i++)
             {
-                if (genericArguments[i] == null)
-                    throw new ArgumentNullException();
-
+                ArgumentNullException.ThrowIfNull(genericArguments[i], null);
                 ThrowIfTypeNeverValidGenericArgument(genericArguments[i]);
             }
 

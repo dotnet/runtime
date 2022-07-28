@@ -60,4 +60,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldind_i4.exe{}
+.assembly ldind_i4{}

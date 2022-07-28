@@ -31,7 +31,7 @@ public struct A
 }
 
 
-public class Test
+public class Test_CctorZeroVal03
 {
 	public static int Main()
 	{

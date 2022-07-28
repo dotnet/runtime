@@ -418,5 +418,44 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 (byte)ILOpCode.Ret
             }, builder.ToArray());
         }
+
+        [Fact]
+        public void Clear()
+        {
+            var cfb = new ControlFlowBuilder();
+
+            var il1 = GenerateSampleIL(cfb);
+            cfb.Clear();
+            var il2 = GenerateSampleIL(cfb);
+
+            AssertEx.Equal(il1, il2);
+
+            static byte[] GenerateSampleIL(ControlFlowBuilder cfb)
+            {
+                var code = new BlobBuilder();
+                var il = new InstructionEncoder(code, cfb);
+
+                var l1 = il.DefineLabel();
+                var l2 = il.DefineLabel();
+                var l3 = il.DefineLabel();
+                var l4 = il.DefineLabel();
+
+                il.MarkLabel(l1);
+                il.OpCode(ILOpCode.Nop);
+                il.Branch(ILOpCode.Br_s, l1);
+                il.MarkLabel(l2);
+                il.OpCode(ILOpCode.Nop);
+                il.MarkLabel(l3);
+                il.OpCode(ILOpCode.Nop);
+                il.MarkLabel(l4);
+
+                cfb.AddCatchRegion(l1, l2, l3, l4, MetadataTokens.TypeDefinitionHandle(1));
+
+                var builder = new BlobBuilder();
+                new MethodBodyStreamEncoder(builder).AddMethodBody(il);
+
+                return builder.ToArray();
+            }
+        }
     }
 }

@@ -339,6 +339,36 @@
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
+      <argument>IL2080</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetConstructorImpl(System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2080</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetEvent(System.String,System.Reflection.BindingFlags)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2080</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetField(System.String,System.Reflection.BindingFlags)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2080</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetMethodImpl(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Reflection.CallingConventions,System.Type[],System.Reflection.ParameterModifier[])</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2080</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Reflection.Context.Delegation.DelegatingType.GetNestedType(System.String,System.Reflection.BindingFlags)</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
       <argument>IL2085</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Reflection.Context.Projection.ProjectingType.GetMember(System.String,System.Reflection.MemberTypes,System.Reflection.BindingFlags)</property>

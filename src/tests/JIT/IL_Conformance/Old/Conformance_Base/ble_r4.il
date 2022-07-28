@@ -475,4 +475,4 @@ FAIL:
 	ret
 }
 }
-.assembly ble_r4.exe{}
+.assembly ble_r4{}

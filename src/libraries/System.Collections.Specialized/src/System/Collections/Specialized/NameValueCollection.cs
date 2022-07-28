@@ -41,12 +41,12 @@ namespace System.Collections.Specialized
         ///    provider and the default case-insensitive comparer.</para>
         /// </devdoc>
         public NameValueCollection(NameValueCollection col)
-            : base(col != null ? col.Comparer : null)
+            : base(col?.Comparer)
         {
             Add(col!);
         }
 
-        [Obsolete("Please use NameValueCollection(IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use NameValueCollection(IEqualityComparer) instead.")]
         public NameValueCollection(IHashCodeProvider? hashProvider, IComparer? comparer)
             : base(hashProvider, comparer)
         {
@@ -77,18 +77,13 @@ namespace System.Collections.Specialized
         ///    case-insensitive comparer.</para>
         /// </devdoc>
         public NameValueCollection(int capacity, NameValueCollection col)
-            : base(capacity, (col != null ? col.Comparer : null))
+            : base(capacity, col != null ? col.Comparer : throw new ArgumentNullException(nameof(col)))
         {
-            if (col == null)
-            {
-                throw new ArgumentNullException(nameof(col));
-            }
-
             this.Comparer = col.Comparer;
             Add(col);
         }
 
-        [Obsolete("Please use NameValueCollection(Int32, IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use NameValueCollection(Int32, IEqualityComparer) instead.")]
         public NameValueCollection(int capacity, IHashCodeProvider? hashProvider, IComparer? comparer)
             : base(capacity, hashProvider, comparer)
         {
@@ -159,10 +154,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public void Add(NameValueCollection c)
         {
-            if (c == null)
-            {
-                throw new ArgumentNullException(nameof(c));
-            }
+            ArgumentNullException.ThrowIfNull(c);
 
             InvalidateCachedArrays();
 
@@ -200,10 +192,7 @@ namespace System.Collections.Specialized
 
         public void CopyTo(Array dest, int index)
         {
-            if (dest == null)
-            {
-                throw new ArgumentNullException(nameof(dest));
-            }
+            ArgumentNullException.ThrowIfNull(dest);
 
             if (dest.Rank != 1)
             {
@@ -398,14 +387,6 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Gets all the keys in the <see cref='System.Collections.Specialized.NameValueCollection'/>. </para>
         /// </devdoc>
-        public virtual string?[] AllKeys
-        {
-            get
-            {
-                if (_allKeys == null)
-                    _allKeys = BaseGetAllKeys();
-                return _allKeys;
-            }
-        }
+        public virtual string?[] AllKeys => _allKeys ??= BaseGetAllKeys();
     }
 }

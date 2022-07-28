@@ -11,23 +11,23 @@ internal static partial class Interop
     {
         internal const int WAIT_FAILED = unchecked((int)0xFFFFFFFF);
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, BOOL bWaitAll, uint dwMilliseconds, BOOL bAlertable);
+        [LibraryImport(Libraries.Kernel32)]
+        internal static partial uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, BOOL bWaitAll, uint dwMilliseconds, BOOL bAlertable);
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+        [LibraryImport(Libraries.Kernel32)]
+        internal static partial uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern uint SignalObjectAndWait(IntPtr hObjectToSignal, IntPtr hObjectToWaitOn, uint dwMilliseconds, BOOL bAlertable);
+        [LibraryImport(Libraries.Kernel32)]
+        internal static partial uint SignalObjectAndWait(IntPtr hObjectToSignal, IntPtr hObjectToWaitOn, uint dwMilliseconds, BOOL bAlertable);
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern void Sleep(uint milliseconds);
+        [LibraryImport(Libraries.Kernel32)]
+        internal static partial void Sleep(uint milliseconds);
 
         internal const uint CREATE_SUSPENDED = 0x00000004;
         internal const uint STACK_SIZE_PARAM_IS_A_RESERVATION = 0x00010000;
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern unsafe SafeWaitHandle CreateThread(
+        [LibraryImport(Libraries.Kernel32)]
+        internal static unsafe partial SafeWaitHandle CreateThread(
             IntPtr lpThreadAttributes,
             IntPtr dwStackSize,
             delegate* unmanaged<IntPtr, uint> lpStartAddress,
@@ -35,22 +35,23 @@ internal static partial class Interop
             uint dwCreationFlags,
             out uint lpThreadId);
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern uint ResumeThread(SafeWaitHandle hThread);
+        [LibraryImport(Libraries.Kernel32)]
+        internal static partial uint ResumeThread(SafeWaitHandle hThread);
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern IntPtr GetCurrentThread();
+        [LibraryImport(Libraries.Kernel32)]
+        internal static partial IntPtr GetCurrentThread();
 
         internal const int DUPLICATE_SAME_ACCESS = 2;
 
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool DuplicateHandle(
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return:MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool DuplicateHandle(
             IntPtr hSourceProcessHandle,
             IntPtr hSourceHandle,
             IntPtr hTargetProcessHandle,
             out SafeWaitHandle lpTargetHandle,
             uint dwDesiredAccess,
-            bool bInheritHandle,
+            [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle,
             uint dwOptions);
 
         internal enum ThreadPriority : int
@@ -66,10 +67,11 @@ internal static partial class Interop
             ErrorReturn = 0x7FFFFFFF
         }
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern ThreadPriority GetThreadPriority(SafeWaitHandle hThread);
+        [LibraryImport(Libraries.Kernel32)]
+        internal static partial ThreadPriority GetThreadPriority(SafeWaitHandle hThread);
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern bool SetThreadPriority(SafeWaitHandle hThread, int nPriority);
+        [LibraryImport(Libraries.Kernel32)]
+        [return:MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool SetThreadPriority(SafeWaitHandle hThread, int nPriority);
     }
 }

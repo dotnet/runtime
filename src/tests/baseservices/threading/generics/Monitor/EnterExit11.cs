@@ -17,14 +17,14 @@ class Gen<T>
 
 		Gen<T>.staticLock = new object();
 		
-		TestHelper myHelper = new TestHelper(Test.nThreads);
+		TestHelper myHelper = new TestHelper(Test_EnterExit11.nThreads);
 		// MonitorDelegate[] consumer = new MonitorDelegate[Test.nThreads];
 		// for(int i=0;i<consumer.Length;i++){
 		// 	consumer[i] = new MonitorDelegate(myHelper.Consumer);
 		// 	consumer[i].BeginInvoke(staticLock,null,null);
 		// }
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_EnterExit11.nThreads; i++)
 		{
 			ThreadPool.QueueUserWorkItem(state =>
 			{
@@ -38,11 +38,11 @@ class Gen<T>
 			if(myHelper.Error == true)
 				break;
 		}
-		Test.Eval(!myHelper.Error);
+		Test_EnterExit11.Eval(!myHelper.Error);
 	}
 }
 
-public class Test
+public class Test_EnterExit11
 {
 	public static int nThreads = 5;
 	public static int counter = 0;

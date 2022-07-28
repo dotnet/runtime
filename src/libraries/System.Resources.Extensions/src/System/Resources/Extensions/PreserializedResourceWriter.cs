@@ -70,12 +70,18 @@ namespace System.Resources.Extensions
         /// <param name="typeName">Assembly qualified type name of the resource</param>
         public void AddResource(string name, string value, string typeName)
         {
-            if (name == null)
+            if (name is null)
+            {
                 throw new ArgumentNullException(nameof(name));
-            if (value == null)
+            }
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
-            if (typeName == null)
+            }
+            if (typeName is null)
+            {
                 throw new ArgumentNullException(nameof(typeName));
+            }
 
             // determine if the type is a primitive type
             if (s_primitiveTypes.TryGetValue(typeName, out Type? primitiveType))
@@ -98,7 +104,7 @@ namespace System.Resources.Extensions
                         throw new TypeLoadException(SR.Format(SR.TypeLoadException_CannotLoadConverter, primitiveType));
                     }
 
-                    object primitiveValue = converter.ConvertFromInvariantString(value);
+                    object primitiveValue = converter.ConvertFromInvariantString(value)!;
 
                     Debug.Assert(primitiveValue.GetType() == primitiveType);
 
@@ -121,12 +127,18 @@ namespace System.Resources.Extensions
         /// <param name="typeName">Assembly qualified type name of the resource</param>
         public void AddTypeConverterResource(string name, byte[] value, string typeName)
         {
-            if (name == null)
+            if (name is null)
+            {
                 throw new ArgumentNullException(nameof(name));
-            if (value == null)
+            }
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
-            if (typeName == null)
+            }
+            if (typeName is null)
+            {
                 throw new ArgumentNullException(nameof(typeName));
+            }
 
             AddResourceData(name, typeName, new ResourceDataRecord(SerializationFormat.TypeConverterByteArray, value));
 
@@ -142,18 +154,20 @@ namespace System.Resources.Extensions
         /// <param name="typeName">Assembly qualified type name of the resource</param>
         public void AddBinaryFormattedResource(string name, byte[] value, string? typeName = null)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-            if (typeName == null)
+            if (name is null)
             {
-                // Some resx-files are missing type information for binary-formatted resources.
-                // These would have previously been handled by deserializing once, capturing the type
-                // and reserializing when writing the resources.  We don't want to do that so instead
-                // we just omit the type.
-                typeName = UnknownObjectTypeName;
+                throw new ArgumentNullException(nameof(name));
             }
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            // Some resx-files are missing type information for binary-formatted resources.
+            // These would have previously been handled by deserializing once, capturing the type
+            // and reserializing when writing the resources.  We don't want to do that so instead
+            // we just omit the type.
+            typeName ??= UnknownObjectTypeName;
 
             AddResourceData(name, typeName, new ResourceDataRecord(SerializationFormat.BinaryFormatter, value));
 
@@ -173,12 +187,18 @@ namespace System.Resources.Extensions
         /// <param name="closeAfterWrite">Indicates that the stream should be closed after resources have been written</param>
         public void AddActivatorResource(string name, Stream value, string typeName, bool closeAfterWrite = false)
         {
-            if (name == null)
+            if (name is null)
+            {
                 throw new ArgumentNullException(nameof(name));
-            if (value == null)
+            }
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
-            if (typeName == null)
+            }
+            if (typeName is null)
+            {
                 throw new ArgumentNullException(nameof(typeName));
+            }
 
             if (!value.CanSeek)
                 throw new ArgumentException(SR.NotSupported_UnseekableStream);

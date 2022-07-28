@@ -16,13 +16,15 @@ namespace ILCompiler.DependencyAnalysis
         public readonly MethodWithToken Method;
         public readonly bool IsInstantiatingStub;
         public readonly bool IsPrecodeImportRequired;
+        public readonly bool IsJumpableImportRequired;
 
-        public TypeAndMethod(TypeDesc type, MethodWithToken method, bool isInstantiatingStub, bool isPrecodeImportRequired)
+        public TypeAndMethod(TypeDesc type, MethodWithToken method, bool isInstantiatingStub, bool isPrecodeImportRequired, bool isJumpableImportRequired)
         {
             Type = type;
             Method = method;
             IsInstantiatingStub = isInstantiatingStub;
             IsPrecodeImportRequired = isPrecodeImportRequired;
+            IsJumpableImportRequired = isJumpableImportRequired;
         }
 
         public bool Equals(TypeAndMethod other)
@@ -30,7 +32,8 @@ namespace ILCompiler.DependencyAnalysis
             return Type == other.Type &&
                    Method.Equals(other.Method) &&
                    IsInstantiatingStub == other.IsInstantiatingStub &&
-                   IsPrecodeImportRequired == other.IsPrecodeImportRequired;
+                   IsPrecodeImportRequired == other.IsPrecodeImportRequired &&
+                   IsJumpableImportRequired == other.IsJumpableImportRequired;
         }
 
         public override bool Equals(object obj)
@@ -43,7 +46,8 @@ namespace ILCompiler.DependencyAnalysis
             return (Type?.GetHashCode() ?? 0) ^
                 unchecked(Method.GetHashCode() * 31) ^
                 (IsInstantiatingStub ? 0x40000000 : 0) ^
-                (IsPrecodeImportRequired ? 0x20000000 : 0);
+                (IsPrecodeImportRequired ? 0x20000000 : 0) ^
+                (IsJumpableImportRequired ? 0x10000000 : 0);
         }
     }
 }

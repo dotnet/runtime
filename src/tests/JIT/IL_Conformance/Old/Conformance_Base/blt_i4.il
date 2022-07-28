@@ -305,4 +305,4 @@ FAIL:
 	ret
 }
 }
-.assembly blt_i4.exe{}
+.assembly blt_i4{}

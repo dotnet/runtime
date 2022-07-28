@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace System.IO.Enumeration
 {
-    public unsafe abstract partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
+    public abstract unsafe partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
     {
         // The largest supported path on Unix is 4K bytes of UTF-8 (most only support 1K)
         private const int StandardBufferSize = 4096;
@@ -147,8 +147,7 @@ namespace System.IO.Enumeration
                             if (_options.RecurseSubdirectories && _remainingRecursionDepth > 0 && ShouldRecurseIntoEntry(ref entry))
                             {
                                 // Recursion is on and the directory was accepted, Queue it
-                                if (_pending == null)
-                                    _pending = new Queue<(string Path, int RemainingDepth)>();
+                                _pending ??= new Queue<(string Path, int RemainingDepth)>();
                                 _pending.Enqueue((Path.Join(_currentPath, entry.FileName), _remainingRecursionDepth - 1));
                             }
                         }
@@ -175,7 +174,12 @@ namespace System.IO.Enumeration
 
         private unsafe void FindNextEntry(byte* entryBufferPtr, int bufferLength)
         {
-            int result = Interop.Sys.ReadDirR(_directoryHandle, entryBufferPtr, bufferLength, out _entry);
+            int result;
+            fixed (Interop.Sys.DirectoryEntry* e = &_entry)
+            {
+                result = Interop.Sys.ReadDirR(_directoryHandle, entryBufferPtr, bufferLength, e);
+            }
+
             switch (result)
             {
                 case -1:
@@ -236,12 +240,17 @@ namespace System.IO.Enumeration
 
                     CloseDirectoryHandle();
 
-                    if (_pathBuffer != null)
-                        ArrayPool<char>.Shared.Return(_pathBuffer);
-                    _pathBuffer = null;
-                    if (_entryBuffer != null)
-                        ArrayPool<byte>.Shared.Return(_entryBuffer);
-                    _entryBuffer = null;
+                    if (_pathBuffer is char[] pathBuffer)
+                    {
+                        _pathBuffer = null;
+                        ArrayPool<char>.Shared.Return(pathBuffer);
+                    }
+
+                    if (_entryBuffer is byte[] entryBuffer)
+                    {
+                        _entryBuffer = null;
+                        ArrayPool<byte>.Shared.Return(entryBuffer);
+                    }
                 }
             }
 

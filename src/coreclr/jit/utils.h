@@ -32,7 +32,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 template <typename T, int size>
-unsigned ArrLen(T (&)[size])
+inline constexpr unsigned ArrLen(T (&)[size])
 {
     return size;
 }
@@ -42,6 +42,18 @@ template <typename T>
 inline bool isPow2(T i)
 {
     return (i > 0 && ((i - 1) & i) == 0);
+}
+
+template <typename T>
+constexpr bool AreContiguous(T val1, T val2)
+{
+    return (val1 + 1) == val2;
+}
+
+template <typename T, typename... Ts>
+constexpr bool AreContiguous(T val1, T val2, Ts... rest)
+{
+    return ((val1 + 1) == val2) && AreContiguous(val2, rest...);
 }
 
 // Adapter for iterators to a type that is compatible with C++11
@@ -270,10 +282,10 @@ public:
  * returns -> number of bytes successfully written, not including the null
  *            terminator.  Calls NO_WAY on error.
  */
-int SimpleSprintf_s(__in_ecount(cbBufSize - (pWriteStart - pBufStart)) char* pWriteStart,
-                    __in_ecount(cbBufSize) char*                             pBufStart,
-                    size_t                                                   cbBufSize,
-                    __in_z const char*                                       fmt,
+int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWriteStart,
+                    _In_reads_(cbBufSize) char*                             pBufStart,
+                    size_t                                                  cbBufSize,
+                    _In_z_ const char*                                      fmt,
                     ...);
 
 #ifdef DEBUG
@@ -659,7 +671,7 @@ public:
  * Used when outputting strings.
  */
 unsigned CountDigits(unsigned num, unsigned base = 10);
-unsigned CountDigits(float num, unsigned base = 10);
+unsigned CountDigits(double num, unsigned base = 10);
 
 #endif // DEBUG
 
@@ -687,7 +699,33 @@ public:
 
     static bool hasPreciseReciprocal(float x);
 
+    static double infinite_double();
+
     static float infinite_float();
+
+    static bool isAllBitsSet(float val);
+
+    static bool isAllBitsSet(double val);
+
+    static bool isNegative(float val);
+
+    static bool isNegative(double val);
+
+    static bool isNaN(float val);
+
+    static bool isNaN(double val);
+
+    static bool isNegativeZero(double val);
+
+    static bool isPositiveZero(double val);
+
+    static double maximum(double val1, double val2);
+
+    static float maximum(float val1, float val2);
+
+    static double minimum(double val1, double val2);
+
+    static float minimum(float val1, float val2);
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but
@@ -759,10 +797,11 @@ private:
 
 namespace MagicDivide
 {
-uint32_t GetUnsigned32Magic(uint32_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/);
+uint32_t GetUnsigned32Magic(
+    uint32_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits);
 #ifdef TARGET_64BIT
 uint64_t GetUnsigned64Magic(
-    uint64_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits = 64);
+    uint64_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits);
 #endif
 int32_t GetSigned32Magic(int32_t d, int* shift /*out*/);
 #ifdef TARGET_64BIT
@@ -775,6 +814,36 @@ int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
 //
 
 double CachedCyclesPerSecond();
+
+template <typename T>
+bool FitsIn(var_types type, T value)
+{
+    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+                          std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+
+    switch (type)
+    {
+        case TYP_BYTE:
+            return FitsIn<int8_t>(value);
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return FitsIn<uint8_t>(value);
+        case TYP_SHORT:
+            return FitsIn<int16_t>(value);
+        case TYP_USHORT:
+            return FitsIn<uint16_t>(value);
+        case TYP_INT:
+            return FitsIn<int32_t>(value);
+        case TYP_UINT:
+            return FitsIn<uint32_t>(value);
+        case TYP_LONG:
+            return FitsIn<int64_t>(value);
+        case TYP_ULONG:
+            return FitsIn<uint64_t>(value);
+        default:
+            unreached();
+    }
+}
 
 namespace CheckedOps
 {

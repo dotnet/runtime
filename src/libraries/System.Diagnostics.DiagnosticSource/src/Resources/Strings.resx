@@ -144,9 +144,6 @@
   <data name="SetFormatOnStartedActivity" xml:space="preserve">
     <value>"Can not change format for an activity that was already started"</value>
   </data>
-  <data name="SetLinkInvalid" xml:space="preserve">
-    <value>"Can not add link to activity after it has been started"</value>
-  </data>
   <data name="SetParentIdOnActivityWithParent" xml:space="preserve">
     <value>"Can not set ParentId on activity which has parent"</value>
   </data>
@@ -167,5 +164,8 @@
   </data>
   <data name="UnsupportedType" xml:space="preserve">
     <value>{0} is unsupported type for this operation. The only supported types are byte, short, int, long, float, double, and decimal.  </value>
+  </data>
+  <data name="Arg_BufferTooSmall" xml:space="preserve">
+    <value>Destination buffer is not long enough to copy all the items in the list.</value>
   </data>
 </root>

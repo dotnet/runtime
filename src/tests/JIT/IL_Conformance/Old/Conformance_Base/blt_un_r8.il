@@ -904,4 +904,4 @@ FAIL:
 	ret
 }
 }
-.assembly blt_un_r8.exe{}
+.assembly blt_un_r8{}

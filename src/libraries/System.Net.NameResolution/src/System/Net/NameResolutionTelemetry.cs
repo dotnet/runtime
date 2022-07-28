@@ -1,12 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
-using System.Runtime.InteropServices;
+using System.Net.Sockets;
 using System.Threading;
-using Microsoft.Extensions.Internal;
 
 namespace System.Net
 {
@@ -50,8 +49,6 @@ namespace System.Net
             }
         }
 
-        private const int MaxIPFormattedLength = 128;
-
         [Event(ResolutionStartEventId, Level = EventLevel.Informational)]
         private void ResolutionStart(string hostNameOrAddress) => WriteEvent(ResolutionStartEventId, hostNameOrAddress);
 
@@ -63,9 +60,15 @@ namespace System.Net
 
 
         [NonEvent]
-        public ValueStopwatch BeforeResolution(string hostNameOrAddress)
+        public long BeforeResolution(object hostNameOrAddress)
         {
             Debug.Assert(hostNameOrAddress != null);
+            Debug.Assert(
+                hostNameOrAddress is string ||
+                hostNameOrAddress is IPAddress ||
+                hostNameOrAddress is KeyValuePair<string, AddressFamily> ||
+                hostNameOrAddress is KeyValuePair<IPAddress, AddressFamily>,
+                $"Unknown hostNameOrAddress type: {hostNameOrAddress.GetType().Name}");
 
             if (IsEnabled())
             {
@@ -74,44 +77,31 @@ namespace System.Net
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {
-                    ResolutionStart(hostNameOrAddress);
+                    string host = hostNameOrAddress switch
+                    {
+                        string h => h,
+                        KeyValuePair<string, AddressFamily> t => t.Key,
+                        IPAddress a => a.ToString(),
+                        KeyValuePair<IPAddress, AddressFamily> t => t.Key.ToString(),
+                        _ => null!
+                    };
+                    ResolutionStart(host);
                 }
 
-                return ValueStopwatch.StartNew();
+                return Stopwatch.GetTimestamp();
             }
 
-            return default;
+            return 0;
         }
 
         [NonEvent]
-        public ValueStopwatch BeforeResolution(IPAddress address)
+        public void AfterResolution(long startingTimestamp, bool successful)
         {
-            Debug.Assert(address != null);
-
-            if (IsEnabled())
-            {
-                Interlocked.Increment(ref _lookupsRequested);
-                Interlocked.Increment(ref _currentLookups);
-
-                if (IsEnabled(EventLevel.Informational, EventKeywords.None))
-                {
-                    WriteEvent(ResolutionStartEventId, FormatIPAddressNullTerminated(address, stackalloc char[MaxIPFormattedLength]));
-                }
-
-                return ValueStopwatch.StartNew();
-            }
-
-            return default;
-        }
-
-        [NonEvent]
-        public void AfterResolution(ValueStopwatch stopwatch, bool successful)
-        {
-            if (stopwatch.IsActive)
+            if (startingTimestamp != 0)
             {
                 Interlocked.Decrement(ref _currentLookups);
 
-                _lookupsDuration!.WriteMetric(stopwatch.GetElapsedTime().TotalMilliseconds);
+                _lookupsDuration!.WriteMetric(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {
@@ -121,48 +111,6 @@ namespace System.Net
                     }
 
                     ResolutionStop();
-                }
-            }
-        }
-
-        [NonEvent]
-        private static Span<char> FormatIPAddressNullTerminated(IPAddress address, Span<char> destination)
-        {
-            Debug.Assert(address != null);
-
-            bool success = address.TryFormat(destination, out int charsWritten);
-            Debug.Assert(success);
-
-            Debug.Assert(charsWritten < destination.Length);
-            destination[charsWritten] = '\0';
-
-            return destination.Slice(0, charsWritten + 1);
-        }
-
-
-        // WriteEvent overloads taking Span<char> are imitating string arguments
-        // Span arguments are expected to be null-terminated
-
-#if !ES_BUILD_STANDALONE
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = "Parameters to this method are primitive and are trimmer safe")]
-#endif
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, Span<char> arg1)
-        {
-            Debug.Assert(!arg1.IsEmpty && arg1.IndexOf('\0') == arg1.Length - 1, "Expecting a null-terminated ROS<char>");
-
-            if (IsEnabled())
-            {
-                fixed (char* arg1Ptr = &MemoryMarshal.GetReference(arg1))
-                {
-                    EventData descr = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg1Ptr),
-                        Size = arg1.Length * sizeof(char)
-                    };
-
-                    WriteEventCore(eventId, eventDataCount: 1, &descr);
                 }
             }
         }

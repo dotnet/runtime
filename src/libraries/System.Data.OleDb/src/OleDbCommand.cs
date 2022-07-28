@@ -112,8 +112,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                string? value = _commandText;
-                return ((null != value) ? value : string.Empty);
+                return _commandText ?? string.Empty;
             }
             set
             {
@@ -564,10 +563,7 @@ namespace System.Data.OleDb
             Debug.Assert(null != _connection, "no connection, CloseInternalParameters");
             Bindings? bindings = _dbBindings;
             _dbBindings = null;
-            if (null != bindings)
-            {
-                bindings.Dispose();
-            }
+            bindings?.Dispose();
         }
 
         public new OleDbParameter CreateParameter()
@@ -1093,7 +1089,7 @@ namespace System.Data.OleDb
             return builder.ToString();
         }
 
-        private string ExpandOdbcMinimumToText(string sproctext, int parameterCount)
+        private static string ExpandOdbcMinimumToText(string sproctext, int parameterCount)
         {
             //if ((0 < parameterCount) && (ParameterDirection.ReturnValue == Parameters[0].Direction)) {
             //    Debug.Assert("doesn't support ReturnValue parameters");
@@ -1126,11 +1122,7 @@ namespace System.Data.OleDb
 
         private void ParameterCleanup()
         {
-            Bindings? bindings = ParameterBindings;
-            if (null != bindings)
-            {
-                bindings.CleanupBindings();
-            }
+            ParameterBindings?.CleanupBindings();
         }
 
         private bool InitializeCommand(CommandBehavior behavior, bool throwifnotsupported)

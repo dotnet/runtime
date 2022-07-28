@@ -60,8 +60,10 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
 
             XmlElement keyInfoElement = value;
             _id = Utils.GetAttribute(keyInfoElement, "Id", SignedXml.XmlDsigNamespaceUrl);
@@ -97,8 +99,7 @@ namespace System.Security.Cryptography.Xml
 
                     KeyInfoClause keyInfoClause = CryptoHelpers.CreateFromName<KeyInfoClause>(kicString);
                     // if we don't know what kind of KeyInfoClause we're looking at, use a generic KeyInfoNode:
-                    if (keyInfoClause == null)
-                        keyInfoClause = new KeyInfoNode();
+                    keyInfoClause ??= new KeyInfoNode();
 
                     // Ask the create clause to fill itself with the corresponding XML
                     keyInfoClause.LoadXml(elem);

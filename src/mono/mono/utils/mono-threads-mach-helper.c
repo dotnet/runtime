@@ -34,7 +34,7 @@ static id mono_dead_letter_key;
 
 /*
  * Our Mach bindings have a problem in that they might need to attach
- * the runtime after the the user tls keys have been destroyed.
+ * the runtime after the user tls keys have been destroyed.
  *
  * This happens when a bound object is retained by NSThread, which is
  * released very late in the TLS cleanup process.
@@ -49,7 +49,7 @@ static id mono_dead_letter_key;
  * due to duplicate entries.
  *
  * So what do we do here?
- * 
+ *
  * Experimentation showns that threadDictionary is destroied after the
  * problematic keys, so we add our dead letter object as an aditional
  * way to be notified of thread death.
@@ -115,7 +115,7 @@ mono_threads_init_dead_letter (void)
 	alloc = sel_registerName ("alloc");
 	release = sel_registerName ("release");
 	dealloc = sel_registerName ("dealloc");
-	
+
 
 	currentThread = sel_registerName ("currentThread");
 	threadDictionary = sel_registerName ("threadDictionary");

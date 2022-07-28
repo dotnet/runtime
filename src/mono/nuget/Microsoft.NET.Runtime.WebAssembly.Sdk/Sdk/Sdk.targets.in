@@ -1,0 +1,17 @@
+<Project>
+  <!-- Property overrides -->
+  <PropertyGroup>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETCoreTasks}\</_TasksDir>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETFrameworkTasks}\</_TasksDir>
+
+    <WasmAppBuilderTasksAssemblyPath>$(_TasksDir)WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
+    <WasmBuildTasksAssemblyPath>$(_TasksDir)WasmBuildTasks.dll</WasmBuildTasksAssemblyPath>
+    <WasmAppHostDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'WasmAppHost'))</WasmAppHostDir>
+
+    <!-- only for non-blazor projects -->
+    <WasmEmitSymbolMap Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true' and '$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)\WasmApp.props" />
+  <Import Project="$(MSBuildThisFileDirectory)\WasmApp.targets" />
+</Project>

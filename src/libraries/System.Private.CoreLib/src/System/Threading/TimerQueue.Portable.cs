@@ -23,9 +23,11 @@ namespace System.Threading
         private bool _isScheduled;
         private long _scheduledDueTimeMs;
 
+#pragma warning disable IDE0060
         private TimerQueue(int id)
         {
         }
+#pragma warning restore IDE0060
 
         private static List<TimerQueue> InitializeScheduledTimerManager_Locked()
         {
@@ -38,7 +40,7 @@ namespace System.Threading
             // using UnsafeStart() instead of Start()
             Thread timerThread = new Thread(TimerThread)
             {
-                Name = ".NET Timers",
+                Name = ".NET Timer",
                 IsBackground = true
             };
             timerThread.UnsafeStart();
@@ -57,11 +59,7 @@ namespace System.Threading
             {
                 if (!_isScheduled)
                 {
-                    List<TimerQueue>? timers = s_scheduledTimers;
-                    if (timers == null)
-                    {
-                        timers = InitializeScheduledTimerManager_Locked();
-                    }
+                    List<TimerQueue> timers = s_scheduledTimers ?? InitializeScheduledTimerManager_Locked();
 
                     timers.Add(this);
                     _isScheduled = true;
@@ -126,7 +124,7 @@ namespace System.Threading
                 {
                     foreach (TimerQueue timerToFire in timersToFire)
                     {
-                        ThreadPool.UnsafeQueueTimeSensitiveWorkItem(timerToFire);
+                        ThreadPool.UnsafeQueueHighPriorityWorkItemInternal(timerToFire);
                     }
                     timersToFire.Clear();
                 }

@@ -8,7 +8,7 @@
 
 #include "common.h"
 #include "typeequivalencehash.hpp"
-#include "ngenhash.inl"
+#include "dacenumerablehash.inl"
 
 #ifdef FEATURE_TYPEEQUIVALENCE
 TypeEquivalenceHashTable::EquivalenceMatch TypeEquivalenceHashTable::CheckEquivalence(TypeHandle thA, TypeHandle thB)
@@ -22,7 +22,7 @@ TypeEquivalenceHashTable::EquivalenceMatch TypeEquivalenceHashTable::CheckEquiva
     CONTRACTL_END;
 
     LookupContext lookupContext;
-    NgenHashValue hash = TypeEquivalenceEntry::HashTypeHandles(thA, thB);
+    DacEnumerableHashValue hash = TypeEquivalenceEntry::HashTypeHandles(thA, thB);
 
     PTR_TypeEquivalenceEntry search = BaseFindFirstEntryByHash(hash, &lookupContext);
     while (search != NULL)
@@ -90,7 +90,7 @@ void TypeEquivalenceHashTable::RecordEquivalence(TypeHandle thA, TypeHandle thB,
     amt.SuppressRelease();
 
     pNewEntry->SetData(thA, thB, match == TypeEquivalenceHashTable::Match ? true : false);
-    NgenHashValue hash = TypeEquivalenceEntry::HashTypeHandles(thA, thB);
+    DacEnumerableHashValue hash = TypeEquivalenceEntry::HashTypeHandles(thA, thB);
 
     BaseInsertEntry(hash, pNewEntry);
 }

@@ -13,7 +13,6 @@ parameters:
   runtimeVariant: ''
   variables: {}
   pool: ''
-  runtimeFlavorDisplayName: 'Mono'
   dependsOn: []
   #arcade-specific parameters
   condition: always()
@@ -26,7 +25,7 @@ parameters:
   
   
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -excludemonofailures os ${{ parameters.osGroup }} ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }} $(buildConfigUpper)
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -mono os ${{ parameters.osGroup }} ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }} $(buildConfigUpper)
     displayName: Build Tests
 
   #  Send tests to Helix
@@ -38,8 +37,8 @@ steps:
       osGroup: ${{ parameters.osGroup }}
       osSubgroup: ${{ parameters.osSubgroup}}
       coreClrRepoRoot: $(Build.SourcesDirectory)/src/coreclr
-      runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
 
       ${{ if eq(variables['System.TeamProject'], 'public') }}:

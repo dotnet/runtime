@@ -63,7 +63,7 @@ static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
         allocChars = MAX_ERROR_STRING_LENGTH + 1;
     }
 
-    LPWSTR lpRetVal = (LPWSTR)LocalAlloc(LMEM_FIXED, allocChars * sizeof(WCHAR));
+    LPWSTR lpRetVal = (LPWSTR)PAL_malloc(allocChars * sizeof(WCHAR));
 
     if (lpRetVal)
     {
@@ -91,7 +91,7 @@ Function :
     FMTMSG__watoi
 
     Converts a wide string repersentation of an integer number
-    into a interger number.
+    into a integer number.
 
     Returns a integer number, or 0 on failure. 0 is not a valid number
     for FormatMessage inserts.
@@ -135,7 +135,7 @@ static INT FMTMSG__watoi( LPWSTR str )
         UINT NumOfBytes = 0; \
         nSize *= 2; \
         NumOfBytes = nSize * sizeof( WCHAR ); \
-        lpTemp = static_cast<WCHAR *>( LocalAlloc( LMEM_FIXED, NumOfBytes ) ); \
+        lpTemp = static_cast<WCHAR *>( PAL_malloc( NumOfBytes ) ); \
         TRACE( "Growing the buffer.\n" );\
         \
         if ( !lpTemp ) \
@@ -149,7 +149,7 @@ static INT FMTMSG__watoi( LPWSTR str )
         \
         *lpWorkingString = '\0';\
         PAL_wcscpy( lpTemp, lpReturnString );\
-        LocalFree( lpReturnString ); \
+        free( lpReturnString ); \
         lpWorkingString = lpReturnString = lpTemp; \
         lpWorkingString += nCount; \
     } \
@@ -333,7 +333,7 @@ FormatMessageW(
     if ( !( dwFlags & FORMAT_MESSAGE_FROM_STRING ) &&
          ( dwLanguageId != 0) )
     {
-        ERROR( "Invalid language indentifier.\n" );
+        ERROR( "Invalid language identifier.\n" );
         SetLastError( ERROR_RESOURCE_LANG_NOT_FOUND );
         goto exit;
     }
@@ -341,7 +341,7 @@ FormatMessageW(
     /* Parameter processing. */
     if ( dwFlags & FORMAT_MESSAGE_ALLOCATE_BUFFER )
     {
-        TRACE( "Allocated %d TCHARs. Don't forget to call LocalFree to "
+        TRACE( "Allocated %d TCHARs. Don't forget to call free to "
                "free the memory when done.\n", nSize );
         bIsLocalAlloced = TRUE;
     }
@@ -400,7 +400,7 @@ FormatMessageW(
         }
         if ( !lpWorkingString )
         {
-            ERROR( "Invalid error indentifier.\n" );
+            ERROR( "Invalid error identifier.\n" );
             SetLastError( ERROR_INVALID_ADDRESS );
         }
         goto exit;
@@ -418,7 +418,7 @@ FormatMessageW(
     }
 
     lpWorkingString = static_cast<WCHAR *>(
-        LocalAlloc( LMEM_FIXED, nSize * sizeof( WCHAR ) ) );
+        PAL_malloc( nSize * sizeof( WCHAR ) ) );
     if ( !lpWorkingString )
     {
         ERROR( "Unable to allocate memory for the working string.\n" );
@@ -456,7 +456,7 @@ FormatMessageW(
                     lpSourceString++;
                     if ( iswdigit( *lpSourceString ) )
                     {
-                        ERROR( "Invalid insert indentifier.\n" );
+                        ERROR( "Invalid insert identifier.\n" );
                         SetLastError( ERROR_INVALID_PARAMETER );
                         lpWorkingString = NULL;
                         nCount = 0;
@@ -466,7 +466,7 @@ FormatMessageW(
                 Index = FMTMSG__watoi( Number );
                 if ( Index == 0 )
                 {
-                    ERROR( "Invalid insert indentifier.\n" );
+                    ERROR( "Invalid insert identifier.\n" );
                     SetLastError( ERROR_INVALID_PARAMETER );
                     lpWorkingString = NULL;
                     nCount = 0;
@@ -675,14 +675,14 @@ exit: /* Function clean-up and exit. */
         {
             TRACE( "Copying the string into the buffer.\n" );
             PAL_wcsncpy( lpBuffer, lpReturnString, nCount + 1 );
-            LocalFree( lpReturnString );
+            free( lpReturnString );
         }
     }
     else /* Error, something occurred. */
     {
         if ( lpReturnString )
         {
-            LocalFree( lpReturnString );
+            free( lpReturnString );
         }
     }
     LOGEXIT( "FormatMessageW returns %d.\n", nCount );

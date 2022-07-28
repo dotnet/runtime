@@ -4,7 +4,7 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 public struct DateWrapper
 {
@@ -31,20 +31,20 @@ class DateTimeTest
         {
             DateTime currentDate = new DateTime(2019, 5, 2);
 
-            Assert.AreEqual(currentDate.AddDays(1), NativeDateTime.GetTomorrow(currentDate));
+            Assert.Equal(currentDate.AddDays(1), NativeDateTime.GetTomorrow(currentDate));
 
             NativeDateTime.GetTomorrowByRef(currentDate, out DateTime nextDay);
-            
-            Assert.AreEqual(currentDate.AddDays(1), nextDay);
+
+            Assert.Equal(currentDate.AddDays(1), nextDay);
 
             DateWrapper wrapper = new DateWrapper { date = currentDate };
 
-            Assert.AreEqual(currentDate.AddDays(1), NativeDateTime.GetTomorrowWrapped(wrapper).date);
+            Assert.Equal(currentDate.AddDays(1), NativeDateTime.GetTomorrowWrapped(wrapper).date);
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Test Failure: {e}"); 
-            return 101; 
+            Console.WriteLine($"Test Failure: {e}");
+            return 101;
         }
         return 100;
     }

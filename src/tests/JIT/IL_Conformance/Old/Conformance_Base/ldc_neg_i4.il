@@ -183,5 +183,5 @@ END:
 
 
 
-.assembly ldc_neg_i4.exe{}
+.assembly ldc_neg_i4{}
 

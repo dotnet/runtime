@@ -56,10 +56,13 @@ public:
     static bool IsDeleted(const KeyValuePair<LPCUTF8, PTR_NativeImage>& e) { return e.Key() == nullptr; }
 };
 
-class AssemblyLoadContext;
 class ReadyToRunInfo;
-class PEFile;
+class PEAssembly;
 class PEImage;
+
+#ifndef DACCESS_COMPILE
+ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInternalImport *m_pManifestMetadata, Module* pModule, AllocMemTracker *pamTracker);
+#endif
 
 // This class represents a  ReadyToRun image with native OS-specific envelope. As of today,
 // this file format is used as the compiled native code cache in composite R2R Crossgen2
@@ -77,11 +80,12 @@ private:
     // Points to the OwnerCompositeExecutable section content within the component MSIL module
     LPCUTF8 m_fileName;
 
-    AssemblyLoadContext *m_pAssemblyLoadContext;
+    AssemblyBinder *m_pAssemblyBinder;
     ReadyToRunInfo *m_pReadyToRunInfo;
     IMDInternalImport *m_pManifestMetadata;
     PEImageLayout *m_pImageLayout;
     PTR_Assembly *m_pNativeMetadataAssemblyRefMap;
+    PTR_ModuleBase m_pNativeManifestModule;
     
     IMAGE_DATA_DIRECTORY *m_pComponentAssemblies;
     IMAGE_DATA_DIRECTORY *m_pComponentAssemblyMvids;
@@ -91,9 +95,10 @@ private:
     
     Crst m_eagerFixupsLock;
     bool m_eagerFixupsHaveRun;
+    bool m_readyToRunCodeDisabled;
 
 private:
-    NativeImage(AssemblyLoadContext *pAssemblyLoadContext, PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
+    NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *peImageLayout, LPCUTF8 imageFileName);
 
 protected:
     void Initialize(READYTORUN_HEADER *header, LoaderAllocator *loaderAllocator, AllocMemTracker *pamTracker);
@@ -104,7 +109,7 @@ public:
     static NativeImage *Open(
         Module *componentModule,
         LPCUTF8 nativeImageFileName,
-        AssemblyLoadContext *pAssemblyLoadContext,
+        AssemblyBinder *pAssemblyBinder,
         LoaderAllocator *pLoaderAllocator,
         /* out */ bool *isNewNativeImage);
 
@@ -118,13 +123,25 @@ public:
     IMDInternalImport *GetManifestMetadata() const { return m_pManifestMetadata; }
     uint32_t GetManifestAssemblyCount() const { return m_manifestAssemblyCount; }
     PTR_Assembly *GetManifestMetadataAssemblyRefMap() { return m_pNativeMetadataAssemblyRefMap; }
-    AssemblyLoadContext *GetAssemblyLoadContext() const { return m_pAssemblyLoadContext; }
+    AssemblyBinder *GetAssemblyBinder() const { return m_pAssemblyBinder; }
 
     Assembly *LoadManifestAssembly(uint32_t rowid, DomainAssembly *pParentAssembly);
     
     PTR_READYTORUN_CORE_HEADER GetComponentAssemblyHeader(LPCUTF8 assemblySimpleName);
 
     void CheckAssemblyMvid(Assembly *assembly) const;
+
+    void DisableAllR2RCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_readyToRunCodeDisabled = true;
+    }
+
+    bool ReadyToRunCodeDisabled()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_readyToRunCodeDisabled;
+    }
 
 private:
     IMDInternalImport *LoadManifestMetadata();

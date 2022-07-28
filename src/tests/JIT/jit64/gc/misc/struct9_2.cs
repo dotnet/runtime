@@ -85,7 +85,7 @@ struct S
     }
 }
 
-class Test
+class Test_struct9_2
 {
     public static void c(ref S s1, ref int i)
     {

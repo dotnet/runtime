@@ -65,7 +65,7 @@ namespace System.Data.OleDb
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("Add(String parameterName, Object value) has been deprecated.  Use AddWithValue(String parameterName, Object value).  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [Obsolete("Add(String parameterName, Object value) has been deprecated. Use AddWithValue(String parameterName, Object value) instead.")]
         public OleDbParameter Add(string? parameterName, object? value)
         {
             return Add(new OleDbParameter(parameterName, value));

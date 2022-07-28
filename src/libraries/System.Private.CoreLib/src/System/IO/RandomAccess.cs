@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO.Strategies;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -23,7 +24,29 @@ namespace System.IO
         {
             ValidateInput(handle, fileOffset: 0);
 
-            return GetFileLength(handle, path: null);
+            return handle.GetFileLength();
+        }
+
+        /// <summary>
+        /// Sets the length of the file to the given value.
+        /// </summary>
+        /// <param name="handle">The file handle.</param>
+        /// <param name="length">A long value representing the length of the file in bytes.</param>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
+        /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
+        /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
+        /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="length" /> is negative.</exception>
+        public static void SetLength(SafeFileHandle handle, long length)
+        {
+            ValidateInput(handle, fileOffset: 0);
+
+            if (length < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(length));
+            }
+
+            SetFileLength(handle, length);
         }
 
         /// <summary>
@@ -134,7 +157,6 @@ namespace System.IO
         /// <param name="handle">The file handle.</param>
         /// <param name="buffer">A region of memory. This method copies the contents of this region to the file.</param>
         /// <param name="fileOffset">The file position to write to.</param>
-        /// <returns>The total number of bytes written into the file. This can be less than the number of bytes provided in the buffer and it's not an error.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
@@ -143,11 +165,11 @@ namespace System.IO
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>Position of the file is not advanced.</remarks>
-        public static int Write(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
+        public static void Write(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
         {
             ValidateInput(handle, fileOffset);
 
-            return WriteAtOffset(handle, buffer, fileOffset);
+            WriteAtOffset(handle, buffer, fileOffset);
         }
 
         /// <summary>
@@ -156,7 +178,6 @@ namespace System.IO
         /// <param name="handle">The file handle.</param>
         /// <param name="buffers">A list of memory buffers. This method copies the contents of these buffers to the file.</param>
         /// <param name="fileOffset">The file position to write to.</param>
-        /// <returns>The total number of bytes written into the file. This can be less than the number of bytes provided in the buffers and it's not an error.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> or <paramref name="buffers" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
@@ -165,12 +186,12 @@ namespace System.IO
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>Position of the file is not advanced.</remarks>
-        public static long Write(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
+        public static void Write(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
         {
             ValidateInput(handle, fileOffset);
             ValidateBuffers(buffers);
 
-            return WriteGatherAtOffset(handle, buffers, fileOffset);
+            WriteGatherAtOffset(handle, buffers, fileOffset);
         }
 
         /// <summary>
@@ -180,7 +201,7 @@ namespace System.IO
         /// <param name="buffer">A region of memory. This method copies the contents of this region to the file.</param>
         /// <param name="fileOffset">The file position to write to.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="P:System.Threading.CancellationToken.None" />.</param>
-        /// <returns>The total number of bytes written into the file. This can be less than the number of bytes provided in the buffer and it's not an error.</returns>
+        /// <returns>A task representing the asynchronous completion of the write operation.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
@@ -189,13 +210,13 @@ namespace System.IO
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>Position of the file is not advanced.</remarks>
-        public static ValueTask<int> WriteAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken = default)
+        public static ValueTask WriteAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken = default)
         {
             ValidateInput(handle, fileOffset);
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return ValueTask.FromCanceled<int>(cancellationToken);
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
             return WriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
@@ -208,7 +229,7 @@ namespace System.IO
         /// <param name="buffers">A list of memory buffers. This method copies the contents of these buffers to the file.</param>
         /// <param name="fileOffset">The file position to write to.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="P:System.Threading.CancellationToken.None" />.</param>
-        /// <returns>The total number of bytes written into the file. This can be less than the number of bytes provided in the buffers and it's not an error.</returns>
+        /// <returns>A task representing the asynchronous completion of the write operation.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="handle" /> or <paramref name="buffers"/> is <see langword="null" />.</exception>
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
@@ -217,14 +238,14 @@ namespace System.IO
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>Position of the file is not advanced.</remarks>
-        public static ValueTask<long> WriteAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset, CancellationToken cancellationToken = default)
+        public static ValueTask WriteAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset, CancellationToken cancellationToken = default)
         {
             ValidateInput(handle, fileOffset);
             ValidateBuffers(buffers);
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return ValueTask.FromCanceled<long>(cancellationToken);
+                return ValueTask.FromCanceled(cancellationToken);
             }
 
             return WriteGatherAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
@@ -264,42 +285,28 @@ namespace System.IO
             }
         }
 
-        private static ValueTask<int> ScheduleSyncReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        private static ValueTask<int> ScheduleSyncReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer,
+            long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
         {
-            return new ValueTask<int>(Task.Factory.StartNew(static state =>
-            {
-                var args = ((SafeFileHandle handle, Memory<byte> buffer, long fileOffset))state!;
-                return ReadAtOffset(args.handle, args.buffer.Span, args.fileOffset);
-            }, (handle, buffer, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+            return handle.GetThreadPoolValueTaskSource().QueueRead(buffer, fileOffset, cancellationToken, strategy);
         }
 
         private static ValueTask<long> ScheduleSyncReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
         {
-            return new ValueTask<long>(Task.Factory.StartNew(static state =>
-            {
-                var args = ((SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset))state!;
-                return ReadScatterAtOffset(args.handle, args.buffers, args.fileOffset);
-            }, (handle, buffers, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+            return handle.GetThreadPoolValueTaskSource().QueueReadScatter(buffers, fileOffset, cancellationToken);
         }
 
-        private static ValueTask<int> ScheduleSyncWriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        private static ValueTask ScheduleSyncWriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer,
+            long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
         {
-            return new ValueTask<int>(Task.Factory.StartNew(static state =>
-            {
-                var args = ((SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset))state!;
-                return WriteAtOffset(args.handle, args.buffer.Span, args.fileOffset);
-            }, (handle, buffer, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+            return handle.GetThreadPoolValueTaskSource().QueueWrite(buffer, fileOffset, cancellationToken, strategy);
         }
 
-        private static ValueTask<long> ScheduleSyncWriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
+        private static ValueTask ScheduleSyncWriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
         {
-            return new ValueTask<long>(Task.Factory.StartNew(static state =>
-            {
-                var args = ((SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset))state!;
-                return WriteGatherAtOffset(args.handle, args.buffers, args.fileOffset);
-            }, (handle, buffers, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+            return handle.GetThreadPoolValueTaskSource().QueueWriteGather(buffers, fileOffset, cancellationToken);
         }
     }
 }

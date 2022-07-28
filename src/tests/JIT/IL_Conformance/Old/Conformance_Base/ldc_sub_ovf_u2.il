@@ -1501,5 +1501,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_sub_ovf_u2.exe{}
+.assembly ldc_sub_ovf_u2{}
 

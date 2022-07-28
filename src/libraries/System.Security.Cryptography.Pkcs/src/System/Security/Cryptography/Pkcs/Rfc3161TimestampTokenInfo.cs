@@ -323,10 +323,14 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlyMemory<byte>? tsaName,
             X509ExtensionCollection? extensions)
         {
-            if (policyId == null)
+            if (policyId is null)
+            {
                 throw new ArgumentNullException(nameof(policyId));
-            if (hashAlgorithmId == null)
+            }
+            if (hashAlgorithmId is null)
+            {
                 throw new ArgumentNullException(nameof(hashAlgorithmId));
+            }
 
             var tstInfo = new Rfc3161TstInfo
             {

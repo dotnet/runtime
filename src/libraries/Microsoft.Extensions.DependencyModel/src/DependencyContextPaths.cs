@@ -14,16 +14,16 @@ namespace Microsoft.Extensions.DependencyModel
 
         public static DependencyContextPaths Current { get; } = GetCurrent();
 
-        public string Application { get; }
+        public string? Application { get; }
 
-        public string SharedRuntime { get; }
+        public string? SharedRuntime { get; }
 
         public IEnumerable<string> NonApplicationPaths { get; }
 
         public DependencyContextPaths(
-            string application,
-            string sharedRuntime,
-            IEnumerable<string> nonApplicationPaths)
+            string? application,
+            string? sharedRuntime,
+            IEnumerable<string>? nonApplicationPaths)
         {
             Application = application;
             SharedRuntime = sharedRuntime;
@@ -32,18 +32,18 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static DependencyContextPaths GetCurrent()
         {
-            object deps = AppDomain.CurrentDomain.GetData(DepsFilesProperty);
-            object fxDeps = AppDomain.CurrentDomain.GetData(FxDepsFileProperty);
+            object? deps = AppDomain.CurrentDomain.GetData(DepsFilesProperty);
+            object? fxDeps = AppDomain.CurrentDomain.GetData(FxDepsFileProperty);
 
             return Create(deps as string, fxDeps as string);
         }
 
-        internal static DependencyContextPaths Create(string depsFiles, string sharedRuntime)
+        internal static DependencyContextPaths Create(string? depsFiles, string? sharedRuntime)
         {
-            string[] files = depsFiles?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-            string application = files != null && files.Length > 0 ? files[0] : null;
+            string[]? files = depsFiles?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            string? application = files != null && files.Length > 0 ? files[0] : null;
 
-            string[] nonApplicationPaths = files?
+            string[]? nonApplicationPaths = files?
                 .Skip(1) // the application path
                 .ToArray();
 

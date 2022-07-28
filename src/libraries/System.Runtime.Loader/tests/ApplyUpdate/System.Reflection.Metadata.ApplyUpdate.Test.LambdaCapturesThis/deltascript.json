@@ -1,0 +1,7 @@
+{
+    "changes": [
+        {"document": "LambdaCapturesThis.cs", "update": "LambdaCapturesThis_v1.cs"},
+        {"document": "LambdaCapturesThis.cs", "update": "LambdaCapturesThis_v2.cs"},
+    ]
+}
+

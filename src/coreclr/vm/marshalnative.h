@@ -19,8 +19,6 @@
 class MarshalNative
 {
 public:
-    static VOID QCALLTYPE Prelink(MethodDesc * pMD);
-    static BOOL QCALLTYPE IsBuiltInComSupported();
 
     //====================================================================
     // These methods convert between an HR and and a managed exception.
@@ -38,8 +36,6 @@ public:
     static FCDECL3(VOID, PtrToStructureHelper, LPVOID ptr, Object* pObjIn, CLR_BOOL allowValueClasses);
     static FCDECL2(VOID, DestroyStructure, LPVOID ptr, ReflectClassBaseObject* refClassUNSAFE);
 
-    static FCDECL1(FC_BOOL_RET, IsPinnable, Object* obj);
-
     static FCDECL2(LPVOID, GCHandleInternalAlloc, Object *obj, int type);
     static FCDECL1(VOID, GCHandleInternalFree, OBJECTHANDLE handle);
     static FCDECL1(LPVOID, GCHandleInternalGet, OBJECTHANDLE handle);
@@ -48,11 +44,6 @@ public:
 
     static FCDECL2(Object*, GetDelegateForFunctionPointerInternal, LPVOID FPtr, ReflectClassBaseObject* refTypeUNSAFE);
     static FCDECL1(LPVOID, GetFunctionPointerForDelegateInternal, Object* refDelegateUNSAFE);
-
-#ifdef _DEBUG
-    using IsInCooperativeGCMode_fn = BOOL(STDMETHODCALLTYPE*)(void);
-    static IsInCooperativeGCMode_fn QCALLTYPE GetIsInCooperativeGCModeFunctionPointer();
-#endif
 
 #ifdef FEATURE_COMINTEROP
     //====================================================================
@@ -136,11 +127,6 @@ public:
 
     static FCDECL2(void, ChangeWrapperHandleStrength, Object* orefUNSAFE, CLR_BOOL fIsWeak);
 
-    //====================================================================
-    // Create type for given CLSID.
-    //====================================================================
-    static void QCALLTYPE GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
-
 private:
     static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT);
 #endif // FEATURE_COMINTEROP
@@ -149,5 +135,20 @@ private:
 // Check that the supplied object is valid to put in a pinned handle,
 // throwing an exception if not.
 void ValidatePinnedObject(OBJECTREF obj);
+
+extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD);
+extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported();
+
+#ifdef _DEBUG
+using IsInCooperativeGCMode_fn = BOOL(STDMETHODCALLTYPE*)(void);
+extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGCModeFunctionPointer();
+#endif
+
+#ifdef FEATURE_COMINTEROP
+//====================================================================
+// Create type for given CLSID.
+//====================================================================
+extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+#endif
 
 #endif

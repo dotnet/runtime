@@ -5,7 +5,7 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-using TestLibrary;
+using Xunit;
 
 unsafe internal class CheckGCMode
 {
@@ -29,7 +29,7 @@ unsafe internal class CheckGCMode
         if (!Enabled)
             return;
 
-        Assert.AreEqual(transitionSuppressed, inCooperativeMode, $"GC transition should{(transitionSuppressed ? "" : " not")} have been suppressed");
+        Assert.Equal(transitionSuppressed, inCooperativeMode);
     }
 
     internal static void Validate(bool transitionSuppressed, int inCooperativeMode)

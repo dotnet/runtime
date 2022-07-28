@@ -149,7 +149,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureAppConfigurationFromFile()
         {
             var hostBuilder = new HostBuilder()
@@ -236,7 +235,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        public void UseEnvironmentIsNotOverriden()
+        public void UseEnvironmentIsNotOverridden()
         {
             var vals = new Dictionary<string, string>
             {
@@ -310,7 +309,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RelativeContentRootIsResolved()
         {
             using (var host = new HostBuilder()
@@ -374,7 +372,6 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [Theory]
         [MemberData(nameof(ConfigureHostOptionsTestInput))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureHostOptionsWithOptionsOverload(
             BackgroundServiceExceptionBehavior testBehavior, TimeSpan testShutdown)
         {
@@ -398,7 +395,6 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         [Theory]
         [MemberData(nameof(ConfigureHostOptionsTestInput))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureHostOptionsWithContenxtAndOptionsOverload(
             BackgroundServiceExceptionBehavior testBehavior, TimeSpan testShutdown)
         {
@@ -643,7 +639,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void HostServicesSameServiceProviderAsInHostBuilder()
         {
             var hostBuilder = Host.CreateDefaultBuilder();
@@ -656,7 +651,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void HostBuilderConfigureDefaultsInterleavesMissingConfigValues()
         {
             IHostBuilder hostBuilder = new HostBuilder();

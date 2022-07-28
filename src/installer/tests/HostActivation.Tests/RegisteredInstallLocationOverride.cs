@@ -56,10 +56,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // On Linux/macOS the install location is registered in a file which is normally
                 // located in /etc/dotnet/install_location
                 // So we need to redirect it to a different place here.
-                string directory = Path.Combine(TestArtifact.TestArtifactsPath, "installLocationOverride");
+                string directory = Path.Combine(TestArtifact.TestArtifactsPath, "installLocationOverride" + Process.GetCurrentProcess().Id.ToString());
+                if (Directory.Exists(directory))
+                    Directory.Delete(directory, true);
                 Directory.CreateDirectory(directory);
-                PathValueOverride = Path.Combine(directory, "install_location." + Process.GetCurrentProcess().Id.ToString());
-                File.WriteAllText(PathValueOverride, "");
+                PathValueOverride = directory;
             }
         }
 
@@ -78,9 +79,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
             else
             {
-                File.WriteAllText(PathValueOverride, string.Join(Environment.NewLine,
-                    locations.Select(l => string.Format("{0}{1}",
-                        (!string.IsNullOrWhiteSpace(l.Architecture) ? l.Architecture + "=" : ""), l.Path))));
+                foreach (var location in locations)
+                {
+                    string installLocationFileName = "install_location" +
+                        (!string.IsNullOrWhiteSpace(location.Architecture) ? ("_" + location.Architecture) : string.Empty);
+                    File.WriteAllText(Path.Combine(PathValueOverride, installLocationFileName), location.Path);
+                }
             }
         }
 
@@ -127,7 +131,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             else
             {
                 return command.EnvironmentVariable(
-                    Constants.TestOnlyEnvironmentVariables.InstallLocationFilePath,
+                    Constants.TestOnlyEnvironmentVariables.InstallLocationPath,
                     registeredInstallLocationOverride.PathValueOverride);
             }
         }

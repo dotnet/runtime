@@ -25,8 +25,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ValidateOnStart_ConfigureAndValidateThenCallValidateOnStart_ValidatesFailure()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -49,8 +47,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ValidateOnStart_CallFirstThenConfigureAndValidate_ValidatesFailure()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -73,8 +69,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ValidateOnStart_ErrorMessageSpecified_FailsWithCustomError()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -104,8 +98,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ValidateOnStart_NamedOptions_ValidatesFailureOnStart()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -133,16 +125,14 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        private async Task ValidateOnStart_AddOptionsMultipleTimesForSameType_LastOneGetsTriggered()
+        private async Task ValidateOnStart_AddNamedOptionsMultipleTimesForSameType_BothGetTriggered()
         {
             bool firstOptionsBuilderTriggered = false;
             bool secondOptionsBuilderTriggered = false;
             var hostBuilder = CreateHostBuilder(services =>
             {
                 services.AddOptions<ComplexOptions>("bad_configuration1")
-                    .Configure(o => o.Boolean = false)
+                    .Configure(o => o.Boolean = true)
                     .Validate(o =>
                     {
                         firstOptionsBuilderTriggered = true;
@@ -175,13 +165,11 @@ namespace Microsoft.Extensions.Hosting.Tests
                 ValidateFailure<ComplexOptions>(error, 2, "Boolean", "Integer");
             }
 
-            Assert.False(firstOptionsBuilderTriggered);
+            Assert.True(firstOptionsBuilderTriggered);
             Assert.True(secondOptionsBuilderTriggered);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         private async Task ValidateOnStart_AddEagerValidation_DoesValidationWhenHostStartsWithNoFailure()
         {
             bool validateCalled = false;
@@ -193,7 +181,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     .Configure(o => o.Boolean = true)
                     .Validate(o =>
                     {
-                        validateCalled = true; 
+                        validateCalled = true;
                         return o.Boolean;
                     }, "correct_configuration")
                     .ValidateOnStart();
@@ -208,8 +196,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         private async Task ValidateOnStart_AddLazyValidation_SkipsValidationWhenHostStarts()
         {
             bool validateCalled = false;
@@ -227,7 +213,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     .Configure(o => o.Boolean = false)
                     .Validate(o =>
                     {
-                        validateCalled = true; 
+                        validateCalled = true;
                         return o.Boolean;
                     }, "bad_configuration");
             });
@@ -242,8 +228,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ValidateOnStart_AddBothLazyAndEagerValidationOnDifferentTypes_ValidatesWhenHostStartsOnlyForEagerValidations()
         {
             bool validateCalledForNested = false;
@@ -254,7 +238,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 // Lazy validation for NestedOptions
                 services.AddOptions<NestedOptions>()
                     .Configure(o => o.Integer = 11)
-                    .Validate(o => 
+                    .Validate(o =>
                     {
                         validateCalledForNested = true;
                         return o.Integer > 12;
@@ -263,7 +247,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 // Eager validation for ComplexOptions
                 services.AddOptions<ComplexOptions>()
                     .Configure(o => o.Boolean = false)
-                    .Validate(o => 
+                    .Validate(o =>
                     {
                         validateCalledForComplexOptions = true;
                         return o.Boolean;
@@ -286,8 +270,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ValidateOnStart_MultipleErrorsInOneValidationCall_ValidatesFailureWithMultipleErrors()
         {
             var hostBuilder = CreateHostBuilder(services =>
@@ -315,8 +297,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ValidateOnStart_MultipleErrorsInOneValidationCallUsingCustomErrors_FailuresContainCustomErrors()
         {
             var hostBuilder = CreateHostBuilder(services =>

@@ -34,7 +34,7 @@ namespace System.Data
         // > 0 (1)  : CaseSensitve equal
         // < 0 (-1) : Case-Insensitive Equal
         // = 0      : Not Equal
-        internal int NamesEqual(string? s1, string? s2, bool fCaseSensitive, CultureInfo locale)
+        internal static int NamesEqual(string? s1, string? s2, bool fCaseSensitive, CultureInfo locale)
         {
             if (fCaseSensitive)
             {

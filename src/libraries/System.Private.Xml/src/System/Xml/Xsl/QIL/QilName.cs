@@ -74,7 +74,7 @@ namespace System.Xml.Xsl.Qil
                 }
                 else
                 {
-                    return _prefix + ':' + _local;
+                    return $"{_prefix}:{_local}";
                 }
             }
         }
@@ -139,10 +139,10 @@ namespace System.Xml.Xsl.Qil
                 if (_uri.Length == 0)
                     return _local;
 
-                return string.Concat("{", _uri, "}", _local);
+                return $"{{{_uri}}}{_local}";
             }
 
-            return string.Concat("{", _uri, "}", _prefix, ":", _local);
+            return $"{{{_uri}}}{_prefix}:{_local}";
         }
     }
 }

@@ -1,21 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
-using System.IO;
 using System.Text;
 using System.Runtime.Versioning;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
-    public sealed partial class FileInfo : FileSystemInfo
+    public sealed class FileInfo : FileSystemInfo
     {
         private FileInfo() { }
 
@@ -26,10 +20,12 @@ namespace System.IO
 
         internal FileInfo(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
-            // Want to throw the original argument name
-            OriginalPath = originalPath ?? throw new ArgumentNullException(nameof(fileName));
+            ArgumentNullException.ThrowIfNull(originalPath);
 
-            fullPath = fullPath ?? originalPath;
+            // Want to throw the original argument name
+            OriginalPath = originalPath;
+
+            fullPath ??= originalPath;
             Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath.AsSpan()), "should be fully qualified if normalized");
 
             FullPath = isNormalized ? fullPath ?? originalPath : Path.GetFullPath(fullPath);
@@ -76,6 +72,12 @@ namespace System.IO
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="System.IO.FileStream" /> class with the specified creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size, additional file options and the allocation size.
+        /// </summary>
+        /// <remarks><see cref="System.IO.FileStream(string,System.IO.FileStreamOptions)"/> for information about exceptions.</remarks>
+        public FileStream Open(FileStreamOptions options) => File.Open(NormalizedPath, options);
+
         public StreamReader OpenText()
             => new StreamReader(NormalizedPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
 
@@ -89,10 +91,7 @@ namespace System.IO
 
         public FileInfo CopyTo(string destFileName, bool overwrite)
         {
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             string destinationPath = Path.GetFullPath(destFileName);
             FileSystem.CopyFile(FullPath, destinationPath, overwrite);
@@ -139,10 +138,7 @@ namespace System.IO
         // This method does work across volumes.
         public void MoveTo(string destFileName, bool overwrite)
         {
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName));
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             string fullDestFileName = Path.GetFullPath(destFileName);
 
@@ -171,8 +167,7 @@ namespace System.IO
 
         public FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
+            ArgumentNullException.ThrowIfNull(destinationFileName);
 
             FileSystem.ReplaceFile(
                 FullPath,

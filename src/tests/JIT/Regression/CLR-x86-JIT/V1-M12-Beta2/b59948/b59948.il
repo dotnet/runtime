@@ -9,11 +9,11 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0xa20b8571
+.assembly 'b59948'
 {
   
 }
-.module '1'
+.assembly extern xunit.core {}
 // MVID: {9A90DFD6-02B6-45EC-9CEF-25C2CAF3BF19}
 
 .file alignment 512
@@ -130,6 +130,9 @@
 
   .method private static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       34 (0x22)
     .maxstack  20

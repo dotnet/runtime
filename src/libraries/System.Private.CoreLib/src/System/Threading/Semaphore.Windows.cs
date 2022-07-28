@@ -32,6 +32,8 @@ namespace System.Threading
             int errorCode = Marshal.GetLastPInvokeError();
             if (myHandle.IsInvalid)
             {
+                myHandle.Dispose();
+
                 if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     throw new WaitHandleCannotBeOpenedException(
                         SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
@@ -45,10 +47,7 @@ namespace System.Threading
         private static OpenExistingResult OpenExistingWorker(string name, out Semaphore? result)
         {
 #if TARGET_WINDOWS
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             // Pass false to OpenSemaphore to prevent inheritedHandles
             SafeWaitHandle myHandle = Interop.Kernel32.OpenSemaphore(AccessRights, false, name);
@@ -57,6 +56,8 @@ namespace System.Threading
             {
                 result = null;
                 int errorCode = Marshal.GetLastPInvokeError();
+
+                myHandle.Dispose();
 
                 if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.Errors.ERROR_INVALID_NAME)
                     return OpenExistingResult.NameNotFound;

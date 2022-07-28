@@ -126,9 +126,6 @@
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>
   </data>
-  <data name="Argument_CannotBeNullOrEmpty" xml:space="preserve">
-    <value>Argument cannot be null or empty.</value>
-  </data>
   <data name="Argument_EmptyName" xml:space="preserve">
     <value>Empty name is not legal.</value>
   </data>

@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
-
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 1.2.2204.0
-//  Copyright (C) Microsoft Corporation 1998-2002. All rights reserved.
-
+.assembly extern xunit.core {}
 
 // This IL was generated from the following C# program on 10/7/02 using csc version
 // 8.00.2276 with CLR version 2.x86chk.  This tests functionality which currently compiles
@@ -85,7 +82,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module method014.exe
 // MVID: {5E79BC95-82C1-4B20-8867-C903C4ECBE7E}
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -132,7 +128,7 @@
 
 } // end of class Foo
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_method014
        extends [mscorlib]System.Object
 {
   .field public static int32 counter
@@ -141,17 +137,17 @@
   {
     // Code size       47 (0x2f)
     .maxstack  2
-    IL_0000:  ldsfld     int32 Test::counter
+    IL_0000:  ldsfld     int32 Test_method014::counter
     IL_0005:  ldc.i4.1
     IL_0006:  add
-    IL_0007:  stsfld     int32 Test::counter
+    IL_0007:  stsfld     int32 Test_method014::counter
     IL_000c:  ldarg.0
     IL_000d:  brtrue.s   IL_002e
 
     IL_000f:  ldarg.0
-    IL_0010:  stsfld     bool Test::result
+    IL_0010:  stsfld     bool Test_method014::result
     IL_0015:  ldstr      "Test Failed at location: "
-    IL_001a:  ldsfld     int32 Test::counter
+    IL_001a:  ldsfld     int32 Test_method014::counter
     IL_001f:  box        [mscorlib]System.Int32
     IL_0024:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
@@ -161,6 +157,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       142 (0x8e)
     .maxstack  2
@@ -171,29 +170,29 @@
                                                                   !!0)
     IL_0007:  ldstr      "11"
     IL_000c:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_0011:  call       void Test::Eval(bool)
+    IL_0011:  call       void Test_method014::Eval(bool)
     IL_0016:  ldstr      "string"
     IL_001b:  ldc.i4.1
     IL_001c:  call       string class Foo<string>::Function<int32>(!0,
                                                                    !!0)
     IL_0021:  ldstr      "string1"
     IL_0026:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_002b:  call       void Test::Eval(bool)
+    IL_002b:  call       void Test_method014::Eval(bool)
     IL_0030:  ldc.i4.1
     IL_0031:  ldstr      "string"
     IL_0036:  call       string class Foo<int32>::Function<string>(!0,
                                                                    !!0)
     IL_003b:  ldstr      "1string"
     IL_0040:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_0045:  call       void Test::Eval(bool)
+    IL_0045:  call       void Test_method014::Eval(bool)
     IL_004a:  ldstr      "string1"
     IL_004f:  ldstr      "string2"
     IL_0054:  call       string class Foo<string>::Function<string>(!0,
                                                                     !!0)
     IL_0059:  ldstr      "string1string2"
     IL_005e:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_0063:  call       void Test::Eval(bool)
-    IL_0068:  ldsfld     bool Test::result
+    IL_0063:  call       void Test_method014::Eval(bool)
+    IL_0068:  ldsfld     bool Test_method014::result
     IL_006d:  brfalse.s  IL_007e
 
     IL_006f:  ldstr      "Test Passed"
@@ -218,9 +217,9 @@
     // Code size       13 (0xd)
     .maxstack  1
     IL_0000:  ldc.i4.0
-    IL_0001:  stsfld     int32 Test::counter
+    IL_0001:  stsfld     int32 Test_method014::counter
     IL_0006:  ldc.i4.1
-    IL_0007:  stsfld     bool Test::result
+    IL_0007:  stsfld     bool Test_method014::result
     IL_000c:  ret
   } // end of method Test::.cctor
 

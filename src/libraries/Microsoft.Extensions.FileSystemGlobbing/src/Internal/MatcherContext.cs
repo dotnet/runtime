@@ -22,7 +22,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
         private readonly List<FilePatternMatch> _files;
 
         private readonly HashSet<string> _declaredLiteralFolderSegmentInString;
-        private readonly HashSet<LiteralPathSegment> _declaredLiteralFolderSegments = new HashSet<LiteralPathSegment>();
         private readonly HashSet<LiteralPathSegment> _declaredLiteralFileSegments = new HashSet<LiteralPathSegment>();
 
         private bool _declaredParentPathSegment;
@@ -55,13 +54,13 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             return new PatternMatchingResult(_files, _files.Count > 0);
         }
 
-        private void Match(DirectoryInfoBase directory, string parentRelativePath)
+        private void Match(DirectoryInfoBase directory, string? parentRelativePath)
         {
             // Request all the including and excluding patterns to push current directory onto their status stack.
             PushDirectory(directory);
             Declare();
 
-            var entities = new List<FileSystemInfoBase>();
+            var entities = new List<FileSystemInfoBase?>();
             if (_declaredWildcardPathSegment || _declaredLiteralFileSegments.Any())
             {
                 entities.AddRange(directory.EnumerateFileSystemInfos());
@@ -85,10 +84,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
 
             // collect files and sub directories
             var subDirectories = new List<DirectoryInfoBase>();
-            foreach (FileSystemInfoBase entity in entities)
+            foreach (FileSystemInfoBase? entity in entities)
             {
-                var fileInfo = entity as FileInfoBase;
-                if (fileInfo != null)
+                if (entity is FileInfoBase fileInfo)
                 {
                     PatternTestResult result = MatchPatternContexts(fileInfo, (pattern, file) => pattern.Test(file));
                     if (result.IsSuccessful)
@@ -101,8 +99,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
                     continue;
                 }
 
-                var directoryInfo = entity as DirectoryInfoBase;
-                if (directoryInfo != null)
+                if (entity is DirectoryInfoBase directoryInfo)
                 {
                     if (MatchPatternContexts(directoryInfo, (pattern, dir) => pattern.Test(dir)))
                     {
@@ -128,7 +125,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
         private void Declare()
         {
             _declaredLiteralFileSegments.Clear();
-            _declaredLiteralFolderSegments.Clear();
             _declaredParentPathSegment = false;
             _declaredWildcardPathSegment = false;
 
@@ -140,8 +136,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
 
         private void DeclareInclude(IPathSegment patternSegment, bool isLastSegment)
         {
-            var literalSegment = patternSegment as LiteralPathSegment;
-            if (literalSegment != null)
+            if (patternSegment is LiteralPathSegment literalSegment)
             {
                 if (isLastSegment)
                 {
@@ -149,7 +144,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
                 }
                 else
                 {
-                    _declaredLiteralFolderSegments.Add(literalSegment);
                     _declaredLiteralFolderSegmentInString.Add(literalSegment.Value);
                 }
             }
@@ -163,7 +157,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             }
         }
 
-        internal static string CombinePath(string left, string right)
+        internal static string CombinePath(string? left, string right)
         {
             if (string.IsNullOrEmpty(left))
             {

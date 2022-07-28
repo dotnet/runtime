@@ -327,4 +327,5 @@
 <opcode name="mono_get_sp" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x20" flow="next" />
 <opcode name="mono_methodconst" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x21" flow="next" />
 <opcode name="mono_pinvoke_addr_cache" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x22" flow="next" />
+<opcode name="mono_remap_ovf_exc" input="Pop0" output="Push0" args="InlineI" o1="0xF0" o2="0x23" flow="next" />
 </opdesc>

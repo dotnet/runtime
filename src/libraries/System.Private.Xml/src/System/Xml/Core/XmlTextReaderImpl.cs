@@ -19,7 +19,7 @@ namespace System.Xml
         private static UTF8Encoding? s_utf8BomThrowing;
 
         private static UTF8Encoding UTF8BomThrowing =>
-            s_utf8BomThrowing ?? (s_utf8BomThrowing = new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: true));
+            s_utf8BomThrowing ??= new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: true);
 
         //
         // Private helper types
@@ -494,7 +494,7 @@ namespace System.Xml
         {
             ConvertAbsoluteUnixPathToAbsoluteUri(ref url, resolver: null);
             _namespaceManager = new XmlNamespaceManager(nt);
-            _reportedBaseUri = (url != null) ? url : string.Empty;
+            _reportedBaseUri = url ?? string.Empty;
             InitTextReaderInput(_reportedBaseUri, input);
             _reportedEncoding = _ps.encoding;
         }
@@ -505,7 +505,7 @@ namespace System.Xml
         internal XmlTextReaderImpl(Stream xmlFragment, XmlNodeType fragType, XmlParserContext? context)
             : this((context != null && context.NameTable != null) ? context.NameTable : new NameTable())
         {
-            Encoding? enc = (context != null) ? context.Encoding : null;
+            Encoding? enc = context?.Encoding;
             if (context == null || context.BaseURI == null || context.BaseURI.Length == 0)
             {
                 InitStreamInput(xmlFragment, enc);
@@ -528,10 +528,7 @@ namespace System.Xml
         internal XmlTextReaderImpl(string xmlFragment, XmlNodeType fragType, XmlParserContext? context)
             : this(null == context || null == context.NameTable ? new NameTable() : context.NameTable)
         {
-            if (xmlFragment == null)
-            {
-                xmlFragment = string.Empty;
-            }
+            xmlFragment ??= string.Empty;
 
             if (context == null)
             {
@@ -555,7 +552,7 @@ namespace System.Xml
         internal XmlTextReaderImpl(string xmlFragment, XmlParserContext? context)
             : this(null == context || null == context.NameTable ? new NameTable() : context.NameTable)
         {
-            InitStringInput((context == null) ? string.Empty : context.BaseURI, Encoding.Unicode, string.Concat("<?xml ", xmlFragment, "?>"));
+            InitStringInput((context == null) ? string.Empty : context.BaseURI, Encoding.Unicode, $"<?xml {xmlFragment}?>");
             InitFragmentReader(XmlNodeType.XmlDeclaration, context, true);
         }
 
@@ -567,15 +564,7 @@ namespace System.Xml
 
         public XmlTextReaderImpl(string url, XmlNameTable nt) : this(nt)
         {
-            if (url == null)
-            {
-                throw new ArgumentNullException(nameof(url));
-            }
-
-            if (url.Length == 0)
-            {
-                throw new ArgumentException(SR.Xml_EmptyUrl, nameof(url));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(url);
 
             _namespaceManager = new XmlNamespaceManager(nt);
 
@@ -636,7 +625,7 @@ namespace System.Xml
 
         private void FinishInitUriString()
         {
-            Stream? stream = null;
+            Stream? stream;
             Debug.Assert(_laterInitParam != null);
             Debug.Assert(_laterInitParam.inputUriResolver != null);
             Debug.Assert(_laterInitParam.inputbaseUri != null);
@@ -1606,11 +1595,7 @@ namespace System.Xml
         // Reads and concatenates content nodes, base64-decodes the results and copies the decoded bytes into the provided buffer
         public override int ReadContentAsBase64(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1666,11 +1651,7 @@ namespace System.Xml
         // Reads and concatenates content nodes, binhex-decodes the results and copies the decoded bytes into the provided buffer
         public override int ReadContentAsBinHex(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1725,11 +1706,7 @@ namespace System.Xml
         // Reads and concatenates content of an element, base64-decodes the results and copies the decoded bytes into the provided buffer
         public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1785,11 +1762,7 @@ namespace System.Xml
         // Reads and concatenates content of an element, binhex-decodes the results and copies the decoded bytes into the provided buffer
         public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -1858,11 +1831,7 @@ namespace System.Xml
             {
                 throw new InvalidOperationException(SR.Format(SR.Xml_InvalidReadValueChunk, _curNode.type));
             }
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -2293,10 +2262,7 @@ namespace System.Xml
             {
                 if (_incReadDecoder != _readCharsDecoder)
                 { // mixing ReadChars with ReadBase64 or ReadBinHex
-                    if (_readCharsDecoder == null)
-                    {
-                        _readCharsDecoder = new IncrementalReadCharsDecoder();
-                    }
+                    _readCharsDecoder ??= new IncrementalReadCharsDecoder();
                     _readCharsDecoder.Reset();
                     _incReadDecoder = _readCharsDecoder;
                 }
@@ -2314,10 +2280,7 @@ namespace System.Xml
                     return 0;
                 }
 
-                if (_readCharsDecoder == null)
-                {
-                    _readCharsDecoder = new IncrementalReadCharsDecoder();
-                }
+                _readCharsDecoder ??= new IncrementalReadCharsDecoder();
 
                 InitIncrementalRead(_readCharsDecoder);
                 return IncrementalRead(buffer, index, count);
@@ -2351,10 +2314,7 @@ namespace System.Xml
                     return 0;
                 }
 
-                if (_base64Decoder == null)
-                {
-                    _base64Decoder = new Base64Decoder();
-                }
+                _base64Decoder ??= new Base64Decoder();
 
                 InitIncrementalRead(_base64Decoder);
                 return IncrementalRead(array, offset, len);
@@ -2388,10 +2348,7 @@ namespace System.Xml
                     return 0;
                 }
 
-                if (_binHexDecoder == null)
-                {
-                    _binHexDecoder = new BinHexDecoder();
-                }
+                _binHexDecoder ??= new BinHexDecoder();
 
                 InitIncrementalRead(_binHexDecoder);
                 return IncrementalRead(array, offset, len);
@@ -2557,8 +2514,7 @@ namespace System.Xml
 
         internal int DtdParserProxy_ParseNumericCharRef(StringBuilder? internalSubsetBuilder)
         {
-            EntityType entType;
-            return this.ParseNumericCharRef(true, internalSubsetBuilder, out entType);
+            return this.ParseNumericCharRef(true, internalSubsetBuilder, out _);
         }
 
         internal int DtdParserProxy_ParseNamedCharRef(bool expand, StringBuilder? internalSubsetBuilder)
@@ -2628,7 +2584,7 @@ namespace System.Xml
 
         private XmlResolver GetTempResolver()
         {
-            return _xmlResolver == null ? new XmlUrlResolver() : _xmlResolver;
+            return _xmlResolver ?? new XmlUrlResolver();
         }
 
         internal bool DtdParserProxy_PushEntity(IDtdEntityInfo entity, out int entityId)
@@ -2865,10 +2821,7 @@ namespace System.Xml
 
         private void SendValidationEvent(XmlSeverityType severity, XmlSchemaException exception)
         {
-            if (_validationEventHandling != null)
-            {
-                _validationEventHandling.SendEvent(exception, severity);
-            }
+            _validationEventHandling?.SendEvent(exception, severity);
         }
 
         //
@@ -2979,23 +2932,19 @@ namespace System.Xml
 
             // make sure we have at least 4 bytes to detect the encoding (no preamble of System.Text supported encoding is longer than 4 bytes)
             _ps.bytePos = 0;
-            while (_ps.bytesUsed < 4 && _ps.bytes.Length - _ps.bytesUsed > 0)
+            if (_ps.bytesUsed < 4 && _ps.bytes.Length - _ps.bytesUsed > 0)
             {
-                int read = stream.Read(_ps.bytes, _ps.bytesUsed, _ps.bytes.Length - _ps.bytesUsed);
-                if (read == 0)
+                int bytesToRead = Math.Min(4, _ps.bytes.Length - _ps.bytesUsed);
+                int read = stream.ReadAtLeast(_ps.bytes.AsSpan(_ps.bytesUsed), bytesToRead, throwOnEndOfStream: false);
+                if (read < bytesToRead)
                 {
                     _ps.isStreamEof = true;
-                    break;
                 }
                 _ps.bytesUsed += read;
             }
 
             // detect & setup encoding
-            if (encoding == null)
-            {
-                encoding = DetectEncoding();
-            }
-
+            encoding ??= DetectEncoding();
             SetupEncoding(encoding);
 
             // eat preamble
@@ -3297,18 +3246,9 @@ namespace System.Xml
             Debug.Assert(_ps.encoding != null);
             Debug.Assert(_ps.bytes != null);
             ReadOnlySpan<byte> preamble = _ps.encoding.Preamble;
-            int preambleLen = preamble.Length;
-            int i;
-            for (i = 0; i < preambleLen && i < _ps.bytesUsed; i++)
+            if (_ps.bytes.AsSpan(0, _ps.bytesUsed).StartsWith(preamble))
             {
-                if (_ps.bytes[i] != preamble[i])
-                {
-                    break;
-                }
-            }
-            if (i == preambleLen)
-            {
-                _ps.bytePos = preambleLen;
+                _ps.bytePos = preamble.Length;
             }
         }
 
@@ -3504,7 +3444,7 @@ namespace System.Xml
                     int copyCharsCount = _ps.charsUsed - _ps.charPos;
                     if (copyCharsCount < charsLen - 1)
                     {
-                        _ps.lineStartPos = _ps.lineStartPos - _ps.charPos;
+                        _ps.lineStartPos -= _ps.charPos;
                         if (copyCharsCount > 0)
                         {
                             BlockCopyChars(_ps.chars, _ps.charPos, _ps.chars, 0, copyCharsCount);
@@ -3717,7 +3657,7 @@ namespace System.Xml
 
             _ps.charPos += 5;
 
-            // parsing of text declarations cannot change global stringBuidler or curNode as we may be in the middle of a text node
+            // parsing of text declarations cannot change global stringBuilder or curNode as we may be in the middle of a text node
             Debug.Assert(_stringBuilder.Length == 0 || isTextDecl);
             StringBuilder sb = isTextDecl ? new StringBuilder() : _stringBuilder;
 
@@ -3829,10 +3769,7 @@ namespace System.Xml
                         if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos, "standalone") &&
                              (xmlDeclState == 1 || xmlDeclState == 2) && !isTextDecl)
                         {
-                            if (!isTextDecl)
-                            {
-                                attr = AddAttributeNoChecks("standalone", 1);
-                            }
+                            attr = AddAttributeNoChecks("standalone", 1);
                             xmlDeclState = 2;
                             break;
                         }
@@ -4140,8 +4077,7 @@ namespace System.Xml
                         {
                             _fragmentType = XmlNodeType.Element;
                         }
-                        int i;
-                        switch (HandleEntityReference(false, EntityExpandType.OnlyGeneral, out i))
+                        switch (HandleEntityReference(false, EntityExpandType.OnlyGeneral, out _))
                         {
                             case EntityType.Unexpanded:
                                 if (_parsingFunction == ParsingFunction.EntityReference)
@@ -4159,8 +4095,6 @@ namespace System.Xml
                                 }
                                 continue;
                             default:
-                                chars = _ps.chars;
-                                pos = _ps.charPos;
                                 continue;
                         }
                     }
@@ -4198,11 +4132,7 @@ namespace System.Xml
 
             ReadData:
                 // read new characters into the buffer
-                if (ReadData() != 0)
-                {
-                    pos = _ps.charPos;
-                }
-                else
+                if (ReadData() == 0)
                 {
                     if (needMoreChars)
                     {
@@ -4232,9 +4162,6 @@ namespace System.Xml
                     OnEof();
                     return false;
                 }
-
-                pos = _ps.charPos;
-                chars = _ps.chars;
             }
         }
 
@@ -4778,8 +4705,7 @@ namespace System.Xml
             if (startTag.type == XmlNodeType.Element)
             {
                 // parse the bad name
-                int colonPos;
-                int endPos = ParseQName(out colonPos);
+                int endPos = ParseQName(out _);
 
                 Debug.Assert(_ps.chars != null);
                 string[] args = new string[4];
@@ -5494,7 +5420,7 @@ namespace System.Xml
             _stringBuilder.Length = 0;
         }
 
-        private void AddAttributeChunkToList(NodeData attr, NodeData chunk, ref NodeData? lastChunk)
+        private static void AddAttributeChunkToList(NodeData attr, NodeData chunk, ref NodeData? lastChunk)
         {
             if (lastChunk == null)
             {
@@ -5522,7 +5448,7 @@ namespace System.Xml
             // skip over the text if not in full parsing mode
             if (_parsingMode != ParsingMode.Full)
             {
-                while (!ParseText(out startPos, out endPos, ref orChars));
+                while (!ParseText(out _, out _, ref orChars));
                 goto IgnoredNode;
             }
 
@@ -5583,7 +5509,7 @@ namespace System.Xml
                 // V2 reader -> do not cache the whole value yet, read only up to 4kB to decide whether the value is a whitespace
                 else
                 {
-                    bool fullValue = false;
+                    bool fullValue;
 
                     // if it's a partial text value, not a whitespace -> return
                     if (orChars > 0x20)
@@ -5618,7 +5544,7 @@ namespace System.Xml
                         _stringBuilder.Length = 0;
                         if (!fullValue)
                         {
-                            while (!ParseText(out startPos, out endPos, ref orChars));
+                            while (!ParseText(out _, out _, ref orChars));
                         }
                         goto IgnoredNode;
                     }
@@ -5829,7 +5755,6 @@ namespace System.Xml
                             int offset = pos - _ps.charPos;
                             if (ZeroEndingStream(pos))
                             {
-                                chars = _ps.chars;
                                 pos = _ps.charPos + offset;
                                 goto ReturnPartialValue;
                             }
@@ -5968,12 +5893,10 @@ namespace System.Xml
         {
             Debug.Assert(_parsingFunction == ParsingFunction.PartialTextValue || _parsingFunction == ParsingFunction.InReadValueChunk ||
                           _parsingFunction == ParsingFunction.InReadContentAsBinary || _parsingFunction == ParsingFunction.InReadElementContentAsBinary);
-            int startPos;
-            int endPos;
             int orChars = 0;
 
             _parsingFunction = _nextParsingFunction;
-            while (!ParseText(out startPos, out endPos, ref orChars));
+            while (!ParseText(out _, out _, ref orChars));
         }
 
         private void FinishReadValueChunk()
@@ -6220,7 +6143,7 @@ namespace System.Xml
                 {
                     PushExternalEntity(entity);
                     _curNode.entityId = _ps.entityId;
-                    return (isInAttributeValue && _validatingReaderCompatFlag) ? EntityType.ExpandedInAttribute : EntityType.Expanded;
+                    return EntityType.Expanded;
                 }
             }
             else
@@ -6398,7 +6321,7 @@ namespace System.Xml
                 {
                     if (_ignorePIs || _parsingMode != ParsingMode.Full)
                     {
-                        while (!ParsePIValue(out startPos, out endPos));
+                        while (!ParsePIValue(out _, out _));
                         return false;
                     }
                     sb = _stringBuilder;
@@ -6625,7 +6548,7 @@ namespace System.Xml
             }
             else
             {
-                while (!ParseCDataOrComment(type, out startPos, out endPos));
+                while (!ParseCDataOrComment(type, out _, out _));
             }
         }
 
@@ -6871,10 +6794,8 @@ namespace System.Xml
 
         private void SkipDtd()
         {
-            int colonPos;
-
             // parse dtd name
-            int pos = ParseQName(out colonPos);
+            int pos = ParseQName(out _);
             _ps.charPos = pos;
 
             // check whitespace
@@ -7250,10 +7171,7 @@ namespace System.Xml
                                 int tmp2 = pos - _ps.charPos;
                                 if (tmp2 > 0)
                                 {
-                                    if (sb != null)
-                                    {
-                                        sb.Append(_ps.chars, _ps.charPos, tmp2);
-                                    }
+                                    sb?.Append(_ps.chars, _ps.charPos, tmp2);
                                     _ps.charPos = pos;
                                     wsCount += tmp2;
                                 }
@@ -7266,10 +7184,7 @@ namespace System.Xml
                 int tmp3 = pos - _ps.charPos;
                 if (tmp3 > 0)
                 {
-                    if (sb != null)
-                    {
-                        sb.Append(_ps.chars, _ps.charPos, tmp3);
-                    }
+                    sb?.Append(_ps.chars, _ps.charPos, tmp3);
                     _ps.charPos = pos;
                     wsCount += tmp3;
                 }
@@ -7384,7 +7299,7 @@ namespace System.Xml
                 {
                     digitPos = pos;
                     badDigitExceptionString = SR.Xml_BadDecimalEntity;
-                    while (chars[pos] >= '0' && chars[pos] <= '9')
+                    while (char.IsAsciiDigit(chars[pos]))
                     {
                         val = checked(val * 10 + chars[pos] - '0');
                         pos++;
@@ -7432,10 +7347,7 @@ namespace System.Xml
 
                 if (expand)
                 {
-                    if (internalSubsetBuilder != null)
-                    {
-                        internalSubsetBuilder.Append(_ps.chars, _ps.charPos, pos - _ps.charPos + 1);
-                    }
+                    internalSubsetBuilder?.Append(_ps.chars, _ps.charPos, pos - _ps.charPos + 1);
                     chars[pos] = ch;
                 }
                 charCount = 1;
@@ -7463,10 +7375,7 @@ namespace System.Xml
                 Debug.Assert(pos > 0);
                 if (expand)
                 {
-                    if (internalSubsetBuilder != null)
-                    {
-                        internalSubsetBuilder.Append(_ps.chars, _ps.charPos, pos - _ps.charPos + 1);
-                    }
+                    internalSubsetBuilder?.Append(_ps.chars, _ps.charPos, pos - _ps.charPos + 1);
                     chars[pos - 1] = (char)high;
                     chars[pos] = (char)low;
                 }
@@ -7632,10 +7541,7 @@ namespace System.Xml
             Debug.Assert(pos > 0);
             if (expand)
             {
-                if (internalSubsetBuilder != null)
-                {
-                    internalSubsetBuilder.Append(_ps.chars, _ps.charPos, pos - _ps.charPos);
-                }
+                internalSubsetBuilder?.Append(_ps.chars, _ps.charPos, pos - _ps.charPos);
                 _ps.chars[pos - 1] = ch;
             }
             return pos;
@@ -7643,8 +7549,7 @@ namespace System.Xml
 
         private int ParseName()
         {
-            int colonPos;
-            return ParseQName(false, 0, out colonPos);
+            return ParseQName(false, 0, out _);
         }
 
         private int ParseQName(out int colonPos)
@@ -7792,12 +7697,7 @@ namespace System.Xml
             }
             Debug.Assert(nodeIndex < _nodes.Length);
 
-            NodeData node = _nodes[nodeIndex];
-            if (node == null)
-            {
-                node = new NodeData();
-                _nodes[nodeIndex] = node;
-            }
+            NodeData node = _nodes[nodeIndex] ??= new NodeData();
             node.depth = nodeDepth;
             return node;
         }
@@ -8086,7 +7986,7 @@ namespace System.Xml
 
             if (entityName == null)
             {
-                ThrowWithoutLineInfo(SR.Xml_CannotResolveExternalSubset, new string?[] { (publicId != null ? publicId : string.Empty), systemId }, null);
+                ThrowWithoutLineInfo(SR.Xml_CannotResolveExternalSubset, new string?[] { publicId ?? string.Empty, systemId }, null);
             }
             else
             {
@@ -8204,10 +8104,7 @@ namespace System.Xml
 
         private void PopEntity()
         {
-            if (_ps.stream != null)
-            {
-                _ps.stream.Dispose();
-            }
+            _ps.stream?.Dispose();
 
             UnregisterEntity();
             PopParsingState();
@@ -8233,10 +8130,7 @@ namespace System.Xml
             // register entity for recursion checkes
             if (entity != null)
             {
-                if (_currentEntities == null)
-                {
-                    _currentEntities = new Dictionary<IDtdEntityInfo, IDtdEntityInfo>();
-                }
+                _currentEntities ??= new Dictionary<IDtdEntityInfo, IDtdEntityInfo>();
 
                 _currentEntities.Add(entity, entity);
             }
@@ -8366,8 +8260,8 @@ namespace System.Xml
                 }
             }
 
-            int startPos = 0;
-            int pos = 0;
+            int startPos;
+            int pos;
 
             while (true)
             {
@@ -8416,8 +8310,6 @@ namespace System.Xml
                             ThrowUnclosedElements();
                         }
                         _incReadState = IncrementalReadState.Text;
-                        startPos = _ps.charPos;
-                        pos = startPos;
                         break;
                     default:
                         Debug.Fail($"Unexpected read state {_incReadState}");
@@ -8445,7 +8337,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        while (XmlCharType.IsAttributeValueChar(c = chars[pos]))
+                        while (XmlCharType.IsAttributeValueChar(chars[pos]))
                         {
                             pos++;
                         }
@@ -8535,9 +8427,8 @@ namespace System.Xml
                                         Debug.Assert(_ps.charPos - pos == 0);
                                         Debug.Assert(_ps.charPos - startPos == 0);
 
-                                        int colonPos;
                                         // ParseQName can flush the buffer, so we need to update the startPos, pos and chars after calling it
-                                        int endPos = ParseQName(true, 2, out colonPos);
+                                        int endPos = ParseQName(true, 2, out _);
                                         if (XmlConvert.StrEqual(chars, _ps.charPos + 2, endPos - _ps.charPos - 2, _curNode.GetNameWPrefix(_nameTable)) &&
                                             (_ps.chars[endPos] == '>' || XmlCharType.IsWhiteSpace(_ps.chars[endPos])))
                                         {
@@ -8575,9 +8466,8 @@ namespace System.Xml
                                         Debug.Assert(_ps.charPos - pos == 0);
                                         Debug.Assert(_ps.charPos - startPos == 0);
 
-                                        int colonPos;
                                         // ParseQName can flush the buffer, so we need to update the startPos, pos and chars after calling it
-                                        int endPos = ParseQName(true, 1, out colonPos);
+                                        int endPos = ParseQName(true, 1, out _);
                                         if (XmlConvert.StrEqual(_ps.chars, _ps.charPos + 1, endPos - _ps.charPos - 1, _curNode.localName) &&
                                             (_ps.chars[endPos] == '>' || _ps.chars[endPos] == '/' || XmlCharType.IsWhiteSpace(_ps.chars[endPos])))
                                         {
@@ -9204,10 +9094,7 @@ namespace System.Xml
             _nameTable = nt;
 
             // make sure we have namespace manager
-            if (_namespaceManager == null)
-            {
-                _namespaceManager = new XmlNamespaceManager(nt);
-            }
+            _namespaceManager ??= new XmlNamespaceManager(nt);
 
             // copy xml:space and xml:lang
             _xmlContext.xmlSpace = context.XmlSpace;
@@ -9391,10 +9278,7 @@ namespace System.Xml
 
             if (DtdValidation)
             {
-                if (_onDefaultAttributeUse != null)
-                {
-                    _onDefaultAttributeUse(defAttrInfo, this);
-                }
+                _onDefaultAttributeUse?.Invoke(defAttrInfo, this);
 
                 attr.typedValue = defAttrInfo.DefaultValueTyped;
             }
@@ -9415,10 +9299,7 @@ namespace System.Xml
                 prefix = _namespaceManager.LookupPrefix(ns);
 
                 Debug.Assert(prefix != null);
-                if (prefix == null)
-                {
-                    prefix = string.Empty;
-                }
+                prefix ??= string.Empty;
             }
 
             // find out if the attribute is already there
@@ -9667,17 +9548,14 @@ namespace System.Xml
         }
 
         // SxS: URIs are resolved only to be compared. No resource exposure. It's OK to suppress the SxS warning.
-        private bool UriEqual(Uri? uri1, string? uri1Str, string? uri2Str, XmlResolver? resolver)
+        private static bool UriEqual(Uri? uri1, string? uri1Str, string? uri2Str, XmlResolver? resolver)
         {
             if (resolver == null)
             {
                 return uri1Str == uri2Str;
             }
 
-            if (uri1 == null)
-            {
-                uri1 = resolver.ResolveUri(null, uri1Str);
-            }
+            uri1 ??= resolver.ResolveUri(null, uri1Str);
 
             Uri uri2 = resolver.ResolveUri(null, uri2Str);
             return uri1.Equals(uri2);
@@ -9828,10 +9706,7 @@ namespace System.Xml
                     }
                     if (j > i + 1)
                     {
-                        if (norValue == null)
-                        {
-                            norValue = new StringBuilder(len);
-                        }
+                        norValue ??= new StringBuilder(len);
                         norValue.Append(value, startPos, i - startPos + 1);
                         startPos = j;
                         i = j - 1;
@@ -9912,6 +9787,6 @@ namespace System.Xml
             Buffer.BlockCopy(src, srcOffset, dst, dstOffset, count);
         }
 
-        static partial void ConvertAbsoluteUnixPathToAbsoluteUri([NotNullIfNotNull("url")] ref string? url, XmlResolver? resolver);
+        static partial void ConvertAbsoluteUnixPathToAbsoluteUri([NotNullIfNotNull(nameof(url))] ref string? url, XmlResolver? resolver);
     }
 }

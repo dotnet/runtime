@@ -34,7 +34,7 @@ public class FooString : Base<string>
 		
 }
 
-public class Test
+public class Test_method001i
 {
 	public static int counter = 0;
 	public static bool result = true;

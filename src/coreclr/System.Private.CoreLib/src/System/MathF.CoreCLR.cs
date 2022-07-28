@@ -71,10 +71,6 @@ namespace System
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int ILogB(float x);
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Log(float x);
 
         [Intrinsic]

@@ -596,4 +596,4 @@ FAIL:
 	ret
 
 }
-.assembly bge_r4.exe{}
+.assembly bge_r4{}

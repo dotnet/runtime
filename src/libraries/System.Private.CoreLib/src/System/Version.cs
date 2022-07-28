@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
 using System.Diagnostics;
-using System.Text;
-using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -16,7 +15,7 @@ namespace System
     // specified component.
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class Version : ICloneable, IComparable, IComparable<Version?>, IEquatable<Version?>, ISpanFormattable
     {
         // AssemblyName depends on the order staying the same
@@ -197,16 +196,22 @@ namespace System
 
         public bool TryFormat(Span<char> destination, int fieldCount, out int charsWritten)
         {
-            string? failureUpperBound = (uint)fieldCount switch
+            switch ((uint)fieldCount)
             {
-                > 4 => "4",
-                >= 3 when _Build == -1 => "2",
-                4 when _Revision == -1 => "3",
-                _ => null
-            };
-            if (failureUpperBound is not null)
-            {
-                throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", failureUpperBound), nameof(fieldCount));
+                case > 4:
+                    ThrowArgumentException("4");
+                    break;
+
+                case >= 3 when _Build == -1:
+                    ThrowArgumentException("2");
+                    break;
+
+                case 4 when _Revision == -1:
+                    ThrowArgumentException("3");
+                    break;
+
+                static void ThrowArgumentException(string failureUpperBound) =>
+                    throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", failureUpperBound), nameof(fieldCount));
             }
 
             int totalCharsWritten = 0;
@@ -234,7 +239,7 @@ namespace System
                     _ => _Revision
                 };
 
-                if (!value.TryFormat(destination, out int valueCharsWritten))
+                if (!((uint)value).TryFormat(destination, out int valueCharsWritten))
                 {
                     charsWritten = 0;
                     return false;
@@ -259,10 +264,7 @@ namespace System
 
         public static Version Parse(string input)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             return ParseVersion(input.AsSpan(), throwOnFailure: true)!;
         }
@@ -298,11 +300,11 @@ namespace System
             // We musn't have any separators after build.
             int buildEnd = -1;
             int minorEnd = input.Slice(majorEnd + 1).IndexOf('.');
-            if (minorEnd != -1)
+            if (minorEnd >= 0)
             {
                 minorEnd += (majorEnd + 1);
                 buildEnd = input.Slice(minorEnd + 1).IndexOf('.');
-                if (buildEnd != -1)
+                if (buildEnd >= 0)
                 {
                     buildEnd += (minorEnd + 1);
                     if (input.Slice(buildEnd + 1).Contains('.'))
@@ -369,7 +371,6 @@ namespace System
             return int.TryParse(component, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedComponent) && parsedComponent >= 0;
         }
 
-        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Version? v1, Version? v2)
         {
@@ -377,8 +378,7 @@ namespace System
             // so it can become a simple test
             if (v2 is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (v1 is null) ? true : false;
+                return v1 is null;
             }
 
             // Quick reference equality test prior to calling the virtual Equality

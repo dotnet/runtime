@@ -455,60 +455,60 @@ internal static partial class Interop
         }
 
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpInitialize(HTTPAPI_VERSION version, uint flags, IntPtr pReserved);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static partial uint HttpInitialize(HTTPAPI_VERSION version, uint flags, IntPtr pReserved);
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpSetUrlGroupProperty(ulong urlGroupId, HTTP_SERVER_PROPERTY serverProperty, IntPtr pPropertyInfo, uint propertyInfoLength);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static partial uint HttpSetUrlGroupProperty(ulong urlGroupId, HTTP_SERVER_PROPERTY serverProperty, IntPtr pPropertyInfo, uint propertyInfoLength);
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern unsafe uint HttpCreateServerSession(HTTPAPI_VERSION version, ulong* serverSessionId, uint reserved);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static unsafe partial uint HttpCreateServerSession(HTTPAPI_VERSION version, ulong* serverSessionId, uint reserved);
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern unsafe uint HttpCreateUrlGroup(ulong serverSessionId, ulong* urlGroupId, uint reserved);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static unsafe partial uint HttpCreateUrlGroup(ulong serverSessionId, ulong* urlGroupId, uint reserved);
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpCloseUrlGroup(ulong urlGroupId);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static partial uint HttpCloseUrlGroup(ulong urlGroupId);
 
-        [DllImport(Libraries.HttpApi, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern unsafe uint HttpCreateRequestQueue(HTTPAPI_VERSION version, string pName,
+        [LibraryImport(Libraries.HttpApi,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial uint HttpCreateRequestQueue(HTTPAPI_VERSION version, string pName,
             Interop.Kernel32.SECURITY_ATTRIBUTES* pSecurityAttributes, uint flags, out HttpRequestQueueV2Handle pReqQueueHandle);
 
-        [DllImport(Libraries.HttpApi, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern uint HttpAddUrlToUrlGroup(ulong urlGroupId, string pFullyQualifiedUrl, ulong context, uint pReserved);
+        [LibraryImport(Libraries.HttpApi,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial uint HttpAddUrlToUrlGroup(ulong urlGroupId, string pFullyQualifiedUrl, ulong context, uint pReserved);
 
-        [DllImport(Libraries.HttpApi, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern uint HttpRemoveUrlFromUrlGroup(ulong urlGroupId, string pFullyQualifiedUrl, uint flags);
+        [LibraryImport(Libraries.HttpApi,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial uint HttpRemoveUrlFromUrlGroup(ulong urlGroupId, string pFullyQualifiedUrl, uint flags);
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern unsafe uint HttpReceiveHttpRequest(SafeHandle requestQueueHandle, ulong requestId, uint flags, HTTP_REQUEST* pRequestBuffer, uint requestBufferLength, uint* pBytesReturned, NativeOverlapped* pOverlapped);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static unsafe partial uint HttpReceiveHttpRequest(SafeHandle requestQueueHandle, ulong requestId, uint flags, HTTP_REQUEST* pRequestBuffer, uint requestBufferLength, uint* pBytesReturned, NativeOverlapped* pOverlapped);
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern unsafe uint HttpSendHttpResponse(SafeHandle requestQueueHandle, ulong requestId, uint flags, HTTP_RESPONSE* pHttpResponse, void* pCachePolicy, uint* pBytesSent, SafeLocalAllocHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static unsafe partial uint HttpSendHttpResponse(SafeHandle requestQueueHandle, ulong requestId, uint flags, HTTP_RESPONSE* pHttpResponse, void* pCachePolicy, uint* pBytesSent, SafeLocalAllocHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern unsafe uint HttpWaitForDisconnect(SafeHandle requestQueueHandle, ulong connectionId, NativeOverlapped* pOverlapped);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static unsafe partial uint HttpWaitForDisconnect(SafeHandle requestQueueHandle, ulong connectionId, NativeOverlapped* pOverlapped);
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern unsafe uint HttpReceiveRequestEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, void* pEntityBuffer, uint entityBufferLength, out uint bytesReturned, NativeOverlapped* pOverlapped);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static unsafe partial uint HttpReceiveRequestEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, void* pEntityBuffer, uint entityBufferLength, out uint bytesReturned, NativeOverlapped* pOverlapped);
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern unsafe uint HttpSendResponseEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, ushort entityChunkCount, HTTP_DATA_CHUNK* pEntityChunks, uint* pBytesSent, SafeLocalAllocHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static unsafe partial uint HttpSendResponseEntityBody(SafeHandle requestQueueHandle, ulong requestId, uint flags, ushort entityChunkCount, HTTP_DATA_CHUNK* pEntityChunks, uint* pBytesSent, SafeLocalAllocHandle pRequestBuffer, uint requestBufferLength, NativeOverlapped* pOverlapped, void* pLogData);
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpCloseRequestQueue(IntPtr pReqQueueHandle);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static partial uint HttpCloseRequestQueue(IntPtr pReqQueueHandle);
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpCancelHttpRequest(SafeHandle requestQueueHandle, ulong requestId, IntPtr pOverlapped);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static partial uint HttpCancelHttpRequest(SafeHandle requestQueueHandle, ulong requestId, IntPtr pOverlapped);
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern uint HttpCloseServerSession(ulong serverSessionId);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static partial uint HttpCloseServerSession(ulong serverSessionId);
 
         internal sealed class SafeLocalFreeChannelBinding : ChannelBinding
         {
             private int _size;
 
-            private SafeLocalFreeChannelBinding() { }
+            public SafeLocalFreeChannelBinding() { }
 
             public override int Size
             {
@@ -530,11 +530,11 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern unsafe uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, HTTP_SSL_CLIENT_CERT_INFO* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static unsafe partial uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, HTTP_SSL_CLIENT_CERT_INFO* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);
 
-        [DllImport(Libraries.HttpApi, SetLastError = true)]
-        internal static extern unsafe uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, byte* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);
+        [LibraryImport(Libraries.HttpApi, SetLastError = true)]
+        internal static unsafe partial uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, byte* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);
 
         internal static readonly string?[] HttpVerbs = new string?[]
         {

@@ -21,77 +21,19 @@ namespace System.Net
             bool isServer,
             string? hostName)
         {
-            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
-
-            bool chainBuildResult = chain.Build(remoteCertificate);
-            if (!chainBuildResult       // Build failed on handle or on policy.
-                && chain.SafeHandle!.DangerousGetHandle() == IntPtr.Zero)   // Build failed to generate a valid handle.
-            {
-                throw new CryptographicException(Marshal.GetLastPInvokeError());
-            }
-
-            if (checkCertName)
-            {
-                unsafe
-                {
-                    uint status = 0;
-
-                    var eppStruct = new Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA()
-                    {
-                        cbSize = (uint)sizeof(Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA),
-                        // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
-                        dwAuthType = isServer ? Interop.Crypt32.AuthType.AUTHTYPE_CLIENT : Interop.Crypt32.AuthType.AUTHTYPE_SERVER,
-                        fdwChecks = 0,
-                        pwszServerName = null
-                    };
-
-                    var cppStruct = new Interop.Crypt32.CERT_CHAIN_POLICY_PARA()
-                    {
-                        cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_PARA),
-                        dwFlags = 0,
-                        pvExtraPolicyPara = &eppStruct
-                    };
-
-                    fixed (char* namePtr = hostName)
-                    {
-                        eppStruct.pwszServerName = namePtr;
-                        cppStruct.dwFlags |=
-                            (Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
-                             ~Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG);
-
-                        SafeX509ChainHandle chainContext = chain.SafeHandle!;
-                        status = Verify(chainContext, ref cppStruct);
-                        if (status == Interop.Crypt32.CertChainPolicyErrors.CERT_E_CN_NO_MATCH)
-                        {
-                            sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
-                        }
-                    }
-                }
-            }
-
-            if (!chainBuildResult)
-            {
-                sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
-            }
-
-            return sslPolicyErrors;
+            return CertificateValidation.BuildChainAndVerifyProperties(chain, remoteCertificate, checkCertName, isServer, hostName);
         }
 
         //
         // Extracts a remote certificate upon request.
         //
 
-        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext) =>
-            GetRemoteCertificate(securityContext, retrieveCollection: false, out _);
-
-        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext? securityContext, out X509Certificate2Collection? remoteCertificateCollection) =>
-            GetRemoteCertificate(securityContext, retrieveCollection: true, out remoteCertificateCollection);
-
         private static X509Certificate2? GetRemoteCertificate(
-            SafeDeleteContext? securityContext, bool retrieveCollection, out X509Certificate2Collection? remoteCertificateCollection)
+            SafeDeleteContext? securityContext,
+            bool retrieveChainCertificates,
+            ref X509Chain? chain,
+            X509ChainPolicy? chainPolicy)
         {
-            remoteCertificateCollection = null;
-
             if (securityContext == null)
             {
                 return null;
@@ -101,7 +43,21 @@ namespace System.Net
             SafeFreeCertContext? remoteContext = null;
             try
             {
-                remoteContext = SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext);
+                // SECPKG_ATTR_REMOTE_CERT_CONTEXT will not succeed before TLS handshake completes. Inside the handshake,
+                // we need to use (more expensive) SECPKG_ATTR_REMOTE_CERT_CHAIN. That one may be unsupported on older
+                // versions of windows. In that case, we have no option than to return null.
+                //
+                // We can use retrieveCollection to distinguish between in-handshake and after-handshake calls, because
+                // the collection is retrieved for cert validation purposes after the handshake completes.
+                if (retrieveChainCertificates) // handshake completed
+                {
+                    SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext);
+                }
+                else // in handshake
+                {
+                    SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CHAIN(GlobalSSPI.SSPISecureChannel, securityContext, out remoteContext);
+                }
+
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());
@@ -109,11 +65,20 @@ namespace System.Net
             }
             finally
             {
-                if (remoteContext != null && !remoteContext.IsInvalid)
+                if (remoteContext != null)
                 {
-                    if (retrieveCollection)
+                    if (!remoteContext.IsInvalid)
                     {
-                        remoteCertificateCollection = UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext);
+                        if (retrieveChainCertificates)
+                        {
+                            chain ??= new X509Chain();
+                            if (chainPolicy != null)
+                            {
+                                chain.ChainPolicy = chainPolicy;
+                            }
+
+                            UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(remoteContext, chain.ChainPolicy.ExtraStore);
+                        }
                     }
 
                     remoteContext.Dispose();
@@ -173,7 +138,8 @@ namespace System.Net
             // For app-compat We want to ensure the store is opened under the **process** account.
             try
             {
-                WindowsIdentity.RunImpersonated(SafeAccessTokenHandle.InvalidHandle, () =>
+                using SafeAccessTokenHandle invalidHandle = SafeAccessTokenHandle.InvalidHandle;
+                WindowsIdentity.RunImpersonated(invalidHandle, () =>
                 {
                     store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
                 });
@@ -184,22 +150,6 @@ namespace System.Net
             }
 
             return store;
-        }
-
-        private static unsafe uint Verify(SafeX509ChainHandle chainContext, ref Interop.Crypt32.CERT_CHAIN_POLICY_PARA cpp)
-        {
-            Interop.Crypt32.CERT_CHAIN_POLICY_STATUS status = default;
-            status.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_STATUS);
-
-            bool errorCode =
-                Interop.Crypt32.CertVerifyCertificateChainPolicy(
-                    (IntPtr)Interop.Crypt32.CertChainPolicy.CERT_CHAIN_POLICY_SSL,
-                    chainContext,
-                    ref cpp,
-                    ref status);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(chainContext, $"CertVerifyCertificateChainPolicy returned: {errorCode}. Status: {status.dwError}");
-            return status.dwError;
         }
     }
 }

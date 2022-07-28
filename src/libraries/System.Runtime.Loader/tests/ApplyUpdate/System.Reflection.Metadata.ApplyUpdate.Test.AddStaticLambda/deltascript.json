@@ -1,0 +1,6 @@
+{
+    "changes": [
+        {"document": "AddStaticLambda.cs", "update": "AddStaticLambda_v1.cs"},
+    ]
+}
+

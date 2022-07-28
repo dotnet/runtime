@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection;
 
-public class Test 
+public class Test_GetAllocatedBytesForCurrentThread 
 {
     static Random Rand = new Random();
 

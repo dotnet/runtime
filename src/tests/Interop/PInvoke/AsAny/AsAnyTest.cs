@@ -6,7 +6,7 @@ using System.Threading;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Reflection;
-using TestLibrary;
+using Xunit;
 
 #pragma warning disable CS0612, CS0618
 
@@ -31,7 +31,7 @@ class AsAnyTests
 
     private static readonly string MappableString = "" + NormalChar1 + mappableChar + NormalChar2;
     private static readonly string UnmappableString = "" + NormalChar1 + unmappableChar + NormalChar2;
-        
+
     [DllImport("AsAnyNative")]
     public static extern bool PassArraySbyte(
         [MarshalAs(UnmanagedType.AsAny)] object sbyteArray,
@@ -41,7 +41,7 @@ class AsAnyTests
         sbyte[] expected,
         int len
     );
-    
+
     [DllImport("AsAnyNative")]
     public static extern bool PassArrayByte(
         [MarshalAs(UnmanagedType.AsAny)] object byteArray,
@@ -172,12 +172,12 @@ class AsAnyTests
         UIntPtr[] expected,
         int len
     );
-    
+
     [DllImport("AsAnyNative")]
     public static extern long PassLayout(
     [MarshalAs(UnmanagedType.AsAny)] Object i);
 
-    [DllImport("AsAnyNative", EntryPoint = "PassUnicodeStr", CharSet = CharSet.Unicode, 
+    [DllImport("AsAnyNative", EntryPoint = "PassUnicodeStr", CharSet = CharSet.Unicode,
     BestFitMapping = true, ThrowOnUnmappableChar = true)]
     public static extern bool PassUnicodeStrTT(
     [MarshalAs(UnmanagedType.AsAny)]
@@ -191,7 +191,7 @@ class AsAnyTests
 
     [DllImport("AsAnyNative", EntryPoint = "PassUnicodeStr", CharSet = CharSet.Unicode,
    BestFitMapping = false, ThrowOnUnmappableChar = false)]
-    public static extern bool PassUnicodeStrFF(                              
+    public static extern bool PassUnicodeStrFF(
     [MarshalAs(UnmanagedType.AsAny)]
     Object i);
 
@@ -367,9 +367,9 @@ class AsAnyTests
 
         CharArrayInit(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out,
            mappableCharArray_In, mappableCharArray_InOut, mappableCharArray_Out, UnmappableString, MappableString);
-        Assert.IsTrue(PassAnsiCharArrayTT(mappableCharArray_In, mappableCharArray_InOut, mappableCharArray_Out, false));
-        Assert.AreAllEqual(mappableAnsiStr_back.ToCharArray(), mappableCharArray_InOut);
-        Assert.AreAllEqual(mappableAnsiStr_back.ToCharArray(), mappableCharArray_Out);
+        Assert.True(PassAnsiCharArrayTT(mappableCharArray_In, mappableCharArray_InOut, mappableCharArray_Out, false));
+        AssertExtensions.CollectionEqual(mappableAnsiStr_back.ToCharArray(), mappableCharArray_InOut);
+        AssertExtensions.CollectionEqual(mappableAnsiStr_back.ToCharArray(), mappableCharArray_Out);
 
         CharArrayInit(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out,
            mappableCharArray_In, mappableCharArray_InOut, mappableCharArray_Out, UnmappableString, MappableString);
@@ -381,9 +381,9 @@ class AsAnyTests
 
         CharArrayInit(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out,
            mappableCharArray_In, mappableCharArray_InOut, mappableCharArray_Out, UnmappableString, MappableString);
-        Assert.IsTrue(PassAnsiCharArrayFF(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out, true));
-        Assert.AreAllEqual(unMappableAnsiStr_back.ToCharArray(), unMappableCharArray_InOut);
-        Assert.AreAllEqual(unMappableAnsiStr_back.ToCharArray(), unMappableCharArray_Out);
+        Assert.True(PassAnsiCharArrayFF(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out, true));
+        AssertExtensions.CollectionEqual(unMappableAnsiStr_back.ToCharArray(), unMappableCharArray_InOut);
+        AssertExtensions.CollectionEqual(unMappableAnsiStr_back.ToCharArray(), unMappableCharArray_Out);
     }
 
     private static void TestUnicodeStringArray()
@@ -399,21 +399,21 @@ class AsAnyTests
 
         CharArrayInit(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out,
             mappableCharArray_In, mappableCharArray_InOut, mappableCharArray_Out, UnmappableString, MappableString);
-        Assert.IsTrue(PassUnicodeCharArrayTT(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out));
-        Assert.AreAllEqual(unMappableUnicodeStr_back.ToCharArray(), unMappableCharArray_InOut);
-        Assert.AreAllEqual(unMappableUnicodeStr_back.ToCharArray(), unMappableCharArray_Out);
+        Assert.True(PassUnicodeCharArrayTT(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out));
+        AssertExtensions.CollectionEqual(unMappableUnicodeStr_back.ToCharArray(), unMappableCharArray_InOut);
+        AssertExtensions.CollectionEqual(unMappableUnicodeStr_back.ToCharArray(), unMappableCharArray_Out);
 
         CharArrayInit(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out,
             mappableCharArray_In, mappableCharArray_InOut, mappableCharArray_Out, UnmappableString, MappableString);
-        Assert.IsTrue(PassUnicodeCharArrayFT(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out));
-        Assert.AreAllEqual(unMappableUnicodeStr_back.ToCharArray(), unMappableCharArray_InOut);
-        Assert.AreAllEqual(unMappableUnicodeStr_back.ToCharArray(), unMappableCharArray_Out);
+        Assert.True(PassUnicodeCharArrayFT(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out));
+        AssertExtensions.CollectionEqual(unMappableUnicodeStr_back.ToCharArray(), unMappableCharArray_InOut);
+        AssertExtensions.CollectionEqual(unMappableUnicodeStr_back.ToCharArray(), unMappableCharArray_Out);
 
         CharArrayInit(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out,
             mappableCharArray_In, mappableCharArray_InOut, mappableCharArray_Out, UnmappableString, MappableString);
-        Assert.IsTrue(PassUnicodeCharArrayFF(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out));
-        Assert.AreAllEqual(unMappableUnicodeStr_back.ToCharArray(), unMappableCharArray_InOut);
-        Assert.AreAllEqual(unMappableUnicodeStr_back.ToCharArray(), unMappableCharArray_Out);
+        Assert.True(PassUnicodeCharArrayFF(unMappableCharArray_In, unMappableCharArray_InOut, unMappableCharArray_Out));
+        AssertExtensions.CollectionEqual(unMappableUnicodeStr_back.ToCharArray(), unMappableCharArray_InOut);
+        AssertExtensions.CollectionEqual(unMappableUnicodeStr_back.ToCharArray(), unMappableCharArray_Out);
     }
 
     private static void TestAnsiStringBuilder()
@@ -422,34 +422,34 @@ class AsAnyTests
         StringBuilder mappableStrbd = new StringBuilder(MappableString);
 
         Assert.Throws<ArgumentException>(() => PassAnsiStrbdTT(unMappableStrbd, true));
-        Assert.IsTrue(PassAnsiStrbdTT(mappableStrbd, false));
+        Assert.True(PassAnsiStrbdTT(mappableStrbd, false));
         Assert.Throws<ArgumentException>(() => PassAnsiStrbdFT(unMappableStrbd, true));
         Assert.Throws<ArgumentException>(() => PassAnsiStrbdFT(mappableStrbd, false));
-        Assert.IsTrue(PassAnsiStrbdFF(unMappableStrbd, true));
+        Assert.True(PassAnsiStrbdFF(unMappableStrbd, true));
     }
 
     private static void TestUnicodeStringBuilder()
     {
         StringBuilder unMappableStrbd = new StringBuilder(UnmappableString);
-        Assert.IsTrue(PassUnicodeStrbdTT(unMappableStrbd));
-        Assert.IsTrue(PassUnicodeStrbdFT(unMappableStrbd));
-        Assert.IsTrue(PassUnicodeStrbdFF(unMappableStrbd));
+        Assert.True(PassUnicodeStrbdTT(unMappableStrbd));
+        Assert.True(PassUnicodeStrbdFT(unMappableStrbd));
+        Assert.True(PassUnicodeStrbdFF(unMappableStrbd));
     }
 
     private static void TestAnsiStringBestFitMapping()
     {
         Assert.Throws<ArgumentException>(() => PassAnsiStrTT(UnmappableString, true));
-        Assert.IsTrue(PassAnsiStrTT(MappableString, false));
+        Assert.True(PassAnsiStrTT(MappableString, false));
         Assert.Throws<ArgumentException>(() => PassAnsiStrFT(UnmappableString, true));
         Assert.Throws<ArgumentException>(() => PassAnsiStrFT(MappableString, false));
-        Assert.IsTrue(PassAnsiStrFF(UnmappableString, true));
+        Assert.True(PassAnsiStrFF(UnmappableString, true));
     }
 
     private static void TestUnicodeString()
     {
-        Assert.IsTrue(PassUnicodeStrTT(UnmappableString));
-        Assert.IsTrue(PassUnicodeStrFT(UnmappableString));
-        Assert.IsTrue(PassUnicodeStrFF(UnmappableString));
+        Assert.True(PassUnicodeStrTT(UnmappableString));
+        Assert.True(PassUnicodeStrFT(UnmappableString));
+        Assert.True(PassUnicodeStrFF(UnmappableString));
     }
 
     private static void TestUIntPtrArray()
@@ -461,9 +461,9 @@ class AsAnyTests
         UIntPtr[] uIntPtrArray_Out = new UIntPtr[] { new UIntPtr(0), new UIntPtr(1), new UIntPtr(2) };
         UIntPtr[] uIntPtrArray_Back = new UIntPtr[] { new UIntPtr(10), new UIntPtr(11), new UIntPtr(12) };
         UIntPtr[] expected = new UIntPtr[] { new UIntPtr(0), new UIntPtr(1), new UIntPtr(2) };
-        Assert.IsTrue(PassArrayUIntPtr(uIntPtrArray, uIntPtrArray_In, uIntPtrArray_InOut, uIntPtrArray_Out, expected, 3));
-        Assert.AreAllEqual(uIntPtrArray_Back, uIntPtrArray_InOut);
-        Assert.AreAllEqual(uIntPtrArray_Back, uIntPtrArray_Out);
+        Assert.True(PassArrayUIntPtr(uIntPtrArray, uIntPtrArray_In, uIntPtrArray_InOut, uIntPtrArray_Out, expected, 3));
+        AssertExtensions.CollectionEqual(uIntPtrArray_Back, uIntPtrArray_InOut);
+        AssertExtensions.CollectionEqual(uIntPtrArray_Back, uIntPtrArray_Out);
     }
 
     private static void TestIntPtrArray()
@@ -475,9 +475,9 @@ class AsAnyTests
         IntPtr[] intPtrArray_Out = new IntPtr[] { new IntPtr(0), new IntPtr(1), new IntPtr(2) };
         IntPtr[] intPtrArray_Back = new IntPtr[] { new IntPtr(10), new IntPtr(11), new IntPtr(12) };
         IntPtr[] expected = new IntPtr[] { new IntPtr(0), new IntPtr(1), new IntPtr(2) };
-        Assert.IsTrue(PassArrayIntPtr(intPtrArray, intPtrArray_In, intPtrArray_InOut, intPtrArray_Out, expected, 3));
-        Assert.AreAllEqual(intPtrArray_Back, intPtrArray_InOut);
-        Assert.AreAllEqual(intPtrArray_Back, intPtrArray_Out);
+        Assert.True(PassArrayIntPtr(intPtrArray, intPtrArray_In, intPtrArray_InOut, intPtrArray_Out, expected, 3));
+        AssertExtensions.CollectionEqual(intPtrArray_Back, intPtrArray_InOut);
+        AssertExtensions.CollectionEqual(intPtrArray_Back, intPtrArray_Out);
     }
 
     private static void TestBoolArray()
@@ -488,9 +488,9 @@ class AsAnyTests
         bool[] boolArray_InOut = new bool[] { true, false, false };
         bool[] boolArray_Out = new bool[] { true, false, false };
         bool[] boolArray_Back = new bool[] { false, true, true };
-        Assert.IsTrue(PassArrayBool(boolArray, boolArray_In, boolArray_InOut, boolArray_Out, new bool[] { true, false, false }, 3));
-        Assert.AreAllEqual(boolArray_Back, boolArray_InOut);
-        Assert.AreAllEqual(boolArray_Back, boolArray_Out);
+        Assert.True(PassArrayBool(boolArray, boolArray_In, boolArray_InOut, boolArray_Out, new bool[] { true, false, false }, 3));
+        AssertExtensions.CollectionEqual(boolArray_Back, boolArray_InOut);
+        AssertExtensions.CollectionEqual(boolArray_Back, boolArray_Out);
     }
 
     private static void TestCharArray()
@@ -501,9 +501,9 @@ class AsAnyTests
         char[] charArray_InOut = new char[] { 'a', 'b', 'c' };
         char[] charArray_Out = new char[] { 'a', 'b', 'c' };
         char[] charArray_Back = new char[] { 'd', 'e', 'f' };
-        Assert.IsTrue(PassArrayChar(charArray, charArray_In, charArray_InOut, charArray_Out, new char[] { 'a', 'b', 'c' }, 3));
-        Assert.AreAllEqual(charArray_Back, charArray_InOut);
-        Assert.AreAllEqual(charArray_Back, charArray_Out);
+        Assert.True(PassArrayChar(charArray, charArray_In, charArray_InOut, charArray_Out, new char[] { 'a', 'b', 'c' }, 3));
+        AssertExtensions.CollectionEqual(charArray_Back, charArray_InOut);
+        AssertExtensions.CollectionEqual(charArray_Back, charArray_Out);
     }
 
     private static void TestDoubleArray()
@@ -514,9 +514,9 @@ class AsAnyTests
         double[] doubleArray_InOut = new double[] { 0.0, 1.1, 2.2 };
         double[] doubleArray_Out = new double[] { 0.0, 1.1, 2.2 };
         double[] doubleArray_Back = new double[] { 10.0, 11.1, 12.2 };
-        Assert.IsTrue(PassArrayDouble(doubleArray, doubleArray_In, doubleArray_InOut, doubleArray_Out, new double[] { 0.0, 1.1, 2.2 }, 3));
-        Assert.AreAllEqual(doubleArray_Back, doubleArray_InOut);
-        Assert.AreAllEqual(doubleArray_Back, doubleArray_Out);
+        Assert.True(PassArrayDouble(doubleArray, doubleArray_In, doubleArray_InOut, doubleArray_Out, new double[] { 0.0, 1.1, 2.2 }, 3));
+        AssertExtensions.CollectionEqual(doubleArray_Back, doubleArray_InOut);
+        AssertExtensions.CollectionEqual(doubleArray_Back, doubleArray_Out);
     }
 
     private static void TestSingleArray()
@@ -527,9 +527,9 @@ class AsAnyTests
         float[] singleArray_InOut = new float[] { 0, 1, 2 };
         float[] singleArray_Out = new float[] { 0, 1, 2 };
         float[] singleArray_Back = new float[] { 10, 11, 12 };
-        Assert.IsTrue(PassArraySingle(singleArray, singleArray_In, singleArray_InOut, singleArray_Out, new float[] { 0, 1, 2 }, 3));
-        Assert.AreAllEqual(singleArray_Back, singleArray_InOut);
-        Assert.AreAllEqual(singleArray_Back, singleArray_Out);
+        Assert.True(PassArraySingle(singleArray, singleArray_In, singleArray_InOut, singleArray_Out, new float[] { 0, 1, 2 }, 3));
+        AssertExtensions.CollectionEqual(singleArray_Back, singleArray_InOut);
+        AssertExtensions.CollectionEqual(singleArray_Back, singleArray_Out);
     }
 
     private static void TestULongArray()
@@ -540,9 +540,9 @@ class AsAnyTests
         ulong[] ulongArray_InOut = new ulong[] { 0, 1, 2 };
         ulong[] ulongArray_Out = new ulong[] { 0, 1, 2 };
         ulong[] ulongArray_Back = new ulong[] { 10, 11, 12 };
-        Assert.IsTrue(PassArrayUlong(ulongArray, ulongArray_In, ulongArray_InOut, ulongArray_Out, new ulong[] { 0, 1, 2 }, 3));
-        Assert.AreAllEqual(ulongArray_Back, ulongArray_InOut);
-        Assert.AreAllEqual(ulongArray_Back, ulongArray_Out);
+        Assert.True(PassArrayUlong(ulongArray, ulongArray_In, ulongArray_InOut, ulongArray_Out, new ulong[] { 0, 1, 2 }, 3));
+        AssertExtensions.CollectionEqual(ulongArray_Back, ulongArray_InOut);
+        AssertExtensions.CollectionEqual(ulongArray_Back, ulongArray_Out);
     }
 
     private static void TestLongArray()
@@ -553,9 +553,9 @@ class AsAnyTests
         long[] longArray_InOut = new long[] { 0, 1, 2 };
         long[] longArray_Out = new long[] { 0, 1, 2 };
         long[] longArray_Back = new long[] { 10, 11, 12 };
-        Assert.IsTrue(PassArrayLong(longArray, longArray_In, longArray_InOut, longArray_Out, new long[] { 0, 1, 2 }, 3));
-        Assert.AreAllEqual(longArray_Back, longArray_InOut);
-        Assert.AreAllEqual(longArray_Back, longArray_Out);
+        Assert.True(PassArrayLong(longArray, longArray_In, longArray_InOut, longArray_Out, new long[] { 0, 1, 2 }, 3));
+        AssertExtensions.CollectionEqual(longArray_Back, longArray_InOut);
+        AssertExtensions.CollectionEqual(longArray_Back, longArray_Out);
     }
 
     private static void TestUInt32Array()
@@ -566,9 +566,9 @@ class AsAnyTests
         uint[] uintArray_InOut = new uint[] { 0, 1, 2 };
         uint[] uintArray_Out = new uint[] { 0, 1, 2 };
         uint[] uintArray_Back = new uint[] { 10, 11, 12 };
-        Assert.IsTrue(PassArrayUint(uintArray, uintArray_In, uintArray_InOut, uintArray_Out, new uint[] { 0, 1, 2 }, 3));
-        Assert.AreAllEqual(uintArray_Back, uintArray_InOut);
-        Assert.AreAllEqual(uintArray_Back, uintArray_Out);
+        Assert.True(PassArrayUint(uintArray, uintArray_In, uintArray_InOut, uintArray_Out, new uint[] { 0, 1, 2 }, 3));
+        AssertExtensions.CollectionEqual(uintArray_Back, uintArray_InOut);
+        AssertExtensions.CollectionEqual(uintArray_Back, uintArray_Out);
     }
 
     private static void TestInt32Array()
@@ -579,9 +579,9 @@ class AsAnyTests
         int[] intArray_InOut = new int[] { 0, 1, 2 };
         int[] intArray_Out = new int[] { 0, 1, 2 };
         int[] intArray_Back = new int[] { 10, 11, 12 };
-        Assert.IsTrue(PassArrayInt(intArray, intArray_In, intArray_InOut, intArray_Out, new int[] { 0, 1, 2 }, 3));
-        Assert.AreAllEqual(intArray_Back, intArray_InOut);
-        Assert.AreAllEqual(intArray_Back, intArray_Out);
+        Assert.True(PassArrayInt(intArray, intArray_In, intArray_InOut, intArray_Out, new int[] { 0, 1, 2 }, 3));
+        AssertExtensions.CollectionEqual(intArray_Back, intArray_InOut);
+        AssertExtensions.CollectionEqual(intArray_Back, intArray_Out);
     }
 
     private static void TestUInt16Array()
@@ -592,9 +592,9 @@ class AsAnyTests
         ushort[] ushortArray_InOut = new ushort[] { 0, 1, 2 };
         ushort[] ushortArray_Out = new ushort[] { 0, 1, 2 };
         ushort[] ushortArray_Back = new ushort[] { 10, 11, 12 };
-        Assert.IsTrue(PassArrayUshort(ushortArray, ushortArray_In, ushortArray_InOut, ushortArray_Out, new ushort[] { 0, 1, 2 }, 3));
-        Assert.AreAllEqual(ushortArray_Back, ushortArray_InOut);
-        Assert.AreAllEqual(ushortArray_Back, ushortArray_Out);
+        Assert.True(PassArrayUshort(ushortArray, ushortArray_In, ushortArray_InOut, ushortArray_Out, new ushort[] { 0, 1, 2 }, 3));
+        AssertExtensions.CollectionEqual(ushortArray_Back, ushortArray_InOut);
+        AssertExtensions.CollectionEqual(ushortArray_Back, ushortArray_Out);
     }
 
     private static void TestInt16Array()
@@ -605,9 +605,9 @@ class AsAnyTests
         short[] shortArray_InOut = new short[] { -1, 0, 1 };
         short[] shortArray_Out = new short[] { -1, 0, 1 };
         short[] shortArray_Back = new short[] { 9, 10, 11 };
-        Assert.IsTrue(PassArrayShort(shortArray, shortArray_In, shortArray_InOut, shortArray_Out, new short[] { -1, 0, 1 }, 3));
-        Assert.AreAllEqual(shortArray_Back, shortArray_InOut);
-        Assert.AreAllEqual(shortArray_Back, shortArray_Out);
+        Assert.True(PassArrayShort(shortArray, shortArray_In, shortArray_InOut, shortArray_Out, new short[] { -1, 0, 1 }, 3));
+        AssertExtensions.CollectionEqual(shortArray_Back, shortArray_InOut);
+        AssertExtensions.CollectionEqual(shortArray_Back, shortArray_Out);
     }
 
     private static void TestByteArray()
@@ -618,9 +618,9 @@ class AsAnyTests
         byte[] byteArray_InOut = new byte[] { 0, 1, 2 };
         byte[] byteArray_Out = new byte[] { 0, 1, 2 };
         byte[] byteArray_Back = new byte[] { 10, 11, 12 };
-        Assert.IsTrue(PassArrayByte(byteArray, byteArray_In, byteArray_InOut, byteArray_Out, new byte[] { 0, 1, 2 }, 3));
-        Assert.AreAllEqual(byteArray_Back, byteArray_InOut);
-        Assert.AreAllEqual(byteArray_Back, byteArray_Out);
+        Assert.True(PassArrayByte(byteArray, byteArray_In, byteArray_InOut, byteArray_Out, new byte[] { 0, 1, 2 }, 3));
+        AssertExtensions.CollectionEqual(byteArray_Back, byteArray_InOut);
+        AssertExtensions.CollectionEqual(byteArray_Back, byteArray_Out);
     }
 
     private static void TestSByteArray()
@@ -631,9 +631,9 @@ class AsAnyTests
         sbyte[] sbyteArray_InOut = new sbyte[] { -1, 0, 1 };
         sbyte[] sbyteArray_Out = new sbyte[] { -1, 0, 1 };
         sbyte[] sbyteArray_Back = new sbyte[] { 9, 10, 11 };
-        Assert.IsTrue(PassArraySbyte(sbyteArray, sbyteArray_In, sbyteArray_InOut, sbyteArray_Out, new sbyte[] {-1, 0, 1}, 3));
-        Assert.AreAllEqual(sbyteArray_Back, sbyteArray_InOut);
-        Assert.AreAllEqual(sbyteArray_Back, sbyteArray_Out);
+        Assert.True(PassArraySbyte(sbyteArray, sbyteArray_In, sbyteArray_InOut, sbyteArray_Out, new sbyte[] {-1, 0, 1}, 3));
+        AssertExtensions.CollectionEqual(sbyteArray_Back, sbyteArray_InOut);
+        AssertExtensions.CollectionEqual(sbyteArray_Back, sbyteArray_Out);
     }
 
     public static void TestLayout() {
@@ -645,8 +645,8 @@ class AsAnyTests
             a = 12,
             b = 3
         };
-        
-        Assert.AreEqual(layoutStruct.b, PassLayout(layoutStruct));   
+
+        Assert.Equal(layoutStruct.b, PassLayout(layoutStruct));
         Console.WriteLine("------------------------");
     }
 

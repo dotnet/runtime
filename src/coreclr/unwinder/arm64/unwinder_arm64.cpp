@@ -167,8 +167,8 @@ static const BYTE UnwindCodeSizeTable[256] =
 NTSTATUS
 RtlpUnwindCustom(
     __inout PT_CONTEXT ContextRecord,
-    __in BYTE Opcode,
-    __in PARM64_UNWIND_PARAMS UnwindParams
+    _In_ BYTE Opcode,
+    _In_ PARM64_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -374,10 +374,10 @@ Return Value:
 
 ULONG
 RtlpComputeScopeSize(
-    __in ULONG_PTR UnwindCodePtr,
-    __in ULONG_PTR UnwindCodesEndPtr,
-    __in BOOLEAN IsEpilog,
-    __in PARM64_UNWIND_PARAMS UnwindParams
+    _In_ ULONG_PTR UnwindCodePtr,
+    _In_ ULONG_PTR UnwindCodesEndPtr,
+    _In_ BOOLEAN IsEpilog,
+    _In_ PARM64_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -441,10 +441,10 @@ Return Value:
 NTSTATUS
 RtlpUnwindRestoreRegisterRange(
     __inout PT_CONTEXT ContextRecord,
-    __in LONG SpOffset,
-    __in ULONG FirstRegister,
-    __in ULONG RegisterCount,
-    __in PARM64_UNWIND_PARAMS UnwindParams
+    _In_ LONG SpOffset,
+    _In_ ULONG FirstRegister,
+    _In_ ULONG RegisterCount,
+    _In_ PARM64_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -517,10 +517,10 @@ Return Value:
 NTSTATUS
 RtlpUnwindRestoreFpRegisterRange(
     __inout PT_CONTEXT ContextRecord,
-    __in LONG SpOffset,
-    __in ULONG FirstRegister,
-    __in ULONG RegisterCount,
-    __in PARM64_UNWIND_PARAMS UnwindParams
+    _In_ LONG SpOffset,
+    _In_ ULONG FirstRegister,
+    _In_ ULONG RegisterCount,
+    _In_ PARM64_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -588,14 +588,14 @@ Return Value:
 
 NTSTATUS
 RtlpUnwindFunctionFull(
-    __in DWORD64 ControlPcRva,
-    __in ULONG_PTR ImageBase,
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ DWORD64 ControlPcRva,
+    _In_ ULONG_PTR ImageBase,
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
     __inout T_CONTEXT *ContextRecord,
-    __out PDWORD64 EstablisherFrame,
-    __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine,
-    __out PVOID *HandlerData,
-    __in PARM64_UNWIND_PARAMS UnwindParams
+    _Out_ PDWORD64 EstablisherFrame,
+    _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine,
+    _Out_ PVOID *HandlerData,
+    _In_ PARM64_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -614,7 +614,7 @@ Routine Description:
 Arguments:
 
     ControlPcRva - Supplies the address where control left the specified
-        function, as an offset relative to the IamgeBase.
+        function, as an offset relative to the ImageBase.
 
     ImageBase - Supplies the base address of the image that contains the
         function being unwound.
@@ -636,7 +636,7 @@ Arguments:
         returned.
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     UnwindParams - Additional parameters shared with caller.
 
@@ -720,6 +720,8 @@ Return Value:
     if ((HeaderWord & (1 << 21)) != 0) {
         UnwindIndex = EpilogScopeCount;
         EpilogScopeCount = 0;
+    } else {
+        UnwindIndex = 0;
     }
 
     //
@@ -1038,7 +1040,7 @@ ExecuteCodes:
                         ContextRecord,
                         8 * (NextCode & 0x3f),
                         8 + ((CurCode & 1) << 2) + (NextCode >> 6),
-                        2 + AccumulatedSaveNexts,
+                        2 + 2 * AccumulatedSaveNexts,
                         UnwindParams);
             AccumulatedSaveNexts = 0;
         }
@@ -1054,7 +1056,7 @@ ExecuteCodes:
                         ContextRecord,
                         -8 * ((NextCode & 0x3f) + 1),
                         8 + ((CurCode & 1) << 2) + (NextCode >> 6),
-                        2 + AccumulatedSaveNexts,
+                        2 + 2 * AccumulatedSaveNexts,
                         UnwindParams);
             AccumulatedSaveNexts = 0;
         }
@@ -1223,13 +1225,13 @@ finished:
 
 NTSTATUS
 RtlpUnwindFunctionCompact(
-    __in DWORD64 ControlPcRva,
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ DWORD64 ControlPcRva,
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
     __inout T_CONTEXT *ContextRecord,
-    __out PDWORD64 EstablisherFrame,
-    __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine,
-    __out PVOID *HandlerData,
-    __in PARM64_UNWIND_PARAMS UnwindParams
+    _Out_ PDWORD64 EstablisherFrame,
+    _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine,
+    _Out_ PVOID *HandlerData,
+    _In_ PARM64_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -1248,7 +1250,7 @@ Routine Description:
 Arguments:
 
     ControlPcRva - Supplies the address where control left the specified
-        function, as an offset relative to the IamgeBase.
+        function, as an offset relative to the ImageBase.
 
     FunctionEntry - Supplies the address of the function table entry for the
         specified function. If appropriate, this should have already been
@@ -1267,7 +1269,7 @@ Arguments:
         returned.
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     UnwindParams - Additional parameters shared with caller.
 
@@ -1561,9 +1563,31 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
     if (FAILED(GetFunctionEntry(pContext->Pc, &Rfe, sizeof(Rfe))))
         return FALSE;
 
+    DWORD64 ControlPcRva = pContext->Pc - ImageBase;
+
+    //  Long branch pdata
+    if ((Rfe.UnwindData & 3) == 3)
+    {
+        if ((Rfe.UnwindData & 4) == 0)
+        {
+            Rfe.BeginAddress = MEMORY_READ_DWORD(NULL, ImageBase + (Rfe.UnwindData - 3));
+            Rfe.UnwindData = MEMORY_READ_DWORD(NULL, ImageBase + (Rfe.UnwindData - 3) + sizeof(DWORD));
+
+            // A long branch should never be described by another long branch
+            ASSERT_AND_CHECK((Rfe.UnwindData & 3) != 3);
+
+            ControlPcRva = Rfe.BeginAddress;
+
+        } else
+        {
+            return FALSE;
+        }
+    }
+
     if ((Rfe.UnwindData & 3) != 0)
     {
-        hr = RtlpUnwindFunctionCompact(pContext->Pc - ImageBase,
+
+        hr = RtlpUnwindFunctionCompact(ControlPcRva,
                                         &Rfe,
                                         pContext,
                                         &DummyEstablisherFrame,
@@ -1574,7 +1598,7 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
     }
     else
     {
-        hr = RtlpUnwindFunctionFull(pContext->Pc - ImageBase,
+        hr = RtlpUnwindFunctionFull(ControlPcRva,
                                     ImageBase,
                                     &Rfe,
                                     pContext,
@@ -1635,9 +1659,30 @@ RtlVirtualUnwind(
     ARM64_UNWIND_PARAMS unwindParams;
     unwindParams.ContextPointers = ContextPointers;
 
+    DWORD64 ControlPcRva = ControlPc - ImageBase;
+
+    //  Long branch pdata
+    if ((rfe.UnwindData & 3) == 3)
+    {
+        if ((rfe.UnwindData & 4) == 0)
+        {
+            rfe.BeginAddress = MEMORY_READ_DWORD(NULL, ImageBase + (rfe.UnwindData - 3));
+            rfe.UnwindData = MEMORY_READ_DWORD(NULL, ImageBase + (rfe.UnwindData - 3) + sizeof(DWORD));
+
+            // A long branch should never be described by another long branch
+            ASSERT_AND_CHECK((rfe.UnwindData & 3) != 3);
+
+            ControlPcRva = rfe.BeginAddress;
+
+        } else
+        {
+            return FALSE;
+        }
+    }
+
     if ((rfe.UnwindData & 3) != 0)
     {
-        hr = RtlpUnwindFunctionCompact(ControlPc - ImageBase,
+        hr = RtlpUnwindFunctionCompact(ControlPcRva,
                                         &rfe,
                                         ContextRecord,
                                         EstablisherFrame,
@@ -1648,7 +1693,7 @@ RtlVirtualUnwind(
     }
     else
     {
-        hr = RtlpUnwindFunctionFull(ControlPc - ImageBase,
+        hr = RtlpUnwindFunctionFull(ControlPcRva,
                                     ImageBase,
                                     &rfe,
                                     ContextRecord,

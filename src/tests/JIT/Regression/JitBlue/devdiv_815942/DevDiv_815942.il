@@ -8,12 +8,15 @@
 }
 .assembly extern mscorlib { }
 .assembly DevDiv_815942 {}
-.module DevDiv_815942.exe
+.assembly extern xunit.core {}
 
 .class Repro
 {
     .method static int32 Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         // This testcase ensures that we correctly compare a double local
         // against a float const by converting the float const to double
         // instead of converting the local to float and losing precision

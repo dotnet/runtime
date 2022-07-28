@@ -167,7 +167,7 @@ namespace System.Linq.Expressions.Interpreter
 
                     InstructionList.DebugView.InstructionView instructionView = instructionViews[i];
 
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "{0}IP_{1}: {2}", _indent, i.ToString().PadLeft(4, '0'), instructionView.GetValue()).AppendLine();
+                    sb.AppendLine(CultureInfo.InvariantCulture, $"{_indent}IP_{i.ToString().PadLeft(4, '0')}: {instructionView.GetValue()}");
                 }
 
                 EmitExits(sb, instructions.Length);
@@ -422,7 +422,7 @@ namespace System.Linq.Expressions.Interpreter
                     arguments[i] = frame.Data[i];
                 }
 
-                frame.Leave(currentFrame);
+                InterpretedFrame.Leave(currentFrame);
             }
             return frame.Pop();
         }
@@ -446,7 +446,7 @@ namespace System.Linq.Expressions.Interpreter
                     arguments[i] = frame.Data[i];
                 }
 
-                frame.Leave(currentFrame);
+                InterpretedFrame.Leave(currentFrame);
             }
             return null;
         }

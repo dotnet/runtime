@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "stdafx.h"
 
-// Enable building with older SDKs that don't have IMAGE_FILE_MACHINE_ARM64 defined.
-#ifndef IMAGE_FILE_MACHINE_ARM64
-#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
-#endif
-
 #include "blobfetcher.h"
 #include "pedecoder.h"
 
@@ -114,7 +109,7 @@ void PERelocSection::AddBaseReloc(unsigned rva, int type, unsigned short highAdj
     relocSize++;
     unsigned short* offset = (unsigned short*) section->getBlock(2);
     if(offset) {
-        *offset = VAL16((rva & 0xFFF) | (type << 12));
+        *offset = VAL16((unsigned short)(rva & 0xFFF) | (unsigned short)(type << 12));
     }
 }
 
@@ -238,7 +233,7 @@ static inline HRESULT SubOvf_U_U32(UINT64 & a, unsigned int b)
 }
 
 #ifndef HOST_AMD64
-/* subtract two unsigned pointers yeilding a signed pointer sized int */
+/* subtract two unsigned pointers yielding a signed pointer sized int */
 static inline HRESULT SubOvf_U_U(INT64 & r, UINT64 a, UINT64 b)
 {
     r = a - b;
@@ -270,7 +265,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
 #ifdef LOGGING
     // Ensure that if someone adds a value to CeeSectionRelocType in cor.h,
     // that they also add an entry to RelocName.
-    static_assert_no_msg(NumItems(RelocName) == srRelocSentinel);
+    static_assert_no_msg(ARRAY_SIZE(RelocName) == srRelocSentinel);
 #ifdef _DEBUG
     for (unsigned int i = 0; i < srRelocSentinel; i++)
     {
@@ -1313,7 +1308,7 @@ HRESULT PEWriter::linkSortSections(entry * entries,
         _ASSERTE(index == -1 || index == atoi(p));
 
         e->nameLength = (unsigned char)(p - e->name);
-        e->index = index;
+        e->index = (char)index;
         e->arrayIndex = (unsigned short)(cur - getSectStart());
         e++;
     }
@@ -1517,7 +1512,7 @@ void PEWriter::setSectionIndex(IMAGE_SECTION_HEADER * h, unsigned sectionIndex) 
     //
 
     static const char * const SpecialNames[] = { ".text", ".cormeta", NULL };
-    enum { SPECIAL_NAMES_COUNT = NumItems(SpecialNames) };
+    enum { SPECIAL_NAMES_COUNT = ARRAY_SIZE(SpecialNames) };
 
     for (const char * const * s = SpecialNames; /**/; s++)
     {
@@ -1594,7 +1589,7 @@ HRESULT PEWriter::link() {
     iUniqueSections++; // One more for .reloc
     filePos = sizeof(IMAGE_DOS_HEADER)+sizeof(x86StubPgm) + m_ntHeadersSize;
 
-    m_ntHeaders->FileHeader.NumberOfSections = VAL16(iUniqueSections);
+    m_ntHeaders->FileHeader.NumberOfSections = (WORD)VAL16(iUniqueSections);
 
     filePos += iUniqueSections * sizeof(IMAGE_SECTION_HEADER);
     filePos  = roundUp(filePos, VAL32(m_ntHeaders->OptionalHeader.FileAlignment));
@@ -1829,7 +1824,7 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
     return(S_OK);   // SUCCESS
 }
 
-HRESULT PEWriter::Open(__in LPCWSTR fileName)
+HRESULT PEWriter::Open(_In_ LPCWSTR fileName)
 {
     _ASSERTE(m_file == INVALID_HANDLE_VALUE);
     HRESULT hr = NOERROR;
@@ -1913,7 +1908,7 @@ HRESULT PEWriter::Close()
 }
 
 /******************************************************************/
-HRESULT PEWriter::write(__in LPCWSTR fileName) {
+HRESULT PEWriter::write(_In_ LPCWSTR fileName) {
 
     HRESULT hr;
 

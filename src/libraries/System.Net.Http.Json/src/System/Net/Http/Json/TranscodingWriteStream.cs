@@ -68,7 +68,7 @@ namespace System.Net.Http.Json
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -133,8 +133,9 @@ namespace System.Net.Http.Json
             if (!_disposed)
             {
                 _disposed = true;
-                ArrayPool<char>.Shared.Return(_charBuffer);
+                char[] toReturn = _charBuffer;
                 _charBuffer = null!;
+                ArrayPool<char>.Shared.Return(toReturn);
             }
         }
 

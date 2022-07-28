@@ -7,15 +7,15 @@ if (CMAKE_C_COMPILER MATCHES "-?[0-9]+(\.[0-9]+)?$")
 endif()
 
 if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  if(CMAKE_C_COMPILER_ID MATCHES "Clang")
     if(APPLE)
       set(TOOLSET_PREFIX "")
     else()
       set(TOOLSET_PREFIX "llvm-")
     endif()
-  elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  elseif(CMAKE_C_COMPILER_ID MATCHES "GNU")
     if(CMAKE_CROSSCOMPILING)
-      set(TOOLSET_PREFIX "${CMAKE_CXX_COMPILER_TARGET}-")
+      set(TOOLSET_PREFIX "${CMAKE_C_COMPILER_TARGET}-")
     else()
       set(TOOLSET_PREFIX "")
     endif()
@@ -28,13 +28,14 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
       return()
     endif()
 
+    unset(EXEC_LOCATION_${exec} CACHE)
     find_program(EXEC_LOCATION_${exec}
       NAMES
       "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
       "${TOOLSET_PREFIX}${exec}")
 
     if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
-      message(FATAL_ERROR "Unable to find toolchain executable. Name: ${exec}, Prefix: ${TOOLSET_PREFIX}.")
+      message(FATAL_ERROR "Unable to find toolchain executable. Name: '${exec}', Prefix: '${TOOLSET_PREFIX}.'")
     endif()
     set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
   endfunction()
@@ -49,28 +50,32 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
 
   if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS))
     locate_toolchain_exec(objdump CMAKE_OBJDUMP)
-
-    if(CLR_CMAKE_TARGET_ANDROID)
-      set(TOOLSET_PREFIX ${ANDROID_TOOLCHAIN_PREFIX})
-    elseif(CMAKE_CROSSCOMPILING AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD AND (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR
-       CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL arm OR CMAKE_SYSTEM_PROCESSOR STREQUAL s390x))
-      set(TOOLSET_PREFIX "${TOOLCHAIN}-")
-    else()
-      set(TOOLSET_PREFIX "")
-    endif()
-
     locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
+
+    execute_process(
+      COMMAND ${CMAKE_OBJCOPY} --help
+      OUTPUT_VARIABLE OBJCOPY_HELP_OUTPUT
+    )
+
+    # if llvm-objcopy does not support --only-keep-debug argument, try to locate binutils' objcopy
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT "${OBJCOPY_HELP_OUTPUT}" MATCHES "--only-keep-debug")
+      set(TOOLSET_PREFIX "")
+      locate_toolchain_exec(objcopy CMAKE_OBJCOPY)
+    endif ()
+
   endif()
 endif()
 
 if (NOT CLR_CMAKE_HOST_WIN32)
   # detect linker
-  set(ldVersion ${CMAKE_C_COMPILER};-Wl,--version)
+  separate_arguments(ldVersion UNIX_COMMAND "${CMAKE_C_COMPILER} ${CMAKE_SHARED_LINKER_FLAGS} -Wl,--version")
   execute_process(COMMAND ${ldVersion}
     ERROR_QUIET
     OUTPUT_VARIABLE ldVersionOutput)
 
-  if("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold" OR "${ldVersionOutput}" MATCHES "GNU linkers")
+  if("${ldVersionOutput}" MATCHES "LLD")
+    set(LD_LLVM 1)
+  elseif("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold" OR "${ldVersionOutput}" MATCHES "GNU linkers")
     set(LD_GNU 1)
   elseif("${ldVersionOutput}" MATCHES "Solaris Link")
     set(LD_SOLARIS 1)

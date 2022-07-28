@@ -5,12 +5,42 @@
 #ifndef TARGET_H_
 #define TARGET_H_
 
-// Native Varargs are not supported on Unix (all architectures) and Windows ARM
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-#define FEATURE_VARARG 1
-#else
-#define FEATURE_VARARG 0
+#ifdef TARGET_UNIX_POSSIBLY_SUPPORTED
+#define FEATURE_CFI_SUPPORT
 #endif
+
+// Undefine all of the target OS macros
+// Within the JIT codebase we use the TargetOS features
+#ifdef TARGET_UNIX
+#undef TARGET_UNIX
+#endif
+
+#ifdef TARGET_OSX
+#undef TARGET_OSX
+#endif
+
+#ifdef TARGET_WINDOWS
+#undef TARGET_WINDOWS
+#endif
+
+// Native Varargs are not supported on Unix (all architectures) and Windows ARM
+inline bool compFeatureVarArg()
+{
+    return TargetOS::IsWindows && !TargetArchitecture::IsArm32;
+}
+inline bool compMacOsArm64Abi()
+{
+    return TargetArchitecture::IsArm64 && TargetOS::IsMacOS;
+}
+inline bool compFeatureArgSplit()
+{
+    return TargetArchitecture::IsLoongArch64 || TargetArchitecture::IsArm32 ||
+           (TargetOS::IsWindows && TargetArchitecture::IsArm64);
+}
+inline bool compUnixX86Abi()
+{
+    return TargetArchitecture::IsX86 && TargetOS::IsUnix;
+}
 
 /*****************************************************************************/
 // The following are human readable names for the target architectures
@@ -22,6 +52,8 @@
 #define TARGET_READABLE_NAME "ARM"
 #elif defined(TARGET_ARM64)
 #define TARGET_READABLE_NAME "ARM64"
+#elif defined(TARGET_LOONGARCH64)
+#define TARGET_READABLE_NAME "LOONGARCH64"
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -41,6 +73,10 @@
 #define REGMASK_BITS 64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
+#elif defined(TARGET_LOONGARCH64)
+#define REGMASK_BITS 64
+#define CSE_CONST_SHARED_LOW_BITS 12
+
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -56,7 +92,7 @@
 //                       be assigned during register allocation.
 //    REG_NA           - Used to indicate that a register is either not yet assigned or not required.
 //
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
@@ -156,7 +192,7 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 typedef unsigned __int64 regMaskTP;
 #else
 typedef unsigned       regMaskTP;
@@ -185,11 +221,6 @@ typedef unsigned char   regNumberSmall;
 
 /*****************************************************************************/
 
-#define LEA_AVAILABLE 1
-#define SCALED_ADDR_MODES 1
-
-/*****************************************************************************/
-
 #ifdef DEBUG
 #define DSP_SRC_OPER_LEFT 0
 #define DSP_SRC_OPER_RIGHT 1
@@ -213,6 +244,8 @@ typedef unsigned char   regNumberSmall;
 #include "targetarm.h"
 #elif defined(TARGET_ARM64)
 #include "targetarm64.h"
+#elif defined(TARGET_LOONGARCH64)
+#include "targetloongarch64.h"
 #else
   #error Unsupported or unset target architecture
 #endif
@@ -268,7 +301,10 @@ class Target
 {
 public:
     static const char* g_tgtCPUName;
-    static const char* g_tgtPlatformName;
+    static const char* g_tgtPlatformName()
+    {
+        return TargetOS::IsWindows ? "Windows" : "Unix";
+    };
 
     enum ArgOrder
     {
@@ -280,9 +316,8 @@ public:
 };
 
 #if defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
-const char* getRegName(unsigned reg, bool isFloat = false); // this is for gcencode.cpp and disasm.cpp that don't use
-                                                            // the regNumber type
-const char* getRegName(regNumber reg, bool isFloat = false);
+const char* getRegName(unsigned reg); // this is for gcencode.cpp and disasm.cpp that don't use the regNumber type
+const char* getRegName(regNumber reg);
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
 #ifdef DEBUG
@@ -510,7 +545,7 @@ inline regMaskTP genRegMask(regNumber reg)
 
 inline regMaskTP genRegMaskFloat(regNumber reg, var_types type /* = TYP_DOUBLE */)
 {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64)
     assert(genIsValidFloatReg(reg));
     assert((unsigned)reg < ArrLen(regMasks));
     return regMasks[reg];
@@ -671,7 +706,7 @@ C_ASSERT(sizeof(target_ssize_t) == TARGET_POINTER_SIZE);
 #if defined(TARGET_X86)
 // instrDescCns holds constant values for the emitter. The X86 compiler is unique in that it
 // may represent relocated pointer values with these constants. On the 64bit to 32 bit
-// cross-targetting jit, the the constant value must be represented as a 64bit value in order
+// cross-targeting jit, the constant value must be represented as a 64bit value in order
 // to represent these pointers.
 typedef ssize_t cnsval_ssize_t;
 typedef size_t  cnsval_size_t;

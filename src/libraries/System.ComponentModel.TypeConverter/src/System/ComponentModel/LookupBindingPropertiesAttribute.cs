@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     /// <summary>
@@ -37,25 +39,25 @@ namespace System.ComponentModel
         /// Gets the name of the data source property for the component this attribute is
         /// bound to.
         /// </summary>
-        public string DataSource { get; }
+        public string? DataSource { get; }
 
         /// <summary>
         /// Gets the name of the display member property for the component this attribute is
         /// bound to.
         /// </summary>
-        public string DisplayMember { get; }
+        public string? DisplayMember { get; }
 
         /// <summary>
         /// Gets the name of the value member property for the component this attribute is
         /// bound to.
         /// </summary>
-        public string ValueMember { get; }
+        public string? ValueMember { get; }
 
         /// <summary>
         /// Gets the name of the  member property for the component this attribute is
         /// bound to.
         /// </summary>
-        public string LookupMember { get; }
+        public string? LookupMember { get; }
 
         /// <summary>
         /// Specifies the default value for the <see cref='System.ComponentModel.LookupBindingPropertiesAttribute'/>, which is <see langword='null'/>. This
@@ -63,7 +65,7 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly LookupBindingPropertiesAttribute Default = new LookupBindingPropertiesAttribute();
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is LookupBindingPropertiesAttribute other &&
                    other.DataSource == DataSource &&

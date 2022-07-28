@@ -51,7 +51,7 @@ class InvokeUtil
 {
 
 public:
-    static void CopyArg(TypeHandle th, OBJECTREF *obj, ArgDestination *argDest);
+    static void CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest);
 
     // Given a type, this routine will convert an return value representing that
     //  type into an ObjectReference.  If the type is a primitive, the
@@ -59,7 +59,7 @@ public:
     static OBJECTREF CreateObjectAfterInvoke(TypeHandle th, void * pValue);
 
     // This is a special purpose Exception creation function.  It
-    //  creates the TargetInvocationExeption placing the passed
+    //  creates the TargetInvocationException placing the passed
     //  exception into it.
     static OBJECTREF CreateTargetExcept(OBJECTREF* except);
 
@@ -70,14 +70,6 @@ public:
 
     // Validate that the field can be widened for Set
     static void ValidField(TypeHandle th, OBJECTREF* value);
-
-    // ChangeType
-    // This method will invoke the Binder change type method on the object
-    //  binder -- The Binder object
-    //  srcObj -- The source object to be changed
-    //  th -- The TypeHandel of the target type
-    //  locale -- The locale passed to the class.
-    static OBJECTREF ChangeType(OBJECTREF binder,OBJECTREF srcObj,TypeHandle th,OBJECTREF locale);
 
     // CreatePrimitiveValue
     // This routine will validate the object and then place the value into
@@ -121,7 +113,7 @@ public:
     static BOOL IsVoidPtr(TypeHandle th);
 
     // CanPrimitiveWiden
-    // This method determines if the srcType and be widdened without loss to the destType
+    // This method determines if the srcType can be widened without loss to the destType
     //  destType -- The target type
     //  srcType -- The source type.
     inline static DWORD CanPrimitiveWiden(const CorElementType destType, const CorElementType srcType)
@@ -161,13 +153,6 @@ public:
     static TypeHandle GetPointerType(OBJECTREF pObj);
     static void* GetPointerValue(OBJECTREF pObj);
     static void* GetIntPtrValue(OBJECTREF pObj);
-
-private:
-    static void* CreateByRef(TypeHandle dstTh,CorElementType srcType, TypeHandle srcTH,OBJECTREF srcObj, OBJECTREF *pIncomingObj);
-
-    // GetBoxedObject
-    // Given an address of a primitve type, this will box that data...
-    static OBJECTREF GetBoxedObject(TypeHandle th,void* pData);
 
 private:
     // The Attributes Table

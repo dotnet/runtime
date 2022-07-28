@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly volatile.exe{}
+.assembly volatile{}
 .class public _volatile
 {
   .field public static native int PTR

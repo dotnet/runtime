@@ -276,4 +276,4 @@ FAIL:
 	ret
 }
 }
-.assembly mul_i8.exe{}
+.assembly mul_i8{}

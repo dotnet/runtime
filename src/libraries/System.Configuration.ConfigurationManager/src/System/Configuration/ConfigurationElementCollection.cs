@@ -31,7 +31,10 @@ namespace System.Configuration
 
         protected ConfigurationElementCollection(IComparer comparer)
         {
-            if (comparer == null) throw new ArgumentNullException(nameof(comparer));
+            if (comparer is null)
+            {
+                throw new ArgumentNullException(nameof(comparer));
+            }
 
             _comparer = comparer;
         }
@@ -198,7 +201,7 @@ namespace System.Configuration
         {
             // Return an enumerator over the collection's config elements.
             // This is different then the std GetEnumerator because the second one
-            // can return different set of items if overriden in a derived class
+            // can return different set of items if overridden in a derived class
 
             return new Enumerator(Items, this);
         }
@@ -1275,7 +1278,7 @@ namespace System.Configuration
                 {
                     Entry entry = (Entry)_itemsEnumerator.Current;
                     if (entry.EntryType == EntryType.Removed) continue;
-                    _current.Key = entry.GetKey(_thisCollection) != null ? entry.GetKey(_thisCollection) : "key";
+                    _current.Key = entry.GetKey(_thisCollection) ?? "key";
                     _current.Value = entry.Value;
                     return true;
                 }

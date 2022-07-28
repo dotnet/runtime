@@ -7,19 +7,17 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
-    internal static class SocketProtocolSupportPal
+    internal static partial class SocketProtocolSupportPal
     {
-        public static bool OSSupportsIPv6 { get; } = IsSupported(AddressFamily.InterNetworkV6);
-        public static bool OSSupportsIPv4 { get; } = IsSupported(AddressFamily.InterNetwork);
-        public static bool OSSupportsUnixDomainSockets { get; } = IsSupported(AddressFamily.Unix);
-
         private static unsafe bool IsSupported(AddressFamily af)
         {
             IntPtr invalid = (IntPtr)(-1);
             IntPtr socket = invalid;
             try
             {
-                return Interop.Sys.Socket(af, SocketType.Dgram, 0, &socket) != Interop.Error.EAFNOSUPPORT;
+                Interop.Error result = Interop.Sys.Socket(af, SocketType.Dgram, 0, &socket);
+                // we get EAFNOSUPPORT when family is not supported by Kernel, EPROTONOSUPPORT may come from policy enforcement like FreeBSD jail()
+                return result != Interop.Error.EAFNOSUPPORT && result != Interop.Error.EPROTONOSUPPORT;
             }
             finally
             {

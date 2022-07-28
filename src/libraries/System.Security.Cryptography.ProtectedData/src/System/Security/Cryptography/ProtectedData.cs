@@ -16,16 +16,14 @@ namespace System.Security.Cryptography
 
         public static byte[] Protect(byte[] userData, byte[]? optionalEntropy, DataProtectionScope scope)
         {
-            if (userData == null)
-                throw new ArgumentNullException(nameof(userData));
+            ArgumentNullException.ThrowIfNull(userData);
 
             return ProtectOrUnprotect(userData, optionalEntropy, scope, protect: true);
         }
 
         public static byte[] Unprotect(byte[] encryptedData, byte[]? optionalEntropy, DataProtectionScope scope)
         {
-            if (encryptedData == null)
-                throw new ArgumentNullException(nameof(encryptedData));
+            ArgumentNullException.ThrowIfNull(encryptedData);
 
             return ProtectOrUnprotect(encryptedData, optionalEntropy, scope, protect: false);
         }
@@ -59,8 +57,8 @@ namespace System.Security.Cryptography
                     try
                     {
                         bool success = protect ?
-                            Interop.Crypt32.CryptProtectData(ref userDataBlob, null, ref optionalEntropyBlob, IntPtr.Zero, IntPtr.Zero, flags, out outputBlob) :
-                            Interop.Crypt32.CryptUnprotectData(ref userDataBlob, IntPtr.Zero, ref optionalEntropyBlob, IntPtr.Zero, IntPtr.Zero, flags, out outputBlob);
+                            Interop.Crypt32.CryptProtectData(in userDataBlob, null, ref optionalEntropyBlob, IntPtr.Zero, IntPtr.Zero, flags, out outputBlob) :
+                            Interop.Crypt32.CryptUnprotectData(in userDataBlob, IntPtr.Zero, ref optionalEntropyBlob, IntPtr.Zero, IntPtr.Zero, flags, out outputBlob);
                         if (!success)
                         {
                             int lastWin32Error = Marshal.GetLastWin32Error();

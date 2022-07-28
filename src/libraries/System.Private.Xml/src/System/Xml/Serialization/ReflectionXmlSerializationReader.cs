@@ -9,7 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Xml.Extensions;
 using System.Xml.Schema;
 
 // UnconditionalSuppressMessage that specify a Target need to be at the assembly or module level for now. Also,
@@ -29,8 +28,12 @@ namespace System.Xml.Serialization
     {
         private readonly XmlMapping _mapping;
 
+        // Suppressed for the linker by the assembly-level UnconditionalSuppressMessageAttribute
+        // https://github.com/dotnet/linker/issues/2648
+#pragma warning disable IL2026
         internal static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
         internal static TypeDesc QnameTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
+#pragma warning restore IL2026
 
         public ReflectionXmlSerializationReader(XmlMapping mapping, XmlReader xmlReader, XmlDeserializationEvents events, string? encodingStyle)
         {
@@ -166,7 +169,7 @@ namespace System.Xml.Serialization
                 {
                     var xmlns = new XmlSerializerNamespaces();
                     p[index] = xmlns;
-                    member.XmlnsSource = (ns, name) => xmlns.Add(ns, name);
+                    member.XmlnsSource = xmlns.Add;
                 }
 
                 member.Source = source;
@@ -174,7 +177,7 @@ namespace System.Xml.Serialization
 
                 if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                 {
-                    string nameSpecified = mapping.Name + "Specified";
+                    string nameSpecified = $"{mapping.Name}Specified";
                     for (int j = 0; j < mappings.Length; j++)
                     {
                         if (mappings[j].Name == nameSpecified)
@@ -195,10 +198,7 @@ namespace System.Xml.Serialization
                 {
                     anyMember.Collection = new CollectionMember();
                     anyMember.ArraySource = anyMember.Source;
-                    anyMember.Source = (item) =>
-                    {
-                        anyMember.Collection.Add(item);
-                    };
+                    anyMember.Source = anyMember.Collection.Add;
 
                     anyAttribute = anyMember;
                 }
@@ -222,10 +222,7 @@ namespace System.Xml.Serialization
                             if (mapping.Attribute == null && mapping.Text == null)
                             {
                                 anyMember.Collection = new CollectionMember();
-                                anyMember.ArraySource = (item) =>
-                                {
-                                    anyMember.Collection.Add(item);
-                                };
+                                anyMember.ArraySource = anyMember.Collection.Add;
 
                                 textOrArrayMembersList.Add(anyMember);
                             }
@@ -244,10 +241,7 @@ namespace System.Xml.Serialization
                     && !(mapping.Elements!.Length == 1 && mapping.Elements[0].Mapping is ArrayMapping))
                 {
                     anyMember.Collection = new CollectionMember();
-                    anyMember.ArraySource = (item) =>
-                    {
-                        anyMember.Collection.Add(item);
-                    };
+                    anyMember.ArraySource = anyMember.Collection.Add;
 
                     membersList.Add(anyMember);
                     textOrArrayMembersList.Add(anyMember);
@@ -308,7 +302,7 @@ namespace System.Xml.Serialization
             return true;
         }
 
-        private void InitializeValueTypes(object?[] p, MemberMapping[] mappings)
+        private static void InitializeValueTypes(object?[] p, MemberMapping[] mappings)
         {
             for (int i = 0; i < mappings.Length; i++)
             {
@@ -379,7 +373,7 @@ namespace System.Xml.Serialization
                 members[index] = member;
                 if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                 {
-                    string nameSpecified = mapping.Name + "Specified";
+                    string nameSpecified = $"{mapping.Name}Specified";
                     for (int j = 0; j < mappings.Length; j++)
                     {
                         if (mappings[j].Name == nameSpecified)
@@ -549,7 +543,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void ProcessUnknownNode(UnknownNodeAction action)
+        private static void ProcessUnknownNode(UnknownNodeAction action)
         {
             action?.Invoke(null);
         }
@@ -566,7 +560,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void SetCollectionObjectWithCollectionMember([NotNull] ref object? collection, CollectionMember collectionMember,
+        private static void SetCollectionObjectWithCollectionMember([NotNull] ref object? collection, CollectionMember collectionMember,
             [DynamicallyAccessedMembers(TrimmerConstants.AllMethods)] Type collectionType)
         {
             if (collectionType.IsArray)
@@ -591,10 +585,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                if (collection == null)
-                {
-                    collection = ReflectionCreateObject(collectionType)!;
-                }
+                collection ??= ReflectionCreateObject(collectionType)!;
 
                 AddObjectsIntoTargetCollection(collection, collectionMember, collectionType);
             }
@@ -627,43 +618,51 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static readonly ConcurrentDictionary<(Type, string), ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate> s_setMemberValueDelegateCache = new ConcurrentDictionary<(Type, string), ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>();
+        private static readonly ContextAwareTables<Hashtable> s_setMemberValueDelegateCache = new ContextAwareTables<Hashtable>();
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private static ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate GetSetMemberValueDelegate(object o, string memberName)
         {
             Debug.Assert(o != null, "Object o should not be null");
             Debug.Assert(!string.IsNullOrEmpty(memberName), "memberName must have a value");
-            (Type, string) typeMemberNameTuple = (o.GetType(), memberName);
-            if (!s_setMemberValueDelegateCache.TryGetValue(typeMemberNameTuple, out ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate? result))
+            Type type = o.GetType();
+            var delegateCacheForType = s_setMemberValueDelegateCache.GetOrCreateValue(type, _ => new Hashtable());
+            var result = delegateCacheForType[memberName];
+            if (result == null)
             {
-                MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetMember(o.GetType(), memberName);
-                Debug.Assert(memberInfo != null, "memberInfo could not be retrieved");
-                Type memberType;
-                if (memberInfo is PropertyInfo propInfo)
+                lock (delegateCacheForType)
                 {
-                    memberType = propInfo.PropertyType;
-                }
-                else if (memberInfo is FieldInfo fieldInfo)
-                {
-                    memberType = fieldInfo.FieldType;
-                }
-                else
-                {
-                    throw new InvalidOperationException(SR.XmlInternalError);
-                }
+                    if ((result = delegateCacheForType[memberName]) == null)
+                    {
+                        MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetEffectiveSetInfo(o.GetType(), memberName);
+                        Debug.Assert(memberInfo != null, "memberInfo could not be retrieved");
+                        Type memberType;
+                        if (memberInfo is PropertyInfo propInfo)
+                        {
+                            memberType = propInfo.PropertyType;
+                        }
+                        else if (memberInfo is FieldInfo fieldInfo)
+                        {
+                            memberType = fieldInfo.FieldType;
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException(SR.XmlInternalError);
+                        }
 
-                MethodInfo getSetMemberValueDelegateWithTypeGenericMi = typeof(ReflectionXmlSerializationReaderHelper).GetMethod("GetSetMemberValueDelegateWithType", BindingFlags.Static | BindingFlags.Public)!;
-                MethodInfo getSetMemberValueDelegateWithTypeMi = getSetMemberValueDelegateWithTypeGenericMi.MakeGenericMethod(o.GetType(), memberType);
-                var getSetMemberValueDelegateWithType = (Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>)getSetMemberValueDelegateWithTypeMi.CreateDelegate(typeof(Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>));
-                result = getSetMemberValueDelegateWithType(memberInfo);
-                s_setMemberValueDelegateCache.TryAdd(typeMemberNameTuple, result);
+                        MethodInfo getSetMemberValueDelegateWithTypeGenericMi = typeof(ReflectionXmlSerializationReaderHelper).GetMethod("GetSetMemberValueDelegateWithType", BindingFlags.Static | BindingFlags.Public)!;
+                        MethodInfo getSetMemberValueDelegateWithTypeMi = getSetMemberValueDelegateWithTypeGenericMi.MakeGenericMethod(o.GetType(), memberType);
+                        var getSetMemberValueDelegateWithType = (Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>)getSetMemberValueDelegateWithTypeMi.CreateDelegate(typeof(Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>));
+                        result = getSetMemberValueDelegateWithType(memberInfo);
+                        delegateCacheForType[memberName] = result;
+                    }
+                }
             }
 
-            return result;
+            return (ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate)result;
         }
 
-        private object? GetMemberValue(object o, MemberInfo memberInfo)
+        private static object? GetMemberValue(object o, MemberInfo memberInfo)
         {
             if (memberInfo is PropertyInfo propertyInfo)
             {
@@ -732,7 +731,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        private bool IsSequence(Member[] members)
+        private static bool IsSequence(Member[] members)
         {
             // https://github.com/dotnet/runtime/issues/1402:
             // Currently the reflection based method treat this kind of type as normal types.
@@ -883,6 +882,11 @@ namespace System.Xml.Serialization
                 {
                     Reader.Skip();
                     value = default(TimeSpan);
+                }
+                else if (element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset) && Reader.IsEmptyElement)
+                {
+                    Reader.Skip();
+                    value = default(DateTimeOffset);
                 }
                 else
                 {
@@ -1147,10 +1151,7 @@ namespace System.Xml.Serialization
 
                     var arrayMember = new Member(memberMapping);
                     arrayMember.Collection = new CollectionMember();
-                    arrayMember.ArraySource = (item) =>
-                    {
-                        arrayMember.Collection.Add(item);
-                    };
+                    arrayMember.ArraySource = arrayMember.Collection.Add;
 
                     if ((readOnly && o == null) || Reader.IsEmptyElement)
                     {
@@ -1219,13 +1220,14 @@ namespace System.Xml.Serialization
                         "Guid" => XmlConvert.ToGuid(value),
                         "Char" => XmlConvert.ToChar(value),
                         "TimeSpan" => XmlConvert.ToTimeSpan(value),
+                        "DateTimeOffset" => XmlConvert.ToDateTimeOffset(value),
                         _ => throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"unknown FormatterName: {mapping.TypeDesc.FormatterName}")),
                     };
                     return retObj;
                 }
                 else
                 {
-                    string methodName = "To" + mapping.TypeDesc.FormatterName;
+                    string methodName = $"To{mapping.TypeDesc.FormatterName}";
                     MethodInfo? method = typeof(XmlSerializationReader).GetMethod(methodName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, new Type[] { typeof(string) });
                     if (method == null)
                     {
@@ -1297,7 +1299,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private Hashtable WriteHashtable(EnumMapping mapping, string name)
+        private static Hashtable WriteHashtable(EnumMapping mapping, string name)
         {
             var h = new Hashtable();
             ConstantMapping[] constants = mapping.Constants!;
@@ -1309,7 +1311,7 @@ namespace System.Xml.Serialization
             return h;
         }
 
-        private object? ReflectionCreateObject(
+        private static object? ReflectionCreateObject(
             [DynamicallyAccessedMembers(TrimmerConstants.AllMethods)] Type type)
         {
             object? obj;
@@ -1333,7 +1335,7 @@ namespace System.Xml.Serialization
             return obj;
         }
 
-        private ConstructorInfo? GetDefaultConstructor(
+        private static ConstructorInfo? GetDefaultConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors
                 | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type) =>
             type.IsValueType ? null :
@@ -1616,7 +1618,6 @@ namespace System.Xml.Serialization
                 }
 
                 var allMembersList = new List<Member>(mappings.Length);
-                var allMemberMappingList = new List<MemberMapping>(mappings.Length);
 
                 for (int i = 0; i < mappings.Length; i++)
                 {
@@ -1664,18 +1665,11 @@ namespace System.Xml.Serialization
                         {
                             member.Source = (item) =>
                             {
-                                if (member.Collection == null)
-                                {
-                                    member.Collection = new CollectionMember();
-                                }
+                                member.Collection ??= new CollectionMember();
 
                                 member.Collection.Add(item);
                             };
                             member.ArraySource = member.Source;
-                        }
-                        else if (!mapping.TypeDesc.IsArray)
-                        {
-
                         }
                     }
 
@@ -1708,10 +1702,7 @@ namespace System.Xml.Serialization
                                 var xmlSerializerNamespaces = new XmlSerializerNamespaces();
                                 var setMemberValue = GetSetMemberValueDelegate(o!, member.Mapping.Name);
                                 setMemberValue(o, xmlSerializerNamespaces);
-                                member.XmlnsSource = (ns, name) =>
-                                {
-                                    xmlSerializerNamespaces.Add(ns, name);
-                                };
+                                member.XmlnsSource = xmlSerializerNamespaces.Add;
                             }
                             else
                             {
@@ -1727,12 +1718,9 @@ namespace System.Xml.Serialization
                         [RequiresUnreferencedCode("calls GetType on object")]
                         void Wrapper(object? _)
                         {
-                            string specifiedMemberName = member.Mapping.Name + "Specified";
-                            MethodInfo? specifiedMethodInfo = o!.GetType().GetMethod("set_" + specifiedMemberName);
-                            if (specifiedMethodInfo != null)
-                            {
-                                specifiedMethodInfo.Invoke(o, new object[] { true });
-                            }
+                            string specifiedMemberName = $"{member.Mapping.Name}Specified";
+                            MethodInfo? specifiedMethodInfo = o!.GetType().GetMethod($"set_{specifiedMemberName}");
+                            specifiedMethodInfo?.Invoke(o, new object[] { true });
                         }
                     }
 
@@ -1757,7 +1745,6 @@ namespace System.Xml.Serialization
                         }
                     }
 
-                    allMemberMappingList.Add(mapping);
                     allMembersList.Add(member);
 
                     if (mapping == anyElement)
@@ -2007,7 +1994,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private void SetOrAddValueToMember(object o, object value, MemberInfo memberInfo)
+        private static void SetOrAddValueToMember(object o, object value, MemberInfo memberInfo)
         {
             Type memberType = GetMemberType(memberInfo);
 
@@ -2028,7 +2015,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private void AddItemInArrayMember(object o, MemberInfo memberInfo, Type memberType, object item)
+        private static void AddItemInArrayMember(object o, MemberInfo memberInfo, Type memberType, object item)
         {
             var currentArray = (Array?)GetMemberValue(o, memberInfo);
             int length;
@@ -2053,12 +2040,12 @@ namespace System.Xml.Serialization
         }
 
         // WriteXmlNodeEqual
-        private bool XmlNodeEqual(XmlReader source, string name, string? ns)
+        private static bool XmlNodeEqual(XmlReader source, string name, string? ns)
         {
             return source.LocalName == name && string.Equals(source.NamespaceURI, ns);
         }
 
-        private bool QNameEqual(XmlQualifiedName xsiType, string? name, string? ns, string? defaultNamespace)
+        private static bool QNameEqual(XmlQualifiedName xsiType, string? name, string? ns, string? defaultNamespace)
         {
             return xsiType.Name == name && string.Equals(xsiType.Namespace, defaultNamespace);
         }
@@ -2115,17 +2102,11 @@ namespace System.Xml.Serialization
             {
                 if (memberInfo is PropertyInfo propInfo)
                 {
-                    return delegate (object? o, object? p)
-                    {
-                        propInfo.SetValue(o, p);
-                    };
+                    return propInfo.SetValue;
                 }
                 else if (memberInfo is FieldInfo fieldInfo)
                 {
-                    return delegate (object? o, object? p)
-                    {
-                        fieldInfo.SetValue(o, p);
-                    };
+                    return fieldInfo.SetValue;
                 }
 
                 throw new InvalidOperationException(SR.XmlInternalError);
@@ -2138,11 +2119,7 @@ namespace System.Xml.Serialization
                     var setMethod = propInfo.GetSetMethod(true);
                     if (setMethod == null)
                     {
-                        return delegate (object? o, object? p)
-                        {
-                            // Maintain the same failure behavior as non-cached delegate
-                            propInfo.SetValue(o, p);
-                        };
+                        return propInfo.SetValue;
                     }
 
                     setTypedDelegate = (Action<TObj, TParam>)setMethod.CreateDelegate(typeof(Action<TObj, TParam>));

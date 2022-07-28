@@ -82,8 +82,8 @@ namespace System.Data.Odbc
                 throw ODBC.NotInTransaction();
             }
 
-            ODBC32.RetCode retcode = _handle.CompleteTransaction(ODBC32.SQL_COMMIT);
-            if (retcode == ODBC32.RetCode.ERROR)
+            ODBC32.SQLRETURN retcode = _handle.CompleteTransaction(ODBC32.SQL_COMMIT);
+            if (retcode == ODBC32.SQLRETURN.ERROR)
             {
                 //If an error has occurred, we will throw an exception in HandleError,
                 //and leave the transaction active for the user to retry
@@ -106,8 +106,8 @@ namespace System.Data.Odbc
                 {
                     try
                     {
-                        ODBC32.RetCode retcode = handle.CompleteTransaction(ODBC32.SQL_ROLLBACK);
-                        if (retcode == ODBC32.RetCode.ERROR)
+                        ODBC32.SQLRETURN retcode = handle.CompleteTransaction(ODBC32.SQL_ROLLBACK);
+                        if (retcode == ODBC32.SQLRETURN.ERROR)
                         {
                             //don't throw an exception here, but trace it so it can be logged
                             if (_connection != null)
@@ -155,8 +155,8 @@ namespace System.Data.Odbc
                 throw ODBC.NotInTransaction();
             }
 
-            ODBC32.RetCode retcode = _handle.CompleteTransaction(ODBC32.SQL_ROLLBACK);
-            if (retcode == ODBC32.RetCode.ERROR)
+            ODBC32.SQLRETURN retcode = _handle.CompleteTransaction(ODBC32.SQL_ROLLBACK);
+            if (retcode == ODBC32.SQLRETURN.ERROR)
             {
                 //If an error has occurred, we will throw an exception in HandleError,
                 //and leave the transaction active for the user to retry

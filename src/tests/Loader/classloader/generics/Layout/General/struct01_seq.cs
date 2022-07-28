@@ -45,18 +45,18 @@ public struct Gen<T>
 		_string1 = "string1";
 		_Guid1 = new Guid(1,2,3,4,5,6,7,8,9,10,11);
 
-		Test.Eval(_int0 == 0);
-		Test.Eval(_int1 == int.MaxValue) ;
-		Test.Eval(_double0 == 0) ;
-		Test.Eval(_double1 == double.MaxValue) ;
-		Test.Eval(_string0.Equals("string0"));
-		Test.Eval(_string1.Equals("string1"));
-		Test.Eval(_Guid0 == new Guid());
-		Test.Eval(_Guid1 == new Guid(1,2,3,4,5,6,7,8,9,10,11));	
+		Test_struct01_seq.Eval(_int0 == 0);
+		Test_struct01_seq.Eval(_int1 == int.MaxValue) ;
+		Test_struct01_seq.Eval(_double0 == 0) ;
+		Test_struct01_seq.Eval(_double1 == double.MaxValue) ;
+		Test_struct01_seq.Eval(_string0.Equals("string0"));
+		Test_struct01_seq.Eval(_string1.Equals("string1"));
+		Test_struct01_seq.Eval(_Guid0 == new Guid());
+		Test_struct01_seq.Eval(_Guid1 == new Guid(1,2,3,4,5,6,7,8,9,10,11));	
 	}
 }
 
-public class Test
+public class Test_struct01_seq
 {
 	public static int counter = 0;
 	public static bool result = true;

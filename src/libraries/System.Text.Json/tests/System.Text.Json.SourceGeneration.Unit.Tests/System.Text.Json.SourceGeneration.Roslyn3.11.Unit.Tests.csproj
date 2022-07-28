@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_3_11)</RoslynApiVersion>
+    <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.dll" />
+    <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" />
+  </ItemGroup>
+
+  <Import Project="System.Text.Json.SourceGeneration.Unit.Tests.targets" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" />
+  </ItemGroup>
+</Project>

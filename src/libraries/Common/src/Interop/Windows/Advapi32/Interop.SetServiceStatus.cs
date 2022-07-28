@@ -8,7 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern unsafe bool SetServiceStatus(IntPtr serviceStatusHandle, SERVICE_STATUS* status);
+        [LibraryImport(Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static unsafe partial bool SetServiceStatus(IntPtr serviceStatusHandle, SERVICE_STATUS* status);
     }
 }

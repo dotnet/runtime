@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace MS
+namespace MS_vcall_cs
 {
-    internal struct VT
+    public struct VT
     {
         private int _v;
 
@@ -15,7 +16,8 @@ namespace MS
             arg1._v = 10;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             VT vt;
             vt._v = 99;

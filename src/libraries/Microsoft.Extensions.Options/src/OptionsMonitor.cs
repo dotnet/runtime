@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Options
@@ -21,7 +20,7 @@ namespace Microsoft.Extensions.Options
         private readonly IOptionsMonitorCache<TOptions> _cache;
         private readonly IOptionsFactory<TOptions> _factory;
         private readonly List<IDisposable> _registrations = new List<IDisposable>();
-        internal event Action<TOptions, string> _onChange;
+        internal event Action<TOptions, string>? _onChange;
 
         /// <summary>
         /// Constructor.
@@ -34,26 +33,40 @@ namespace Microsoft.Extensions.Options
             _factory = factory;
             _cache = cache;
 
-            foreach (IOptionsChangeTokenSource<TOptions> source in (sources as IOptionsChangeTokenSource<TOptions>[] ?? sources.ToArray()))
+            void RegisterSource(IOptionsChangeTokenSource<TOptions> source)
             {
                 IDisposable registration = ChangeToken.OnChange(
-                      () => source.GetChangeToken(),
-                      (name) => InvokeChanged(name),
-                      source.Name);
+                          source.GetChangeToken,
+                          InvokeChanged,
+                          source.Name);
 
                 _registrations.Add(registration);
             }
+
+            // The default DI container uses arrays under the covers. Take advantage of this knowledge
+            // by checking for an array and enumerate over that, so we don't need to allocate an enumerator.
+            if (sources is IOptionsChangeTokenSource<TOptions>[] sourcesArray)
+            {
+                foreach (IOptionsChangeTokenSource<TOptions> source in sourcesArray)
+                {
+                    RegisterSource(source);
+                }
+            }
+            else
+            {
+                foreach (IOptionsChangeTokenSource<TOptions> source in sources)
+                {
+                    RegisterSource(source);
+                }
+            }
         }
 
-        private void InvokeChanged(string name)
+        private void InvokeChanged(string? name)
         {
-            name = name ?? Options.DefaultName;
+            name ??= Options.DefaultName;
             _cache.TryRemove(name);
             TOptions options = Get(name);
-            if (_onChange != null)
-            {
-                _onChange.Invoke(options, name);
-            }
+            _onChange?.Invoke(options, name);
         }
 
         /// <summary>
@@ -67,10 +80,19 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
-        public virtual TOptions Get(string name)
+        public virtual TOptions Get(string? name)
         {
-            name = name ?? Options.DefaultName;
-            return _cache.GetOrAdd(name, () => _factory.Create(name));
+            if (_cache is not OptionsCache<TOptions> optionsCache)
+            {
+                // copying captured variables to locals avoids allocating a closure if we don't enter the if
+                string localName = name ?? Options.DefaultName;
+                IOptionsFactory<TOptions> localFactory = _factory;
+                return _cache.GetOrAdd(localName, () => localFactory.Create(localName));
+            }
+
+            // non-allocating fast path
+            return optionsCache.GetOrAdd(name, static (name, factory) => factory.Create(name), _factory);
+
         }
 
         /// <summary>

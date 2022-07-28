@@ -142,8 +142,7 @@ namespace System.IO.Tests
             Assert.Throws<DirectoryNotFoundException>(() => Create(testFile));
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void FileInUse()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -218,9 +217,7 @@ namespace System.IO.Tests
             Assert.False(File.Exists(path));
         }
 
-        [Fact]
-        [PlatformSpecific(CaseSensitivePlatforms)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.FileCreateCaseSensitive))]
         public void CaseSensitive()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -236,8 +233,7 @@ namespace System.IO.Tests
             Assert.Throws<DirectoryNotFoundException>(() => File.Create(testFile.ToLowerInvariant()));
         }
 
-        [Fact]
-        [PlatformSpecific(CaseInsensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseInsensitiveOS))]
         public void CaseInsensitive()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -367,7 +363,7 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => Create(GetTestFilePath(), -100));
         }
     }
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+
     public class File_Create_str_i_fo : File_Create_str_i
     {
         public override FileStream Create(string path)

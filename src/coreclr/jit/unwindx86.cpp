@@ -19,7 +19,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #error "This should be included only for x86"
 #endif // TARGET_X86
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
 short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
     short dwarfReg = DWARF_REG_ILLEGAL;
@@ -28,7 +28,7 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 
     return dwarfReg;
 }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
 void Compiler::unwindBegProlog()
 {
@@ -117,7 +117,16 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
     if (fgFirstColdBlock != nullptr)
     {
-        unwindReserveFuncHelper(func, false);
+#ifdef DEBUG
+        if (JitConfig.JitFakeProcedureSplitting())
+        {
+            assert(func->funKind == FUNC_ROOT); // No splitting of funclets.
+        }
+        else
+#endif // DEBUG
+        {
+            unwindReserveFuncHelper(func, false);
+        }
     }
 }
 
@@ -158,7 +167,12 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
 
     if (pColdCode != nullptr)
     {
-        unwindEmitFuncHelper(func, pHotCode, pColdCode, false);
+#ifdef DEBUG
+        if (!JitConfig.JitFakeProcedureSplitting())
+#endif // DEBUG
+        {
+            unwindEmitFuncHelper(func, pHotCode, pColdCode, false);
+        }
     }
 }
 
@@ -239,7 +253,17 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
 
     if (isHotCode)
     {
-        assert(endOffset <= info.compTotalHotCodeSize);
+#ifdef DEBUG
+        if (JitConfig.JitFakeProcedureSplitting() && (fgFirstColdBlock != nullptr))
+        {
+            assert(endOffset <= info.compNativeCodeSize);
+        }
+        else
+#endif // DEBUG
+        {
+            assert(endOffset <= info.compTotalHotCodeSize);
+        }
+
         pColdCode = nullptr;
     }
     else
@@ -256,4 +280,5 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
     eeAllocUnwindInfo((BYTE*)pHotCode, (BYTE*)pColdCode, startOffset, endOffset, sizeof(UNWIND_INFO),
                       (BYTE*)&unwindInfo, (CorJitFuncKind)func->funKind);
 }
+
 #endif // FEATURE_EH_FUNCLETS

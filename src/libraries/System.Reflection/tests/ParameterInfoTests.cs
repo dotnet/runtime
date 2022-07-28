@@ -104,7 +104,7 @@ namespace System.Reflection.Tests
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "Foo1", 0);
             object raw = p.RawDefaultValue;
             Assert.Equal(typeof(int), raw.GetType());
-            Assert.Equal<int>((int)raw, (int)BindingFlags.DeclaredOnly);
+            Assert.Equal<int>((int)BindingFlags.DeclaredOnly, (int)raw);
         }
 
         [Fact]
@@ -114,7 +114,7 @@ namespace System.Reflection.Tests
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "Foo2", 0);
             object raw = p.RawDefaultValue;
             Assert.Equal(typeof(int), raw.GetType());
-            Assert.Equal<int>((int)raw, (int)BindingFlags.IgnoreCase);
+            Assert.Equal<int>((int)BindingFlags.IgnoreCase, (int)raw);
         }
 
         [Fact]
@@ -123,7 +123,7 @@ namespace System.Reflection.Tests
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "Foo3", 0);
             object raw = p.RawDefaultValue;
             Assert.Equal(typeof(int), raw.GetType());
-            Assert.Equal<int>((int)raw, (int)BindingFlags.FlattenHierarchy);
+            Assert.Equal<int>((int)BindingFlags.FlattenHierarchy, (int)raw);
         }
 
         [Theory]
@@ -212,6 +212,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(s_CustomAttributesTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/830", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void CustomAttributesTest(Type attrType)
         {
             ParameterInfo parameterInfo = GetParameterInfo(typeof(ParameterInfoMetadata), "MethodWithOptionalDefaultOutInMarshalParam", 0);
@@ -227,6 +228,30 @@ namespace System.Reflection.Tests
             Assert.NotNull(prov.GetCustomAttributes(true).SingleOrDefault(a => a.GetType().Equals(attrType)));
             Assert.True(prov.IsDefined(attrType, false));
             Assert.True(prov.IsDefined(attrType, true));
+        }
+
+        [Theory]
+        [InlineData(0, true, 30)]
+        [InlineData(1, false, -1)]
+        [InlineData(2, true, 50)]
+        public void CustomAttributesInheritanceTest(int paramIndex, bool exists, int expectedMyAttributeValue)
+        {
+            ParameterInfo parameterInfo = GetParameterInfo(typeof(DerivedParameterInfoMetadata), "VirtualMethodWithCustomAttributes", paramIndex);
+            CustomAttributeData attribute = parameterInfo.CustomAttributes.SingleOrDefault(a => a.AttributeType.Equals(typeof(MyAttribute)));
+            Assert.Equal(exists, attribute != null);
+
+            ICustomAttributeProvider prov = parameterInfo as ICustomAttributeProvider;
+            MyAttribute myAttribute = prov.GetCustomAttributes(typeof(MyAttribute), true).SingleOrDefault() as MyAttribute;
+            Assert.Equal(exists, myAttribute != null);
+            Assert.Equal(expectedMyAttributeValue, exists ? myAttribute.Value : expectedMyAttributeValue);
+        }
+
+        [Fact]
+        public static void GetCustomAttributesOnParameterWithNullMetadataTokenReturnsArrayOfCorrectType()
+        {
+            var parameterWithNullMetadataToken = typeof(int[]).GetProperty(nameof(Array.Length)).GetMethod.ReturnParameter;
+            Assert.Equal(typeof(Attribute[]), Attribute.GetCustomAttributes(parameterWithNullMetadataToken).GetType());
+            Assert.Equal(typeof(MyAttribute[]), Attribute.GetCustomAttributes(parameterWithNullMetadataToken, typeof(MyAttribute)).GetType());
         }
 
         [Fact]
@@ -345,6 +370,7 @@ namespace System.Reflection.Tests
             public void Foo3([CustomBindingFlags(Value = BindingFlags.DeclaredOnly)] BindingFlags bf = BindingFlags.FlattenHierarchy ) { }
 
             public void MethodWithCustomAttribute([My(2)]string str, int iValue, long lValue) { }
+            public virtual void VirtualMethodWithCustomAttributes([My(3)]int val1, [My(4)]int val2, int val3) { }
 
             public void Method1(string str, int iValue, long lValue) { }
             public void Method2() { }
@@ -372,6 +398,11 @@ namespace System.Reflection.Tests
             public int MethodWithOptionalDefaultOutInMarshalParam([MarshalAs(UnmanagedType.LPWStr)][Out][In] string str = "") { return 1; }
         }
 
+        public class DerivedParameterInfoMetadata : ParameterInfoMetadata
+        {
+            override public void VirtualMethodWithCustomAttributes([My(30)]int val1, int val2, [My(50)]int val3) { }
+        }
+
         public class GenericClass<T>
         {
             public void GenericMethod(T t) { }
@@ -380,7 +411,8 @@ namespace System.Reflection.Tests
 
         private class MyAttribute : Attribute
         {
-            internal MyAttribute(int i) { }
+            public int Value {get; private set;}
+            internal MyAttribute(int i) { Value = i;}
         }
 
         internal sealed class CustomBindingFlagsAttribute : UsableCustomConstantAttribute

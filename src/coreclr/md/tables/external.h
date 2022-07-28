@@ -17,5 +17,3 @@
 #include "../export.h"
 
 #include "../inc/recordpool.h"
-#include "../hotdata/export.h"
-#include "../hotdata/hotdataformat.h"

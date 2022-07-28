@@ -123,9 +123,9 @@ public:
 private:
     regMaskTP _rsMaskVars; // backing store for rsMaskVars property
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     regMaskTP rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
-#endif                           // TARGET_ARM
+#endif                           // TARGET_ARMARCH || TARGET_LOONGARCH64
 
 public:                    // TODO-Cleanup: Should be private, but Compiler uses it
     regMaskTP rsMaskResvd; // mask of the registers that are reserved for special purposes (typically empty)
@@ -192,11 +192,21 @@ public:
     bool tmpAllFree() const;
 #endif // DEBUG
 
+    void tmpBeginPreAllocateTemps()
+    {
+        tmpSize = 0;
+    }
     void tmpPreAllocateTemps(var_types type, unsigned count);
 
     unsigned tmpGetTotalSize()
     {
+        assert(hasComputedTmpSize());
         return tmpSize;
+    }
+
+    bool hasComputedTmpSize()
+    {
+        return tmpSize != UINT_MAX;
     }
 
 private:

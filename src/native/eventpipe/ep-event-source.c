@@ -34,10 +34,18 @@ const ep_char8_t* _ep_os_info = "Unknown";
 const ep_char8_t* _ep_arch_info = "x86";
 #elif defined(TARGET_AMD64)
 const ep_char8_t* _ep_arch_info = "x64";
+#elif defined(TARGET_ARMV6)
+const ep_char8_t* _ep_arch_info = "arm32";
 #elif defined(TARGET_ARM)
 const ep_char8_t* _ep_arch_info = "arm32";
 #elif defined(TARGET_ARM64)
 const ep_char8_t* _ep_arch_info = "arm64";
+#elif defined(TARGET_S390X)
+const ep_char8_t* _ep_arch_info = "s390x";
+#elif defined(TARGET_LOONGARCH64)
+const ep_char8_t* _ep_arch_info = "loongarch64";
+#elif defined(TARGET_POWERPC64)
+const ep_char8_t* _ep_arch_info = "ppc64le";
 #else
 const ep_char8_t* _ep_arch_info = "Unknown";
 #endif
@@ -98,21 +106,21 @@ ep_event_source_init (EventPipeEventSource *event_source)
 	// Generate metadata.
 	EventPipeParameterDesc params [3];
 	uint32_t params_len;
-	params_len = (uint32_t)EP_ARRAY_SIZE (params);
+	params_len = (uint32_t)ARRAY_SIZE (params);
 
-	command_line_arg_utf16 = ep_rt_utf8_to_utf16_string ("CommandLine", -1);
+	command_line_arg_utf16 = ep_rt_utf8_to_utf16le_string ("CommandLine", -1);
 	ep_raise_error_if_nok (command_line_arg_utf16 != NULL);
 	ep_parameter_desc_init (&params[0], EP_PARAMETER_TYPE_STRING, command_line_arg_utf16);
 
-	os_info_arg_utf16 = ep_rt_utf8_to_utf16_string ("OSInformation", -1);
+	os_info_arg_utf16 = ep_rt_utf8_to_utf16le_string ("OSInformation", -1);
 	ep_raise_error_if_nok (os_info_arg_utf16 != NULL);
 	ep_parameter_desc_init (&params[1], EP_PARAMETER_TYPE_STRING, os_info_arg_utf16);
 
-	arch_info_arg_utf16 = ep_rt_utf8_to_utf16_string ("ArchInformation", -1);
+	arch_info_arg_utf16 = ep_rt_utf8_to_utf16le_string ("ArchInformation", -1);
 	ep_raise_error_if_nok (arch_info_arg_utf16 != NULL);
 	ep_parameter_desc_init (&params[2], EP_PARAMETER_TYPE_STRING, arch_info_arg_utf16);
 
-	event_name_utf16 = ep_rt_utf8_to_utf16_string ("ProcessInfo", -1);
+	event_name_utf16 = ep_rt_utf8_to_utf16le_string ("ProcessInfo", -1);
 	ep_raise_error_if_nok (event_name_utf16 != NULL);
 
 	size_t metadata_len;
@@ -207,9 +215,9 @@ ep_event_source_send_process_info (
 	ep_char16_t *os_info_utf16 = NULL;
 	ep_char16_t *arch_info_utf16 = NULL;
 
-	command_line_utf16 = ep_rt_utf8_to_utf16_string (command_line, -1);
-	os_info_utf16 = ep_rt_utf8_to_utf16_string (ep_event_source_get_os_info (), -1);
-	arch_info_utf16 = ep_rt_utf8_to_utf16_string (ep_event_source_get_arch_info (), -1);
+	command_line_utf16 = ep_rt_utf8_to_utf16le_string (command_line, -1);
+	os_info_utf16 = ep_rt_utf8_to_utf16le_string (ep_event_source_get_os_info (), -1);
+	arch_info_utf16 = ep_rt_utf8_to_utf16le_string (ep_event_source_get_arch_info (), -1);
 
 	EventData data [3] = { { 0 } };
 	if (command_line_utf16)
@@ -219,7 +227,7 @@ ep_event_source_send_process_info (
 	if (arch_info_utf16)
 		ep_event_data_init (&data[2], (uint64_t)arch_info_utf16, (uint32_t)((ep_rt_utf16_string_len (arch_info_utf16) + 1) * sizeof (ep_char16_t)), 0);
 
-	ep_write_event_2 (event_source->process_info_event, data, (uint32_t)EP_ARRAY_SIZE (data), NULL, NULL);
+	ep_write_event_2 (event_source->process_info_event, data, (uint32_t)ARRAY_SIZE (data), NULL, NULL);
 
 	ep_rt_utf16_string_free (arch_info_utf16);
 	ep_rt_utf16_string_free (os_info_utf16);
@@ -229,7 +237,7 @@ ep_event_source_send_process_info (
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_event_source;
 const char quiet_linker_empty_file_warning_eventpipe_event_source = 0;
 #endif

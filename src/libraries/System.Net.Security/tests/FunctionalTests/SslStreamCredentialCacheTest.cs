@@ -17,6 +17,7 @@ namespace System.Net.Security.Tests
     public class SslStreamCredentialCacheTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_SameCertUsedForClientAndServer_Ok()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -28,15 +29,13 @@ namespace System.Net.Security.Tests
                 X509Certificate2Collection clientCertificateCollection =
                     new X509Certificate2Collection(certificate);
 
-                var tasks = new Task[2];
-
-                tasks[0] = server.AuthenticateAsServerAsync(certificate, true, false);
-                tasks[1] = client.AuthenticateAsClientAsync(
+                Task t1 = server.AuthenticateAsServerAsync(certificate, true, false);
+                Task t2 = client.AuthenticateAsClientAsync(
                                             certificate.GetNameInfo(X509NameType.SimpleName, false),
                                             clientCertificateCollection, false);
 
 
-                await Task.WhenAll(tasks).WaitAsync(TestConfiguration.PassingTestTimeout);
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
                 if (!PlatformDetection.IsWindows7 ||
                     Capability.IsTrustedRootCertificateInstalled())

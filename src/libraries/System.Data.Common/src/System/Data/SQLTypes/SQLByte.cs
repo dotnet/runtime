@@ -18,7 +18,7 @@ namespace System.Data.SqlTypes
     [StructLayout(LayoutKind.Sequential)]
     [XmlSchemaProvider("GetXsdType")]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct SqlByte : INullable, IComparable, IXmlSerializable
+    public struct SqlByte : INullable, IComparable, IXmlSerializable, IEquatable<SqlByte>
     {
         private bool m_fNotNull; // false if null. Do not rename (binary serialization)
         private byte m_value; // Do not rename (binary serialization)
@@ -450,10 +450,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlByte)
+            if (value is SqlByte i)
             {
-                SqlByte i = (SqlByte)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlByte));
@@ -474,26 +472,18 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals([NotNullWhen(true)] object? value)
-        {
-            if (!(value is SqlByte))
-            {
-                return false;
-            }
+        public override bool Equals([NotNullWhen(true)] object? value) =>
+            value is SqlByte other && Equals(other);
 
-            SqlByte i = (SqlByte)value;
-
-            if (i.IsNull || IsNull)
-                return (i.IsNull && IsNull);
-            else
-                return (this == i).Value;
-        }
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(SqlByte other) =>
+            other.IsNull || IsNull ? other.IsNull && IsNull :
+            (this == other).Value;
 
         // For hashing purpose
-        public override int GetHashCode()
-        {
-            return IsNull ? 0 : Value.GetHashCode();
-        }
+        public override int GetHashCode() => IsNull ? 0 : Value.GetHashCode();
 
         XmlSchema? IXmlSerializable.GetSchema() { return null; }
 

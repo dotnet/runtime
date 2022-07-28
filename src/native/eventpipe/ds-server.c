@@ -200,7 +200,7 @@ ds_server_init (void)
 		ep_raise_error ();
 	}
 
-	// Initialize the RuntimeIndentifier before use
+	// Initialize the RuntimeIdentifier before use
 	ds_ipc_advertise_cookie_v1_init ();
 
 	// Ports can fail to be configured
@@ -291,7 +291,7 @@ ds_server_is_paused_in_startup (void)
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef DS_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(DS_INCLUDE_SOURCE_FILES) && !defined(DS_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_diagnostics_server;
 const char quiet_linker_empty_file_warning_diagnostics_server = 0;
 #endif

@@ -24,18 +24,16 @@
 #include "primitives.h"
 #include "dbgutil.h"
 
-#ifdef TARGET_UNIX
 #ifdef USE_DAC_TABLE_RVA
 #include <dactablerva.h>
 #else
 extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
 #endif
-#endif
 
 #include "dwbucketmanager.hpp"
 #include "gcinterface.dac.h"
 
-// To include definiton of IsThrowableThreadAbortException
+// To include definition of IsThrowableThreadAbortException
 // #include <exstatecommon.h>
 
 CRITICAL_SECTION g_dacCritSec;
@@ -92,10 +90,10 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
 }
 
 HRESULT
-ConvertUtf8(__in LPCUTF8 utf8,
+ConvertUtf8(_In_ LPCUTF8 utf8,
             ULONG32 bufLen,
             ULONG32* nameLen,
-            __out_ecount_part_opt(bufLen, *nameLen) PWSTR buffer)
+            _Out_writes_to_opt_(bufLen, *nameLen) PWSTR buffer)
 {
     if (nameLen)
     {
@@ -118,9 +116,9 @@ ConvertUtf8(__in LPCUTF8 utf8,
 }
 
 HRESULT
-AllocUtf8(__in_opt LPCWSTR wstr,
+AllocUtf8(_In_opt_ LPCWSTR wstr,
           ULONG32 srcChars,
-          __deref_out LPUTF8* utf8)
+          _Outptr_ LPUTF8* utf8)
 {
     ULONG32 chars = WszWideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
                                            NULL, 0, NULL, NULL);
@@ -165,7 +163,7 @@ HRESULT
 GetFullClassNameFromMetadata(IMDInternalImport* mdImport,
                              mdTypeDef classToken,
                              ULONG32 bufferChars,
-                             __inout_ecount(bufferChars) LPUTF8 buffer)
+                             _Inout_updates_(bufferChars) LPUTF8 buffer)
 {
     HRESULT hr;
     LPCUTF8 baseName, namespaceName;
@@ -179,7 +177,7 @@ HRESULT
 GetFullMethodNameFromMetadata(IMDInternalImport* mdImport,
                               mdMethodDef methodToken,
                               ULONG32 bufferChars,
-                              __inout_ecount(bufferChars) LPUTF8 buffer)
+                              _Inout_updates_(bufferChars) LPUTF8 buffer)
 {
     HRESULT status;
     HRESULT hr;
@@ -209,15 +207,8 @@ GetFullMethodNameFromMetadata(IMDInternalImport* mdImport,
 
     LPCUTF8 methodName;
     IfFailRet(mdImport->GetNameOfMethodDef(methodToken, &methodName));
-// Review conversion of size_t to ULONG32.
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4267)
-#endif
+
     len = strlen(methodName);
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
     if (len >= bufferChars)
     {
         return E_OUTOFMEMORY;
@@ -228,13 +219,13 @@ GetFullMethodNameFromMetadata(IMDInternalImport* mdImport,
 }
 
 HRESULT
-SplitFullName(__in_z __in PCWSTR fullName,
+SplitFullName(_In_z_ PCWSTR fullName,
               SplitSyntax syntax,
               ULONG32 memberDots,
-              __deref_out_opt LPUTF8* namespaceName,
-              __deref_out_opt LPUTF8* typeName,
-              __deref_out_opt LPUTF8* memberName,
-              __deref_out_opt LPUTF8* params)
+              _Outptr_opt_ LPUTF8* namespaceName,
+              _Outptr_opt_ LPUTF8* typeName,
+              _Outptr_opt_ LPUTF8* memberName,
+              _Outptr_opt_ LPUTF8* params)
 {
     HRESULT status;
     PCWSTR paramsStart, memberStart, memberEnd, typeStart;
@@ -278,7 +269,7 @@ SplitFullName(__in_z __in PCWSTR fullName,
 
         memberStart = memberEnd;
 
-        for (;;)
+        while (true)
         {
             while (memberStart >= fullName &&
                    *memberStart != W('.'))
@@ -401,7 +392,7 @@ SplitFullName(__in_z __in PCWSTR fullName,
 }
 
 int
-CompareUtf8(__in LPCUTF8 str1, __in LPCUTF8 str2, __in ULONG32 nameFlags)
+CompareUtf8(_In_ LPCUTF8 str1, _In_ LPCUTF8 str2, _In_ ULONG32 nameFlags)
 {
     if (nameFlags & CLRDATA_BYNAME_CASE_INSENSITIVE)
     {
@@ -469,8 +460,8 @@ MetaEnum::End(void)
 
 HRESULT
 MetaEnum::NextToken(mdToken* token,
-                    __deref_opt_out_opt LPCUTF8* namespaceName,
-                    __deref_opt_out_opt LPCUTF8* name)
+                    _Outptr_opt_result_maybenull_ LPCUTF8* namespaceName,
+                    _Outptr_opt_result_maybenull_ LPCUTF8* name)
 {
     HRESULT hr;
     if (!m_mdImport)
@@ -556,7 +547,7 @@ MetaEnum::NextDomainToken(AppDomain** appDomain,
     // Splay tokens across all app domains.
     //
 
-    for (;;)
+    while (true)
     {
         if (m_lastToken == mdTokenNil)
         {
@@ -584,15 +575,15 @@ MetaEnum::NextDomainToken(AppDomain** appDomain,
 }
 
 HRESULT
-MetaEnum::NextTokenByName(__in_opt LPCUTF8 namespaceName,
-                          __in_opt LPCUTF8 name,
+MetaEnum::NextTokenByName(_In_opt_ LPCUTF8 namespaceName,
+                          _In_opt_ LPCUTF8 name,
                           ULONG32 nameFlags,
                           mdToken* token)
 {
     HRESULT status;
     LPCUTF8 tokNamespace, tokName;
 
-    for (;;)
+    while (true)
     {
         if ((status = NextToken(token, &tokNamespace, &tokName)) != S_OK)
         {
@@ -617,8 +608,8 @@ MetaEnum::NextTokenByName(__in_opt LPCUTF8 namespaceName,
 }
 
 HRESULT
-MetaEnum::NextDomainTokenByName(__in_opt LPCUTF8 namespaceName,
-                                __in_opt LPCUTF8 name,
+MetaEnum::NextDomainTokenByName(_In_opt_ LPCUTF8 namespaceName,
+                                _In_opt_ LPCUTF8 name,
                                 ULONG32 nameFlags,
                                 AppDomain** appDomain, mdToken* token)
 {
@@ -635,7 +626,7 @@ MetaEnum::NextDomainTokenByName(__in_opt LPCUTF8 namespaceName,
     // Splay tokens across all app domains.
     //
 
-    for (;;)
+    while (true)
     {
         if (m_lastToken == mdTokenNil)
         {
@@ -677,11 +668,6 @@ MetaEnum::New(Module* mod,
     if (handle)
     {
         *handle = TO_CDENUM(NULL);
-    }
-
-    if (!mod->GetFile()->HasMetadata())
-    {
-        return S_FALSE;
     }
 
     metaEnum = new (nothrow) MetaEnum;
@@ -760,7 +746,7 @@ SplitName::Clear(void)
 }
 
 HRESULT
-SplitName::SplitString(__in_opt PCWSTR fullName)
+SplitName::SplitString(_In_opt_ PCWSTR fullName)
 {
     if (m_syntax == SPLIT_NO_NAME)
     {
@@ -805,7 +791,7 @@ WCHAR* wcrscan(LPCWSTR beg, LPCWSTR end, WCHAR ch)
 // sepName to point to the second '+' character in the string.  When sepName
 // points to the first '+' character this function will return "Outer" in
 // pResult and sepName will point one WCHAR before fullName.
-HRESULT NextEnclosingClasName(LPCWSTR fullName, __deref_inout LPWSTR& sepName, __deref_out LPUTF8 *pResult)
+HRESULT NextEnclosingClasName(LPCWSTR fullName, _Outref_ LPWSTR& sepName, _Outptr_ LPUTF8 *pResult)
 {
     if (sepName < fullName)
     {
@@ -999,7 +985,7 @@ SplitName::FindField(IMDInternalImport* mdInternal)
 }
 
 HRESULT
-SplitName::AllocAndSplitString(__in_opt PCWSTR fullName,
+SplitName::AllocAndSplitString(_In_opt_ PCWSTR fullName,
                                SplitSyntax syntax,
                                ULONG32 nameFlags,
                                ULONG32 memberDots,
@@ -1029,7 +1015,7 @@ SplitName::AllocAndSplitString(__in_opt PCWSTR fullName,
 }
 
 HRESULT
-SplitName::CdStartMethod(__in_opt PCWSTR fullName,
+SplitName::CdStartMethod(_In_opt_ PCWSTR fullName,
                          ULONG32 nameFlags,
                          Module* mod,
                          mdTypeDef typeToken,
@@ -1143,7 +1129,7 @@ SplitName::CdNextDomainMethod(CLRDATA_ENUM* handle,
 }
 
 HRESULT
-SplitName::CdStartField(__in_opt PCWSTR fullName,
+SplitName::CdStartField(_In_opt_ PCWSTR fullName,
                         ULONG32 nameFlags,
                         ULONG32 fieldFlags,
                         IXCLRDataTypeInstance* fromTypeInst,
@@ -1246,7 +1232,7 @@ SplitName::CdNextField(ClrDataAccess* dac,
                        IXCLRDataValue** value,
                        ULONG32 nameBufRetLen,
                        ULONG32* nameLenRet,
-                       __out_ecount_part_opt(nameBufRetLen, *nameLenRet) WCHAR nameBufRet[  ],
+                       _Out_writes_to_opt_(nameBufRetLen, *nameLenRet) WCHAR nameBufRet[  ],
                        IXCLRDataModule** tokenScopeRet,
                        mdFieldDef* tokenRet)
 {
@@ -1384,7 +1370,7 @@ SplitName::CdNextDomainField(ClrDataAccess* dac,
     // Splay fields across all app domains.
     //
 
-    for (;;)
+    while (true)
     {
         if (!split->m_lastField)
         {
@@ -1424,7 +1410,7 @@ SplitName::CdNextDomainField(ClrDataAccess* dac,
 }
 
 HRESULT
-SplitName::CdStartType(__in_opt PCWSTR fullName,
+SplitName::CdStartType(_In_opt_ PCWSTR fullName,
                        ULONG32 nameFlags,
                        Module* mod,
                        AppDomain* appDomain,
@@ -1575,7 +1561,7 @@ DacInstanceManager::Add(DAC_INSTANCE* inst)
             // use only one block, so improving data locality across blocks (i.e. keeping the buckets of the
             // hash table together) should help.
             newBlock = (HashInstanceKeyBlock*)
-                ClrVirtualAlloc(NULL, HASH_INSTANCE_BLOCK_ALLOC_SIZE*NumItems(m_hash), MEM_COMMIT, PAGE_READWRITE);
+                ClrVirtualAlloc(NULL, HASH_INSTANCE_BLOCK_ALLOC_SIZE*ARRAY_SIZE(m_hash), MEM_COMMIT, PAGE_READWRITE);
         }
         if (!newBlock)
         {
@@ -1592,7 +1578,7 @@ DacInstanceManager::Add(DAC_INSTANCE* inst)
         }
         else
         {
-            for (DWORD j = 0; j < NumItems(m_hash); j++)
+            for (DWORD j = 0; j < ARRAY_SIZE(m_hash); j++)
             {
                 m_hash[j] = newBlock;
                 newBlock->next = NULL; // The previously allocated block
@@ -2008,7 +1994,7 @@ void DacInstanceManager::Flush(bool fSaveBlock)
     // forget all the internal pointers.
     //
 
-    for (;;)
+    while (true)
     {
         FreeAllBlocks(fSaveBlock);
 
@@ -2034,7 +2020,7 @@ void DacInstanceManager::Flush(bool fSaveBlock)
     }
 
 #if defined(DAC_HASHTABLE)
-    for (int i = NumItems(m_hash) - 1; i >= 0; i--)
+    for (int i = STRING_LENGTH(m_hash); i >= 0; i--)
     {
         HashInstanceKeyBlock* block = m_hash[i];
         HashInstanceKeyBlock* next;
@@ -2066,7 +2052,7 @@ DacInstanceManager::ClearEnumMemMarker(void)
     ULONG i;
     DAC_INSTANCE* inst;
 
-    for (i = 0; i < NumItems(m_hash); i++)
+    for (i = 0; i < ARRAY_SIZE(m_hash); i++)
     {
         HashInstanceKeyBlock* block = m_hash[i];
         while (block)
@@ -2136,7 +2122,7 @@ DacInstanceManager::DumpAllInstances(
    int total = 0;
 #endif // #if defined(DAC_MEASURE_PERF)
 
-    for (i = 0; i < NumItems(m_hash); i++)
+    for (i = 0; i < ARRAY_SIZE(m_hash); i++)
     {
 
 #if defined(DAC_MEASURE_PERF)
@@ -2515,7 +2501,7 @@ namespace serialization { namespace bin {
                 return ErrOverflow;
             }
 
-            memcpy_s(dest, destSize, s.GetUTF8NoConvert(), cnt);
+            memcpy_s(dest, destSize, s.GetUTF8(), cnt);
 
             return cnt;
         }
@@ -3104,8 +3090,6 @@ private:
 //
 //----------------------------------------------------------------------------
 
-LONG ClrDataAccess::s_procInit;
-
 ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget/*=0*/)
 {
     SUPPORTS_DAC_HOST_ONLY;     // ctor does no marshalling - don't check with DacCop
@@ -3294,6 +3278,10 @@ ClrDataAccess::QueryInterface(THIS_
     else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface11)))
     {
         ifaceRet = static_cast<ISOSDacInterface11*>(this);
+    }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface12)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface12*>(this);
     }
     else
     {
@@ -3703,7 +3691,7 @@ ClrDataAccess::GetRuntimeNameByAddress(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *symbolLen,
-    /* [size_is][out] */ __out_ecount_opt(bufLen) WCHAR symbolBuf[  ],
+    /* [size_is][out] */ _Out_writes_bytes_opt_(bufLen) WCHAR symbolBuf[  ],
     /* [out] */ CLRDATA_ADDRESS* displacement)
 {
     HRESULT status;
@@ -4079,20 +4067,10 @@ ClrDataAccess::GetModuleByAddress(
         {
             TADDR base;
             ULONG32 length;
-            PEFile* file = modDef->GetFile();
+            PEAssembly* pPEAssembly = modDef->GetPEAssembly();
 
-            if ((base = PTR_TO_TADDR(file->GetLoadedImageContents(&length))))
+            if ((base = PTR_TO_TADDR(pPEAssembly->GetLoadedImageContents(&length))))
             {
-                if (TO_CDADDR(base) <= address &&
-                    TO_CDADDR(base + length) > address)
-                {
-                    break;
-                }
-            }
-            if (file->HasNativeImage())
-            {
-                base = PTR_TO_TADDR(file->GetLoadedNative()->GetBase());
-                length = file->GetLoadedNative()->GetVirtualSize();
                 if (TO_CDADDR(base) <= address &&
                     TO_CDADDR(base + length) > address)
                 {
@@ -4143,9 +4121,9 @@ ClrDataAccess::StartEnumMethodDefinitionsByAddress(
         {
             TADDR base;
             ULONG32 length;
-            PEFile* file = modDef->GetFile();
+            PEAssembly* assembly = modDef->GetPEAssembly();
 
-            if ((base = PTR_TO_TADDR(file->GetLoadedImageContents(&length))))
+            if ((base = PTR_TO_TADDR(assembly->GetLoadedImageContents(&length))))
             {
                 if (TO_CDADDR(base) <= address &&
                     TO_CDADDR(base + length) > address)
@@ -4332,7 +4310,7 @@ ClrDataAccess::GetDataByAddress(
     /* [in] */ IXCLRDataTask* tlsTask,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ],
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ],
     /* [out] */ IXCLRDataValue **value,
     /* [out] */ CLRDATA_ADDRESS *displacement)
 {
@@ -4399,7 +4377,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
     ClrDataModule* pubModule = NULL;
     ClrDataMethodInstance* pubMethodInst = NULL;
     ClrDataExceptionState* pubExState = NULL;
-    GcEvtArgs pubGcEvtArgs;
+    GcEvtArgs pubGcEvtArgs = {};
     ULONG32 notifyType = 0;
     DWORD catcherNativeOffset = 0;
     TADDR nativeCodeLocation = NULL;
@@ -4812,7 +4790,7 @@ ClrDataAccess::SetAllCodeNotifications(
                     PTR_HOST_TO_TADDR(((ClrDataModule*)mod)->GetModule()) :
                     NULL;
 
-                if (jn.SetAllNotifications(modulePtr, flags, &changedTable))
+                if (jn.SetAllNotifications(modulePtr, (USHORT)flags, &changedTable))
                 {
                     if (!changedTable ||
                         (changedTable && jn.UpdateOutOfProcTable()))
@@ -5267,21 +5245,7 @@ ClrDataAccess::FollowStubStep(
         // so that the real native address can
         // be picked up once the JIT is done.
 
-        // One special case is ngen'ed code that
-        // needs the prestub run.  This results in
-        // an unjitted trace but no jitting will actually
-        // occur since the code is ngen'ed.  Detect
-        // this and redirect to the actual code.
         methodDesc = trace.GetMethodDesc();
-        if (methodDesc->IsPreImplemented() &&
-            !methodDesc->IsPointingToStableNativeCode() &&
-            !methodDesc->IsGenericMethodDefinition() &&
-            methodDesc->HasNativeCode())
-        {
-            *outAddr = methodDesc->GetNativeCode();
-            *outFlags = CLRDATA_FOLLOW_STUB_EXIT;
-            break;
-        }
 
         *outAddr = GFN_TADDR(DACNotifyCompilationFinished);
         outBuffer->u.flags = STUB_BUF_METHOD_JITTED;
@@ -5371,7 +5335,7 @@ ClrDataAccess::FollowStub2(
         Thread* thread = task ? ((ClrDataTask*)task)->GetThread() : NULL;
         ULONG32 loops = 4;
 
-        for (;;)
+        while (true)
         {
             if ((status = FollowStubStep(thread,
                                          inFlags,
@@ -5527,7 +5491,7 @@ HRESULT
 ClrDataAccess::Initialize(void)
 {
     HRESULT hr;
-    CLRDATA_ADDRESS base;
+    CLRDATA_ADDRESS base = { 0 };
 
     //
     // We do not currently support cross-platform
@@ -5546,6 +5510,8 @@ ClrDataAccess::Initialize(void)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM;
     #elif defined(TARGET_ARM64)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM64;
+    #elif defined(TARGET_LOONGARCH64)
+        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_LOONGARCH64;
     #else
         #error Unknown Processor.
     #endif
@@ -5570,7 +5536,7 @@ ClrDataAccess::Initialize(void)
     {
         // DAC fatal error: Platform mismatch - the platform reported by the data target
         // is not what this version of mscordacwks.dll was built for.
-        return CORDBG_E_UNCOMPATIBLE_PLATFORMS;
+        return CORDBG_E_INCOMPATIBLE_PLATFORMS;
     }
 
     //
@@ -5602,12 +5568,8 @@ ClrDataAccess::Initialize(void)
     // multiple initializations as each one will
     // copy the same data into the globals and so
     // cannot interfere with each other.
-    if (!s_procInit)
-    {
-        IfFailRet(GetDacGlobals());
-        IfFailRet(DacGetHostVtPtrs());
-        s_procInit = true;
-    }
+    IfFailRet(GetDacGlobalValues());
+    IfFailRet(DacGetHostVtPtrs());
 
     //
     // DAC is now setup and ready to use
@@ -5671,7 +5633,7 @@ ClrDataAccess::GetFullMethodName(
     IN MethodDesc* methodDesc,
     IN ULONG32 symbolChars,
     OUT ULONG32* symbolLen,
-    __out_ecount_part_opt(symbolChars, *symbolLen) LPWSTR symbol
+    _Out_writes_to_opt_(symbolChars, *symbolLen) LPWSTR symbol
     )
 {
     StackSString s;
@@ -5719,7 +5681,7 @@ ClrDataAccess::GetJitHelperName(
 #define JITHELPER(code,fn,sig) #code,
 #include <jithelpers.h>
     };
-    static_assert_no_msg(COUNTOF(s_rgHelperNames) == CORINFO_HELP_COUNT);
+    static_assert_no_msg(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
 
 #ifdef TARGET_UNIX
     if (!dynamicHelpersOnly)
@@ -5760,13 +5722,93 @@ ClrDataAccess::GetJitHelperName(
     return NULL;
 }
 
+// This function expects more memory than maybe needed.
+static int FormatCLRStubName(
+    _In_opt_z_ LPCWSTR stubNameMaybe,
+    _In_ TADDR stubAddr,
+    _In_ ULONG32 bufLen,
+    _Out_ ULONG32 *symbolLen,
+    _Out_writes_bytes_opt_(bufLen) WCHAR* symbolBuf)
+{
+    // Parts needed to construct a name:
+    // With stub manager name: "CLRStub[%s]@%p"
+    //   No stub manager name: "CLRStub@%p"
+    const WCHAR formatName_Prefix[] = W("CLRStub");
+    const WCHAR formatName_OpenBracket[] = W("[");
+    const WCHAR formatName_CloseBracket[] = W("]");
+    const WCHAR formatName_PrefixEnd[] = W("@");
+
+    // Compute the address as a string safely.
+    WCHAR addrString[Max64BitHexString + 1];
+    FormatInteger(addrString, ARRAY_SIZE(addrString), "%p", stubAddr);
+    size_t addStringLen = wcslen(addrString);
+
+    // Compute maximum length, include the null terminator.
+    size_t formatName_MaxLen = ARRAY_SIZE(formatName_Prefix) // Include trailing null
+                                + ARRAY_SIZE(formatName_PrefixEnd) - 1
+                                + addStringLen;
+
+    // Consider stub manager name
+    size_t stubManagedNameLen = 0;
+    if (stubNameMaybe != NULL)
+    {
+        stubManagedNameLen = wcslen(stubNameMaybe);
+        formatName_MaxLen += ARRAY_SIZE(formatName_OpenBracket) - 1;
+        formatName_MaxLen += ARRAY_SIZE(formatName_CloseBracket) - 1;
+    }
+
+    HRESULT hr = S_FALSE;
+
+    // Compute the exact length needed.
+    const size_t lenNeeded = formatName_MaxLen + stubManagedNameLen;
+    if (lenNeeded <= bufLen)
+    {
+        size_t written = 0;
+
+        // Set the prefix
+        wcscpy_s(symbolBuf, bufLen - written, formatName_Prefix);
+        written += ARRAY_SIZE(formatName_Prefix) - 1;
+
+        // Add the name
+        if (stubManagedNameLen > 0)
+        {
+            wcscat_s(symbolBuf, bufLen - written, formatName_OpenBracket);
+            written += ARRAY_SIZE(formatName_OpenBracket) - 1;
+            wcscat_s(symbolBuf, bufLen - written, stubNameMaybe);
+            written += stubManagedNameLen;
+            wcscat_s(symbolBuf, bufLen - written, formatName_CloseBracket);
+            written += ARRAY_SIZE(formatName_CloseBracket) - 1;
+        }
+
+        // Append the prefix end
+        wcscat_s(symbolBuf, bufLen - written, formatName_PrefixEnd);
+        written += ARRAY_SIZE(formatName_PrefixEnd) - 1;
+
+        // Append the address
+        wcscat_s(symbolBuf, bufLen - written, addrString);
+        written += addStringLen;
+
+        hr = S_OK;
+    }
+
+    if (symbolLen)
+    {
+        if (!FitsIn<ULONG32>(lenNeeded))
+            return COR_E_OVERFLOW;
+
+        *symbolLen = (ULONG32)lenNeeded;
+    }
+
+    return hr;
+}
+
 HRESULT
 ClrDataAccess::RawGetMethodName(
     /* [in] */ CLRDATA_ADDRESS address,
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *symbolLen,
-    /* [size_is][out] */ __out_ecount_opt(bufLen) WCHAR symbolBuf[  ],
+    /* [size_is][out] */ _Out_writes_bytes_opt_(bufLen) WCHAR symbolBuf[  ],
     /* [out] */ CLRDATA_ADDRESS* displacement)
 {
 #ifdef TARGET_ARM
@@ -5774,7 +5816,6 @@ ClrDataAccess::RawGetMethodName(
     address &= ~THUMB_CODE;
 #endif
 
-    const UINT k_cch64BitHexFormat = COUNTOF("1234567812345678");
     HRESULT status;
 
     if (flags != 0)
@@ -5821,28 +5862,8 @@ ClrDataAccess::RawGetMethodName(
         //
         // Special-cased stub managers
         //
-#ifdef FEATURE_PREJIT
-        if (pStubManager == RangeSectionStubManager::g_pManager)
-        {
-            switch (RangeSectionStubManager::GetStubKind(TO_TADDR(address)))
-            {
-            case STUB_CODE_BLOCK_PRECODE:
-                goto PrecodeStub;
-
-            case STUB_CODE_BLOCK_JUMPSTUB:
-                goto JumpStub;
-
-            default:
-                break;
-            }
-        }
-        else
-#endif
         if (pStubManager == PrecodeStubManager::g_pManager)
         {
-#ifdef FEATURE_PREJIT
-        PrecodeStub:
-#endif
             PCODE alignedAddress = AlignDown(TO_TADDR(address), PRECODE_ALIGNMENT);
 
 #ifdef TARGET_ARM
@@ -5887,9 +5908,6 @@ ClrDataAccess::RawGetMethodName(
         else
         if (pStubManager == JumpStubStubManager::g_pManager)
         {
-#ifdef FEATURE_PREJIT
-        JumpStub:
-#endif
             PCODE pTarget = decodeBackToBackJump(TO_TADDR(address));
 
             HRESULT hr = GetRuntimeNameByAddress(pTarget, flags, bufLen, symbolLen, symbolBuf, NULL);
@@ -5909,47 +5927,15 @@ ClrDataAccess::RawGetMethodName(
             }
         }
 
-        static WCHAR s_wszFormatNameWithStubManager[] = W("CLRStub[%s]@%I64x");
-
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
 
-        int result = _snwprintf_s(
-            symbolBuf,
+        return FormatCLRStubName(
+            wszStubManagerName,
+            TO_TADDR(address),
             bufLen,
-            _TRUNCATE,
-            s_wszFormatNameWithStubManager,
-            wszStubManagerName,                                         // Arg 1 = stub name
-            TO_TADDR(address));                                         // Arg 2 = stub hex address
-
-        if (result != -1)
-        {
-            // Printf succeeded, so we have an exact char count to return
-            if (symbolLen)
-            {
-                size_t cchSymbol = wcslen(symbolBuf) + 1;
-                if (!FitsIn<ULONG32>(cchSymbol))
-                    return COR_E_OVERFLOW;
-
-                *symbolLen = (ULONG32) cchSymbol;
-            }
-            return S_OK;
-        }
-
-        // Printf failed.  Estimate a size that will be at least big enough to hold the name
-        if (symbolLen)
-        {
-            size_t cchSymbol = COUNTOF(s_wszFormatNameWithStubManager) +
-                wcslen(wszStubManagerName) +
-                k_cch64BitHexFormat +
-                1;
-
-            if (!FitsIn<ULONG32>(cchSymbol))
-                return COR_E_OVERFLOW;
-
-            *symbolLen = (ULONG32) cchSymbol;
-        }
-        return S_FALSE;
+            symbolLen,
+            symbolBuf);
     }
 
     // Do not waste time looking up name for static helper. Debugger can get the actual name from .pdb.
@@ -5975,44 +5961,12 @@ NameFromMethodDesc:
     if (methodDesc->GetClassification() == mcDynamic &&
         !methodDesc->GetSig())
     {
-        // XXX Microsoft - Should this case have a more specific name?
-        static WCHAR s_wszFormatNameAddressOnly[] = W("CLRStub@%I64x");
-
-        int result = _snwprintf_s(
-            symbolBuf,
+        return FormatCLRStubName(
+            NULL,
+            TO_TADDR(address),
             bufLen,
-            _TRUNCATE,
-            s_wszFormatNameAddressOnly,
-            TO_TADDR(address));
-
-        if (result != -1)
-        {
-            // Printf succeeded, so we have an exact char count to return
-            if (symbolLen)
-            {
-                size_t cchSymbol = wcslen(symbolBuf) + 1;
-                if (!FitsIn<ULONG32>(cchSymbol))
-                    return COR_E_OVERFLOW;
-
-                *symbolLen = (ULONG32) cchSymbol;
-            }
-            return S_OK;
-        }
-
-        // Printf failed.  Estimate a size that will be at least big enough to hold the name
-        if (symbolLen)
-        {
-            size_t cchSymbol = COUNTOF(s_wszFormatNameAddressOnly) +
-                k_cch64BitHexFormat +
-                1;
-
-            if (!FitsIn<ULONG32>(cchSymbol))
-                return COR_E_OVERFLOW;
-
-            *symbolLen = (ULONG32) cchSymbol;
-        }
-
-        return S_FALSE;
+            symbolLen,
+            symbolBuf);
     }
 
     return GetFullMethodName(methodDesc, bufLen, symbolLen, symbolBuf);
@@ -6077,9 +6031,22 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     SUPPORTS_DAC;
     COUNT_T countNativeVarInfo;
     NewHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
+    TADDR nativeCodeStartAddr;
+    if (address != NULL)
+    {
+        NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
+        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+        {
+            return E_INVALIDARG;
+        }
+        nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+    }
+    else
+    {
+        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
+    }
 
     DebugInfoRequest request;
-    TADDR  nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
     request.InitFromStartingAddr(methodDesc, nativeCodeStartAddr);
 
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
@@ -6087,7 +6054,6 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
         DebugInfoStoreNew, NULL, // allocator
         NULL, NULL,
         &countNativeVarInfo, &nativeVars);
-
 
     if (!success)
     {
@@ -6105,8 +6071,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
 
     if (codeOffset)
     {
-        *codeOffset = (ULONG32)
-            (address - nativeCodeStartAddr);
+        *codeOffset = (ULONG32)(address - nativeCodeStartAddr);
     }
     return S_OK;
 }
@@ -6124,11 +6089,23 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 
     // Use the DebugInfoStore to get IL->Native maps.
     // It doesn't matter whether we're jitted, ngenned etc.
+    TADDR nativeCodeStartAddr;
+    if (address != NULL)
+    {
+        NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
+        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+        {
+            return E_INVALIDARG;
+        }
+        nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+    }
+    else
+    {
+        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
+    }
 
     DebugInfoRequest request;
-    TADDR  nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
     request.InitFromStartingAddr(methodDesc, nativeCodeStartAddr);
-
 
     // Bounds info.
     ULONG32 countMapCopy;
@@ -6144,7 +6121,6 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
     {
         return E_FAIL;
     }
-
 
     // Need to convert map formats.
     *numMap = countMapCopy;
@@ -6179,8 +6155,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
     }
     if (codeOffset)
     {
-        *codeOffset = (ULONG32)
-            (address - nativeCodeStartAddr);
+        *codeOffset = (ULONG32)(address - nativeCodeStartAddr);
     }
 
     *mapAllocated = true;
@@ -6485,43 +6460,25 @@ ClrDataAccess::GetHostGcNotificationTable()
 }
 
 /* static */ bool
-ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEFile *pPEFile,
+ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                              DWORD &dwTimeStamp,
                                              DWORD &dwSize,
                                              DWORD &dwDataSize,
                                              DWORD &dwRvaHint,
                                              bool  &isNGEN,
-                                             __out_ecount(cchFilePath) LPWSTR wszFilePath,
+                                             _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                              const DWORD cchFilePath)
 {
     SUPPORTS_DAC_HOST_ONLY;
     PEImage *mdImage = NULL;
-    PEImageLayout   *layout;
+    PEImageLayout   *layout = NULL;
     IMAGE_DATA_DIRECTORY *pDir = NULL;
     COUNT_T uniPathChars = 0;
 
     isNGEN = false;
-
-    if (pPEFile->HasNativeImage())
-    {
-        mdImage = pPEFile->GetNativeImage();
-        _ASSERTE(mdImage != NULL);
-        layout = mdImage->GetLoadedLayout();
-        pDir = &(layout->GetCorHeader()->MetaData);
-        // For ngen image, the IL metadata is stored for private use. So we need to pass
-        // the RVA hint to find it to debuggers.
-        //
-        if (pDir->Size != 0)
-        {
-            isNGEN = true;
-            dwRvaHint = pDir->VirtualAddress;
-            dwDataSize = pDir->Size;
-        }
-
-    }
     if (pDir == NULL || pDir->Size == 0)
     {
-        mdImage = pPEFile->GetILimage();
+        mdImage = pPEAssembly->GetPEImage();
         if (mdImage != NULL)
         {
             layout = mdImage->GetLoadedLayout();
@@ -6570,90 +6527,29 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEFile *pPEFile,
 }
 
 /* static */
-bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEFile *peFile,
+bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
                                                  DWORD &dwTimeStamp,
                                                  DWORD &dwSize,
-                                                 __out_ecount(cchFilePath) LPWSTR wszFilePath,
+                                                 _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                                  const DWORD cchFilePath)
 {
     SUPPORTS_DAC_HOST_ONLY;
     DWORD dwWritten = 0;
 
     // use the IL File name
-    if (!peFile->GetPath().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten)))
+    if (!pPEAssembly->GetPath().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten)))
     {
         // Use DAC hint to retrieve the IL name.
-        peFile->GetModuleFileNameHint().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten));
+        pPEAssembly->GetModuleFileNameHint().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten));
     }
-#ifdef FEATURE_PREJIT
-    // Need to get IL image information from cached info in the ngen image.
-    dwTimeStamp = peFile->GetLoaded()->GetNativeVersionInfo()->sourceAssembly.timeStamp;
-    dwSize = peFile->GetLoaded()->GetNativeVersionInfo()->sourceAssembly.ilImageSize;
-#else
     dwTimeStamp = 0;
     dwSize = 0;
-#endif //  FEATURE_PREJIT
 
     return true;
 }
 
-#if defined(FEATURE_CORESYSTEM)
-/* static */
-// We extract "ni.dll from the NGEN image name to obtain the IL image name.
-// In the end we add given ilExtension.
-// This dependecy is based on Apollo installer behavior.
-bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
-                                                 __out_ecount(cchFilePath) LPWSTR wszFilePath,
-                                                 const DWORD cchFilePath)
-{
-    if (wszFilePath == NULL || cchFilePath == 0)
-    {
-        return false;
-    }
-
-    _wcslwr_s(wszFilePath, cchFilePath);
-    // Find the "ni.dll" extension.
-    // If none exists use NGEN image name.
-    //
-    const WCHAR* ngenExtension = W("ni.dll");
-
-    if (wcslen(ilExtension) <= wcslen(ngenExtension))
-    {
-        LPWSTR  wszFileExtension = wcsstr(wszFilePath, ngenExtension);
-        if (wszFileExtension != 0)
-        {
-            LPWSTR  wszNextFileExtension = wszFileExtension;
-            // Find last occurrence
-            do
-            {
-                wszFileExtension = wszNextFileExtension;
-                wszNextFileExtension = wcsstr(wszFileExtension + 1, ngenExtension);
-            } while (wszNextFileExtension != 0);
-
-            // Overwrite ni.dll with ilExtension
-            if (!memcpy_s(wszFileExtension,
-                            wcslen(ngenExtension)*sizeof(WCHAR),
-                            ilExtension,
-                            wcslen(ilExtension)*sizeof(WCHAR)))
-            {
-                wszFileExtension[wcslen(ilExtension)] = '\0';
-                return true;
-            }
-        }
-    }
-
-    //Use ngen filename if there is no ".ni"
-    if (wcsstr(wszFilePath, W(".ni")) == 0)
-    {
-        return true;
-    }
-
-    return false;
-}
-#endif // FEATURE_CORESYSTEM
-
 void *
-ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
+ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
                                    bool* isAlternate)
 {
     DWORD imageTimestamp, imageSize, dataSize;
@@ -6684,20 +6580,20 @@ ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
     // so the field remains for now.
 
     if (!ClrDataAccess::GetMetaDataFileInfoFromPEFile(
-            peFile,
+            pPEAssembly,
             imageTimestamp,
             imageSize,
             dataSize,
             ulRvaHint,
             isNGEN,
             uniPath,
-            NumItems(uniPath)))
+            ARRAY_SIZE(uniPath)))
     {
         return NULL;
     }
 
     // try direct match for the image that is loaded into the managed process
-    peFile->GetLoadedMetadata((COUNT_T *)(&dataSize));
+    pPEAssembly->GetLoadedMetadata((COUNT_T *)(&dataSize));
 
     DWORD allocSize = 0;
     if (!ClrSafeInt<DWORD>::addition(dataSize, sizeof(DAC_INSTANCE), allocSize))
@@ -6715,7 +6611,7 @@ ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
     buffer = (void*)(inst + 1);
 
     // APIs implemented by hosting debugger.  It can use the path/filename, timestamp, and
-    // file size to find an exact match for the image.  If that fails for an ngen'ed image,
+    // pPEAssembly size to find an exact match for the image.  If that fails for an ngen'ed image,
     // we can request the IL image which it came from.
     if (m_legacyMetaDataLocator)
     {
@@ -6751,32 +6647,25 @@ ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
         //
         isAlt = true;
         if (!ClrDataAccess::GetILImageInfoFromNgenPEFile(
-                peFile,
+                pPEAssembly,
                 imageTimestamp,
                 imageSize,
                 uniPath,
-                NumItems(uniPath)))
+                ARRAY_SIZE(uniPath)))
         {
             goto ErrExit;
         }
 
-#if defined(FEATURE_CORESYSTEM)
         const WCHAR* ilExtension = W("dll");
         WCHAR ngenImageName[MAX_LONGPATH] = {0};
-        if (wcscpy_s(ngenImageName, NumItems(ngenImageName), uniPath) != 0)
+        if (wcscpy_s(ngenImageName, ARRAY_SIZE(ngenImageName), uniPath) != 0)
         {
             goto ErrExit;
         }
-        if (wcscpy_s(uniPath, NumItems(uniPath), ngenImageName) != 0)
+        if (wcscpy_s(uniPath, ARRAY_SIZE(uniPath), ngenImageName) != 0)
         {
             goto ErrExit;
         }
-        // Transform NGEN image name into IL Image name
-        if (!GetILImageNameFromNgenImage(ilExtension, uniPath, NumItems(uniPath)))
-        {
-            goto ErrExit;
-        }
-#endif//FEATURE_CORESYSTEM
 
         // RVA size in ngen image and IL image is the same. Because the only
         // different is in RVA. That is 4 bytes column fixed.
@@ -6831,13 +6720,13 @@ ErrExit:
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// Given a PEFile or a ReflectionModule try to find the corresponding metadata
+// Given a PEAssembly or a ReflectionModule try to find the corresponding metadata
 // We will first ask debugger to locate it. If fail, we will try
 // to get it from the target process
 //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 IMDInternalImport*
-ClrDataAccess::GetMDImport(const PEFile* peFile, const ReflectionModule* reflectionModule, bool throwEx)
+ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule* reflectionModule, bool throwEx)
 {
     HRESULT     status;
     PTR_CVOID mdBaseTarget = NULL;
@@ -6846,22 +6735,22 @@ ClrDataAccess::GetMDImport(const PEFile* peFile, const ReflectionModule* reflect
     PVOID       mdBaseHost = NULL;
     bool        isAlternate = false;
 
-    _ASSERTE((peFile == NULL && reflectionModule != NULL) || (peFile != NULL && reflectionModule == NULL));
-    TADDR       peFileAddr = (peFile != NULL) ? dac_cast<TADDR>(peFile) : dac_cast<TADDR>(reflectionModule);
+    _ASSERTE((pPEAssembly == NULL && reflectionModule != NULL) || (pPEAssembly != NULL && reflectionModule == NULL));
+    TADDR     peAssemblyAddr = (pPEAssembly != NULL) ? dac_cast<TADDR>(pPEAssembly) : dac_cast<TADDR>(reflectionModule);
 
     //
     // Look for one we've already created.
     //
-    mdImport = m_mdImports.Get(peFileAddr);
+    mdImport = m_mdImports.Get(peAssemblyAddr);
     if (mdImport != NULL)
     {
         return mdImport;
     }
 
-    if (peFile != NULL)
+    if (pPEAssembly != NULL)
     {
         // Get the metadata size
-        mdBaseTarget = ((PEFile*)peFile)->GetLoadedMetadata(&mdSize);
+        mdBaseTarget = const_cast<PEAssembly*>(pPEAssembly)->GetLoadedMetadata(&mdSize);
     }
     else if (reflectionModule != NULL)
     {
@@ -6912,12 +6801,12 @@ ClrDataAccess::GetMDImport(const PEFile* peFile, const ReflectionModule* reflect
     }
 
     // Try to see if debugger can locate it
-    if (peFile != NULL && mdBaseHost == NULL && (m_target3 || m_legacyMetaDataLocator))
+    if (pPEAssembly != NULL && mdBaseHost == NULL && (m_target3 || m_legacyMetaDataLocator))
     {
         // We couldn't read the metadata from memory.  Ask
         // the target for metadata as it may be able to
         // provide it from some alternate means.
-        mdBaseHost = GetMetaDataFromHost(const_cast<PEFile *>(peFile), &isAlternate);
+        mdBaseHost = GetMetaDataFromHost(const_cast<PEAssembly *>(pPEAssembly), &isAlternate);
     }
 
     if (mdBaseHost == NULL)
@@ -6952,7 +6841,7 @@ ClrDataAccess::GetMDImport(const PEFile* peFile, const ReflectionModule* reflect
     // The m_mdImports list does get cleaned up by calls to ClrDataAccess::Flush,
     // i.e. every time the process changes state.
 
-    if (m_mdImports.Add(peFileAddr, mdImport, isAlternate) == NULL)
+    if (m_mdImports.Add(peAssemblyAddr, mdImport, isAlternate) == NULL)
     {
         mdImport->Release();
         DacError(E_OUTOFMEMORY);
@@ -6998,11 +6887,6 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
     return m_fEnableTargetConsistencyAsserts;
 }
 
-#ifdef FEATURE_CORESYSTEM
-#define ctime_s _ctime32_s
-#define time_t __time32_t
-#endif
-
 //
 // VerifyDlls - Validate that the mscorwks in the target matches this version of mscordacwks
 // Only done on Windows and Mac builds at the moment.
@@ -7010,129 +6894,6 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
 //
 HRESULT ClrDataAccess::VerifyDlls()
 {
-#ifndef TARGET_UNIX
-    // Provide a knob for disabling this check if we really want to try and proceed anyway with a
-    // DAC mismatch.  DAC behavior may be arbitrarily bad - globals probably won't be at the same
-    // address, data structures may be laid out differently, etc.
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgDACSkipVerifyDlls))
-    {
-        return S_OK;
-    }
-
-    // Read the debug directory timestamp from the target mscorwks image using DAC
-    // Note that we don't use the PE timestamp because the PE file might be changed in ways
-    // that don't effect the PDB (and therefore don't effect DAC).  Specifically, we rebase
-    // our DLLs at the end of a build, that changes the PE file, but not the PDB.
-    // Note that if we wanted to be extra careful, we could read the CV contents (which includes
-    // the GUID signature) and verify it matches.  Using the timestamp is useful for helpful error
-    // messages, and should be sufficient in any real scenario.
-    DWORD timestamp = 0;
-    HRESULT hr = S_OK;
-    DAC_ENTER();
-    EX_TRY
-    {
-        // Note that we don't need to worry about ensuring the image memory read by this code
-        // is saved in a minidump.  Managed minidump debugging already requires that you have
-        // the full mscorwks.dll available at debug time (eg. windbg won't even load DAC without it).
-        PEDecoder pedecoder(dac_cast<PTR_VOID>(m_globalBase));
-
-        // We use the first codeview debug directory entry since this should always refer to the single
-        // PDB for mscorwks.dll.
-        const UINT k_maxDebugEntries = 32;  // a reasonable upper limit in case of corruption
-        for( UINT i = 0; i < k_maxDebugEntries; i++)
-        {
-            PTR_IMAGE_DEBUG_DIRECTORY pDebugEntry = pedecoder.GetDebugDirectoryEntry(i);
-
-            // If there are no more entries, then stop
-            if (pDebugEntry == NULL)
-                break;
-
-            // Ignore non-codeview entries.  Some scenarios (eg. optimized builds), there may be extra
-            // debug directory entries at the end of some other type.
-            if (pDebugEntry->Type == IMAGE_DEBUG_TYPE_CODEVIEW)
-            {
-                // Found a codeview entry - use it's timestamp for comparison
-                timestamp = pDebugEntry->TimeDateStamp;
-                break;
-            }
-        }
-        char szMsgBuf[1024];
-        _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-            "Failed to find any valid codeview debug directory entry in %s image",
-            MAIN_CLR_MODULE_NAME_A);
-        _ASSERTE_MSG(timestamp != 0, szMsgBuf);
-    }
-    EX_CATCH
-    {
-        if (!DacExceptionFilter(GET_EXCEPTION(), this, &hr))
-        {
-            EX_RETHROW;
-        }
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-    DAC_LEAVE();
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    // Validate that we got a timestamp and it matches what the DAC table told us to expect
-    if (timestamp == 0 || timestamp != g_dacTableInfo.dwID0)
-    {
-        // Timestamp mismatch.  This means mscordacwks is being used with a version of
-        // mscorwks other than the one it was built for.  This will not work reliably.
-
-#ifdef _DEBUG
-        // Check if verbose asserts are enabled.  The default is up to the specific instantiation of
-        // ClrDataAccess, but can be overridden (in either direction) by a COMPlus_ knob.
-        // Note that we check this knob every time because it may be handy to turn it on in
-        // the environment mid-flight.
-        DWORD dwAssertDefault = m_fEnableDllVerificationAsserts ? 1 : 0;
-        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgDACAssertOnMismatch, dwAssertDefault))
-        {
-            // Output a nice error message that contains the timestamps in string format.
-            time_t actualTime = timestamp;
-            char szActualTime[30];
-            ctime_s(szActualTime, sizeof(szActualTime), &actualTime);
-
-            time_t expectedTime = g_dacTableInfo.dwID0;
-            char szExpectedTime[30];
-            ctime_s(szExpectedTime, sizeof(szExpectedTime), &expectedTime);
-
-            // Create a nice detailed message for the assert dialog.
-            // Note that the strings returned by ctime_s have terminating newline characters.
-            // This is technically a TARGET_CONSISTENCY_CHECK because a corrupt target could,
-            // in-theory, have a corrupt mscrowks PE header and cause this check to fail
-            // unnecessarily.  However, this check occurs during startup, before we know
-            // whether target consistency checks should be enabled, so it's always enabled
-            // at the moment.
-
-            char szMsgBuf[1024];
-            _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-                "DAC fatal error: %s/mscordacwks.dll version mismatch\n\n"\
-                "The debug directory timestamp of the loaded %s does not match the\n"\
-                "version mscordacwks.dll was built for.\n"\
-                "Expected %s timestamp: %s"\
-                "Actual %s timestamp: %s\n"\
-                "DAC will now fail to initialize with a CORDBG_E_MISMATCHED_CORWKS_AND_DACWKS_DLLS\n"\
-                "error.  If you really want to try and use the mimatched DLLs, you can disable this\n"\
-                "check by setting COMPlus_DbgDACSkipVerifyDlls=1.  However, using a mismatched DAC\n"\
-                "DLL will usually result in arbitrary debugger failures.\n",
-                TARGET_MAIN_CLR_DLL_NAME_A,
-                TARGET_MAIN_CLR_DLL_NAME_A,
-                TARGET_MAIN_CLR_DLL_NAME_A,
-                szExpectedTime,
-                TARGET_MAIN_CLR_DLL_NAME_A,
-                szActualTime);
-            _ASSERTE_MSG(false, szMsgBuf);
-        }
-#endif
-
-        // Return a specific hresult indicating this problem
-        return CORDBG_E_MISMATCHED_CORWKS_AND_DACWKS_DLLS;
-    }
-#endif // TARGET_UNIX
-
     return S_OK;
 }
 
@@ -7221,20 +6982,12 @@ bool ClrDataAccess::MdCacheGetEEName(TADDR taEEStruct, SString & eeName)
 
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-// Needed for RT_RCDATA.
-#define MAKEINTRESOURCE(v) MAKEINTRESOURCEW(v)
-
-// this funny looking double macro forces x to be macro expanded before L is prepended
-#define _WIDE(x) _WIDE2(x)
-#define _WIDE2(x) W(x)
-
 HRESULT
 GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress)
 {
-#ifdef TARGET_UNIX
 #ifdef USE_DAC_TABLE_RVA
 #ifdef DAC_TABLE_SIZE
-    if (DAC_TABLE_SIZE != sizeof(g_dacGlobals))
+    if (DAC_TABLE_SIZE != sizeof(DacGlobals))
     {
         return E_INVALIDARG;
     }
@@ -7242,144 +6995,34 @@ GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG6
     // On MacOS, FreeBSD or NetBSD use the RVA include file
     *dacTableAddress = baseAddress + DAC_TABLE_RVA;
 #else
-    // On Linux/MacOS try to get the dac table address via the export symbol
-    if (!TryGetSymbol(dataTarget, baseAddress, "g_dacTable", dacTableAddress))
+    // Otherwise, try to get the dac table address via the export symbol
+    if (!TryGetSymbol(dataTarget, baseAddress, DACCESS_TABLE_SYMBOL, dacTableAddress))
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
-#endif
 #endif
     return S_OK;
 }
 
 HRESULT
-ClrDataAccess::GetDacGlobals()
+ClrDataAccess::GetDacGlobalValues()
 {
-#ifdef TARGET_UNIX
     ULONG64 dacTableAddress;
     HRESULT hr = GetDacTableAddress(m_pTarget, m_globalBase, &dacTableAddress);
     if (FAILED(hr))
     {
         return hr;
     }
-    if (FAILED(ReadFromDataTarget(m_pTarget, dacTableAddress, (BYTE*)&g_dacGlobals, sizeof(g_dacGlobals))))
+    if (FAILED(ReadFromDataTarget(m_pTarget, dacTableAddress, (BYTE*)&m_dacGlobals, sizeof(m_dacGlobals))))
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
-    if (g_dacGlobals.ThreadStore__s_pThreadStore == NULL)
+    if (m_dacGlobals.ThreadStore__s_pThreadStore == NULL)
     {
         return CORDBG_E_UNSUPPORTED;
     }
     return S_OK;
-#else
-    HRESULT status = E_FAIL;
-    DWORD rsrcRVA = 0;
-    LPVOID rsrcData = NULL;
-    DWORD rsrcSize = 0;
-
-    DWORD resourceSectionRVA = 0;
-
-    if (FAILED(status = GetMachineAndResourceSectionRVA(m_pTarget, m_globalBase, NULL, &resourceSectionRVA)))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: can't locate resource section in " TARGET_MAIN_CLR_DLL_NAME_A);
-        return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
-    }
-
-    if (FAILED(status = GetResourceRvaFromResourceSectionRvaByName(m_pTarget, m_globalBase,
-        resourceSectionRVA, (DWORD)(size_t)RT_RCDATA, _WIDE(DACCESS_TABLE_RESOURCE), 0,
-        &rsrcRVA, &rsrcSize)))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: can't locate DAC table resource in " TARGET_MAIN_CLR_DLL_NAME_A);
-        return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
-    }
-
-    rsrcData = new (nothrow) BYTE[rsrcSize];
-    if (rsrcData == NULL)
-        return E_OUTOFMEMORY;
-
-    if (FAILED(status = ReadFromDataTarget(m_pTarget, m_globalBase + rsrcRVA, (BYTE*)rsrcData, rsrcSize)))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: can't load DAC table resource from " TARGET_MAIN_CLR_DLL_NAME_A);
-        return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
-    }
-
-
-    PBYTE rawData = (PBYTE)rsrcData;
-    DWORD bytesLeft = rsrcSize;
-
-    // Read the header
-    struct DacTableHeader header;
-
-    // We currently expect the header to be 2 32-bit values and 1 16-byte value,
-    // make sure there is no packing going on or anything.
-    static_assert_no_msg(sizeof(DacTableHeader) == 2 * 4 + 16);
-
-    if (bytesLeft < sizeof(DacTableHeader))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: DAC table too small for header.");
-        goto Exit;
-    }
-    memcpy(&header, rawData, sizeof(DacTableHeader));
-    rawData += sizeof(DacTableHeader);
-    bytesLeft -= sizeof(DacTableHeader);
-
-    // Save the table info for later use
-    g_dacTableInfo = header.info;
-
-    // Sanity check that the DAC table is the size we expect.
-    // This could fail if a different version of dacvars.h or vptr_list.h was used when building
-    // mscordacwks.dll than when running DacTableGen.
-
-    if (offsetof(DacGlobals, EEJitManager__vtAddr) != header.numGlobals * sizeof(ULONG))
-    {
-#ifdef _DEBUG
-        char szMsgBuf[1024];
-        _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-            "DAC fatal error: mismatch in number of globals in DAC table. Read from file: %d, expected: %zd.",
-            header.numGlobals,
-            (size_t)offsetof(DacGlobals, EEJitManager__vtAddr) / sizeof(ULONG));
-        _ASSERTE_MSG(false, szMsgBuf);
-#endif // _DEBUG
-
-        status = E_INVALIDARG;
-        goto Exit;
-    }
-
-    if (sizeof(DacGlobals) != (header.numGlobals + header.numVptrs) * sizeof(ULONG))
-    {
-#ifdef _DEBUG
-        char szMsgBuf[1024];
-        _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-            "DAC fatal error: mismatch in number of vptrs in DAC table. Read from file: %d, expected: %zd.",
-            header.numVptrs,
-            (size_t)(sizeof(DacGlobals) - offsetof(DacGlobals, EEJitManager__vtAddr)) / sizeof(ULONG));
-        _ASSERTE_MSG(false, szMsgBuf);
-#endif // _DEBUG
-
-        status = E_INVALIDARG;
-        goto Exit;
-    }
-
-    // Copy the DAC table into g_dacGlobals
-    if (bytesLeft < sizeof(DacGlobals))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: DAC table resource too small for DacGlobals.");
-        status = E_UNEXPECTED;
-        goto Exit;
-    }
-    memcpy(&g_dacGlobals, rawData, sizeof(DacGlobals));
-    rawData += sizeof(DacGlobals);
-    bytesLeft -= sizeof(DacGlobals);
-
-    status = S_OK;
-
-Exit:
-
-    return status;
-#endif
 }
-
-#undef MAKEINTRESOURCE
 
 //----------------------------------------------------------------------------
 //
@@ -7558,34 +7201,8 @@ BOOL OutOfProcessExceptionEventGetProcessIdAndThreadId(HANDLE hProcess, HANDLE h
     *pPId = (DWORD)(SIZE_T)hProcess;
     *pThreadId = (DWORD)(SIZE_T)hThread;
 #else
-#if !defined(FEATURE_CORESYSTEM)
-    HMODULE hKernel32 = WszGetModuleHandle(W("kernel32.dll"));
-#else
-	HMODULE hKernel32 = WszGetModuleHandle(W("api-ms-win-core-processthreads-l1-1-1.dll"));
-#endif
-    if (hKernel32 == NULL)
-    {
-        return FALSE;
-    }
-
-    typedef WINBASEAPI DWORD (WINAPI GET_PROCESSID_OF_THREAD)(HANDLE);
-    GET_PROCESSID_OF_THREAD * pGetProcessIdOfThread;
-
-    typedef WINBASEAPI DWORD (WINAPI GET_THREADID)(HANDLE);
-    GET_THREADID * pGetThreadId;
-
-    pGetProcessIdOfThread = (GET_PROCESSID_OF_THREAD *)GetProcAddress(hKernel32, "GetProcessIdOfThread");
-    pGetThreadId = (GET_THREADID *)GetProcAddress(hKernel32, "GetThreadId");
-
-    // OOP callbacks are used on Win7 or later.   We should have having below two APIs available.
-    _ASSERTE((pGetProcessIdOfThread != NULL) && (pGetThreadId != NULL));
-    if ((pGetProcessIdOfThread == NULL) || (pGetThreadId == NULL))
-    {
-        return FALSE;
-    }
-
-    *pPId = (*pGetProcessIdOfThread)(hThread);
-    *pThreadId = (*pGetThreadId)(hThread);
+    *pPId = GetProcessIdOfThread(hThread);
+    *pThreadId = GetThreadId(hThread);
 #endif // TARGET_UNIX
     return TRUE;
 }
@@ -7620,9 +7237,9 @@ typedef struct _WER_RUNTIME_EXCEPTION_INFORMATION
 //    else detailed error code.
 //
 //----------------------------------------------------------------------------
-STDAPI OutOfProcessExceptionEventGetWatsonBucket(__in PDWORD pContext,
-                                                 __in const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
-                                                 __out GenericModeBlock * pGMB)
+STDAPI OutOfProcessExceptionEventGetWatsonBucket(_In_ PDWORD pContext,
+                                                 _In_ const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
+                                                 _Out_ GenericModeBlock * pGMB)
 {
     HANDLE hProcess = pExceptionInformation->hProcess;
     HANDLE hThread  = pExceptionInformation->hThread;
@@ -7711,12 +7328,12 @@ STDAPI OutOfProcessExceptionEventGetWatsonBucket(__in PDWORD pContext,
 //    Since this is called by external modules it's important that we don't let any exceptions leak out (see Win8 95224).
 //
 //----------------------------------------------------------------------------
-STDAPI OutOfProcessExceptionEventCallback(__in PDWORD pContext,
-                                          __in const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
-                                          __out BOOL * pbOwnershipClaimed,
-                                          __out_ecount(*pchSize) PWSTR pwszEventName,
+STDAPI OutOfProcessExceptionEventCallback(_In_ PDWORD pContext,
+                                          _In_ const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
+                                          _Out_ BOOL * pbOwnershipClaimed,
+                                          _Out_writes_(*pchSize) PWSTR pwszEventName,
                                           __inout PDWORD pchSize,
-                                          __out PDWORD pdwSignatureCount)
+                                          _Out_ PDWORD pdwSignatureCount)
 {
     SUPPORTS_DAC_HOST_ONLY;
 
@@ -7803,12 +7420,12 @@ STDAPI OutOfProcessExceptionEventCallback(__in PDWORD pContext,
 //    Since this is called by external modules it's important that we don't let any exceptions leak out (see Win8 95224).
 //
 //----------------------------------------------------------------------------
-STDAPI OutOfProcessExceptionEventSignatureCallback(__in PDWORD pContext,
-                                                   __in const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
-                                                   __in DWORD dwIndex,
-                                                   __out_ecount(*pchName) PWSTR pwszName,
+STDAPI OutOfProcessExceptionEventSignatureCallback(_In_ PDWORD pContext,
+                                                   _In_ const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
+                                                   _In_ DWORD dwIndex,
+                                                   _Out_writes_(*pchName) PWSTR pwszName,
                                                    __inout PDWORD pchName,
-                                                   __out_ecount(*pchValue) PWSTR pwszValue,
+                                                   _Out_writes_(*pchValue) PWSTR pwszValue,
                                                    __inout PDWORD pchValue)
 {
     SUPPORTS_DAC_HOST_ONLY;
@@ -7928,12 +7545,12 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(__in PDWORD pContext,
 //    this function are of the pwszName and pwszValue buffers.
 //
 //----------------------------------------------------------------------------
-STDAPI OutOfProcessExceptionEventDebuggerLaunchCallback(__in PDWORD pContext,
-                                                        __in const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
-                                                        __out BOOL * pbCustomDebuggerNeeded,
-                                                        __out_ecount_opt(*pchSize) PWSTR pwszDebuggerLaunch,
+STDAPI OutOfProcessExceptionEventDebuggerLaunchCallback(_In_ PDWORD pContext,
+                                                        _In_ const PWER_RUNTIME_EXCEPTION_INFORMATION pExceptionInformation,
+                                                        _Out_ BOOL * pbCustomDebuggerNeeded,
+                                                        _Out_writes_opt_(*pchSize) PWSTR pwszDebuggerLaunch,
                                                         __inout PDWORD pchSize,
-                                                        __out BOOL * pbAutoLaunchDebugger)
+                                                        _Out_ BOOL * pbAutoLaunchDebugger)
 {
     SUPPORTS_DAC_HOST_ONLY;
 
@@ -8092,7 +7709,7 @@ bool DacHandleWalker::FetchMoreHandles(HANDLESCANPROC callback)
                 if (hTable)
                 {
                     // Yikes!  The handle table callbacks don't produce the handle type or
-                    // the AppDomain that we need, and it's too difficult to propogate out
+                    // the AppDomain that we need, and it's too difficult to propagate out
                     // these things (especially the type) without worrying about performance
                     // implications for the GC.  Instead we'll have the callback walk each
                     // type individually.  There are only a few handle types, and the handle

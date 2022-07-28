@@ -17,13 +17,13 @@ namespace Microsoft.Extensions.Hosting
     public abstract partial class BackgroundService : Microsoft.Extensions.Hosting.IHostedService, System.IDisposable
     {
         protected BackgroundService() { }
-        public virtual System.Threading.Tasks.Task ExecuteTask { get { throw null; } }
+        public virtual System.Threading.Tasks.Task? ExecuteTask { get { throw null; } }
         public virtual void Dispose() { }
         protected abstract System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken stoppingToken);
         public virtual System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
-    [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version. The recommended alternative is Microsoft.Extensions.Hosting.Environments.", false)]
+    [System.ObsoleteAttribute("EnvironmentName has been deprecated. Use Microsoft.Extensions.Hosting.Environments instead.")]
     public static partial class EnvironmentName
     {
         public static readonly string Development;
@@ -35,6 +35,12 @@ namespace Microsoft.Extensions.Hosting
         public static readonly string Development;
         public static readonly string Production;
         public static readonly string Staging;
+    }
+    public sealed partial class HostAbortedException : System.Exception
+    {
+        public HostAbortedException() { }
+        public HostAbortedException(string? message) { }
+        public HostAbortedException(string? message, System.Exception? innerException) { }
     }
     public partial class HostBuilderContext
     {
@@ -77,7 +83,7 @@ namespace Microsoft.Extensions.Hosting
         public static bool IsProduction(this Microsoft.Extensions.Hosting.IHostingEnvironment hostingEnvironment) { throw null; }
         public static bool IsStaging(this Microsoft.Extensions.Hosting.IHostingEnvironment hostingEnvironment) { throw null; }
     }
-    [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version. The recommended alternative is Microsoft.Extensions.Hosting.IHostApplicationLifetime.", false)]
+    [System.ObsoleteAttribute("IApplicationLifetime has been deprecated. Use Microsoft.Extensions.Hosting.IHostApplicationLifetime instead.")]
     public partial interface IApplicationLifetime
     {
         System.Threading.CancellationToken ApplicationStarted { get; }
@@ -106,8 +112,8 @@ namespace Microsoft.Extensions.Hosting
         Microsoft.Extensions.Hosting.IHostBuilder ConfigureContainer<TContainerBuilder>(System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, TContainerBuilder> configureDelegate);
         Microsoft.Extensions.Hosting.IHostBuilder ConfigureHostConfiguration(System.Action<Microsoft.Extensions.Configuration.IConfigurationBuilder> configureDelegate);
         Microsoft.Extensions.Hosting.IHostBuilder ConfigureServices(System.Action<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.DependencyInjection.IServiceCollection> configureDelegate);
-        Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory);
-        Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(System.Func<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder>> factory);
+        Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory) where TContainerBuilder : notnull;
+        Microsoft.Extensions.Hosting.IHostBuilder UseServiceProviderFactory<TContainerBuilder>(System.Func<Microsoft.Extensions.Hosting.HostBuilderContext, Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull;
     }
     public partial interface IHostedService
     {
@@ -116,15 +122,15 @@ namespace Microsoft.Extensions.Hosting
     }
     public partial interface IHostEnvironment
     {
-        string ApplicationName { get; set; }
+        string? ApplicationName { get; set; }
         Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; }
         string ContentRootPath { get; set; }
         string EnvironmentName { get; set; }
     }
-    [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version. The recommended alternative is Microsoft.Extensions.Hosting.IHostEnvironment.", false)]
+    [System.ObsoleteAttribute("IHostingEnvironment has been deprecated. Use Microsoft.Extensions.Hosting.IHostEnvironment instead.")]
     public partial interface IHostingEnvironment
     {
-        string ApplicationName { get; set; }
+        string? ApplicationName { get; set; }
         Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; }
         string ContentRootPath { get; set; }
         string EnvironmentName { get; set; }

@@ -69,6 +69,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void LoadAssemblyByPath_ValidUserAssembly()
         {
@@ -84,6 +85,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void LoadAssemblyByStream_ValidUserAssembly()
         {
@@ -113,7 +115,6 @@ namespace System.Runtime.Loader.Tests
         public static void LoadFromAssemblyName_ValidTrustedPlatformAssembly()
         {
             var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
-            asmName.CodeBase = null;
             var loadContext = new CustomTPALoadContext();
 
             // We should be able to override (and thus, load) assemblies that were
@@ -129,7 +130,6 @@ namespace System.Runtime.Loader.Tests
         public static void LoadFromAssemblyName_FallbackToDefaultContext()
         {
             var asmName = typeof(System.Linq.Enumerable).Assembly.GetName();
-            asmName.CodeBase = null;
             var loadContext = new AssemblyLoadContext("FallbackToDefaultContextTest");
 
             // This should not have any special handlers, so it should just find the version in the default context
@@ -143,6 +143,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
         public static void GetLoadContextTest_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -217,6 +218,19 @@ namespace System.Runtime.Loader.Tests
             Assert.Equal(name, alc.Name);
             Assert.Contains(name, alc.ToString());
             Assert.Contains("System.Runtime.Loader.AssemblyLoadContext", alc.ToString());
+            Assert.Contains(alc, AssemblyLoadContext.All);
+            Assert.Empty(alc.Assemblies);
+        }
+
+        [Fact]
+        public static void SubclassAssemblyLoadContext_Properties()
+        {
+            AssemblyLoadContext alc = new ResourceAssemblyLoadContext();
+
+            Assert.False(alc.IsCollectible);
+            Assert.Null(alc.Name);
+            Assert.Contains("\"\"", alc.ToString());
+            Assert.Contains(typeof(ResourceAssemblyLoadContext).ToString(), alc.ToString());
             Assert.Contains(alc, AssemblyLoadContext.All);
             Assert.Empty(alc.Assemblies);
         }

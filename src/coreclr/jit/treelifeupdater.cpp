@@ -60,7 +60,7 @@ bool TreeLifeUpdater<ForCodeGen>::UpdateLifeFieldVar(GenTreeLclVar* lclNode, uns
         {
             regNumber reg     = lclNode->GetRegNumByIdx(multiRegIndex);
             bool      isInReg = fldVarDsc->lvIsInReg() && reg != REG_NA;
-            isInMemory        = !isInReg || fldVarDsc->lvLiveInOutOfHndlr;
+            isInMemory        = !isInReg || fldVarDsc->IsAlwaysAliveInMemory();
             if (isInReg)
             {
                 if (isBorn)
@@ -182,7 +182,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
         lclVarTree = tree;
     }
     unsigned int lclNum = lclVarTree->AsLclVarCommon()->GetLclNum();
-    LclVarDsc*   varDsc = compiler->lvaTable + lclNum;
+    LclVarDsc*   varDsc = compiler->lvaGetDesc(lclNum);
 
 #ifdef DEBUG
 #if !defined(TARGET_AMD64)
@@ -254,12 +254,12 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
             VarSetOps::AddElemD(compiler, varDeltaSet, varDsc->lvVarIndex);
             if (ForCodeGen)
             {
-                if (isBorn && varDsc->lvIsRegCandidate() && tree->gtHasReg())
+                if (isBorn && varDsc->lvIsRegCandidate() && tree->gtHasReg(compiler))
                 {
                     compiler->codeGen->genUpdateVarReg(varDsc, tree);
                 }
                 bool isInReg    = varDsc->lvIsInReg() && tree->GetRegNum() != REG_NA;
-                bool isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
+                bool isInMemory = !isInReg || varDsc->IsAlwaysAliveInMemory();
                 if (isInReg)
                 {
                     compiler->codeGen->genUpdateRegLife(varDsc, isBorn, isDying DEBUGARG(tree));
@@ -277,13 +277,13 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
             for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
             {
                 bool       fieldIsSpilled = spill && ((lclVarTree->GetRegSpillFlagByIdx(i) & GTF_SPILL) != 0);
-                LclVarDsc* fldVarDsc      = &(compiler->lvaTable[firstFieldVarNum + i]);
+                LclVarDsc* fldVarDsc      = compiler->lvaGetDesc(firstFieldVarNum + i);
                 noway_assert(fldVarDsc->lvIsStructField);
                 assert(fldVarDsc->lvTracked);
                 unsigned  fldVarIndex  = fldVarDsc->lvVarIndex;
                 regNumber reg          = lclVarTree->AsLclVar()->GetRegNumByIdx(i);
                 bool      isInReg      = fldVarDsc->lvIsInReg() && reg != REG_NA;
-                bool      isInMemory   = !isInReg || fldVarDsc->lvLiveInOutOfHndlr;
+                bool      isInMemory   = !isInReg || fldVarDsc->IsAlwaysAliveInMemory();
                 bool      isFieldDying = lclVarTree->AsLclVar()->IsLastUse(i);
                 if ((isBorn && !isFieldDying) || (!isBorn && isFieldDying))
                 {
@@ -451,7 +451,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
 #ifdef DEBUG
                 if (compiler->verbose)
                 {
-                    printf("\t\t\t\t\t\t\tVar V%02u becoming live\n", varDsc - compiler->lvaTable);
+                    printf("\t\t\t\t\t\t\tVar V%02u becoming live\n", compiler->lvaGetLclNum(varDsc));
                 }
 #endif // DEBUG
             }

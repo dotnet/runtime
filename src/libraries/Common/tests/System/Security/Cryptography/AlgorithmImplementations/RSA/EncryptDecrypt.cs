@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Test.Cryptography;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
@@ -336,11 +338,19 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
-        [Fact]
+        [ConditionalFact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52199", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RoundtripEmptyArray()
         {
+            if (OperatingSystem.IsIOS() && !OperatingSystem.IsIOSVersionAtLeast(13, 6))
+            {
+                throw new SkipTestException("iOS prior to 13.6 does not reliably support RSA encryption of empty data.");
+            }
+            if (OperatingSystem.IsTvOS() && !OperatingSystem.IsTvOSVersionAtLeast(14, 0))
+            {
+                throw new SkipTestException("tvOS prior to 14.0 does not reliably support RSA encryption of empty data.");
+            }
+
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
                 void RoundtripEmpty(RSAEncryptionPadding paddingMode)
@@ -664,6 +674,23 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
+        [Theory]
+        [MemberData(nameof(OaepPaddingModes))]
+        public void NonPowerOfTwoKeySizeOaepRoundtrip(RSAEncryptionPadding oaepPaddingMode)
+        {
+            byte[] crypt;
+            byte[] output;
+
+            using (RSA rsa = RSAFactory.Create(3072))
+            {
+                crypt = Encrypt(rsa, TestData.HelloBytes, oaepPaddingMode);
+                output = Decrypt(rsa, crypt, oaepPaddingMode);
+            }
+
+            Assert.NotEqual(crypt, output);
+            Assert.Equal(TestData.HelloBytes, output);
+        }
+
         [Fact]
         public void NotSupportedValueMethods()
         {
@@ -671,6 +698,21 @@ namespace System.Security.Cryptography.Rsa.Tests
             {
                 Assert.Throws<NotSupportedException>(() => rsa.DecryptValue(null));
                 Assert.Throws<NotSupportedException>(() => rsa.EncryptValue(null));
+            }
+        }
+
+        public static IEnumerable<object[]> OaepPaddingModes
+        {
+            get
+            {
+                yield return new object[] { RSAEncryptionPadding.OaepSHA1 };
+
+                if (RSAFactory.SupportsSha2Oaep)
+                {
+                    yield return new object[] { RSAEncryptionPadding.OaepSHA256 };
+                    yield return new object[] { RSAEncryptionPadding.OaepSHA384 };
+                    yield return new object[] { RSAEncryptionPadding.OaepSHA512 };
+                }
             }
         }
     }

@@ -8,10 +8,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -119,7 +119,7 @@ sgen_hash_table_lookup (SgenHashTable *hash_table, gpointer key)
 gboolean
 sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer new_value, gpointer old_value)
 {
-	guint hash;
+	guint hash = 0;
 	SgenHashTableEntry *entry;
 
 	rehash_if_necessary (hash_table);
@@ -127,7 +127,7 @@ sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer new_v
 
 	if (entry) {
 		if (old_value)
-			memcpy (old_value, entry->data, hash_table->data_size);	
+			memcpy (old_value, entry->data, hash_table->data_size);
 		memcpy (entry->data, new_value, hash_table->data_size);
 		return FALSE;
 	}

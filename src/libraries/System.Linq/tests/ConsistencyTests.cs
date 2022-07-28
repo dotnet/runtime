@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -50,7 +51,10 @@ namespace System.Linq.Tests
             return result;
         }
 
-        private static MethodInfo GetMissingExtensionMethod(Type a, Type b, IEnumerable<string> excludedMethods)
+        private static MethodInfo GetMissingExtensionMethod(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type a,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type b,
+            IEnumerable<string> excludedMethods)
         {
             var dex = new HashSet<string>(excludedMethods);
 

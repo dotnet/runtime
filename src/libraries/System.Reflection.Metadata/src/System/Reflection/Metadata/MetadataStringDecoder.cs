@@ -43,20 +43,15 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public MetadataStringDecoder(Encoding encoding)
         {
-            if (encoding == null)
+            if (encoding is null)
             {
-                throw new ArgumentNullException(nameof(encoding));
+                Throw.ArgumentNull(nameof(encoding));
             }
 
             // Non-enforcement of (encoding is UTF8Encoding) here is by design.
             //
             // This type is not itself aware of any particular encoding. However, the constructor argument that accepts a
             // MetadataStringDecoder argument is validated however because it must be a UTF8 decoder.
-            //
-            // Above architectural purity, the fact that you can get our default implementation of Encoding.GetString
-            // is a hidden feature to use our light-up of unsafe Encoding.GetString outside this assembly on an arbitrary
-            // encoding. I'm more comfortable sharing that hack than having the reflection over internal
-            // CreateStringFromEncoding spread.
 
             Encoding = encoding;
         }
@@ -70,12 +65,10 @@ namespace System.Reflection.Metadata
         /// <param name="bytes">Pointer to bytes to decode.</param>
         /// <param name="byteCount">Number of bytes to decode.</param>
         /// <returns>The decoded string.</returns>
-        public unsafe virtual string GetString(byte* bytes, int byteCount)
+        public virtual unsafe string GetString(byte* bytes, int byteCount)
         {
             Debug.Assert(Encoding != null);
 
-            // Note that this call is currently wired to the light-up extension in EncodingHelper
-            // for portability.
             return Encoding.GetString(bytes, byteCount);
         }
     }

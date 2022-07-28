@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="tests_d.ilproj" Aliases="tests_d" />
+    <ProjectReference Include="tests_r.ilproj" Aliases="tests_r" />
+    <ProjectReference Include="attribute.csproj" />
+    <ProjectReference Include="../../../../tracing/eventpipe/common/common.csproj" />
+    <ProjectReference Include="../../../../tracing/eventpipe/common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

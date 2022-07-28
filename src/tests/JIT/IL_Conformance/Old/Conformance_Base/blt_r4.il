@@ -464,4 +464,4 @@ FAIL:
 	ret
 }
 }
-.assembly blt_r4.exe{}
+.assembly blt_r4{}

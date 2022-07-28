@@ -3,6 +3,7 @@
 
 using System.Data.Common;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -90,10 +91,7 @@ namespace System.Data
                 }
 
                 _schemaIsChanged = value;
-                if (_listener != null)
-                {
-                    _listener.CleanUp();
-                }
+                _listener?.CleanUp();
             }
         }
 
@@ -120,10 +118,7 @@ namespace System.Data
             }
 
             // no need to listen to events after close
-            if (_listener != null)
-            {
-                _listener.CleanUp();
-            }
+            _listener?.CleanUp();
 
             _listener = null!;
             _schemaTable = null;
@@ -137,12 +132,7 @@ namespace System.Data
 
             // each time, we just get schema table of current table for once, no need to recreate each time, if schema is changed, reader is already
             // is invalid
-            if (_schemaTable == null)
-            {
-                _schemaTable = GetSchemaTableFromDataTable(_currentDataTable);
-            }
-
-            return _schemaTable;
+            return _schemaTable ??= GetSchemaTableFromDataTable(_currentDataTable);
         }
 
         public override bool NextResult()
@@ -157,10 +147,7 @@ namespace System.Data
 
             _currentDataTable = _tables[++_tableCounter];
 
-            if (_listener != null)
-            {
-                _listener.UpdataTable(_currentDataTable); // it will unsubscribe from preveous tables events and subscribe to new table's events
-            }
+            _listener?.UpdataTable(_currentDataTable); // it will unsubscribe from preveous tables events and subscribe to new table's events
 
             _schemaTable = null;
             _rowCounter = -1;
@@ -194,10 +181,7 @@ namespace System.Data
             if (_rowCounter >= _currentDataTable.Rows.Count - 1)
             {
                 _reachEORows = true;
-                if (_listener != null)
-                {
-                    _listener.CleanUp();
-                }
+                _listener?.CleanUp();
                 return false;
             }
 
@@ -211,10 +195,7 @@ namespace System.Data
                 if (_rowCounter == _currentDataTable.Rows.Count)
                 {
                     _reachEORows = true;
-                    if (_listener != null)
-                    {
-                        _listener.CleanUp();
-                    }
+                    _listener?.CleanUp();
                     return false;
                 }
                 ValidateRow(_rowCounter);
@@ -308,6 +289,7 @@ namespace System.Data
             }
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public override Type GetProviderSpecificFieldType(int ordinal)
         {
             ValidateOpen(nameof(GetProviderSpecificFieldType));
@@ -525,6 +507,7 @@ namespace System.Data
             }
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public override Type GetFieldType(int ordinal)
         {
             ValidateOpen(nameof(GetFieldType));
@@ -734,7 +717,14 @@ namespace System.Data
             DataColumn ColumnSize = new DataColumn(SchemaTableColumn.ColumnSize, typeof(int));
             DataColumn NumericPrecision = new DataColumn(SchemaTableColumn.NumericPrecision, typeof(short));
             DataColumn NumericScale = new DataColumn(SchemaTableColumn.NumericScale, typeof(short));
-            DataColumn DataType = new DataColumn(SchemaTableColumn.DataType, typeof(Type));
+            DataColumn DataType = GetSystemTypeDataColumn();
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:ReflectionToDynamicallyAccessedMembers",
+                Justification = "The problem is Type.TypeInitializer which requires constructors on the Type instance." +
+                    "In this case the TypeInitializer property is not accessed dynamically.")]
+            static DataColumn GetSystemTypeDataColumn() =>
+                new DataColumn(SchemaTableColumn.DataType, typeof(Type));
+
             DataColumn ProviderType = new DataColumn(SchemaTableColumn.ProviderType, typeof(int));
             DataColumn IsLong = new DataColumn(SchemaTableColumn.IsLong, typeof(bool));
             DataColumn AllowDBNull = new DataColumn(SchemaTableColumn.AllowDBNull, typeof(bool));
@@ -982,7 +972,7 @@ namespace System.Data
                             }
                         }
                         else
-                        { // we are proccessing current datarow
+                        { // we are processing current datarow
                             _currentRowRemoved = true;
                             if (_rowCounter > 0)
                             {

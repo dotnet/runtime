@@ -45,8 +45,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             return new RuntimeBinderException(SR.BindToVoidMethodButExpectResult);
         }
 
-        internal static Exception ArgumentNull(string paramName) => new ArgumentNullException(paramName);
-
         internal static Exception DynamicArgumentNeedsValue(string paramName) =>
             new ArgumentException(SR.DynamicArgumentNeedsValue, paramName);
     }

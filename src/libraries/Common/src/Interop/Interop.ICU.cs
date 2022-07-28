@@ -9,8 +9,8 @@ internal static partial class Interop
 {
     internal static partial class Globalization
     {
-        [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICU")]
-        internal static extern int LoadICU();
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICU")]
+        internal static partial int LoadICU();
 
         internal static void InitICUFunctions(IntPtr icuuc, IntPtr icuin, ReadOnlySpan<char> version, ReadOnlySpan<char> suffix)
         {
@@ -20,10 +20,10 @@ internal static partial class Interop
             InitICUFunctions(icuuc, icuin, version.ToString(), suffix.Length > 0 ? suffix.ToString() : null);
         }
 
-        [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_InitICUFunctions")]
-        internal static extern void InitICUFunctions(IntPtr icuuc, IntPtr icuin, string version, string? suffix);
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_InitICUFunctions", StringMarshalling = StringMarshalling.Utf8)]
+        internal static partial void InitICUFunctions(IntPtr icuuc, IntPtr icuin, string version, string? suffix);
 
-        [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetICUVersion")]
-        internal static extern int GetICUVersion();
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetICUVersion")]
+        internal static partial int GetICUVersion();
     }
 }

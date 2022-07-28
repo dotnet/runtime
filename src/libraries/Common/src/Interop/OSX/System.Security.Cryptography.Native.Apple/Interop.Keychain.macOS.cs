@@ -15,68 +15,68 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SecKeychainItemCopyKeychain(
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SecKeychainItemCopyKeychain(
             IntPtr item,
             out SafeKeychainHandle keychain);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SecKeychainCreate")]
-        private static extern unsafe int AppleCryptoNative_SecKeychainCreateTemporary(
+        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SecKeychainCreate", StringMarshalling = StringMarshalling.Utf8)]
+        private static unsafe partial int AppleCryptoNative_SecKeychainCreateTemporary(
             string path,
             int utf8PassphraseLength,
             byte* utf8Passphrase,
             out SafeTemporaryKeychainHandle keychain);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SecKeychainCreate(
+        [LibraryImport(Libraries.AppleCryptoNative, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int AppleCryptoNative_SecKeychainCreate(
             string path,
             int utf8PassphraseLength,
             byte[] utf8Passphrase,
             out SafeKeychainHandle keychain);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SecKeychainDelete(IntPtr keychain);
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SecKeychainDelete(IntPtr keychain);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SecKeychainCopyDefault(out SafeKeychainHandle keychain);
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SecKeychainCopyDefault(out SafeKeychainHandle keychain);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SecKeychainOpen(
+        [LibraryImport(Libraries.AppleCryptoNative, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int AppleCryptoNative_SecKeychainOpen(
             string keychainPath,
             out SafeKeychainHandle keychain);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SecKeychainUnlock(
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SecKeychainUnlock(
             SafeKeychainHandle keychain,
             int utf8PassphraseLength,
             byte[] utf8Passphrase);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SetKeychainNeverLock(SafeKeychainHandle keychain);
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SetKeychainNeverLock(SafeKeychainHandle keychain);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SecKeychainEnumerateCerts(
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SecKeychainEnumerateCerts(
             SafeKeychainHandle keychain,
             out SafeCFArrayHandle matches,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_SecKeychainEnumerateIdentities(
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SecKeychainEnumerateIdentities(
             SafeKeychainHandle keychain,
             out SafeCFArrayHandle matches,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_X509StoreAddCertificate(
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_X509StoreAddCertificate(
             SafeKeychainItemHandle cert,
             SafeKeychainHandle keychain,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_X509StoreRemoveCertificate(
+        [LibraryImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_X509StoreRemoveCertificate(
             SafeKeychainItemHandle cert,
             SafeKeychainHandle keychain,
-            bool isReadOnlyMode,
+            [MarshalAs(UnmanagedType.Bool)] bool isReadOnlyMode,
             out int pOSStatus);
 
         private static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeHandle item)
@@ -401,7 +401,7 @@ namespace System.Security.Cryptography.Apple
         private static readonly Dictionary<IntPtr, SafeTemporaryKeychainHandle> s_lookup =
             new Dictionary<IntPtr, SafeTemporaryKeychainHandle>();
 
-        internal SafeTemporaryKeychainHandle()
+        public SafeTemporaryKeychainHandle()
         {
         }
 

@@ -3,20 +3,23 @@
 
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.Reflection;
 
 namespace System.Drawing
 {
+    [SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "Heif and Webp are referenced here for " +
+        "design-time support, the user is responsible to ensure that they are used on a supported version of Windows.")]
     public class ImageFormatConverter : TypeConverter
     {
-        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type? sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             if ((destinationType == typeof(string)) || (destinationType == typeof(InstanceDescriptor)))
             {
@@ -25,7 +28,7 @@ namespace System.Drawing
             return base.CanConvertTo(context, destinationType);
         }
 
-        public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             // we must be able to convert from short names and long names
             string? strFormat = value as string;
@@ -62,11 +65,15 @@ namespace System.Drawing
                 return ImageFormat.Tiff;
             else if (strFormat.Equals("Wmf", StringComparison.OrdinalIgnoreCase))
                 return ImageFormat.Wmf;
+            else if (strFormat.Equals("Heif", StringComparison.OrdinalIgnoreCase))
+                return ImageFormat.Heif;
+            else if (strFormat.Equals("Webp", StringComparison.OrdinalIgnoreCase))
+                return ImageFormat.Webp;
 
             throw new FormatException(SR.Format(SR.ConvertInvalidPrimitive, strFormat, nameof(ImageFormat)));
         }
 
-        public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (value is ImageFormat imgFormat)
             {
@@ -127,7 +134,9 @@ namespace System.Drawing
                 ImageFormat.Png,
                 ImageFormat.Tiff,
                 ImageFormat.Exif,
-                ImageFormat.Icon
+                ImageFormat.Icon,
+                ImageFormat.Heif,
+                ImageFormat.Webp
             });
         }
 

@@ -6,8 +6,9 @@
 // implemented by classes
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 .assembly extern mscorlib { }
-.assembly UnsupportedScenario2 { }
+.assembly 'UnsupportedScenario1' { }
 
 .class public auto ansi beforefieldinit A { 
   .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret } 
@@ -196,6 +197,9 @@
 
   .method public hidebysig static int32  Main( string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
     .locals init (bool V_0)    

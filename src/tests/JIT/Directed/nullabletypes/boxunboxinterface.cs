@@ -797,7 +797,7 @@ internal class NullableTest18
 
 
 
-internal class Test
+internal class Test_boxunboxinterface
 {
     private static int Main()
     {

@@ -8,7 +8,7 @@
 #include <glib.h>
 
 #include "mono-compiler.h"
-#include "mono-error.h"
+#include <mono/utils/mono-error.h>
 
 MONO_COMPONENT_API
 gboolean

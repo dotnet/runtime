@@ -18,9 +18,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
     {
         private readonly Version _expectedRequestMessageVersion = HttpVersion.Version11;
         private HttpRequestOptionsKey<bool> EnableStreamingResponse = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
-#nullable enable
         private HttpRequestOptionsKey<IDictionary<string, object?>> FetchOptions = new HttpRequestOptionsKey<IDictionary<string, object?>>("WebAssemblyFetchOptions");
-#nullable disable
 
         [Fact]
         public void Ctor_Default_CorrectDefaults()
@@ -46,6 +44,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         [Theory]
         [InlineData("http://host/absolute/")]
         [InlineData("blob:http://host/absolute/")]
+        [InlineData("foo://host/absolute")]
         public void Ctor_AbsoluteStringUri_CorrectValues(string uri)
         {
             var rm = new HttpRequestMessage(HttpMethod.Post, uri);
@@ -82,6 +81,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         [Theory]
         [InlineData("http://host/absolute/")]
         [InlineData("blob:http://host/absolute/")]
+        [InlineData("foo://host/absolute")]
         public void Ctor_AbsoluteUri_CorrectValues(string uriData)
         {
             var uri = new Uri(uriData);
@@ -110,12 +110,6 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         public void Ctor_NullMethod_ThrowsArgumentNullException(string uriData)
         {
             Assert.Throws<ArgumentNullException>(() => new HttpRequestMessage(null, uriData));
-        }
-
-        [Fact]
-        public void Ctor_NonHttpUri_ThrowsArgumentException()
-        {
-            AssertExtensions.Throws<ArgumentException>("requestUri", () => new HttpRequestMessage(HttpMethod.Put, "ftp://example.com"));
         }
 
         [Theory]
@@ -170,7 +164,6 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
             Assert.NotNull(rm.Options);
         }
 
-#nullable enable
         [Theory]
         [InlineData("https://example.com")]
         [InlineData("blob:https://example.com")]
@@ -212,9 +205,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
                 }
             }
         }
-#nullable disable
 
-#nullable enable
         [Theory]
         [InlineData("https://example.com")]
         [InlineData("blob:https://example.com")]
@@ -243,7 +234,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
             rm.Options.TryGetValue(FetchOptions, out IDictionary<string, object?>? fetchOptionsValue);
             Assert.Null(fetchOptionsValue);
         }
-#nullable disable
+
         [Theory]
         [InlineData("https://example.com")]
         [InlineData("blob:https://example.com")]
@@ -302,14 +293,6 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
 
             rm.Options.TryGetValue(EnableStreamingResponse, out bool streamingEnabledValue);
             Assert.False(streamingEnabledValue);
-        }
-
-
-        [Fact]
-        public void RequestUri_SetNonHttpUri_ThrowsArgumentException()
-        {
-            var rm = new HttpRequestMessage();
-            AssertExtensions.Throws<ArgumentException>("value", () => { rm.RequestUri = new Uri("ftp://example.com"); });
         }
 
         [Fact]
@@ -386,7 +369,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupported))]
         public async Task BlobUri_Marshal_CorrectValues_Browser()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 function typedArrayToURL(typedArray, mimeType) {
                     return URL.createObjectURL(new Blob([typedArray.buffer], {type: mimeType}))
                 }
@@ -412,7 +395,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         [Fact]
         public void BlobStringUri_Marshal_CorrectValues()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 function typedArrayToURL(typedArray, mimeType) {
                     // URL.createObjectURL does not work outside of browser but since this was actual
                     // test code from https://developer.mozilla.org/en-US/docs/Web/API/Blob
@@ -441,7 +424,7 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         [Fact]
         public void BlobUri_Marshal_CorrectValues()
         {
-            Runtime.InvokeJS(@"
+            Utils.InvokeJS(@"
                 function typedArrayToURL(typedArray, mimeType) {
                     // URL.createObjectURL does not work outside of browser but since this was actual
                     // test code from https://developer.mozilla.org/en-US/docs/Web/API/Blob
@@ -477,10 +460,8 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
                 throw new NotImplementedException();
             }
 
-#nullable enable
             protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             {
-#nullable disable
                 throw new NotImplementedException();
             }
 

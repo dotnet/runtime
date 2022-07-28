@@ -67,10 +67,7 @@ namespace System.Linq.Expressions.Compiler
         {
             Type lookingUp = initialArg;
             TypeInfo nextTypeInfo;
-            if (curTypeInfo.TypeChain == null)
-            {
-                curTypeInfo.TypeChain = new Dictionary<Type, TypeInfo>();
-            }
+            curTypeInfo.TypeChain ??= new Dictionary<Type, TypeInfo>();
 
             if (!curTypeInfo.TypeChain.TryGetValue(lookingUp, out nextTypeInfo))
             {
@@ -84,8 +81,6 @@ namespace System.Linq.Expressions.Compiler
             return nextTypeInfo;
         }
 
-#if !FEATURE_COMPILE
-
         public delegate object VBCallSiteDelegate0<T>(T callSite, object instance);
         public delegate object VBCallSiteDelegate1<T>(T callSite, object instance, ref object arg1);
         public delegate object VBCallSiteDelegate2<T>(T callSite, object instance, ref object arg1, ref object arg2);
@@ -94,7 +89,6 @@ namespace System.Linq.Expressions.Compiler
         public delegate object VBCallSiteDelegate5<T>(T callSite, object instance, ref object arg1, ref object arg2, ref object arg3, ref object arg4, ref object arg5);
         public delegate object VBCallSiteDelegate6<T>(T callSite, object instance, ref object arg1, ref object arg2, ref object arg3, ref object arg4, ref object arg5, ref object arg6);
         public delegate object VBCallSiteDelegate7<T>(T callSite, object instance, ref object arg1, ref object arg2, ref object arg3, ref object arg4, ref object arg5, ref object arg6, ref object arg7);
-
 
         private static Type TryMakeVBStyledCallSite(Type[] types)
         {
@@ -128,7 +122,6 @@ namespace System.Linq.Expressions.Compiler
                 default: return null;
             }
         }
-#endif
 
         /// <summary>
         /// Creates a new delegate, or uses a func/action
@@ -163,11 +156,14 @@ namespace System.Linq.Expressions.Compiler
 
             if (needCustom)
             {
-#if FEATURE_COMPILE
-                return MakeNewCustomDelegate(types);
-#else
-                return TryMakeVBStyledCallSite(types) ?? MakeNewCustomDelegate(types);
-#endif
+                if (LambdaExpression.CanCompileToIL)
+                {
+                    return MakeNewCustomDelegate(types);
+                }
+                else
+                {
+                    return TryMakeVBStyledCallSite(types) ?? MakeNewCustomDelegate(types);
+                }
             }
 
             Type result;

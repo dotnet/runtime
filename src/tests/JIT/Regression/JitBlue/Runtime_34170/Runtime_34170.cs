@@ -73,7 +73,7 @@ internal struct StructNonAlignedField
     }
 }
 
-class Test
+class Test_Runtime_34170
 {
     private static unsafe int Main()
     {

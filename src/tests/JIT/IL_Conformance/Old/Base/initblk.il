@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly initblk.exe{
+.assembly 'initblk'{
 }
 
 .class public _initblk {

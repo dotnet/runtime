@@ -270,8 +270,7 @@ namespace System.Xml
             if (!CanInsertBefore(newChild, refChild))
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_Location);
 
-            if (newChild.ParentNode != null)
-                newChild.ParentNode.RemoveChild(newChild);
+            newChild.ParentNode?.RemoveChild(newChild);
 
             // special case for doc-fragment.
             if (newChild.NodeType == XmlNodeType.DocumentFragment)
@@ -385,8 +384,7 @@ namespace System.Xml
             if (!CanInsertAfter(newChild, refChild))
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_Location);
 
-            if (newChild.ParentNode != null)
-                newChild.ParentNode.RemoveChild(newChild);
+            newChild.ParentNode?.RemoveChild(newChild);
 
             // special case for doc-fragment.
             if (newChild.NodeType == XmlNodeType.DocumentFragment)
@@ -581,19 +579,14 @@ namespace System.Xml
         // Adds the specified node to the end of the list of children of this node.
         public virtual XmlNode? AppendChild(XmlNode newChild)
         {
-            XmlDocument? thisDoc = OwnerDocument;
-            if (thisDoc == null)
-            {
-                thisDoc = this as XmlDocument;
-            }
+            XmlDocument? thisDoc = OwnerDocument ?? this as XmlDocument;
             if (!IsContainer)
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_Contain);
 
             if (this == newChild || AncestorNode(newChild))
                 throw new ArgumentException(SR.Xdom_Node_Insert_Child);
 
-            if (newChild.ParentNode != null)
-                newChild.ParentNode.RemoveChild(newChild);
+            newChild.ParentNode?.RemoveChild(newChild);
 
             XmlDocument? childDoc = newChild.OwnerDocument;
             if (childDoc != null && childDoc != thisDoc && childDoc != this)
@@ -778,7 +771,7 @@ namespace System.Xml
                                 firstChildTextLikeNode = null;
                             }
 
-                            sb.Remove(0, sb.Length);
+                            sb.Clear();
                             break;
                         }
                 }
@@ -790,7 +783,7 @@ namespace System.Xml
             StringBuilderCache.Release(sb);
         }
 
-        private XmlNode? NormalizeWinner(XmlNode? firstNode, XmlNode secondNode)
+        private static XmlNode? NormalizeWinner(XmlNode? firstNode, XmlNode secondNode)
         {
             //first node has the priority
             if (firstNode == null)
@@ -1051,7 +1044,7 @@ namespace System.Xml
         public virtual void RemoveAll()
         {
             XmlNode? child = FirstChild;
-            XmlNode? sibling = null;
+            XmlNode? sibling;
 
             while (child != null)
             {
@@ -1166,8 +1159,7 @@ namespace System.Xml
         // the prefix defined in that declaration.
         public virtual string GetPrefixOfNamespace(string namespaceURI)
         {
-            string? prefix = GetPrefixOfNamespaceStrict(namespaceURI);
-            return prefix != null ? prefix : string.Empty;
+            return GetPrefixOfNamespaceStrict(namespaceURI) ?? string.Empty;
         }
 
         internal string? GetPrefixOfNamespaceStrict(string namespaceURI)
@@ -1351,7 +1343,7 @@ namespace System.Xml
             get
             {
                 XmlNode? node = this;
-                XmlElement? elem = null;
+                XmlElement? elem;
                 do
                 {
                     elem = node as XmlElement;
@@ -1381,7 +1373,7 @@ namespace System.Xml
             get
             {
                 XmlNode? node = this;
-                XmlElement? elem = null;
+                XmlElement? elem;
                 do
                 {
                     elem = node as XmlElement;
@@ -1471,11 +1463,11 @@ namespace System.Xml
                 {
                     case XmlNodeType.Element:
                     case XmlNodeType.EntityReference:
-                        result += ", Name=\"" + _node.Name + "\"";
+                        result += $", Name=\"{_node.Name}\"";
                         break;
                     case XmlNodeType.Attribute:
                     case XmlNodeType.ProcessingInstruction:
-                        result += ", Name=\"" + _node.Name + "\", Value=\"" + XmlConvert.EscapeValueForDebuggerDisplay(_node.Value!) + "\"";
+                        result += $", Name=\"{_node.Name}\", Value=\"{XmlConvert.EscapeValueForDebuggerDisplay(_node.Value!)}\"";
                         break;
                     case XmlNodeType.Text:
                     case XmlNodeType.CDATA:
@@ -1483,11 +1475,11 @@ namespace System.Xml
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
                     case XmlNodeType.XmlDeclaration:
-                        result += ", Value=\"" + XmlConvert.EscapeValueForDebuggerDisplay(_node.Value!) + "\"";
+                        result += $", Value=\"{XmlConvert.EscapeValueForDebuggerDisplay(_node.Value!)}\"";
                         break;
                     case XmlNodeType.DocumentType:
                         XmlDocumentType documentType = (XmlDocumentType)_node;
-                        result += ", Name=\"" + documentType.Name + "\", SYSTEM=\"" + documentType.SystemId + "\", PUBLIC=\"" + documentType.PublicId + "\", Value=\"" + XmlConvert.EscapeValueForDebuggerDisplay(documentType.InternalSubset!) + "\"";
+                        result += $", Name=\"{documentType.Name}\", SYSTEM=\"{documentType.SystemId}\", PUBLIC=\"{documentType.PublicId}\", Value=\"{XmlConvert.EscapeValueForDebuggerDisplay(documentType.InternalSubset!)}\"";
                         break;
                     default:
                         break;

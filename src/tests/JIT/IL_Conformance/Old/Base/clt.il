@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly clt.exe{
+.assembly 'clt'{
 }
 
 .class public _clt {

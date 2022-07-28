@@ -3,6 +3,7 @@
 
 
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -35,9 +36,9 @@ namespace HostActivation.Tests
             return assertion.HaveStdErrContaining($"Using environment variable {expectedEnvironmentVariable}=[{installLocation}] as runtime location.");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedConfigFileInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        public static AndConstraint<CommandResultAssertions> HaveUsedRegisteredInstallLocation(this CommandResultAssertions assertion, string installLocation)
         {
-            return assertion.HaveStdErrContaining($"Using install location '{installLocation}'.");
+            return assertion.HaveStdErrContaining($"Found registered install location '{installLocation}'.");
         }
 
         public static AndConstraint<CommandResultAssertions> HaveUsedGlobalInstallLocation(this CommandResultAssertions assertion, string installLocation)
@@ -45,14 +46,14 @@ namespace HostActivation.Tests
             return assertion.HaveStdErrContaining($"Using global installation location [{installLocation}]");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveFoundDefaultInstallLocationInConfigFile(this CommandResultAssertions assertion, string installLocation)
+        public static AndConstraint<CommandResultAssertions> HaveLookedForDefaultInstallLocation(this CommandResultAssertions assertion, string installLocationPath)
         {
-            return assertion.HaveStdErrContaining($"Found install location path '{installLocation}'.");
+            return assertion.HaveStdErrContaining($"Looking for install_location file in '{Path.Combine(installLocationPath, "install_location")}'.");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveFoundArchSpecificInstallLocationInConfigFile(this CommandResultAssertions assertion, string installLocation, string arch)
+        public static AndConstraint<CommandResultAssertions> HaveLookedForArchitectureSpecificInstallLocation(this CommandResultAssertions assertion, string installLocationPath, string architecture)
         {
-            return assertion.HaveStdErrContaining($"Found architecture-specific install location path: '{installLocation}' ('{arch}').");
+            return assertion.HaveStdErrContaining($"Looking for architecture-specific install_location file in '{Path.Combine(installLocationPath, "install_location_" + architecture.ToLowerInvariant())}'.");
         }
     }
 }

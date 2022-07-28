@@ -1,16 +1,34 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
 {
     public partial class SslStreamCertificateContext
     {
-        internal readonly X509Certificate2 Certificate;
-        internal readonly X509Certificate2[] IntermediateCertificates;
+        public readonly X509Certificate2 Certificate;
+        public readonly X509Certificate2[] IntermediateCertificates;
+        internal readonly SslCertificateTrust? Trust;
 
-        public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline = false)
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline)
+        {
+            return Create(target, additionalCertificates, offline, null);
+        }
+
+        public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline = false, SslCertificateTrust? trust = null)
+        {
+            return Create(target, additionalCertificates, offline, trust, noOcspFetch: false);
+        }
+
+        internal static SslStreamCertificateContext Create(
+            X509Certificate2 target,
+            X509Certificate2Collection? additionalCertificates,
+            bool offline,
+            SslCertificateTrust? trust,
+            bool noOcspFetch)
         {
             if (!target.HasPrivateKey)
             {
@@ -18,6 +36,8 @@ namespace System.Net.Security
             }
 
             X509Certificate2[] intermediates = Array.Empty<X509Certificate2>();
+            X509Certificate2? root = null;
+
             using (X509Chain chain = new X509Chain())
             {
                 if (additionalCertificates != null)
@@ -48,12 +68,15 @@ namespace System.Net.Security
                     if (TrimRootCertificate)
                     {
                         count--;
+                        root = chain.ChainElements[chain.ChainElements.Count - 1].Certificate;
+
                         foreach (X509ChainStatus status in chain.ChainStatus)
                         {
                             if (status.Status.HasFlag(X509ChainStatusFlags.PartialChain))
                             {
                                 // The last cert isn't a root cert
                                 count++;
+                                root = null;
                                 break;
                             }
                         }
@@ -81,13 +104,22 @@ namespace System.Net.Security
                 }
             }
 
-            return new SslStreamCertificateContext(target, intermediates);
+            SslStreamCertificateContext ctx = new SslStreamCertificateContext(target, intermediates, trust);
+
+            // On Linux, AddRootCertificate will start a background download of an OCSP response,
+            // unless this context was built "offline", or this came from the internal Create(X509Certificate2)
+            ctx.SetNoOcspFetch(offline || noOcspFetch);
+            ctx.AddRootCertificate(root);
+
+            return ctx;
         }
+
+        partial void AddRootCertificate(X509Certificate2? rootCertificate);
+        partial void SetNoOcspFetch(bool noOcspFetch);
 
         internal SslStreamCertificateContext Duplicate()
         {
-            return new SslStreamCertificateContext(new X509Certificate2(Certificate), IntermediateCertificates);
-
+            return new SslStreamCertificateContext(new X509Certificate2(Certificate), IntermediateCertificates, Trust);
         }
     }
 }

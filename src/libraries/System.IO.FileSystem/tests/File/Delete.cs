@@ -10,6 +10,8 @@ namespace System.IO.Tests
     {
         static bool IsBindMountSupported => OperatingSystem.IsLinux() && !PlatformDetection.IsInContainer;
 
+        private static bool IsBindMountSupportedAndOnUnixAndSuperUser => IsBindMountSupported && PlatformDetection.IsUnixAndSuperUser;
+
         protected virtual void Delete(string path)
         {
             File.Delete(path);
@@ -81,11 +83,11 @@ namespace System.IO.Tests
             Assert.Throws<UnauthorizedAccessException>(() => Delete(TestDirectory));
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void DeletingSymLinkDoesntDeleteTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = GetTestFilePath();
+            var linkPath = GetRandomLinkPath();
 
             File.Create(path).Dispose();
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false));
@@ -114,10 +116,9 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [ConditionalFact(nameof(IsBindMountSupported))]
+        [ConditionalFact(nameof(IsBindMountSupportedAndOnUnixAndSuperUser))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
-        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void Unix_NonExistentPath_ReadOnlyVolume()
         {
             ReadOnly_FileSystemHelper(readOnlyDirectory =>
@@ -126,10 +127,9 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(IsBindMountSupported))]
+        [ConditionalFact(nameof(IsBindMountSupportedAndOnUnixAndSuperUser))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
-        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void Unix_ExistingDirectory_ReadOnlyVolume()
         {
             ReadOnly_FileSystemHelper(readOnlyDirectory =>

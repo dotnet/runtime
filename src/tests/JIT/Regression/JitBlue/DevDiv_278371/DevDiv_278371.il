@@ -12,6 +12,7 @@
 }
 
 .assembly DevDiv_278371 {}
+.assembly extern xunit.core {}
 
 .class public sequential ansi sealed beforefieldinit S
        extends [mscorlib]System.ValueType
@@ -36,6 +37,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (valuetype S V_0,
              bool V_1,

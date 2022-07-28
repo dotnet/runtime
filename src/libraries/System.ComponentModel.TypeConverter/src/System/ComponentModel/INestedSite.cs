@@ -13,6 +13,6 @@ namespace System.ComponentModel
         /// Returns the full name of the component in this site in the format of &lt;owner&gt;.&lt;component&gt;.
         /// If this component's site has a null name, FullName also returns null.
         /// </summary>
-        string FullName { get; }
+        string? FullName { get; }
     }
 }

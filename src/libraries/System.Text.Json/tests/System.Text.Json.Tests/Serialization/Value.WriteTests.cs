@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Text.Encodings.Web;
 using Newtonsoft.Json;
 using Xunit;
@@ -48,7 +49,7 @@ namespace System.Text.Json.Serialization.Tests
 
             {
                 Span<byte> json = JsonSerializer.SerializeToUtf8Bytes(1);
-                Assert.Equal(Encoding.UTF8.GetBytes("1"), json.ToArray());
+                Assert.Equal("1"u8.ToArray(), json.ToArray());
             }
 
             {
@@ -111,6 +112,81 @@ namespace System.Text.Json.Serialization.Tests
                 Version version = new Version(1, 2, 3, 4);
                 Assert.Equal(@"""1.2.3.4""", JsonSerializer.Serialize(version));
             }
+
+            {
+                Version version = new Version(int.MaxValue, int.MaxValue);
+                Assert.Equal(@"""2147483647.2147483647""", JsonSerializer.Serialize(version));
+            }
+
+            {
+                Version version = new Version(int.MaxValue, int.MaxValue, int.MaxValue);
+                Assert.Equal(@"""2147483647.2147483647.2147483647""", JsonSerializer.Serialize(version));
+            }
+
+            {
+                Version version = new Version(int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue);
+                Assert.Equal(@"""2147483647.2147483647.2147483647.2147483647""", JsonSerializer.Serialize(version));
+            }
         }
+
+        [Theory]
+        [InlineData("1:59:59", "01:59:59")]
+        [InlineData("23:59:59")]
+        [InlineData("23:59:59.9", "23:59:59.9000000")]
+        [InlineData("23:59:59.9999999")]
+        [InlineData("1.23:59:59")]
+        [InlineData("9999999.23:59:59.9999999")]
+        [InlineData("-9999999.23:59:59.9999999")]
+        [InlineData("10675199.02:48:05.4775807")] // TimeSpan.MaxValue
+        [InlineData("-10675199.02:48:05.4775808")] // TimeSpan.MinValue
+        public static void TimeSpan_Write_Success(string value, string? expectedValue = null)
+        {
+            TimeSpan ts = TimeSpan.Parse(value);
+            string json = JsonSerializer.Serialize(ts);
+
+            Assert.Equal($"\"{expectedValue ?? value}\"", json);
+            Assert.Equal(json, JsonConvert.SerializeObject(ts));
+        }
+
+#if NETCOREAPP
+        [Theory]
+        [InlineData("1970-01-01")]
+        [InlineData("2002-02-13")]
+        [InlineData("2022-05-10")]
+        [InlineData("0001-01-01")] // DateOnly.MinValue
+        [InlineData("9999-12-31")] // DateOnly.MaxValue
+        public static void DateOnly_Write_Success(string value)
+        {
+            DateOnly ts = DateOnly.Parse(value);
+            string json = JsonSerializer.Serialize(ts);
+            Assert.Equal($"\"{value}\"", json);
+        }
+
+        [Theory]
+        [InlineData("1970-01-01")]
+        [InlineData("2002-02-13")]
+        [InlineData("2022-05-10")]
+        [InlineData("0001-01-01")] // DateOnly.MinValue
+        [InlineData("9999-12-31")] // DateOnly.MaxValue
+        public static void DateOnly_WriteDictionaryKey_Success(string value)
+        {
+            var dict = new Dictionary<DateOnly, int> { [DateOnly.Parse(value)] = 0 };
+            string json = JsonSerializer.Serialize(dict);
+            Assert.Equal($@"{{""{value}"":0}}", json);
+        }
+
+        [Theory]
+        [InlineData("1:59:59", "01:59:59")]
+        [InlineData("23:59:59")]
+        [InlineData("23:59:59.9", "23:59:59.9000000")]
+        [InlineData("00:00:00")] // TimeOnly.MinValue
+        [InlineData("23:59:59.9999999")] // TimeOnly.MaxValue
+        public static void TimeOnly_Write_Success(string value, string? expectedValue = null)
+        {
+            TimeOnly ts = TimeOnly.Parse(value);
+            string json = JsonSerializer.Serialize(ts);
+            Assert.Equal($"\"{expectedValue ?? value}\"", json);
+        }
+#endif
     }
 }

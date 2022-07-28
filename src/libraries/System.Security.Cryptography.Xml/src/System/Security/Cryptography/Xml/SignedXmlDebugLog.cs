@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Xml
     internal static class SignedXmlDebugLog
     {
         //
-        // In order to enable XML digital signature debug loggging, applications should setup their config
+        // In order to enable XML digital signature debug logging, applications should setup their config
         // file to be similar to the following:
         //
         // <configuration>
@@ -219,7 +219,7 @@ namespace System.Security.Cryptography.Xml
             // * All others       -> hash code
             //
 
-            string keyName = null;
+            string keyName;
 #pragma warning disable CA1416 // This call site is reachable on all platforms. 'CspKeyContainerInfo.KeyContainerName' is supported on: 'windows'.
             if (cspKey != null && cspKey.CspKeyContainerInfo.KeyContainerName != null)
             {
@@ -249,7 +249,7 @@ namespace System.Security.Cryptography.Xml
         {
             Debug.Assert(o != null, "o != null");
 
-            return $"{o.GetType().Name}#{o.GetHashCode().ToString("x8", CultureInfo.InvariantCulture)}";
+            return $"{o.GetType().Name}#{o.GetHashCode():x8}";
         }
 
         /// <summary>
@@ -338,7 +338,7 @@ namespace System.Security.Cryptography.Xml
             {
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_CheckSignedInfo,
-                                                  signedInfo.Id != null ? signedInfo.Id : NullString);
+                                                  signedInfo.Id ?? NullString);
                 WriteLine(signedXml, TraceEventType.Information, SignedXmlDebugEvent.BeginCheckSignedInfo, logMessage);
             }
         }
@@ -586,7 +586,7 @@ namespace System.Security.Cryptography.Xml
 
                 // First read the input stream into our temporary stream
                 byte[] buffer = new byte[4096];
-                int readBytes = 0;
+                int readBytes;
                 do
                 {
                     readBytes = data.Read(buffer, 0, buffer.Length);

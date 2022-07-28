@@ -60,7 +60,7 @@ public class Gen<T, U, V>
     }
 }
 
-public class Test
+public class Test_class03
 {
     public static int counter = 0;
     public static bool result = true;

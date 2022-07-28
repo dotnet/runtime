@@ -21,18 +21,16 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="source">The source configuration.</param>
         public ChainedConfigurationProvider(ChainedConfigurationSource source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (source.Configuration == null)
-            {
-                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Configuration"), nameof(source));
-            }
+            ThrowHelper.ThrowIfNull(source);
 
-            _config = source.Configuration;
+            _config = source.Configuration ?? throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Configuration"), nameof(source));
             _shouldDisposeConfig = source.ShouldDisposeConfiguration;
         }
+
+        /// <summary>
+        /// Gets the chained configuration.
+        /// </summary>
+        public IConfiguration Configuration => _config;
 
         /// <summary>
         /// Tries to get a configuration value for the specified key.
@@ -40,7 +38,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
         /// <returns><c>True</c> if a value for the specified key was found, otherwise <c>false</c>.</returns>
-        public bool TryGet(string key, out string value)
+        public bool TryGet(string key, out string? value)
         {
             value = _config[key];
             return !string.IsNullOrEmpty(value);
@@ -51,7 +49,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
-        public void Set(string key, string value) => _config[key] = value;
+        public void Set(string key, string? value) => _config[key] = value;
 
         /// <summary>
         /// Returns a change token if this provider supports change tracking, null otherwise.
@@ -74,7 +72,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The child keys.</returns>
         public IEnumerable<string> GetChildKeys(
             IEnumerable<string> earlierKeys,
-            string parentPath)
+            string? parentPath)
         {
             IConfiguration section = parentPath == null ? _config : _config.GetSection(parentPath);
             var keys = new List<string>();

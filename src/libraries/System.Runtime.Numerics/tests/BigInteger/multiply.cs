@@ -44,7 +44,7 @@ namespace System.Numerics.Tests
             // Again, with lower threshold
             BigIntTools.Utils.RunWithFakeThreshold("SquareThreshold", 8, () =>
                 BigIntTools.Utils.RunWithFakeThreshold("MultiplyThreshold", 8, () =>
-                    BigIntTools.Utils.RunWithFakeThreshold("AllocationThreshold", 8, RunMultiply_TwoLargeBigIntegers)
+                    BigIntTools.Utils.RunWithFakeThreshold("StackAllocThreshold", 8, RunMultiply_TwoLargeBigIntegers)
                 )
             );
         }
@@ -202,6 +202,30 @@ namespace System.Numerics.Tests
 
             // 32 bit boundary  n1=0 n2=1
             VerifyMultiplyString(Math.Pow(2, 33) + " 2 bMultiply");
+        }
+
+        [Fact]
+        public static void RunMultiply_OnePositiveOneNegative()
+        {
+            Random random = new Random(s_seed);
+            byte[] tempByteArray1 = new byte[0];
+
+            // Multiply Method - One positive and one negative BigIntegers
+            for (int i = 0; i < s_samples; i++)
+            {
+                try
+                {
+                    tempByteArray1 = GetRandomByteArray(random);
+                    string randBigInt = Print(tempByteArray1);
+                    VerifyMultiplyString(randBigInt + randBigInt + "uNegate bMultiply");
+
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    Console.WriteLine("Array1: " + Print(tempByteArray1));
+                    throw;
+                }
+            }
         }
 
         private static void VerifyMultiplyString(string opstring)

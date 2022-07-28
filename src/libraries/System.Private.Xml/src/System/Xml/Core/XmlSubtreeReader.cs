@@ -1300,10 +1300,7 @@ namespace System.Xml
             _nsManager.AddNamespace(prefix, ns);
 
             int index = _nsAttrCount++;
-            if (_nsAttributes == null)
-            {
-                _nsAttributes = new NodeData[InitialNamespaceAttributeCount];
-            }
+            _nsAttributes ??= new NodeData[InitialNamespaceAttributeCount];
 
             if (index == _nsAttributes.Length)
             {
@@ -1326,7 +1323,7 @@ namespace System.Xml
             {
                 localName = prefix;
                 attrPrefix = _xmlns;
-                name = reader.NameTable.Add(string.Concat(_xmlns, ":", prefix));
+                name = reader.NameTable.Add($"{_xmlns}:{prefix}");
             }
 
             if (_nsAttributes[index] == null)
@@ -1580,12 +1577,10 @@ namespace System.Xml
             }
         }
 
-        private void CheckBuffer(Array buffer, int index, int count)
+        private static void CheckBuffer(Array buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));

@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32605.63
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DependencyGraphViewer", "DependencyGraphViewer.csproj", "{03F15361-EAF4-4A06-8A2B-BD0304618CEA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DependecyGraphViewer.Tests", "Tests\DependecyGraphViewer.Tests.csproj", "{F4950BFC-87A9-4158-AB4F-1311CFC15700}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{03F15361-EAF4-4A06-8A2B-BD0304618CEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03F15361-EAF4-4A06-8A2B-BD0304618CEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03F15361-EAF4-4A06-8A2B-BD0304618CEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03F15361-EAF4-4A06-8A2B-BD0304618CEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4950BFC-87A9-4158-AB4F-1311CFC15700}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4950BFC-87A9-4158-AB4F-1311CFC15700}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4950BFC-87A9-4158-AB4F-1311CFC15700}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4950BFC-87A9-4158-AB4F-1311CFC15700}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E06F254B-B3D1-456A-8707-75953B49D7C6}
+	EndGlobalSection
+EndGlobal

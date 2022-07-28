@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -13,21 +12,6 @@ namespace Functions
         private const double powDoubleDeltaX = -0.0004;
         private const double powDoubleDeltaY = 0.0004;
         private const double powDoubleExpectedResult = 4659.4627376138733;
-
-        [Benchmark(InnerIterationCount = PowDoubleIterations)]
-        public static void PowDoubleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        PowDoubleTest();
-                    }
-                }
-            }
-        }
 
         public static void PowDoubleTest()
         {

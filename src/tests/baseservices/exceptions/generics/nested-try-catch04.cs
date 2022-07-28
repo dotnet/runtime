@@ -35,27 +35,27 @@ public class Gen<T>
 				{
 					throw new GenException<T>();
 				}
-				Test.Eval(!throwException);
+				Test_nested_try_catch04.Eval(!throwException);
 			}
 			catch(GenException<T>)
 			{
-				Test.Eval(throwException);
+				Test_nested_try_catch04.Eval(throwException);
 				throw;
 			}
 		}
 		catch(GenException<T>)
 		{
-			Test.Eval(throwException);
+			Test_nested_try_catch04.Eval(throwException);
 		}
 		finally
 		{
 			set = true;
 		}
-		Test.Eval(set);
+		Test_nested_try_catch04.Eval(set);
 	}
 }
 
-public class Test
+public class Test_nested_try_catch04
 {
 	public static int counter = 0;
 	public static bool result = true;

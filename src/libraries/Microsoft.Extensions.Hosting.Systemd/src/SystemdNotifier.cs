@@ -2,23 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
 using System.Net.Sockets;
+using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Hosting.Systemd
 {
+    [UnsupportedOSPlatform("browser")]
     public class SystemdNotifier : ISystemdNotifier
     {
         private const string NOTIFY_SOCKET = "NOTIFY_SOCKET";
 
-        private readonly string _socketPath;
+        private readonly string? _socketPath;
 
         public SystemdNotifier() :
             this(GetNotifySocketPath())
         { }
 
         // For testing
-        internal SystemdNotifier(string socketPath)
+        internal SystemdNotifier(string? socketPath)
         {
             _socketPath = socketPath;
         }
@@ -36,7 +37,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
 
             using (var socket = new Socket(AddressFamily.Unix, SocketType.Dgram, ProtocolType.Unspecified))
             {
-                var endPoint = new UnixDomainSocketEndPoint(_socketPath);
+                var endPoint = new UnixDomainSocketEndPoint(_socketPath!);
                 socket.Connect(endPoint);
 
                 // It's safe to do a non-blocking call here: messages sent here are much
@@ -45,9 +46,9 @@ namespace Microsoft.Extensions.Hosting.Systemd
             }
         }
 
-        private static string GetNotifySocketPath()
+        private static string? GetNotifySocketPath()
         {
-            string socketPath = Environment.GetEnvironmentVariable(NOTIFY_SOCKET);
+            string? socketPath = Environment.GetEnvironmentVariable(NOTIFY_SOCKET);
 
             if (string.IsNullOrEmpty(socketPath))
             {
@@ -57,7 +58,11 @@ namespace Microsoft.Extensions.Hosting.Systemd
             // Support abstract socket paths.
             if (socketPath[0] == '@')
             {
-                socketPath = "\0" + socketPath.Substring(1);
+                socketPath = string.Create(socketPath.Length, socketPath, (buffer, state) =>
+                {
+                    buffer[0] = '\0';
+                    state.AsSpan(1).CopyTo(buffer.Slice(1));
+                });
             }
 
             return socketPath;

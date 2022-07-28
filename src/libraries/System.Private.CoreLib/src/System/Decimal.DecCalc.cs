@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
+
 using X86 = System.Runtime.Intrinsics.X86;
 
 namespace System
@@ -17,11 +17,7 @@ namespace System
         internal uint Low => (uint)_lo64;
         internal uint Mid => (uint)(_lo64 >> 32);
 
-        internal bool IsNegative => _flags < 0;
-
-        internal int Scale => (byte)(_flags >> ScaleShift);
-
-        private ulong Low64 => _lo64;
+        internal ulong Low64 => _lo64;
 
         private static ref DecCalc AsMutable(ref decimal d) => ref Unsafe.As<decimal, DecCalc>(ref d);
 
@@ -1879,7 +1875,7 @@ ReturnZero:
                 double dbl = ((double)value.Low64 +
                     (double)value.High * ds2to64) / s_doublePowers10[value.Scale];
 
-                if (value.IsNegative)
+                if (decimal.IsNegative(value))
                     dbl = -dbl;
 
                 return dbl;

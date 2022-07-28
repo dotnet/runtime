@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Keep in sync with https://github.com/dotnet/corert/blob/master/src/Native/ObjWriter/cordebuginfo.h
+// Keep in sync with llvm/tools/objwriter/cordebuginfo.h in current objwriter branch in https://github.com/dotnet/llvm-project repo
 //
 
 /**********************************************************************************/
@@ -18,7 +18,7 @@ public:
         NO_MAPPING  = -1,
         PROLOG      = -2,
         EPILOG      = -3,
-        MAX_MAPPING_VALUE = -3 // Sentinal value. This should be set to the largest magnitude value in the enum
+        MAX_MAPPING_VALUE = -3 // Sentinel value. This should be set to the largest magnitude value in the enum
                                // so that the compression routines know the enum's range.
     };
 
@@ -52,7 +52,7 @@ public:
     struct OffsetMapping
     {
         uint32_t        nativeOffset;
-        uint32_t        ilOffset;
+        uint32_t        ilOffset; // IL offset or one of the special values in MappingTypes
         SourceTypes     source; // The debugger needs this so that
                                 // we don't put Edit and Continue breakpoints where
                                 // the stack isn't empty.  We can put regular breakpoints
@@ -145,6 +145,40 @@ public:
         REGNUM_R13,
         REGNUM_R14,
         REGNUM_R15,
+#elif TARGET_LOONGARCH64
+        REGNUM_R0,
+        REGNUM_RA,
+        REGNUM_TP,
+        REGNUM_SP,
+        REGNUM_A0,
+        REGNUM_A1,
+        REGNUM_A2,
+        REGNUM_A3,
+        REGNUM_A4,
+        REGNUM_A5,
+        REGNUM_A6,
+        REGNUM_A7,
+        REGNUM_T0,
+        REGNUM_T1,
+        REGNUM_T2,
+        REGNUM_T3,
+        REGNUM_T4,
+        REGNUM_T5,
+        REGNUM_T6,
+        REGNUM_T7,
+        REGNUM_T8,
+        REGNUM_X0,
+        REGNUM_FP,
+        REGNUM_S0,
+        REGNUM_S1,
+        REGNUM_S2,
+        REGNUM_S3,
+        REGNUM_S4,
+        REGNUM_S5,
+        REGNUM_S6,
+        REGNUM_S7,
+        REGNUM_S8,
+        REGNUM_PC,
 #else
         PORTABILITY_WARNING("Register numbers not defined on this platform")
 #endif
@@ -164,6 +198,8 @@ public:
         REGNUM_FP = REGNUM_R11,
 #endif //REDHAWK
 #elif TARGET_ARM64
+        //Nothing to do here. FP is already alloted.
+#elif TARGET_LOONGARCH64
         //Nothing to do here. FP is already alloted.
 #else
         // RegNum values should be properly defined for this platform
@@ -261,7 +297,7 @@ public:
     };
 
     // VLT_FPSTK -- enregisterd TYP_DOUBLE (on the FP stack)
-    // eg. ST(3). Actually it is ST("FPstkHeigth - vpFpStk")
+    // eg. ST(3). Actually it is ST("FPstkHeight - vpFpStk")
 
     struct vlFPstk
     {
@@ -315,7 +351,7 @@ public:
 
         UNKNOWN_ILNUM       = -4, // Unknown variable
 
-        MAX_ILNUM           = -4  // Sentinal value. This should be set to the largest magnitude value in th enum
+        MAX_ILNUM           = -4  // Sentinel value. This should be set to the largest magnitude value in th enum
                                   // so that the compression routines know the enum's range.
     };
 
@@ -332,5 +368,32 @@ public:
         uint32_t        endOffset;
         uint32_t        varNumber;
         VarLoc          loc;
+    };
+
+    // Represents an individual entry in the inline tree.
+    // This is ordinarily stored as a flat array in which [0] is the root, and
+    // the indices below indicate the tree structure.
+    struct InlineTreeNode
+    {
+        // Method handle of inlinee (or root)
+        CORINFO_METHOD_HANDLE Method;
+        // IL offset of IL instruction resulting in the inline
+        uint32_t ILOffset;
+        // Index of child in tree, 0 if no children
+        uint32_t Child;
+        // Index of sibling in tree, 0 if no sibling
+        uint32_t Sibling;
+    };
+
+    struct RichOffsetMapping
+    {
+        // Offset in emitted code
+        uint32_t NativeOffset;
+        // Index of inline tree node containing the IL offset (0 for root)
+        uint32_t Inlinee;
+        // IL offset of IL instruction in inlinee that this mapping was created from
+        uint32_t ILOffset;
+        // Source information about the IL instruction in the inlinee
+        SourceTypes Source;
     };
 };

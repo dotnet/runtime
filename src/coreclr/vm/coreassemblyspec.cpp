@@ -15,47 +15,18 @@
 #include "appdomain.inl"
 #include <peimage.h>
 #include "peimagelayout.inl"
-#include "domainfile.h"
+#include "domainassembly.h"
 #include "holder.h"
 #include "bundle.h"
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
-#include "../binder/inc/textualidentityparser.hpp"
 #include "../binder/inc/assemblyidentity.hpp"
 #include "../binder/inc/assembly.hpp"
 #include "../binder/inc/assemblyname.hpp"
 
-#include "../binder/inc/coreclrbindercommon.h"
+#include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
-
-STDAPI BinderAddRefPEImage(PEImage *pPEImage)
-{
-    HRESULT hr = S_OK;
-
-    if (pPEImage != NULL)
-    {
-        pPEImage->AddRef();
-    }
-
-    return hr;
-}
-
-STDAPI BinderReleasePEImage(PEImage *pPEImage)
-{
-    HRESULT hr = S_OK;
-
-    if (pPEImage != NULL)
-    {
-        pPEImage->Release();
-    }
-
-    return hr;
-}
 
 static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
 {
@@ -68,100 +39,61 @@ static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
     CONTRACTL_END;
 
     StackSString name;
-    pSpec->GetFileOrDisplayName(0, name);
+    pSpec->GetDisplayName(0, name);
     EEFileLoadException::Throw(name, hr);
 }
 
-// See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
-// and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
-// for an example of how they're used.
-VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
-                         BOOL            fThrowOnFileNotFound,
-                         CoreBindResult *pResult,
-                         BOOL fNgenExplicitBind /* = FALSE */,
-                         BOOL fExplicitBindToNativeImage /* = FALSE */)
+HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pResult));
+        PRECONDITION(CheckPointer(ppAssembly));
         PRECONDITION(CheckPointer(pAppDomain));
         PRECONDITION(IsCoreLib() == FALSE); // This should never be called for CoreLib (explicit loading)
     }
     CONTRACTL_END;
 
-    ReleaseHolder<BINDER_SPACE::Assembly> result;
     HRESULT hr=S_OK;
 
-    pResult->Reset();
-
     // Have a default binding context setup
-    ICLRPrivBinder *pBinder = GetBindingContextFromParentAssembly(pAppDomain);
+    AssemblyBinder *pBinder = GetBinderFromParentAssembly(pAppDomain);
 
-    // Get the reference to the TPABinder context
-    CLRPrivBinderCoreCLR *pTPABinder = pAppDomain->GetTPABinderContext();
-
-    ReleaseHolder<ICLRPrivAssembly> pPrivAsm;
+    ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
 
-    if (m_wszCodeBase == NULL && IsCoreLibSatellite())
+    if (IsCoreLibSatellite())
     {
         StackSString sSystemDirectory(SystemDomain::System()->SystemDirectory());
-        StackSString tmpString;
         StackSString sSimpleName;
-        StackSString sCultureName;
+        SmallStackSString sCultureName;
 
-        tmpString.SetUTF8(m_pAssemblyName);
-        tmpString.ConvertToUnicode(sSimpleName);
+        SString(SString::Utf8Literal, m_pAssemblyName).ConvertToUnicode(sSimpleName);
+        if (m_context.szLocale != NULL)
+            SString(SString::Utf8Literal, m_context.szLocale).ConvertToUnicode(sCultureName);
 
-        tmpString.Clear();
-        if ((m_context.szLocale != NULL) && (m_context.szLocale[0] != 0))
-        {
-            tmpString.SetUTF8(m_context.szLocale);
-            tmpString.ConvertToUnicode(sCultureName);
-        }
-
-        hr = CCoreCLRBinderHelper::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
+        hr = BINDER_SPACE::AssemblyBinderCommon::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
     }
-    else if (m_wszCodeBase == NULL)
+    else
     {
-        // For name based binding these arguments shouldn't have been changed from default
-        _ASSERTE(!fNgenExplicitBind && !fExplicitBindToNativeImage);
         AssemblyNameData assemblyNameData = { 0 };
         PopulateAssemblyNameData(assemblyNameData);
         hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm);
     }
-    else
-    {
-        hr = pTPABinder->Bind(m_wszCodeBase,
-                              GetParentAssembly() ? GetParentAssembly()->GetFile() : NULL,
-                              fNgenExplicitBind,
-                              fExplicitBindToNativeImage,
-                              &pPrivAsm);
-    }
 
-    pResult->SetHRBindResult(hr);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pPrivAsm != nullptr);
-
-        result = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(pPrivAsm.Extract());
-        _ASSERTE(result != nullptr);
-
-        pResult->Init(result);
+        *ppAssembly = pPrivAsm.Extract();
     }
-    else if (FAILED(hr) && (fThrowOnFileNotFound || (!Assembly::FileNotFound(hr))))
-    {
-        ThrowLoadError(this, hr);
-    }
+
+    return hr;
 }
 
 
 STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
                             PEImage           **ppPEImage,
-                            PEImage           **ppNativeImage,
-                            BOOL                fExplicitBindToNativeImage,
                             BundleFileLocation  bundleFileLocation)
 {
     HRESULT hr = S_OK;
@@ -170,40 +102,17 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
 
     EX_TRY
     {
-        PEImageHolder pImage = NULL;
-        PEImageHolder pNativeImage = NULL;
+        PEImageHolder pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
 
-#ifdef FEATURE_PREJIT
-        // fExplicitBindToNativeImage is set on Phone when we bind to a list of native images and have no IL on device for an assembly
-        if (fExplicitBindToNativeImage)
+        // Make sure that the IL image can be opened.
+        hr=pImage->TryOpenFile();
+        if (FAILED(hr))
         {
-            pNativeImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_TrustedNativeImage, bundleFileLocation);
-
-            // Make sure that the IL image can be opened if the native image is not available.
-            hr=pNativeImage->TryOpenFile();
-            if (FAILED(hr))
-            {
-                goto Exit;
-            }
-        }
-        else
-#endif
-        {
-            pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
-
-            // Make sure that the IL image can be opened if the native image is not available.
-            hr=pImage->TryOpenFile();
-            if (FAILED(hr))
-            {
-                goto Exit;
-            }
+            goto Exit;
         }
 
         if (pImage)
             *ppPEImage = pImage.Extract();
-
-        if (ppNativeImage)
-            *ppNativeImage = pNativeImage.Extract();
     }
     EX_CATCH_HRESULT(hr);
 
@@ -211,40 +120,9 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
     return hr;
 }
 
-STDAPI BinderHasNativeHeader(PEImage *pPEImage, BOOL* result)
-{
-    HRESULT hr = S_OK;
-
-    _ASSERTE(pPEImage != NULL);
-    _ASSERTE(result != NULL);
-
-    EX_TRY
-    {
-        *result = pPEImage->HasNativeHeader();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (FAILED(hr))
-    {
-        *result = false;
-
-#if defined(TARGET_UNIX)
-        // PAL_LOADLoadPEFile may fail while loading IL masquerading as NI.
-        // This will result in a ThrowHR(E_FAIL).  Suppress the error.
-        if(hr == E_FAIL)
-        {
-            hr = S_OK;
-        }
-#endif // defined(TARGET_UNIX)
-    }
-
-    return hr;
-}
-
 STDAPI BinderAcquireImport(PEImage                  *pPEImage,
                            IMDInternalImport       **ppIAssemblyMetaDataImport,
-                           DWORD                    *pdwPAFlags,
-                           BOOL                      bNativeImage)
+                           DWORD                    *pdwPAFlags)
 {
     HRESULT hr = S_OK;
 
@@ -254,7 +132,7 @@ STDAPI BinderAcquireImport(PEImage                  *pPEImage,
 
     EX_TRY
     {
-        PEImageLayoutHolder pLayout(pPEImage->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED));
+        PEImageLayout* pLayout = pPEImage->GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
 
         // CheckCorHeader includes check of NT headers too
         if (!pLayout->CheckCorHeader())
@@ -263,23 +141,12 @@ STDAPI BinderAcquireImport(PEImage                  *pPEImage,
         if (!pLayout->CheckFormat())
             IfFailGo(COR_E_BADIMAGEFORMAT);
 
-#ifdef FEATURE_PREJIT
-        if (bNativeImage && pPEImage->IsNativeILILOnly())
-        {
-            pPEImage->GetNativeILPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
-        }
-        else
-#endif
-        {
-            pPEImage->GetPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
-        }
+        pPEImage->GetPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
 
         *ppIAssemblyMetaDataImport = pPEImage->GetMDImport();
         if (!*ppIAssemblyMetaDataImport)
         {
-            // Some native images don't contain metadata, to reduce size
-            if (!bNativeImage)
-                IfFailGo(COR_E_BADIMAGEFORMAT);
+            IfFailGo(COR_E_BADIMAGEFORMAT);
         }
         else
             (*ppIAssemblyMetaDataImport)->AddRef();
@@ -289,63 +156,75 @@ ErrExit:
     return hr;
 }
 
-HRESULT BaseAssemblySpec::ParseName()
+void BaseAssemblySpec::Init(SString& assemblyDisplayName)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        GC_TRIGGERS;
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    PCWSTR pAssemblyDisplayName = assemblyDisplayName.GetUnicode();
+
+    GCX_COOP();
+
+    OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLY_NAME__PARSE_AS_ASSEMBLYSPEC);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pAssemblyDisplayName);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(this);
+    CALL_MANAGED_METHOD_NORET(args);
+}
+
+extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, BaseAssemblySpec* pAssemblySpec)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    StackSString ssName;
+    ssName.SetAndConvertToUTF8(pAssemblyNameParts->_pName);
+
+    AssemblyMetaDataInternal asmInfo;
+
+    asmInfo.usMajorVersion = pAssemblyNameParts->_major;
+    asmInfo.usMinorVersion = pAssemblyNameParts->_minor;
+    asmInfo.usBuildNumber = pAssemblyNameParts->_build;
+    asmInfo.usRevisionNumber = pAssemblyNameParts->_revision;
+
+    SmallStackSString ssLocale;
+    if (pAssemblyNameParts->_pCultureName != NULL)
+        ssLocale.SetAndConvertToUTF8(pAssemblyNameParts->_pCultureName);
+    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8() : NULL;
+
+    // Initialize spec
+    pAssemblySpec->Init(ssName.GetUTF8(), &asmInfo,
+        pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, pAssemblyNameParts->_flags);
+
+    // Copy and own any fields we do not own
+    pAssemblySpec->CloneFields();
+
+    END_QCALL;
+}
+
+HRESULT BaseAssemblySpec::InitNoThrow(SString& assemblyDisplayName)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
         GC_TRIGGERS;
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END;
-
-    if (!m_pAssemblyName)
-        return S_OK;
 
     HRESULT hr = S_OK;
 
     EX_TRY
     {
-        NewHolder<BINDER_SPACE::AssemblyIdentityUTF8> pAssemblyIdentity;
-        AppDomain *pDomain = ::GetAppDomain();
-        _ASSERTE(pDomain);
-
-        BINDER_SPACE::ApplicationContext *pAppContext = NULL;
-        CLRPrivBinderCoreCLR *pBinder = pDomain->GetTPABinderContext();
-        if (pBinder != NULL)
-        {
-            pAppContext = pBinder->GetAppContext();
-        }
-
-        hr = CCoreCLRBinderHelper::GetAssemblyIdentity(m_pAssemblyName, pAppContext, pAssemblyIdentity);
-
-        if (FAILED(hr))
-        {
-            m_ownedFlags |= BAD_NAME_OWNED;
-            IfFailThrow(hr);
-        }
-
-        // Name - does not copy the data
-        SetName(pAssemblyIdentity->GetSimpleNameUTF8());
-
-        // Culture - does not copy the data
-        if (pAssemblyIdentity->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE))
-        {
-            if (!pAssemblyIdentity->m_cultureOrLanguage.IsEmpty())
-            {
-                SetCulture(pAssemblyIdentity->GetCultureOrLanguageUTF8());
-            }
-            else
-            {
-                SetCulture("");
-            }
-        }
-
-        InitializeWithAssemblyIdentity(pAssemblyIdentity);
-
-        // Copy and own any fields we do not already own
-        CloneFields();
+        Init(assemblyDisplayName);
     }
     EX_CATCH_HRESULT(hr);
 
@@ -438,42 +317,6 @@ void BaseAssemblySpec::InitializeWithAssemblyIdentity(BINDER_SPACE::AssemblyIden
     }
 }
 
-VOID BaseAssemblySpec::GetFileOrDisplayName(DWORD flags, SString &result) const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        INJECT_FAULT(ThrowOutOfMemory());
-        PRECONDITION(CheckValue(result));
-        PRECONDITION(result.IsEmpty());
-    }
-    CONTRACTL_END;
-
-    if (m_wszCodeBase)
-    {
-        result.Set(m_wszCodeBase);
-        return;
-    }
-
-    GetDisplayNameInternal(flags, result);
-}
-
-VOID BaseAssemblySpec::GetDisplayName(DWORD flags, SString &result) const
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        INJECT_FAULT(ThrowOutOfMemory());
-        PRECONDITION(CheckValue(result));
-        PRECONDITION(result.IsEmpty());
-    }
-    CONTRACTL_END;
-
-    GetDisplayNameInternal(flags, result);
-}
-
 namespace
 {
     PEKIND GetProcessorArchitectureFromAssemblyFlags(DWORD flags)
@@ -497,7 +340,7 @@ namespace
     }
 }
 
-VOID BaseAssemblySpec::GetDisplayNameInternal(DWORD flags, SString &result) const
+VOID BaseAssemblySpec::GetDisplayName(DWORD flags, SString &result) const
 {
     if (flags==0)
         flags=ASM_DISPLAYF_FULL;
@@ -589,8 +432,8 @@ VOID BaseAssemblySpec::GetDisplayNameInternal(DWORD flags, SString &result) cons
     }
 
     IfFailThrow(BINDER_SPACE::TextualIdentityParser::ToString(&assemblyIdentity,
-                                                              assemblyIdentity.m_dwIdentityFlags,
-                                                              result));
+                                                             assemblyIdentity.m_dwIdentityFlags,
+                                                             result));
 }
 
 void BaseAssemblySpec::PopulateAssemblyNameData(AssemblyNameData &data) const

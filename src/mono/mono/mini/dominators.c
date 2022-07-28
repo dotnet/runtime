@@ -28,14 +28,14 @@
 
 /*
  * Compute dominators and immediate dominators using the algorithm in the
- * paper "A Simple, Fast Dominance Algorithm" by Keith D. Cooper, 
+ * paper "A Simple, Fast Dominance Algorithm" by Keith D. Cooper,
  * Timothy J. Harvey, and Ken Kennedy:
  * http://citeseer.ist.psu.edu/cooper01simple.html
  */
 static void
 compute_dominators (MonoCompile *cfg)
 {
-	int bindex, i, bitsize;
+	int bitsize;
 	MonoBasicBlock *entry;
 	MonoBasicBlock **doms;
 	gboolean changed;
@@ -50,7 +50,7 @@ compute_dominators (MonoCompile *cfg)
 	doms [entry->dfn] = entry;
 
 	if (cfg->verbose_level > 1) {
-		for (i = 0; i < cfg->num_bblocks; ++i) {
+		for (guint i = 0; i < cfg->num_bblocks; ++i) {
 			int j;
 			MonoBasicBlock *bb = cfg->bblocks [i];
 
@@ -65,11 +65,12 @@ compute_dominators (MonoCompile *cfg)
 	while (changed) {
 		changed = FALSE;
 
-		for (bindex = 0; bindex < cfg->num_bblocks; ++bindex) {
+		for (guint bindex = 0; bindex < cfg->num_bblocks; ++bindex) {
 			MonoBasicBlock *bb = cfg->bblocks [bindex];
 			MonoBasicBlock *idom;
 
 			idom = NULL;
+			gint16 i;
 			for (i = 0; i < bb->in_count; ++i) {
 				MonoBasicBlock *in_bb = bb->in_bb [i];
 				if ((in_bb != bb) && doms [in_bb->dfn]) {
@@ -114,7 +115,7 @@ compute_dominators (MonoCompile *cfg)
 	}
 
 	/* Compute bb->dominators for each bblock */
-	for (i = 0; i < cfg->num_bblocks; ++i) {
+	for (guint i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
 		MonoBasicBlock *cbb;
 		MonoBitSet *dominators;
@@ -147,7 +148,7 @@ compute_dominators (MonoCompile *cfg)
 	if (cfg->verbose_level > 1) {
 		printf ("DTREE %s %d\n", mono_method_full_name (cfg->method, TRUE),
 			cfg->header->num_clauses);
-		for (i = 0; i < cfg->num_bblocks; ++i) {
+		for (guint i = 0; i < cfg->num_bblocks; ++i) {
 			MonoBasicBlock *bb = cfg->bblocks [i];
 			printf ("BB%d(dfn=%d) (IDOM=BB%d): ", bb->block_num, bb->dfn, bb->idom ? bb->idom->block_num : -1);
 			mono_blockset_print (cfg, bb->dominators, NULL, -1);
@@ -169,7 +170,7 @@ check_dominance_frontier (MonoBasicBlock *x, MonoBasicBlock *t)
 			if (!(t->flags & BB_VISITED)) {
 				int found = FALSE;
 				check_dominance_frontier (x, t->out_bb [i]);
-				
+
 				for (j = 0; j < t->out_bb [i]->in_count; j++) {
 					if (t->out_bb [i]->in_bb [j] == t)
 						found = TRUE;
@@ -183,7 +184,7 @@ check_dominance_frontier (MonoBasicBlock *x, MonoBasicBlock *t)
 			g_assert_not_reached ();
 		}
 	}
-} 
+}
 
 #endif
 
@@ -194,23 +195,24 @@ static void
 compute_dominance_frontier (MonoCompile *cfg)
 {
 	char *mem;
-	int i, j, bitsize;
+	int bitsize;
+	gint16 j;
 
 	g_assert (!(cfg->comp_done & MONO_COMP_DFRONTIER));
 
-	for (i = 0; i < cfg->num_bblocks; ++i)
+	for (guint i = 0; i < cfg->num_bblocks; ++i)
 		cfg->bblocks [i]->flags &= ~BB_VISITED;
 
 	bitsize = mono_bitset_alloc_size (cfg->num_bblocks, 0);
 	mem = (char *)mono_mempool_alloc0 (cfg->mempool, bitsize * cfg->num_bblocks);
- 
-	for (i = 0; i < cfg->num_bblocks; ++i) {
+
+	for (guint i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
 		bb->dfrontier = mono_bitset_mem_new (mem, cfg->num_bblocks, 0);
 		mem += bitsize;
 	}
 
-	for (i = 0; i < cfg->num_bblocks; ++i) {
+	for (guint i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
 
 		if (bb->in_count > 1) {
@@ -228,9 +230,9 @@ compute_dominance_frontier (MonoCompile *cfg)
 	}
 
 #if 0
-	for (i = 0; i < cfg->num_bblocks; ++i) {
+	for (guint i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
-		
+
 		printf ("DFRONT %s BB%d: ", mono_method_full_name (cfg->method, TRUE), bb->block_num);
 		mono_blockset_print (cfg, bb->dfrontier, NULL, -1);
 	}
@@ -238,16 +240,16 @@ compute_dominance_frontier (MonoCompile *cfg)
 
 #if 0
 	/* this is a check for the dominator frontier */
-	for (i = 0; i < m->num_bblocks; ++i) {
+	for (guint i = 0; i < m->num_bblocks; ++i) {
 		MonoBasicBlock *x = m->bblocks [i];
-		
+
 		mono_bitset_foreach_bit ((x->dfrontier), j, (m->num_bblocks)) {
 			MonoBasicBlock *w = m->bblocks [j];
 			int k;
 			/* x must not strictly dominates w */
 			if (mono_bitset_test_fast (w->dominators, x->dfn) && w != x)
 				g_assert_not_reached ();
-			
+
 			for (k = 0; k < m->num_bblocks; ++k)
 				m->bblocks [k]->flags &= ~BB_VISITED;
 
@@ -260,10 +262,9 @@ compute_dominance_frontier (MonoCompile *cfg)
 }
 
 static void
-df_set (MonoCompile *m, MonoBitSet* dest, MonoBitSet *set) 
+df_set (MonoCompile *m, MonoBitSet* dest, MonoBitSet *set)
 {
-	int i;
-
+	guint i;
 	mono_bitset_foreach_bit (set, i, m->num_bblocks) {
 		mono_bitset_union_fast (dest, m->bblocks [i]->dfrontier);
 	}
@@ -285,11 +286,11 @@ mono_compile_iterated_dfrontier (MonoCompile *m, MonoBitSet *set)
 		df_set (m, result, result);
 		count2 = mono_bitset_count (result);
 	} while (count2 > count1);
-	
+
 	return result;
 }
 
-void    
+void
 mono_compile_dominator_info (MonoCompile *cfg, int dom_flags)
 {
 	if ((dom_flags & MONO_COMP_DOM) && !(cfg->comp_done & MONO_COMP_DOM))
@@ -301,20 +302,19 @@ mono_compile_dominator_info (MonoCompile *cfg, int dom_flags)
 /*
  * code to detect loops and loop nesting level
  */
-void 
+void
 mono_compute_natural_loops (MonoCompile *cfg)
 {
-	int i, j, k;
 	MonoBitSet *in_loop_blocks;
 	int *bb_indexes;
 
 	g_assert (!(cfg->comp_done & MONO_COMP_LOOPS));
 
 	in_loop_blocks = mono_bitset_new (cfg->num_bblocks + 1, 0);
-	for (i = 0; i < cfg->num_bblocks; ++i) {
+	for (guint i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *n = cfg->bblocks [i];
 
-		for (j = 0; j < n->out_count; j++) {
+		for (gint16 j = 0; j < n->out_count; j++) {
 			MonoBasicBlock *h = n->out_bb [j];
 			/* check for single block loops */
 			if (n == h) {
@@ -340,8 +340,8 @@ mono_compute_natural_loops (MonoCompile *cfg)
 							mono_bitset_set_fast (in_loop_blocks, b->dfn);
 					}
 				}
-				todo = g_slist_prepend (NULL, n);	
-			
+				todo = g_slist_prepend (NULL, n);
+
 				while (todo) {
 					MonoBasicBlock *cb = (MonoBasicBlock *)todo->data;
 					todo = g_slist_delete_link (todo, todo);
@@ -354,7 +354,7 @@ mono_compute_natural_loops (MonoCompile *cfg)
 					if (cb->dfn)
 						mono_bitset_set_fast (in_loop_blocks, cb->dfn);
 
-					for (k = 0; k < cb->in_count; k++) {
+					for (gint16 k = 0; k < cb->in_count; k++) {
 						MonoBasicBlock *prev = cb->in_bb [k];
 						/* add all previous blocks */
 						if (prev != h && !((prev->dfn && mono_bitset_test_fast (in_loop_blocks, prev->dfn)) || (!prev->dfn && g_list_find (h->loop_blocks, prev)))) {
@@ -378,14 +378,13 @@ mono_compute_natural_loops (MonoCompile *cfg)
 	/* Compute loop_body_start for each loop */
 	bb_indexes = g_new0 (int, cfg->num_bblocks);
 	{
-		MonoBasicBlock *bb;
-
-		for (i = 0, bb = cfg->bb_entry; bb; i ++, bb = bb->next_bb) {
+		MonoBasicBlock *bb = cfg->bb_entry;
+		for (int i = 0; bb; i ++, bb = bb->next_bb) {
 			if (bb->dfn)
 				bb_indexes [bb->dfn] = i;
 		}
 	}
-	for (i = 0; i < cfg->num_bblocks; ++i) {
+	for (guint i = 0; i < cfg->num_bblocks; ++i) {
 		if (cfg->bblocks [i]->loop_blocks) {
 			/* The loop body start is the first bblock in the order they will be emitted */
 			MonoBasicBlock *h = cfg->bblocks [i];
@@ -406,7 +405,7 @@ mono_compute_natural_loops (MonoCompile *cfg)
 	g_free (bb_indexes);
 
 	if (cfg->verbose_level > 1) {
-		for (i = 0; i < cfg->num_bblocks; ++i) {
+		for (guint i = 0; i < cfg->num_bblocks; ++i) {
 			if (cfg->bblocks [i]->loop_blocks) {
 				MonoBasicBlock *h = (MonoBasicBlock *)cfg->bblocks [i]->loop_blocks->data;
 				GList *l;
@@ -424,27 +423,27 @@ static void
 clear_idominators (MonoCompile *cfg)
 {
 	guint i;
-    
+
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		if (cfg->bblocks[i]->dominated) {
 			cfg->bblocks[i]->dominated = NULL;
 		}
 	}
 
-	cfg->comp_done &= ~MONO_COMP_IDOM;   
+	cfg->comp_done &= ~MONO_COMP_IDOM;
 }
 
 static void
 clear_loops (MonoCompile *cfg)
 {
 	guint i;
-    
+
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		cfg->bblocks[i]->nesting = 0;
 		cfg->bblocks[i]->loop_blocks = NULL;
 	}
 
-	cfg->comp_done &= ~MONO_COMP_LOOPS;   
+	cfg->comp_done &= ~MONO_COMP_LOOPS;
 }
 
 void

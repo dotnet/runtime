@@ -77,4 +77,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldloc_i4.exe{}
+.assembly ldloc_i4{}

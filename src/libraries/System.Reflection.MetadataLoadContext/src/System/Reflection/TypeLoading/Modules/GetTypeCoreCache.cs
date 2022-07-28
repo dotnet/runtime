@@ -170,7 +170,6 @@ namespace System.Reflection.TypeLoading
             [Conditional("DEBUG")]
             public void VerifyUnifierConsistency()
             {
-#if DEBUG
                 // There's a point at which this check becomes gluttonous, even by checked build standards...
                 if (_nextFreeEntry >= 5000 && (0 != (_nextFreeEntry % 100)))
                     return;
@@ -201,7 +200,6 @@ namespace System.Reflection.TypeLoading
                 // The assertion is "<=" rather than "==" because we allow an entry to "leak" until the next resize if
                 // a thread died between the time between we allocated the entry and the time we link it into the bucket stack.
                 Debug.Assert(numEntriesEncountered <= _nextFreeEntry);
-#endif //DEBUG
             }
 
             private readonly int[] _buckets;

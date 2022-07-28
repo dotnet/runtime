@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
@@ -24,6 +25,34 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void RaceUseAndDisposeDoesNotCrash()
+        {
+            X509Certificate2 cert = new X509Certificate2(TestFiles.MicrosoftRootCertFile);
+
+            Thread subjThread = new Thread(static state => {
+                X509Certificate2 c = (X509Certificate2)state;
+
+                try
+                {
+                    _ = c.Subject;
+                }
+                catch
+                {
+                    // managed exceptions are okay, we are looking for runtime crashes.
+                }
+            });
+
+            Thread disposeThread = new Thread(static state => {
+                ((X509Certificate2)state).Dispose();
+            });
+
+            subjThread.Start(cert);
+            disposeThread.Start(cert);
+            disposeThread.Join();
+            subjThread.Join();
+        }
+
+        [Fact]
         public static void X509CertTest()
         {
             string certSubject = @"CN=Microsoft Corporate Root Authority, OU=ITG, O=Microsoft, L=Redmond, S=WA, C=US, E=pkit@microsoft.com";
@@ -38,18 +67,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(certSubjectObsolete, cert.GetIssuerName());
 #pragma warning restore CS0618
 
-                int snlen = cert.GetSerialNumber().Length;
-                Assert.Equal(16, snlen);
+                byte[] serial1 = cert.GetSerialNumber();
+                byte[] serial2 = cert.GetSerialNumber();
+                Assert.NotSame(serial1, serial2);
+                AssertExtensions.SequenceEqual(serial1, serial2);
 
-                byte[] serialNumber = new byte[snlen];
-                Buffer.BlockCopy(cert.GetSerialNumber(), 0,
-                                     serialNumber, 0,
-                                     snlen);
+                // Big-endian value
+                byte[] expectedSerial = "2A98A8770374E7B34195EBE04D9B17F6".HexToByteArray();
+                AssertExtensions.SequenceEqual(expectedSerial, cert.SerialNumberBytes.Span);
 
-                Assert.Equal(0xF6, serialNumber[0]);
-                Assert.Equal(0xB3, serialNumber[snlen / 2]);
-                Assert.Equal(0x2A, serialNumber[snlen - 1]);
-
+                // GetSerialNumber() returns in little-endian order.
+                Array.Reverse(expectedSerial);
+                AssertExtensions.SequenceEqual(expectedSerial, serial1);
+                
                 Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
 
                 int pklen = cert.GetPublicKey().Length;
@@ -92,6 +122,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal("00D01E4090000046520000000100000004", cert2.SerialNumber);
                 Assert.Equal("1.2.840.113549.1.1.5", cert2.SignatureAlgorithm.Value);
+                Assert.NotEmpty(cert2.SignatureAlgorithm.FriendlyName);
                 Assert.Equal("7A74410FB0CD5C972A364B71BF031D88A6510E9E", cert2.Thumbprint);
                 Assert.Equal(3, cert2.Version);
             }
@@ -347,6 +378,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.ThrowsAny<CryptographicException>(() => c.GetKeyAlgorithmParametersString());
                 Assert.ThrowsAny<CryptographicException>(() => c.GetPublicKey());
                 Assert.ThrowsAny<CryptographicException>(() => c.GetSerialNumber());
+                Assert.ThrowsAny<CryptographicException>(() => c.SerialNumberBytes);
                 Assert.ThrowsAny<CryptographicException>(() => c.Issuer);
                 Assert.ThrowsAny<CryptographicException>(() => c.Subject);
                 Assert.ThrowsAny<CryptographicException>(() => c.NotBefore);
@@ -358,6 +390,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 #endif
 
                 // State held on X509Certificate2
+                Assert.ThrowsAny<CryptographicException>(() => c.RawDataMemory);
                 Assert.ThrowsAny<CryptographicException>(() => c.RawData);
                 Assert.ThrowsAny<CryptographicException>(() => c.SignatureAlgorithm);
                 Assert.ThrowsAny<CryptographicException>(() => c.Version);
@@ -402,6 +435,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(certSubject, cert.Issuer);
 
                 Assert.Equal("9E7A5CCC9F951A8700", cert.GetSerialNumber().ByteArrayToHex());
+                Assert.Equal("00871A959FCC5C7A9E", cert.SerialNumberBytes.ByteArrayToHex());
                 Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
 
                 Assert.Equal(74, cert.GetPublicKey().Length);
@@ -445,6 +479,30 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void RawDataMemory_NoCopy()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                ReadOnlyMemory<byte> first = cert.RawDataMemory;
+                ReadOnlyMemory<byte> second = cert.RawDataMemory;
+                Assert.True(first.Span == second.Span, "RawDataMemory returned different values.");
+            }
+        }
+
+        [Fact]
+        public static void RawDataMemory_RoundTrip_LifetimeIndependentOfCert()
+        {
+            ReadOnlyMemory<byte> memory;
+
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                memory = cert.RawDataMemory;
+            }
+
+            AssertExtensions.SequenceEqual(TestData.MsCertificate.AsSpan(), memory.Span);
+        }
+
+        [Fact]
         public static void MutateDistinguishedName_IssuerName_DoesNotImpactIssuer()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
@@ -463,6 +521,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 byte[] subjectBytes = cert.SubjectName.RawData;
                 Array.Clear(subjectBytes);
                 Assert.Equal("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Subject);
+            }
+        }
+
+        [Fact]
+        public static void SignatureAlgorithmOidReadableForGostCertificate()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.GostCertificate))
+            {
+                Assert.Equal("1.2.643.2.2.3", cert.SignatureAlgorithm.Value);
             }
         }
 

@@ -121,9 +121,9 @@ namespace System.Linq.Parallel
                 return false;
             }
 
-            Mutables? mutables = _mutables;
-            if (mutables == null)
-                mutables = _mutables = new Mutables();
+            Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
+
+            Mutables mutables = _mutables ??= new Mutables();
 
             // If we haven't enumerated the source yet, do that now.  This is the first phase
             // of a two-phase barrier style operation.

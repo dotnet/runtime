@@ -59,7 +59,7 @@ namespace System.IO.Pipelines
 
             ~PooledMemory()
             {
-                Debug.Assert(_returned, "Block being garbage collected instead of returned to pool" + Environment.NewLine + _leaser);
+                Debug.Assert(_returned, $"Block being garbage collected instead of returned to pool{Environment.NewLine}{_leaser}");
             }
 
             protected override void Dispose(bool disposing)

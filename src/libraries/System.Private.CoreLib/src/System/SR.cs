@@ -51,7 +51,7 @@ namespace System
 
                 // Are we recursively looking up the same resource?  Note - our backout code will set
                 // the ResourceHelper's currentlyLoading stack to null if an exception occurs.
-                if (_currentlyLoading != null && _currentlyLoading.Count > 0 && _currentlyLoading.LastIndexOf(key) != -1)
+                if (_currentlyLoading != null && _currentlyLoading.Count > 0 && _currentlyLoading.LastIndexOf(key) >= 0)
                 {
                     // We can start infinitely recursing for one resource lookup,
                     // then during our failure reporting, start infinitely recursing again.
@@ -62,10 +62,12 @@ namespace System
                     }
                     _infinitelyRecursingCount++;
 
+#if SYSTEM_PRIVATE_CORELIB
                     // Note: our infrastructure for reporting this exception will again cause resource lookup.
                     // This is the most direct way of dealing with that problem.
-                    string message = $"Infinite recursion during resource lookup within {System.CoreLib.Name}.  This may be a bug in {System.CoreLib.Name}, or potentially in certain extensibility points such as assembly resolve events or CultureInfo names.  Resource name: {key}";
+                    string message = $@"Encountered infinite recursion while looking up resource '{key}' in {System.CoreLib.Name}. Verify the installation of .NET is complete and does not need repairing, and that the state of the process has not become corrupted.";
                     Environment.FailFast(message);
+#endif
                 }
 
                 _currentlyLoading ??= new List<string>();
@@ -88,7 +90,7 @@ namespace System
                 string? s = ResourceManager.GetString(key, null);
                 _currentlyLoading.RemoveAt(_currentlyLoading.Count - 1); // Pop
 
-                Debug.Assert(s != null, "Managed resource string lookup failed.  Was your resource name misspelled?  Did you rebuild mscorlib after adding a resource to resources.txt?  Debug this w/ cordbg and bug whoever owns the code that called SR.GetResourceString.  Resource name was: \"" + key + "\"");
+                Debug.Assert(s != null, $"Looking up resource '{key}' failed. Was your resource name misspelled? Did you rebuild after adding a resource?");
                 return s ?? key;
             }
             catch

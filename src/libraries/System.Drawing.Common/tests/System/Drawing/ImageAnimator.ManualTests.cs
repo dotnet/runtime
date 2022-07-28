@@ -43,6 +43,7 @@ namespace System.Drawing.Tests
                 "animated-timer-10fps-repeat-infinite.gif",
                 "animated-timer-100fps-repeat-2.gif",
                 "animated-timer-100fps-repeat-infinite.gif",
+                "animated-timer-0-delay-all-frames.gif",
             };
 
             Dictionary<string, EventHandler> handlers = new();
@@ -69,7 +70,7 @@ namespace System.Drawing.Tests
                     animation.Save(Path.Combine(testOutputFolder, $"{++frameIndexes[imageName]}_{timestamp}.jpg"), ImageFormat.Jpeg);
                 }));
 
-                bitmaps[imageName] = new(Helpers.GetTestBitmapPath(imageName));
+                bitmaps[imageName] = new Bitmap(Helpers.GetTestBitmapPath(imageName));
                 ImageAnimator.Animate(bitmaps[imageName], handlers[imageName]);
             }
 

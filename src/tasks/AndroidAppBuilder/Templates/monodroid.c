@@ -191,7 +191,7 @@ log_callback (const char *log_domain, const char *log_level, const char *message
     }
 }
 
-#if FORCE_AOT
+#if defined(FORCE_AOT) && defined(STATIC_AOT)
 void register_aot_modules (void);
 #endif
 
@@ -234,13 +234,13 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     appctx_values[1] = bundle_path;
 
     char *file_name = RUNTIMECONFIG_BIN_FILE;
-    int str_len = strlen (bundle_path) + strlen (file_name) + 2;
-    char *file_path = (char *)malloc (sizeof (char) * str_len);
-    int num_char = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
+    int str_len = strlen (bundle_path) + strlen (file_name) + 1; // +1 is for the "/"
+    char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
+    int num_char = snprintf (file_path, (str_len + 1), "%s/%s", bundle_path, file_name);
     struct stat buffer;
 
     LOG_INFO ("file_path: %s\n", file_path);
-    assert (num_char > 0 && num_char < str_len);
+    assert (num_char > 0 && num_char == str_len);
 
     if (stat (file_path, &buffer) == 0) {
         MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
@@ -270,7 +270,10 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     LOG_INFO("Interp Enabled");
     mono_jit_set_aot_mode(MONO_AOT_MODE_INTERP_ONLY);
 #elif FORCE_AOT
+    LOG_INFO("AOT Enabled");
+#if STATIC_AOT
     register_aot_modules();
+#endif
     mono_jit_set_aot_mode(MONO_AOT_MODE_FULL);
 #endif
 
@@ -310,15 +313,15 @@ Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstrin
 }
 
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_docs_dir, jstring j_entryPointLibName, jobjectArray j_args)
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, jobjectArray j_args)
 {
     char file_dir[2048];
     char cache_dir[2048];
-    char docs_dir[2048];
+    char testresults_dir[2048];
     char entryPointLibName[2048];
     strncpy_str (env, file_dir, j_files_dir, sizeof(file_dir));
     strncpy_str (env, cache_dir, j_cache_dir, sizeof(cache_dir));
-    strncpy_str (env, docs_dir, j_docs_dir, sizeof(docs_dir));
+    strncpy_str (env, testresults_dir, j_testresults_dir, sizeof(testresults_dir));
     strncpy_str (env, entryPointLibName, j_entryPointLibName, sizeof(entryPointLibName));
 
     bundle_path = file_dir;
@@ -326,7 +329,7 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
 
     setenv ("HOME", bundle_path, true);
     setenv ("TMPDIR", cache_dir, true);
-    setenv ("DOCSDIR", docs_dir, true);
+    setenv ("TEST_RESULTS_DIR", testresults_dir, true);
 
     int args_len = (*env)->GetArrayLength(env, j_args);
     int managed_argc = args_len + 1;

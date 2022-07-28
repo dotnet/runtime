@@ -5,8 +5,7 @@
     <!-- Nullability of parameter 'name' doesn't match overridden member -->
     <NoWarn>$(NoWarn);618;CS8765</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.InteropServices.cs" />

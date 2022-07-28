@@ -165,4 +165,4 @@ END:
 }
 }
 
-.assembly conv_ovf_i8_u8.exe{}
+.assembly conv_ovf_i8_u8{}

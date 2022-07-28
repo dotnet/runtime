@@ -310,6 +310,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54418", TestPlatforms.MacCatalyst)]
         public void BeginReceiveFrom_RemoteEpIsReturnedWhenCompletedSynchronously()
         {
             EndPoint anyEp = new IPEndPoint(IPAddress.Any, 0);

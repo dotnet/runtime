@@ -79,7 +79,8 @@ namespace System.Xml.Linq
         /// <param name="annotation">The annotation to add.</param>
         public void AddAnnotation(object annotation)
         {
-            if (annotation == null) throw new ArgumentNullException(nameof(annotation));
+            ArgumentNullException.ThrowIfNull(annotation);
+
             if (annotations == null)
             {
                 annotations = annotation is object[]? new object[] { annotation } : annotation;
@@ -116,7 +117,8 @@ namespace System.Xml.Linq
         /// </returns>
         public object? Annotation(Type type)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
+
             if (annotations != null)
             {
                 object?[]? a = annotations as object[];
@@ -195,7 +197,8 @@ namespace System.Xml.Linq
         /// <returns>An enumerable collection of annotations for this XObject.</returns>
         public IEnumerable<object> Annotations(Type type)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
+
             return AnnotationsIterator(type);
         }
 
@@ -255,7 +258,8 @@ namespace System.Xml.Linq
         /// <param name="type">The type of annotations to remove.</param>
         public void RemoveAnnotations(Type type)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
+
             if (annotations != null)
             {
                 object?[]? a = annotations as object[];
@@ -426,10 +430,7 @@ namespace System.Xml.Linq
                 if (a != null)
                 {
                     notify = true;
-                    if (a.changed != null)
-                    {
-                        a.changed(sender, e);
-                    }
+                    a.changed?.Invoke(sender, e);
                 }
                 o = o.parent;
             }
@@ -451,10 +452,7 @@ namespace System.Xml.Linq
                 if (a != null)
                 {
                     notify = true;
-                    if (a.changing != null)
-                    {
-                        a.changing(sender, e);
-                    }
+                    a.changing?.Invoke(sender, e);
                 }
                 o = o.parent;
             }

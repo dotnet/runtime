@@ -20,16 +20,6 @@ namespace System.Text.Json.Serialization.Converters
             ((TCollection)state.Current.ReturnValue!)[key] = value;
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
-        {
-            if (state.Current.JsonTypeInfo.CreateObject == null)
-            {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonTypeInfo.Type);
-            }
-
-            state.Current.ReturnValue = state.Current.JsonTypeInfo.CreateObject();
-        }
-
         protected internal override bool OnWriteResume(
             Utf8JsonWriter writer,
             TCollection value,
@@ -61,7 +51,7 @@ namespace System.Text.Json.Serialization.Converters
                 do
                 {
                     TKey key = enumerator.Current.Key;
-                    _keyConverter.WriteWithQuotes(writer, key, options, ref state);
+                    _keyConverter.WriteAsPropertyNameCore(writer, key, options, state.Current.IsWritingExtensionDataProperty);
                     _valueConverter.Write(writer, enumerator.Current.Value, options);
                 } while (enumerator.MoveNext());
             }
@@ -80,7 +70,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.PropertyState = StackFramePropertyState.Name;
 
                         TKey key = enumerator.Current.Key;
-                        _keyConverter.WriteWithQuotes(writer, key, options, ref state);
+                        _keyConverter.WriteAsPropertyNameCore(writer, key, options, state.Current.IsWritingExtensionDataProperty);
                     }
 
                     TValue element = enumerator.Current.Value;
@@ -90,7 +80,7 @@ namespace System.Text.Json.Serialization.Converters
                         return false;
                     }
 
-                    state.Current.EndDictionaryElement();
+                    state.Current.EndDictionaryEntry();
                 } while (enumerator.MoveNext());
             }
 

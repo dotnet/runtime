@@ -11,6 +11,10 @@ namespace Microsoft.Win32.SafeHandles
     /// </summary>
     internal sealed class SafeServiceHandle : SafeHandle
     {
+        public SafeServiceHandle() : base(IntPtr.Zero, true)
+        {
+        }
+
         internal SafeServiceHandle(IntPtr handle) : base(IntPtr.Zero, true)
         {
             SetHandle(handle);

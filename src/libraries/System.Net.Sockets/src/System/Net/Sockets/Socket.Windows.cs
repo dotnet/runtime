@@ -19,7 +19,9 @@ namespace System.Net.Sockets
         private static CachedSerializedEndPoint? s_cachedMappedAnyV6EndPoint;
         private DynamicWinsockMethods? _dynamicWinsockMethods;
 
+#pragma warning disable CA1822
         internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
+#pragma warning restore CA1822
 
         private sealed class CachedSerializedEndPoint
         {
@@ -235,7 +237,32 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, csep.IPEndPoint);
 
+            if (_socketType == SocketType.Stream && _protocolType == ProtocolType.Tcp)
+            {
+                EnableReuseUnicastPort();
+            }
+
             DoBind(csep.IPEndPoint, csep.SocketAddress);
+        }
+
+        private void EnableReuseUnicastPort()
+        {
+            // By enabling SO_REUSE_UNICASTPORT, we defer actual port allocation until the ConnectEx call,
+            // so it can bind to ports from the Windows auto-reuse port range, if configured by an admin.
+            // The socket option is supported on Windows 10+, we are ignoring the SocketError in case setsockopt fails.
+            int optionValue = 1;
+            SocketError error = Interop.Winsock.setsockopt(
+                _handle,
+                SocketOptionLevel.Socket,
+                SocketOptionName.ReuseUnicastPort,
+                ref optionValue,
+                sizeof(int));
+
+            if (NetEventSource.Log.IsEnabled() && error != SocketError.Success)
+            {
+                error = SocketPal.GetLastSocketError();
+                NetEventSource.Info($"Enabling SO_REUSE_UNICASTPORT failed with error code: {error}");
+            }
         }
 
         internal unsafe bool ConnectEx(SafeSocketHandle socketHandle,
@@ -372,14 +399,11 @@ namespace System.Net.Sockets
 
         private void SendFileInternal(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
-            // Open the file, if any
-            FileStream? fileStream = OpenFile(fileName);
-
             SocketError errorCode;
-            using (fileStream)
-            {
-                SafeFileHandle? fileHandle = fileStream?.SafeFileHandle;
 
+            // Open the file, if any
+            using (SafeFileHandle? fileHandle = OpenFileHandle(fileName))
+            {
                 // This can throw ObjectDisposedException.
                 errorCode = SocketPal.SendFile(_handle, fileHandle, preBuffer, postBuffer, flags);
             }

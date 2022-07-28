@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Metadata
@@ -13,7 +15,7 @@ namespace System.Reflection.Metadata
     /// script that applies one or more updates to Foo.dll The ApplyUpdateTest
     /// testsuite runs each test in sequence, loading the corresponding
     /// assembly, applying an update to it and observing the results.
-    [Collection(nameof(ApplyUpdateUtil.NoParallelTests))]
+    [Collection(nameof(DisableParallelization))]
     public class ApplyUpdateTest
     {
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
@@ -36,6 +38,82 @@ namespace System.Reflection.Metadata
 
                 r = ApplyUpdate.Test.MethodBody1.StaticMethod1 ();
                 Assert.Equal ("NEWEST STRING", r);
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        void LambdaBodyChange()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof (ApplyUpdate.Test.LambdaBodyChange).Assembly;
+
+                var o = new ApplyUpdate.Test.LambdaBodyChange ();
+                var r = o.MethodWithLambda();
+
+                Assert.Equal("OLD STRING", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = o.MethodWithLambda();
+
+                Assert.Equal("NEW STRING", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = o.MethodWithLambda();
+
+                Assert.Equal("NEWEST STRING!", r);
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        void LambdaCapturesThis()
+        {
+            // Tests that changes to the body of a lambda that captures 'this' is supported.
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof (ApplyUpdate.Test.LambdaCapturesThis).Assembly;
+
+                var o = new ApplyUpdate.Test.LambdaCapturesThis ();
+                var r = o.MethodWithLambda();
+
+                Assert.Equal("OLD STRING", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = o.MethodWithLambda();
+
+                Assert.Equal("NEW STRING", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = o.MethodWithLambda();
+
+                Assert.Equal("NEWEST STRING!", r);
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        void FirstCallAfterUpdate()
+        {
+            /* Tests that updating a method that has not been called before works correctly and that
+             * the JIT/interpreter doesn't have to rely on cached baseline data. */
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof (ApplyUpdate.Test.FirstCallAfterUpdate).Assembly;
+
+                var o = new ApplyUpdate.Test.FirstCallAfterUpdate ();
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                string r = o.Method1("NEW");
+
+                Assert.Equal("NEWEST STRING", r);
             });
         }
 
@@ -80,6 +158,196 @@ namespace System.Reflection.Metadata
                 Assert.Equal(1, cattrs.Length);
                 Assert.NotNull(cattrs[0]);
                 Assert.Equal(attrType, cattrs[0].GetType());
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        public void CustomAttributeUpdates()
+        {
+            // Test that _modifying_ custom attribute constructor/property argumments works as expected.
+            // For this test, we don't change which constructor is called, or how many custom attributes there are.
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeUpdates).Assembly;
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                // Just check the updated value on one method
+
+                Type attrType = typeof(System.Reflection.Metadata.ApplyUpdate.Test.MyAttribute);
+                Type ty = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeUpdates");
+                Assert.NotNull(ty);
+                MethodInfo mi = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeUpdates.Method1), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi);
+                var cattrs = Attribute.GetCustomAttributes(mi, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(1, cattrs.Length);
+                Assert.NotNull(cattrs[0]);
+                Assert.Equal(attrType, cattrs[0].GetType());
+                string p = (cattrs[0] as System.Reflection.Metadata.ApplyUpdate.Test.MyAttribute).StringValue;
+                Assert.Equal("rstuv", p);
+            });
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        public void CustomAttributeDelete()
+        {
+            // Test that deleting custom attribute on constructor/property works as expected.
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete).Assembly;
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                // Just check the updated value on one method
+
+                Type attrType = typeof(System.Reflection.Metadata.ApplyUpdate.Test.MyDeleteAttribute);
+                Type ty = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete");
+                Assert.NotNull(ty);
+
+                MethodInfo mi1 = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete.Method1), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi1);
+                Attribute[] cattrs = Attribute.GetCustomAttributes(mi1, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(0, cattrs.Length);
+
+                MethodInfo mi2 = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete.Method2), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi2);
+                cattrs = Attribute.GetCustomAttributes(mi2, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(0, cattrs.Length);
+
+                MethodInfo mi3 = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete.Method3), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi3);
+                cattrs = Attribute.GetCustomAttributes(mi3, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(1, cattrs.Length);
+                string p = (cattrs[0] as System.Reflection.Metadata.ApplyUpdate.Test.MyDeleteAttribute).StringValue;
+                Assert.Equal("Not Deleted", p);
+            });
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        public void AsyncMethodChanges()
+        {
+            // Test that changing an async method doesn't cause any type load exceptions
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                Assembly assembly = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange).Assembly;
+
+                ApplyUpdateUtil.ApplyUpdate(assembly);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                Type ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange);
+                Assert.NotNull(ty);
+
+                MethodInfo mi = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.TestTaskMethod), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi);
+
+                string result = ApplyUpdate.Test.AsyncMethodChange.TestTaskMethod().GetAwaiter().GetResult();
+                Assert.Equal("TestTaskMethod v1", result);
+
+                object[] attributes = mi.GetCustomAttributes(true);
+                Assert.NotNull(attributes);
+                Assert.True(attributes.Length > 0);
+
+                foreach (var attribute in attributes)
+                {
+                    if (attribute is AsyncStateMachineAttribute asm)
+                    {
+                        Assert.Contains("<TestTaskMethod>", asm.StateMachineType.Name);
+                    }
+                }
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestAddLambdaCapturingThis()
+        {
+            // Test that adding a lambda that captures 'this' (to a method that already has a lambda that captures 'this') is supported
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis();
+
+                Assert.Equal("123", x.TestMethod());
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                string result = x.TestMethod();
+                Assert.Equal("42123abcd", result);
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestAddStaticField()
+        {
+            // Test that adding a new static field to an existing class is supported
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField();
+
+                x.TestMethod();
+
+                Assert.Equal ("abcd", x.GetField);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                x.TestMethod();
+
+                string result = x.GetField;
+                Assert.Equal("4567", result);
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestAddNestedClass()
+        {
+            // Test that adding a new nested class to an existing class is supported
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass();
+
+                var r = x.TestMethod();
+
+                Assert.Equal ("123", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = x.TestMethod();
+
+                Assert.Equal("123456789", r);
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestAddStaticLambda()
+        {
+            // Test that adding a new static lambda to an existing method body is supported
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda();
+
+                var r = x.TestMethod();
+
+                Assert.Equal ("abcd", r);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                r = x.TestMethod();
+
+                Assert.Equal("abcd1abcd", r);
             });
         }
 
@@ -128,11 +396,236 @@ namespace System.Reflection.Metadata
             Assert.False(result);
         }
 
-        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.TestUsingLaunchEnvironment))]
-        public static void IsSupported2()
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestStaticLambdaRegression()
         {
-            bool result = MetadataUpdater.IsSupported;
-            Assert.True(result);
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression).Assembly;
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression();
+
+                Assert.Equal (0, x.count);
+
+                x.TestMethod();
+                x.TestMethod();
+
+                Assert.Equal (2, x.count);
+
+                ApplyUpdateUtil.ApplyUpdate(assm, usePDB: false);
+
+                x.TestMethod();
+                x.TestMethod();
+
+                Assert.Equal (4, x.count);
+
+                ApplyUpdateUtil.ApplyUpdate(assm, usePDB: false);
+
+                x.TestMethod();
+                x.TestMethod();
+
+                Assert.Equal (6, x.count);
+
+            });
+        }
+
+        private static bool ContainsTypeWithName(Type[] types, string fullName)
+        {
+            foreach (var ty in types) {
+                if (ty.FullName == fullName)
+                    return true;
+            }
+            return false;
+        }
+
+        internal static Type CheckReflectedType(Assembly assm, Type[] allTypes, string nameSpace, string typeName, Action<Type> moreChecks = null, [CallerMemberName] string callerMemberName = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0)
+        {
+            var fullName = $"{nameSpace}.{typeName}";
+            var ty = assm.GetType(fullName);
+            Assert.True(ty != null, $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetType for '{typeName}' to return non-null in {callerMemberName}");
+            int nestedIdx = typeName.LastIndexOf('+');
+            string comparisonName = typeName;
+            if (nestedIdx != -1)
+                comparisonName = typeName.Substring(nestedIdx+1);
+            Assert.True(comparisonName == ty.Name, $"{callerFilePath}:{callerLineNumber}: returned type has unexpected name '{ty.Name}' (expected: '{comparisonName}') in {callerMemberName}");
+            Assert.True(ContainsTypeWithName (allTypes, fullName), $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetTypes to contain '{fullName}', but it didn't in {callerMemberName}");
+            if (moreChecks != null)
+                moreChecks(ty);
+            return ty;
+        }
+
+
+        internal static void CheckCustomNoteAttribute(MemberInfo subject, string expectedAttributeValue, [CallerMemberName] string callerMemberName = "", [CallerFilePath] string callerFilePath = "", [CallerLineNumber] int callerLineNumber = 0)
+        {
+            var attrData = subject.GetCustomAttributesData();
+            CustomAttributeData noteData = null;
+            foreach (var cad in attrData)
+            {
+                if (cad.AttributeType.FullName.Contains("CustomNoteAttribute"))
+                    noteData = cad;
+            }
+            Assert.True(noteData != null, $"{callerFilePath}:{callerLineNumber}: expected a CustomNoteAttribute attributes on '{subject.Name}', but got null, in {callerMemberName}");
+            Assert.True(1 == noteData.ConstructorArguments.Count, $"{callerFilePath}:{callerLineNumber}: expected exactly 1 constructor argument on CustomNoteAttribute, got {noteData.ConstructorArguments.Count}, in {callerMemberName}");
+            object argVal = noteData.ConstructorArguments[0].Value;
+            Assert.True(expectedAttributeValue.Equals(argVal), $"{callerFilePath}:{callerLineNumber}: expected '{expectedAttributeValue}' as CustomNoteAttribute argument, got '{argVal}', in {callerMemberName}");
+
+            var attrs = subject.GetCustomAttributes(false);
+            object note = null;
+            foreach (var attr in attrs)
+            {
+                if (attr.GetType().FullName.Contains("CustomNoteAttribute"))
+                    note = attr;
+            }
+            Assert.True(note != null, $"{callerFilePath}:{callerLineNumber}: expected a CustomNoteAttribute object on '{subject.Name}', but got null, in {callerMemberName}");
+            object v = note.GetType().GetField("Note").GetValue(note);
+            Assert.True(expectedAttributeValue.Equals(v), $"{callerFilePath}:{callerLineNumber}: expected '{expectedAttributeValue}' in CustomNoteAttribute Note field, but got '{v}', in {callerMemberName}");
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestReflectionAddNewType()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                const string ns = "System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType";
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.ZExistingClass).Assembly;
+
+                var allTypes = assm.GetTypes();
+
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass");
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass+PreviousNestedClass");
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                allTypes = assm.GetTypes();
+
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass", static (ty) =>
+                {
+                    var allMethods = ty.GetMethods();
+
+                    MethodInfo newMethod = null;
+                    foreach (var meth in allMethods)
+                    {
+                        if (meth.Name == "NewMethod")
+                            newMethod = meth;
+                    }
+                    Assert.NotNull (newMethod);
+
+                    Assert.Equal (newMethod, ty.GetMethod ("NewMethod"));
+
+                    var allFields = ty.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public);
+
+                    // Mono doesn't do instance fields yet
+#if false
+                    FieldInfo newField = null;
+#endif
+                    FieldInfo newStaticField = null;
+                    foreach (var fld in allFields)
+                    {
+#if false
+                        if (fld.Name == "NewField")
+                            newField = fld;
+#endif
+                        if (fld.Name == "NewStaticField")
+                            newStaticField = fld;
+                    }
+#if false
+                    Assert.NotNull(newField);
+                    Assert.Equal(newField, ty.GetField("NewField"));
+#endif
+
+                    Assert.NotNull(newStaticField);
+                    Assert.Equal(newStaticField, ty.GetField("NewStaticField", BindingFlags.Static | BindingFlags.Public));
+
+                });
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass+PreviousNestedClass");
+                CheckReflectedType(assm, allTypes, ns, "IExistingInterface");
+
+                CheckReflectedType(assm, allTypes, ns, "ZExistingClass+NewNestedClass");
+
+                var newTy = CheckReflectedType(assm, allTypes, ns, "NewToplevelClass", static (ty) =>
+                {
+                    CheckCustomNoteAttribute(ty, "123");
+
+                    var nested = ty.GetNestedType("AlsoNested");
+                    var allNested = ty.GetNestedTypes();
+
+                    Assert.Equal("AlsoNested", nested.Name);
+                    Assert.Same(ty, nested.DeclaringType);
+
+                    Assert.Equal(1, allNested.Length);
+                    Assert.Same(nested, allNested[0]);
+
+                    var allInterfaces = ty.GetInterfaces();
+
+                    Assert.Equal (2, allInterfaces.Length);
+                    bool hasICloneable = false, hasINewInterface = false;
+                    for (int i = 0; i < allInterfaces.Length; ++i) {
+                        var itf = allInterfaces[i];
+                        if (itf.Name == "ICloneable")
+                            hasICloneable = true;
+                        if (itf.Name == "IExistingInterface")
+                            hasINewInterface = true;
+                    }
+                    Assert.True(hasICloneable);
+                    Assert.True(hasINewInterface);
+
+                    var allProperties = ty.GetProperties();
+
+                    PropertyInfo newProp = null;
+                    foreach (var prop in allProperties)
+                    {
+                        if (prop.Name == "NewProp")
+                            newProp = prop;
+                    }
+                    Assert.NotNull(newProp);
+
+                    Assert.Equal(newProp, ty.GetProperty("NewProp"));
+                    MethodInfo newPropGet = newProp.GetGetMethod();
+                    Assert.NotNull(newPropGet);
+                    MethodInfo newPropSet = newProp.GetSetMethod();
+                    Assert.NotNull(newPropSet);
+
+                    Assert.Equal("get_NewProp", newPropGet.Name);
+
+                    CheckCustomNoteAttribute (newProp, "hijkl");
+
+                    var allEvents = ty.GetEvents();
+
+                    EventInfo newEvt = null;
+                    foreach (var evt in allEvents)
+                    {
+                        if (evt.Name == "NewEvent")
+                            newEvt = evt;
+                    }
+                    Assert.NotNull(newEvt);
+
+                    Assert.Equal(newEvt, ty.GetEvent("NewEvent"));
+                    MethodInfo newEvtAdd = newEvt.GetAddMethod();
+                    Assert.NotNull(newEvtAdd);
+                    MethodInfo newEvtRemove = newEvt.GetRemoveMethod();
+                    Assert.NotNull(newEvtRemove);
+
+                    Assert.Equal("add_NewEvent", newEvtAdd.Name);
+                });
+                CheckReflectedType(assm, allTypes, ns, "NewGenericClass`1");
+                CheckReflectedType(assm, allTypes, ns, "NewToplevelStruct");
+                CheckReflectedType(assm, allTypes, ns, "INewInterface");
+                CheckReflectedType(assm, allTypes, ns, "NewEnum", static (ty) => {
+                    var names = Enum.GetNames (ty);
+                    Assert.Equal(3, names.Length);
+                    var vals = Enum.GetValues (ty);
+                    Assert.Equal(3, vals.Length);
+
+                    Assert.NotNull(Enum.Parse (ty, "Red"));
+                    Assert.NotNull(Enum.Parse (ty, "Yellow"));
+                });
+
+                // make some instances using reflection and use them through known interfaces
+                var o = Activator.CreateInstance(newTy);
+
+                var i = (System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.IExistingInterface)o;
+
+                Assert.Equal("123", i.ItfMethod(123));
+            });
         }
     }
 }

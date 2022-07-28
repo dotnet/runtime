@@ -40,12 +40,14 @@ namespace System.IO.Tests
                 {
                     Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
                 }
+
+                Directory.SetCurrentDirectory(Path.GetTempPath());
             }).Dispose();
         }
 
         public sealed class Directory_SetCurrentDirectory_SymLink : FileSystemTest
         {
-            private static bool CanCreateSymbolicLinksAndRemoteExecutorSupported => CanCreateSymbolicLinks && RemoteExecutor.IsSupported;
+            private static bool CanCreateSymbolicLinksAndRemoteExecutorSupported => MountHelper.CanCreateSymbolicLinks && RemoteExecutor.IsSupported;
 
             [ConditionalFact(nameof(CanCreateSymbolicLinksAndRemoteExecutorSupported))]
             public void SetToPathContainingSymLink()
@@ -53,7 +55,7 @@ namespace System.IO.Tests
                 RemoteExecutor.Invoke(() =>
                 {
                     var path = GetTestFilePath();
-                    var linkPath = GetTestFilePath();
+                    var linkPath = GetRandomLinkPath();
 
                     Directory.CreateDirectory(path);
                     Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
@@ -76,6 +78,8 @@ namespace System.IO.Tests
                     {
                         Assert.Equal(path, Directory.GetCurrentDirectory());
                     }
+
+                    Directory.SetCurrentDirectory(Path.GetTempPath());
                 }).Dispose();
             }
         }

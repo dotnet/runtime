@@ -60,4 +60,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldc_r4.exe{}
+.assembly ldc_r4{}

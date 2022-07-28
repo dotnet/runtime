@@ -148,6 +148,22 @@ namespace System.Tests
             Assert.Equal(expected, result);
         }
 
+        [Fact]
+        public static void Create_InterpolatedString_ConstructsStringAndClearsBuilder()
+        {
+            Span<char> initialBuffer = stackalloc char[16];
+
+            DefaultInterpolatedStringHandler handler = new DefaultInterpolatedStringHandler(0, 0, CultureInfo.InvariantCulture, initialBuffer);
+            handler.AppendLiteral("hello");
+            Assert.Equal("hello", string.Create(CultureInfo.InvariantCulture, initialBuffer, ref handler));
+            Assert.Equal("", string.Create(CultureInfo.InvariantCulture, initialBuffer, ref handler));
+
+            handler = new DefaultInterpolatedStringHandler(0, 0, CultureInfo.InvariantCulture);
+            handler.AppendLiteral("hello");
+            Assert.Equal("hello", string.Create(CultureInfo.InvariantCulture, ref handler));
+            Assert.Equal("", string.Create(CultureInfo.InvariantCulture, ref handler));
+        }
+
         [Theory]
         [InlineData("Hello", 'H', true)]
         [InlineData("Hello", 'Z', false)]
@@ -199,9 +215,9 @@ namespace System.Tests
         [InlineData("Hello", 'e', StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("Hello", 'E', StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", 'H', StringComparison.OrdinalIgnoreCase, false)]
-        public static void Contains_Char_StringComparison(string s, char value, StringComparison comparisionType, bool expected)
+        public static void Contains_Char_StringComparison(string s, char value, StringComparison comparisonType, bool expected)
         {
-            Assert.Equal(expected, s.Contains(value, comparisionType));
+            Assert.Equal(expected, s.Contains(value, comparisonType));
         }
 
         public static IEnumerable<object[]> Contains_String_StringComparison_TestData()
@@ -299,6 +315,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void Contains_StringComparison_TurkishI()
         {
             const string Source = "\u0069\u0130";
@@ -766,6 +783,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public void Replace_StringComparison_TurkishI()
         {
             const string Source = "\u0069\u0130";
@@ -810,8 +828,14 @@ namespace System.Tests
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", false, CultureInfo.InvariantCulture, "def" };
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", true, CultureInfo.InvariantCulture, "def" };
 
-                yield return new object[] { "\u0069\u0130", "\u0069", "a", false, new CultureInfo("tr-TR"), "a\u0130" };
-                yield return new object[] { "\u0069\u0130", "\u0069", "a", true, new CultureInfo("tr-TR"), "aa" };
+                // Android has different results w/ tr-TR
+                // See https://github.com/dotnet/runtime/issues/60568
+                if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
+                {
+                    yield return new object[] { "\u0069\u0130", "\u0069", "a", false, new CultureInfo("tr-TR"), "a\u0130" };
+                    yield return new object[] { "\u0069\u0130", "\u0069", "a", true, new CultureInfo("tr-TR"), "aa" };
+                }
+
                 yield return new object[] { "\u0069\u0130", "\u0069", "a", false, CultureInfo.InvariantCulture, "a\u0130" };
                 yield return new object[] { "\u0069\u0130", "\u0069", "a", true, CultureInfo.InvariantCulture, "a\u0130" };
             }
@@ -1088,6 +1112,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void IndexOf_TurkishI_TurkishCulture_Char()
         {
             using (new ThreadCultureChange("tr-TR"))
@@ -1943,6 +1968,23 @@ namespace System.Tests
                     }
                 }
             }
+        }
+
+        [Theory]
+        [InlineData("a", "A", 0)]
+        [InlineData("A", "a", 0)]
+        [InlineData("Ab", "aB", 0)]
+        [InlineData("aB", "Ab", 0)]
+        [InlineData("aB", "Aa", 1)]
+        [InlineData("aa", "aB", -1)]
+        [InlineData("\u0160a", "\u0160A", 0)]
+        [InlineData("\u0160a", "\u0160B", -1)]
+        [InlineData("\u0160b", "\u0160A", 1)]
+        [InlineData("\u0160b\u0160\u0160\u0160", "\u0160A\u0160\u0160\u0160", 1)]
+        [InlineData("\u0160A\u0160\u0160\u0160", "\u0160b\u0160\u0160\u0160", -1)]
+        public static void TestCompareOrdinalIgnoreCase(string a, string b, int sign)
+        {
+            Assert.Equal(sign, Math.Sign(string.Compare(a, b, StringComparison.OrdinalIgnoreCase)));
         }
     }
 }

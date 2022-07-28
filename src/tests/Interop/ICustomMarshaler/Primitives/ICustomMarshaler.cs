@@ -4,10 +4,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using static TestLibrary.Utilities;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    public class ICustomMarshalerTests : XunitBase
+    public class ICustomMarshalerTests
     {
         // To avoid having to create a native test library to reference in tests that
         // interact with native libraries, we can use a simple method from the C standard
@@ -19,8 +20,7 @@ namespace System.Runtime.InteropServices.Tests
         public const string LibcLibrary = "libc";
 #endif
 
-        [Fact]
-        public void CustomMarshaler_StringType_Success()
+        public static void CustomMarshaler_StringType_Success()
         {
             int val = 64001;
             Assert.Equal(val, MarshalerOnStringTypeMethod(val.ToString()));
@@ -42,8 +42,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi")]
         public static extern int MarshalerOnStringTypeMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringForwardingCustomMarshaler))] string str);
 
-        [Fact]
-        public void CustomMarshaler_ArrayType_Success()
+        public static void CustomMarshaler_ArrayType_Success()
         {
             int val = 64001;
             Assert.Equal(val, MarshalerOnArrayTypeMethod(new string[] { val.ToString() }));
@@ -65,8 +64,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi")]
         public static extern int MarshalerOnArrayTypeMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = "System.Runtime.InteropServices.Tests.ICustomMarshalerTests+ArrayForwardingCustomMarshaler")] string[] str);
 
-        [Fact]
-        public void CustomMarshaler_BoxedValueType_Success()
+        public static void CustomMarshaler_BoxedValueType_Success()
         {
             int val = 64001;
             Assert.Equal(val * 2, MarshalerOnBoxedValueTypeMethod(val));
@@ -93,8 +91,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi")]
         public static extern int MarshalerOnBoxedValueTypeMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(BoxedValueTypeCustomMarshaler))] object i);
 
-        [Fact]
-        public void Parameter_CustomMarshalerProvidedOnClassType_ForwardsCorrectly()
+        public static void Parameter_CustomMarshalerProvidedOnClassType_ForwardsCorrectly()
         {
             int val = 64001;
             Assert.Equal((val * 2).ToString(), MarshalerOnClassTypeMethod(new StringContainer { Value = val.ToString() }).Value);
@@ -142,8 +139,7 @@ namespace System.Runtime.InteropServices.Tests
         [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ClassForwardingCustomMarshaler))]
         public static extern StringContainer MarshalerOnClassTypeMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ClassForwardingCustomMarshaler))] StringContainer str);
 
-        [Fact]
-        public void Parameter_CustomMarshalerProvided_CallsMethodsInCorrectOrdering()
+        public static void Parameter_CustomMarshalerProvided_CallsMethodsInCorrectOrdering()
         {
             Assert.Empty(OrderTrackingCustomMarshaler.Events);
 
@@ -169,6 +165,44 @@ namespace System.Runtime.InteropServices.Tests
                 "Called CleanUpNativeData"
             });
             Assert.Equal(expectedOrderingSecondCall, OrderTrackingCustomMarshaler.Events);
+
+            // GetInstance is only called once.
+            string val3 = "7488";
+            Assert.Equal(7488, OrderTrackingMethodRef(ref val3));
+            IEnumerable<string> expectedOrderingThirdCall = expectedOrderingSecondCall.Concat(new string[]
+            {
+                "Called MarshalManagedToNative",
+                "Called CleanUpManagedData",
+                "Called MarshalNativeToManaged",
+                "Called CleanUpNativeData",
+            });
+            Assert.Equal(expectedOrderingThirdCall.Skip(7), OrderTrackingCustomMarshaler.Events.Skip(7));
+
+            OrderTrackingMethodOut(out var val4);
+            Assert.Equal("2334", val4);
+            IEnumerable<string> expectedOrderingForthCall = expectedOrderingThirdCall.Concat(new string[]
+            {
+                "Called MarshalNativeToManaged",
+            });
+            Assert.Equal(expectedOrderingForthCall.Skip(11), OrderTrackingCustomMarshaler.Events.Skip(11));
+
+            var val5 = OrderTrackingMethodDelegate(439, (x) => x.ToString());
+            Assert.Equal("439", val5);
+            IEnumerable<string> expectedOrderingFifthCall = expectedOrderingForthCall.Concat(new string[]
+            {
+                "Called MarshalManagedToNative",
+                "Called CleanUpManagedData",
+                "Called MarshalNativeToManaged",
+            });
+            Assert.Equal(expectedOrderingFifthCall.Skip(12), OrderTrackingCustomMarshaler.Events.Skip(12));
+
+            var val6 = OrderTrackingMethodReturn("726");
+            Assert.Equal("726", val6);
+            IEnumerable<string> expectedOrderingSixthCall = expectedOrderingFifthCall.Concat(new string[]
+            {
+                "Called MarshalNativeToManaged",
+            });
+            Assert.Equal(expectedOrderingSixthCall.Skip(15), OrderTrackingCustomMarshaler.Events.Skip(15));
         }
 
         // This should only be used *once*, as it uses static state.
@@ -206,7 +240,7 @@ namespace System.Runtime.InteropServices.Tests
             public object MarshalNativeToManaged(IntPtr pNativeData)
             {
                 Events.Add("Called MarshalNativeToManaged");
-                return pNativeData.ToInt32().ToString();
+                return pNativeData.ToInt64().ToString();
             }
 
             public static ICustomMarshaler GetInstance(string cookie)
@@ -221,8 +255,24 @@ namespace System.Runtime.InteropServices.Tests
         [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
         public static extern string OrderTrackingMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))] string str);
 
-        [Fact]
-        public void CustomMarshaler_BothMarshalTypeRefAndMarshalTypeProvided_PicksMarshalType()
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntRef")]
+        public static extern int OrderTrackingMethodRef([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))] ref string str);
+
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntOut")]
+        public static extern void OrderTrackingMethodOut([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))] out string str);
+
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
+        public delegate string TestDelegate(int val);
+
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntDelegate")]
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
+        public static extern string OrderTrackingMethodDelegate(int val, TestDelegate dlg);
+
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseInt")]
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
+        public static extern string OrderTrackingMethodReturn([MarshalAs(UnmanagedType.LPStr)] string str);
+
+        public static void CustomMarshaler_BothMarshalTypeRefAndMarshalTypeProvided_PicksMarshalType()
         {
             Assert.Equal(2, BothTypeRefAndTypeMethod("64001"));
         }
@@ -243,8 +293,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int BothTypeRefAndTypeMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = "System.Runtime.InteropServices.Tests.ICustomMarshalerTests+OverridingCustomMarshaler", MarshalTypeRef = typeof(StringForwardingCustomMarshaler))] string str);
 
-        [Fact]
-        public void Parameter_CookieProvided_PassesCookieToGetInstance()
+        public static void Parameter_CookieProvided_PassesCookieToGetInstance()
         {
             int val = 64001;
             Assert.Equal(val, CustomCookieMethod(val.ToString()));
@@ -273,8 +322,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int CustomCookieMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CookieTrackingCustomMarshaler), MarshalCookie = "Cookie")] string str);
 
-        [Fact]
-        public void Parameter_NotCustomMarshalerType_UsesSpecifiedMarshaler()
+        public static void Parameter_NotCustomMarshalerType_UsesSpecifiedMarshaler()
         {
             int val = 64001;
             Assert.Equal(val, NonCustomMarshalerTypeMethod(val.ToString()));
@@ -283,8 +331,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int NonCustomMarshalerTypeMethod([MarshalAs(UnmanagedType.LPStr, MarshalTypeRef = typeof(OverridingCustomMarshaler))] string str);
 
-        [Fact]
-        public void CustomMarshaler_Generic_Success()
+        public static void CustomMarshaler_Generic_Success()
         {
             Assert.Equal(234, GenericGetInstanceCustomMarshalerMethod("64001"));
         }
@@ -308,8 +355,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int GenericGetInstanceCustomMarshalerMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(GenericCustomMarshaler<int>))] string str);
 
-        [Fact]
-        public void CustomMarshaler_ValueTypeWithStringType_Success()
+        public static void CustomMarshaler_ValueTypeWithStringType_Success()
         {
             Assert.Equal(234, ValueTypeMarshalerOnStringTypeMethod("64001"));
         }
@@ -333,8 +379,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int ValueTypeMarshalerOnStringTypeMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(CustomMarshalerValueType))] string str);
 
-        [Fact]
-        public void Parameter_MarshalerOnValueType_ThrowsMarshalDirectiveException()
+        public static void Parameter_MarshalerOnValueType_ThrowsMarshalDirectiveException()
         {
             Assert.Throws<MarshalDirectiveException>(() => MarshalerOnValueTypeMethod(0));
         }
@@ -342,8 +387,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int MarshalerOnValueTypeMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringForwardingCustomMarshaler))] int str);
 
-        [Fact]
-        public unsafe void Parameter_MarshalerOnPointer_ThrowsMarshalDirectiveException()
+        public static unsafe void Parameter_MarshalerOnPointer_ThrowsMarshalDirectiveException()
         {
             Assert.Throws<MarshalDirectiveException>(() => MarshalerOnPointerMethod(null));
         }
@@ -351,8 +395,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static unsafe extern int MarshalerOnPointerMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StringForwardingCustomMarshaler))] int* str);
 
-        [Fact]
-        public void Parameter_NullICustomMarshaler_ThrowsTypeLoadException()
+        public static void Parameter_NullICustomMarshaler_ThrowsTypeLoadException()
         {
             Assert.Throws<TypeLoadException>(() => NullCustomMarshalerMethod(""));
         }
@@ -360,17 +403,23 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int NullCustomMarshalerMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = null)] string str);
 
-        [Fact]
-        public void Parameter_NotICustomMarshaler_ThrowsApplicationException()
+        public static void Parameter_InvalidTypeICustomMarshaler_TypeLoadException()
+        {
+            Assert.Throws<TypeLoadException>(() => InvalidTypeCustomMarshalerMethod(""));
+        }
+
+        [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int InvalidTypeCustomMarshalerMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = "junk_type")] string str);
+
+        public static void Parameter_NotICustomMarshaler_ThrowsApplicationException()
         {
             Assert.Throws<ApplicationException>(() => NonICustomMarshalerMethod(""));
         }
-    
+
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int NonICustomMarshalerMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(string))] string str);
 
-        [Fact]
-        public void Parameter_OpenGenericICustomMarshaler_ThrowsTypeLoadException()
+        public static void Parameter_OpenGenericICustomMarshaler_ThrowsTypeLoadException()
         {
             Assert.Throws<TypeLoadException>(() => OpenGenericICustomMarshalerMethod(""));
         }
@@ -378,8 +427,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int OpenGenericICustomMarshalerMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(GenericCustomMarshaler<>))] string str);
 
-        [Fact]
-        public void Parameter_GetInstanceMethodDoesntExist_ThrowsApplicationException()
+        public static void Parameter_GetInstanceMethodDoesntExist_ThrowsApplicationException()
         {
             Assert.Throws<ApplicationException>(() => NoGetInstanceMethod(""));
         }
@@ -398,8 +446,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int NoGetInstanceMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(NoGetInstanceCustomMarshaler))] string str);
 
-        [Fact]
-        public void Parameter_GetInstanceMethodInstanceMethod_ThrowsApplicationException()
+        public static void Parameter_GetInstanceMethodInstanceMethod_ThrowsApplicationException()
         {
             Assert.Throws<ApplicationException>(() => InstanceGetInstanceMethod(""));
         }
@@ -419,8 +466,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int InstanceGetInstanceMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(InstanceGetInstanceCustomMarshaler))] string str);
 
-        [Fact]
-        public void Parameter_GetInstanceMethodNoParameters_ThrowsApplicationException()
+        public static void Parameter_GetInstanceMethodNoParameters_ThrowsApplicationException()
         {
             Assert.Throws<ApplicationException>(() => NoParametersGetInstanceMethod(""));
         }
@@ -441,8 +487,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int NoParametersGetInstanceMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(NoParameterGetInstanceCustomMarshaler))] string str);
 
-        [Fact]
-        public void Parameter_GetInstanceMethodNonStringParameter_ThrowsApplicationException()
+        public static void Parameter_GetInstanceMethodNonStringParameter_ThrowsApplicationException()
         {
             Assert.Throws<ApplicationException>(() => NonStringGetInstanceMethod(""));
         }
@@ -463,8 +508,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int NonStringGetInstanceMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(NonStringGetInstanceCustomMarshaler))] string str);
 
-        [Fact]
-        public void Parameter_GetInstanceMethodReturnsVoid_ThrowsApplicationException()
+        public static void Parameter_GetInstanceMethodReturnsVoid_ThrowsApplicationException()
         {
             Assert.Throws<ApplicationException>(() => VoidGetInstanceMethod(""));
         }
@@ -485,8 +529,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int VoidGetInstanceMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(VoidGetInstanceCustomMarshaler))] string str);
 
-        [Fact]
-        public void Parameter_GetInstanceMethodReturnsNull_ThrowsApplicationException()
+        public static void Parameter_GetInstanceMethodReturnsNull_ThrowsApplicationException()
         {
             Assert.Throws<ApplicationException>(() => NullGetInstanceMethod(""));
         }
@@ -507,9 +550,8 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int NullGetInstanceMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(NullGetInstanceCustomMarshaler))] string str);
 
-        [Fact]
-        public void Parameter_GetInstanceMethodThrows_ThrowsActualException()
-        {            
+        public static void Parameter_GetInstanceMethodThrows_ThrowsActualException()
+        {
             Assert.Throws<NotImplementedException>(() => ThrowingGetInstanceMethod(""));
         }
 
@@ -529,8 +571,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int ThrowingGetInstanceMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ThrowingGetInstanceCustomMarshaler))] string str);
 
-        [Fact]
-        public void Parameter_MarshalManagedToNativeThrows_ThrowsActualException()
+        public static void Parameter_MarshalManagedToNativeThrows_ThrowsActualException()
         {
             Assert.Throws<NotImplementedException>(() => ThrowingMarshalManagedToNativeMethod(""));
         }
@@ -551,8 +592,7 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int ThrowingMarshalManagedToNativeMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ThrowingMarshalManagedToNativeCustomMarshaler))] string str);
 
-        [Fact]
-        public void Parameter_CleanUpNativeDataMethodThrows_ThrowsActualException()
+        public static void Parameter_CleanUpNativeDataMethodThrows_ThrowsActualException()
         {
             Assert.Throws<NotImplementedException>(() => ThrowingCleanUpNativeDataMethod(""));
         }
@@ -573,7 +613,6 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int ThrowingCleanUpNativeDataMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ThrowingCleanUpNativeDataCustomMarshaler))] string str);
 
-        [Fact]
         public static void Field_ParentIsStruct_ThrowsTypeLoadException()
         {
             Assert.Throws<TypeLoadException>(() => StructWithCustomMarshalerFieldMethod(new StructWithCustomMarshalerField()));
@@ -588,9 +627,109 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int StructWithCustomMarshalerFieldMethod(StructWithCustomMarshalerField c);
 
+
+        public static void Parameter_DifferentCustomMarshalerType_MarshalsCorrectly()
+        {
+            Assert.Equal(234, DifferentCustomMarshalerType("5678"));
+        }
+
+        public class OuterCustomMarshaler : ICustomMarshaler
+        {
+            public void CleanUpManagedData(object ManagedObj) => throw new NotImplementedException();
+            public void CleanUpNativeData(IntPtr pNativeData) => throw new NotImplementedException();
+
+            public int GetNativeDataSize() => throw new NotImplementedException();
+
+            public IntPtr MarshalManagedToNative(object ManagedObj) => throw new NotImplementedException();
+            public object MarshalNativeToManaged(IntPtr pNativeData) => throw new NotImplementedException();
+
+            public static ICustomMarshaler GetInstance(string cookie) => new InnerCustomMarshaler();
+
+            private interface ILargeInterface
+            {
+                void Method1();
+                void Method2();
+                void Method3();
+                void Method4();
+                void Method5();
+                void Method6();
+            }
+
+            private class InnerCustomMarshaler : ILargeInterface, ICustomMarshaler
+            {
+                public void Method1() => throw new InvalidOperationException();
+                public void Method2() => throw new InvalidOperationException();
+                public void Method3() => throw new InvalidOperationException();
+                public void Method4() => throw new InvalidOperationException();
+                public void Method5() => throw new InvalidOperationException();
+                public void Method6() => throw new InvalidOperationException();
+
+                public void CleanUpManagedData(object ManagedObj) { }
+                public void CleanUpNativeData(IntPtr pNativeData) => Marshal.FreeCoTaskMem(pNativeData);
+
+                public int GetNativeDataSize() => IntPtr.Size;
+
+                public IntPtr MarshalManagedToNative(object ManagedObj) => Marshal.StringToCoTaskMemAnsi("234");
+                public object MarshalNativeToManaged(IntPtr pNativeData) => null;
+            }
+        }
+
+        [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int DifferentCustomMarshalerType([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OuterCustomMarshaler))] string str);
+
+        public delegate string TestDelegateRef([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(BoxedValueTypeCustomMarshaler))] ref int val);
+
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntDelegateRef")]
+        public static extern string CustomMarshallerWithDelegateRef(int val, TestDelegateRef dlg);
+
+        public static void DelegateParameter_MarshalerOnRefInt_ThrowsMarshalDirectiveException()
+        {
+            Assert.Throws<MarshalDirectiveException>(() => CustomMarshallerWithDelegateRef(84664, (ref int x) => x.ToString()));
+        }
         public static int Main(String[] args)
         {
-            return new ICustomMarshalerTests().RunTests();
+            try
+            {
+                CustomMarshaler_StringType_Success();
+                CustomMarshaler_ArrayType_Success();
+                CustomMarshaler_BoxedValueType_Success();
+                Parameter_CustomMarshalerProvidedOnClassType_ForwardsCorrectly();
+                Parameter_CustomMarshalerProvided_CallsMethodsInCorrectOrdering();
+                CustomMarshaler_BothMarshalTypeRefAndMarshalTypeProvided_PicksMarshalType();
+                Parameter_CookieProvided_PassesCookieToGetInstance();
+                Parameter_NotCustomMarshalerType_UsesSpecifiedMarshaler();
+                CustomMarshaler_Generic_Success();
+                CustomMarshaler_ValueTypeWithStringType_Success();
+                Parameter_MarshalerOnValueType_ThrowsMarshalDirectiveException();
+                Parameter_MarshalerOnPointer_ThrowsMarshalDirectiveException();
+                Parameter_NullICustomMarshaler_ThrowsTypeLoadException();
+                Parameter_InvalidTypeICustomMarshaler_TypeLoadException();
+                Parameter_NotICustomMarshaler_ThrowsApplicationException();
+                Parameter_OpenGenericICustomMarshaler_ThrowsTypeLoadException();
+                Parameter_GetInstanceMethodDoesntExist_ThrowsApplicationException();
+                Parameter_GetInstanceMethodInstanceMethod_ThrowsApplicationException();
+                Parameter_GetInstanceMethodNoParameters_ThrowsApplicationException();
+                Parameter_GetInstanceMethodNonStringParameter_ThrowsApplicationException();
+                Parameter_GetInstanceMethodReturnsVoid_ThrowsApplicationException();
+                Parameter_GetInstanceMethodReturnsNull_ThrowsApplicationException();
+                Parameter_GetInstanceMethodThrows_ThrowsActualException();
+                Parameter_MarshalManagedToNativeThrows_ThrowsActualException();
+                Parameter_CleanUpNativeDataMethodThrows_ThrowsActualException();
+                Field_ParentIsStruct_ThrowsTypeLoadException();
+                Parameter_DifferentCustomMarshalerType_MarshalsCorrectly();
+                if (SupportsExceptionInterop)
+                {
+                    // EH interop is not supported for NativeAOT.
+                    DelegateParameter_MarshalerOnRefInt_ThrowsMarshalDirectiveException();
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Test Failure: {e}");
+                return 101;
+            }
+
+            return 100;
         }
     }
 }

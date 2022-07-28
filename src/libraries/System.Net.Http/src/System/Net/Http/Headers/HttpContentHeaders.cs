@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -16,59 +14,29 @@ namespace System.Net.Http.Headers
         private HttpHeaderValueCollection<string>? _contentEncoding;
         private HttpHeaderValueCollection<string>? _contentLanguage;
 
-        public ICollection<string> Allow
-        {
-            get
-            {
-                if (_allow == null)
-                {
-                    _allow = new HttpHeaderValueCollection<string>(KnownHeaders.Allow.Descriptor,
-                        this, HeaderUtilities.TokenValidator);
-                }
-                return _allow;
-            }
-        }
+        public ICollection<string> Allow =>
+            _allow ??= new HttpHeaderValueCollection<string>(KnownHeaders.Allow.Descriptor, this);
 
         public ContentDispositionHeaderValue? ContentDisposition
         {
-            get { return (ContentDispositionHeaderValue?)GetParsedValues(KnownHeaders.ContentDisposition.Descriptor); }
+            get { return (ContentDispositionHeaderValue?)GetSingleParsedValue(KnownHeaders.ContentDisposition.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentDisposition.Descriptor, value); }
         }
 
         // Must be a collection (and not provide properties like "GZip", "Deflate", etc.) since the
         // order matters!
-        public ICollection<string> ContentEncoding
-        {
-            get
-            {
-                if (_contentEncoding == null)
-                {
-                    _contentEncoding = new HttpHeaderValueCollection<string>(KnownHeaders.ContentEncoding.Descriptor,
-                        this, HeaderUtilities.TokenValidator);
-                }
-                return _contentEncoding;
-            }
-        }
+        public ICollection<string> ContentEncoding =>
+            _contentEncoding ??= new HttpHeaderValueCollection<string>(KnownHeaders.ContentEncoding.Descriptor, this);
 
-        public ICollection<string> ContentLanguage
-        {
-            get
-            {
-                if (_contentLanguage == null)
-                {
-                    _contentLanguage = new HttpHeaderValueCollection<string>(KnownHeaders.ContentLanguage.Descriptor,
-                        this, HeaderUtilities.TokenValidator);
-                }
-                return _contentLanguage;
-            }
-        }
+        public ICollection<string> ContentLanguage =>
+            _contentLanguage ??= new HttpHeaderValueCollection<string>(KnownHeaders.ContentLanguage.Descriptor, this);
 
         public long? ContentLength
         {
             get
             {
                 // 'Content-Length' can only hold one value. So either we get 'null' back or a boxed long value.
-                object? storedValue = GetParsedValues(KnownHeaders.ContentLength.Descriptor);
+                object? storedValue = GetSingleParsedValue(KnownHeaders.ContentLength.Descriptor);
 
                 // Only try to calculate the length if the user didn't set the value explicitly using the setter.
                 if (!_contentLengthSet && (storedValue == null))
@@ -104,25 +72,25 @@ namespace System.Net.Http.Headers
 
         public Uri? ContentLocation
         {
-            get { return (Uri?)GetParsedValues(KnownHeaders.ContentLocation.Descriptor); }
+            get { return (Uri?)GetSingleParsedValue(KnownHeaders.ContentLocation.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentLocation.Descriptor, value); }
         }
 
         public byte[]? ContentMD5
         {
-            get { return (byte[]?)GetParsedValues(KnownHeaders.ContentMD5.Descriptor); }
+            get { return (byte[]?)GetSingleParsedValue(KnownHeaders.ContentMD5.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentMD5.Descriptor, value); }
         }
 
         public ContentRangeHeaderValue? ContentRange
         {
-            get { return (ContentRangeHeaderValue?)GetParsedValues(KnownHeaders.ContentRange.Descriptor); }
+            get { return (ContentRangeHeaderValue?)GetSingleParsedValue(KnownHeaders.ContentRange.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentRange.Descriptor, value); }
         }
 
         public MediaTypeHeaderValue? ContentType
         {
-            get { return (MediaTypeHeaderValue?)GetParsedValues(KnownHeaders.ContentType.Descriptor); }
+            get { return (MediaTypeHeaderValue?)GetSingleParsedValue(KnownHeaders.ContentType.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ContentType.Descriptor, value); }
         }
 

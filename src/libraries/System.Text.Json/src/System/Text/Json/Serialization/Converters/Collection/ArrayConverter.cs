@@ -9,11 +9,9 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Converter for <cref>System.Array</cref>.
     /// </summary>
-    internal sealed class ArrayConverter<TCollection, TElement>
-        : IEnumerableDefaultConverter<TCollection, TElement>
-        where TCollection: IEnumerable
+    internal sealed class ArrayConverter<TCollection, TElement> : IEnumerableDefaultConverter<TElement[], TElement>
     {
-        internal override bool CanHaveIdMetadata => false;
+        internal override bool CanHaveMetadata => false;
 
         protected override void Add(in TElement value, ref ReadStack state)
         {
@@ -31,10 +29,8 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ReturnValue = list.ToArray();
         }
 
-        protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
+        protected override bool OnWriteResume(Utf8JsonWriter writer, TElement[] array, JsonSerializerOptions options, ref WriteStack state)
         {
-            TElement[] array = (TElement[])(IEnumerable)value;
-
             int index = state.Current.EnumeratorIndex;
 
             JsonConverter<TElement> elementConverter = GetElementConverter(ref state);
@@ -56,6 +52,8 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.EnumeratorIndex = index;
                         return false;
                     }
+
+                    state.Current.EndCollectionElement();
 
                     if (ShouldFlush(writer, ref state))
                     {

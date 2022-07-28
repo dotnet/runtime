@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.Logging.Console
     /// <summary>
     /// Format of <see cref="ConsoleLogger" /> messages.
     /// </summary>
-    [System.ObsoleteAttribute("ConsoleLoggerFormat has been deprecated.", false)]
+    [System.ObsoleteAttribute("ConsoleLoggerFormat has been deprecated.")]
     public enum ConsoleLoggerFormat
     {
         /// <summary>

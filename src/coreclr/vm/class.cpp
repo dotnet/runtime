@@ -84,7 +84,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     }
     CONTRACTL_END
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef _DEBUG
     _ASSERTE(!IsDestroyed());
@@ -153,7 +152,9 @@ void EEClass::Destruct(MethodTable * pOwningMT)
 
         if (pDelegateEEClass->m_pStaticCallStub)
         {
-            BOOL fStubDeleted = pDelegateEEClass->m_pStaticCallStub->DecRef();
+            ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pStaticCallStub, sizeof(Stub));
+            BOOL fStubDeleted = stubWriterHolder.GetRW()->DecRef();
+
             if (fStubDeleted)
             {
                 DelegateInvokeStubManager::g_pManager->RemoveStub(pDelegateEEClass->m_pStaticCallStub);
@@ -167,11 +168,10 @@ void EEClass::Destruct(MethodTable * pOwningMT)
         // it is owned by the m_pMulticastStubCache, not by the class
         // - it is shared across classes. So we don't decrement
         // its ref count here
-        delete pDelegateEEClass->m_pUMThunkMarshInfo;
     }
 
 #ifdef FEATURE_COMINTEROP
-    if (GetSparseCOMInteropVTableMap() != NULL && !pOwningMT->IsZapped())
+    if (GetSparseCOMInteropVTableMap() != NULL)
         delete GetSparseCOMInteropVTableMap();
 #endif // FEATURE_COMINTEROP
 
@@ -197,7 +197,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     }
 #endif // PROFILING_SUPPORTED
 
-#endif // CROSSGEN_COMPILE
 }
 
 //*******************************************************************************
@@ -429,7 +428,7 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
 // AddField - called when a new field is added by EnC
 //
 // Since instances of this class may already exist on the heap, we can't change the
-// runtime layout of the object to accomodate the new field.  Instead we hang the field
+// runtime layout of the object to accommodate the new field.  Instead we hang the field
 // off the syncblock (for instance fields) or in the FieldDesc for static fields.
 //
 // Here we just create the FieldDesc and link it to the class.  The actual storage will
@@ -878,15 +877,7 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
             LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: Replaced approximate parent %s with exact parent %s from token %x\n", pParentMT->GetDebugClassName(), pNewParentMT->GetDebugClassName(), crExtends));
 
             // SetParentMethodTable is not used here since we want to update the indirection cell in the NGen case
-            if (pMT->IsParentMethodTableIndirectPointerMaybeNull())
-            {
-                *pMT->GetParentMethodTableValuePtr() = pNewParentMT;
-            }
-            else
-            {
-                pMT->GetParentMethodTablePointerPtr()->SetValueMaybeNull(pNewParentMT);
-            }
-
+            *pMT->GetParentMethodTableValuePtr() = pNewParentMT;
             pParentMT = pNewParentMT;
         }
     }
@@ -904,28 +895,14 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
         DWORD nDicts = pParentMT->GetNumDicts();
         for (DWORD iDict = 0; iDict < nDicts; iDict++)
         {
-            if (pMT->GetPerInstInfo()[iDict].GetValueMaybeNull() != pParentMT->GetPerInstInfo()[iDict].GetValueMaybeNull())
+            if (pMT->GetPerInstInfo()[iDict] != pParentMT->GetPerInstInfo()[iDict])
             {
-                pMT->GetPerInstInfo()[iDict].SetValueMaybeNull(pParentMT->GetPerInstInfo()[iDict].GetValueMaybeNull());
+                pMT->GetPerInstInfo()[iDict] = pParentMT->GetPerInstInfo()[iDict];
             }
         }
     }
 
-#ifdef FEATURE_PREJIT
-    // Restore action, not in MethodTable::Restore because we may have had approx parents at that point
-    if (pMT->IsZapped())
-    {
-        MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
-        while (it.Next())
-        {
-            Module::RestoreMethodTablePointer(&it.GetInterfaceInfo()->m_pMethodTable, pMT->GetLoaderModule(), CLASS_LOAD_EXACTPARENTS);
-        }
-    }
-    else
-#endif
-    {
-        MethodTableBuilder::LoadExactInterfaceMap(pMT);
-    }
+    MethodTableBuilder::LoadExactInterfaceMap(pMT);
 
 #ifdef _DEBUG
     if (g_pConfig->ShouldDumpOnClassLoad(pMT->GetDebugClassName()))
@@ -1056,11 +1033,7 @@ bool ClassLoader::IsMethodSignatureCompatibleWith(FnPtrTypeDesc* fn1TD, FnPtrTyp
     TypeHandle* pFn2ArgTH = fn2TD->GetRetAndArgTypes();
     for (DWORD i = 0; i < fn1TD->GetNumArgs() + 1; i++)
     {
-#ifdef FEATURE_PREJIT
-        if (!ZapSig::CompareTaggedPointerToTypeHandle(pFn1ArgTH->GetModule(), pFn1ArgTH[i].AsTAddr(), pFn2ArgTH[i]))
-#else
         if (pFn1ArgTH[i] != pFn2ArgTH[i])
-#endif
         {
             return false;
         }
@@ -1233,7 +1206,7 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
     //      }
     //      class B : A {
     //          [PreserveBaseOverrides]
-    //          DerivedRetType VirtualFunction() { .override A.VirtualFuncion }
+    //          DerivedRetType VirtualFunction() { .override A.VirtualFunction }
     //      }
     //      class C : B {
     //          MoreDerivedRetType VirtualFunction() { .override A.VirtualFunction }
@@ -1486,16 +1459,17 @@ int MethodTable::GetVectorSize()
 
         if (strcmp(className, "Vector`1") == 0)
         {
-            vectorSize = GetNumInstanceFieldBytes();
             _ASSERTE(strcmp(namespaceName, "System.Numerics") == 0);
-            return vectorSize;
+            vectorSize = GetNumInstanceFieldBytes();
         }
-        if (strcmp(className, "Vector128`1") == 0)
+        else if (strcmp(className, "Vector128`1") == 0)
         {
+            _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
             vectorSize = 16;
         }
         else if (strcmp(className, "Vector64`1") == 0)
         {
+            _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
             vectorSize = 8;
         }
         if (vectorSize != 0)
@@ -1505,7 +1479,6 @@ int MethodTable::GetVectorSize()
             CorElementType corType = typeArg.GetSignatureCorElementType();
             if (((corType >= ELEMENT_TYPE_I1) && (corType <= ELEMENT_TYPE_R8)) || (corType == ELEMENT_TYPE_I) || (corType == ELEMENT_TYPE_U))
             {
-                _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
                 return vectorSize;
             }
         }
@@ -1821,7 +1794,6 @@ TypeHandle MethodTable::SetupCoClassForInterface()
         CoClassType = TypeName::GetTypeUsingCASearchRules(ss.GetUnicode(), GetAssembly());
 
         // Cache the coclass type
-        g_IBCLogger.LogEEClassCOWTableAccess(this);
         GetClass_NoLogging()->SetCoClassForInterface(CoClassType);
     }
     return CoClassType;
@@ -1904,7 +1876,7 @@ TypeHandle MethodTable::GetDefItfForComClassItf()
     if (it.Next())
     {
         // Can use GetInterfaceApprox, as there are no generic default interfaces
-        return TypeHandle(it.GetInterfaceApprox()); 
+        return TypeHandle(it.GetInterfaceApprox());
     }
     else
     {
@@ -2188,7 +2160,6 @@ CorIfaceAttr MethodTable::GetComInterfaceType()
     }
 
     // Cache the interface type
-    g_IBCLogger.LogEEClassCOWTableAccess(this);
     GetClass_NoLogging()->SetComInterfaceType(ItfType);
 
     return ItfType;
@@ -2221,7 +2192,7 @@ void EEClass::GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL 
         if (*pfBestFitMapping) flags |= VMFLAG_BESTFITMAPPING;
         if (*pfThrowOnUnmappableChar) flags |= VMFLAG_THROWONUNMAPPABLECHAR;
 
-        FastInterlockOr(&pClass->m_VMFlags, flags);
+        InterlockedOr((LONG*)&pClass->m_VMFlags, flags);
     }
     else
     {
@@ -2264,8 +2235,8 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
         {
             // Display them
             if(debug) {
-                ssBuff.Printf(W("%S:\n"), pszClassName);
-                WszOutputDebugString(ssBuff.GetUnicode());
+                ssBuff.Printf("%s:\n", pszClassName);
+                OutputDebugStringUtf8(ssBuff.GetUTF8());
             }
             else {
                  LOG((LF_CLASSLOADER, LL_ALWAYS, "%s:\n", pszClassName));
@@ -2278,8 +2249,8 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
                 printf("offset %s%3d %s\n", pFD->IsByValue() ? "byvalue " : "", pFD->GetOffset_NoLogging(), pFD->GetName());
 #endif
                 if(debug) {
-                    ssBuff.Printf(W("offset %3d %S\n"), pFD->GetOffset_NoLogging(), pFD->GetName());
-                    WszOutputDebugString(ssBuff.GetUnicode());
+                    ssBuff.Printf("offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName());
+                    OutputDebugStringUtf8(ssBuff.GetUTF8());
                 }
                 else {
                     LOG((LF_CLASSLOADER, LL_ALWAYS, "offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName()));
@@ -2291,7 +2262,7 @@ void MethodTable::DebugRecursivelyDumpInstanceFields(LPCUTF8 pszClassName, BOOL 
     {
         if(debug)
         {
-            WszOutputDebugString(W("<Exception Thrown>\n"));
+            OutputDebugStringUtf8("<Exception Thrown>\n");
         }
         else
         {
@@ -2327,8 +2298,8 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
 
         if (debug)
         {
-            ssBuff.Printf(W("Field layout for '%S':\n\n"), pszClassName);
-            WszOutputDebugString(ssBuff.GetUnicode());
+            ssBuff.Printf("Field layout for '%s':\n\n", pszClassName);
+            OutputDebugStringUtf8(ssBuff.GetUTF8());
         }
         else
         {
@@ -2340,8 +2311,8 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
         {
             if (debug)
             {
-                WszOutputDebugString(W("Static fields (stored at vtable offsets)\n"));
-                WszOutputDebugString(W("----------------------------------------\n"));
+                OutputDebugStringUtf8("Static fields (stored at vtable offsets)\n");
+                OutputDebugStringUtf8("----------------------------------------\n");
             }
             else
             {
@@ -2354,8 +2325,8 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
             {
                 FieldDesc *pFD = GetClass()->GetFieldDescList() + ((GetNumInstanceFields()-cParentInstanceFields) + i);
                 if(debug) {
-                    ssBuff.Printf(W("offset %3d %S\n"), pFD->GetOffset_NoLogging(), pFD->GetName());
-                    WszOutputDebugString(ssBuff.GetUnicode());
+                    ssBuff.Printf("offset %3d %s\n", pFD->GetOffset_NoLogging(), pFD->GetName());
+                    OutputDebugStringUtf8(ssBuff.GetUTF8());
                 }
                 else
                 {
@@ -2369,7 +2340,7 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
         {
             if (GetNumStaticFields()) {
                 if(debug) {
-                    WszOutputDebugString(W("\n"));
+                    OutputDebugStringUtf8("\n");
                 }
                 else
                 {
@@ -2380,8 +2351,8 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
 
             if (debug)
             {
-                WszOutputDebugString(W("Instance fields\n"));
-                WszOutputDebugString(W("---------------\n"));
+                OutputDebugStringUtf8("Instance fields\n");
+                OutputDebugStringUtf8("---------------\n");
             }
             else
             {
@@ -2395,7 +2366,7 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
 
         if (debug)
         {
-            WszOutputDebugString(W("\n"));
+            OutputDebugStringUtf8("\n");
         }
         else
         {
@@ -2407,7 +2378,7 @@ void MethodTable::DebugDumpFieldLayout(LPCUTF8 pszClassName, BOOL debug)
     {
         if (debug)
         {
-            WszOutputDebugString(W("<Exception Thrown>\n"));
+            OutputDebugStringUtf8("<Exception Thrown>\n");
         }
         else
         {
@@ -2432,8 +2403,8 @@ MethodTable::DebugDumpGCDesc(
 
         if (fDebug)
         {
-            ssBuff.Printf(W("GC description for '%S':\n\n"), pszClassName);
-            WszOutputDebugString(ssBuff.GetUnicode());
+            ssBuff.Printf("GC description for '%s':\n\n", pszClassName);
+            OutputDebugStringUtf8(ssBuff.GetUTF8());
         }
         else
         {
@@ -2448,7 +2419,7 @@ MethodTable::DebugDumpGCDesc(
 
             if (fDebug)
             {
-                WszOutputDebugString(W("GCDesc:\n"));
+                OutputDebugStringUtf8("GCDesc:\n");
             } else
             {
                 //LF_ALWAYS allowed here because this is controlled by special env var ShouldDumpOnClassLoad
@@ -2462,12 +2433,12 @@ MethodTable::DebugDumpGCDesc(
             {
                 if (fDebug)
                 {
-                    ssBuff.Printf(W("   offset %5d (%d w/o Object), size %5d (%5d w/o BaseSize subtr)\n"),
+                    ssBuff.Printf("   offset %5d (%d w/o Object), size %5d (%5d w/o BaseSize subtr)\n",
                         pSeries->GetSeriesOffset(),
                         pSeries->GetSeriesOffset() - OBJECT_SIZE,
                         pSeries->GetSeriesSize(),
                         pSeries->GetSeriesSize() + GetBaseSize() );
-                    WszOutputDebugString(ssBuff.GetUnicode());
+                    OutputDebugStringUtf8(ssBuff.GetUTF8());
                 }
                 else
                 {
@@ -2484,7 +2455,7 @@ MethodTable::DebugDumpGCDesc(
 
             if (fDebug)
             {
-                WszOutputDebugString(W("\n"));
+                OutputDebugStringUtf8("\n");
             } else
             {
                 //LF_ALWAYS allowed here because this is controlled by special env var ShouldDumpOnClassLoad
@@ -2496,7 +2467,7 @@ MethodTable::DebugDumpGCDesc(
     {
         if (fDebug)
         {
-            WszOutputDebugString(W("<Exception Thrown>\n"));
+            OutputDebugStringUtf8("<Exception Thrown>\n");
         }
         else
         {
@@ -2532,7 +2503,7 @@ CorClassIfaceAttr MethodTable::GetComClassInterfaceType()
         return clsIfNone;
 
     // If the class does not support IClassX,
-    // then it is considered ClassInterfaceType.None unless explicitly overriden by the CA
+    // then it is considered ClassInterfaceType.None unless explicitly overridden by the CA
     if (!ClassSupportsIClassX(this))
         return clsIfNone;
 
@@ -2571,29 +2542,6 @@ MethodTable::GetSubstitutionForParent(
 } // MethodTable::GetSubstitutionForParent
 
 #endif //!DACCESS_COMPILE
-
-
-//*******************************************************************************
-#ifdef FEATURE_PREJIT
-DWORD EEClass::GetSize()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    // Total instance size consists of the fixed ("normal") fields, cached at construction time and dependent
-    // on whether we're a vanilla EEClass or DelegateEEClass etc., and a portion for the packed fields tacked on
-    // the end. The size of the packed fields can be retrieved from the fields themselves or, if we were
-    // unsuccessful in our attempts to compress the data, the full size of the EEClassPackedFields structure
-    // (which is essentially just a DWORD array of all the field values).
-    return m_cbFixedEEClassFields +
-        (m_fFieldsArePacked ? GetPackedFields()->GetPackedSize() : sizeof(EEClassPackedFields));
-}
-#endif // FEATURE_PREJIT
 
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_COMINTEROP
@@ -2742,371 +2690,7 @@ WORD SparseVTableMap::GetNumVTableSlots()
     return m_VTSlot;
 }
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-//*******************************************************************************
-void SparseVTableMap::Save(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    image->StoreStructure(this, sizeof(SparseVTableMap),
-                                    DataImage::ITEM_SPARSE_VTABLE_MAP_TABLE);
-
-    // Trim unused portion of the table
-    m_Allocated = m_MapEntries;
-
-    image->StoreInternedStructure(m_MapList, m_Allocated * sizeof(Entry),
-                                    DataImage::ITEM_SPARSE_VTABLE_MAP_ENTRIES);
-}
-
-//*******************************************************************************
-void SparseVTableMap::Fixup(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    image->FixupPointerField(this, offsetof(SparseVTableMap, m_MapList));
-}
-#endif //FEATURE_NATIVE_IMAGE_GENERATION
 #endif //FEATURE_COMINTEROP
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-
-//*******************************************************************************
-void EEClass::Save(DataImage *image, MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(this == pMT->GetClass());
-        PRECONDITION(pMT->IsCanonicalMethodTable());
-        PRECONDITION(pMT->IsFullyLoaded());
-        PRECONDITION(!image->IsStored(this));
-        PRECONDITION(image->GetModule()->GetAssembly() ==
-                 GetAppDomain()->ToCompilationDomain()->GetTargetAssembly());
-    }
-    CONTRACTL_END;
-
-    LOG((LF_ZAP, LL_INFO10000, "EEClass::Save %s (%p)\n", m_szDebugClassName, this));
-
-    m_fFieldsArePacked = GetPackedFields()->PackFields();
-
-    DWORD cbSize = GetSize();
-
-    // ***************************************************************
-    // Only put new actions in this function if they really relate to EEClass
-    // rather than MethodTable.  For example, if you need to allocate
-    // a per-type entry in some table in the NGEN image, then you will probably
-    // need to allocate one such entry per MethodTable, e.g. per generic
-    // instantiation.  You probably don't want to allocate one that is common
-    // to a group of shared instantiations.
-    // ***************************************************************
-
-    DataImage::ItemKind item =
-        (!pMT->IsGenericTypeDefinition() && pMT->ContainsGenericVariables())
-        ? DataImage::ITEM_EECLASS_COLD
-        // Until we get all the access paths for generics tidied up, many paths touch the EEClass, e.g. GetInstantiation()
-        : pMT->HasInstantiation()
-        ? DataImage::ITEM_EECLASS_WARM
-        : DataImage::ITEM_EECLASS;
-
-    // Save optional fields if we have any.
-    if (HasOptionalFields())
-        image->StoreStructure(GetOptionalFields(),
-                              sizeof(EEClassOptionalFields),
-                              item);
-
-#ifdef _DEBUG
-    if (!image->IsStored(m_szDebugClassName))
-        image->StoreStructure(m_szDebugClassName, (ULONG)(strlen(m_szDebugClassName)+1),
-                              DataImage::ITEM_DEBUG,
-                              1);
-#endif // _DEBUG
-
-#ifdef FEATURE_COMINTEROP
-    if (GetSparseCOMInteropVTableMap() != NULL)
-        GetSparseCOMInteropVTableMap()->Save(image);
-#endif // FEATURE_COMINTEROP
-
-    //
-    // Save MethodDescs
-    //
-
-    MethodDescChunk *chunk = GetChunks();
-    if (chunk != NULL)
-    {
-        MethodDesc::SaveChunk methodDescSaveChunk(image);
-
-        MethodTable::IntroducedMethodIterator it(pMT, TRUE);
-        for (; it.IsValid(); it.Next())
-        {
-            MethodDesc * pMD = it.GetMethodDesc();
-
-            // Do not save IL stubs that we have failed to generate code for
-            if (pMD->IsILStub() && image->GetCodeAddress(pMD) == NULL)
-                continue;
-
-            methodDescSaveChunk.Append(pMD);
-        }
-
-        ZapStoredStructure * pChunksNode = methodDescSaveChunk.Save();
-        if (pChunksNode != NULL)
-            image->BindPointer(chunk, pChunksNode, 0);
-
-    }
-
-    //
-    // Save FieldDescs
-    //
-
-    SIZE_T fieldCount = FieldDescListSize(pMT);
-
-    if (fieldCount != 0)
-    {
-        FieldDesc *pFDStart = GetFieldDescList();
-        FieldDesc *pFDEnd = pFDStart + fieldCount;
-
-        FieldDesc *pFD = pFDStart;
-        while (pFD < pFDEnd)
-        {
-            pFD->PrecomputeNameHash();
-            pFD++;
-        }
-
-        ZapStoredStructure * pFDNode = image->StoreStructure(pFDStart, (ULONG)(fieldCount * sizeof(FieldDesc)),
-                                        DataImage::ITEM_FIELD_DESC_LIST);
-
-        pFD = pFDStart;
-        while (pFD < pFDEnd)
-        {
-            pFD->SaveContents(image);
-            if (pFD != pFDStart)
-                image->BindPointer(pFD, pFDNode, (BYTE *)pFD - (BYTE *)pFDStart);
-            pFD++;
-        }
-    }
-
-    // Save dictionary layout information
-    DictionaryLayout *pDictLayout = GetDictionaryLayout();
-    if (pMT->IsSharedByGenericInstantiations() && pDictLayout != NULL)
-    {
-        pDictLayout->Save(image);
-        LOG((LF_ZAP, LL_INFO10000, "ZAP: dictionary for %s has %d slots used out of possible %d\n", m_szDebugClassName,
-             pDictLayout->GetNumUsedSlots(), pDictLayout->GetMaxSlots()));
-    }
-
-    if (GetVarianceInfo() != NULL)
-        image->StoreInternedStructure(GetVarianceInfo(),
-                              pMT->GetNumGenericArgs(),
-                              DataImage::ITEM_CLASS_VARIANCE_INFO);
-
-    image->StoreStructure(this, cbSize, item);
-
-    if (pMT->IsInterface())
-    {
-        GUID dummy;
-        if (SUCCEEDED(pMT->GetGuidNoThrow(&dummy, TRUE, FALSE)))
-        {
-            GuidInfo* pGuidInfo = GetGuidInfo();
-            _ASSERTE(pGuidInfo != NULL);
-
-            image->StoreStructure(pGuidInfo, sizeof(GuidInfo),
-                                    DataImage::ITEM_GUID_INFO);
-        }
-        else
-        {
-            // make sure we don't store a GUID_NULL guid in the NGEN image
-            // instead we'll compute the GUID at runtime, and throw, if appropriate
-            m_pGuidInfo.SetValueMaybeNull(NULL);
-        }
-    }
-
-#ifdef FEATURE_COMINTEROP
-    if (IsDelegate())
-    {
-        DelegateEEClass *pDelegateClass = (DelegateEEClass *)this;
-        ComPlusCallInfo *pComInfo = pDelegateClass->m_pComPlusCallInfo;
-
-        if (pComInfo != NULL && pComInfo->ShouldSave(image))
-        {
-            image->StoreStructure(pDelegateClass->m_pComPlusCallInfo,
-                                  sizeof(ComPlusCallInfo),
-                                  item);
-        }
-    }
-#endif // FEATURE_COMINTEROP
-
-    LOG((LF_ZAP, LL_INFO10000, "EEClass::Save %s (%p) complete.\n", m_szDebugClassName, this));
-}
-
-//*******************************************************************************
-DWORD EEClass::FieldDescListSize(MethodTable * pMT)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    EEClass * pClass = pMT->GetClass();
-    DWORD fieldCount = pClass->GetNumInstanceFields() + pClass->GetNumStaticFields();
-
-    MethodTable * pParentMT = pMT->GetParentMethodTable();
-    if (pParentMT != NULL)
-        fieldCount -= pParentMT->GetNumInstanceFields();
-    return fieldCount;
-}
-
-//*******************************************************************************
-void EEClass::Fixup(DataImage *image, MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(this == pMT->GetClass());
-        PRECONDITION(pMT->IsCanonicalMethodTable());
-        PRECONDITION(pMT->IsFullyLoaded());
-        PRECONDITION(image->IsStored(this));
-    }
-    CONTRACTL_END;
-
-    LOG((LF_ZAP, LL_INFO10000, "EEClass::Fixup %s (%p)\n", GetDebugClassName(), this));
-
-    // Fixup pointer to optional fields if this class has any. This pointer is a relative pointer (to avoid
-    // the need for base relocation fixups) and thus needs to use the IMAGE_REL_BASED_RELPTR fixup type.
-    if (HasOptionalFields())
-        image->FixupRelativePointerField(this, offsetof(EEClass, m_rpOptionalFields));
-
-#ifdef _DEBUG
-    image->FixupPointerField(this, offsetof(EEClass, m_szDebugClassName));
-#endif
-
-#ifdef FEATURE_COMINTEROP
-    if (GetSparseCOMInteropVTableMap() != NULL)
-    {
-        image->FixupPointerField(GetOptionalFields(), offsetof(EEClassOptionalFields, m_pSparseVTableMap));
-        GetSparseCOMInteropVTableMap()->Fixup(image);
-    }
-#endif // FEATURE_COMINTEROP
-
-    DictionaryLayout *pDictLayout = GetDictionaryLayout();
-    if (pDictLayout != NULL)
-    {
-        pDictLayout->Fixup(image, FALSE);
-        image->FixupPointerField(GetOptionalFields(), offsetof(EEClassOptionalFields, m_pDictLayout));
-    }
-
-    if (HasOptionalFields())
-        image->FixupRelativePointerField(GetOptionalFields(), offsetof(EEClassOptionalFields, m_pVarianceInfo));
-
-    //
-    // We pass in the method table, because some classes (e.g. remoting proxy)
-    // have fake method tables set up in them & we want to restore the regular
-    // one.
-    //
-    image->FixupField(this, offsetof(EEClass, m_pMethodTable), pMT, 0, IMAGE_REL_BASED_RelativePointer);
-
-    //
-    // Fixup MethodDescChunk and MethodDescs
-    //
-    MethodDescChunk* pChunks = GetChunks();
-
-    if (pChunks!= NULL && image->IsStored(pChunks))
-    {
-        image->FixupRelativePointerField(this, offsetof(EEClass, m_pChunks));
-
-        MethodTable::IntroducedMethodIterator it(pMT, TRUE);
-        for (; it.IsValid(); it.Next())
-        {
-            MethodDesc * pMD = it.GetMethodDesc();
-
-            // Skip IL stubs that were not saved into the image
-            if (pMD->IsILStub() && !image->IsStored(pMD))
-                continue;
-
-            it.GetMethodDesc()->Fixup(image);
-        }
-
-    }
-    else
-    {
-        image->ZeroPointerField(this, offsetof(EEClass, m_pChunks));
-    }
-
-    //
-    // Fixup FieldDescs
-    //
-
-    SIZE_T fieldCount = FieldDescListSize(pMT);
-
-    if (fieldCount != 0)
-    {
-        image->FixupRelativePointerField(this, offsetof(EEClass, m_pFieldDescList));
-
-        FieldDesc *pField = GetFieldDescList();
-        FieldDesc *pFieldEnd = pField + fieldCount;
-        while (pField < pFieldEnd)
-        {
-            pField->Fixup(image);
-            pField++;
-        }
-    }
-
-#ifdef FEATURE_COMINTEROP
-    // These fields will be lazy inited if we zero them
-    if (HasOptionalFields())
-        image->ZeroPointerField(GetOptionalFields(), offsetof(EEClassOptionalFields, m_pCoClassForIntf));
-#ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-    if (HasOptionalFields())
-        image->ZeroPointerField(GetOptionalFields(), offsetof(EEClassOptionalFields, m_pClassFactory));
-#endif
-    image->ZeroPointerField(this, offsetof(EEClass, m_pccwTemplate));
-#endif // FEATURE_COMINTEROP
-
-
-    if (HasLayout())
-    {
-        image->ZeroPointerField(this, offsetof(LayoutEEClass, m_nativeLayoutInfo));
-    }
-    else if (IsDelegate())
-    {
-        image->FixupRelativePointerField(this, offsetof(DelegateEEClass, m_pInvokeMethod));
-        image->FixupRelativePointerField(this, offsetof(DelegateEEClass, m_pBeginInvokeMethod));
-        image->FixupRelativePointerField(this, offsetof(DelegateEEClass, m_pEndInvokeMethod));
-
-        image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pUMThunkMarshInfo));
-        image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pStaticCallStub));
-        image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pMultiCastInvokeStub));
-        image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pWrapperDelegateInvokeStub));
-        image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pMarshalStub));
-
-#ifdef FEATURE_COMINTEROP
-        DelegateEEClass *pDelegateClass = (DelegateEEClass *)this;
-        ComPlusCallInfo *pComInfo = pDelegateClass->m_pComPlusCallInfo;
-
-        if (image->IsStored(pComInfo))
-        {
-            image->FixupPointerField(this, offsetof(DelegateEEClass, m_pComPlusCallInfo));
-            pComInfo->Fixup(image);
-        }
-        else
-        {
-            image->ZeroPointerField(this, offsetof(DelegateEEClass, m_pComPlusCallInfo));
-        }
-#endif // FEATURE_COMINTEROP
-
-        image->FixupPointerField(this, offsetof(DelegateEEClass, m_pForwardStubMD));
-        image->FixupPointerField(this, offsetof(DelegateEEClass, m_pReverseStubMD));
-    }
-
-    //
-    // This field must be initialized at
-    // load time
-    //
-
-    if (IsInterface() && GetGuidInfo() != NULL)
-        image->FixupRelativePointerField(this, offsetof(EEClass, m_pGuidInfo));
-    else
-        image->ZeroPointerField(this, offsetof(EEClass, m_pGuidInfo));
-
-    LOG((LF_ZAP, LL_INFO10000, "EEClass::Fixup %s (%p) complete.\n", GetDebugClassName(), this));
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
-
 
 //*******************************************************************************
 void EEClass::AddChunk (MethodDescChunk* pNewChunk)
@@ -3116,8 +2700,22 @@ void EEClass::AddChunk (MethodDescChunk* pNewChunk)
     STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(pNewChunk->GetNextChunk() == NULL);
-    pNewChunk->SetNextChunk(GetChunks());
-    SetChunks(pNewChunk);
+
+    MethodDescChunk* head = GetChunks();
+
+    if (head == NULL)
+    {
+        SetChunks(pNewChunk);
+    }
+    else
+    {
+        // Current chunk needs to be added to the end of the list so that
+        // when reflection is iterating all methods, they would come in declared order
+        while (head->GetNextChunk() != NULL)
+            head = head->GetNextChunk();
+
+        head->SetNextChunk(pNewChunk);
+    }
 }
 
 //*******************************************************************************
@@ -3291,7 +2889,7 @@ DeepFieldDescIterator::Init(MethodTable* pMT, int iteratorType,
 
     while (pMT)
     {
-        if (m_numClasses < (int)NumItems(m_classes))
+        if (m_numClasses < (int)ARRAY_SIZE(m_classes))
         {
             m_classes[m_numClasses++] = pMT;
         }

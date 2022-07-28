@@ -48,17 +48,15 @@ namespace System.Reflection.PortableExecutable
             Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = null)
             : base(header, deterministicIdProvider)
         {
-            if (header == null)
+            if (header is null)
             {
                 Throw.ArgumentNull(nameof(header));
             }
-
-            if (metadataRootBuilder == null)
+            if (metadataRootBuilder is null)
             {
                 Throw.ArgumentNull(nameof(metadataRootBuilder));
             }
-
-            if (ilStream == null)
+            if (ilStream is null)
             {
                 Throw.ArgumentNull(nameof(ilStream));
             }
@@ -229,12 +227,11 @@ namespace System.Reflection.PortableExecutable
 
         public void Sign(BlobBuilder peImage, Func<IEnumerable<Blob>, byte[]> signatureProvider)
         {
-            if (peImage == null)
+            if (peImage is null)
             {
                 Throw.ArgumentNull(nameof(peImage));
             }
-
-            if (signatureProvider == null)
+            if (signatureProvider is null)
             {
                 Throw.ArgumentNull(nameof(signatureProvider));
             }

@@ -11,23 +11,23 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly d
+.assembly 'nullref'
 {
 }
-.module d.exe
+.assembly extern xunit.core {}
 
 .class public explicit ansi beforefieldinit BigClass
 {
   .field [0] public int32 firstField
   .field [0x7FFFFF9] public int32 lastField
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     IL_0000:  ldarg.0
     IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
     IL_0006:  ret
-  } 
+  }
 }
 
 .class public explicit ansi sealed value beforefieldinit BigStruct
@@ -41,17 +41,20 @@
 .class public auto ansi beforefieldinit TestClass
        extends [mscorlib]System.Object
 {
-// Global field to store the the big class
+// Global field to store the big class
 .field static class BigClass s_bigClass
 
-// Global field to store the the big struct
+// Global field to store the big struct
 .field static valuetype BigStruct s_bigStruct
 
   .method public hidebysig static int32 Main(string [] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (int32 retValue)
-	
+
 	ldarg.0
 	call       bool TestClass::Test1(string [] args)
 	brfalse.s  FAILED
@@ -75,7 +78,7 @@ PASSED:
 FAILED:
         ldc.i4.s   101
 	stloc.0
-	
+
 RET:
 	ldloc.0
 	ret
@@ -85,7 +88,7 @@ RET:
   {
 	.locals init (int32 val)
 // adding some conditional code so the JIT can't optimize it
-	
+
 	ldarg.0
 	ldlen
 	conv.i4
@@ -104,7 +107,7 @@ NEXT:	ldsfld     class BigClass TestClass::s_bigClass
 	stloc.0
 
     IL_0000:  ret
-  } 
+  }
 
   .method public hidebysig static bool Test1(string [] args) cil managed
   {
@@ -132,7 +135,7 @@ FAILED:
 	ldc.i4.s   0
 	stloc.0
 
-RET:	
+RET:
 	ldloc.0
 	ret
   }
@@ -141,7 +144,7 @@ RET:
   {
 	.locals init (valuetype BigStruct &pBigStruct, int32 val)
 // adding some conditional code so the JIT can't optimize it
-	
+
 	ldarg.0
 	ldlen
 	conv.i4
@@ -158,13 +161,13 @@ NEXT:	ldloc.0
 
 	stloc.1
 
-	ldstr      "Value: {0}"    
+	ldstr      "Value: {0}"
 	ldloc.1
 	box        [mscorlib]System.Int32
 	call       void [System.Console]System.Console::WriteLine(string, object)
 
     IL_0000:  ret
-  } 
+  }
 
   .method public hidebysig static bool Test2(string [] args) cil managed
   {
@@ -192,7 +195,7 @@ FAILED:
 	ldc.i4.s   0
 	stloc.0
 
-RET:	
+RET:
 	ldloc.0
 	ret
   }
@@ -201,7 +204,7 @@ RET:
   {
 	.locals init (valuetype BigStruct &pBigStruct, int32 prevVal, int32 newVal)
 // adding some conditional code so the JIT can't optimize it
-	
+
 	ldarg.0
 	ldlen
 	conv.i4
@@ -221,7 +224,7 @@ NEXT:	ldloc.0
 	ldloc.0
 	ldc.i4.s   11
 	stfld      int32 BigStruct::lastField
-	
+
 	ldloc.0
 	ldfld      int32 BigStruct::lastField
 	stloc.1
@@ -234,7 +237,7 @@ NEXT:	ldloc.0
 	call       void [System.Console]System.Console::WriteLine(string, object, object)
 
     IL_0000:  ret
-  } 
+  }
 
   .method public hidebysig static bool Test3(string [] args) cil managed
   {
@@ -262,8 +265,8 @@ FAILED:
 	ldc.i4.s   0
 	stloc.0
 
-RET:	
+RET:
 	ldloc.0
 	ret
   }
-} 
+}

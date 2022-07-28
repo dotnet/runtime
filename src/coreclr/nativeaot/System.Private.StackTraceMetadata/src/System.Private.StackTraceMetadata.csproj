@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
+    <ProjectReference Include="..\..\System.Private.Reflection.Execution\src\System.Private.Reflection.Execution.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+    <Compile Include="Internal\StackTraceMetadata\StackTraceMetadata.cs" />
+    <Compile Include="Internal\StackTraceMetadata\MethodNameFormatter.cs" />
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MetadataBlob.cs">
+      <Link>Internal\Runtime\MetadataBlob.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs">
+      <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

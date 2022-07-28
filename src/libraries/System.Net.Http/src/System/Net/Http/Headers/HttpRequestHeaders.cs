@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -22,6 +21,7 @@ namespace System.Net.Http.Headers
         private HttpGeneralHeaders? _generalHeaders;
         private HttpHeaderValueCollection<NameValueWithParametersHeaderValue>? _expect;
         private bool _expectContinueSet;
+        private string? _protocol;
 
         #region Request Headers
 
@@ -48,30 +48,21 @@ namespace System.Net.Http.Headers
 
         public AuthenticationHeaderValue? Authorization
         {
-            get { return (AuthenticationHeaderValue?)GetParsedValues(KnownHeaders.Authorization.Descriptor); }
+            get { return (AuthenticationHeaderValue?)GetSingleParsedValue(KnownHeaders.Authorization.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.Authorization.Descriptor, value); }
-        }
-
-        public HttpHeaderValueCollection<NameValueWithParametersHeaderValue> Expect
-        {
-            get { return ExpectCore; }
         }
 
         public bool? ExpectContinue
         {
             get
             {
-                // ExpectCore will force the collection into existence, so avoid accessing it if possible.
-                if (_expectContinueSet || ContainsParsedValue(KnownHeaders.Expect.Descriptor, HeaderUtilities.ExpectContinue))
+                if (ContainsParsedValue(KnownHeaders.Expect.Descriptor, HeaderUtilities.ExpectContinue))
                 {
-                    if (ExpectCore.IsSpecialValueSet)
-                    {
-                        return true;
-                    }
-                    if (_expectContinueSet)
-                    {
-                        return false;
-                    }
+                    return true;
+                }
+                if (_expectContinueSet)
+                {
+                    return false;
                 }
 
                 return null;
@@ -81,19 +72,23 @@ namespace System.Net.Http.Headers
                 if (value == true)
                 {
                     _expectContinueSet = true;
-                    ExpectCore.SetSpecialValue();
+                    if (!ContainsParsedValue(KnownHeaders.Expect.Descriptor, HeaderUtilities.ExpectContinue))
+                    {
+                        AddParsedValue(KnownHeaders.Expect.Descriptor, HeaderUtilities.ExpectContinue);
+                    }
                 }
                 else
                 {
                     _expectContinueSet = value != null;
-                    ExpectCore.RemoveSpecialValue();
+                    // We intentionally ignore the return value. It's OK if "100-continue" wasn't in the store.
+                    RemoveParsedValue(KnownHeaders.Expect.Descriptor, HeaderUtilities.ExpectContinue);
                 }
             }
         }
 
         public string? From
         {
-            get { return (string?)GetParsedValues(KnownHeaders.From.Descriptor); }
+            get { return (string?)GetSingleParsedValue(KnownHeaders.From.Descriptor); }
             set
             {
                 // Null and empty string are equivalent. In this case it means, remove the From header value (if any).
@@ -102,13 +97,15 @@ namespace System.Net.Http.Headers
                     value = null;
                 }
 
+                CheckContainsNewLine(value);
+
                 SetOrRemoveParsedValue(KnownHeaders.From.Descriptor, value);
             }
         }
 
         public string? Host
         {
-            get { return (string?)GetParsedValues(KnownHeaders.Host.Descriptor); }
+            get { return (string?)GetSingleParsedValue(KnownHeaders.Host.Descriptor); }
             set
             {
                 // Null and empty string are equivalent. In this case it means, remove the Host header value (if any).
@@ -117,7 +114,7 @@ namespace System.Net.Http.Headers
                     value = null;
                 }
 
-                if ((value != null) && (HttpRuleParser.GetHostLength(value, 0, false, out string? _) != value.Length))
+                if ((value != null) && (HttpRuleParser.GetHostLength(value, 0, false) != value.Length))
                 {
                     throw new FormatException(SR.net_http_headers_invalid_host_header);
                 }
@@ -139,7 +136,7 @@ namespace System.Net.Http.Headers
 
         public RangeConditionHeaderValue? IfRange
         {
-            get { return (RangeConditionHeaderValue?)GetParsedValues(KnownHeaders.IfRange.Descriptor); }
+            get { return (RangeConditionHeaderValue?)GetSingleParsedValue(KnownHeaders.IfRange.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.IfRange.Descriptor, value); }
         }
 
@@ -153,7 +150,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                object? storedValue = GetParsedValues(KnownHeaders.MaxForwards.Descriptor);
+                object? storedValue = GetSingleParsedValue(KnownHeaders.MaxForwards.Descriptor);
                 if (storedValue != null)
                 {
                     return (int)storedValue;
@@ -163,22 +160,31 @@ namespace System.Net.Http.Headers
             set { SetOrRemoveParsedValue(KnownHeaders.MaxForwards.Descriptor, value); }
         }
 
+        public string? Protocol
+        {
+            get => _protocol;
+            set
+            {
+                CheckContainsNewLine(value);
+                _protocol = value;
+            }
+        }
 
         public AuthenticationHeaderValue? ProxyAuthorization
         {
-            get { return (AuthenticationHeaderValue?)GetParsedValues(KnownHeaders.ProxyAuthorization.Descriptor); }
+            get { return (AuthenticationHeaderValue?)GetSingleParsedValue(KnownHeaders.ProxyAuthorization.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.ProxyAuthorization.Descriptor, value); }
         }
 
         public RangeHeaderValue? Range
         {
-            get { return (RangeHeaderValue?)GetParsedValues(KnownHeaders.Range.Descriptor); }
+            get { return (RangeHeaderValue?)GetSingleParsedValue(KnownHeaders.Range.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.Range.Descriptor, value); }
         }
 
         public Uri? Referrer
         {
-            get { return (Uri?)GetParsedValues(KnownHeaders.Referer.Descriptor); }
+            get { return (Uri?)GetSingleParsedValue(KnownHeaders.Referer.Descriptor); }
             set { SetOrRemoveParsedValue(KnownHeaders.Referer.Descriptor, value); }
         }
 
@@ -188,8 +194,8 @@ namespace System.Net.Http.Headers
         public HttpHeaderValueCollection<ProductInfoHeaderValue> UserAgent =>
             GetSpecializedCollection(UserAgentSlot, static thisRef => new HttpHeaderValueCollection<ProductInfoHeaderValue>(KnownHeaders.UserAgent.Descriptor, thisRef));
 
-        private HttpHeaderValueCollection<NameValueWithParametersHeaderValue> ExpectCore =>
-            _expect ??= new HttpHeaderValueCollection<NameValueWithParametersHeaderValue>(KnownHeaders.Expect.Descriptor, this, HeaderUtilities.ExpectContinue);
+        public HttpHeaderValueCollection<NameValueWithParametersHeaderValue> Expect =>
+            _expect ??= new HttpHeaderValueCollection<NameValueWithParametersHeaderValue>(KnownHeaders.Expect.Descriptor, this);
 
         #endregion
 
@@ -280,6 +286,6 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private HttpGeneralHeaders GeneralHeaders => _generalHeaders ?? (_generalHeaders = new HttpGeneralHeaders(this));
+        private HttpGeneralHeaders GeneralHeaders => _generalHeaders ??= new HttpGeneralHeaders(this);
     }
 }

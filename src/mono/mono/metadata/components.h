@@ -20,37 +20,38 @@ mono_component_event_pipe_100ns_ticks_stop (void);
 void
 mono_components_init (void);
 
+extern MonoComponentHotReload *mono_component_hot_reload_private_ptr;
+extern MonoComponentEventPipe *mono_component_event_pipe_private_ptr;
+extern MonoComponentDiagnosticsServer *mono_component_diagnostics_server_private_ptr;
+extern MonoComponentDebugger *mono_component_debugger_private_ptr;
+
 /* Declare each component's getter function here */
 static inline
 MonoComponentHotReload *
 mono_component_hot_reload (void)
 {
-	extern MonoComponentHotReload *hot_reload;
-	return hot_reload;
+	return mono_component_hot_reload_private_ptr;
 }
 
 static inline
 MonoComponentEventPipe *
 mono_component_event_pipe (void)
 {
-	extern MonoComponentEventPipe *event_pipe;
-	return event_pipe;
+	return mono_component_event_pipe_private_ptr;
 }
 
 static inline
 MonoComponentDiagnosticsServer *
 mono_component_diagnostics_server (void)
 {
-	extern MonoComponentDiagnosticsServer *diagnostics_server;
-	return diagnostics_server;
+	return mono_component_diagnostics_server_private_ptr;
 }
 
 static inline
 MonoComponentDebugger *
 mono_component_debugger (void)
 {
-	extern MonoComponentDebugger *debugger;
-	return debugger;
+	return mono_component_debugger_private_ptr;
 }
 
 #endif/*_MONO_METADATA_COMPONENTS_H*/

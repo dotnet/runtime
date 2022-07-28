@@ -920,5 +920,41 @@ namespace System.Text.Json.Nodes.Tests
             });
             Assert.Equal(1, index);
         }
+
+        [Fact]
+        public static void TestJsonNodeOptionsSet()
+        {
+	        var options = new JsonNodeOptions()
+	        {
+	            PropertyNameCaseInsensitive = true
+	        };
+
+            // Ctor that takes just options
+            var obj1 = new JsonObject(options);
+            obj1["Hello"] = "World";
+
+            // Ctor that takes props IEnumerable + options
+            IEnumerable<KeyValuePair<string, JsonNode?>> props = new List<KeyValuePair<string, JsonNode?>>
+            {
+                new KeyValuePair<string, JsonNode?>("Hello", "World")
+            };
+	        var obj2 = new JsonObject(props, options);
+
+            // Create method
+            using JsonDocument doc = JsonDocument.Parse(@"{""Hello"":""World""}");
+            var obj3 = JsonObject.Create(doc.RootElement, options);
+
+            Test(obj1);
+            Test(obj2);
+            Test(obj3);
+
+            static void Test(JsonObject jObject)
+            {
+                Assert.NotNull(jObject.Options);
+                Assert.True(jObject.Options.Value.PropertyNameCaseInsensitive);
+                Assert.Equal("World", (string)jObject["Hello"]);
+                Assert.Equal("World", (string)jObject["hello"]); // Test case insensitivity
+            }
+        }
     }
 }

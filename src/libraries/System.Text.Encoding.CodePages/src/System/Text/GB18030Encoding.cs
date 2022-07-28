@@ -188,7 +188,7 @@ namespace System.Text
 
             // We should've read in GBLast4ByteCode 4 byte sequences
             Debug.Assert(count4Byte == GBLast4ByteCode + 1,
-                "[GB18030Encoding.LoadManagedCodePage] Expected 0x99FB to be last 4 byte offset, found 0x" + count4Byte.ToString("X4", CultureInfo.InvariantCulture));
+                $"[GB18030Encoding.LoadManagedCodePage] Expected 0x99FB to be last 4 byte offset, found 0x{count4Byte:X4}");
         }
 
         // Is4Byte
@@ -242,7 +242,7 @@ namespace System.Text
                 if (charLeftOver != 0)
                 {
                     Debug.Assert(char.IsHighSurrogate(charLeftOver),
-                        "[GB18030Encoding.GetBytes] leftover character should be high surrogate, not 0x" + ((int)charLeftOver).ToString("X4", CultureInfo.InvariantCulture));
+                        $"[GB18030Encoding.GetBytes] leftover character should be high surrogate, not 0x{(int)charLeftOver:X4}");
 
                     // If our next char isn't a low surrogate, then we need to do fallback.
                     if (!char.IsLowSurrogate(ch))
@@ -272,7 +272,7 @@ namespace System.Text
                         byte byte2 = (byte)((offset % 0x0a) + 0x30);
                         offset /= 0x0a;
                         Debug.Assert(offset < 0x6f,
-                            "[GB18030Encoding.GetBytes](1) Expected offset < 0x6f, not 0x" + offset.ToString("X2", CultureInfo.InvariantCulture));
+                            $"[GB18030Encoding.GetBytes](1) Expected offset < 0x6f, not 0x{offset:X2}");
 
                         charLeftOver = (char)0;
                         if (!buffer.AddByte((byte)(offset + 0x90), byte2, byte3, byte4))
@@ -322,7 +322,7 @@ namespace System.Text
                         byte byte2 = (byte)((iBytes % 0x0a) + 0x30);
                         iBytes /= 0x0a;
                         Debug.Assert(iBytes < 0x7e,
-                            "[GB18030Encoding.GetBytes]Expected iBytes < 0x7e, not 0x" + iBytes.ToString("X2", CultureInfo.InvariantCulture));
+                            $"[GB18030Encoding.GetBytes]Expected iBytes < 0x7e, not 0x{iBytes:X2}");
                         if (!buffer.AddByte((byte)(iBytes + 0x81), byte2, byte3, byte4))
                             break;
                     }
@@ -360,26 +360,26 @@ namespace System.Text
         }
 
         // Helper methods
-        internal bool IsGBLeadByte(short ch)
+        internal static bool IsGBLeadByte(short ch)
         {
             // return true if we're in the lead byte range
             return ((ch) >= 0x81 && (ch) <= 0xfe);
         }
 
-        internal bool IsGBTwoByteTrailing(short ch)
+        internal static bool IsGBTwoByteTrailing(short ch)
         {
             // Return true if we are in range for the trailing byte of a 2 byte sequence
             return (((ch) >= 0x40 && (ch) <= 0x7e) ||
                     ((ch) >= 0x80 && (ch) <= 0xfe));
         }
 
-        internal bool IsGBFourByteTrailing(short ch)
+        internal static bool IsGBFourByteTrailing(short ch)
         {
             // Return true if we are in range for the trailing byte of a 4 byte sequence
             return ((ch) >= 0x30 && (ch) <= 0x39);
         }
 
-        internal int GetFourBytesOffset(short offset1, short offset2, short offset3, short offset4)
+        internal static int GetFourBytesOffset(short offset1, short offset2, short offset3, short offset4)
         {
             return ((offset1 - 0x81) * 0x0a * 0x7e * 0x0a +
                     (offset2 - 0x30) * 0x7e * 0x0a +
@@ -801,8 +801,7 @@ namespace System.Text
                 bLeftOver2 = -1;
                 bLeftOver3 = -1;
                 bLeftOver4 = -1;
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                m_fallbackBuffer?.Reset();
             }
 
             // Anything left in our decoder?

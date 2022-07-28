@@ -324,14 +324,14 @@ namespace System.IO.Hashing.Tests
 
             internal static string ToHexString(ReadOnlySpan<byte> input)
             {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
                 return Convert.ToHexString(input);
 #else
                 var builder = new global::System.Text.StringBuilder(input.Length * 2);
 
                 foreach (byte b in input)
                 {
-                    builder.Append(b.ToString("X2"));
+                    builder.Append($"{b:X2}");
                 }
 
                 return builder.ToString();
@@ -340,7 +340,7 @@ namespace System.IO.Hashing.Tests
 
             internal static byte[] FromHexString(string hexString)
             {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
                 return Convert.FromHexString(hexString);
 #else
                 byte[] bytes = new byte[hexString.Length / 2];

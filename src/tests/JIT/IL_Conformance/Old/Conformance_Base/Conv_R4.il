@@ -586,4 +586,4 @@ END:
 }
 }
 
-.assembly Conv_R4.exe{}
+.assembly Conv_R4{}

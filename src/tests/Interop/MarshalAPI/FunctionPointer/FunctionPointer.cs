@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 public partial class FunctionPtr
 {
@@ -27,16 +27,16 @@ public partial class FunctionPtr
             IntPtr fcnptr = Marshal.GetFunctionPointerForDelegate<VoidDelegate>(md);
 
             VoidDelegate del = (VoidDelegate)Marshal.GetDelegateForFunctionPointer(fcnptr, typeof(VoidDelegate));
-            Assert.AreEqual(md.Target, del.Target, "Failure - the Target of the funcptr->delegate should be equal to the original method.");
-            Assert.AreEqual(md.Method, del.Method, "Failure - The Method of the funcptr->delegate should be equal to the MethodInfo of the original method.");
+            Assert.Equal(md.Target, del.Target);
+            Assert.Equal(md.Method, del.Method);
         }
 
         // Native FcnPtr -> Delegate
         {
             IntPtr fcnptr = FunctionPointerNative.GetVoidVoidFcnPtr();
             VoidDelegate del = (VoidDelegate)Marshal.GetDelegateForFunctionPointer(fcnptr, typeof(VoidDelegate));
-            Assert.AreEqual(null, del.Target, "Failure - the Target of the funcptr->delegate should be null since we provided native funcptr.");
-            Assert.AreEqual("Invoke", del.Method.Name, "Failure - The Method of the native funcptr->delegate should be the Invoke method.");
+            Assert.Equal(null, del.Target);
+            Assert.Equal("Invoke", del.Method.Name);
 
             // Round trip of a native function pointer is never legal for a non-concrete Delegate type
             Assert.Throws<ArgumentException>(() =>

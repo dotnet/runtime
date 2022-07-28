@@ -69,7 +69,7 @@ namespace System.Net.Http.Json
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -139,7 +139,7 @@ namespace System.Net.Http.Json
             }
 
             _encoder.Convert(_charBuffer.Array!, _charBuffer.Offset, _charBuffer.Count, _overflowBuffer.Array!, byteIndex: 0, _overflowBuffer.Array!.Length,
-                flush: shouldFlushEncoder, out int overFlowChars, out int overflowBytes, out completed);
+                flush: shouldFlushEncoder, out int overFlowChars, out int overflowBytes, out _);
 
             Debug.Assert(overflowBytes > 0 && overFlowChars > 0, "We expect writes to the overflow buffer to always succeed since it is large enough to accommodate at least one char.");
 
@@ -208,17 +208,20 @@ namespace System.Net.Http.Json
             {
                 _disposed = true;
 
-                Debug.Assert(_charBuffer.Array != null);
-                ArrayPool<char>.Shared.Return(_charBuffer.Array);
+                char[]? charBuffer = _charBuffer.Array;
+                Debug.Assert(charBuffer != null);
                 _charBuffer = default;
+                ArrayPool<char>.Shared.Return(charBuffer);
 
-                Debug.Assert(_byteBuffer.Array != null);
-                ArrayPool<byte>.Shared.Return(_byteBuffer.Array);
+                byte[]? byteBuffer = _byteBuffer.Array;
+                Debug.Assert(byteBuffer != null);
                 _byteBuffer = default;
+                ArrayPool<byte>.Shared.Return(byteBuffer);
 
-                Debug.Assert(_overflowBuffer.Array != null);
-                ArrayPool<byte>.Shared.Return(_overflowBuffer.Array);
+                byte[]? overflowBuffer = _overflowBuffer.Array;
+                Debug.Assert(overflowBuffer != null);
                 _overflowBuffer = default;
+                ArrayPool<byte>.Shared.Return(overflowBuffer);
 
                 _stream.Dispose();
             }

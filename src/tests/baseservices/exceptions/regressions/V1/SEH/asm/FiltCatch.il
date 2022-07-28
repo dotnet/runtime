@@ -15,7 +15,7 @@
   .ver 4:0:0:0
 }
 
-.assembly FiltCatch.exe{}
+.assembly FiltCatch{}
 
 .class		FiltCatch {
 

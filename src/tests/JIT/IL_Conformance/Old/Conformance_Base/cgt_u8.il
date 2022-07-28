@@ -113,4 +113,4 @@ FAIL:
 	ret
 }
 }
-.assembly cgt_u8.exe{}
+.assembly cgt_u8{}

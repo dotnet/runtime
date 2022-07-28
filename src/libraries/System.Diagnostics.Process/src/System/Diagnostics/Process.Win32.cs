@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -78,22 +79,23 @@ namespace System.Diagnostics
                 ShellExecuteHelper executeHelper = new ShellExecuteHelper(&shellExecuteInfo);
                 if (!executeHelper.ShellExecuteOnSTAThread())
                 {
-                    int error = executeHelper.ErrorCode;
-                    if (error == 0)
+                    int errorCode = executeHelper.ErrorCode;
+                    if (errorCode == 0)
                     {
-                        error = GetShellError(shellExecuteInfo.hInstApp);
+                        errorCode = GetShellError(shellExecuteInfo.hInstApp);
                     }
 
-                    switch (error)
+                    switch (errorCode)
                     {
-                        case Interop.Errors.ERROR_BAD_EXE_FORMAT:
-                        case Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH:
-                            throw new Win32Exception(error, SR.InvalidApplication);
                         case Interop.Errors.ERROR_CALL_NOT_IMPLEMENTED:
                             // This happens on Windows Nano
                             throw new PlatformNotSupportedException(SR.UseShellExecuteNotSupported);
                         default:
-                            throw new Win32Exception(error);
+                            string nativeErrorMessage = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
+                                ? SR.InvalidApplication
+                                : GetErrorMessage(errorCode);
+
+                            throw CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, startInfo.WorkingDirectory);
                     }
                 }
 
@@ -107,7 +109,7 @@ namespace System.Diagnostics
             return false;
         }
 
-        private int GetShellError(IntPtr error)
+        private static int GetShellError(IntPtr error)
         {
             switch ((long)error)
             {
@@ -134,7 +136,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal unsafe class ShellExecuteHelper
+        internal sealed unsafe class ShellExecuteHelper
         {
             private readonly Interop.Shell32.SHELLEXECUTEINFO* _executeInfo;
             private bool _succeeded;
@@ -201,7 +203,7 @@ namespace System.Diagnostics
 #if DEBUG
                 // We never used to throw here, want to surface possible mistakes on our part
                 int error = Marshal.GetLastWin32Error();
-                Debug.Assert(error == 0, $"Failed GetWindowTextLengthW(): { new Win32Exception(error).Message }");
+                Debug.Assert(error == 0, $"Failed GetWindowTextLengthW(): { Marshal.GetPInvokeErrorMessage(error) }");
 #endif
                 return string.Empty;
             }
@@ -220,7 +222,7 @@ namespace System.Diagnostics
             {
                 // We never used to throw here, want to surface possible mistakes on our part
                 int error = Marshal.GetLastWin32Error();
-                Debug.Assert(error == 0, $"Failed GetWindowTextW(): { new Win32Exception(error).Message }");
+                Debug.Assert(error == 0, $"Failed GetWindowTextW(): { Marshal.GetPInvokeErrorMessage(error) }");
             }
 #endif
             return title.Slice(0, length).ToString();
@@ -263,18 +265,7 @@ namespace System.Diagnostics
             return true;
         }
 
-        public string MainWindowTitle
-        {
-            get
-            {
-                if (_mainWindowTitle == null)
-                {
-                    _mainWindowTitle = GetMainWindowTitle();
-                }
-
-                return _mainWindowTitle;
-            }
-        }
+        public string MainWindowTitle => _mainWindowTitle ??= GetMainWindowTitle();
 
         private bool IsRespondingCore()
         {
@@ -288,7 +279,10 @@ namespace System.Diagnostics
             }
 
             IntPtr result;
-            return Interop.User32.SendMessageTimeout(mainWindow, WM_NULL, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 5000, out result) != (IntPtr)0;
+            unsafe
+            {
+                return Interop.User32.SendMessageTimeout(mainWindow, WM_NULL, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 5000, &result) != (IntPtr)0;
+            }
         }
 
         public bool Responding
@@ -320,7 +314,7 @@ namespace System.Diagnostics
                         idle = false;
                         break;
                     default:
-                        throw new InvalidOperationException(SR.InputIdleUnkownError);
+                        throw new InvalidOperationException(SR.InputIdleUnknownError);
                 }
             }
             return idle;
@@ -436,17 +430,14 @@ namespace System.Diagnostics
             foreach (Process p in GetProcesses())
             {
                 SafeProcessHandle h = SafeGetHandle(p);
-                if (!h.IsInvalid)
+                if (!h.IsInvalid && predicate(this, p))
                 {
-                    if (predicate(this, p))
-                    {
-                        results.Add((p, h));
-                    }
-                    else
-                    {
-                        p.Dispose();
-                        h.Dispose();
-                    }
+                    results.Add((p, h));
+                }
+                else
+                {
+                    p.Dispose();
+                    h.Dispose();
                 }
             }
 

@@ -14,17 +14,11 @@
 #include "method.hpp"
 #include "eventtrace.h"
 #include "eehash.h"
-#include "eemessagebox.h"
 #include "corhost.h"
-#include "regex_util.h"
 #include "clr/fs/path.h"
 #include "configuration.h"
 
 using namespace clr;
-
-#define DEFAULT_ZAP_SET W("")
-
-#define DEFAULT_APP_DOMAIN_LEAKS 0
 
 
 #ifdef STRESS_HEAP
@@ -103,8 +97,6 @@ HRESULT EEConfig::Init()
     iGCconcurrent = 0;
     iGCHoardVM = 0;
     iGCLOHThreshold = 0;
-
-    m_fFreepZapSet = false;
 
     dwSpinInitialDuration = 0x32;
     dwSpinBackoffFactor = 0x3;
@@ -187,10 +179,6 @@ HRESULT EEConfig::Init()
     DoubleArrayToLargeObjectHeapThreshold = 1000;
 #endif
 
-    iRequireZaps = REQUIRE_ZAPS_NONE;
-
-    pZapSet = DEFAULT_ZAP_SET;
-
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     dwDisableStackwalkCache = 0;
 #else // TARGET_X86
@@ -249,14 +237,16 @@ HRESULT EEConfig::Init()
     tieredCompilation_DeleteCallCountingStubsAfter = 0;
 #endif
 
+#if defined(FEATURE_PGO)
+    fTieredPGO = false;
+#endif
+
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
     dwOSR_HitLimit = 10;
     dwOSR_CounterBump = 5000;
 #endif
 
-#ifndef CROSSGEN_COMPILE
     backpatchEntryPointSlots = false;
-#endif
 
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
     pszGDBJitElfDump = NULL;
@@ -279,26 +269,10 @@ HRESULT EEConfig::Cleanup()
         MODE_ANY;
     } CONTRACTL_END;
 
-    if (m_fFreepZapSet)
-        delete[] pZapSet;
     delete[] szZapBBInstr;
-
-    if (pRequireZapsList)
-        delete pRequireZapsList;
-
-    if (pRequireZapsExcludeList)
-        delete pRequireZapsExcludeList;
 
     if (pReadyToRunExcludeList)
         delete pReadyToRunExcludeList;
-
-#ifdef _DEBUG
-    if (pForbidZapsList)
-        delete pForbidZapsList;
-
-    if (pForbidZapsExcludeList)
-        delete pForbidZapsExcludeList;
-#endif
 
 #ifdef FEATURE_COMINTEROP
     if (pszLogCCWRefCountChange)
@@ -387,10 +361,6 @@ HRESULT EEConfig::sync()
 
     if (gcConcurrentWasForced || (gcConcurrentConfigVal == -1 && g_IGCconcurrent))
         iGCconcurrent = TRUE;
-
-    // Disable concurrent GC during ngen for the rare case a GC gets triggered, causing problems
-    if (IsCompilationProcess())
-        iGCconcurrent = FALSE;
 
 #if defined(STRESS_HEAP) || defined(_DEBUG)
     iGCStress           =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCStress);
@@ -505,27 +475,6 @@ HRESULT EEConfig::sync()
             fDebugAssembliesModifiable = _wcsicmp(wszModifiableAssemblies, W("debug")) == 0;
     }
 
-    iRequireZaps        = RequireZapsType(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapRequire, iRequireZaps));
-    if (IsCompilationProcess() || iRequireZaps >= REQUIRE_ZAPS_COUNT)
-        iRequireZaps = REQUIRE_ZAPS_NONE;
-
-    if (iRequireZaps != REQUIRE_ZAPS_NONE)
-    {
-        {
-            NewArrayHolder<WCHAR> wszZapRequireList;
-            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapRequireList, &wszZapRequireList));
-            if (wszZapRequireList)
-                pRequireZapsList = new AssemblyNamesList(wszZapRequireList);
-        }
-
-        {
-            NewArrayHolder<WCHAR> wszZapRequireExcludeList;
-            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapRequireExcludeList, &wszZapRequireExcludeList));
-            if (wszZapRequireExcludeList)
-                pRequireZapsExcludeList = new AssemblyNamesList(wszZapRequireExcludeList);
-        }
-    }
-
     pReadyToRunExcludeList = NULL;
 #if defined(FEATURE_READYTORUN)
     if (ReadyToRunInfo::IsReadyToRunEnabled())
@@ -536,26 +485,6 @@ HRESULT EEConfig::sync()
             pReadyToRunExcludeList = new AssemblyNamesList(wszReadyToRunExcludeList);
     }
 #endif // defined(FEATURE_READYTORUN)
-
-#ifdef _DEBUG
-    iForbidZaps     = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenBind_ZapForbid) != 0;
-    if (iForbidZaps != 0)
-    {
-        {
-            NewArrayHolder<WCHAR> wszZapForbidList;
-            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenBind_ZapForbidList, &wszZapForbidList));
-            if (wszZapForbidList)
-                pForbidZapsList = new AssemblyNamesList(wszZapForbidList);
-        }
-
-        {
-            NewArrayHolder<WCHAR> wszZapForbidExcludeList;
-            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenBind_ZapForbidExcludeList, &wszZapForbidExcludeList));
-            if (wszZapForbidExcludeList)
-                pForbidZapsExcludeList = new AssemblyNamesList(wszZapForbidExcludeList);
-        }
-    }
-#endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
     DoubleArrayToLargeObjectHeapThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
@@ -577,11 +506,7 @@ HRESULT EEConfig::sync()
     if (szZapBBInstr != NULL)
     {
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapBBInstrDir, &szZapBBInstrDir));
-        g_IBCLogger.EnableAllInstr();
     }
-    else
-        g_IBCLogger.DisableAllInstr();
-
 
     dwDisableStackwalkCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);
 
@@ -739,14 +664,6 @@ HRESULT EEConfig::sync()
     m_fInteropValidatePinnedObjects = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_InteropValidatePinnedObjects) != 0);
     m_fInteropLogArguments = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InteropLogArguments) != 0);
 
-#ifdef FEATURE_PREJIT
-#ifdef _DEBUG
-    dwNgenForceFailureMask  = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenForceFailureMask);
-    dwNgenForceFailureCount = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenForceFailureCount);
-    dwNgenForceFailureKind  = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenForceFailureKind);
-#endif
-#endif // FEATURE_PREJIT
-
 #if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
     fSuppressLockViolationsOnReentryFromOS = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLockViolationsOnReentryFromOS) != 0);
 #endif
@@ -856,6 +773,10 @@ HRESULT EEConfig::sync()
     }
 #endif
 
+#if defined(FEATURE_PGO)
+    fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
+#endif
+
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
     dwOSR_HitLimit = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_HitLimit);
     dwOSR_CounterBump = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_CounterBump);
@@ -866,9 +787,7 @@ HRESULT EEConfig::sync()
     dwOSR_HighId = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_OSR_HighId);
 #endif
 
-#ifndef CROSSGEN_COMPILE
     backpatchEntryPointSlots = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BackpatchEntryPointSlots) != 0;
-#endif
 
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
     {
@@ -883,38 +802,6 @@ HRESULT EEConfig::sync()
 #endif
     return hr;
 }
-
-bool EEConfig::RequireZap(LPCUTF8 assemblyName) const
-{
-    LIMITED_METHOD_CONTRACT;
-    if (iRequireZaps == REQUIRE_ZAPS_NONE)
-        return false;
-
-    if (pRequireZapsExcludeList != NULL && pRequireZapsExcludeList->IsInList(assemblyName))
-        return false;
-
-    if (pRequireZapsList == NULL || pRequireZapsList->IsInList(assemblyName))
-        return true;
-
-    return false;
-}
-
-#ifdef _DEBUG
-bool EEConfig::ForbidZap(LPCUTF8 assemblyName) const
-{
-    LIMITED_METHOD_CONTRACT;
-    if (iForbidZaps == 0)
-        return false;
-
-    if (pForbidZapsExcludeList != NULL && pForbidZapsExcludeList->IsInList(assemblyName))
-        return false;
-
-    if (pForbidZapsList == NULL || pForbidZapsList->IsInList(assemblyName))
-        return true;
-
-    return false;
-}
-#endif
 
 bool EEConfig::ExcludeReadyToRun(LPCUTF8 assemblyName) const
 {
@@ -933,7 +820,7 @@ bool EEConfig::ExcludeReadyToRun(LPCUTF8 assemblyName) const
 // Ownership of the string buffer passes to ParseMethList
 
 /* static */
-HRESULT EEConfig::ParseMethList(__in_z LPWSTR str, MethodNamesList** out) {
+HRESULT EEConfig::ParseMethList(_In_z_ LPWSTR str, MethodNamesList** out) {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -1014,7 +901,7 @@ bool EEConfig::IsInMethList(MethodNamesList* list, MethodDesc* pMD)
 
 // Ownership of the string buffer passes to ParseTypeList
 /* static */
-HRESULT EEConfig::ParseTypeList(__in_z LPWSTR str, TypeNamesList** out)
+HRESULT EEConfig::ParseTypeList(_In_z_ LPWSTR str, TypeNamesList** out)
 {
     CONTRACTL {
         NOTHROW;
@@ -1063,6 +950,56 @@ TypeNamesList::TypeNamesList()
     LIMITED_METHOD_CONTRACT;
 }
 
+namespace
+{
+    //
+    // Slight modification of Rob Pike's minimal regex from The Practice of Programming.
+    // See https://www.cs.princeton.edu/~bwk/tpop.webpage/code.html - 'Grep program from Chapter 9'
+    //
+
+    /* Copyright (C) 1999 Lucent Technologies */
+    /* Excerpted from 'The Practice of Programming' */
+    /* by Brian W. Kernighan and Rob Pike */
+    bool matchhere(const char *regexp, const char* regexe, const char *text);
+    bool matchstar(char c, const char *regexp, const char* regexe, const char *text);
+
+    /* match: search for regexp anywhere in text */
+    bool match(const char *regexp, const char* regexe, const char *text)
+    {
+        if (regexp[0] == '^')
+            return matchhere(regexp+1, regexe, text);
+        do {    /* must look even if string is empty */
+            if (matchhere(regexp, regexe, text))
+                return true;
+        } while (*text++ != '\0');
+        return false;
+    }
+
+    /* matchhere: search for regexp at beginning of text */
+    bool matchhere(const char *regexp, const char* regexe, const char *text)
+    {
+        if (regexp[0] == '\0' || regexp == regexe)
+            return 1;
+        if (regexp[1] == '*')
+            return matchstar(regexp[0], regexp+2, regexe, text);
+        if (regexp[0] == '$' && (regexp[1] == '\0' ||  (regexp+1) == regexe))
+            return *text == '\0';
+        if (*text!='\0' && (regexp[0]=='.' || regexp[0]==*text))
+            return matchhere(regexp+1, regexe, text+1);
+        return false;
+    }
+
+    /* matchstar: search for c*regexp at beginning of text */
+    bool matchstar(char c, const char *regexp, const char* regexe, const char *text)
+    {
+        do {    /* a * matches zero or more instances */
+            if (matchhere(regexp, regexe, text))
+                return true;
+        } while (*text != '\0' && (*text++ == c || c == '.'));
+        return false;
+    }
+}
+
 bool EEConfig::RegexOrExactMatch(LPCUTF8 regex, LPCUTF8 input)
 {
     CONTRACTL
@@ -1081,21 +1018,15 @@ bool EEConfig::RegexOrExactMatch(LPCUTF8 regex, LPCUTF8 input)
         // Debug only, so we can live with it.
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        regex::STRRegEx::GroupingContainer groups;
-        if (regex::STRRegEx::Match("^/(.*)/(i?)$", regex, groups))
-        {
-            regex::STRRegEx::MatchFlags flags = regex::STRRegEx::DefaultMatchFlags;
-            if (groups[2].Length() != 0)
-                flags = (regex::STRRegEx::MatchFlags)(flags | regex::STRRegEx::MF_CASE_INSENSITIVE);
-
-            return regex::STRRegEx::Matches(groups[1].Begin(), groups[1].End(),
-                                            input, input + strlen(input), flags);
-        }
+        regex++;
+        const char* end = strchr(regex, '/');
+        if (end != NULL)
+            return match(regex, end, input);
     }
     return strcmp(regex, input) == 0;
 }
 
-HRESULT TypeNamesList::Init(__in_z LPCWSTR str)
+HRESULT TypeNamesList::Init(_In_z_ LPCWSTR str)
 {
     CONTRACTL {
         NOTHROW;

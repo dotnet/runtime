@@ -22,7 +22,7 @@ namespace System.Net.Http.Tests
         {
             CheckValidParsedValue("text", 0, "text", 4);
             CheckValidParsedValue("text,", 0, "text", 5);
-            CheckValidParsedValue("\r\n text , next_text  ", 0, "text", 10);
+            CheckValidParsedValue(" text , next_text  ", 0, "text", 8);
             CheckValidParsedValue("  text,next_text  ", 2, "text", 7);
             CheckValidParsedValue(" ,, text, , ,next", 0, "text", 13);
             CheckValidParsedValue(" ,, text, , ,", 0, "text", 13);
@@ -39,6 +39,7 @@ namespace System.Net.Http.Tests
             CheckInvalidParsedValue("te\u00E4xt", 0);
             CheckInvalidParsedValue("text\u4F1A", 0);
             CheckInvalidParsedValue("\u4F1A", 0);
+            CheckInvalidParsedValue("\r\n text , next_text  ", 0);
         }
 
         #region Helper methods

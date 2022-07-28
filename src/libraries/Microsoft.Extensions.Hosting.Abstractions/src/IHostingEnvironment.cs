@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Hosting
     ///  The recommended alternative is Microsoft.Extensions.Hosting.IHostEnvironment.
     /// </para>
     /// </summary>
-    [Obsolete("This type is obsolete and will be removed in a future version. The recommended alternative is Microsoft.Extensions.Hosting.IHostEnvironment.", error: false)]
+    [Obsolete("IHostingEnvironment has been deprecated. Use Microsoft.Extensions.Hosting.IHostEnvironment instead.")]
     public interface IHostingEnvironment
     {
         /// <summary>
@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Hosting
         /// Gets or sets the name of the application. This property is automatically set by the host to the assembly containing
         /// the application entry point.
         /// </summary>
-        string ApplicationName { get; set; }
+        string? ApplicationName { get; set; }
 
         /// <summary>
         /// Gets or sets the absolute path to the directory that contains the application content files.

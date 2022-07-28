@@ -12,20 +12,19 @@ internal static partial class Interop
         /// <summary>
         /// Version used for a buffer containing a scalar integer (not an IntPtr)
         /// </summary>
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode)]
-        private static extern IntPtr CryptFindOIDInfo(CryptOidInfoKeyType dwKeyType, ref int pvKey, OidGroup group);
+        [LibraryImport(Libraries.Crypt32)]
+        private static unsafe partial CRYPT_OID_INFO* CryptFindOIDInfo(CryptOidInfoKeyType dwKeyType, void* pvKey, OidGroup group);
 
-        public static CRYPT_OID_INFO FindAlgIdOidInfo(Interop.BCrypt.ECC_CURVE_ALG_ID_ENUM algId)
+        public static unsafe CRYPT_OID_INFO FindAlgIdOidInfo(Interop.BCrypt.ECC_CURVE_ALG_ID_ENUM algId)
         {
-            int intAlgId = (int)algId;
-            IntPtr fullOidInfo = CryptFindOIDInfo(
+            CRYPT_OID_INFO* fullOidInfo = CryptFindOIDInfo(
                 CryptOidInfoKeyType.CRYPT_OID_INFO_ALGID_KEY,
-                ref intAlgId,
+                &algId,
                 OidGroup.HashAlgorithm);
 
-            if (fullOidInfo != IntPtr.Zero)
+            if (fullOidInfo != null)
             {
-                return Marshal.PtrToStructure<CRYPT_OID_INFO>(fullOidInfo);
+                return *fullOidInfo;
             }
 
             // Otherwise the lookup failed.

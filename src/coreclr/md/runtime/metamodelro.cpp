@@ -116,7 +116,7 @@ CMiniMd::Impl_GetStringW(
 
     if (*szString == 0)
     {
-        // If emtpy string "", return pccBuffer 0
+        // If empty string "", return pccBuffer 0
         if ((szOut != NULL) && (cchBuffer != 0))
             szOut[0] = W('\0');
         if (pcchBuffer != NULL)
@@ -263,11 +263,6 @@ CMiniMd::vSearchTable(
     ULONG   val;            // Value from a row.
     int     lo, mid, hi;    // binary search indices.
 
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // If you change the rows touched while searching, please update
-    // CMiniMdRW::GetHotMetadataTokensSearchAware
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
     // Start with entire table.
     lo = 1;
     hi = GetCountRecs(ixTbl);
@@ -317,11 +312,6 @@ CMiniMd::vSearchTableNotGreater(
     ULONG  lo, mid = 0, hi;     // binary search indices.
 
     cRecs = GetCountRecs(ixTbl);
-
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // If you change the rows touched while searching, please update
-    // CMiniMdRW::GetHotMetadataTokensSearchAware
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     // Start with entire table.
     lo = 1;

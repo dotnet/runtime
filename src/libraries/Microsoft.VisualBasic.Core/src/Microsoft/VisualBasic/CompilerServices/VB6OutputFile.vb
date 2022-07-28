@@ -11,7 +11,7 @@ Imports Microsoft.VisualBasic.CompilerServices.Utils
 Namespace Microsoft.VisualBasic.CompilerServices
 
     <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)>
-    Friend Class VB6OutputFile
+    Friend NotInheritable Class VB6OutputFile
 
         '============================================================================
         ' Declarations

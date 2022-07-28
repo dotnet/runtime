@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
-Test the following matrix for classes with virtual newslot final methods (implicit override):
+Test_Class_ImplicitOverrideVirtualNewslotFinal the following matrix for classes with virtual newslot final methods (implicit override):
 
 Non-Generic virtual methods:
 						Non-generic Interface	Generic Interface
@@ -126,7 +126,7 @@ public class C4<T> : IGen<T>
 
 
 
-public class Test
+public class Test_Class_ImplicitOverrideVirtualNewslotFinal
 {
 
 	public static bool pass = true;

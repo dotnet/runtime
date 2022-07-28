@@ -195,16 +195,15 @@ namespace System.Data.SqlTypes
                 if (offset < 0 || offset >= Length)
                     throw new ArgumentOutOfRangeException(nameof(offset));
 
-                if (_rgchWorkBuf == null)
-                    _rgchWorkBuf = new char[1];
+                _rgchWorkBuf ??= new char[1];
 
                 Read(offset, _rgchWorkBuf, 0, 1);
                 return _rgchWorkBuf[0];
             }
             set
             {
-                if (_rgchWorkBuf == null)
-                    _rgchWorkBuf = new char[1];
+                _rgchWorkBuf ??= new char[1];
+
                 _rgchWorkBuf[0] = value;
                 Write(offset, _rgchWorkBuf, 0, 1);
             }
@@ -494,7 +493,7 @@ namespace System.Data.SqlTypes
 
         void IXmlSerializable.ReadXml(XmlReader r)
         {
-            char[]? value = null;
+            char[]? value;
 
             string? isNull = r.GetAttribute("nil", XmlSchema.InstanceNamespace);
 
@@ -615,7 +614,7 @@ namespace System.Data.SqlTypes
         {
             CheckIfStreamClosed();
 
-            long lPosition = 0;
+            long lPosition;
 
             switch (origin)
             {

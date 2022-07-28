@@ -9,9 +9,6 @@ namespace System.Drawing.Imaging
     [StructLayout(LayoutKind.Sequential)]
     public sealed unsafe class EncoderParameter : IDisposable
     {
-#pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
-        [MarshalAs(UnmanagedType.Struct)]
-#pragma warning restore CS0618
         private Guid _parameterGuid;                    // GUID of the parameter
         private readonly int _numberOfValues;                    // Number of the parameter values
         private readonly EncoderParameterValueType _parameterValueType;   // Value type, like ValueTypeLONG  etc.
@@ -100,10 +97,7 @@ namespace System.Drawing.Imaging
         {
             _parameterGuid = encoder.Guid;
 
-            if (undefined == true)
-                _parameterValueType = EncoderParameterValueType.ValueTypeUndefined;
-            else
-                _parameterValueType = EncoderParameterValueType.ValueTypeByte;
+            _parameterValueType = undefined ? EncoderParameterValueType.ValueTypeUndefined : EncoderParameterValueType.ValueTypeByte;
             _numberOfValues = 1;
             _parameterValue = Marshal.AllocHGlobal(sizeof(byte));
 
@@ -205,10 +199,7 @@ namespace System.Drawing.Imaging
         {
             _parameterGuid = encoder.Guid;
 
-            if (undefined == true)
-                _parameterValueType = EncoderParameterValueType.ValueTypeUndefined;
-            else
-                _parameterValueType = EncoderParameterValueType.ValueTypeByte;
+            _parameterValueType = undefined ? EncoderParameterValueType.ValueTypeUndefined : EncoderParameterValueType.ValueTypeByte;
 
             _numberOfValues = value.Length;
             _parameterValue = Marshal.AllocHGlobal(_numberOfValues);
@@ -311,7 +302,7 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        [Obsolete("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.")]
         public EncoderParameter(Encoder encoder, int NumberOfValues, int Type, int Value)
         {
             int size;

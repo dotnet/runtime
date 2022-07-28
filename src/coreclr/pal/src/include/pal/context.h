@@ -75,9 +75,87 @@ using asm_sigcontext::_xstate;
 #define MCREG_R14(mc)       ((mc).gregs[14])
 #define MCREG_R15(mc)       ((mc).gregs[15])
 
+#elif HOST_POWERPC64
+
+#define MCREG_R0(mc)        ((mc).gp_regs[0])
+#define MCREG_R1(mc)        ((mc).gp_regs[1])
+#define MCREG_R2(mc)        ((mc).gp_regs[2])
+#define MCREG_R3(mc)        ((mc).gp_regs[3])
+#define MCREG_R4(mc)        ((mc).gp_regs[4])
+#define MCREG_R5(mc)        ((mc).gp_regs[5])
+#define MCREG_R6(mc)        ((mc).gp_regs[6])
+#define MCREG_R7(mc)        ((mc).gp_regs[7])
+#define MCREG_R8(mc)        ((mc).gp_regs[8])
+#define MCREG_R9(mc)        ((mc).gp_regs[9])
+#define MCREG_R10(mc)       ((mc).gp_regs[10])
+#define MCREG_R11(mc)       ((mc).gp_regs[11])
+#define MCREG_R12(mc)       ((mc).gp_regs[12])
+#define MCREG_R13(mc)       ((mc).gp_regs[13])
+#define MCREG_R14(mc)       ((mc).gp_regs[14])
+#define MCREG_R15(mc)       ((mc).gp_regs[15])
+#define MCREG_R16(mc)       ((mc).gp_regs[16])
+#define MCREG_R17(mc)       ((mc).gp_regs[17])
+#define MCREG_R18(mc)       ((mc).gp_regs[18])
+#define MCREG_R19(mc)       ((mc).gp_regs[19])
+#define MCREG_R20(mc)       ((mc).gp_regs[20])
+#define MCREG_R21(mc)       ((mc).gp_regs[21])
+#define MCREG_R22(mc)       ((mc).gp_regs[22])
+#define MCREG_R23(mc)       ((mc).gp_regs[23])
+#define MCREG_R24(mc)       ((mc).gp_regs[24])
+#define MCREG_R25(mc)       ((mc).gp_regs[25])
+#define MCREG_R26(mc)       ((mc).gp_regs[26])
+#define MCREG_R27(mc)       ((mc).gp_regs[27])
+#define MCREG_R28(mc)       ((mc).gp_regs[28])
+#define MCREG_R29(mc)       ((mc).gp_regs[29])
+#define MCREG_R30(mc)       ((mc).gp_regs[30])
+#define MCREG_R31(mc)       ((mc).gp_regs[31])
+#define MCREG_Nip(mc)       ((mc).gp_regs[32])
+#define MCREG_Msr(mc)       ((mc).gp_regs[33])
+#define MCREG_Ctr(mc)       ((mc).gp_regs[35])
+#define MCREG_Link(mc)      ((mc).gp_regs[36])
+#define MCREG_Xer(mc)       ((mc).gp_regs[37])
+#define MCREG_Ccr(mc)       ((mc).gp_regs[38])
+
 #elif HAVE___GREGSET_T
 
 #ifdef HOST_64BIT
+
+#if defined(HOST_LOONGARCH64)
+#define MCREG_R0(mc)      ((mc).__gregs[0])
+#define MCREG_Ra(mc)      ((mc).__gregs[1])
+#define MCREG_Tp(mc)      ((mc).__gregs[2])
+#define MCREG_Sp(mc)      ((mc).__gregs[3])
+#define MCREG_A0(mc)      ((mc).__gregs[4])
+#define MCREG_A1(mc)      ((mc).__gregs[5])
+#define MCREG_A2(mc)      ((mc).__gregs[6])
+#define MCREG_A3(mc)      ((mc).__gregs[7])
+#define MCREG_A4(mc)      ((mc).__gregs[8])
+#define MCREG_A5(mc)      ((mc).__gregs[9])
+#define MCREG_A6(mc)      ((mc).__gregs[10])
+#define MCREG_A7(mc)      ((mc).__gregs[11])
+#define MCREG_T0(mc)      ((mc).__gregs[12])
+#define MCREG_T1(mc)      ((mc).__gregs[13])
+#define MCREG_T2(mc)      ((mc).__gregs[14])
+#define MCREG_T3(mc)      ((mc).__gregs[15])
+#define MCREG_T4(mc)      ((mc).__gregs[16])
+#define MCREG_T5(mc)      ((mc).__gregs[17])
+#define MCREG_T6(mc)      ((mc).__gregs[18])
+#define MCREG_T7(mc)      ((mc).__gregs[19])
+#define MCREG_T8(mc)      ((mc).__gregs[20])
+#define MCREG_X0(mc)      ((mc).__gregs[21])
+#define MCREG_Fp(mc)      ((mc).__gregs[22])
+#define MCREG_S0(mc)      ((mc).__gregs[23])
+#define MCREG_S1(mc)      ((mc).__gregs[24])
+#define MCREG_S2(mc)      ((mc).__gregs[25])
+#define MCREG_S3(mc)      ((mc).__gregs[26])
+#define MCREG_S4(mc)      ((mc).__gregs[27])
+#define MCREG_S5(mc)      ((mc).__gregs[28])
+#define MCREG_S6(mc)      ((mc).__gregs[29])
+#define MCREG_S7(mc)      ((mc).__gregs[30])
+#define MCREG_S8(mc)      ((mc).__gregs[31])
+#define MCREG_Pc(mc)      ((mc).__pc)
+
+#else // HOST_LOONGARCH64
 #define MCREG_Rbx(mc)       ((mc).__gregs[_REG_RBX])
 #define MCREG_Rcx(mc)       ((mc).__gregs[_REG_RCX])
 #define MCREG_Rdx(mc)       ((mc).__gregs[_REG_RDX])
@@ -112,6 +190,7 @@ using asm_sigcontext::_xstate;
 #define FPREG_DataSelector(uc) *((WORD*) &(((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_dp) + 2)
 #define FPREG_MxCsr(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr)
 #define FPREG_MxCsr_Mask(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr_mask)
+#endif
 
 #else // HOST_64BIT
 
@@ -133,6 +212,43 @@ using asm_sigcontext::_xstate;
 #elif HAVE_GREGSET_T
 
 #ifdef HOST_64BIT
+
+#if defined(HOST_LOONGARCH64)
+#define MCREG_R0(mc)      ((mc).gregs[0])
+#define MCREG_Ra(mc)      ((mc).gregs[1])
+#define MCREG_Tp(mc)      ((mc).gregs[2])
+#define MCREG_Sp(mc)      ((mc).gregs[3])
+#define MCREG_A0(mc)      ((mc).gregs[4])
+#define MCREG_A1(mc)      ((mc).gregs[5])
+#define MCREG_A2(mc)      ((mc).gregs[6])
+#define MCREG_A3(mc)      ((mc).gregs[7])
+#define MCREG_A4(mc)      ((mc).gregs[8])
+#define MCREG_A5(mc)      ((mc).gregs[9])
+#define MCREG_A6(mc)      ((mc).gregs[10])
+#define MCREG_A7(mc)      ((mc).gregs[11])
+#define MCREG_T0(mc)      ((mc).gregs[12])
+#define MCREG_T1(mc)      ((mc).gregs[13])
+#define MCREG_T2(mc)      ((mc).gregs[14])
+#define MCREG_T3(mc)      ((mc).gregs[15])
+#define MCREG_T4(mc)      ((mc).gregs[16])
+#define MCREG_T5(mc)      ((mc).gregs[17])
+#define MCREG_T6(mc)      ((mc).gregs[18])
+#define MCREG_T7(mc)      ((mc).gregs[19])
+#define MCREG_T8(mc)      ((mc).gregs[20])
+#define MCREG_X0(mc)      ((mc).gregs[21])
+#define MCREG_Fp(mc)      ((mc).gregs[22])
+#define MCREG_S0(mc)      ((mc).gregs[23])
+#define MCREG_S1(mc)      ((mc).gregs[24])
+#define MCREG_S2(mc)      ((mc).gregs[25])
+#define MCREG_S3(mc)      ((mc).gregs[26])
+#define MCREG_S4(mc)      ((mc).gregs[27])
+#define MCREG_S5(mc)      ((mc).gregs[28])
+#define MCREG_S6(mc)      ((mc).gregs[29])
+#define MCREG_S7(mc)      ((mc).gregs[30])
+#define MCREG_S8(mc)      ((mc).gregs[31])
+#define MCREG_Pc(mc)      ((mc).pc)
+#endif // HOST_LOONGARCH64
+
 #define MCREG_Rbx(mc)       ((mc).gregs[REG_RBX])
 #define MCREG_Rcx(mc)       ((mc).gregs[REG_RCX])
 #define MCREG_Rdx(mc)       ((mc).gregs[REG_RDX])
@@ -418,6 +534,40 @@ const _STRUCT_ARM_NEON_STATE64* GetConstNativeSigSimdContext(const native_contex
 
 #endif // TARGET_OSX
 
+#elif defined(HOST_LOONGARCH64)
+#define MCREG_R0(mc)      ((mc).regs[0])
+#define MCREG_Ra(mc)      ((mc).regs[1])
+#define MCREG_Tp(mc)      ((mc).regs[2])
+#define MCREG_Sp(mc)      ((mc).regs[3])
+#define MCREG_A0(mc)      ((mc).regs[4])
+#define MCREG_A1(mc)      ((mc).regs[5])
+#define MCREG_A2(mc)      ((mc).regs[6])
+#define MCREG_A3(mc)      ((mc).regs[7])
+#define MCREG_A4(mc)      ((mc).regs[8])
+#define MCREG_A5(mc)      ((mc).regs[9])
+#define MCREG_A6(mc)      ((mc).regs[10])
+#define MCREG_A7(mc)      ((mc).regs[11])
+#define MCREG_T0(mc)      ((mc).regs[12])
+#define MCREG_T1(mc)      ((mc).regs[13])
+#define MCREG_T2(mc)      ((mc).regs[14])
+#define MCREG_T3(mc)      ((mc).regs[15])
+#define MCREG_T4(mc)      ((mc).regs[16])
+#define MCREG_T5(mc)      ((mc).regs[17])
+#define MCREG_T6(mc)      ((mc).regs[18])
+#define MCREG_T7(mc)      ((mc).regs[19])
+#define MCREG_T8(mc)      ((mc).regs[20])
+#define MCREG_X0(mc)      ((mc).regs[21])
+#define MCREG_Fp(mc)      ((mc).regs[22])
+#define MCREG_S0(mc)      ((mc).regs[23])
+#define MCREG_S1(mc)      ((mc).regs[24])
+#define MCREG_S2(mc)      ((mc).regs[25])
+#define MCREG_S3(mc)      ((mc).regs[26])
+#define MCREG_S4(mc)      ((mc).regs[27])
+#define MCREG_S5(mc)      ((mc).regs[28])
+#define MCREG_S6(mc)      ((mc).regs[29])
+#define MCREG_S7(mc)      ((mc).regs[30])
+#define MCREG_S8(mc)      ((mc).regs[31])
+#define MCREG_Pc(mc)      ((mc).pc)
 #else // HOST_ARM64
 
 #ifdef TARGET_OSX
@@ -610,6 +760,84 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #if HAVE_PT_REGS
 
 #ifdef HOST_64BIT
+
+#if defined(HOST_LOONGARCH64)
+#define PTREG_R0(ptreg)      ((ptreg).regs[0])
+#define PTREG_Ra(ptreg)      ((ptreg).regs[1])
+#define PTREG_Tp(ptreg)      ((ptreg).regs[2])
+#define PTREG_Sp(ptreg)      ((ptreg).regs[3])
+#define PTREG_A0(ptreg)      ((ptreg).regs[4])
+#define PTREG_A1(ptreg)      ((ptreg).regs[5])
+#define PTREG_A2(ptreg)      ((ptreg).regs[6])
+#define PTREG_A3(ptreg)      ((ptreg).regs[7])
+#define PTREG_A4(ptreg)      ((ptreg).regs[8])
+#define PTREG_A5(ptreg)      ((ptreg).regs[9])
+#define PTREG_A6(ptreg)      ((ptreg).regs[10])
+#define PTREG_A7(ptreg)      ((ptreg).regs[11])
+#define PTREG_T0(ptreg)      ((ptreg).regs[12])
+#define PTREG_T1(ptreg)      ((ptreg).regs[13])
+#define PTREG_T2(ptreg)      ((ptreg).regs[14])
+#define PTREG_T3(ptreg)      ((ptreg).regs[15])
+#define PTREG_T4(ptreg)      ((ptreg).regs[16])
+#define PTREG_T5(ptreg)      ((ptreg).regs[17])
+#define PTREG_T6(ptreg)      ((ptreg).regs[18])
+#define PTREG_T7(ptreg)      ((ptreg).regs[19])
+#define PTREG_T8(ptreg)      ((ptreg).regs[20])
+#define PTREG_X0(ptreg)      ((ptreg).regs[21])
+#define PTREG_Fp(ptreg)      ((ptreg).regs[22])
+#define PTREG_S0(ptreg)      ((ptreg).regs[23])
+#define PTREG_S1(ptreg)      ((ptreg).regs[24])
+#define PTREG_S2(ptreg)      ((ptreg).regs[25])
+#define PTREG_S3(ptreg)      ((ptreg).regs[26])
+#define PTREG_S4(ptreg)      ((ptreg).regs[27])
+#define PTREG_S5(ptreg)      ((ptreg).regs[28])
+#define PTREG_S6(ptreg)      ((ptreg).regs[29])
+#define PTREG_S7(ptreg)      ((ptreg).regs[30])
+#define PTREG_S8(ptreg)      ((ptreg).regs[31])
+#define PTREG_Pc(ptreg)      ((ptreg).csr_epc)
+#endif // HOST_LOONGARCH64
+
+#if defined(HOST_POWERPC64)
+#define PTREG_R0(ptreg)        ((ptreg).gpr[0])
+#define PTREG_R1(ptreg)        ((ptreg).gpr[1])
+#define PTREG_R2(ptreg)        ((ptreg).gpr[2])
+#define PTREG_R3(ptreg)        ((ptreg).gpr[3])
+#define PTREG_R4(ptreg)        ((ptreg).gpr[4])
+#define PTREG_R5(ptreg)        ((ptreg).gpr[5])
+#define PTREG_R6(ptreg)        ((ptreg).gpr[6])
+#define PTREG_R7(ptreg)        ((ptreg).gpr[7])
+#define PTREG_R8(ptreg)        ((ptreg).gpr[8])
+#define PTREG_R9(ptreg)        ((ptreg).gpr[9])
+#define PTREG_R10(ptreg)       ((ptreg).gpr[10])
+#define PTREG_R11(ptreg)       ((ptreg).gpr[11])
+#define PTREG_R12(ptreg)       ((ptreg).gpr[12])
+#define PTREG_R13(ptreg)       ((ptreg).gpr[13])
+#define PTREG_R14(ptreg)       ((ptreg).gpr[14])
+#define PTREG_R15(ptreg)       ((ptreg).gpr[15])
+#define PTREG_R16(ptreg)       ((ptreg).gpr[16])
+#define PTREG_R17(ptreg)       ((ptreg).gpr[17])
+#define PTREG_R18(ptreg)       ((ptreg).gpr[18])
+#define PTREG_R19(ptreg)       ((ptreg).gpr[19])
+#define PTREG_R20(ptreg)       ((ptreg).gpr[20])
+#define PTREG_R21(ptreg)       ((ptreg).gpr[21])
+#define PTREG_R22(ptreg)       ((ptreg).gpr[22])
+#define PTREG_R23(ptreg)       ((ptreg).gpr[23])
+#define PTREG_R24(ptreg)       ((ptreg).gpr[24])
+#define PTREG_R25(ptreg)       ((ptreg).gpr[25])
+#define PTREG_R26(ptreg)       ((ptreg).gpr[26])
+#define PTREG_R27(ptreg)       ((ptreg).gpr[27])
+#define PTREG_R28(ptreg)       ((ptreg).gpr[28])
+#define PTREG_R29(ptreg)       ((ptreg).gpr[29])
+#define PTREG_R30(ptreg)       ((ptreg).gpr[30])
+#define PTREG_R31(ptreg)       ((ptreg).gpr[31])
+#define PTREG_Nip(ptreg)       ((ptreg).nip)
+#define PTREG_Msr(ptreg)       ((ptreg).msr)
+#define PTREG_Ctr(ptreg)       ((ptreg).ctr)
+#define PTREG_Link(ptreg)      ((ptreg).link)
+#define PTREG_Xer(ptreg)       ((ptreg).xer)
+#define PTREG_Ccr(ptreg)       ((ptreg).ccr)
+#else //HOST_POWERPC64
+
 #define PTREG_Rbx(ptreg)    ((ptreg).rbx)
 #define PTREG_Rcx(ptreg)    ((ptreg).rcx)
 #define PTREG_Rdx(ptreg)    ((ptreg).rdx)
@@ -630,6 +858,7 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define PTREG_R14(ptreg)    ((ptreg).r14)
 #define PTREG_R15(ptreg)    ((ptreg).r15)
 
+#endif //HOST_POWERPC64
 #else // HOST_64BIT
 
 #if defined(HOST_ARM)
@@ -731,8 +960,12 @@ inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
     return pContext->Eip;
 #elif defined(HOST_ARM64) || defined(HOST_ARM)
     return pContext->Pc;
+#elif defined(HOST_LOONGARCH64)
+    return pContext->Pc;
 #elif defined(HOST_S390X)
     return pContext->PSWAddr;
+#elif defined(HOST_POWERPC64)
+    return pContext->Nip;
 #else
 #error "don't know how to get the program counter for this architecture"
 #endif
@@ -746,8 +979,12 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
     pContext->Eip = pc;
 #elif defined(HOST_ARM64) || defined(HOST_ARM)
     pContext->Pc = pc;
+#elif defined(HOST_LOONGARCH64)
+    pContext->Pc = pc;
 #elif defined(HOST_S390X)
     pContext->PSWAddr = pc;
+#elif defined(HOST_POWERPC64)
+    pContext->Nip = pc;
 #else
 #error "don't know how to set the program counter for this architecture"
 #endif
@@ -763,8 +1000,12 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
     return pContext->R7;
 #elif defined(HOST_ARM64)
     return pContext->Fp;
+#elif defined(HOST_LOONGARCH64)
+    return pContext->Fp;
 #elif defined(HOST_S390X)
     return pContext->R11;
+#elif defined(HOST_POWERPC64)
+    return pContext->R31;
 #else
 #error "don't know how to get the frame pointer for this architecture"
 #endif

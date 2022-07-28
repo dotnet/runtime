@@ -67,7 +67,7 @@ namespace NativeFormat
         {
             _ASSERTE(false);
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
             // Failfast instead of throwing, to avoid violating NOTHROW contracts of callers
             EEPOLICY_HANDLE_FATAL_ERROR(COR_E_BADIMAGEFORMAT);
 #endif

@@ -1,13 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);net48-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);net48</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
              Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Certificates.cs" />
     <Compile Include="CertLoader.cs" />
     <Compile Include="CertLoader.Settings.cs" />
@@ -26,6 +29,7 @@
     <Compile Include="Oids.cs" />
     <Compile Include="Pkcs9AttributeTests.cs" />
     <Compile Include="RecipientInfoCollectionTests.cs" />
+    <Compile Include="SignatureSupport.cs" />
     <Compile Include="SignedCms\CmsSignerTests.cs" />
     <Compile Include="SignedCms\CounterSigningDerOrder.cs" />
     <Compile Include="SignedCms\SignedCmsTests.cs" />
@@ -33,11 +37,12 @@
     <Compile Include="SignedCms\SignedDocuments.cs" />
     <Compile Include="SignedCms\SignerInfoTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="AlgorithmIdentifierTest.cs" />
     <Compile Include="EnvelopedCms\DecryptTestsRsaPaddingModeTests.cs" />
     <Compile Include="EnvelopedCms\DecryptTestsUsingExplicitPrivateKey.cs" />
     <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaOaepCertTests.cs" />
+    <Compile Include="EnvelopedCms\DecryptTests.KeyPersistence.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaPaddingModeTests.cs" />
     <Compile Include="EnvelopedCms\SubjectIdentifierTests.cs" />
     <Compile Include="Pkcs12\CertBagTests.cs" />
@@ -64,16 +69,10 @@
     <Compile Include="Pkcs8PrivateKeyInfoTests.cs" />
     <Compile Include="PrivateKeyHelpers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and $(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
-    <Compile Include="EnvelopedCms\DecryptTests.KeyPersistence.cs" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.Cryptography.Pkcs.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net48'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />
   </ItemGroup>
 </Project>

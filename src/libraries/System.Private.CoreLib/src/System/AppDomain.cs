@@ -46,7 +46,7 @@ namespace System
 
         public string? DynamicDirectory => null;
 
-        [Obsolete("AppDomain.SetDynamicBase has been deprecated. Please investigate the use of AppDomainSetup.DynamicBase instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.SetDynamicBase has been deprecated and is not supported.")]
         public void SetDynamicBase(string? path) { }
 
         public string FriendlyName
@@ -80,13 +80,10 @@ namespace System
 
         public string ApplyPolicy(string assemblyName)
         {
-            if (assemblyName == null)
+            ArgumentException.ThrowIfNullOrEmpty(assemblyName);
+            if (assemblyName[0] == '\0')
             {
-                throw new ArgumentNullException(nameof(assemblyName));
-            }
-            if (assemblyName.Length == 0 || assemblyName[0] == '\0')
-            {
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(assemblyName));
+                throw new ArgumentException(SR.Argument_EmptyString, nameof(assemblyName));
             }
 
             return assemblyName;
@@ -95,7 +92,8 @@ namespace System
         [Obsolete(Obsoletions.AppDomainCreateUnloadMessage, DiagnosticId = Obsoletions.AppDomainCreateUnloadDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static AppDomain CreateDomain(string friendlyName)
         {
-            if (friendlyName == null) throw new ArgumentNullException(nameof(friendlyName));
+            ArgumentNullException.ThrowIfNull(friendlyName);
+
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_AppDomains);
         }
 
@@ -105,10 +103,8 @@ namespace System
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public int ExecuteAssembly(string assemblyFile, string?[]? args)
         {
-            if (assemblyFile == null)
-            {
-                throw new ArgumentNullException(nameof(assemblyFile));
-            }
+            ArgumentNullException.ThrowIfNull(assemblyFile);
+
             string fullPath = Path.GetFullPath(assemblyFile);
             Assembly assembly = Assembly.LoadFile(fullPath);
             return ExecuteAssembly(assembly, args);
@@ -167,10 +163,8 @@ namespace System
         [Obsolete(Obsoletions.AppDomainCreateUnloadMessage, DiagnosticId = Obsoletions.AppDomainCreateUnloadDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void Unload(AppDomain domain)
         {
-            if (domain == null)
-            {
-                throw new ArgumentNullException(nameof(domain));
-            }
+            ArgumentNullException.ThrowIfNull(domain);
+
             throw new CannotUnloadAppDomainException(SR.Arg_PlatformNotSupported);
         }
 
@@ -211,27 +205,27 @@ namespace System
 
         public long MonitoringTotalAllocatedMemorySize => GC.GetTotalAllocatedBytes(precise: false);
 
-        [Obsolete("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [Obsolete("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread instead.")]
         public static int GetCurrentThreadId() => Environment.CurrentManagedThreadId;
 
         public bool ShadowCopyFiles => false;
 
-        [Obsolete("AppDomain.AppendPrivatePath has been deprecated. Please investigate the use of AppDomainSetup.PrivateBinPath instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.AppendPrivatePath has been deprecated and is not supported.")]
         public void AppendPrivatePath(string? path) { }
 
-        [Obsolete("AppDomain.ClearPrivatePath has been deprecated. Please investigate the use of AppDomainSetup.PrivateBinPath instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.ClearPrivatePath has been deprecated and is not supported.")]
         public void ClearPrivatePath() { }
 
-        [Obsolete("AppDomain.ClearShadowCopyPath has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyDirectories instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.ClearShadowCopyPath has been deprecated and is not supported.")]
         public void ClearShadowCopyPath() { }
 
-        [Obsolete("AppDomain.SetCachePath has been deprecated. Please investigate the use of AppDomainSetup.CachePath instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.SetCachePath has been deprecated and is not supported.")]
         public void SetCachePath(string? path) { }
 
-        [Obsolete("AppDomain.SetShadowCopyFiles has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyFiles instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.SetShadowCopyFiles has been deprecated and is not supported.")]
         public void SetShadowCopyFiles() { }
 
-        [Obsolete("AppDomain.SetShadowCopyPath has been deprecated. Please investigate the use of AppDomainSetup.ShadowCopyDirectories instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("AppDomain.SetShadowCopyPath has been deprecated and is not supported.")]
         public void SetShadowCopyPath(string? path) { }
 
         public Assembly[] GetAssemblies() => AssemblyLoadContext.GetLoadedAssemblies();
@@ -269,10 +263,7 @@ namespace System
 
         public void SetThreadPrincipal(IPrincipal principal)
         {
-            if (principal == null)
-            {
-                throw new ArgumentNullException(nameof(principal));
-            }
+            ArgumentNullException.ThrowIfNull(principal);
 
             // Set the principal while checking it has not been set previously.
             if (Interlocked.CompareExchange(ref _defaultPrincipal, principal, null) is not null)
@@ -284,10 +275,7 @@ namespace System
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstance(string assemblyName, string typeName)
         {
-            if (assemblyName == null)
-            {
-                throw new ArgumentNullException(nameof(assemblyName));
-            }
+            ArgumentNullException.ThrowIfNull(assemblyName);
 
             return Activator.CreateInstance(assemblyName, typeName);
         }
@@ -295,10 +283,7 @@ namespace System
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstance(string assemblyName, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
         {
-            if (assemblyName == null)
-            {
-                throw new ArgumentNullException(nameof(assemblyName));
-            }
+            ArgumentNullException.ThrowIfNull(assemblyName);
 
             return Activator.CreateInstance(assemblyName,
                                             typeName,
@@ -313,10 +298,7 @@ namespace System
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public ObjectHandle? CreateInstance(string assemblyName, string typeName, object?[]? activationAttributes)
         {
-            if (assemblyName == null)
-            {
-                throw new ArgumentNullException(nameof(assemblyName));
-            }
+            ArgumentNullException.ThrowIfNull(assemblyName);
 
             return Activator.CreateInstance(assemblyName, typeName, activationAttributes);
         }

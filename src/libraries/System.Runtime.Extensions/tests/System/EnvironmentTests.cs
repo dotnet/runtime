@@ -96,6 +96,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Throws PNSE")]
         public void ProcessPath_MatchesExpectedValue()
         {
             string expectedProcessPath = PlatformDetection.IsBrowser ? null : Process.GetCurrentProcess().MainModule.FileName;
@@ -161,7 +162,7 @@ namespace System.Tests
 
         // On non-OSX Unix, we must parse the version from uname -r
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX & ~TestPlatforms.Browser)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS & ~TestPlatforms.MacCatalyst)]
         [InlineData("2.6.19-1.2895.fc6", 2, 6, 19, 1)]
         [InlineData("xxx1yyy2zzz3aaa4bbb", 1, 2, 3, 4)]
         [InlineData("2147483647.2147483647.2147483647.2147483647", int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue)]
@@ -171,7 +172,6 @@ namespace System.Tests
         [InlineData("nelknet 4.15.0-24201807041620-generic", 4, 15, 0, int.MaxValue)] // integer overflow
         [InlineData("", 0, 0, 0, 0)]
         [InlineData("1abc", 1, 0, 0, 0)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void OSVersion_ParseVersion(string input, int major, int minor, int build, int revision)
         {
             var getOSMethod = typeof(Environment).GetMethod("GetOperatingSystem", BindingFlags.Static | BindingFlags.NonPublic);
@@ -184,14 +184,15 @@ namespace System.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49106", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void OSVersion_ValidVersion_OSX()
         {
             Version version = Environment.OSVersion.Version;
 
             // verify that the Environment.OSVersion.Version matches the current RID
-            Assert.Contains(version.ToString(2), RuntimeInformation.RuntimeIdentifier);
+            // As of 12.0, only major version numbers are included in the RID
+            Assert.Contains(version.ToString(1), RuntimeInformation.RuntimeIdentifier);
 
+            Assert.True(version.Minor >= 0, "OSVersion Minor should be non-negative");
             Assert.True(version.Build >= 0, "OSVersion Build should be non-negative");
             Assert.Equal(-1, version.Revision); // Revision is never set on OSX
         }
@@ -236,7 +237,7 @@ namespace System.Tests
         [Fact]
         public void WorkingSet_Valid()
         {
-            if (PlatformDetection.IsBrowser)
+            if (PlatformDetection.IsBrowser || (PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst) || PlatformDetection.IstvOS)
                 Assert.Equal(0, Environment.WorkingSet);
             else
                 Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
@@ -332,12 +333,22 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]
+        public void GetFolderPath_Unix_PersonalExists()
+        {
+            Assert.True(Directory.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Personal)));
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Browser)]  // Tests OS-specific environment
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
         {
-            Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));
-            Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+            if (!PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst)
+            {
+                Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.Personal));
+                Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+            }
+
             Assert.Equal(Environment.GetEnvironmentVariable("HOME"), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
         }
 

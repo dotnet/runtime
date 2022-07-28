@@ -861,7 +861,7 @@ namespace System.Threading.Tasks.Tests
                 }
                 else
                 {
-                    Assert.True(false, string.Format("Bug901737_ODEWhenDisposingLinkedCTS:  - Exception Occurred (not an ODE!!): " + ex));
+                    Assert.True(false, string.Format("Bug901737_ODEWhenDisposingLinkedCTS:  - Exception Occurred (not an ODE!): " + ex));
                 }
             }
         }
@@ -1779,7 +1779,7 @@ namespace System.Threading.Tasks.Tests
                 t.Wait();
 
                 if (marshalledException != null)
-                    throw new AggregateException("DUMMY: ThreadCrossingSynchronizationContext.Send captured and propogated an exception",
+                    throw new AggregateException("DUMMY: ThreadCrossingSynchronizationContext.Send captured and propagated an exception",
                         marshalledException);
             }
         }

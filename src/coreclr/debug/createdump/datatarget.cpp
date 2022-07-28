@@ -3,7 +3,11 @@
 
 #include "createdump.h"
 
-#define IMAGE_FILE_MACHINE_AMD64             0x8664  // AMD64 (K8)
+#if defined(HOST_ARM64)
+// Flag to check if atomics feature is available on
+// the machine
+bool g_arm64_atomics_present = false;
+#endif
 
 DumpDataTarget::DumpDataTarget(CrashInfo& crashInfo) :
     m_ref(1),
@@ -25,6 +29,12 @@ DumpDataTarget::QueryInterface(
         InterfaceId == IID_ICLRDataTarget)
     {
         *Interface = (ICLRDataTarget*)this;
+        AddRef();
+        return S_OK;
+    }
+    else if (InterfaceId == IID_ICLRRuntimeLocator)
+    {
+        *Interface = (ICLRRuntimeLocator*)this;
         AddRef();
         return S_OK;
     }
@@ -65,6 +75,8 @@ DumpDataTarget::GetMachineType(
     *machine = IMAGE_FILE_MACHINE_ARM64;
 #elif HOST_X86
     *machine = IMAGE_FILE_MACHINE_I386;
+#elif HOST_LOONGARCH64
+    *machine = IMAGE_FILE_MACHINE_LOONGARCH64;
 #else
 #error Unsupported architecture
 #endif
@@ -75,7 +87,7 @@ HRESULT STDMETHODCALLTYPE
 DumpDataTarget::GetPointerSize(
     /* [out] */ ULONG32 *size)
 {
-#if defined(HOST_AMD64) || defined(HOST_ARM64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
     *size = 8;
 #elif defined(HOST_ARM) || defined(HOST_X86)
     *size = 4;
@@ -96,25 +108,10 @@ DumpDataTarget::GetImageBase(
     int length = WideCharToMultiByte(CP_ACP, 0, moduleName, -1, tempModuleName, sizeof(tempModuleName), NULL, NULL);
     if (length > 0)
     {
-        for (const MemoryRegion& image : m_crashInfo.ModuleMappings())
-        {
-            const char *name = strrchr(image.FileName().c_str(), '/');
-            if (name != nullptr)
-            {
-                name++;
-            }
-            else
-            {
-                name = image.FileName().c_str();
-            }
-            if (strcmp(name, tempModuleName) == 0)
-            {
-                *baseAddress = image.StartAddress();
-                return S_OK;
-            }
-        }
+        *baseAddress = m_crashInfo.GetBaseAddressFromName(tempModuleName);
     }
-    return E_FAIL;
+
+    return *baseAddress != 0 ? S_OK : E_FAIL;
 }
 
 HRESULT STDMETHODCALLTYPE
@@ -131,6 +128,7 @@ DumpDataTarget::ReadVirtual(
         *done = 0;
         return E_FAIL;
     }
+    m_crashInfo.m_dataTargetPagesAdded += m_crashInfo.InsertMemoryRegion(address, read);
     *done = read;
     return S_OK;
 }
@@ -218,4 +216,14 @@ DumpDataTarget::Request(
 {
     assert(false);
     return E_NOTIMPL;
+}
+
+// ICLRRuntimeLocator
+
+HRESULT STDMETHODCALLTYPE 
+DumpDataTarget::GetRuntimeBase(
+    /* [out] */ CLRDATA_ADDRESS* baseAddress)
+{
+    *baseAddress = m_crashInfo.RuntimeBaseAddress();
+    return S_OK;
 }

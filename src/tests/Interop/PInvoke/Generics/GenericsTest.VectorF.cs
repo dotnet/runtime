@@ -4,7 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -73,7 +73,7 @@ unsafe partial class GenericsTest
         }
         else
         {
-            Assert.AreEqual(Vector<float>.Count, 4);
+            Assert.Equal(Vector<float>.Count, 4);
             TestVectorF128();
         }
     }
@@ -84,18 +84,18 @@ unsafe partial class GenericsTest
 
         Vector<float> value2;
         GenericsNative.GetVectorF128Out(1.0f, 2.0f, 3.0f, 4.0f, &value2);
-        Assert.AreEqual(value2[0], 1.0f);
-        Assert.AreEqual(value2[1], 2.0f);
-        Assert.AreEqual(value2[2], 3.0f);
-        Assert.AreEqual(value2[3], 4.0f);
+        Assert.Equal(value2[0], 1.0f);
+        Assert.Equal(value2[1], 2.0f);
+        Assert.Equal(value2[2], 3.0f);
+        Assert.Equal(value2[3], 4.0f);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorF128Out(1.0f, 2.0f, 3.0f, 4.0f, out Vector<float> value3));
 
         Vector<float>* value4 = GenericsNative.GetVectorF128Ptr(1.0f, 2.0f, 3.0f, 4.0f);
-        Assert.AreEqual((*value4)[0], 1.0f);
-        Assert.AreEqual((*value4)[1], 2.0f);
-        Assert.AreEqual((*value4)[2], 3.0f);
-        Assert.AreEqual((*value4)[3], 4.0f);
+        Assert.Equal((*value4)[0], 1.0f);
+        Assert.Equal((*value4)[1], 2.0f);
+        Assert.Equal((*value4)[2], 3.0f);
+        Assert.Equal((*value4)[3], 4.0f);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorF128Ref(1.0f, 2.0f, 3.0f, 4.0f));
 
@@ -127,26 +127,26 @@ unsafe partial class GenericsTest
 
         Vector<float> value2;
         GenericsNative.GetVectorF256Out(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, &value2);
-        Assert.AreEqual(value2[0], 1.0f);
-        Assert.AreEqual(value2[1], 2.0f);
-        Assert.AreEqual(value2[2], 3.0f);
-        Assert.AreEqual(value2[3], 4.0f);
-        Assert.AreEqual(value2[4], 5.0f);
-        Assert.AreEqual(value2[5], 6.0f);
-        Assert.AreEqual(value2[6], 7.0f);
-        Assert.AreEqual(value2[7], 8.0f);
+        Assert.Equal(value2[0], 1.0f);
+        Assert.Equal(value2[1], 2.0f);
+        Assert.Equal(value2[2], 3.0f);
+        Assert.Equal(value2[3], 4.0f);
+        Assert.Equal(value2[4], 5.0f);
+        Assert.Equal(value2[5], 6.0f);
+        Assert.Equal(value2[6], 7.0f);
+        Assert.Equal(value2[7], 8.0f);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorF256Out(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, out Vector<float> value3));
 
         Vector<float>* value4 = GenericsNative.GetVectorF256Ptr(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
-        Assert.AreEqual((*value4)[0], 1.0f);
-        Assert.AreEqual((*value4)[1], 2.0f);
-        Assert.AreEqual((*value4)[2], 3.0f);
-        Assert.AreEqual((*value4)[3], 4.0f);
-        Assert.AreEqual((*value4)[4], 5.0f);
-        Assert.AreEqual((*value4)[5], 6.0f);
-        Assert.AreEqual((*value4)[6], 7.0f);
-        Assert.AreEqual((*value4)[7], 8.0f);
+        Assert.Equal((*value4)[0], 1.0f);
+        Assert.Equal((*value4)[1], 2.0f);
+        Assert.Equal((*value4)[2], 3.0f);
+        Assert.Equal((*value4)[3], 4.0f);
+        Assert.Equal((*value4)[4], 5.0f);
+        Assert.Equal((*value4)[5], 6.0f);
+        Assert.Equal((*value4)[6], 7.0f);
+        Assert.Equal((*value4)[7], 8.0f);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVectorF256Ref(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f));
 

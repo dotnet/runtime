@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly ldind_stind.exe{}
+.assembly ldind_stind{}
 
 .class public ldind_stind {
 

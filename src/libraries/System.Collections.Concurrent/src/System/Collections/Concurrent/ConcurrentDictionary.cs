@@ -142,10 +142,7 @@ namespace System.Collections.Concurrent
         public ConcurrentDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer)
             : this(comparer)
         {
-            if (collection is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(collection));
-            }
+            ArgumentNullException.ThrowIfNull(collection);
 
             InitializeFromCollection(collection);
         }
@@ -168,10 +165,7 @@ namespace System.Collections.Concurrent
         public ConcurrentDictionary(int concurrencyLevel, IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer)
             : this(concurrencyLevel, DefaultCapacity, growLockArray: false, comparer)
         {
-            if (collection is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(collection));
-            }
+            ArgumentNullException.ThrowIfNull(collection);
 
             InitializeFromCollection(collection);
         }
@@ -317,7 +311,7 @@ namespace System.Collections.Concurrent
         /// found and removed; otherwise, false.
         /// </returns>
         /// <remarks>
-        /// Both the specifed key and value must match the entry in the dictionary for it to be removed.
+        /// Both the specified key and value must match the entry in the dictionary for it to be removed.
         /// The key is compared using the dictionary's comparer (or the default comparer for <typeparamref name="TKey"/>
         /// if no comparer was provided to the dictionary when it was constructed).  The value is compared using the
         /// default comparer for <typeparamref name="TValue"/>.
@@ -471,7 +465,8 @@ namespace System.Collections.Concurrent
 
         private bool TryGetValueInternal(TKey key, int hashcode, [MaybeNullWhen(false)] out TValue value)
         {
-            Debug.Assert((_comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key)) == hashcode);
+            Debug.Assert((_comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key)) == hashcode,
+                          $"Invalid comparer: _comparer {_comparer} key {key} _comparer.GetHashCode(key) {_comparer?.GetHashCode(key)} hashcode {hashcode}");
 
             // We must capture the volatile _tables field into a local variable: it is set to a new table on each table resize.
             // The Volatile.Read on the array element then ensures that we have a copy of the reference to tables._buckets[bucketNo]:
@@ -677,10 +672,7 @@ namespace System.Collections.Concurrent
         /// </exception>
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int index)
         {
-            if (array is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (index < 0)
             {
@@ -1805,10 +1797,7 @@ namespace System.Collections.Concurrent
         /// <paramref name="array"/>.</exception>
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (index < 0)
             {
@@ -1885,20 +1874,8 @@ namespace System.Collections.Concurrent
         #endregion
 
 
-        private bool AreAllBucketsEmpty()
-        {
-            int[] countPerLock = _tables._countPerLock;
-
-            for (int i = 0; i < countPerLock.Length; i++)
-            {
-                if (countPerLock[i] != 0)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        private bool AreAllBucketsEmpty() =>
+            _tables._countPerLock.AsSpan().IndexOfAnyExcept(0) < 0;
 
         /// <summary>
         /// Replaces the bucket table with a larger one. To prevent multiple threads from resizing the
@@ -1986,9 +1963,6 @@ namespace System.Collections.Concurrent
                     _budget = int.MaxValue;
                 }
 
-                // Now acquire all other locks for the table
-                AcquireLocks(1, tables._locks.Length, ref locksAcquired);
-
                 object[] newLocks = tables._locks;
 
                 // Add more locks
@@ -2005,6 +1979,9 @@ namespace System.Collections.Concurrent
                 var newBuckets = new Node[newLength];
                 var newCountPerLock = new int[newLocks.Length];
                 var newTables = new Tables(newBuckets, newLocks, newCountPerLock);
+
+                // Now acquire all other locks for the table
+                AcquireLocks(1, tables._locks.Length, ref locksAcquired);
 
                 // Copy all data into a new table, creating new nodes for all elements
                 foreach (Node? bucket in tables._buckets)

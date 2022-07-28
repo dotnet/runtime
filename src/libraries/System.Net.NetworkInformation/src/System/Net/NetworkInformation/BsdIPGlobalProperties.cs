@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Net.NetworkInformation
 {
     internal sealed class BsdIPGlobalProperties : UnixIPGlobalProperties
@@ -30,28 +32,12 @@ namespace System.Net.NetworkInformation
                     continue;
                 }
 
-                byte[] localBytes = new byte[nativeInfo.LocalEndPoint.NumAddressBytes];
-                fixed (byte* localBytesPtr = localBytes)
-                {
-                    Buffer.MemoryCopy(nativeInfo.LocalEndPoint.AddressBytes, localBytesPtr, localBytes.Length, localBytes.Length);
-                }
-                IPAddress localIPAddress = new IPAddress(localBytes);
+                IPAddress localIPAddress = new IPAddress(new ReadOnlySpan<byte>(nativeInfo.LocalEndPoint.AddressBytes, checked((int)nativeInfo.LocalEndPoint.NumAddressBytes)));
                 IPEndPoint local = new IPEndPoint(localIPAddress, (int)nativeInfo.LocalEndPoint.Port);
 
-                IPAddress remoteIPAddress;
-                if (nativeInfo.RemoteEndPoint.NumAddressBytes == 0)
-                {
-                    remoteIPAddress = IPAddress.Any;
-                }
-                else
-                {
-                    byte[] remoteBytes = new byte[nativeInfo.RemoteEndPoint.NumAddressBytes];
-                    fixed (byte* remoteBytesPtr = &remoteBytes[0])
-                    {
-                        Buffer.MemoryCopy(nativeInfo.RemoteEndPoint.AddressBytes, remoteBytesPtr, remoteBytes.Length, remoteBytes.Length);
-                    }
-                    remoteIPAddress = new IPAddress(remoteBytes);
-                }
+                IPAddress remoteIPAddress = nativeInfo.RemoteEndPoint.NumAddressBytes == 0 ?
+                    IPAddress.Any :
+                    new IPAddress(new ReadOnlySpan<byte>(nativeInfo.RemoteEndPoint.AddressBytes, checked((int)nativeInfo.RemoteEndPoint.NumAddressBytes)));
 
                 IPEndPoint remote = new IPEndPoint(remoteIPAddress, (int)nativeInfo.RemoteEndPoint.Port);
                 connectionInformations[nextResultIndex++] = new SimpleTcpConnectionInformation(local, remote, state);
@@ -81,7 +67,7 @@ namespace System.Net.NetworkInformation
             return endPoints;
         }
 
-        public unsafe override IPEndPoint[] GetActiveUdpListeners()
+        public override unsafe IPEndPoint[] GetActiveUdpListeners()
         {
             int realCount = Interop.Sys.GetEstimatedUdpListenerCount();
             int infoCount = realCount * 2;
@@ -99,20 +85,9 @@ namespace System.Net.NetworkInformation
             {
                 Interop.Sys.IPEndPointInfo endPointInfo = infos[i];
                 int port = (int)endPointInfo.Port;
-                IPAddress ipAddress;
-                if (endPointInfo.NumAddressBytes == 0)
-                {
-                    ipAddress = IPAddress.Any;
-                }
-                else
-                {
-                    byte[] bytes = new byte[endPointInfo.NumAddressBytes];
-                    fixed (byte* bytesPtr = &bytes[0])
-                    {
-                        Buffer.MemoryCopy(endPointInfo.AddressBytes, bytesPtr, bytes.Length, bytes.Length);
-                    }
-                    ipAddress = new IPAddress(bytes);
-                }
+                IPAddress ipAddress = endPointInfo.NumAddressBytes == 0 ?
+                    IPAddress.Any :
+                    new IPAddress(new ReadOnlySpan<byte>(endPointInfo.AddressBytes, checked((int)endPointInfo.NumAddressBytes)));
 
                 endPoints[i] = new IPEndPoint(ipAddress, port);
             }
@@ -135,6 +110,10 @@ namespace System.Net.NetworkInformation
             return new BsdIPv4GlobalStatistics();
         }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override IPGlobalStatistics GetIPv6GlobalStatistics()
         {
             // Although there is a 'net.inet6.ip6.stats' sysctl variable, there

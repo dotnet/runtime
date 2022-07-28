@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing.Imaging;
+using System.Threading;
 
 namespace System.Drawing
 {
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Drawing.Imaging;
-    using System.Threading;
-
     /// <summary>
     ///     Animates one or more images that have time-based frames.
     ///     See the ImageInfo.cs file for the helper nested ImageInfo class.
@@ -35,6 +34,12 @@ namespace System.Drawing
     /// </summary>
     public sealed partial class ImageAnimator
     {
+        // We use a timer to apply an animation tick speeds of something a bit shorter than 50ms
+        // such that if the requested frame rate is about 20 frames per second, we will rarely skip
+        // a frame entirely. Sometimes we'll show a few more frames if available, but we will never
+        // show more than 25 frames a second and that's OK.
+        internal const int AnimationDelayMS = 40;
+
         /// <summary>
         ///     A list of images to be animated.
         /// </summary>
@@ -94,7 +99,7 @@ namespace System.Drawing
         /// <summary>
         ///     Advances the frame in the specified image. The new frame is drawn the next time the image is rendered.
         /// </summary>
-        public static void UpdateFrames(Image image)
+        public static void UpdateFrames(Image? image)
         {
             if (image == null || s_imageInfoList == null)
             {
@@ -245,10 +250,7 @@ namespace System.Drawing
                 {
                     // Construct the image array
                     //
-                    if (s_imageInfoList == null)
-                    {
-                        s_imageInfoList = new List<ImageInfo>();
-                    }
+                    s_imageInfoList ??= new List<ImageInfo>();
 
                     // Add the new image
                     //
@@ -387,7 +389,7 @@ namespace System.Drawing
 
             while (true)
             {
-                Thread.Sleep(40);
+                Thread.Sleep(AnimationDelayMS);
 
                 // Because Thread.Sleep is not accurate, capture how much time has actually elapsed during the animation
                 long timeElapsed = stopwatch.ElapsedMilliseconds;

@@ -50,7 +50,8 @@ namespace System.Xml.Linq
         /// </param>
         public XDeclaration(XDeclaration other)
         {
-            if (other == null) throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
+
             _version = other._version;
             _encoding = other._encoding;
             _standalone = other._standalone;

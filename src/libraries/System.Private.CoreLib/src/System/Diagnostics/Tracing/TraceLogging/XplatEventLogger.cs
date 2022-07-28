@@ -14,7 +14,7 @@ using System.Runtime.Versioning;
 
 namespace System.Diagnostics.Tracing
 {
-    internal sealed class XplatEventLogger : EventListener
+    internal sealed partial class XplatEventLogger : EventListener
     {
         public XplatEventLogger() {}
 
@@ -38,11 +38,12 @@ namespace System.Diagnostics.Tracing
             return null;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern bool IsEventSourceLoggingEnabled();
+        [LibraryImport(RuntimeHelpers.QCall)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool IsEventSourceLoggingEnabled();
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload);
+        [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload);
 
         private static readonly List<char> escape_seq = new List<char> { '\b', '\f', '\n', '\r', '\t', '\"', '\\' };
         private static readonly Dictionary<char, string> seq_mapping = new Dictionary<char, string>()
@@ -56,7 +57,7 @@ namespace System.Diagnostics.Tracing
             {'\\', "\\\\"}
         };
 
-        private static void minimalJsonserializer(string payload, StringBuilder sb)
+        private static void MinimalJsonserializer(string payload, ref ValueStringBuilder sb)
         {
             foreach (var elem in payload)
             {
@@ -87,7 +88,7 @@ namespace System.Diagnostics.Tracing
                eventDataCount = Math.Min(payloadName.Count, payload.Count);
             }
 
-            var sb = StringBuilderCache.Acquire();
+            var sb = new ValueStringBuilder(stackalloc char[256]);
 
             sb.Append('{');
 
@@ -95,7 +96,7 @@ namespace System.Diagnostics.Tracing
             if (!string.IsNullOrEmpty(eventMessage))
             {
                 sb.Append("\\\"EventSource_Message\\\":\\\"");
-                minimalJsonserializer(eventMessage, sb);
+                MinimalJsonserializer(eventMessage, ref sb);
                 sb.Append("\\\"");
                 if (eventDataCount != 0)
                     sb.Append(", ");
@@ -118,14 +119,14 @@ namespace System.Diagnostics.Tracing
                     case string str:
                     {
                         sb.Append("\\\"");
-                        minimalJsonserializer(str, sb);
+                        MinimalJsonserializer(str, ref sb);
                         sb.Append("\\\"");
                         break;
                     }
                     case byte[] byteArr:
                     {
                         sb.Append("\\\"");
-                        AppendByteArrayAsHexString(sb, byteArr);
+                        AppendByteArrayAsHexString(ref sb, byteArr);
                         sb.Append("\\\"");
                         break;
                     }
@@ -140,22 +141,14 @@ namespace System.Diagnostics.Tracing
                 }
             }
             sb.Append('}');
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return sb.ToString();
         }
 
-        private static void AppendByteArrayAsHexString(StringBuilder builder, byte[] byteArray)
+        private static void AppendByteArrayAsHexString(ref ValueStringBuilder builder, byte[] byteArray)
         {
-            Debug.Assert(builder != null);
             Debug.Assert(byteArray != null);
 
-            ReadOnlySpan<char> hexFormat = "X2";
-            Span<char> hex = stackalloc char[2];
-            for (int i=0; i<byteArray.Length; i++)
-            {
-                byteArray[i].TryFormat(hex, out int charsWritten, hexFormat);
-                Debug.Assert(charsWritten == 2);
-                builder.Append(hex);
-            }
+            HexConverter.EncodeToUtf16(byteArray, builder.AppendSpan(byteArray.Length * 2));
         }
 
         protected internal override void OnEventSourceCreated(EventSource eventSource)

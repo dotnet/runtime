@@ -96,11 +96,9 @@ void deps_json_t::reconcile_libraries_with_targets(
                 entry.asset = asset;
                 entry.asset.name = asset_name;
 
-                m_deps_entries[i].push_back(entry);
-
                 if (trace::is_enabled())
                 {
-                    trace::info(_X("Parsed %s deps entry %d for asset name: %s from %s: %s, library version: %s, relpath: %s, assemblyVersion %s, fileVersion %s"),
+                    trace::info(_X("Parsed %s deps entry %zu for asset name: %s from %s: %s, library version: %s, relpath: %s, assemblyVersion %s, fileVersion %s"),
                         deps_entry_t::s_known_asset_types[i],
                         m_deps_entries[i].size() - 1,
                         entry.asset.name.c_str(),
@@ -111,6 +109,8 @@ void deps_json_t::reconcile_libraries_with_targets(
                         entry.asset.assembly_version.as_str().c_str(),
                         entry.asset.file_version.as_str().c_str());
                 }
+
+                m_deps_entries[i].push_back(std::move(entry));
             }
         }
     }
@@ -130,7 +130,7 @@ pal::string_t deps_json_t::get_current_rid(const rid_fallback_graph_t& rid_fallb
     // We do the same even when the RID is empty.
     if (currentRid.empty() || (rid_fallback_graph.count(currentRid) == 0))
     {
-        currentRid = pal::get_current_os_fallback_rid() + pal::string_t(_X("-")) + get_arch();
+        currentRid = pal::get_current_os_fallback_rid() + pal::string_t(_X("-")) + get_current_arch_name();
 
         trace::info(_X("Falling back to base HostRID: %s"), currentRid.c_str());
     }
@@ -307,7 +307,7 @@ bool deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
                         package.name.GetString());
                 }
 
-                asset_files.push_back(asset);
+                asset_files.push_back(std::move(asset));
             }
         }
     }
@@ -413,7 +413,9 @@ bool deps_json_t::load_self_contained(const pal::string_t& deps_path, const json
 
 bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ver) const
 {
-    pal::string_t pv = name;
+    pal::string_t pv;
+    pv.reserve(name.length() + ver.length() + 1);
+    pv.assign(name);
     pv.push_back(_X('/'));
     pv.append(ver);
 
@@ -439,7 +441,7 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
 bool deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph)
 {
     m_deps_file = deps_path;
-    m_file_exists = bundle::info_t::config_t::probe(deps_path) || pal::file_exists(deps_path);
+    m_file_exists = bundle::info_t::config_t::probe(deps_path) || pal::realpath(&m_deps_file, true);
 
     json_parser_t json;
     if (!m_file_exists)
@@ -449,7 +451,7 @@ bool deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_pa
         return true;
     }
 
-    if (!json.parse_file(deps_path))
+    if (!json.parse_file(m_deps_file))
     {
         return false;
     }

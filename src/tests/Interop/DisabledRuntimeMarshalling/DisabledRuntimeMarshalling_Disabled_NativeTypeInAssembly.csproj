@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="PInvokeAssemblyMarshallingDisabled/*.cs" />
+    <Compile Include="*.cs" />
+    <Compile Include="Native_DisabledMarshalling/DisabledRuntimeMarshallingNative.cs" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>

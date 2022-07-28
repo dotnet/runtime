@@ -214,7 +214,7 @@ retry:
 				mono_coop_mutex_init (&handle_data->signal_mutex);
 
 				if (handle_specific)
-					handle_data->specific = g_memdup (handle_specific, mono_w32handle_ops_typesize (type));
+					handle_data->specific = g_memdup (handle_specific, (guint)mono_w32handle_ops_typesize (type));
 
 				return handle_data;
 			}
@@ -503,18 +503,6 @@ mono_w32handle_ops_prewait (MonoW32Handle *handle_data)
 {
 	if (handle_ops [handle_data->type] && handle_ops [handle_data->type]->prewait)
 		handle_ops [handle_data->type]->prewait (handle_data);
-}
-
-static void
-mono_w32handle_unlock_handles (MonoW32Handle **handles_data, gsize nhandles)
-{
-	gint i;
-
-	for (i = nhandles - 1; i >= 0; i--) {
-		if (!handles_data [i])
-			continue;
-		mono_w32handle_unlock (handles_data [i]);
-	}
 }
 
 static int

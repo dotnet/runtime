@@ -44,5 +44,5 @@ END:
 }
 
 
-.assembly c_ret.exe {}
+.assembly c_ret {}
 

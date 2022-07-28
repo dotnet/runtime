@@ -26,3 +26,16 @@
     }
 }
 
+.class public sequential ansi sealed beforefieldinit ValueTypeFieldTests
+       extends [System.Runtime]System.ValueType
+{
+    .field public int32 InstanceField
+
+    .method public static int32 ValueType.UnboxLdfld_Valid(object o) cil managed
+    {
+        ldarg.0
+        unbox      ValueTypeFieldTests
+        ldfld      int32 ValueTypeFieldTests::InstanceField
+        ret
+    }
+}

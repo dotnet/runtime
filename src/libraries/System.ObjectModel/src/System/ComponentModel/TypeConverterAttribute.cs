@@ -34,10 +34,7 @@ namespace System.ComponentModel
         /// </summary>
         public TypeConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             ConverterTypeName = type.AssemblyQualifiedName!;
         }
@@ -49,10 +46,7 @@ namespace System.ComponentModel
         /// </summary>
         public TypeConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName)
         {
-            if (typeName == null)
-            {
-                throw new ArgumentNullException(nameof(typeName));
-            }
+            ArgumentNullException.ThrowIfNull(typeName);
 
             ConverterTypeName = typeName;
         }

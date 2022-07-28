@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options instance.</param>
         /// <param name="createOptions">The func used to create the new instance.</param>
         /// <returns>The options instance.</returns>
-        TOptions GetOrAdd(string name, Func<TOptions> createOptions);
+        TOptions GetOrAdd(string? name, Func<TOptions> createOptions);
 
         /// <summary>
         /// Tries to adds a new option to the cache, will return false if the name already exists.
@@ -27,14 +27,14 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options instance.</param>
         /// <param name="options">The options instance.</param>
         /// <returns>Whether anything was added.</returns>
-        bool TryAdd(string name, TOptions options);
+        bool TryAdd(string? name, TOptions options);
 
         /// <summary>
         /// Try to remove an options instance.
         /// </summary>
         /// <param name="name">The name of the options instance.</param>
         /// <returns>Whether anything was removed.</returns>
-        bool TryRemove(string name);
+        bool TryRemove(string? name);
 
         /// <summary>
         /// Clears all options instances from the cache.

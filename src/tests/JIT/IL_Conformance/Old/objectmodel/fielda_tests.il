@@ -4,7 +4,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly fielda_tests.exe{}
+.assembly fielda_tests{}
 
 .class public field_tests {
 

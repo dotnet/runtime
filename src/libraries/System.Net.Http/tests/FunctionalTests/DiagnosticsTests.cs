@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Net.Test.Common;
@@ -30,6 +31,7 @@ namespace System.Net.Http.Functional.Tests
         public DiagnosticsTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71877", TestPlatforms.Browser)]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(HttpClient).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
@@ -256,7 +258,7 @@ namespace System.Net.Http.Functional.Tests
                         GetProperty<HttpRequestMessage>(kvp.Value, "Request");
                         TaskStatus status = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Canceled, status);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                 });
 
@@ -308,6 +310,7 @@ namespace System.Net.Http.Functional.Tests
                 parentActivity.AddBaggage("correlationId", Guid.NewGuid().ToString("N").ToString());
                 parentActivity.AddBaggage("moreBaggage", Guid.NewGuid().ToString("N").ToString());
                 parentActivity.AddTag("tag", "tag"); // add tag to ensure it is not injected into request
+                parentActivity.TraceStateString = "Foo";
 
                 parentActivity.Start();
 
@@ -344,7 +347,7 @@ namespace System.Net.Http.Functional.Tests
                         activityStopResponseLogged = GetProperty<HttpResponseMessage>(kvp.Value, "Response");
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.RanToCompletion, requestStatus);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                 });
 
@@ -403,13 +406,10 @@ namespace System.Net.Http.Functional.Tests
                         HttpRequestMessage request = GetProperty<HttpRequestMessage>(kvp.Value, "Request");
                         Assert.True(request.Headers.TryGetValues("Request-Id", out var requestId));
                         Assert.True(request.Headers.TryGetValues("Correlation-Context", out var correlationContext));
-                        Assert.Equal(3, correlationContext.Count());
-                        Assert.Contains("key=value", correlationContext);
-                        Assert.Contains("bad%2Fkey=value", correlationContext);
-                        Assert.Contains("goodkey=bad%2Fvalue", correlationContext);
+                        Assert.Equal("key=value, goodkey=bad%2Fvalue, bad%2Fkey=value", Assert.Single(correlationContext));
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.RanToCompletion, requestStatus);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -467,7 +467,7 @@ namespace System.Net.Http.Functional.Tests
 
                         Assert.False(request.Headers.TryGetValues("traceparent", out var _));
                         Assert.False(request.Headers.TryGetValues("tracestate", out var _));
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                 });
 
@@ -519,7 +519,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Stop"))
                     {
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                 });
 
@@ -608,7 +608,7 @@ namespace System.Net.Http.Functional.Tests
                         GetProperty<HttpRequestMessage>(kvp.Value, "Request");
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Faulted, requestStatus);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -647,7 +647,7 @@ namespace System.Net.Http.Functional.Tests
                         GetProperty<HttpRequestMessage>(kvp.Value, "Request");
                         TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Faulted, requestStatus);
-                        activityStopTcs.SetResult();;
+                        activityStopTcs.SetResult();
                     }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
@@ -796,42 +796,12 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedActivityPropagationWithoutListener()
+        public static IEnumerable<object[]> UseSocketsHttpHandler_WithIdFormat_MemberData()
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
-            {
-                Activity parent = new Activity("parent").Start();
-
-                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
-                    async uri =>
-                    {
-                        await GetAsync(useVersion, testAsync, uri);
-                    },
-                    async server =>
-                    {
-                        HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync();
-                        AssertHeadersAreInjected(requestData, parent);
-                    });
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendAsync_ExpectedActivityPropagationWithoutListenerOrParentActivity()
-        {
-            RemoteExecutor.Invoke(async (useVersion, testAsync) =>
-            {
-                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
-                    async uri =>
-                    {
-                        await GetAsync(useVersion, testAsync, uri);
-                    },
-                    async server =>
-                    {
-                        HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync();
-                        AssertNoHeadersAreInjected(requestData);
-                    });
-            }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
+            yield return new object[] { true, ActivityIdFormat.Hierarchical };
+            yield return new object[] { true, ActivityIdFormat.W3C };
+            yield return new object[] { false, ActivityIdFormat.Hierarchical };
+            yield return new object[] { false, ActivityIdFormat.W3C };
         }
 
         [ConditionalTheory(nameof(EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported))]
@@ -877,6 +847,56 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), TestAsync.ToString(), envVarValue).Dispose();
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [MemberData(nameof(UseSocketsHttpHandler_WithIdFormat_MemberData))]
+        public async Task SendAsync_HeadersAreInjectedOnRedirects(bool useSocketsHttpHandler, ActivityIdFormat idFormat)
+        {
+            Activity parent = new Activity("parent");
+            parent.SetIdFormat(idFormat);
+            parent.TraceStateString = "Foo";
+            parent.Start();
+
+            await GetFactoryForVersion(UseVersion).CreateServerAsync(async (originalServer, originalUri) =>
+            {
+                await GetFactoryForVersion(UseVersion).CreateServerAsync(async (redirectServer, redirectUri) =>
+                {
+                    Task clientTask = GetAsync(UseVersion.ToString(), TestAsync.ToString(), originalUri, useSocketsHttpHandler: useSocketsHttpHandler);
+
+                    Task<HttpRequestData> serverTask = originalServer.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectUri.AbsoluteUri) });
+
+                    await Task.WhenAny(clientTask, serverTask);
+                    Assert.False(clientTask.IsCompleted, $"{clientTask.Status}: {clientTask.Exception}");
+                    HttpRequestData firstRequestData = await serverTask;
+                    AssertHeadersAreInjected(firstRequestData, parent);
+
+                    serverTask = redirectServer.HandleRequestAsync();
+                    await TestHelper.WhenAllCompletedOrAnyFailed(clientTask, serverTask);
+                    HttpRequestData secondRequestData = await serverTask;
+                    AssertHeadersAreInjected(secondRequestData, parent);
+
+                    if (idFormat == ActivityIdFormat.W3C)
+                    {
+                        string firstParent = GetHeaderValue(firstRequestData, "traceparent");
+                        string firstState = GetHeaderValue(firstRequestData, "tracestate");
+                        Assert.True(ActivityContext.TryParse(firstParent, firstState, out ActivityContext firstContext));
+
+                        string secondParent = GetHeaderValue(secondRequestData, "traceparent");
+                        string secondState = GetHeaderValue(secondRequestData, "tracestate");
+                        Assert.True(ActivityContext.TryParse(secondParent, secondState, out ActivityContext secondContext));
+
+                        Assert.Equal(firstContext.TraceId, secondContext.TraceId);
+                        Assert.Equal(firstContext.TraceFlags, secondContext.TraceFlags);
+                        Assert.Equal(firstContext.TraceState, secondContext.TraceState);
+                        Assert.NotEqual(firstContext.SpanId, secondContext.SpanId);
+                    }
+                    else
+                    {
+                        Assert.NotEqual(GetHeaderValue(firstRequestData, "Request-Id"), GetHeaderValue(secondRequestData, "Request-Id"));
+                    }
+                });
+            });
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
@@ -893,10 +913,165 @@ namespace System.Net.Http.Functional.Tests
                         (HttpRequestMessage request, _) = await GetAsync(useVersion, testAsync, uri);
 
                         string headerName = parent.IdFormat == ActivityIdFormat.Hierarchical ? "Request-Id" : "traceparent";
+
                         Assert.Equal(bool.Parse(switchValue), request.Headers.Contains(headerName));
                     },
                     async server => await server.HandleRequestAsync());
             }, UseVersion.ToString(), TestAsync.ToString(), switchValue.ToString()).Dispose();
+        }
+
+        public static IEnumerable<object[]> SocketsHttpHandlerPropagators_WithIdFormat_MemberData()
+        {
+            foreach (var propagator in new[] { null, DistributedContextPropagator.CreateDefaultPropagator(), DistributedContextPropagator.CreateNoOutputPropagator(), DistributedContextPropagator.CreatePassThroughPropagator() })
+            {
+                foreach (ActivityIdFormat format in new[] { ActivityIdFormat.Hierarchical, ActivityIdFormat.W3C })
+                {
+                    yield return new object[] { propagator, format };
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [MemberData(nameof(SocketsHttpHandlerPropagators_WithIdFormat_MemberData))]
+        public async Task SendAsync_CustomSocketsHttpHandlerPropagator_PropagatorIsUsed(DistributedContextPropagator propagator, ActivityIdFormat idFormat)
+        {
+            Activity parent = new Activity("parent");
+            parent.SetIdFormat(idFormat);
+            parent.Start();
+
+            await GetFactoryForVersion(UseVersion).CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                    handler.ActivityHeadersPropagator = propagator;
+                    using var client = new HttpClient(handler);
+                    var request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                    await client.SendAsync(TestAsync, request);
+                },
+                async server =>
+                {
+                    HttpRequestData requestData = await server.HandleRequestAsync();
+
+                    if (propagator is null || ReferenceEquals(propagator, DistributedContextPropagator.CreateNoOutputPropagator()))
+                    {
+                        AssertNoHeadersAreInjected(requestData);
+                    }
+                    else
+                    {
+                        AssertHeadersAreInjected(requestData, parent, ReferenceEquals(propagator, DistributedContextPropagator.CreatePassThroughPropagator()));
+                    }
+                });
+        }
+
+        public static IEnumerable<object[]> SocketsHttpHandler_ActivityCreation_MemberData()
+        {
+            foreach (var currentActivitySet in new bool[] {
+                true,    // Activity was set
+                false }) // No Activity is set
+            {
+                foreach (var diagnosticListenerActivityEnabled in new bool?[] {
+                    true,   // DiagnosticListener requested an Activity
+                    false,  // DiagnosticListener does not want an Activity
+                    null }) // There is no DiagnosticListener
+                {
+                    foreach (var activitySourceCreatesActivity in new bool?[] {
+                        true,   // ActivitySource created an Activity
+                        false,  // ActivitySource chose not to create an Activity
+                        null }) // ActivitySource had no listeners
+                    {
+                        yield return new object[] { currentActivitySet, diagnosticListenerActivityEnabled, activitySourceCreatesActivity };
+                    }
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(SocketsHttpHandler_ActivityCreation_MemberData))]
+        public void SendAsync_ActivityIsCreatedIfRequested(bool currentActivitySet, bool? diagnosticListenerActivityEnabled, bool? activitySourceCreatesActivity)
+        {
+            string parameters = $"{currentActivitySet},{diagnosticListenerActivityEnabled},{activitySourceCreatesActivity}";
+
+            RemoteExecutor.Invoke(async (useVersion, testAsync, parametersString) =>
+            {
+                bool?[] parameters = parametersString.Split(',').Select(p => p.Length == 0 ? (bool?)null : bool.Parse(p)).ToArray();
+                bool currentActivitySet = parameters[0].Value;
+                bool? diagnosticListenerActivityEnabled = parameters[1];
+                bool? activitySourceCreatesActivity = parameters[2];
+
+                bool madeASamplingDecision = false;
+                if (activitySourceCreatesActivity.HasValue)
+                {
+                    ActivitySource.AddActivityListener(new ActivityListener
+                    {
+                        ShouldListenTo = _ => true,
+                        Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
+                        {
+                            madeASamplingDecision = true;
+                            return activitySourceCreatesActivity.Value ? ActivitySamplingResult.AllData : ActivitySamplingResult.None;
+                        }
+                    });
+                }
+
+                bool listenerCallbackWasCalled = false;
+                IDisposable listenerSubscription = new MemoryStream(); // Dummy disposable
+                if (diagnosticListenerActivityEnabled.HasValue)
+                {
+                    var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(_ => listenerCallbackWasCalled = true);
+
+                    diagnosticListenerObserver.Enable(name => !name.Contains("HttpRequestOut") || diagnosticListenerActivityEnabled.Value);
+
+                    listenerSubscription = DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver);
+                }
+
+                Activity parent = currentActivitySet ? new Activity("parent").Start() : null;
+                Activity activity = parent;
+
+                if (!currentActivitySet)
+                {
+                    // Listen to new activity creations if an Activity was created without a parent
+                    // (when a DiagnosticListener forced one to be created)
+                    ActivitySource.AddActivityListener(new ActivityListener
+                    {
+                        ShouldListenTo = _ => true,
+                        ActivityStarted = created =>
+                        {
+                            Assert.Null(parent);
+                            activity = created;
+                        }
+                    });
+                }
+
+                using (listenerSubscription)
+                {
+                    await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                        async uri =>
+                        {
+                            await GetAsync(useVersion, testAsync, uri);
+                        },
+                        async server =>
+                        {
+                            HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync();
+
+                            if (currentActivitySet || diagnosticListenerActivityEnabled == true || activitySourceCreatesActivity == true)
+                            {
+                                Assert.NotNull(activity);
+                                AssertHeadersAreInjected(requestData, activity, parent is null);
+                            }
+                            else
+                            {
+                                AssertNoHeadersAreInjected(requestData);
+
+                                if (!currentActivitySet)
+                                {
+                                    Assert.Null(activity);
+                                }
+                            }
+                        });
+                }
+
+                Assert.Equal(activitySourceCreatesActivity.HasValue, madeASamplingDecision);
+                Assert.Equal(diagnosticListenerActivityEnabled.HasValue, listenerCallbackWasCalled);
+            }, UseVersion.ToString(), TestAsync.ToString(), parameters).Dispose();
         }
 
         private static T GetProperty<T>(object obj, string propertyName)
@@ -925,7 +1100,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Null(GetHeaderValue(request, "Correlation-Context"));
         }
 
-        private static void AssertHeadersAreInjected(HttpRequestData request, Activity parent)
+        private static void AssertHeadersAreInjected(HttpRequestData request, Activity parent, bool passthrough = false)
         {
             string requestId = GetHeaderValue(request, "Request-Id");
             string traceparent = GetHeaderValue(request, "traceparent");
@@ -935,7 +1110,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Assert.True(requestId != null, "Request-Id was not injected when instrumentation was enabled");
                 Assert.StartsWith(parent.Id, requestId);
-                Assert.NotEqual(parent.Id, requestId);
+                Assert.Equal(passthrough, parent.Id == requestId);
                 Assert.Null(traceparent);
                 Assert.Null(tracestate);
             }
@@ -944,6 +1119,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Null(requestId);
                 Assert.True(traceparent != null, "traceparent was not injected when W3C instrumentation was enabled");
                 Assert.StartsWith($"00-{parent.TraceId.ToHexString()}-", traceparent);
+                Assert.Equal(passthrough, parent.Id == traceparent);
                 Assert.Equal(parent.TraceStateString, tracestate);
             }
 
@@ -960,10 +1136,12 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static async Task<(HttpRequestMessage, HttpResponseMessage)> GetAsync(string useVersion, string testAsync, Uri uri, CancellationToken cancellationToken = default)
+        private static async Task<(HttpRequestMessage, HttpResponseMessage)> GetAsync(string useVersion, string testAsync, Uri uri, CancellationToken cancellationToken = default, bool useSocketsHttpHandler = false)
         {
-            HttpClientHandler handler = CreateHttpClientHandler(useVersion);
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            HttpMessageHandler handler = useSocketsHttpHandler
+                ? CreateSocketsHttpHandler(allowAllCertificates: true)
+                : CreateHttpClientHandler(allowAllCertificates: true);
+
             using var client = new HttpClient(handler);
             var request = CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true);
             return (request, await client.SendAsync(bool.Parse(testAsync), request, cancellationToken));

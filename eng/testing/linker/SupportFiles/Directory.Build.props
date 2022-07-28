@@ -3,14 +3,10 @@
     <SkipConfigureTrimming>true</SkipConfigureTrimming>
     <PublishTrimmed>true</PublishTrimmed>
     <SkipImportRepoLinkerTargets>true</SkipImportRepoLinkerTargets>
-    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <TrimmerDefaultAction>link</TrimmerDefaultAction>
     <TrimMode>link</TrimMode>
     <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
     <SelfContained>true</SelfContained>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <PlatformManifestFile />
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
@@ -18,11 +14,4 @@
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
-
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.NETCore.App" />
-    <FrameworkReference Update="Microsoft.NETCore.App"
-                        RuntimePackLabels="Mono"
-                        Condition="'$(UseMonoRuntime)' == 'true'" />
-  </ItemGroup>
 </Project>

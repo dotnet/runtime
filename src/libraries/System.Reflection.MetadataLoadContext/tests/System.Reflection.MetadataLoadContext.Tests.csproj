@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
-    <!-- The GAC is obsolete, but there are unit tests still referencing it -->
-    <NoWarn>$(NoWarn);SYSLIB0005</NoWarn>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <!-- SYSLIB0005: The GAC is obsolete, but there are unit tests still referencing it.
+         SYSLIB0037: AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete. -->
+    <NoWarn>$(NoWarn);SYSLIB0005;SYSLIB0037</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"

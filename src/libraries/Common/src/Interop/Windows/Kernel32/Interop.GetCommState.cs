@@ -8,8 +8,9 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern bool GetCommState(
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool GetCommState(
             SafeFileHandle hFile,
             ref DCB lpDCB);
     }

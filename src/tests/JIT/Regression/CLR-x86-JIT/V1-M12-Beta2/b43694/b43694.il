@@ -7,14 +7,18 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly 'stobjfloat'
+.assembly 'b43694'
 {
   
 }
+.assembly extern xunit.core {}
 .class M
 {
   .method public static int32 Main()
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack 10
     .locals (float32 f)

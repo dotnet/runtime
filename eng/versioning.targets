@@ -1,32 +1,69 @@
 <Project>
   <PropertyGroup>
-    <GenerateAssemblyInfo Condition="'$(GenerateAssemblyInfo)'==''">true</GenerateAssemblyInfo>
-  </PropertyGroup>
+    <!-- Libraries have never generated these attributes so don't let the SDK generate them. -->
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
 
-  <PropertyGroup Condition="'$(GenerateAssemblyInfo)'=='true'">
-    <AssemblyInfoFile Condition="'$(MSBuildProjectExtension)' == '.csproj'">$(IntermediateOutputPath)_AssemblyInfo.cs</AssemblyInfoFile>
-    <AssemblyInfoFile Condition="'$(MSBuildProjectExtension)' == '.vbproj'">$(IntermediateOutputPath)_AssemblyInfo.vb</AssemblyInfoFile>
+    <!-- Libraries have always added a description set to assembly name so include that here. -->
+    <Description Condition="'$(Description)' == ''">$(AssemblyName)</Description>
   </PropertyGroup>
 
   <!-- Assembly metadata indicating that an assembly is a framework (as opposed to user) assembly:
        Test projects need to not have this because of the way "IsFrameworkAssembly" APIs work to check this. -->
-  <ItemGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'" >
-    <AssemblyMetadata Include=".NETFrameworkAssembly">
-      <Value></Value>
-    </AssemblyMetadata>
-    <AssemblyMetadata Include="Serviceable">
-      <Value>True</Value>
-    </AssemblyMetadata>
-    <AssemblyMetadata Include="PreferInbox">
-      <Value>True</Value>
-    </AssemblyMetadata>
-    <AssemblyMetadata Include="IsTrimmable" Condition="'$(SetIsTrimmable)' != 'false'">
-      <Value>True</Value>
-    </AssemblyMetadata>
+  <ItemGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
+      <_Parameter1>.NETFrameworkAssembly</_Parameter1>
+      <_Parameter2></_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
+      <_Parameter1>Serviceable</_Parameter1>
+      <_Parameter2>True</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
+      <_Parameter1>PreferInbox</_Parameter1>
+      <_Parameter2>True</_Parameter2>
+    </AssemblyAttribute>
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetsAnyOS)' == 'true' and !$(TargetFrameworks.Contains('$(TargetFramework)-Browser'))">
-      <CrossPlatformAndHasNoBrowserTarget>true</CrossPlatformAndHasNoBrowserTarget>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyDefaultAliasAttribute">
+      <_Parameter1>$(AssemblyName)</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Resources.NeutralResourcesLanguage" Condition="'@(EmbeddedResource)' != '' and '$(IsSourceProject)' == 'true'">
+      <_Parameter1>en-US</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="CLSCompliantAttribute" Condition="'$(CLSCompliant)' == 'true'">
+      <_Parameter1>true</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <Target Name="CalculateIncludeDllSafeSearchPathAttribute"
+          DependsOnTargets="ResolveReferences"
+          BeforeTargets="GetAssemblyAttributes"
+          Condition="'$(IsSourceProject)' == 'true'">
+    <!-- We want to apply the IncludeDllSafeSearchPathAttribute on all source assemblies that may contain DllImport -->
+    <PropertyGroup Condition="'$(IncludeDllSafeSearchPathAttribute)' == '' and '@(ReferencePath)' != ''">
+      <IncludeDllSafeSearchPathAttribute Condition="@(ReferencePath->AnyHaveMetadataValue('Filename', 'System.Runtime.InteropServices'))">true</IncludeDllSafeSearchPathAttribute>
+      <IncludeDllSafeSearchPathAttribute Condition="@(ReferencePath->AnyHaveMetadataValue('Filename', 'System.Private.CoreLib'))">true</IncludeDllSafeSearchPathAttribute>
+      <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard' and @(ReferencePath->AnyHaveMetadataValue('Filename', 'netstandard'))">true</IncludeDllSafeSearchPathAttribute>
+      <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and @(ReferencePath->AnyHaveMetadataValue('Filename', 'mscorlib'))">true</IncludeDllSafeSearchPathAttribute>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <AssemblyAttributeOrOperator Condition="'$(MSBuildProjectExtension)' == '.csproj'">|</AssemblyAttributeOrOperator>
+      <AssemblyAttributeOrOperator Condition="'$(MSBuildProjectExtension)' == '.vbproj'">Or</AssemblyAttributeOrOperator>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(IncludeDllSafeSearchPathAttribute)' == 'true'">
+      <AssemblyAttribute Include="System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute">
+        <_Parameter1>System.Runtime.InteropServices.DllImportSearchPath.AssemblyDirectory $(AssemblyAttributeOrOperator) System.Runtime.InteropServices.DllImportSearchPath.System32</_Parameter1>
+        <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
+      </AssemblyAttribute>
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == '' and !$(TargetFrameworks.Contains('$(TargetFramework)-Browser'))">
+    <CrossPlatformAndHasNoBrowserTarget>true</CrossPlatformAndHasNoBrowserTarget>
   </PropertyGroup>
 
   <!-- Enables warnings for Android, iOS, tvOS and macCatalyst for all builds -->
@@ -38,16 +75,23 @@
   </ItemGroup>
 
   <!-- Enables browser warnings for cross platform or Browser targeted builds -->
-  <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
+  <ItemGroup Condition="('$(TargetPlatformIdentifier)' == 'Browser' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
     <SupportedPlatform Include="browser"/>
   </ItemGroup>
 
   <!-- Add target platforms into MSBuild SupportedPlatform list -->
-  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true' and '$(IsTestProject)' != 'true'">
-    <SupportedPlatform Condition="'$(Targetsillumos)' == 'true'" Include="illumos"/>
-    <SupportedPlatform Condition="'$(TargetsSolaris)' == 'true'" Include="Solaris"/>
-    <SupportedPlatform Condition="'$(TargetstvOS)' == 'true'" Include="tvOS"/>
-    <SupportedPlatform Condition="'$(TargetsUnix)' == 'true'" Include="Unix"/>
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'illumos'" Include="illumos" />
+    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'Solaris'" Include="Solaris" />
+    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'tvOS'" Include="tvOS" />
+    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' != '' and
+                                  '$(TargetPlatformIdentifier)' != 'Browser' and
+                                  '$(TargetPlatformIdentifier)' != 'windows'" Include="Unix" />
+  </ItemGroup>
+
+  <!-- Add PlatformNeutralAssembly property for targeted builds of cross platform assemblies -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(IsTestProject)' != 'true' and '@(SupportedOSPlatforms)' == ''">
+    <CompilerVisibleProperty Include="PlatformNeutralAssembly" />
   </ItemGroup>
 
   <!-- Adds UnsupportedOSPlatform and SupportedOSPlatform attributes to the assembly when:
@@ -55,8 +99,13 @@
       * This is a cross-platform target
       * The build isn't targeting .NET Framework
     -->
-  <Target Name="AddOSPlatformAttributes" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild"
-    Condition="'$(TargetsAnyOS)' == 'true' and '$(IsTestProject)' != 'true' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
+  <Target Name="AddOSPlatformAttributes"
+          BeforeTargets="GenerateAssemblyInfo"
+          AfterTargets="PrepareForBuild"
+          Condition="'$(TargetPlatformIdentifier)' == '' and
+                     '$(IsTestProject)' != 'true' and
+                     '$(TargetFrameworkIdentifier)' != '.NETFramework'
+                     and '$(AddOSPlatformAttributes)' != 'false'">
     <!-- Defensively de-dupe the values -->
     <ItemGroup>
       <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
@@ -64,106 +113,39 @@
     </ItemGroup>
 
     <ItemGroup Condition="'@(_unsupportedOSPlatforms)' != ''">
-      <!-- Add the assembly attribute -->
       <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform">
         <_Parameter1>%(_unsupportedOSPlatforms.Identity)</_Parameter1>
       </AssemblyAttribute>
 
       <!-- Ensure this platform is included in the platforms enabled for the CA1416 analyzer -->
-      <SupportedPlatform Include="%(_unsupportedOSPlatforms.Identity)" />
+      <SupportedPlatform Include="@(_unsupportedOSPlatforms)" />
     </ItemGroup>
 
     <ItemGroup Condition="'@(_supportedOSPlatforms)' != ''">
-      <!-- Add the assembly attribute -->
       <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
         <_Parameter1>%(_supportedOSPlatforms.Identity)</_Parameter1>
       </AssemblyAttribute>
 
       <!-- Ensure this platform is included in the platforms enabled for the CA1416 analyzer -->
-      <SupportedPlatform Include="%(_supportedOSPlatforms.Identity)" />
+      <SupportedPlatform Include="@(_supportedOSPlatforms)" />
     </ItemGroup>
   </Target>
 
-  <!-- Add PlatformNeutralAssembly property for targeted builds of cross platform assemblies -->
-  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true' and '$(IsTestProject)' != 'true' and '@(SupportedOSPlatforms)' == ''">
-    <CompilerVisibleProperty Include="PlatformNeutralAssembly" />
-  </ItemGroup>
-
-  <PropertyGroup>
-    <!-- corefx has never generated these attributes so don't let the SDK generate them -->
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
-
-    <!-- corefx has always added a description set to assembly name so include that here -->
-    <Description Condition="'$(Description)' == ''">$(AssemblyName)</Description>
-  </PropertyGroup>
-
-  <Target Name="_ComputeBuildToolsAssemblyInfoAttributes"
-          BeforeTargets="GetAssemblyAttributes">
+  <!-- Remove assembly level attributes from certain projects.
+       Use a target for that until https://github.com/dotnet/sdk/issues/14836 is implemented. -->
+  <Target Name="RemoveSupportedOSTargetPlatformAttributeFromProjects"
+          AfterTargets="GetAssemblyAttributes"
+          BeforeTargets="CreateGeneratedAssemblyInfoInputsCacheFile">
     <ItemGroup>
-      <AssemblyAttribute Include="System.Reflection.AssemblyDefaultAliasAttribute">
-        <_Parameter1>$(AssemblyName)</_Parameter1>
-      </AssemblyAttribute>
-
-      <AssemblyAttribute Include="System.Resources.NeutralResourcesLanguage" Condition="'@(EmbeddedResource)' != '' and '$(IsSourceProject)' == 'true'">
-        <_Parameter1>en-US</_Parameter1>
-      </AssemblyAttribute>
-
-      <AssemblyAttribute Include="System.Reflection.AssemblyMetadata"
-                         Condition="'@(AssemblyMetadata)' != ''">
-        <_Parameter1>%(AssemblyMetadata.Identity)</_Parameter1>
-        <_Parameter2>%(AssemblyMetadata.Value)</_Parameter2>
-      </AssemblyAttribute>
-    </ItemGroup>
-  </Target>
-
-  <!-- Work around https://github.com/Microsoft/msbuild/issues/3412 by writing the non-string assembly attributes manually -->
-  <!-- Note: ReferenceAssemblies.targets still uses @(AssemblyInfoLines) as well. So if you remove this, those need to migrate too. -->
-  <Target Name="_WriteNonStringAssemblyInfoAttributes"
-          DependsOnTargets="ResolveReferences"
-          AfterTargets="CoreGenerateAssemblyInfo"
-          BeforeTargets="BeforeCompile;CoreCompile"
-          Inputs="$(MSBuildProjectFile)"
-          Outputs="$(AssemblyInfoFile)">
-
-    <!-- We want to apply the IncludeDllSafeSearchPathAttribute on all source assemblies that may contain DllImport -->
-    <PropertyGroup Condition="'$(IncludeDllSafeSearchPathAttribute)'=='' and '$(IsSourceProject)'== 'true'">
-      <IncludeDllSafeSearchPathAttribute>false</IncludeDllSafeSearchPathAttribute>
-      <!-- We don't need to include it by default. -->
-      <IncludeDllSafeSearchPathAttribute Condition="'%(ReferencePath.Filename)' == 'System.Runtime.InteropServices'">true</IncludeDllSafeSearchPathAttribute>
-      <IncludeDllSafeSearchPathAttribute Condition="'%(ReferencePath.Filename)' == 'System.Private.CoreLib'">true</IncludeDllSafeSearchPathAttribute>
-      <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard' and '%(ReferencePath.Filename)' == 'netstandard'">true</IncludeDllSafeSearchPathAttribute>
-      <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '%(ReferencePath.Filename)' == 'mscorlib'">true</IncludeDllSafeSearchPathAttribute>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
-      <AssemblyInfoLines Condition="'$(CLSCompliant)'=='true'" Include="[assembly:System.CLSCompliant(true)]" />
-
-      <AssemblyInfoLines Condition="'$(IncludeDllSafeSearchPathAttribute)'=='true'"
-        Include="[assembly: System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute(System.Runtime.InteropServices.DllImportSearchPath.AssemblyDirectory | System.Runtime.InteropServices.DllImportSearchPath.System32)]" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.vbproj'">
-      <AssemblyInfoLines Condition="'$(CLSCompliant)'=='true'" Include="&lt;Assembly:System.CLSCompliant(True)&gt;" />
-
-      <AssemblyInfoLines Condition="'$(IncludeDllSafeSearchPathAttribute)'=='true'"
-        Include="&lt;Assembly:System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute(System.Runtime.InteropServices.DllImportSearchPath.AssemblyDirectory Or System.Runtime.InteropServices.DllImportSearchPath.System32)&gt;" />
-    </ItemGroup>
-
-    <WriteLinesToFile File="$(AssemblyInfoFile)"
-                      Lines="@(AssemblyInfoLines)"
-                      Condition="'@(AssemblyInfoLines)' != ''"
-                      Overwrite="true" />
-
-    <ItemGroup Condition="'@(AssemblyInfoLines)' != ''">
-      <Compile Include="$(AssemblyInfoFile)" />
-      <FileWrites Include="$(AssemblyInfoFile)" />
+      <AssemblyAttribute Remove="System.Runtime.Versioning.SupportedOSPlatformAttribute"
+                         Condition="'$(IsTestProject)' == 'true' or '$(AddOSPlatformAttributes)' == 'false'" />
+      <!-- Don't include target platform attributes, since we use the target platform to represent RIDs instead. -->
+      <AssemblyAttribute Remove="System.Runtime.Versioning.TargetPlatformAttribute" />
     </ItemGroup>
   </Target>
 
   <Target Name="GenerateRuntimeVersionFile"
           DependsOnTargets="GenerateNativeVersionFile">
-
     <PropertyGroup>
       <RuntimeVersionFile Condition="'$(RuntimeVersionFile)' == ''">$(ArtifactsObjDir)runtime_version.h</RuntimeVersionFile>
 
@@ -193,15 +175,21 @@
       Lines="$(_RuntimeVersionFileContents)"
       Overwrite="true"
       WriteOnlyWhenDifferent="true" />
-
   </Target>
 
-  <!-- Removes assembly level attributes from test projects. -->
-  <Target Name="RemoveSupportedOSPlatformAttributeFromTestProjects" AfterTargets="GetAssemblyAttributes" Condition="'$(IsTestProject)' == 'true'">
-    <ItemGroup>
-      <AssemblyAttribute Remove="System.Runtime.Versioning.SupportedOSPlatformAttribute" />
-      <AssemblyAttribute Remove="System.Runtime.Versioning.TargetPlatformAttribute" />
-    </ItemGroup>
+  <Target Name="GenerateNativeSourcelinkFile"
+          Condition="'$(DisableSourceLink)' != 'true'"
+          DependsOnTargets="_CopyGeneratedSourcelinkFile;_VerifyNativeSourceLinkFileExists" />
+
+  <Target Name="_CopyGeneratedSourcelinkFile"
+          DependsOnTargets="GenerateSourceLinkFile"
+          Inputs="$(SourceLink)" Outputs="$(NativeSourceLinkFile)">
+    <Error Condition="'$(NativeSourceLinkFile)' == ''" Text="Please set NativeSourceLinkFile to forward appropriate information for sourcelink."/>
+    <Copy SourceFiles="$(SourceLink)" DestinationFiles="$(NativeSourceLinkFile)" />
   </Target>
 
+  <Target Name="_VerifyNativeSourceLinkFileExists"
+          Condition="'$(VerifySourceLinkFileExists)' == true">
+    <Error Condition="!Exists('$(NativeSourceLinkFile)')" Text="Native SourceLink file could not be made available to the native build. Ensure that $(MSBuildProjectName) ran the sourcelink targets."/>
+  </Target>
 </Project>

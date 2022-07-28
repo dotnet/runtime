@@ -9,15 +9,15 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool CryptUnprotectData(
-                  [In] ref DATA_BLOB pDataIn,
-                  [In] IntPtr ppszDataDescr,
-                  [In] ref DATA_BLOB pOptionalEntropy,
-                  [In] IntPtr pvReserved,
-                  [In] IntPtr pPromptStruct,
-                  [In] CryptProtectDataFlags dwFlags,
-                  [Out] out DATA_BLOB pDataOut);
+        internal static partial bool CryptUnprotectData(
+            in DATA_BLOB pDataIn,
+            IntPtr ppszDataDescr,
+            ref DATA_BLOB pOptionalEntropy,
+            IntPtr pvReserved,
+            IntPtr pPromptStruct,
+            CryptProtectDataFlags dwFlags,
+            out DATA_BLOB pDataOut);
     }
 }

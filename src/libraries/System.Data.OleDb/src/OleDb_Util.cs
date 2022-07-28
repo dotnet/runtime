@@ -334,7 +334,7 @@ namespace System.Data.OleDb
 
         internal static OleDbHResult GetErrorDescription(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult hresult, out string message)
         {
-            OleDbHResult hr = errorInfo.GetDescription(out message);
+            OleDbHResult hr = errorInfo.GetDescription(out message!);
             if (((int)hr < 0) && ADP.IsEmpty(message))
             {
                 message = FailedGetDescription(hr) + Environment.NewLine + ODB.ELookup(hresult);
@@ -358,7 +358,7 @@ namespace System.Data.OleDb
             return ADP.InvalidOperation(SR.Format(SR.OleDb_IDBInfoNotSupported));
         }
 
-        // explictly used error codes
+        // explicitly used error codes
         internal const int ADODB_AlreadyClosedError = unchecked((int)0x800A0E78);
         internal const int ADODB_NextResultError = unchecked((int)0x800A0CB3);
 
@@ -691,16 +691,13 @@ namespace System.Data.OleDb
         // Debug error string writeline
         internal static string ELookup(OleDbHResult hr)
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(hr.ToString());
-            if ((0 < builder.Length) && char.IsDigit(builder[0]))
+            string result = hr.ToString();
+            if (char.IsDigit(result[0]))
             {
-                builder.Length = 0;
+                result = "";
             }
-            builder.Append("(0x");
-            builder.Append(((int)hr).ToString("X8", CultureInfo.InvariantCulture));
-            builder.Append(')');
-            return builder.ToString();
+
+            return $"{result}(0x{(int)hr:X8})";
         }
 
 #if DEBUG
@@ -710,9 +707,7 @@ namespace System.Data.OleDb
             string? value = (string?)g_wlookpup[id];
             if (null == value)
             {
-                value = "0x" + ((short)id).ToString("X2", CultureInfo.InvariantCulture) + " " + ((short)id);
-                value += " " + ((DBTypeEnum)id).ToString();
-                g_wlookpup[id] = value;
+                g_wlookpup[id] = value = $"0x{(short)id:X2} {(short)id} {(DBTypeEnum)id}";
             }
             return value;
         }

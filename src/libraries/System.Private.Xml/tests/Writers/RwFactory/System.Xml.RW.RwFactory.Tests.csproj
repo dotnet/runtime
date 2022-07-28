@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CFactoryModule.cs" />
@@ -14,7 +14,7 @@
     <Compile Include="CXmlDriverVariation.cs" />
     <Compile Include="ReaderFactory.cs" />
     <Compile Include="WriterFactory.cs" />
-    <Compile Include="$(CommonTestPath)System\Xml\DisableParallelization.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelizationPerAssembly.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)System\Xml\ModuleCore\ModuleCore.csproj" />

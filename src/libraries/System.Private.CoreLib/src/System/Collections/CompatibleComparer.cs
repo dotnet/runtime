@@ -46,10 +46,7 @@ namespace System.Collections
 
         public int GetHashCode(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             return _hcp != null ?
                 _hcp.GetHashCode(obj) :

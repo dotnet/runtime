@@ -20,9 +20,10 @@
   #define FEATURE_FIXED_OUT_ARGS   1       // Preallocate the outgoing arg area in the prolog
   #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
   #define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
-  #define FEATURE_FASTTAILCALL     0       // Tail calls made as epilog+jmp
-  #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
+  #define FEATURE_FASTTAILCALL     1       // Tail calls made as epilog+jmp
+  #define FEATURE_TAILCALL_OPT     1       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
   #define FEATURE_SET_FLAGS        1       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
+  #define FEATURE_IMPLICIT_BYREFS       0  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register (including HFA support)
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register (including passing HFAs)
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register (including HFA returns)
@@ -33,7 +34,7 @@
   #define MAX_ARG_REG_COUNT             4  // Maximum registers used to pass a single argument in multiple registers. (max is 4 floats or doubles using an HFA)
   #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
 
-  #define MAX_MULTIREG_COUNT            4  // Maxiumum number of registers defined by a single instruction (including calls).
+  #define MAX_MULTIREG_COUNT            4  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
 
   #define NOGC_WRITE_BARRIERS      0       // We DO-NOT have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
@@ -68,9 +69,6 @@
 
   #define REG_DEFAULT_HELPER_CALL_TARGET REG_R12
   #define RBM_DEFAULT_HELPER_CALL_TARGET RBM_R12
-
-  #define REG_FASTTAILCALL_TARGET REG_R12   // Target register for fast tail call
-  #define RBM_FASTTAILCALL_TARGET RBM_R12
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
   #define RBM_ALLFLOAT            (RBM_FLT_CALLEE_SAVED | RBM_FLT_CALLEE_TRASH)
@@ -152,6 +150,12 @@
   //       r1: incremented by 4
   //       r2: trashed
   //       r3: trashed
+
+  #define REG_WRITE_BARRIER_DST          REG_ARG_0
+  #define RBM_WRITE_BARRIER_DST          RBM_ARG_0
+
+  #define REG_WRITE_BARRIER_SRC          REG_ARG_1
+  #define RBM_WRITE_BARRIER_SRC          RBM_ARG_1
 
   #define REG_WRITE_BARRIER_DST_BYREF    REG_ARG_0
   #define RBM_WRITE_BARRIER_DST_BYREF    RBM_ARG_0
@@ -242,6 +246,9 @@
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
   #define RBM_INIT_PINVOKE_FRAME_TRASH (RBM_CALLEE_TRASH | RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH)
+
+  #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH)
+  #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_R0
 
   #define REG_FPBASE               REG_R11
   #define RBM_FPBASE               RBM_R11

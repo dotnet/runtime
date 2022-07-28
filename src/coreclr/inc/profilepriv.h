@@ -106,18 +106,12 @@ public:
     // **** IMPORTANT!! ****
 
     CurrentProfilerStatus curProfStatus;
-    
+
     EventMask eventMask;
 
-    //---------------------------------------------------------------
-    // m_dwProfilerEvacuationCounter keeps track of how many profiler
-    // callback calls remain on the stack
-    //---------------------------------------------------------------
-    // Why volatile?
-    // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization.
-    Volatile<DWORD> dwProfilerEvacuationCounter;
-
     Volatile<BOOL> inUse;
+
+    DWORD slot;
 
     // Reset those variables that is only for the current attach session
     void ResetPerSessionStatus();
@@ -136,7 +130,7 @@ enum class ProfilerCallbackType
 // cause another profiler to not be able to detach. We can't just check the event masks
 // before and after the call because it is legal for a profiler to change its event mask,
 // and then it would be possible for a profiler to permanently prevent itself from detaching.
-// 
+//
 // WHEN IS EvacuationCounterHolder REQUIRED?
 // Answer: any time you access a ProfilerInfo *. There is a specific sequence that must be followed:
 //   - Do a dirty read of the Profiler interface
@@ -145,24 +139,16 @@ enum class ProfilerCallbackType
 //     is always read with a memory barrier
 //
 // The DoProfilerCallback/IterateProfilers functions automate this process for you, you should use
-// them unless you are absoultely sure you know what you're doing
+// them unless you are absolutely sure you know what you're doing
 class EvacuationCounterHolder
 {
 private:
     ProfilerInfo *m_pProfilerInfo;
+    Thread *m_pThread;
 
 public:
-    EvacuationCounterHolder(ProfilerInfo *pProfilerInfo) :
-        m_pProfilerInfo(pProfilerInfo)
-    {
-        _ASSERTE(m_pProfilerInfo != NULL);
-        InterlockedIncrement((LONG *)(m_pProfilerInfo->dwProfilerEvacuationCounter.GetPointer()));
-    }
-
-    ~EvacuationCounterHolder()
-    {
-        InterlockedDecrement((LONG *)(m_pProfilerInfo->dwProfilerEvacuationCounter.GetPointer()));
-    }
+    EvacuationCounterHolder(ProfilerInfo *pProfilerInfo);
+    ~EvacuationCounterHolder();
 };
 
 struct StoredProfilerNode
@@ -206,7 +192,7 @@ private:
             // Now indicate we are accessing the profiler
             EvacuationCounterHolder evacuationCounter(pProfilerInfo);
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
-            
+
             if ((callbackType == ProfilerCallbackType::Active && IsProfilerPresent(pProfilerInfo))
                 || (callbackType == ProfilerCallbackType::ActiveOrInitializing && IsProfilerPresentOrInitializing(pProfilerInfo)))
             {
@@ -219,7 +205,7 @@ private:
     FORCEINLINE VOID IterateProfilers(ProfilerCallbackType callbackType, Func callback, Args... args)
     {
         DoOneProfilerIteration(&mainProfilerInfo, callbackType, callback, args...);
-        
+
         if (notificationProfilerCount > 0)
         {
             for (SIZE_T i = 0; i < MAX_NOTIFICATION_PROFILERS; ++i)
@@ -272,7 +258,7 @@ public:
 #endif
 
 #ifdef _DEBUG
-    // Test-only, debug-only code to allow attaching profilers to call ICorProfilerInfo inteface,
+    // Test-only, debug-only code to allow attaching profilers to call ICorProfilerInfo interface,
     // which would otherwise be disallowed for attaching profilers
     BOOL                    fTestOnlyEnableICorProfilerInfo;
 #endif // _DEBUG
@@ -289,23 +275,26 @@ public:
     BOOL IsMainProfiler(ProfToEEInterfaceImpl *pProfToEE);
     ProfilerInfo *GetProfilerInfo(ProfToEEInterfaceImpl *pProfToEE);
 
-    template<typename ConditionFunc, typename CallbackFunc, typename Data = void, typename... Args>
-    FORCEINLINE HRESULT DoProfilerCallback(ProfilerCallbackType callbackType, ConditionFunc condition, Data *additionalData, CallbackFunc callback, Args... args)
+    template<typename ConditionFunc, typename CallbackFunc, typename... Args>
+    static void DoProfilerCallbackHelper(ProfilerInfo *pProfilerInfo, ConditionFunc condition, CallbackFunc callback, HRESULT *pHR, Args... args)
+    {
+        if (condition(pProfilerInfo))
+        {
+            HRESULT innerHR = callback(pProfilerInfo->pProfInterface, args...);
+            if (FAILED(innerHR))
+            {
+                *pHR = innerHR;
+            }
+        }
+    }
+
+    template<typename ConditionFunc, typename CallbackFunc, typename... Args>
+    FORCEINLINE HRESULT DoProfilerCallback(ProfilerCallbackType callbackType, ConditionFunc condition, CallbackFunc callback, Args... args)
     {
         HRESULT hr = S_OK;
         IterateProfilers(callbackType,
-                         [](ProfilerInfo *pProfilerInfo, ConditionFunc condition, Data *additionalData, CallbackFunc callback, HRESULT *pHR, Args... args)
-                            {
-                                if (condition(pProfilerInfo))
-                                {
-                                    HRESULT innerHR = callback(additionalData, pProfilerInfo->pProfInterface, args...);
-                                    if (FAILED(innerHR))
-                                    {
-                                        *pHR = innerHR;
-                                    }
-                                }
-                            },
-                         condition, additionalData, callback, &hr, args...);
+                         &DoProfilerCallbackHelper<ConditionFunc, CallbackFunc, Args...>,
+                         condition, callback, &hr, args...);
         return hr;
     }
 
@@ -317,10 +306,9 @@ public:
 
     BOOL IsCallback3Supported();
     BOOL IsCallback5Supported();
-    BOOL IsDisableTransparencySet();
     BOOL RequiresGenericsContextForEnterLeave();
     UINT_PTR EEFunctionIDMapper(FunctionID funcId, BOOL * pbHookFunction);
-    
+
     void ThreadCreated(ThreadID threadID);
     void ThreadDestroyed(ThreadID threadID);
     void ThreadAssignedToOSThread(ThreadID managedThreadId, DWORD osThreadId);
@@ -397,7 +385,7 @@ public:
     void GarbageCollectionStarted(int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason);
     void GarbageCollectionFinished();
     void GetAssemblyReferences(LPCWSTR wszAssemblyPath, IAssemblyBindingClosure *pClosure, AssemblyReferenceClosureWalkContextForProfAPI *pContext);
-    void EventPipeEventDelivered(EventPipeProvider *provider, DWORD eventId, DWORD eventVersion, ULONG cbMetadataBlob, LPCBYTE metadataBlob, ULONG cbEventData, 
+    void EventPipeEventDelivered(EventPipeProvider *provider, DWORD eventId, DWORD eventVersion, ULONG cbMetadataBlob, LPCBYTE metadataBlob, ULONG cbEventData,
                                  LPCBYTE eventData, LPCGUID pActivityId, LPCGUID pRelatedActivityId, Thread *pEventThread, ULONG numStackFrames, UINT_PTR stackFrames[]);
     void EventPipeProviderCreated(EventPipeProvider *provider);
 };

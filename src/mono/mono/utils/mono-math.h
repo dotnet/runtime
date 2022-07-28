@@ -7,6 +7,7 @@
 
 #include <math.h>
 #include <mono/utils/mono-publib.h>
+#include <glib.h>
 
 // Instead of isfinite, isinf, isnan, etc.,
 // use mono_isfininite, mono_isinf, mono_isnan, etc.
@@ -97,6 +98,29 @@ mono_round_to_even (double x)
 	}
 
 	return copysign (floor_tmp, x);
+}
+
+static inline gboolean
+mono_try_trunc_i64 (double val, gint64 *out)
+{
+	const double two63  = 2147483648.0 * 4294967296.0;
+	// 0x402 is epsilon used to get us to the next value
+	if (val > (-two63 - 0x402) && val < two63) {
+		*out = (gint64)val;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static inline gboolean
+mono_try_trunc_u64 (double val, guint64 *out)
+{
+	const double two64  = 4294967296.0 * 4294967296.0;
+	if (val > -1.0 && val < two64) {
+		*out = (guint64)val;
+		return TRUE;
+	}
+	return FALSE;
 }
 
 #endif

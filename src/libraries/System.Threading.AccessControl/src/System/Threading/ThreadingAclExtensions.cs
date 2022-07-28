@@ -18,8 +18,7 @@ namespace System.Threading
 
         public static void SetAccessControl(this EventWaitHandle handle, EventWaitHandleSecurity eventSecurity)
         {
-            if (eventSecurity == null)
-                throw new ArgumentNullException(nameof(eventSecurity));
+            ArgumentNullException.ThrowIfNull(eventSecurity);
 
             eventSecurity.Persist(handle.GetSafeWaitHandle());
         }
@@ -31,8 +30,7 @@ namespace System.Threading
 
         public static void SetAccessControl(this Mutex mutex, MutexSecurity mutexSecurity)
         {
-            if (mutexSecurity == null)
-                throw new ArgumentNullException(nameof(mutexSecurity));
+            ArgumentNullException.ThrowIfNull(mutexSecurity);
 
             mutexSecurity.Persist(mutex.GetSafeWaitHandle());
         }
@@ -44,8 +42,7 @@ namespace System.Threading
 
         public static void SetAccessControl(this Semaphore semaphore, SemaphoreSecurity semaphoreSecurity)
         {
-            if (semaphoreSecurity == null)
-                throw new ArgumentNullException(nameof(semaphoreSecurity));
+            ArgumentNullException.ThrowIfNull(semaphoreSecurity);
 
             semaphoreSecurity.Persist(semaphore.GetSafeWaitHandle());
         }

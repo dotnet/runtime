@@ -52,7 +52,7 @@ FCIMPLEND;
 
 
 
-VOID QCALLTYPE SystemNative::Exit(INT32 exitcode)
+extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode)
 {
     QCALL_CONTRACT;
 
@@ -90,60 +90,6 @@ FCIMPL0(INT32, SystemNative::GetExitCode)
 }
 FCIMPLEND
 
-void QCALLTYPE SystemNative::_GetCommandLine(QCall::StringHandleOnStack retString)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    LPCWSTR commandLine;
-
-    commandLine = WszGetCommandLine();
-    if (commandLine==NULL)
-        COMPlusThrowOM();
-
-    retString.Set(commandLine);
-
-    END_QCALL;
-}
-
-FCIMPL0(Object*, SystemNative::GetCommandLineArgs)
-{
-    FCALL_CONTRACT;
-
-    PTRARRAYREF strArray = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(strArray);
-
-    LPWSTR commandLine;
-
-    commandLine = WszGetCommandLine();
-    if (commandLine==NULL)
-        COMPlusThrowOM();
-
-    DWORD numArgs = 0;
-    LPWSTR* argv = SegmentCommandLine(commandLine, &numArgs);
-    if (!argv)
-        COMPlusThrowOM();
-
-    _ASSERTE(numArgs > 0);
-
-    strArray = (PTRARRAYREF) AllocateObjectArray(numArgs, g_pStringClass);
-    // Copy each argument into new Strings.
-    for(unsigned int i=0; i<numArgs; i++)
-    {
-        STRINGREF str = StringObject::NewString(argv[i]);
-        STRINGREF * destData = ((STRINGREF*)(strArray->GetDataPtr())) + i;
-        SetObjectReference((OBJECTREF*)destData, (OBJECTREF)str);
-    }
-    delete [] argv;
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(strArray);
-}
-FCIMPLEND
-
 // Return a method info for the method were the exception was thrown
 FCIMPL1(ReflectMethodObject*, SystemNative::GetMethodFromStackTrace, ArrayBase* pStackTraceUNSAFE)
 {
@@ -174,7 +120,7 @@ FCIMPL1(ReflectMethodObject*, SystemNative::GetMethodFromStackTrace, ArrayBase* 
 }
 FCIMPLEND
 
-INT32 QCALLTYPE SystemNative::GetProcessorCount()
+extern "C" INT32 QCALLTYPE Environment_GetProcessorCount()
 {
     QCALL_CONTRACT;
 
@@ -195,6 +141,8 @@ INT32 QCALLTYPE SystemNative::GetProcessorCount()
 // managed string object buffer. This buffer is not always used, see comments in
 // the method below.
 WCHAR g_szFailFastBuffer[256];
+WCHAR *g_pFailFastBuffer = g_szFailFastBuffer;
+
 #define FAIL_FAST_STATIC_BUFFER_LENGTH (sizeof(g_szFailFastBuffer) / sizeof(WCHAR))
 
 // This is the common code for FailFast processing that is wrapped by the two
@@ -243,7 +191,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     // Another option would seem to be to implement a new frame type that
     // protects object references as pinned, but that seems like overkill for
     // just this problem.
-    WCHAR  *pszMessage = NULL;
+    WCHAR  *pszMessageBuffer = NULL;
     DWORD   cchMessage = (gc.refMesgString == NULL) ? 0 : gc.refMesgString->GetStringLength();
 
     WCHAR * errorSourceString = NULL;
@@ -262,32 +210,44 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
 
     if (cchMessage < FAIL_FAST_STATIC_BUFFER_LENGTH)
     {
-        pszMessage = g_szFailFastBuffer;
+        // The static buffer can be used only once to avoid race condition with other threads
+        pszMessageBuffer = InterlockedExchangeT(&g_pFailFastBuffer, NULL);
     }
-    else
+
+    if (pszMessageBuffer == NULL)
     {
         // We can fail here, but we can handle the fault.
         CONTRACT_VIOLATION(FaultViolation);
-        pszMessage = new (nothrow) WCHAR[cchMessage + 1];
-        if (pszMessage == NULL)
+        pszMessageBuffer = new (nothrow) WCHAR[cchMessage + 1];
+        if (pszMessageBuffer == NULL)
         {
             // Truncate the message to what will fit in the static buffer.
             cchMessage = FAIL_FAST_STATIC_BUFFER_LENGTH - 1;
-            pszMessage = g_szFailFastBuffer;
+            pszMessageBuffer = InterlockedExchangeT(&g_pFailFastBuffer, NULL);
         }
     }
 
-    if (cchMessage > 0)
-        memcpyNoGCRefs(pszMessage, gc.refMesgString->GetBuffer(), cchMessage * sizeof(WCHAR));
-    pszMessage[cchMessage] = W('\0');
+    const WCHAR *pszMessage;
+    if (pszMessageBuffer != NULL)
+    {
+        if (cchMessage > 0)
+            memcpyNoGCRefs(pszMessageBuffer, gc.refMesgString->GetBuffer(), cchMessage * sizeof(WCHAR));
+        pszMessageBuffer[cchMessage] = W('\0');
+        pszMessage = pszMessageBuffer;
+    }
+    else
+    {
+        pszMessage = W("There is not enough memory to print the supplied FailFast message.");
+        cchMessage = (DWORD)wcslen(pszMessage);
+    }
 
     if (cchMessage == 0) {
         WszOutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
     }
     else {
-        WszOutputDebugString(W("CLR: Managed code called FailFast, saying \""));
+        WszOutputDebugString(W("CLR: Managed code called FailFast.\r\n"));
         WszOutputDebugString(pszMessage);
-        WszOutputDebugString(W("\"\r\n"));
+        WszOutputDebugString(W("\r\n"));
     }
 
     LPCWSTR argExceptionString = NULL;
@@ -418,7 +378,7 @@ FCIMPLEND
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
-void QCALLTYPE SystemNative::X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId)
+extern "C" void QCALLTYPE X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId)
 {
     QCALL_CONTRACT;
 

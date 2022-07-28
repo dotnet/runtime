@@ -21,9 +21,12 @@ static bool strictArmAsm;
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
 
-const char* emitFPregName(unsigned reg, bool varName = true);
 const char* emitVectorRegName(regNumber reg);
 
+void emitDispInsHelp(
+    instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
+void emitDispLargeJmp(
+    instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
 void emitDispInst(instruction ins);
 void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false);
 void emitDispFloatZero();
@@ -46,15 +49,6 @@ void emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr);
 void emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, bool isScaled, emitAttr size);
-
-void emitDispIns(instrDesc* id,
-                 bool       isNew,
-                 bool       doffs,
-                 bool       asmfm,
-                 unsigned   offs  = 0,
-                 BYTE*      pCode = 0,
-                 size_t     sz    = 0,
-                 insGroup*  ig    = NULL);
 #endif // DEBUG
 
 /************************************************************************/
@@ -363,6 +357,12 @@ static bool isStackRegister(regNumber reg)
     return (reg == REG_ZR) || (reg == REG_FP);
 } // ZR (R31) encodes the SP register
 
+// Returns true if 'value' is a legal unsigned immediate 5 bit encoding (such as for CCMP).
+static bool isValidUimm5(ssize_t value)
+{
+    return (0 <= value) && (value <= 0x1FLL);
+};
+
 // Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for fMOV).
 static bool isValidUimm8(ssize_t value)
 {
@@ -494,6 +494,12 @@ static bool emitIns_valid_imm_for_alu(INT64 imm, emitAttr size);
 
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
 static bool emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr size);
+
+// true if this 'imm' can be encoded as a input operand to a ccmp instruction
+static bool emitIns_valid_imm_for_ccmp(INT64 imm);
+
+// true if 'imm' can be encoded as an offset in a ldp/stp instruction
+static bool canEncodeLoadOrStorePairOffset(INT64 imm, emitAttr size);
 
 // true if 'imm' can use the left shifted by 12 bits encoding
 static bool canEncodeWithShiftImmBy12(INT64 imm);
@@ -677,11 +683,6 @@ inline static bool insOptsLSExtend(insOpts opt)
             (opt == INS_OPTS_UXTX) || (opt == INS_OPTS_SXTX));
 }
 
-inline static bool insOpts32BitExtend(insOpts opt)
-{
-    return ((opt == INS_OPTS_UXTW) || (opt == INS_OPTS_SXTW));
-}
-
 inline static bool insOpts64BitExtend(insOpts opt)
 {
     return ((opt == INS_OPTS_UXTX) || (opt == INS_OPTS_SXTX));
@@ -718,6 +719,12 @@ inline static ssize_t computeRelPageAddr(size_t dstAddr, size_t srcAddr)
 }
 
 /************************************************************************/
+/*                   Output target-independent instructions             */
+/************************************************************************/
+
+void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
+
+/************************************************************************/
 /*           The public entry points to output instructions             */
 /************************************************************************/
 
@@ -728,7 +735,12 @@ void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
 
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
-void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t imm, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_I(instruction ins,
+                 emitAttr    attr,
+                 regNumber   reg,
+                 ssize_t     imm,
+                 insOpts opt = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
+                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt = INS_OPTS_NONE);
 
@@ -742,8 +754,13 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
     emitIns_R_R(ins, attr, reg1, reg2);
 }
 
-void emitIns_R_I_I(
-    instruction ins, emitAttr attr, regNumber reg1, ssize_t imm1, ssize_t imm2, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_I_I(instruction ins,
+                   emitAttr    attr,
+                   regNumber   reg1,
+                   ssize_t     imm1,
+                   ssize_t     imm2,
+                   insOpts opt = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
+                       DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insOpts opt = INS_OPTS_NONE);
@@ -827,7 +844,7 @@ void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
 void emitIns_R_AI(instruction ins,
                   emitAttr    attr,
                   regNumber   ireg,
-                  ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(unsigned gtFlags = 0));
+                  ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
@@ -840,24 +857,8 @@ void emitIns_R_ARX(
 
 enum EmitCallType
 {
-
-    // I have included here, but commented out, all the values used by the x86 emitter.
-    // However, ARM has a much reduced instruction set, and so the ARM emitter only
-    // supports a subset of the x86 variants.  By leaving them commented out, it becomes
-    // a compile time error if code tries to use them (and hopefully see this comment
-    // and know why they are unavailible on ARM), while making it easier to stay
-    // in-sync with x86 and possibly add them back in if needed.
-
-    EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method
-                   //  EC_FUNC_TOKEN_INDIR,    // Indirect call to a helper/static/nonvirtual/global method
-    EC_FUNC_ADDR,  // Direct call to an absolute address
-
-    //  EC_FUNC_VIRTUAL,        // Call to a virtual method (using the vtable)
-    EC_INDIR_R, // Indirect call via register
-                //  EC_INDIR_SR,            // Indirect call via stack-reference (local var)
-                //  EC_INDIR_C,             // Indirect call via static class var
-                //  EC_INDIR_ARD,           // Indirect call via an addressing mode
-
+    EC_FUNC_TOKEN, // Direct call to a helper/static/nonvirtual/global method
+    EC_INDIR_R,    // Indirect call via register
     EC_COUNT
 };
 
@@ -871,12 +872,12 @@ void emitIns_Call(EmitCallType          callType,
                   VARSET_VALARG_TP ptrVars,
                   regMaskTP        gcrefRegs,
                   regMaskTP        byrefRegs,
-                  IL_OFFSETX       ilOffset = BAD_IL_OFFSET,
-                  regNumber        ireg     = REG_NA,
-                  regNumber        xreg     = REG_NA,
-                  unsigned         xmul     = 0,
-                  ssize_t          disp     = 0,
-                  bool             isJump   = false);
+                  const DebugInfo& di,
+                  regNumber        ireg,
+                  regNumber        xreg,
+                  unsigned         xmul,
+                  ssize_t          disp,
+                  bool             isJump);
 
 BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
 unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* i, code_t code);
@@ -885,6 +886,8 @@ BYTE* emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t d
 BYTE* emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg);
 BYTE* emitOutputShortConstant(
     BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg, emitAttr opSize);
+BYTE* emitOutputVectorConstant(
+    BYTE* dst, ssize_t distVal, regNumber dstReg, regNumber addrReg, emitAttr opSize, emitAttr elemSize);
 
 /*****************************************************************************
  *

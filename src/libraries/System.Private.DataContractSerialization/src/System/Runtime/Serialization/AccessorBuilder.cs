@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
@@ -40,9 +41,38 @@ namespace System.Runtime.Serialization
         {
             if (memberInfo is PropertyInfo propInfo)
             {
-                var createGetterGeneric = s_createGetterInternal.MakeGenericMethod(propInfo.DeclaringType!, propInfo.PropertyType).CreateDelegate<Func<PropertyInfo, Getter>>();
-                Getter accessor = createGetterGeneric(propInfo);
-                return accessor;
+                Type declaringType = propInfo.DeclaringType!;
+                Type propertyType = propInfo.PropertyType!;
+
+                if (declaringType.IsGenericType && declaringType.GetGenericTypeDefinition() == typeof(KeyValue<,>))
+                {
+                    if (propInfo.Name == "Key")
+                    {
+                        return (obj) =>
+                        {
+                            return ((IKeyValue)obj).Key;
+                        };
+                    }
+                    else
+                    {
+                        return (obj) =>
+                        {
+                            return ((IKeyValue)obj).Value;
+                        };
+                    }
+                }
+
+                // If either of the arguments to MakeGenericMethod is a valuetype, this is going to cause JITting.
+                // Only JIT if dynamic code is supported.
+                if (RuntimeFeature.IsDynamicCodeSupported || (!declaringType.IsValueType && !propertyType.IsValueType))
+                {
+                    var createGetterGeneric = s_createGetterInternal.MakeGenericMethod(declaringType, propertyType).CreateDelegate<Func<PropertyInfo, Getter>>();
+                    return createGetterGeneric(propInfo);
+                }
+                else
+                {
+                    return propInfo.GetValue;
+                }
             }
             else if (memberInfo is FieldInfo fieldInfo)
             {
@@ -62,23 +92,53 @@ namespace System.Runtime.Serialization
             Justification = "The call to MakeGenericMethod is safe due to the fact that FastInvokerBuilder.CreateSetterInternal<T, T1> is not annotated.")]
         public static Setter CreateSetter(MemberInfo memberInfo)
         {
-            if (memberInfo is PropertyInfo)
+            if (memberInfo is PropertyInfo propInfo)
             {
-                PropertyInfo propInfo = (PropertyInfo)memberInfo;
                 if (propInfo.CanWrite)
                 {
-                    var buildSetAccessorGeneric = s_createSetterInternal.MakeGenericMethod(propInfo.DeclaringType!, propInfo.PropertyType).CreateDelegate<Func<PropertyInfo, Setter>>();
-                    Setter accessor = buildSetAccessorGeneric(propInfo);
-                    return accessor;
+                    Type declaringType = propInfo.DeclaringType!;
+                    Type propertyType = propInfo.PropertyType!;
+
+                    if (declaringType.IsGenericType && declaringType.GetGenericTypeDefinition() == typeof(KeyValue<,>))
+                    {
+                        if (propInfo.Name == "Key")
+                        {
+                            return (ref object obj, object? val) =>
+                            {
+                                ((IKeyValue)obj).Key = val;
+                            };
+                        }
+                        else
+                        {
+                            return (ref object obj, object? val) =>
+                            {
+                                ((IKeyValue)obj).Value = val;
+                            };
+                        }
+                    }
+
+                    // If either of the arguments to MakeGenericMethod is a valuetype, this is going to cause JITting.
+                    // Only JIT if dynamic code is supported.
+                    if (RuntimeFeature.IsDynamicCodeSupported || (!declaringType.IsValueType && !propertyType.IsValueType))
+                    {
+                        var createSetterGeneric = s_createSetterInternal.MakeGenericMethod(propInfo.DeclaringType!, propInfo.PropertyType).CreateDelegate<Func<PropertyInfo, Setter>>();
+                        return createSetterGeneric(propInfo);
+                    }
+                    else
+                    {
+                        return (ref object obj, object? val) =>
+                        {
+                            propInfo.SetValue(obj, val);
+                        };
+                    }
                 }
                 else
                 {
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.NoSetMethodForProperty, propInfo.DeclaringType, propInfo.Name)));
                 }
             }
-            else if (memberInfo is FieldInfo)
+            else if (memberInfo is FieldInfo fieldInfo)
             {
-                FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 return (ref object obj, object? val) =>
                 {
                     fieldInfo.SetValue(obj, val);
@@ -98,24 +158,6 @@ namespace System.Runtime.Serialization
 
         private static Getter CreateGetterInternal<DeclaringType, PropertyType>(PropertyInfo propInfo)
         {
-            if (typeof(DeclaringType).IsGenericType && typeof(DeclaringType).GetGenericTypeDefinition() == typeof(KeyValue<,>))
-            {
-                if (propInfo.Name == "Key")
-                {
-                    return (obj) =>
-                    {
-                        return ((IKeyValue)obj).Key;
-                    };
-                }
-                else
-                {
-                    return (obj) =>
-                    {
-                        return ((IKeyValue)obj).Value;
-                    };
-                }
-            }
-
             if (typeof(DeclaringType).IsValueType)
             {
                 var getMethod = propInfo.GetMethod!.CreateDelegate<StructGetDelegate<DeclaringType, PropertyType>>();
@@ -139,24 +181,6 @@ namespace System.Runtime.Serialization
 
         private static Setter CreateSetterInternal<DeclaringType, PropertyType>(PropertyInfo propInfo)
         {
-            if (typeof(DeclaringType).IsGenericType && typeof(DeclaringType).GetGenericTypeDefinition() == typeof(KeyValue<,>))
-            {
-                if (propInfo.Name == "Key")
-                {
-                    return (ref object obj, object? val) =>
-                    {
-                        ((IKeyValue)obj).Key = val;
-                    };
-                }
-                else
-                {
-                    return (ref object obj, object? val) =>
-                    {
-                        ((IKeyValue)obj).Value = val;
-                    };
-                }
-            }
-
             if (typeof(DeclaringType).IsValueType)
             {
                 var setMethod = propInfo.SetMethod!.CreateDelegate<StructSetDelegate<DeclaringType, PropertyType>>();

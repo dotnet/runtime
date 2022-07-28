@@ -352,6 +352,17 @@ namespace System.Data
         public static Exception ArgumentContainsNull(string paramName) => _Argument(paramName, SR.Format(SR.Data_ArgumentContainsNull, paramName));
         public static Exception TypeNotAllowed(Type type) => _InvalidOperation(SR.Format(SR.Data_TypeNotAllowed, type.AssemblyQualifiedName));
 
+        //
+        // Batch
+        //
+
+        public static Exception NotSupportedOnDataSourceBatch() => Common.ADP.NotSupported(SR.Batch_NotSupportedOnDataSourceBatch);
+
+        //
+        // Command
+        //
+
+        public static Exception NotSupportedOnDataSourceCommand() => Common.ADP.NotSupported(SR.Command_NotSupportedOnDataSourceCommand);
 
         //
         // Collections
@@ -383,7 +394,7 @@ namespace System.Data
         public static Exception CannotRemoveConstraint(string constraint, string table) => _Argument(SR.Format(SR.DataColumns_RemoveConstraint, constraint, table));
         public static Exception CannotRemoveExpression(string column, string expression) => _Argument(SR.Format(SR.DataColumns_RemoveExpression, column, expression));
         public static Exception ColumnNotInTheUnderlyingTable(string column, string table) => _Argument(SR.Format(SR.DataColumn_NotInTheUnderlyingTable, column, table));
-        public static Exception InvalidOrdinal(string name, int ordinal) => _ArgumentOutOfRange(name, SR.Format(SR.DataColumn_OrdinalExceedMaximun, (ordinal).ToString(CultureInfo.InvariantCulture)));
+        public static Exception InvalidOrdinal(string name, int ordinal) => _ArgumentOutOfRange(name, SR.Format(SR.DataColumn_OrdinalExceedMaximum, (ordinal).ToString(CultureInfo.InvariantCulture)));
 
         //
         // _Constraint and ConstrainsCollection
@@ -614,7 +625,8 @@ namespace System.Data
         public static Exception CannotChangeCaseLocale(Exception? innerException) => _Argument(SR.DataSet_CannotChangeCaseLocale, innerException);
         public static Exception CannotChangeSchemaSerializationMode() => _InvalidOperation(SR.DataSet_CannotChangeSchemaSerializationMode);
         public static Exception InvalidSchemaSerializationMode(Type enumType, string mode) => _InvalidEnumArgumentException(SR.Format(SR.ADP_InvalidEnumerationValue, enumType.Name, mode));
-        public static Exception InvalidRemotingFormat(SerializationFormat mode) => _InvalidEnumArgumentException<SerializationFormat>(mode);
+        public static Exception InvalidRemotingFormat(SerializationFormat mode) => _InvalidEnumArgumentException(mode);
+        public static Exception SerializationFormatBinaryNotSupported() => _InvalidEnumArgumentException(SerializationFormat.Binary);
 
         //
         // DataTable and DataTableCollection
@@ -649,7 +661,7 @@ namespace System.Data
         public static Exception RangeArgument(int min, int max) => _Argument(SR.Format(SR.Range_Argument, (min).ToString(CultureInfo.InvariantCulture), (max).ToString(CultureInfo.InvariantCulture)));
         public static Exception NullRange() => _Data(SR.Range_NullRange);
         public static Exception NegativeMinimumCapacity() => _Argument(SR.RecordManager_MinimumCapacity);
-        public static Exception ProblematicChars(char charValue) => _Argument(SR.Format(SR.DataStorage_ProblematicChars, "0x" + ((ushort)charValue).ToString("X", CultureInfo.InvariantCulture)));
+        public static Exception ProblematicChars(char charValue) => _Argument(SR.Format(SR.DataStorage_ProblematicChars, $"0x{(ushort)charValue:X}"));
         public static Exception StorageSetFailed() => _Argument(SR.DataStorage_SetInvalidDataType);
 
 
@@ -677,7 +689,7 @@ namespace System.Data
         public static Exception DiffgramMissingSQL() => _Data(SR.Xml_MissingSQL);
         public static Exception DuplicateConstraintRead(string str) => _Data(SR.Format(SR.Xml_DuplicateConstraint, str));
         public static Exception ColumnTypeConflict(string name) => _Data(SR.Format(SR.Xml_ColumnConflict, name));
-        public static Exception CannotConvert(string name, string type) => _Data(SR.Format(SR.Xml_CannotConvert, name, type));
+        public static Exception CannotConvert(string name, string? type) => _Data(SR.Format(SR.Xml_CannotConvert, name, type));
         public static Exception MissingRefer(string name) => _Data(SR.Format(SR.Xml_MissingRefer, Keywords.REFER, Keywords.XSD_KEYREF, name));
         public static Exception InvalidPrefix(string name) => _Data(SR.Format(SR.Xml_InvalidPrefix_SpecialCharacters, name));
         public static Exception CanNotDeserializeObjectType() => _InvalidOperation(SR.Xml_CanNotDeserializeObjectType);

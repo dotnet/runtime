@@ -90,9 +90,9 @@ namespace System.Composition.Hosting.Core
         {
             var hc = _contractType.GetHashCode();
             if (_contractName != null)
-                hc = hc ^ _contractName.GetHashCode();
+                hc ^= _contractName.GetHashCode();
             if (_metadataConstraints != null)
-                hc = hc ^ ConstraintHashCode(_metadataConstraints);
+                hc ^= ConstraintHashCode(_metadataConstraints);
             return hc;
         }
 
@@ -140,7 +140,10 @@ namespace System.Composition.Hosting.Core
         /// <returns>True if the constraint is present and of the correct type, otherwise false.</returns>
         public bool TryUnwrapMetadataConstraint<T>(string constraintName, out T constraintValue, out CompositionContract remainingContract)
         {
-            if (constraintName == null) throw new ArgumentNullException(nameof(constraintName));
+            if (constraintName is null)
+            {
+                throw new ArgumentNullException(nameof(constraintName));
+            }
 
             constraintValue = default(T);
             remainingContract = null;

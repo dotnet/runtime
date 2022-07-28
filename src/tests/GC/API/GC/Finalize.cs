@@ -6,7 +6,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public class Test
+public class Test_Finalize
 {
     public static bool visited = false;
     public class Dummy
@@ -14,7 +14,7 @@ public class Test
         ~Dummy()
         {
             Console.WriteLine("In Finalize() of Dummy");
-            Test.visited = true;
+            Test_Finalize.visited = true;
         }
     }
 

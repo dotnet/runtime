@@ -1,7 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
+using System.Diagnostics;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
@@ -9,17 +9,35 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Provides metadata about a set of types that is relevant to JSON serialization.
     /// </summary>
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public abstract partial class JsonSerializerContext
+    public abstract partial class JsonSerializerContext : IJsonTypeInfoResolver
     {
         private bool? _canUseSerializationLogic;
-        private JsonSerializerOptions? _defaultOptions;
 
-        internal JsonSerializerOptions? _options;
+        private JsonSerializerOptions? _options;
+
+        /// <summary>
+        /// Gets the run time specified options of the context. If no options were passed
+        /// when instanciating the context, then a new instance is bound and returned.
+        /// </summary>
+        /// <remarks>
+        /// The options instance cannot be mutated once it is bound to the context instance.
+        /// </remarks>
+        public JsonSerializerOptions Options
+        {
+            get => _options ??= new JsonSerializerOptions { TypeInfoResolver = this, IsImmutable = true };
+
+            internal set
+            {
+                Debug.Assert(!value.IsImmutable);
+                value.TypeInfoResolver = this;
+                value.IsImmutable = true;
+                _options = value;
+            }
+        }
 
         /// <summary>
         /// Indicates whether pre-generated serialization logic for types in the context
-        /// is compatible with the run-time specified <see cref="JsonSerializerOptions"/>.
+        /// is compatible with the run time specified <see cref="JsonSerializerOptions"/>.
         /// </summary>
         internal bool CanUseSerializationLogic
         {
@@ -27,7 +45,7 @@ namespace System.Text.Json.Serialization
             {
                 if (!_canUseSerializationLogic.HasValue)
                 {
-                    if (_defaultOptions == null)
+                    if (GeneratedSerializerOptions == null)
                     {
                         _canUseSerializationLogic = false;
                     }
@@ -46,12 +64,13 @@ namespace System.Text.Json.Serialization
 #pragma warning restore SYSLIB0020
 
                             // Ensure options values are consistent with expected defaults.
-                            Options.DefaultIgnoreCondition == _defaultOptions.DefaultIgnoreCondition &&
-                            Options.IgnoreReadOnlyFields == _defaultOptions.IgnoreReadOnlyFields &&
-                            Options.IgnoreReadOnlyProperties == _defaultOptions.IgnoreReadOnlyProperties &&
-                            Options.IncludeFields == _defaultOptions.IncludeFields &&
-                            Options.PropertyNamingPolicy == _defaultOptions.PropertyNamingPolicy &&
-                            Options.WriteIndented == _defaultOptions.WriteIndented;
+                            Options.DefaultIgnoreCondition == GeneratedSerializerOptions.DefaultIgnoreCondition &&
+                            Options.IgnoreReadOnlyFields == GeneratedSerializerOptions.IgnoreReadOnlyFields &&
+                            Options.IgnoreReadOnlyProperties == GeneratedSerializerOptions.IgnoreReadOnlyProperties &&
+                            Options.IncludeFields == GeneratedSerializerOptions.IncludeFields &&
+                            Options.PropertyNamingPolicy == GeneratedSerializerOptions.PropertyNamingPolicy &&
+                            Options.DictionaryKeyPolicy == GeneratedSerializerOptions.DictionaryKeyPolicy &&
+                            Options.WriteIndented == GeneratedSerializerOptions.WriteIndented;
                     }
                 }
 
@@ -60,56 +79,42 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
-        /// Gets the run-time specified options of the context. If no options were passed
-        /// when instanciating the context, then a new instance is bound and returned.
+        /// The default run time options for the context. Its values are defined at design-time via <see cref="JsonSourceGenerationOptionsAttribute"/>.
         /// </summary>
-        /// <remarks>
-        /// The instance cannot be mutated once it is bound with the context instance.
-        /// </remarks>
-        public JsonSerializerOptions Options
-        {
-            get
-            {
-                if (_options == null)
-                {
-                    _options = new JsonSerializerOptions();
-                    _options._context = this;
-                }
-
-                return _options;
-            }
-        }
+        protected abstract JsonSerializerOptions? GeneratedSerializerOptions { get; }
 
         /// <summary>
         /// Creates an instance of <see cref="JsonSerializerContext"/> and binds it with the indicated <see cref="JsonSerializerOptions"/>.
         /// </summary>
-        /// <param name="instanceOptions">The run-time provided options for the context instance.</param>
-        /// <param name="defaultOptions">The default run-time options for the context. It's values are defined at design-time via <see cref="JsonSourceGenerationOptionsAttribute"/>.</param>
+        /// <param name="options">The run time provided options for the context instance.</param>
         /// <remarks>
         /// If no instance options are passed, then no options are set until the context is bound using <see cref="JsonSerializerOptions.AddContext{TContext}"/>,
         /// or until <see cref="Options"/> is called, where a new options instance is created and bound.
         /// </remarks>
-        protected JsonSerializerContext(JsonSerializerOptions? instanceOptions, JsonSerializerOptions? defaultOptions)
+        protected JsonSerializerContext(JsonSerializerOptions? options)
         {
-            if (instanceOptions != null)
+            if (options != null)
             {
-                if (instanceOptions._context != null)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext();
-                }
-
-                _options = instanceOptions;
-                instanceOptions._context = this;
+                options.VerifyMutable();
+                Options = options;
             }
-
-            _defaultOptions = defaultOptions;
         }
 
         /// <summary>
         /// Returns a <see cref="JsonTypeInfo"/> instance representing the given type.
         /// </summary>
         /// <param name="type">The type to fetch metadata about.</param>
-        /// <returns>Should return null if the context has no metadata for the type.</returns>
+        /// <returns>The metadata for the specified type, or <see langword="null" /> if the context has no metadata for the type.</returns>
         public abstract JsonTypeInfo? GetTypeInfo(Type type);
+
+        JsonTypeInfo? IJsonTypeInfoResolver.GetTypeInfo(Type type, JsonSerializerOptions options)
+        {
+            if (options != null && options != _options)
+            {
+                ThrowHelper.ThrowInvalidOperationException_ResolverTypeInfoOptionsNotCompatible();
+            }
+
+            return GetTypeInfo(type);
+        }
     }
 }

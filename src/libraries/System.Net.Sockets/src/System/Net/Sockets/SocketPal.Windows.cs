@@ -40,10 +40,10 @@ namespace System.Net.Sockets
         {
             Interop.Winsock.EnsureInitialized();
 
-            IntPtr handle = Interop.Winsock.WSASocketW(addressFamily, socketType, protocolType, IntPtr.Zero, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
-                                                                                                                Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
+            socket = new SafeSocketHandle();
+            Marshal.InitHandle(socket, Interop.Winsock.WSASocketW(addressFamily, socketType, protocolType, IntPtr.Zero, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
+                                                                                                                Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT));
 
-            socket = new SafeSocketHandle(handle, ownsHandle: true);
             if (socket.IsInvalid)
             {
                 SocketError error = GetLastSocketError();
@@ -72,22 +72,22 @@ namespace System.Net.Sockets
 
             fixed (byte* protocolInfoBytes = socketInformation.ProtocolInformation)
             {
+                socket = new SafeSocketHandle();
+
                 // Sockets are non-inheritable in .NET Core.
                 // Handle properties like HANDLE_FLAG_INHERIT are not cloned with socket duplication, therefore
                 // we need to disable handle inheritance when constructing the new socket handle from Protocol Info.
                 // Additionally, it looks like WSA_FLAG_NO_HANDLE_INHERIT has no effect when being used with the Protocol Info
                 // variant of WSASocketW, so it is being passed to that call only for consistency.
                 // Inheritance is being disabled with SetHandleInformation(...) after the WSASocketW call.
-                IntPtr handle = Interop.Winsock.WSASocketW(
+                Marshal.InitHandle(socket, Interop.Winsock.WSASocketW(
                     (AddressFamily)(-1),
                     (SocketType)(-1),
                     (ProtocolType)(-1),
                     (IntPtr)protocolInfoBytes,
                     0,
                     Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
-                    Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
-
-                socket = new SafeSocketHandle(handle, ownsHandle: true);
+                    Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT));
 
                 if (socket.IsInvalid)
                 {
@@ -178,9 +178,9 @@ namespace System.Net.Sockets
 
         public static SocketError Accept(SafeSocketHandle listenSocket, byte[] socketAddress, ref int socketAddressSize, out SafeSocketHandle socket)
         {
-            IntPtr handle = Interop.Winsock.accept(listenSocket, socketAddress, ref socketAddressSize);
+            socket = new SafeSocketHandle();
+            Marshal.InitHandle(socket, Interop.Winsock.accept(listenSocket, socketAddress, ref socketAddressSize));
 
-            socket = new SafeSocketHandle(handle, ownsHandle: true);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
             return socket.IsInvalid ? GetLastSocketError() : SocketError.Success;
@@ -207,8 +207,8 @@ namespace System.Net.Sockets
 
             WSABuffer[]? leasedWSA = null;
             GCHandle[]? leasedGC = null;
-            Span<WSABuffer> WSABuffers = stackalloc WSABuffer[0];
-            Span<GCHandle> objectsToPin = stackalloc GCHandle[0];
+            scoped Span<WSABuffer> WSABuffers;
+            scoped Span<GCHandle> objectsToPin;
             if (useStack)
             {
                 WSABuffers = stackalloc WSABuffer[StackThreshold];
@@ -329,8 +329,8 @@ namespace System.Net.Sockets
 
             WSABuffer[]? leasedWSA = null;
             GCHandle[]? leasedGC = null;
-            Span<WSABuffer> WSABuffers = stackalloc WSABuffer[0];
-            Span<GCHandle> objectsToPin = stackalloc GCHandle[0];
+            scoped Span<WSABuffer> WSABuffers;
+            scoped Span<GCHandle> objectsToPin;
             if (useStack)
             {
                 WSABuffers = stackalloc WSABuffer[StackThreshold];
@@ -667,7 +667,7 @@ namespace System.Net.Sockets
                 handle,
                 SocketOptionLevel.IPv6,
                 optionName,
-                ref ipmr,
+                ipmr,
                 Interop.Winsock.IPv6MulticastRequest.Size);
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
@@ -787,8 +787,6 @@ namespace System.Net.Sockets
 
         public static SocketError GetIPv6MulticastOption(SafeSocketHandle handle, SocketOptionName optionName, out IPv6MulticastOption? optionValue)
         {
-            Interop.Winsock.IPv6MulticastRequest ipmr = default;
-
             int optlen = Interop.Winsock.IPv6MulticastRequest.Size;
 
             // This can throw ObjectDisposedException.
@@ -796,7 +794,7 @@ namespace System.Net.Sockets
                 handle,
                 SocketOptionLevel.IP,
                 optionName,
-                out ipmr,
+                out Interop.Winsock.IPv6MulticastRequest ipmr,
                 ref optlen);
 
             if (errorCode == SocketError.SocketError)
@@ -811,7 +809,6 @@ namespace System.Net.Sockets
 
         public static SocketError GetLingerOption(SafeSocketHandle handle, out LingerOption? optionValue)
         {
-            Interop.Winsock.Linger lngopt = default;
             int optlen = 4;
 
             // This can throw ObjectDisposedException.
@@ -819,7 +816,7 @@ namespace System.Net.Sockets
                 handle,
                 SocketOptionLevel.Socket,
                 SocketOptionName.Linger,
-                out lngopt,
+                out Interop.Winsock.Linger lngopt,
                 ref optlen);
 
             if (errorCode == SocketError.SocketError)
@@ -841,25 +838,23 @@ namespace System.Net.Sockets
 
                 IntPtr rawHandle = handle.DangerousGetHandle();
                 IntPtr* fileDescriptorSet = stackalloc IntPtr[2] { (IntPtr)1, rawHandle };
-                Interop.Winsock.TimeValue IOwait = default;
+                Interop.Winsock.TimeValue timeout = default;
 
                 // A negative timeout value implies an indefinite wait.
                 int socketCount;
                 if (microseconds != -1)
                 {
-                    MicrosecondsToTimeValue((long)(uint)microseconds, ref IOwait);
-                    socketCount =
-                        Interop.Winsock.select(
+                    MicrosecondsToTimeValue((long)(uint)microseconds, ref timeout);
+                    socketCount = Interop.Winsock.select(
                             0,
                             mode == SelectMode.SelectRead ? fileDescriptorSet : null,
                             mode == SelectMode.SelectWrite ? fileDescriptorSet : null,
                             mode == SelectMode.SelectError ? fileDescriptorSet : null,
-                            ref IOwait);
+                            ref timeout);
                 }
                 else
                 {
-                    socketCount =
-                        Interop.Winsock.select(
+                    socketCount = Interop.Winsock.select(
                             0,
                             mode == SelectMode.SelectRead ? fileDescriptorSet : null,
                             mode == SelectMode.SelectWrite ? fileDescriptorSet : null,
@@ -937,21 +932,19 @@ namespace System.Net.Sockets
                 {
                     if (microseconds != -1)
                     {
-                        Interop.Winsock.TimeValue IOwait = default;
-                        MicrosecondsToTimeValue((long)(uint)microseconds, ref IOwait);
+                        Interop.Winsock.TimeValue timeout = default;
+                        MicrosecondsToTimeValue((long)(uint)microseconds, ref timeout);
 
-                        socketCount =
-                            Interop.Winsock.select(
+                        socketCount = Interop.Winsock.select(
                                 0, // ignored value
                                 readPtr,
                                 writePtr,
                                 errPtr,
-                                ref IOwait);
+                                ref timeout);
                     }
                     else
                     {
-                        socketCount =
-                            Interop.Winsock.select(
+                        socketCount = Interop.Winsock.select(
                                 0, // ignored value
                                 readPtr,
                                 writePtr,
@@ -1085,6 +1078,57 @@ namespace System.Net.Sockets
                 Interop.Winsock.WSAPROTOCOL_INFOW* lpProtocolInfo = (Interop.Winsock.WSAPROTOCOL_INFOW*)protocolInfoBytes;
                 int result = Interop.Winsock.WSADuplicateSocket(handle, (uint)targetProcessId, lpProtocolInfo);
                 return result == 0 ? SocketError.Success : GetLastSocketError();
+            }
+        }
+
+        internal static unsafe bool HasNonBlockingConnectCompleted(SafeSocketHandle handle, out bool success)
+        {
+            bool refAdded = false;
+            try
+            {
+                handle.DangerousAddRef(ref refAdded);
+
+                IntPtr rawHandle = handle.DangerousGetHandle();
+                IntPtr* writefds = stackalloc IntPtr[2] { (IntPtr)1, rawHandle };
+                IntPtr* exceptfds = stackalloc IntPtr[2] { (IntPtr)1, rawHandle };
+                Interop.Winsock.TimeValue timeout = default;
+                MicrosecondsToTimeValue(0, ref timeout);
+
+                int socketCount = Interop.Winsock.select(
+                            0,
+                            null,
+                            writefds,
+                            exceptfds,
+                            ref timeout);
+
+                if ((SocketError)socketCount == SocketError.SocketError)
+                {
+                    throw new SocketException((int)GetLastSocketError());
+                }
+
+                // Failure of the connect attempt is indicated in exceptfds.
+                if ((int)exceptfds[0] != 0 && exceptfds[1] == rawHandle)
+                {
+                    success = false;
+                    return true;
+                }
+
+                // Success is indicated in writefds.
+                if ((int)writefds[0] != 0 && writefds[1] == rawHandle)
+                {
+                    success = true;
+                    return true;
+                }
+
+                success = false;
+                return false;
+            }
+            finally
+            {
+                if (refAdded)
+                {
+                    handle.DangerousRelease();
+                }
             }
         }
     }

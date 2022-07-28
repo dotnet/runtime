@@ -8,7 +8,7 @@
     <Compile Include="../Common.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
+    <CMakeProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" Value="false" />

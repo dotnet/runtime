@@ -2,13 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly test{}
+.assembly 'branch_06'{}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit test
        extends [mscorlib]System.Object
 {
   .method public static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  8
 

@@ -1,0 +1,24 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>$(MSBuildThisFileName)</AssemblyName>
+    <RootNamespace>$(MSBuildThisFileName)</RootNamespace>
+    <StringResourcesClassName>SR</StringResourcesClassName>
+    <StringResourcesName>FxResources.$(RootNamespace).$(StringResourcesClassName)</StringResourcesName>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <UsingToolXliff>true</UsingToolXliff>
+    <CLSCompliant>false</CLSCompliant>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynApiVersion)" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+  </ItemGroup>
+
+</Project>

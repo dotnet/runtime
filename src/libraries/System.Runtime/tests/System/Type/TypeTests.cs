@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -149,6 +150,9 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(FindMembers_TestData))]
+        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
+            Justification = "DAM on FindMembers references compiler-generated members which use reflection. " +
+                            "These members are not accessed by the test.")]
         public void FindMembers_Invoke_ReturnsExpected(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter filter, object filterCriteria, int expectedLength)
         {
             Assert.Equal(expectedLength, typeof(TypeTests).FindMembers(memberType, bindingAttr, filter, filterCriteria).Length);
@@ -305,7 +309,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(MakeArrayType_ByRef_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39001", TestRuntimes.Mono)]
         public void MakeArrayType_ByRef_ThrowsTypeLoadException(Type t)
         {
             Assert.Throws<TypeLoadException>(() => t.MakeArrayType());
@@ -528,6 +531,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52393", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void GetTypeByName_InvokeViaReflection_Success()
         {
@@ -924,6 +928,23 @@ namespace System.Tests
             Assert.True(!typeof(ContextBoundClass).IsContextful);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void MakeGenericType_NonRuntimeType()
+        {
+            foreach (Type nonRuntimeType in Helpers.NonRuntimeTypes)
+            {
+                if (PlatformDetection.IsReflectionEmitSupported)
+                {
+                    Type t = typeof(List<>).MakeGenericType(nonRuntimeType);
+                    Assert.NotNull(t);
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => typeof(List<>).MakeGenericType(nonRuntimeType));
+                }
+            }
+        }
+
 #region GetInterfaceMap tests
         public static IEnumerable<object[]> GetInterfaceMap_TestData()
         {
@@ -1021,6 +1042,7 @@ namespace System.Tests
             };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/861", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Theory]
         [MemberData(nameof(GetInterfaceMap_TestData))]
         public void GetInterfaceMap(Type interfaceType, Type classType, Tuple<MethodInfo, MethodInfo>[] expectedMap)
@@ -1116,6 +1138,36 @@ namespace System.Tests
             }
         }
 #endregion
+
+        [Fact]
+        public void GetEnumTypeCode()
+        {
+            Assert.True(Type.GetTypeCode(typeof(TestEnum)) == TypeCode.Int32);
+        }
+
+        [Fact]
+        public void GetEnumNestedInGenericClassTypeCode()
+        {
+            Assert.True(Type.GetTypeCode(typeof(TestGenericClass<TestClass>.NestedEnum)) == TypeCode.Int32);
+        }
+
+        public enum TestEnum
+        {
+            A,
+            B,
+            C
+        }
+
+        public class TestClass { }
+        public class TestGenericClass<T>
+        {
+            public enum NestedEnum
+            {
+                A,
+                B,
+                C
+            }
+        }
     }
 
     public class NonGenericClass { }

@@ -20,8 +20,8 @@ namespace Sample
                 new TryCatchThrow(),
                 new TryCatchFilter(),
                 new TryCatchFilterInline(),
-                //new TryCatchFilterThrow(),
-                //new TryCatchFilterThrowApplies(),
+                new TryCatchFilterThrow(),
+                new TryCatchFilterThrowApplies(),
             };
         }
 
@@ -39,7 +39,7 @@ namespace Sample
 
         public abstract class ExcMeasurement : BenchTask.Measurement
         {
-            public override int InitialSamples => 10000;
+            public override int InitialSamples => 100000;
         }
 
         class NoExceptionHandling : ExcMeasurement

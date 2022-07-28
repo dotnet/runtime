@@ -14,24 +14,20 @@ namespace System.Net.Mime
     /// </summary>
     internal sealed class MimeWriter : BaseWriter
     {
-        private static readonly byte[] s_DASHDASH = new byte[] { (byte)'-', (byte)'-' };
-
         private readonly byte[] _boundaryBytes;
         private bool _writeBoundary = true;
 
         internal MimeWriter(Stream stream, string boundary)
             : base(stream, false) // Unnecessary, the underlying MailWriter stream already encodes dots
         {
-            if (boundary == null)
-                throw new ArgumentNullException(nameof(boundary));
+            ArgumentNullException.ThrowIfNull(boundary);
 
             _boundaryBytes = Encoding.ASCII.GetBytes(boundary);
         }
 
         internal override void WriteHeaders(NameValueCollection headers, bool allowUnicode)
         {
-            if (headers == null)
-                throw new ArgumentNullException(nameof(headers));
+            ArgumentNullException.ThrowIfNull(headers);
 
             foreach (string key in headers)
                 WriteHeader(key, headers[key]!, allowUnicode);
@@ -66,11 +62,9 @@ namespace System.Net.Mime
 
         private void Close(MultiAsyncResult? multiResult)
         {
-            _bufferBuilder.Append(s_crlf);
-            _bufferBuilder.Append(s_DASHDASH);
+            _bufferBuilder.Append("\r\n--"u8);
             _bufferBuilder.Append(_boundaryBytes);
-            _bufferBuilder.Append(s_DASHDASH);
-            _bufferBuilder.Append(s_crlf);
+            _bufferBuilder.Append("--\r\n"u8);
             Flush(multiResult);
         }
 
@@ -101,10 +95,9 @@ namespace System.Net.Mime
         {
             if (_writeBoundary)
             {
-                _bufferBuilder.Append(s_crlf);
-                _bufferBuilder.Append(s_DASHDASH);
+                _bufferBuilder.Append("\r\n--"u8);
                 _bufferBuilder.Append(_boundaryBytes);
-                _bufferBuilder.Append(s_crlf);
+                _bufferBuilder.Append("\r\n"u8);
                 _writeBoundary = false;
             }
         }

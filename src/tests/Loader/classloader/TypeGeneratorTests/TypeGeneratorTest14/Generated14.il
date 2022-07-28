@@ -8,7 +8,7 @@
 
 //TEST ASSEMBLY:
 .assembly Generated14 { .hash algorithm 0x00008004 }
-.module Generated14.exe
+.assembly extern xunit.core {}
 
 .class public BaseClass0 
 {
@@ -169,7 +169,7 @@
 	.method public hidebysig newslot abstract virtual instance string Method5() cil managed { }
 	.method public hidebysig newslot abstract virtual instance string Method6<M0>() cil managed { }
 }
-.class private auto ansi beforefieldinit Framework {
+.class public auto ansi beforefieldinit Generated14 {
 	.method static void M.BaseClass0<(BaseClass0)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
@@ -720,30 +720,30 @@
 		initobj valuetype MyStruct64`1<class BaseClass0>
 		.try {  ldloc V_3
 				ldstr "MyStruct64::Method0.MI.469()#MyStruct64::Method1.MI.471()#MyStruct64::Method2.MI.473<System.Object>()#MyStruct64::Method3.MI.475<System.Object>()#"
-				call void Framework::M.IBase0<valuetype MyStruct64`1<class BaseClass0>>(!!0,string) leave.s LV0
+				call void Generated14::M.IBase0<valuetype MyStruct64`1<class BaseClass0>>(!!0,string) leave.s LV0
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
 		.try {  ldloc V_3
 				ldstr "MyStruct64::Method4.MI.477()#MyStruct64::Method5.MI.479()#MyStruct64::Method6.MI.481<System.Object>()#"
-				call void Framework::M.IBase1.T<class BaseClass0,valuetype MyStruct64`1<class BaseClass0>>(!!1,string) leave.s LV1
+				call void Generated14::M.IBase1.T<class BaseClass0,valuetype MyStruct64`1<class BaseClass0>>(!!1,string) leave.s LV1
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
 		.try {  ldloc V_3
 				ldstr "MyStruct64::Method4.MI.477()#MyStruct64::Method5.MI.479()#MyStruct64::Method6.MI.481<System.Object>()#"
-				call void Framework::M.IBase1.A<valuetype MyStruct64`1<class BaseClass0>>(!!0,string) leave.s LV2
+				call void Generated14::M.IBase1.A<valuetype MyStruct64`1<class BaseClass0>>(!!0,string) leave.s LV2
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV2} LV2:
 		.locals init (valuetype MyStruct64`1<class BaseClass1> V_4)
 		ldloca V_4
 		initobj valuetype MyStruct64`1<class BaseClass1>
 		.try {  ldloc V_4
 				ldstr "MyStruct64::Method0.MI.469()#MyStruct64::Method1.MI.471()#MyStruct64::Method2.MI.473<System.Object>()#MyStruct64::Method3.MI.475<System.Object>()#"
-				call void Framework::M.IBase0<valuetype MyStruct64`1<class BaseClass1>>(!!0,string) leave.s LV3
+				call void Generated14::M.IBase0<valuetype MyStruct64`1<class BaseClass1>>(!!0,string) leave.s LV3
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV3} LV3:
 		.try {  ldloc V_4
 				ldstr "MyStruct64::Method4.MI.477()#MyStruct64::Method5.MI.479()#MyStruct64::Method6.MI.481<System.Object>()#"
-				call void Framework::M.IBase1.T<class BaseClass0,valuetype MyStruct64`1<class BaseClass1>>(!!1,string) leave.s LV4
+				call void Generated14::M.IBase1.T<class BaseClass0,valuetype MyStruct64`1<class BaseClass1>>(!!1,string) leave.s LV4
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV4} LV4:
 		.try {  ldloc V_4
 				ldstr "MyStruct64::Method4.MI.477()#MyStruct64::Method5.MI.479()#MyStruct64::Method6.MI.481<System.Object>()#"
-				call void Framework::M.IBase1.A<valuetype MyStruct64`1<class BaseClass1>>(!!0,string) leave.s LV5
+				call void Generated14::M.IBase1.A<valuetype MyStruct64`1<class BaseClass1>>(!!0,string) leave.s LV5
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV5} LV5:
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -765,7 +765,7 @@
 				      "MyStruct64::Method4.MI.477()#" +
 				      "MyStruct64::Method5.MI.479()#" +
 				      "MyStruct64::Method6.MI.481<System.Object>()#"
-				call void Framework::M.MyStruct64.T<class BaseClass0,valuetype MyStruct64`1<class BaseClass0>>(!!1,string) leave.s LV0
+				call void Generated14::M.MyStruct64.T<class BaseClass0,valuetype MyStruct64`1<class BaseClass0>>(!!1,string) leave.s LV0
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
 		.try {  ldloc V_5
 				ldstr "MyStruct64::Method0.MI.469()#" +
@@ -775,7 +775,7 @@
 				      "MyStruct64::Method4.MI.477()#" +
 				      "MyStruct64::Method5.MI.479()#" +
 				      "MyStruct64::Method6.MI.481<System.Object>()#"
-				call void Framework::M.MyStruct64.A<valuetype MyStruct64`1<class BaseClass0>>(!!0,string) leave.s LV1
+				call void Generated14::M.MyStruct64.A<valuetype MyStruct64`1<class BaseClass0>>(!!0,string) leave.s LV1
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
 		.locals init (valuetype MyStruct64`1<class BaseClass1> V_6)
 		ldloca V_6
@@ -788,7 +788,7 @@
 				      "MyStruct64::Method4.MI.477()#" +
 				      "MyStruct64::Method5.MI.479()#" +
 				      "MyStruct64::Method6.MI.481<System.Object>()#"
-				call void Framework::M.MyStruct64.T<class BaseClass1,valuetype MyStruct64`1<class BaseClass1>>(!!1,string) leave.s LV2
+				call void Generated14::M.MyStruct64.T<class BaseClass1,valuetype MyStruct64`1<class BaseClass1>>(!!1,string) leave.s LV2
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV2} LV2:
 		.try {  ldloc V_6
 				ldstr "MyStruct64::Method0.MI.469()#" +
@@ -798,7 +798,7 @@
 				      "MyStruct64::Method4.MI.477()#" +
 				      "MyStruct64::Method5.MI.479()#" +
 				      "MyStruct64::Method6.MI.481<System.Object>()#"
-				call void Framework::M.MyStruct64.B<valuetype MyStruct64`1<class BaseClass1>>(!!0,string) leave.s LV3
+				call void Generated14::M.MyStruct64.B<valuetype MyStruct64`1<class BaseClass1>>(!!0,string) leave.s LV3
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV3} LV3:
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -1164,12 +1164,15 @@
 	}
 	.method public hidebysig static int32  Main() cil managed
 	{
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  10
-		call void Framework::MethodCallingTest()
-		call void Framework::ConstrainedCallsTest()
-		call void Framework::StructConstrainedInterfaceCallsTest()
-		call void Framework::CalliTest()
+		call void Generated14::MethodCallingTest()
+		call void Generated14::ConstrainedCallsTest()
+		call void Generated14::StructConstrainedInterfaceCallsTest()
+		call void Generated14::CalliTest()
 		ldc.i4 100
 		ret
 	}

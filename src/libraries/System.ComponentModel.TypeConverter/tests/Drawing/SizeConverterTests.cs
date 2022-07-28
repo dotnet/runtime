@@ -195,7 +195,7 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(1, props["Height"].GetValue(pt));
             Assert.Equal((object)false, props["IsEmpty"].GetValue(pt));
 
-            // Pick an attibute that cannot be applied to properties to make sure everything gets filtered
+            // Pick an attribute that cannot be applied to properties to make sure everything gets filtered
             props = Converter.GetProperties(null, new Size(1, 1), new Attribute[] { new System.Reflection.AssemblyCopyrightAttribute("")});
             Assert.Equal(0, props.Count);
         }

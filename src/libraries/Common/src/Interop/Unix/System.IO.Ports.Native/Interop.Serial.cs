@@ -10,14 +10,14 @@ internal static partial class Interop
 {
     internal static partial class Serial
     {
-        [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_SerialPortOpen", SetLastError = true)]
-        internal static extern SafeSerialDeviceHandle SerialPortOpen(string name);
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_SerialPortOpen", SetLastError = true)]
+        internal static partial SafeSerialDeviceHandle SerialPortOpen([MarshalAs(UnmanagedType.LPUTF8Str)] string name);
 
-        [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_SerialPortClose", SetLastError = true)]
-        internal static extern int SerialPortClose(IntPtr handle);
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_SerialPortClose", SetLastError = true)]
+        internal static partial int SerialPortClose(IntPtr handle);
 
-        [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Shutdown")]
-        internal static extern Error Shutdown(IntPtr socket, SocketShutdown how);
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Shutdown")]
+        internal static partial Error Shutdown(IntPtr socket, SocketShutdown how);
 
         /// <summary>
         /// Reads a number of bytes from an open file descriptor into a specified buffer.
@@ -29,8 +29,8 @@ internal static partial class Interop
         /// Returns the number of bytes read on success; otherwise, -1 is returned
         /// Note - on fail. the position of the stream may change depending on the platform; consult man 2 read for more info
         /// </returns>
-        [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Read", SetLastError = true)]
-        internal static extern unsafe int Read(SafeHandle fd, byte* buffer, int count);
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Read", SetLastError = true)]
+        internal static unsafe partial int Read(SafeHandle fd, byte* buffer, int count);
 
         /// <summary>
         /// Writes the specified buffer to the provided open file descriptor
@@ -41,8 +41,8 @@ internal static partial class Interop
         /// <returns>
         /// Returns the number of bytes written on success; otherwise, returns -1 and sets errno
         /// </returns>
-        [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Write", SetLastError = true)]
-        internal static extern unsafe int Write(SafeHandle fd, byte* buffer, int bufferSize);
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Write", SetLastError = true)]
+        internal static unsafe partial int Write(SafeHandle fd, byte* buffer, int bufferSize);
 
         /// <summary>
         /// Polls a set of file descriptors for signals and returns what signals have been set
@@ -52,8 +52,8 @@ internal static partial class Interop
         /// <param name="timeout">The amount of time to wait; -1 for infinite, 0 for immediate return, and a positive number is the number of milliseconds</param>
         /// <param name="triggered">The number of events triggered (i.e. the number of entries in pollEvents with a non-zero TriggeredEvents). May be zero in the event of a timeout.</param>
         /// <returns>An error or Error.SUCCESS.</returns>
-        [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Poll")]
-        private static extern unsafe Error Poll(PollEvent* pollEvents, uint eventCount, int timeout, uint* triggered);
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Poll")]
+        private static unsafe partial Error Poll(PollEvent* pollEvents, uint eventCount, int timeout, uint* triggered);
 
         /// <summary>
         /// Polls a File Descriptor for the passed in flags.

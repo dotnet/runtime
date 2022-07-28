@@ -29,7 +29,7 @@ hash_t1 (void)
 		return FAILED ("did not find all keys, got %d expected 2", foreach_count);
 	if (foreach_fail)
 		return FAILED("failed to pass the user-data to foreach");
-	
+
 	if (!g_hash_table_remove (t, (char*)"my"))
 		return FAILED ("did not find known key");
 	if (g_hash_table_size (t) != 1)
@@ -37,7 +37,7 @@ hash_t1 (void)
 	g_hash_table_insert(t, (char*)"hello", (char*)"moon");
 	if (strcmp (g_hash_table_lookup (t, (char*)"hello"), (char*)"moon") != 0)
 		return FAILED ("did not replace world with moon");
-		
+
 	if (!g_hash_table_remove (t, (char*)"hello"))
 		return FAILED ("did not find known key");
 	if (g_hash_table_size (t) != 0)
@@ -70,7 +70,7 @@ hash_null_lookup (void)
 {
 	GHashTable *hash = g_hash_table_new (NULL, NULL);
 	gpointer ok, ov;
-		
+
 	g_hash_table_insert (hash, NULL, GINT_TO_POINTER (1));
 	g_hash_table_insert (hash, GINT_TO_POINTER(1), GINT_TO_POINTER(2));
 
@@ -87,7 +87,7 @@ hash_null_lookup (void)
 		return FAILED ("Incorrect key found");
 	if (ov != GINT_TO_POINTER (2))
 		return FAILED ("Got wrong value %p\n", ov);
-	
+
 	g_hash_table_destroy (hash);
 
 	return NULL;
@@ -106,14 +106,14 @@ hash_grow (void)
 {
 	GHashTable *hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
 	int i, count = 0;
-	
+
 	for (i = 0; i < 1000; i++)
 		g_hash_table_insert (hash, g_strdup_printf ("%d", i), g_strdup_printf ("x-%d", i));
 
 	for (i = 0; i < 1000; i++){
 		char buffer [30];
 		gpointer value;
-		
+
 		sprintf (buffer, "%d", i);
 
 		value = g_hash_table_lookup (hash, buffer);

@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32)]
-        internal static extern int RegCloseKey(IntPtr hKey);
+        [LibraryImport(Libraries.Advapi32)]
+        internal static partial int RegCloseKey(IntPtr hKey);
     }
 }

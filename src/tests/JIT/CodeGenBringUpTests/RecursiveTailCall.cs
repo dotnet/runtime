@@ -30,7 +30,7 @@ class GenericException<T> : Exception
 {
 }
 
-public class Test
+public class Test_RecursiveTailCall
 {
     // Test a recursive tail call with a 1-byte struct parameter.
     static bool TestStruct1Param(Struct1 str1, int count)
@@ -149,7 +149,7 @@ public class Test
             return Fail;
         }
 
-        Test test = new Test();
+        Test_RecursiveTailCall test = new Test_RecursiveTailCall();
 
         if (!test.TestGenericSharing<object>())
         {

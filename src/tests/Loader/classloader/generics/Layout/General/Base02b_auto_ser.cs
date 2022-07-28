@@ -35,14 +35,14 @@ public class GenBase<T>
 
 	public virtual void VerifyLayout()
 	{
-		Test.Eval(_int0 == 0);
-		Test.Eval(_int1 == int.MaxValue) ;
-		Test.Eval(_double0 == 0) ;
-		Test.Eval(_double1 == double.MaxValue) ;
-		Test.Eval(_string0.Equals("string0"));
-		Test.Eval(_string1.Equals("string1"));
-		Test.Eval(_Guid0 == new Guid());
-		Test.Eval(_Guid1 == new Guid(1,2,3,4,5,6,7,8,9,10,11));	
+		Test_Base02b_auto_ser.Eval(_int0 == 0);
+		Test_Base02b_auto_ser.Eval(_int1 == int.MaxValue) ;
+		Test_Base02b_auto_ser.Eval(_double0 == 0) ;
+		Test_Base02b_auto_ser.Eval(_double1 == double.MaxValue) ;
+		Test_Base02b_auto_ser.Eval(_string0.Equals("string0"));
+		Test_Base02b_auto_ser.Eval(_string1.Equals("string1"));
+		Test_Base02b_auto_ser.Eval(_Guid0 == new Guid());
+		Test_Base02b_auto_ser.Eval(_Guid1 == new Guid(1,2,3,4,5,6,7,8,9,10,11));	
 	}
 }
 
@@ -68,19 +68,19 @@ public class Gen<T> : GenBase<T>
 	public override void VerifyLayout() 
 	{
 	 	base.VerifyLayout();
-		Test.Eval(_sint0 == 0);
-		Test.Eval(_sint1 == int.MaxValue) ;
-		Test.Eval(_sdouble0 == 0) ;
-		Test.Eval(_sdouble1 == double.MaxValue) ;
-		Test.Eval(_sstring0.Equals("string0"));
-		Test.Eval(_sstring1.Equals("string1"));
-		Test.Eval(_sGuid0 == new Guid());
-		Test.Eval(_sGuid1 == new Guid(1,2,3,4,5,6,7,8,9,10,11));	
+		Test_Base02b_auto_ser.Eval(_sint0 == 0);
+		Test_Base02b_auto_ser.Eval(_sint1 == int.MaxValue) ;
+		Test_Base02b_auto_ser.Eval(_sdouble0 == 0) ;
+		Test_Base02b_auto_ser.Eval(_sdouble1 == double.MaxValue) ;
+		Test_Base02b_auto_ser.Eval(_sstring0.Equals("string0"));
+		Test_Base02b_auto_ser.Eval(_sstring1.Equals("string1"));
+		Test_Base02b_auto_ser.Eval(_sGuid0 == new Guid());
+		Test_Base02b_auto_ser.Eval(_sGuid1 == new Guid(1,2,3,4,5,6,7,8,9,10,11));	
 	}
 	
 }
 
-public class Test
+public class Test_Base02b_auto_ser
 {
 	public static int counter = 0;
 	public static bool result = true;

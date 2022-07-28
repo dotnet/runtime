@@ -102,8 +102,32 @@ enum ClrToProfEntrypointFlags
     kEE2PNoTrigger                      = 0x00000004,
 };
 
-#define ASSERT_EVAC_COUNTER_NONZERO()   \
-    _ASSERTE(m_pProfilerInfo->dwProfilerEvacuationCounter.Load() > 0)
+EvacuationCounterHolder::EvacuationCounterHolder(ProfilerInfo *pProfilerInfo) :
+    m_pProfilerInfo(pProfilerInfo),
+    m_pThread(GetThreadNULLOk())
+{
+    _ASSERTE(m_pProfilerInfo != NULL);
+    if (m_pThread == NULL)
+    {
+        return;
+    }
+
+    m_pThread->IncProfilerEvacuationCounter(m_pProfilerInfo->slot);
+}
+
+EvacuationCounterHolder::~EvacuationCounterHolder()
+{
+    if (m_pThread == NULL)
+    {
+        return;
+    }
+
+    m_pThread->DecProfilerEvacuationCounter(m_pProfilerInfo->slot);
+}
+
+#define ASSERT_EVAC_COUNTER_NONZERO()                                                       \
+    _ASSERTE((GetThreadNULLOk() == NULL) ||                                                 \
+             (GetThread()->GetProfilerEvacuationCounter(m_pProfilerInfo->slot) > 0))
 
 #define CHECK_PROFILER_STATUS(ee2pFlags)                                                \
     /* If one of these asserts fires, perhaps you forgot to use                     */  \
@@ -216,7 +240,7 @@ inline void SetProfilerCallbacksAllowedForThread(Thread * pThread, BOOL fValue)
 //
 // Arguments:
 //      * pClsid - [in] Profiler's CLSID
-//      * wszClsid - [in] String form of CLSID or progid of profiler to load.
+//      * szClsid - [in] String form of CLSID or progid of profiler to load.
 //      * wszProfileDLL - [in] Path to profiler DLL
 //      * ppCallback - [out] Pointer to profiler's ICorProfilerCallback2 interface
 //      * phmodProfilerDLL - [out] HMODULE of profiler's DLL.
@@ -230,8 +254,8 @@ inline void SetProfilerCallbacksAllowedForThread(Thread * pThread, BOOL fValue)
 
 static HRESULT CoCreateProfiler(
     const CLSID * pClsid,
-    __in_z LPCWSTR wszClsid,
-    __in_z LPCWSTR wszProfileDLL,
+    _In_z_ LPCSTR szClsid,
+    _In_z_ LPCWSTR wszProfileDLL,
     ICorProfilerCallback2 ** ppCallback,
     HMODULE * phmodProfilerDLL)
 {
@@ -248,7 +272,7 @@ static HRESULT CoCreateProfiler(
     } CONTRACTL_END;
 
     _ASSERTE(pClsid != NULL);
-    _ASSERTE(wszClsid != NULL);
+    _ASSERTE(szClsid != NULL);
     _ASSERTE(ppCallback != NULL);
     _ASSERTE(phmodProfilerDLL != NULL);
 
@@ -281,7 +305,7 @@ static HRESULT CoCreateProfiler(
     if (hr == E_NOINTERFACE)
     {
         // Helpful message for a potentially common problem
-        ProfilingAPIUtility::LogNoInterfaceError(IID_ICorProfilerCallback2, wszClsid);
+        ProfilingAPIUtility::LogNoInterfaceError(IID_ICorProfilerCallback2, szClsid);
     }
     else if (hr == CORPROF_E_PROFILER_CANCEL_ACTIVATION)
     {
@@ -289,12 +313,12 @@ static HRESULT CoCreateProfiler(
         // profile this runtime.  Profilers that need to set system environment
         // variables to be able to profile services may use this HRESULT to avoid
         // profiling all the other managed apps on the box.
-        ProfilingAPIUtility::LogProfInfo(IDS_PROF_CANCEL_ACTIVATION, wszClsid);
+        ProfilingAPIUtility::LogProfInfo(IDS_PROF_CANCEL_ACTIVATION, szClsid);
     }
     else if (FAILED(hr))
     {
         // Catch-all error for other CoCreateInstance failures
-        ProfilingAPIUtility::LogProfError(IDS_E_PROF_CCI_FAILED, wszClsid, hr);
+        ProfilingAPIUtility::LogProfError(IDS_E_PROF_CCI_FAILED, szClsid, hr);
     }
 
     // Now that hr is normalized (set to error if pCallback2FromCreateInstance == NULL),
@@ -304,8 +328,8 @@ static HRESULT CoCreateProfiler(
         LOG((
             LF_CORPROF,
             LL_INFO10,
-            "**PROF: Unable to CoCreateInstance profiler class %S.  hr=0x%x.\n",
-            wszClsid,
+            "**PROF: Unable to CoCreateInstance profiler class %s.  hr=0x%x.\n",
+            szClsid,
             hr));
         return hr;
     }
@@ -342,7 +366,7 @@ static HRESULT CoCreateProfiler(
     if (FAILED(hr))
     {
         // Helpful message for a potentially common problem
-        ProfilingAPIUtility::LogNoInterfaceError(IID_ICorProfilerCallback2, wszClsid);
+        ProfilingAPIUtility::LogNoInterfaceError(IID_ICorProfilerCallback2, szClsid);
         return hr;
     }
 
@@ -459,7 +483,7 @@ EEToProfInterfaceImpl::EEToProfInterfaceImpl() :
 //      * pProfToEE - A newly-created ProfToEEInterfaceImpl instance that will be passed
 //          to the profiler as the ICorProfilerInfo3 interface implementation.
 //      * pClsid - Profiler's CLSID
-//      * wszClsid - String form of CLSID or progid of profiler to load
+//      * szClsid - String form of CLSID or progid of profiler to load
 //      * wszProfileDLL - Path to profiler DLL
 //      * fLoadedViaAttach - TRUE iff the profiler is being attach-loaded (else
 //             profiler is being startup-loaded)
@@ -476,8 +500,8 @@ EEToProfInterfaceImpl::EEToProfInterfaceImpl() :
 HRESULT EEToProfInterfaceImpl::Init(
     ProfToEEInterfaceImpl * pProfToEE,
     const CLSID * pClsid,
-    __in_z LPCWSTR wszClsid,
-    __in_z LPCWSTR wszProfileDLL,
+    _In_z_ LPCSTR szClsid,
+    _In_z_ LPCWSTR wszProfileDLL,
     BOOL fLoadedViaAttach,
     DWORD dwConcurrentGCWaitTimeoutInMs)
 {
@@ -516,7 +540,7 @@ HRESULT EEToProfInterfaceImpl::Init(
 
         // A specialized event log entry for this failure would be confusing and
         // unhelpful.  So just log a generic internal failure event
-        ProfilingAPIUtility::LogProfError(IDS_E_PROF_INTERNAL_INIT, wszClsid, E_FAIL);
+        ProfilingAPIUtility::LogProfError(IDS_E_PROF_INTERNAL_INIT, szClsid, E_FAIL);
         return E_FAIL;
     }
 
@@ -539,7 +563,7 @@ HRESULT EEToProfInterfaceImpl::Init(
 
         // A specialized event log entry for this failure would be confusing and
         // unhelpful.  So just log a generic internal failure event
-        ProfilingAPIUtility::LogProfError(IDS_E_PROF_INTERNAL_INIT, wszClsid, E_OUTOFMEMORY);
+        ProfilingAPIUtility::LogProfError(IDS_E_PROF_INTERNAL_INIT, szClsid, E_OUTOFMEMORY);
 
         return E_OUTOFMEMORY;
     }
@@ -554,12 +578,12 @@ HRESULT EEToProfInterfaceImpl::Init(
     EX_TRY
     {
         // CoCreate the profiler (but don't call its Initialize() method yet)
-        hr = CreateProfiler(pClsid, wszClsid, wszProfileDLL);
+        hr = CreateProfiler(pClsid, szClsid, wszProfileDLL);
     }
     EX_CATCH
     {
         hr = E_UNEXPECTED;
-        ProfilingAPIUtility::LogProfError(IDS_E_PROF_UNHANDLED_EXCEPTION_ON_LOAD, wszClsid);
+        ProfilingAPIUtility::LogProfError(IDS_E_PROF_UNHANDLED_EXCEPTION_ON_LOAD, szClsid);
     }
     // Intentionally swallowing all exceptions, as we don't want a poorly-written
     // profiler that throws or AVs on attach to cause the entire process to go away.
@@ -601,7 +625,7 @@ void EEToProfInterfaceImpl::SetProfilerInfo(ProfilerInfo *pProfilerInfo)
 //
 // Arguments:
 //      pClsid - Profiler's CLSID
-//      wszClsid - String form of CLSID or progid of profiler to load
+//      szClsid - String form of CLSID or progid of profiler to load
 //      wszProfileDLL - Path to profiler DLL
 //
 // Return Value:
@@ -620,8 +644,8 @@ void EEToProfInterfaceImpl::SetProfilerInfo(ProfilerInfo *pProfilerInfo)
 
 HRESULT EEToProfInterfaceImpl::CreateProfiler(
     const CLSID * pClsid,
-    __in_z LPCWSTR wszClsid,
-    __in_z LPCWSTR wszProfileDLL)
+    _In_z_ LPCSTR szClsid,
+    _In_z_ LPCWSTR wszProfileDLL)
 {
     CONTRACTL
     {
@@ -637,15 +661,12 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
     }
     CONTRACTL_END;
 
-    // Always called before Thread created.
-    _ASSERTE(GetThreadNULLOk() == NULL);
-
     // Try and CoCreate the registered profiler
     ReleaseHolder<ICorProfilerCallback2> pCallback2;
     HModuleHolder hmodProfilerDLL;
     HRESULT hr = CoCreateProfiler(
         pClsid,
-        wszClsid,
+        szClsid,
         wszProfileDLL,
         &pCallback2,
         &hmodProfilerDLL);
@@ -2435,7 +2456,7 @@ HRESULT EEToProfInterfaceImpl::SetEventMask(DWORD dwEventMask, DWORD dwEventMask
             // Remember that we've turned off concurrent GC and we'll turn it back on in TerminateProfiling
             g_profControlBlock.fConcurrentGCDisabledForAttach = FALSE;
             pGCHeap->TemporaryEnableConcurrentGC();
-            
+
             return hr;
         }
 
@@ -2771,10 +2792,6 @@ HRESULT EEToProfInterfaceImpl::InitializeForAttach(void * pvClientData, UINT cbC
 
     _ASSERTE(m_pProfToEE != NULL);
 
-    // Attach initialization occurs on the AttachThread, which does not have an EEThread
-    // object
-    _ASSERTE(GetThreadNULLOk() == NULL);
-
     // Should only be called on profilers that support ICorProfilerCallback3
     _ASSERTE(m_pCallback3 != NULL);
 
@@ -2825,10 +2842,6 @@ HRESULT EEToProfInterfaceImpl::ProfilerAttachComplete()
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
                                 LL_INFO10,
                                 "**PROF: Calling profiler's ProfilerAttachComplete() method.\n"));
-
-    // Attach initialization occurs on the AttachThread, which does not have an EEThread
-    // object
-    _ASSERTE(GetThreadNULLOk() == NULL);
 
     // Should only be called on profilers that support ICorProfilerCallback3
     _ASSERTE(m_pCallback3 != NULL);
@@ -3021,7 +3034,7 @@ HRESULT EEToProfInterfaceImpl::ThreadAssignedToOSThread(ThreadID managedThreadId
 
 HRESULT EEToProfInterfaceImpl::ThreadNameChanged(ThreadID managedThreadId,
                                                  ULONG cchName,
-                                                 __in_ecount_opt(cchName) WCHAR name[])
+                                                 _In_reads_bytes_opt_(cchName) WCHAR name[])
 {
     CONTRACTL
     {
@@ -6042,7 +6055,7 @@ HRESULT EEToProfInterfaceImpl::EventPipeProviderCreated(EventPipeProvider *provi
 #endif // FEATURE_PERFTRACING
 }
 
-HRESULT EEToProfInterfaceImpl::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
+HRESULT EEToProfInterfaceImpl::LoadAsNotificationOnly(BOOL *pbNotificationOnly)
 {
     CONTRACTL
     {
@@ -6052,13 +6065,13 @@ HRESULT EEToProfInterfaceImpl::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
     }
     CONTRACTL_END;
 
-    // This one API is special, we call in to the profiler before we've set up any of our 
-    // machinery to do asserts (m_pProfilerInfo in specific). So we can't use 
+    // This one API is special, we call in to the profiler before we've set up any of our
+    // machinery to do asserts (m_pProfilerInfo in specific). So we can't use
     // CLR_TO_PROFILER_ENTRYPOINT here.
 
     LOG((LF_CORPROF,
         LL_INFO1000,
-        "**PROF: LoadAsNotficationOnly.\n"));
+        "**PROF: LoadAsNotificationOnly.\n"));
 
     if (m_pCallback11 == NULL)
     {
@@ -6066,7 +6079,7 @@ HRESULT EEToProfInterfaceImpl::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
         return S_OK;
     }
 
-    return m_pCallback11->LoadAsNotficationOnly(pbNotificationOnly);
+    return m_pCallback11->LoadAsNotificationOnly(pbNotificationOnly);
 }
 
 #endif // PROFILING_SUPPORTED

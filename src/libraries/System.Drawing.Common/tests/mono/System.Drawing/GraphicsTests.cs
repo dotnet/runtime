@@ -1794,11 +1794,11 @@ namespace MonoTests.System.Drawing
                 string_format.Alignment = StringAlignment.Far;
                 SizeF far = g.MeasureString(text, font, int.MaxValue, string_format);
 
-                Assert.Equal(near.Width, center.Width, 1);
-                Assert.Equal(near.Height, center.Height, 1);
+                Assert.Equal((double)near.Width, center.Width, 1);
+                Assert.Equal((double)near.Height, center.Height, 1);
 
-                Assert.Equal(center.Width, far.Width, 1);
-                Assert.Equal(center.Height, far.Height, 1);
+                Assert.Equal((double)center.Width, far.Width, 1);
+                Assert.Equal((double)center.Height, far.Height, 1);
             }
         }
 
@@ -1821,11 +1821,11 @@ namespace MonoTests.System.Drawing
                 string_format.Alignment = StringAlignment.Far;
                 SizeF far = g.MeasureString(text, font, int.MaxValue, string_format);
 
-                Assert.Equal(near.Width, center.Width, 0);
-                Assert.Equal(near.Height, center.Height, 0);
+                Assert.Equal((double)near.Width, center.Width, 0);
+                Assert.Equal((double)near.Height, center.Height, 0);
 
-                Assert.Equal(center.Width, far.Width, 0);
-                Assert.Equal(center.Height, far.Height, 0);
+                Assert.Equal((double)center.Width, far.Width, 0);
+                Assert.Equal((double)center.Height, far.Height, 0);
             }
         }
 
@@ -1846,11 +1846,11 @@ namespace MonoTests.System.Drawing
                 string_format.LineAlignment = StringAlignment.Far;
                 SizeF far = g.MeasureString(text, font, int.MaxValue, string_format);
 
-                Assert.Equal(near.Width, center.Width, 1);
-                Assert.Equal(near.Height, center.Height, 1);
+                Assert.Equal((double)near.Width, center.Width, 1);
+                Assert.Equal((double)near.Height, center.Height, 1);
 
-                Assert.Equal(center.Width, far.Width, 1);
-                Assert.Equal(center.Height, far.Height, 1);
+                Assert.Equal((double)center.Width, far.Width, 1);
+                Assert.Equal((double)center.Height, far.Height, 1);
             }
         }
 
@@ -1873,11 +1873,11 @@ namespace MonoTests.System.Drawing
                 string_format.LineAlignment = StringAlignment.Far;
                 SizeF far = g.MeasureString(text, font, int.MaxValue, string_format);
 
-                Assert.Equal(near.Width, center.Width, 1);
-                Assert.Equal(near.Height, center.Height, 1);
+                Assert.Equal((double)near.Width, center.Width, 1);
+                Assert.Equal((double)near.Height, center.Height, 1);
 
-                Assert.Equal(center.Width, far.Width, 1);
-                Assert.Equal(center.Height, far.Height, 1);
+                Assert.Equal((double)center.Width, far.Width, 1);
+                Assert.Equal((double)center.Height, far.Height, 1);
             }
         }
 
@@ -1895,7 +1895,7 @@ namespace MonoTests.System.Drawing
 
                 // in pixels
                 Assert.True(size2.Width < size.Width);
-                Assert.Equal(size2.Height, size.Height);
+                Assert.Equal((double)size2.Height, size.Height);
 
                 Assert.Equal(1, lines);
                 // documentation seems to suggest chars is total length
@@ -1920,8 +1920,8 @@ namespace MonoTests.System.Drawing
                 {
                     s += " ";
                     size = g.MeasureString(s, font);
-                    Assert.Equal(expected.Height, size.Height, 1);
-                    Assert.Equal(expected.Width, size.Width, 1);
+                    Assert.Equal((double)expected.Height, size.Height, 1);
+                    Assert.Equal((double)expected.Width, size.Width, 1);
                 }
 
                 s = "a";
@@ -1932,8 +1932,8 @@ namespace MonoTests.System.Drawing
                 for (int i = 1; i < 10; i++)
                 {
                     size = g.MeasureString(s, font);
-                    Assert.Equal(expected.Height, size.Height, 1);
-                    Assert.Equal(expected.Width + i * space_width, size.Width, 1);
+                    Assert.Equal((double)expected.Height, size.Height, 1);
+                    Assert.Equal((double)expected.Width + i * space_width, size.Width, 1);
                     s = " " + s;
                 }
 
@@ -1943,8 +1943,8 @@ namespace MonoTests.System.Drawing
                 {
                     s = s + " ";
                     size = g.MeasureString(s, font);
-                    Assert.Equal(expected.Height, size.Height, 1);
-                    Assert.Equal(expected.Width, size.Width, 1);
+                    Assert.Equal((double)expected.Height, size.Height, 1);
+                    Assert.Equal((double)expected.Width, size.Width, 1);
                 }
             }
         }
@@ -2076,7 +2076,7 @@ namespace MonoTests.System.Drawing
                 string_format.HotkeyPrefix = HotkeyPrefix.Hide;
                 regions = g.MeasureCharacterRanges(text, font, layout_rect, string_format);
                 RectangleF bounds_hide = regions[0].GetBounds(g);
-                Assert.Equal(bounds_hide.Width, bounds_show.Width);
+                Assert.Equal((double)bounds_hide.Width, bounds_show.Width);
             }
         }
 
@@ -2125,8 +2125,8 @@ namespace MonoTests.System.Drawing
                     RectangleF sb = small[i].GetBounds(gfx);
                     Assert.Equal(sb.X, zb.X);
                     Assert.Equal(sb.Y, zb.Y);
-                    Assert.Equal(sb.Width, zb.Width);
-                    Assert.Equal(sb.Height, zb.Height);
+                    Assert.Equal((double)sb.Width, zb.Width);
+                    Assert.Equal((double)sb.Height, zb.Height);
                 }
 
                 Region[] max = Measure_Helper(gfx, new RectangleF(0, 0, float.MaxValue, float.MaxValue));
@@ -2137,8 +2137,8 @@ namespace MonoTests.System.Drawing
                     RectangleF mb = max[i].GetBounds(gfx);
                     Assert.Equal(mb.X, zb.X);
                     Assert.Equal(mb.Y, zb.Y);
-                    Assert.Equal(mb.Width, zb.Width);
-                    Assert.Equal(mb.Height, zb.Height);
+                    Assert.Equal((double)mb.Width, zb.Width);
+                    Assert.Equal((double)mb.Height, zb.Height);
                 }
             }
         }
@@ -2316,15 +2316,15 @@ namespace MonoTests.System.Drawing
                 RectangleF clip = g.VisibleClipBounds;
                 Assert.Equal(0, clip.X);
                 Assert.Equal(0, clip.Y);
-                Assert.Equal(32, clip.Width, 4);
-                Assert.Equal(32, clip.Height, 4);
+                Assert.Equal(32.0, clip.Width, 4);
+                Assert.Equal(32.0, clip.Height, 4);
 
                 g.RotateTransform(90);
                 RectangleF rotclip = g.VisibleClipBounds;
                 Assert.Equal(0, rotclip.X);
-                Assert.Equal(-32, rotclip.Y, 4);
-                Assert.Equal(32, rotclip.Width, 4);
-                Assert.Equal(32, rotclip.Height, 4);
+                Assert.Equal(-32.0, rotclip.Y, 4);
+                Assert.Equal(32.0, rotclip.Width, 4);
+                Assert.Equal(32.0, rotclip.Height, 4);
             }
         }
 
@@ -2363,15 +2363,15 @@ namespace MonoTests.System.Drawing
                 g.RotateTransform(90);
                 RectangleF rotclipbound = g.ClipBounds;
                 Assert.Equal(0, rotclipbound.X);
-                Assert.Equal(-200, rotclipbound.Y, 4);
-                Assert.Equal(200, rotclipbound.Width, 4);
-                Assert.Equal(200, rotclipbound.Height, 4);
+                Assert.Equal(-200.0, rotclipbound.Y, 4);
+                Assert.Equal(200.0, rotclipbound.Width, 4);
+                Assert.Equal(200.0, rotclipbound.Height, 4);
 
                 RectangleF rotclip = g.VisibleClipBounds;
                 Assert.Equal(0, rotclip.X);
-                Assert.Equal(-100, rotclip.Y, 4);
-                Assert.Equal(100, rotclip.Width, 4);
-                Assert.Equal(100, rotclip.Height, 4);
+                Assert.Equal(-100.0, rotclip.Y, 4);
+                Assert.Equal(100.0, rotclip.Width, 4);
+                Assert.Equal(100.0, rotclip.Height, 4);
             }
         }
 
@@ -2390,15 +2390,15 @@ namespace MonoTests.System.Drawing
                 RectangleF vcb = g.VisibleClipBounds;
                 Assert.Equal(0, vcb.X);
                 Assert.Equal(0, vcb.Y);
-                Assert.Equal(100, vcb.Width, 4);
-                Assert.Equal(50, vcb.Height, 4);
+                Assert.Equal(100.0, vcb.Width, 4);
+                Assert.Equal(50.0, vcb.Height, 4);
 
                 g.RotateTransform(90);
                 RectangleF rvcb = g.VisibleClipBounds;
                 Assert.Equal(0, rvcb.X);
-                Assert.Equal(-100, rvcb.Y, 4);
-                Assert.Equal(50.0f, rvcb.Width, 4);
-                Assert.Equal(100, rvcb.Height, 4);
+                Assert.Equal(-100.0, rvcb.Y, 4);
+                Assert.Equal(50.0, rvcb.Width, 4);
+                Assert.Equal(100.0, rvcb.Height, 4);
             }
         }
 
@@ -3152,7 +3152,6 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TransformPoints()
         {

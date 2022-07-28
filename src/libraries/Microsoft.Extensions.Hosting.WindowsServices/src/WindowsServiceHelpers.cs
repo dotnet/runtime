@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Hosting.WindowsServices
 {
@@ -15,6 +16,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// Check if the current process is hosted as a Windows Service.
         /// </summary>
         /// <returns><c>True</c> if the current process is hosted as a Windows Service, otherwise <c>false</c>.</returns>
+        [SupportedOSPlatformGuard("windows")]
         public static bool IsWindowsService()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -27,7 +29,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             {
                 return false;
             }
-            return parent.SessionId == 0 && string.Equals("services", parent.ProcessName, StringComparison.OrdinalIgnoreCase);
+            return string.Equals("services", parent.ProcessName, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

@@ -1,0 +1,33 @@
+parameters:
+  unpackFolder: ''
+  cleanUnpackFolder: true
+  artifactFileName: ''
+  artifactName: ''
+  displayName: ''
+  buildId: ''
+  branchName: ''
+  pipeline: ''
+  project: 'public' # 'internal' or 'public'
+
+steps:
+  # Download artifact
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download specific ${{ parameters.displayName }}'
+    inputs:
+      buildType: specific
+      project: ${{ parameters.project }}
+      pipeline: ${{ parameters.pipeline }}
+      buildVersionToDownload: specific
+      branchName: ${{ parameters.branchName }}
+      buildId: ${{ parameters.buildId }}
+      downloadType: single
+      downloadPath: '$(Build.SourcesDirectory)/__download__'
+      artifactName: '${{ parameters.artifactName }}'
+
+  # Unzip artifact
+  - task: ExtractFiles@1
+    displayName: 'Unzip specific ${{ parameters.displayName }}'
+    inputs:
+      archiveFilePatterns: $(Build.SourcesDirectory)/__download__/${{ parameters.artifactName }}/${{ parameters.artifactFileName }}
+      destinationFolder: ${{ parameters.unpackFolder }}
+      cleanDestinationFolder: ${{ parameters.cleanUnpackFolder }}

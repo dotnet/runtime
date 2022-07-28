@@ -340,8 +340,6 @@ namespace System.Drawing
         /// <summary>
         /// Converts the attributes of this <see cref='System.Drawing.Rectangle'/> to a human readable string.
         /// </summary>
-        public override readonly string ToString() =>
-            "{X=" + X.ToString() + ",Y=" + Y.ToString() +
-            ",Width=" + Width.ToString() + ",Height=" + Height.ToString() + "}";
+        public override readonly string ToString() => $"{{X={X},Y={Y},Width={Width},Height={Height}}}";
     }
 }

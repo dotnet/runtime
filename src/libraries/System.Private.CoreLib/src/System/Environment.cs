@@ -23,8 +23,7 @@ namespace System
 
         public static string? GetEnvironmentVariable(string variable)
         {
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
+            ArgumentNullException.ThrowIfNull(variable);
 
             return GetEnvironmentVariableCore(variable);
         }
@@ -34,8 +33,7 @@ namespace System
             if (target == EnvironmentVariableTarget.Process)
                 return GetEnvironmentVariable(variable);
 
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
+            ArgumentNullException.ThrowIfNull(variable);
 
             bool fromMachine = ValidateAndConvertRegistryTarget(target);
             return GetEnvironmentVariableFromRegistry(variable, fromMachine);
@@ -77,32 +75,19 @@ namespace System
             get => CurrentDirectoryCore;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                if (value.Length == 0)
-                    throw new ArgumentException(SR.Argument_PathEmpty, nameof(value));
-
+                ArgumentException.ThrowIfNullOrEmpty(value);
                 CurrentDirectoryCore = value;
             }
         }
 
         public static string ExpandEnvironmentVariables(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0)
                 return name;
 
             return ExpandEnvironmentVariablesCore(name);
-        }
-
-        private static string[]? s_commandLineArgs;
-
-        internal static void SetCommandLineArgs(string[] cmdLineArgs) // invoked from VM
-        {
-            s_commandLineArgs = cmdLineArgs;
         }
 
         public static string GetFolderPath(SpecialFolder folder) => GetFolderPath(folder, SpecialFolderOption.None);
@@ -128,8 +113,7 @@ namespace System
                 int processId = s_processId;
                 if (processId == 0)
                 {
-                    Interlocked.CompareExchange(ref s_processId, GetProcessId(), 0);
-                    processId = s_processId;
+                    s_processId = processId = GetProcessId();
                     // Assume that process Id zero is invalid for user processes. It holds for all mainstream operating systems.
                     Debug.Assert(processId != 0);
                 }
@@ -196,7 +180,7 @@ namespace System
 
                 // Strip optional suffixes
                 int separatorIndex = versionSpan.IndexOfAny('-', '+', ' ');
-                if (separatorIndex != -1)
+                if (separatorIndex >= 0)
                     versionSpan = versionSpan.Slice(0, separatorIndex);
 
                 // Return zeros rather then failing if the version string fails to parse
@@ -208,6 +192,21 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
             get => new StackTrace(true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+        }
+
+        private static volatile int s_systemPageSize;
+
+        public static int SystemPageSize
+        {
+            get
+            {
+                int systemPageSize = s_systemPageSize;
+                if (systemPageSize == 0)
+                {
+                    s_systemPageSize = systemPageSize = GetSystemPageSize();
+                }
+                return systemPageSize;
+            }
         }
 
         private static bool ValidateAndConvertRegistryTarget(EnvironmentVariableTarget target)
@@ -225,11 +224,7 @@ namespace System
 
         private static void ValidateVariableAndValue(string variable, ref string? value)
         {
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
-
-            if (variable.Length == 0)
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(variable));
+            ArgumentException.ThrowIfNullOrEmpty(variable);
 
             if (variable[0] == '\0')
                 throw new ArgumentException(SR.Argument_StringFirstCharIsZero, nameof(variable));

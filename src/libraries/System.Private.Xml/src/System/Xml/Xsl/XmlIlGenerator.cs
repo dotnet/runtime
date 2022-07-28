@@ -352,12 +352,12 @@ namespace System.Xml.Xsl
         public void CreateTypeInitializer(XmlQueryStaticData staticData)
         {
             byte[] data;
-            Type[] ebTypes;
+            Type[]? ebTypes;
             FieldInfo fldInitData, fldData, fldTypes;
             ConstructorInfo cctor;
 
             staticData.GetObjectData(out data, out ebTypes);
-            fldInitData = _module!.DefineInitializedData("__" + XmlQueryStaticData.DataFieldName, data);
+            fldInitData = _module!.DefineInitializedData($"__{XmlQueryStaticData.DataFieldName}", data);
             fldData = _module.DefineField(XmlQueryStaticData.DataFieldName, typeof(object));
             fldTypes = _module.DefineField(XmlQueryStaticData.TypesFieldName, typeof(Type[]));
 

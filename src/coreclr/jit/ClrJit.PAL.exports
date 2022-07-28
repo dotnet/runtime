@@ -1,3 +1,5 @@
 getJit
 jitStartup
-getLikelyClass
+getLikelyClasses
+getLikelyMethods
+jitBuildString

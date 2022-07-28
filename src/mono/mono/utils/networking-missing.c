@@ -25,17 +25,17 @@ inet_pton (int family, const char *address, void *inaddrp)
 	if (family == AF_INET) {
 #ifdef HAVE_INET_ATON
 		struct in_addr inaddr;
-		
+
 		if (!inet_aton (address, &inaddr))
 			return 0;
-		
+
 		memcpy (inaddrp, &inaddr, sizeof (struct in_addr));
 		return 1;
 #else
 		/* assume the system has inet_addr(), if it doesn't
 		   have that we're pretty much screwed... */
 		guint32 inaddr;
-		
+
 		if (!strcmp (address, "255.255.255.255")) {
 			/* special-case hack */
 			inaddr = 0xffffffff;
@@ -47,12 +47,12 @@ inet_pton (int family, const char *address, void *inaddrp)
 			if (inaddr == INADDR_NONE)
 				return 0;
 		}
-		
+
 		memcpy (inaddrp, &inaddr, sizeof (guint32));
 		return 1;
 #endif /* HAVE_INET_ATON */
 	}
-	
+
 	return -1;
 }
 

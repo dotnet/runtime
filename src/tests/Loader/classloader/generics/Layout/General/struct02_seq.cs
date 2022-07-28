@@ -67,26 +67,26 @@ public struct Gen<T,U>
 		_string3 = "string3";
 		_Guid3 = new Guid(12,22,32,42,52,62,72,82,92,102,112);
 	
-		Test.Eval(_int0 == 0);
-		Test.Eval(_int1 == 1);
-		Test.Eval(_int2 == int.MaxValue) ;
-		Test.Eval(_int3 == int.MinValue) ;
-		Test.Eval(_double0 == 0) ;
-		Test.Eval(_double1== 1) ;
-		Test.Eval(_double2 == double.MaxValue) ;
-		Test.Eval(_double3 == double.MinValue) ;
-		Test.Eval(_string0.Equals("string0"));
-		Test.Eval(_string1.Equals("string1"));
-		Test.Eval(_string2.Equals("string2"));
-		Test.Eval(_string3.Equals("string3"));
-		Test.Eval(_Guid0 == new Guid());
-		Test.Eval(_Guid1 == new Guid(1,2,3,4,5,6,7,8,9,10,11));
-		Test.Eval(_Guid2 == new Guid(11,21,31,41,51,61,71,81,91,101,111));	
-		Test.Eval(_Guid3 == new Guid(12,22,32,42,52,62,72,82,92,102,112));	
+		Test_struct02_seq.Eval(_int0 == 0);
+		Test_struct02_seq.Eval(_int1 == 1);
+		Test_struct02_seq.Eval(_int2 == int.MaxValue) ;
+		Test_struct02_seq.Eval(_int3 == int.MinValue) ;
+		Test_struct02_seq.Eval(_double0 == 0) ;
+		Test_struct02_seq.Eval(_double1== 1) ;
+		Test_struct02_seq.Eval(_double2 == double.MaxValue) ;
+		Test_struct02_seq.Eval(_double3 == double.MinValue) ;
+		Test_struct02_seq.Eval(_string0.Equals("string0"));
+		Test_struct02_seq.Eval(_string1.Equals("string1"));
+		Test_struct02_seq.Eval(_string2.Equals("string2"));
+		Test_struct02_seq.Eval(_string3.Equals("string3"));
+		Test_struct02_seq.Eval(_Guid0 == new Guid());
+		Test_struct02_seq.Eval(_Guid1 == new Guid(1,2,3,4,5,6,7,8,9,10,11));
+		Test_struct02_seq.Eval(_Guid2 == new Guid(11,21,31,41,51,61,71,81,91,101,111));	
+		Test_struct02_seq.Eval(_Guid3 == new Guid(12,22,32,42,52,62,72,82,92,102,112));	
 	}
 }
 
-public class Test
+public class Test_struct02_seq
 {
 	public static int counter = 0;
 	public static bool result = true;

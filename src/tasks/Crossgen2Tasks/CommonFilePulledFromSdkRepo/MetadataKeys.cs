@@ -17,6 +17,7 @@ namespace Microsoft.NET.Build.Tasks
         public const string AllowExplicitVersion = "AllowExplicitVersion";
         public const string RelativePath = "RelativePath";
         public const string DiagnosticLevel = "DiagnosticLevel";
+        public const string Implementation = "Implementation";      //  Metadata on WinMD references
 
         // Target Metadata
         public const string RuntimeIdentifier = "RuntimeIdentifier";
@@ -123,5 +124,6 @@ namespace Microsoft.NET.Build.Tasks
         public const string EmitSymbols = "EmitSymbols";
         public const string IsVersion5 = "IsVersion5";
         public const string CreateCompositeImage = "CreateCompositeImage";
+        public const string PerfmapFormatVersion = "PerfmapFormatVersion";
     }
 }

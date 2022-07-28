@@ -75,7 +75,7 @@ public class GenTypes
 	
 }
 
-public class Test
+public class Test_ConstraintsAndInheritance
 {
 	public static int Main()
 	{

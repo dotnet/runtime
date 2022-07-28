@@ -3,20 +3,20 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Test 
+class Test_test448035 
 {
     int countdown;
 
-    Test(int n) 
+    Test_test448035(int n) 
     {
         countdown = n;
     }
 
-    ~Test()
+    ~Test_test448035()
     {
         if (countdown > 0)
         { 
-            new Test(countdown - 1).ToString(); 
+            new Test_test448035(countdown - 1).ToString(); 
         }
 
         for (int i = 0; i < 1000; i++)
@@ -35,7 +35,7 @@ class Test
             table.Add(new Object(), new Object());
         }
 
-        new Test(5).ToString();
+        new Test_test448035(5).ToString();
 
 	Console.WriteLine("PASS: Test did not assert");
 	return 100;

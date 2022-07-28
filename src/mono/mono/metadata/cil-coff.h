@@ -186,7 +186,7 @@ typedef struct {
 #define MONO_PE_RES_DIR_ENTRY_DIR_OFFSET(d)	(GUINT32_FROM_LE((d).dir) & 0x7fffffff)
 #define MONO_PE_RES_DIR_ENTRY_SET_DIR(d,i,o)	((d).dir = GUINT32_TO_LE(((guint32)((i)?1:0) << 31) | ((o) & 0x7fffffff)))
 
-typedef struct 
+typedef struct
 {
 	guint32 res_characteristics;
 	guint32 res_date_stamp;

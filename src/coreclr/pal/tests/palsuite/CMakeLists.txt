@@ -6,7 +6,7 @@ include_directories(${PALTESTSUITE_SOURCE_DIR}/common)
 
 # All test will link against these libraries:
 # pthread and m are part of the Android C library (bionic),
-# so we don't need to link them seperately
+# so we don't need to link them separately
 if(NOT CLR_CMAKE_TARGET_ANDROID)
   list(APPEND COMMON_TEST_LIBRARIES pthread)
   list(APPEND COMMON_TEST_LIBRARIES m)
@@ -174,11 +174,9 @@ add_executable_clr(paltests
   c_runtime/isalnum/test1/test1.cpp
   c_runtime/isalpha/test1/test1.cpp
   c_runtime/isdigit/test1/test1.cpp
-  c_runtime/islower/test1/test1.cpp
   c_runtime/isprint/test1/isprint.cpp
   c_runtime/isprint/test2/test2.cpp
   c_runtime/isspace/test1/test1.cpp
-  c_runtime/isupper/test1/test1.cpp
   c_runtime/iswdigit/test1/test1.cpp
   #c_runtime/iswprint/test1/test1.cpp
   c_runtime/iswspace/test1/test1.cpp
@@ -272,14 +270,12 @@ add_executable_clr(paltests
   c_runtime/strchr/test1/test1.cpp
   c_runtime/strcmp/test1/test1.cpp
   c_runtime/strcpy/test1/test1.cpp
-  c_runtime/strcspn/test1/test1.cpp
   c_runtime/strlen/test1/test1.cpp
   c_runtime/strncat/test1/test1.cpp
   c_runtime/strncmp/test1/test1.cpp
   c_runtime/strncpy/test1/test1.cpp
   c_runtime/strpbrk/test1/test1.cpp
   c_runtime/strrchr/test1/test1.cpp
-  c_runtime/strspn/test1/test1.cpp
   c_runtime/strstr/test1/test1.cpp
   c_runtime/strtod/test1/test1.cpp
   c_runtime/strtod/test2/test2.cpp
@@ -415,7 +411,6 @@ add_executable_clr(paltests
   c_runtime/wcsstr/test1/test1.cpp
   c_runtime/wcstod/test1/test1.cpp
   c_runtime/wcstod/test2/test2.cpp
-  c_runtime/wcstok/test1/test1.cpp
   c_runtime/wcstoul/test1/test1.cpp
   c_runtime/wcstoul/test2/test2.cpp
   c_runtime/wcstoul/test3/test3.cpp
@@ -581,9 +576,6 @@ add_executable_clr(paltests
 #  filemapping_memmgt/GetProcAddress/test1/testlib.cpp
   filemapping_memmgt/GetProcAddress/test2/test2.cpp
 #  filemapping_memmgt/GetProcAddress/test2/testlib.cpp
-  filemapping_memmgt/LocalAlloc/test1/LocalAlloc.cpp
-  filemapping_memmgt/LocalFree/test1/LocalFree.cpp
-  filemapping_memmgt/LocalFree/test2/LocalFree.cpp
   filemapping_memmgt/MapViewOfFile/test1/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test2/MapViewOfFile.cpp
   filemapping_memmgt/MapViewOfFile/test3/MapViewOfFile.cpp
@@ -762,8 +754,6 @@ add_executable_clr(paltests
   miscellaneous/GetSystemInfo/test1/test.cpp
   miscellaneous/GetTickCount/test1/test.cpp
   miscellaneous/GlobalMemoryStatusEx/test1/test.cpp
-  miscellaneous/InterlockedBit/test1/test.cpp
-  miscellaneous/InterlockedBit/test2/test.cpp
   miscellaneous/InterlockedCompareExchange/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test2/test.cpp
   miscellaneous/InterlockedCompareExchange64/test1/test.cpp
@@ -786,8 +776,6 @@ add_executable_clr(paltests
   #miscellaneous/IsBadWritePtr/test1/test.cpp
   #miscellaneous/IsBadWritePtr/test2/test2.cpp
   #miscellaneous/IsBadWritePtr/test3/test3.cpp
-  #miscellaneous/MessageBoxW/test1/test.cpp
-  #miscellaneous/MessageBoxW/test2/test.cpp
   miscellaneous/queryperformancecounter/test1/test1.cpp
   miscellaneous/queryperformancefrequency/test1/test1.cpp
   miscellaneous/SetEnvironmentVariableA/test1/test1.cpp

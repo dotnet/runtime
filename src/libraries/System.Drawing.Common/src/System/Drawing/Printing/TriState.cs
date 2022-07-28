@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Drawing.Printing
 {
-    internal readonly partial struct TriState
+    internal readonly partial struct TriState : IEquatable<TriState>
     {
         private readonly byte _value; // 0 is "default", not false
 
@@ -11,73 +14,46 @@ namespace System.Drawing.Printing
         public static readonly TriState False = new TriState(1);
         public static readonly TriState True = new TriState(2);
 
-        private TriState(byte value)
+        private TriState(byte value) => _value = value;
+
+        public bool IsDefault => this == Default;
+
+        public bool IsFalse => this == False;
+
+        public bool IsNotDefault => this != Default;
+
+        public bool IsTrue => this == True;
+
+        public static bool operator ==(TriState left, TriState right) => left.Equals(right);
+
+        public static bool operator !=(TriState left, TriState right) => !left.Equals(right);
+
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
-            _value = value;
+            Debug.Assert(o is TriState);
+            return Equals((TriState)o);
         }
 
-        public bool IsDefault
-        {
-            get { return this == Default; }
-        }
+        public bool Equals(TriState other) => _value == other._value;
 
-        public bool IsFalse
-        {
-            get { return this == False; }
-        }
+        public override int GetHashCode() => _value;
 
-        public bool IsNotDefault
-        {
-            get { return this != Default; }
-        }
-
-        public bool IsTrue
-        {
-            get { return this == True; }
-        }
-
-        public static bool operator ==(TriState left, TriState right)
-        {
-            return left._value == right._value;
-        }
-
-        public static bool operator !=(TriState left, TriState right)
-        {
-            return !(left == right);
-        }
-
-        public override bool Equals(object? o)
-        {
-            TriState state = (TriState)o!;
-            return _value == state._value;
-        }
-
-        public override int GetHashCode()
-        {
-            return _value;
-        }
-
-        public static implicit operator TriState(bool value)
-        {
-            return (value) ? True : False;
-        }
+        public static implicit operator TriState(bool value) => value ? True : False;
 
         public static explicit operator bool(TriState value)
         {
             if (value.IsDefault)
+            {
                 throw new InvalidCastException(SR.TriStateCompareError);
-            else
-                return (value == TriState.True);
+            }
+
+            return (value == TriState.True);
         }
 
-        /// <summary>
-        /// Provides some interesting information about the TriState in String form.
-        /// </summary>
-        public override string ToString()
-        {
-            if (this == Default) return "Default";
-            else if (this == False) return "False";
-            else return "True";
-        }
+        /// <summary>Provides some interesting information about the TriState in String form.</summary>
+        public override string ToString() =>
+            this == Default ? "Default" :
+            this == False ? "False" :
+            "True";
     }
 }

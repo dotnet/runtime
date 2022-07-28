@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
 using Mono;
 
 namespace System.Runtime.Loader
@@ -36,6 +35,7 @@ namespace System.Runtime.Loader
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+#pragma warning disable IDE0060
         private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -44,6 +44,7 @@ namespace System.Runtime.Loader
             // TODO: Handle nativeImagePath
             return InternalLoadFile(NativeALC, assemblyPath, ref stackMark);
         }
+#pragma warning restore IDE0060
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         internal Assembly InternalLoad(byte[] arrAssembly, byte[]? arrSymbols)
@@ -70,8 +71,7 @@ namespace System.Runtime.Loader
         // Returns the load context in which the specified assembly has been loaded
         public static AssemblyLoadContext? GetLoadContext(Assembly assembly)
         {
-            if (assembly == null)
-                throw new ArgumentNullException(nameof(assembly));
+            ArgumentNullException.ThrowIfNull(assembly);
 
             AssemblyLoadContext? loadContextForAssembly = null;
 
@@ -80,6 +80,7 @@ namespace System.Runtime.Loader
             // We only support looking up load context for runtime assemblies.
             if (rtAsm != null)
             {
+                var _ = Default;  // ensure the default ALC is initialized.
                 RuntimeAssembly runtimeAssembly = rtAsm;
                 IntPtr ptrAssemblyLoadContext = GetLoadContextForAssembly(runtimeAssembly);
                 loadContextForAssembly = GetAssemblyLoadContext(ptrAssemblyLoadContext);
@@ -126,24 +127,14 @@ namespace System.Runtime.Loader
         // success.
         private static Assembly? MonoResolveUsingResolvingEvent(IntPtr gchALC, string assemblyName)
         {
-            AssemblyLoadContext context;
-            // This check exists because the function can be called early in startup, before the default ALC is initialized
-            if (gchALC == IntPtr.Zero)
-                context = Default;
-            else
-                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchALC).Target)!;
+            AssemblyLoadContext context = GetAssemblyLoadContext(gchALC);
             return context.ResolveUsingEvent(new AssemblyName(assemblyName));
         }
 
         // Invoked by Mono to resolve requests to load satellite assemblies.
         private static Assembly? MonoResolveUsingResolveSatelliteAssembly(IntPtr gchALC, string assemblyName)
         {
-            AssemblyLoadContext context;
-            // This check exists because the function can be called early in startup, before the default ALC is initialized
-            if (gchALC == IntPtr.Zero)
-                context = Default;
-            else
-                context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchALC).Target)!;
+            AssemblyLoadContext context = GetAssemblyLoadContext(gchALC);
             return context.ResolveSatelliteAssembly(new AssemblyName(assemblyName));
         }
 

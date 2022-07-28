@@ -37,7 +37,7 @@ enum LoaderAllocatorType
 
 typedef SHash<PtrSetSHashTraits<LoaderAllocator *>> LoaderAllocatorSet;
 
-class CLRPrivBinderAssemblyLoadContext;
+class CustomAssemblyBinder;
 
 // Iterator over a DomainAssembly in the same ALC
 class DomainAssemblyIterator
@@ -160,6 +160,8 @@ protected:
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_StubHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_PrecodeHeapInstance[sizeof(CodeFragmentHeap)];
+    BYTE                m_FixupPrecodeHeapInstance[sizeof(LoaderHeap)];
+    BYTE                m_NewStubPrecodeHeapInstance[sizeof(LoaderHeap)];
     PTR_LoaderHeap      m_pLowFrequencyHeap;
     PTR_LoaderHeap      m_pHighFrequencyHeap;
     PTR_LoaderHeap      m_pStubHeap; // stubs for PInvoke, remoting, etc
@@ -168,6 +170,8 @@ protected:
 #ifdef FEATURE_READYTORUN
     PTR_CodeFragmentHeap m_pDynamicHelpersHeap;
 #endif
+    PTR_LoaderHeap      m_pFixupPrecodeHeap;
+    PTR_LoaderHeap      m_pNewStubPrecodeHeap;
     //****************************************************************************************
     OBJECTHANDLE        m_hLoaderAllocatorObjectHandle;
     FuncPtrStubs *      m_pFuncPtrStubs; // for GetMultiCallableAddrOfCode()
@@ -236,9 +240,7 @@ protected:
     FatTokenSet *m_pFatTokenSet;
 #endif
 
-#ifndef CROSSGEN_COMPILE
     VirtualCallStubManager *m_pVirtualCallStubManager;
-#endif
 
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;
@@ -286,9 +288,7 @@ private:
     PTR_CallCountingManager m_callCountingManager;
 #endif
 
-#ifndef CROSSGEN_COMPILE
     MethodDescBackpatchInfoTracker m_methodDescBackpatchInfoTracker;
-#endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     PTR_OnStackReplacementManager m_onStackReplacementManager;
@@ -353,7 +353,7 @@ public:
     // 3. Native LoaderAllocator is alive, managed scout is collected.
     //    - The native LoaderAllocator can be kept alive via native reference with code:AddRef call, e.g.:
     //        * Reference from LCG method,
-    //        * Reference recieved from assembly iterator code:AppDomain::AssemblyIterator::Next and/or
+    //        * Reference received from assembly iterator code:AppDomain::AssemblyIterator::Next and/or
     //          held by code:CollectibleAssemblyHolder.
     //    - Other LoaderAllocator can have this LoaderAllocator in its reference list
     //      (code:m_LoaderAllocatorReferences), but without call to code:AddRef.
@@ -447,12 +447,24 @@ public:
         return m_pPrecodeHeap;
     }
 
+    PTR_LoaderHeap GetNewStubPrecodeHeap()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pNewStubPrecodeHeap;
+    }
+
     // The executable heap is intended to only be used by the global loader allocator.
     // It refers to executable memory that is not associated with a rangelist.
     PTR_LoaderHeap GetExecutableHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pExecutableHeap;
+    }
+
+    PTR_LoaderHeap GetFixupPrecodeHeap()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pFixupPrecodeHeap;
     }
 
     PTR_CodeFragmentHeap GetDynamicHelpersHeap();
@@ -572,7 +584,7 @@ public:
         return m_nGCCount;
     }
 
-    static BOOL QCALLTYPE Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
+    static BOOL Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
 
     //****************************************************************************************
     // Methods to retrieve a pointer to the COM+ string STRINGREF for a string constant.
@@ -587,7 +599,6 @@ public:
     void InitVirtualCallStubManager(BaseDomain *pDomain);
     void UninitVirtualCallStubManager();
 
-#ifndef CROSSGEN_COMPILE
     inline VirtualCallStubManager *GetVirtualCallStubManager()
     {
         LIMITED_METHOD_CONTRACT;
@@ -596,7 +607,6 @@ public:
 
     UMEntryThunkCache *GetUMEntryThunkCache();
 
-#endif
 
     static LoaderAllocator* GetLoaderAllocator(ILStubCache* pILStubCache)
     {
@@ -652,22 +662,28 @@ public:
     }
 #endif // FEATURE_TIERED_COMPILATION
 
-#ifndef CROSSGEN_COMPILE
     MethodDescBackpatchInfoTracker *GetMethodDescBackpatchInfoTracker()
     {
         LIMITED_METHOD_CONTRACT;
         return &m_methodDescBackpatchInfoTracker;
     }
-#endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 public:
     PTR_OnStackReplacementManager GetOnStackReplacementManager();
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
+#ifndef DACCESS_COMPILE
+public:
+    virtual void RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle) {};
+    virtual void UnregisterDependentHandleToNativeObjectFromCleanup(LADependentHandleToNativeObject *dependentHandle) {};
+    virtual void CleanupDependentHandlesToNativeObjects() {};
+#endif
 };  // class LoaderAllocator
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
+
+extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
 
 class GlobalLoaderAllocator : public LoaderAllocator
 {
@@ -707,7 +723,7 @@ protected:
 public:
     virtual LoaderAllocatorID* Id();
     AssemblyLoaderAllocator() : m_Id(LAT_Assembly), m_pShuffleThunkCache(NULL)
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
         , m_binderToRelease(NULL)
 #endif
     { LIMITED_METHOD_CONTRACT; }
@@ -727,18 +743,18 @@ public:
         return m_pShuffleThunkCache;
     }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     virtual void RegisterHandleForCleanup(OBJECTHANDLE objHandle);
     virtual void UnregisterHandleFromCleanup(OBJECTHANDLE objHandle);
     virtual void CleanupHandles();
-    CLRPrivBinderAssemblyLoadContext* GetBinder()
+    CustomAssemblyBinder* GetBinder()
     {
         return m_binderToRelease;
     }
     virtual ~AssemblyLoaderAllocator();
-    void RegisterBinder(CLRPrivBinderAssemblyLoadContext* binderToRelease);
+    void RegisterBinder(CustomAssemblyBinder* binderToRelease);
     virtual void ReleaseManagedAssemblyLoadContext();
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 private:
     struct HandleCleanupListItem
@@ -753,8 +769,22 @@ private:
     };
 
     SList<HandleCleanupListItem> m_handleCleanupList;
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-    CLRPrivBinderAssemblyLoadContext* m_binderToRelease;
+#if !defined(DACCESS_COMPILE)
+    CustomAssemblyBinder* m_binderToRelease;
+#endif
+
+private:
+    class DependentHandleToNativeObjectHashTraits : public PtrSetSHashTraits<LADependentHandleToNativeObject *> {};
+    typedef SHash<DependentHandleToNativeObjectHashTraits> DependentHandleToNativeObjectSet;
+
+    CrstExplicitInit m_dependentHandleToNativeObjectSetCrst;
+    DependentHandleToNativeObjectSet m_dependentHandleToNativeObjectSet;
+
+#ifndef DACCESS_COMPILE
+public:
+    virtual void RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle);
+    virtual void UnregisterDependentHandleToNativeObjectFromCleanup(LADependentHandleToNativeObject *dependentHandle);
+    virtual void CleanupDependentHandlesToNativeObjects();
 #endif
 };
 

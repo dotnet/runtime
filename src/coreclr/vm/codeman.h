@@ -478,13 +478,13 @@ struct HeapList
     size_t              maxCodeHeapSize;// Size of the entire contiguous block of memory
     size_t              reserveForJumpStubs; // Amount of memory reserved for jump stubs in this block
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine
 #endif
 
     TADDR GetModuleBase()
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         return (TADDR)CLRPersonalityRoutine;
  #else
         return (TADDR)mapBase;
@@ -552,7 +552,7 @@ public:
 // done and allow us to add new entries one at a time (AddToUnwindInfoTable)
 //
 // Each _rangesection has a UnwindInfoTable's which hold the
-// RUNTIME_FUNCTION array as well as other bookeeping (the current and maximum
+// RUNTIME_FUNCTION array as well as other bookkeeping (the current and maximum
 // size of the array, and the handle used to publish it to the OS.
 //
 // Ideally we would just use this new API when it is available, however to mininmize
@@ -650,9 +650,6 @@ struct RangeSection
 
 /*****************************************************************************/
 
-#ifdef CROSSGEN_COMPILE
-#define CodeFragmentHeap LoaderHeap
-#else
 
 //
 // A simple linked-list based allocator to expose code heap as loader heap for allocation of precodes.
@@ -689,7 +686,7 @@ public:
     TaggedMemAllocPtr RealAllocAlignedMem(size_t  dwRequestedSize
                                          ,unsigned  dwAlignment
 #ifdef _DEBUG
-                                         ,__in __in_z const char *szFile
+                                         ,_In_ _In_z_ const char *szFile
                                          ,int  lineNum
 #endif
                                          );
@@ -697,9 +694,9 @@ public:
     virtual void RealBackoutMem(void *pMem
                         , size_t dwSize
 #ifdef _DEBUG
-                        , __in __in_z const char *szFile
+                        , _In_ _In_z_ const char *szFile
                         , int lineNum
-                        , __in __in_z const char *szAllocFile
+                        , _In_ _In_z_ const char *szAllocFile
                         , int allocLineNum
 #endif
                         ) DAC_EMPTY();
@@ -712,7 +709,6 @@ public:
     }
 #endif
 };
-#endif // CROSSGEN_COMPILE
 
 typedef DPTR(class CodeFragmentHeap) PTR_CodeFragmentHeap;
 
@@ -756,6 +752,14 @@ public:
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars) = 0;
+
+    virtual BOOL GetRichDebugInfo(
+        const DebugInfoRequest& request,
+        IN FP_IDS_NEW fpNew, IN void* pNewData,
+        OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
+        OUT ULONG32* pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32* pNumRichMappings) = 0;
 
     virtual BOOL JitCodeToMethodInfo(
             RangeSection * pRangeSection,
@@ -922,12 +926,12 @@ public:
     }
 #endif // ALLOW_SXS_JIT
 
-#if !defined CROSSGEN_COMPILE && !defined DACCESS_COMPILE
+#if !defined DACCESS_COMPILE
     EEJitManager();
 
     // No destructor necessary. Only one instance of this class that is destroyed at process shutdown.
     // ~EEJitManager();
-#endif // !CROSSGEN_COMPILE && !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE
 
 
     virtual DWORD GetCodeType()
@@ -936,7 +940,6 @@ public:
         return (miManaged | miIL);
     }
 
-#ifndef CROSSGEN_COMPILE
     // Used to read debug info.
     virtual BOOL GetBoundariesAndVars(
         const DebugInfoRequest & request,
@@ -946,8 +949,15 @@ public:
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
 
+    virtual BOOL GetRichDebugInfo(
+        const DebugInfoRequest& request,
+        IN FP_IDS_NEW fpNew, IN void* pNewData,
+        OUT ICorDebugInfo::InlineTreeNode** ppInlineTree,
+        OUT ULONG32* pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32* pNumRichMappings);
+
     virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset);
-#endif // !CROSSGEN_COMPILE
 
     virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
                                      PCODE currentPC,
@@ -957,7 +967,6 @@ public:
     virtual TADDR       JitTokenToStartAddress(const METHODTOKEN& MethodToken);
     virtual void        JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo *methodRegionInfo);
 
-#ifndef CROSSGEN_COMPILE
     virtual unsigned    InitializeEHEnumeration(const METHODTOKEN& MethodToken, EH_CLAUSE_ENUMERATOR* pEnumState);
     virtual PTR_EXCEPTION_CLAUSE_TOKEN GetNextEHClause(EH_CLAUSE_ENUMERATOR* pEnumState,
                                         EE_ILEXCEPTION_CLAUSE* pEHclause);
@@ -966,8 +975,7 @@ public:
                                         CrawlFrame *pCf);
 #endif // !DACCESS_COMPILE
     GCInfoToken         GetGCInfoToken(const METHODTOKEN& MethodToken);
-#endif // !CROSSGEN_COMPILE
-#if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
+#if !defined DACCESS_COMPILE
     void                RemoveJitData(CodeHeader * pCHdr, size_t GCinfo_len, size_t EHinfo_len);
     void                Unload(LoaderAllocator* pAllocator);
     void                CleanupCodeHeaps();
@@ -991,12 +999,11 @@ public:
                                             bool throwOnOutOfMemoryWithinRange);
 
     void *              allocCodeFragmentBlock(size_t blockSize, unsigned alignment, LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind);
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
     static CodeHeader * GetCodeHeader(const METHODTOKEN& MethodToken);
     static CodeHeader * GetCodeHeaderFromStartAddress(TADDR methodStartAddress);
 
-#ifndef CROSSGEN_COMPILE
 #if defined(FEATURE_EH_FUNCLETS)
     // Compute function entry lazily. Do not call directly. Use EECodeInfo::GetFunctionEntry instead.
     virtual PTR_RUNTIME_FUNCTION    LazyGetFunctionEntry(EECodeInfo * pCodeInfo);
@@ -1021,9 +1028,7 @@ public:
         // available at debug time).
     }
 #endif // FEATURE_EH_FUNCLETS
-#endif // !CROSSGEN_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 #ifndef DACCESS_COMPILE
 	// Heap Management functions
     void NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet);
@@ -1032,28 +1037,24 @@ public:
 
     static TADDR FindMethodCode(RangeSection * pRangeSection, PCODE currentPC);
     static TADDR FindMethodCode(PCODE currentPC);
-#endif // !CROSSGEN_COMPILE
 
-#if !defined DACCESS_COMPILE && !defined CROSSGEN_COMPILE
+#if !defined DACCESS_COMPILE
     void        FreeCodeMemory(HostCodeHeap *pCodeHeap, void * codeStart);
     void        RemoveFromCleanupList(HostCodeHeap *pCodeHeap);
     void        AddToCleanupList(HostCodeHeap *pCodeHeap);
     void        DeleteCodeHeap(HeapList *pHeapList);
     void        RemoveCodeHeapFromDomainList(CodeHeap *pHeap, LoaderAllocator *pAllocator);
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 private :
-#ifndef CROSSGEN_COMPILE
     struct DomainCodeHeapList {
         LoaderAllocator *m_pAllocator;
         CDynArray<HeapList *> m_CodeHeapList;
         DomainCodeHeapList();
         ~DomainCodeHeapList();
     };
-#endif
 
 #ifndef DACCESS_COMPILE
-#ifndef CROSSGEN_COMPILE
     HeapList*   NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapList *pADHeapList);
     bool        CanUseCodeHeap(CodeHeapRequestInfo *pInfo, HeapList *pCodeHeap);
     void*       allocCodeRaw(CodeHeapRequestInfo *pInfo,
@@ -1063,18 +1064,15 @@ private :
     DomainCodeHeapList *GetCodeHeapList(CodeHeapRequestInfo *pInfo, LoaderAllocator *pAllocator, BOOL fDynamicOnly = FALSE);
     DomainCodeHeapList *CreateCodeHeapList(CodeHeapRequestInfo *pInfo);
     LoaderHeap* GetJitMetaHeap(MethodDesc *pMD);
-#endif // !CROSSGEN_COMPILE
 
     HeapList * GetCodeHeapList()
     {
         return m_pCodeHeap;
     }
 
-#ifndef CROSSGEN_COMPILE
 protected:
     void *      allocEHInfoRaw(CodeHeader* pCodeHeader, DWORD blockSize, size_t * pAllocationSize);
 private:
-#endif
 #endif // !DACCESS_COMPILE
 
     PTR_HeapList m_pCodeHeap;
@@ -1114,7 +1112,7 @@ public:
 private:
     CORJIT_FLAGS m_CPUCompileFlags;
 
-#if !defined CROSSGEN_COMPILE && !defined DACCESS_COMPILE
+#if !defined DACCESS_COMPILE
     void SetCpuInfo();
 #endif
 
@@ -1125,16 +1123,24 @@ public:
         return m_CPUCompileFlags;
     }
 
+private:
+    bool m_storeRichDebugInfo;
+
+public:
+    bool IsStoringRichDebugInfo()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_storeRichDebugInfo;
+    }
+
 private :
     PTR_HostCodeHeap    m_cleanupList;
     //When EH Clauses are resolved we need to atomically update the TypeHandle
     Crst                m_JitLoadCritSec;
 
-#if !defined CROSSGEN_COMPILE
     // must hold critical section to access this structure.
     CUnorderedArray<DomainCodeHeapList *, 5> m_DomainCodeHeaps;
     CUnorderedArray<DomainCodeHeapList *, 5> m_DynamicDomainCodeHeaps;
-#endif
 
 #ifdef TARGET_AMD64
 private:
@@ -1263,14 +1269,6 @@ public:
         return m_pEEJitManager;
     }
 
-#ifdef FEATURE_PREJIT
-    static NativeImageJitManager * GetNativeImageJitManager()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pNativeImageJitManager;
-    }
-#endif
-
 #ifdef FEATURE_READYTORUN
     static ReadyToRunJitManager * GetReadyToRunJitManager()
     {
@@ -1336,27 +1334,18 @@ private:
     SPTR_DECL(EECodeManager, m_pDefaultCodeMan);
 
     SPTR_DECL(EEJitManager, m_pEEJitManager);
-#ifdef FEATURE_PREJIT
-    SPTR_DECL(NativeImageJitManager, m_pNativeImageJitManager);
-#endif
 #ifdef FEATURE_READYTORUN
     SPTR_DECL(ReadyToRunJitManager, m_pReadyToRunJitManager);
 #endif
 
     static CrstStatic       m_JumpStubCrst;
-    static CrstStatic       m_RangeCrst;        // Aquire before writing into m_CodeRangeList and m_DataRangeList
+    static CrstStatic       m_RangeCrst;        // Acquire before writing into m_CodeRangeList and m_DataRangeList
 
     // infrastructure to manage readers so we can lock them out and delete domain data
     // make ReaderCount volatile because we have order dependency in READER_INCREMENT
-#ifndef DACCESS_COMPILE
-    static Volatile<RangeSection *> m_CodeRangeList;
-    static Volatile<LONG>   m_dwReaderCount;
-    static Volatile<LONG>   m_dwWriterLock;
-#else
-    SPTR_DECL(RangeSection,  m_CodeRangeList);
-    SVAL_DECL(LONG, m_dwReaderCount);
-    SVAL_DECL(LONG, m_dwWriterLock);
-#endif
+    VOLATILE_SPTR_DECL(RangeSection,  m_CodeRangeList);
+    VOLATILE_SVAL_DECL(LONG, m_dwReaderCount);
+    VOLATILE_SVAL_DECL(LONG, m_dwWriterLock);
 
 #ifndef DACCESS_COMPILE
     class WriterLockHolder
@@ -1451,6 +1440,13 @@ private:
     static unsigned m_LCG_JumpStubBlockFullCount;
 
 public:
+
+    static void DumpExecutionManagerUsage()
+    {
+        fprintf(stderr, "JumpStub usage count:\n");
+        fprintf(stderr, "Normal: %u, LCG: %u\n", m_normal_JumpStubLookup, m_LCG_JumpStubLookup);
+    }
+
     struct JumpStubCache
     {
         JumpStubCache()
@@ -1509,96 +1505,7 @@ inline void EEJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodTo
     methodRegionInfo->coldSize         = 0;
 }
 
-
-//-----------------------------------------------------------------------------
-#ifdef FEATURE_PREJIT
-
-//*****************************************************************************
-// Stub JitManager for Managed native.
-
-class NativeImageJitManager : public IJitManager
-{
-    VPTR_VTABLE_CLASS(NativeImageJitManager, IJitManager)
-
-public:
-#ifndef DACCESS_COMPILE
-    NativeImageJitManager();
-#endif // #ifndef DACCESS_COMPILE
-
-    virtual DWORD GetCodeType()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (miManaged | miNative);
-    }
-
-    // Used to read debug info.
-    virtual BOOL GetBoundariesAndVars(
-        const DebugInfoRequest & request,
-        IN FP_IDS_NEW fpNew, IN void * pNewData,
-        OUT ULONG32 * pcMap,
-        OUT ICorDebugInfo::OffsetMapping **ppMap,
-        OUT ULONG32 * pcVars,
-        OUT ICorDebugInfo::NativeVarInfo **ppVars);
-
-    virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
-                                     PCODE currentPC,
-                                     MethodDesc ** ppMethodDesc,
-                                     EECodeInfo * pCodeInfo);
-
-    virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset);
-
-    static PTR_Module   JitTokenToZapModule(const METHODTOKEN& MethodToken);
-    virtual TADDR       JitTokenToStartAddress(const METHODTOKEN& MethodToken);
-    virtual void        JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo);
-
-    virtual unsigned    InitializeEHEnumeration(const METHODTOKEN& MethodToken, EH_CLAUSE_ENUMERATOR* pEnumState);
-
-    virtual PTR_EXCEPTION_CLAUSE_TOKEN  GetNextEHClause(EH_CLAUSE_ENUMERATOR* pEnumState,
-                                        EE_ILEXCEPTION_CLAUSE* pEHclause);
-
-#ifndef DACCESS_COMPILE
-    virtual TypeHandle  ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
-                                        CrawlFrame *pCf);
-#endif // #ifndef DACCESS_COMPILE
-
-    virtual GCInfoToken  GetGCInfoToken(const METHODTOKEN& MethodToken);
-
-#if defined(FEATURE_EH_FUNCLETS)
-    virtual PTR_RUNTIME_FUNCTION    LazyGetFunctionEntry(EECodeInfo * pCodeInfo);
-
-    virtual TADDR                   GetFuncletStartAddress(EECodeInfo * pCodeInfo);
-    virtual DWORD                   GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
-    virtual BOOL                    IsFilterFunclet(EECodeInfo * pCodeInfo);
-#endif // FEATURE_EH_FUNCLETS
-
-    virtual StubCodeBlockKind       GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC);
-
-#if defined(DACCESS_COMPILE)
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
-#if defined(FEATURE_EH_FUNCLETS)
-    // Enumerate the memory necessary to retrieve the unwind info for a specific method
-    virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
-#endif //FEATURE_EH_FUNCLETS
-#endif //DACCESS_COMPILE
-};
-
-inline TADDR NativeImageJitManager::JitTokenToStartAddress(const METHODTOKEN& MethodToken)
-{
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        HOST_NOCALLS;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    return JitTokenToModuleBase(MethodToken) +
-        RUNTIME_FUNCTION__BeginAddress(dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader));
-}
-
-#endif // FEATURE_PREJIT
-
-#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+#if defined(FEATURE_READYTORUN)
 
 class NativeExceptionInfoLookupTable
 {
@@ -1616,17 +1523,9 @@ public:
                                          PTR_RUNTIME_FUNCTION pRuntimeFunctionTable,
                                          int StartIndex,
                                          int EndIndex);
-
-#ifdef FEATURE_PREJIT
-    static BOOL HasExceptionInfo(NGenLayoutInfo * pNgenLayout, PTR_RUNTIME_FUNCTION pMainRuntimeFunction);
-    static PTR_MethodDesc GetMethodDesc(NGenLayoutInfo * pNgenLayout, PTR_RUNTIME_FUNCTION pMainRuntimeFunction, TADDR moduleBase);
-
-private:
-    static DWORD GetMethodDescRVA(NGenLayoutInfo * pNgenLayout, PTR_RUNTIME_FUNCTION pMainRuntimeFunction);
-#endif
 };
 
-#endif // FEATURE_PREJIT || FEATURE_READYTORUN
+#endif // FEATURE_READYTORUN
 
 #ifdef FEATURE_READYTORUN
 
@@ -1653,6 +1552,14 @@ public:
         OUT ICorDebugInfo::OffsetMapping **ppMap,
         OUT ULONG32 * pcVars,
         OUT ICorDebugInfo::NativeVarInfo **ppVars);
+
+    virtual BOOL GetRichDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::InlineTreeNode**    ppInlineTree,
+        OUT ULONG32*                           pNumInlineTree,
+        OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
+        OUT ULONG32*                           pNumRichMappings);
 
     virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
                                      PCODE currentPC,
@@ -1715,9 +1622,6 @@ public:
 class EECodeInfo
 {
     friend BOOL EEJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
-#ifdef FEATURE_PREJIT
-    friend BOOL NativeImageJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
-#endif
 #ifdef FEATURE_READYTORUN
     friend BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
 #endif
@@ -1852,52 +1756,6 @@ private:
 };
 
 #include "codeman.inl"
-
-
-#ifdef FEATURE_PREJIT
-class MethodSectionIterator;
-
-//
-//  MethodIterator class is used to iterate all the methods in an ngen image.
-//  It will match and report hot (and cold, if any) sections of a method at the same time.
-//  GcInfo version is always current
-class MethodIterator
-{
-public:
-    enum MethodIteratorOptions
-    {
-        Hot = 0x1,
-        Unprofiled =0x2,
-        All = Hot | Unprofiled
-    };
-private:
-    TADDR                 m_ModuleBase;
-    MethodIteratorOptions methodIteratorOptions;
-
-    NGenLayoutInfo *        m_pNgenLayout;
-    BOOL                    m_fHotMethodsDone;
-    COUNT_T                 m_CurrentRuntimeFunctionIndex;
-    COUNT_T                 m_CurrentColdRuntimeFunctionIndex;
-
-    void Init(PTR_Module pModule, PEDecoder * pPEDecoder, MethodIteratorOptions mio);
-
-  public:
-    MethodIterator(PTR_Module pModule, MethodIteratorOptions mio = All);
-    MethodIterator(PTR_Module pModule, PEDecoder * pPEDecoder, MethodIteratorOptions mio = All);
-
-    BOOL Next();
-
-    PTR_MethodDesc GetMethodDesc();
-    GCInfoToken GetGCInfoToken();
-    TADDR GetMethodStartAddress();
-    TADDR GetMethodColdStartAddress();
-    ULONG GetHotCodeSize();
-
-    PTR_RUNTIME_FUNCTION GetRuntimeFunction();
-
-    void GetMethodRegionInfo(IJitManager::MethodRegionInfo *methodRegionInfo);
-};
-#endif //FEATURE_PREJIT
 
 void ThrowOutOfMemoryWithinRange();
 

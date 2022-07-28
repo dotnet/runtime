@@ -127,4 +127,4 @@ FAIL:
 	ret
 }
 }
-.assembly ble_u8.exe{}
+.assembly ble_u8{}

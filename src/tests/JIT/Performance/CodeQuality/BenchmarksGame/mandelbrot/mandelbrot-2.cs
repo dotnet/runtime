@@ -15,10 +15,6 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using Microsoft.Xunit.Performance;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
@@ -41,33 +37,6 @@ namespace BenchmarksGame
                 return -1;
             }
             return 100;
-        }
-
-        // Commented out data left in source to provide checksums for each case
-
-        [Benchmark]
-        //[InlineData(1000, "B2-13-51-CE-B0-29-2C-4E-75-5E-91-19-18-E4-0C-D9")]
-        //[InlineData(2000, "5A-21-55-9B-7B-18-2F-34-9B-33-C5-F9-B5-2C-40-56")]
-        //[InlineData(3000, "E5-82-85-0A-3C-89-69-B1-A8-21-63-52-75-B3-C8-33")]
-        [InlineData(4000, "C7-E6-66-43-66-73-F8-A8-D3-B4-D7-97-2F-FC-A1-D3")]
-        //[InlineData(5000, "6D-36-F1-F6-37-8F-34-EB-52-F9-2D-11-89-12-B2-2F")]
-        //[InlineData(6000, "8B-05-78-EB-2E-0E-98-F2-C7-39-76-ED-0F-A9-D2-B8")]
-        //[InlineData(7000, "01-F8-F2-2A-AB-70-C7-BA-E3-64-19-E7-D2-84-DF-57")]
-        //[InlineData(8000, "C8-ED-D7-FB-65-66-3A-D9-C6-04-9E-96-E8-CA-4F-2C")]
-        public static void Bench(int width, string checksum)
-        {
-            int lineLen = (width - 1) / 8 + 1;
-            byte[] bytes = null;
-
-            Benchmark.Iterate(() =>
-            {
-                bytes = new byte[width * lineLen];
-                var memStream = new MemoryStream(bytes);
-
-                DoBench(width, memStream, false);
-            });
-
-            Assert.True(MatchesChecksum(bytes, checksum));
         }
 
         static bool MatchesChecksum(byte[] bytes, string checksum)

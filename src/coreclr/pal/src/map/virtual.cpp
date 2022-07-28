@@ -751,7 +751,7 @@ static BOOL VIRTUALStoreAllocationInfo(
 
     if (pNewEntry->pAllocState && pNewEntry->pProtectionState)
     {
-        /* Set the intial allocation state, and initial allocation protection. */
+        /* Set the initial allocation state, and initial allocation protection. */
         VIRTUALSetAllocState(MEM_RESERVE, 0, nBufferSize * CHAR_BIT, pNewEntry);
         memset(pNewEntry->pProtectionState,
                VIRTUALConvertWinFlags(flProtection),
@@ -1263,21 +1263,24 @@ Function:
   lpBeginAddress - Inclusive beginning of range
   lpEndAddress - Exclusive end of range
   dwSize - Number of bytes to allocate
+  fStoreAllocationInfo - TRUE to indicate that the allocation should be registered in the PAL allocation list
 --*/
 LPVOID
 PALAPI
 PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     IN LPCVOID lpBeginAddress,
     IN LPCVOID lpEndAddress,
-    IN SIZE_T dwSize)
+    IN SIZE_T dwSize,
+    IN BOOL fStoreAllocationInfo)
 {
 #ifdef HOST_64BIT
     PERF_ENTRY(PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange);
     ENTRY(
-        "PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(lpBeginAddress = %p, lpEndAddress = %p, dwSize = %Iu)\n",
+        "PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(lpBeginAddress = %p, lpEndAddress = %p, dwSize = %Iu, fStoreAllocationInfo = %d)\n",
         lpBeginAddress,
         lpEndAddress,
-        dwSize);
+        dwSize,
+        fStoreAllocationInfo);
 
     _ASSERTE(lpBeginAddress <= lpEndAddress);
 
@@ -1292,7 +1295,7 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     if (address != nullptr)
     {
         _ASSERTE(IS_ALIGNED(address, GetVirtualPageSize()));
-        if (!VIRTUALStoreAllocationInfo((UINT_PTR)address, reservationSize, MEM_RESERVE | MEM_RESERVE_EXECUTABLE, PAGE_NOACCESS))
+        if (fStoreAllocationInfo && !VIRTUALStoreAllocationInfo((UINT_PTR)address, reservationSize, MEM_RESERVE | MEM_RESERVE_EXECUTABLE, PAGE_NOACCESS))
         {
             ASSERT("Unable to store the structure in the list.\n");
             munmap(address, reservationSize);
@@ -1317,6 +1320,27 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
 #else // !HOST_64BIT
     return nullptr;
 #endif // HOST_64BIT
+}
+
+/*++
+Function:
+  PAL_GetExecutableMemoryAllocatorPreferredRange
+
+  This function gets the preferred range used by the executable memory allocator.
+  This is the range that the memory allocator will prefer to allocate memory in,
+  including (if nearby) the libcoreclr memory range.
+
+  lpBeginAddress - Inclusive beginning of range
+  lpEndAddress - Exclusive end of range
+  dwSize - Number of bytes to allocate
+--*/
+void
+PALAPI
+PAL_GetExecutableMemoryAllocatorPreferredRange(
+    OUT LPVOID *start,
+    OUT LPVOID *end)
+{
+    g_executableMemoryAllocator.GetPreferredRange(start, end);
 }
 
 /*++
@@ -2065,7 +2089,7 @@ size_t GetVirtualPageSize()
 Function :
     ReserveMemoryFromExecutableAllocator
 
-    This function is used to reserve a region of virual memory (not commited)
+    This function is used to reserve a region of virual memory (not committed)
     that is located close to the coreclr library. The memory comes from the virtual
     address range that is managed by ExecutableMemoryAllocator.
 --*/
@@ -2093,11 +2117,6 @@ Function:
 --*/
 void ExecutableMemoryAllocator::Initialize()
 {
-    m_startAddress = NULL;
-    m_nextFreeAddress = NULL;
-    m_totalSizeOfReservedMemory = 0;
-    m_remainingReservedMemory = 0;
-
     // Enable the executable memory allocator on 64-bit platforms only
     // because 32-bit platforms have limited amount of virtual address space.
 #ifdef HOST_64BIT
@@ -2121,7 +2140,15 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     int32_t preferredStartAddressIncrement;
     UINT_PTR preferredStartAddress;
     UINT_PTR coreclrLoadAddress;
-    const int32_t MemoryProbingIncrement = 128 * 1024 * 1024;
+
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Smaller steps on ARM because we try hard finding a spare memory in a 128Mb
+    // distance from coreclr so e.g. all calls from corelib to coreclr could use relocs
+    const int32_t AddressProbingIncrement = 8 * 1024 * 1024;
+#else
+    const int32_t AddressProbingIncrement = 128 * 1024 * 1024;
+#endif
+    const int32_t SizeProbingDecrement = 128 * 1024 * 1024;
 
     // Try to find and reserve an available region of virtual memory that is located
     // within 2GB range (defined by the MaxExecutableMemorySizeNearCoreClr constant) from the
@@ -2142,12 +2169,18 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     {
         // Try to allocate above the location of libcoreclr
         preferredStartAddress = coreclrLoadAddress + CoreClrLibrarySize;
-        preferredStartAddressIncrement = MemoryProbingIncrement;
+        preferredStartAddressIncrement = AddressProbingIncrement;
     }
     else
     {
         // Try to allocate below the location of libcoreclr
-        preferredStartAddress = coreclrLoadAddress - MaxExecutableMemorySizeNearCoreClr;
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+        // For arm for the "high address" case it only makes sense to try to reserve 128Mb
+        // and if it doesn't work - we'll reserve a full-sized region in a random location
+        sizeOfAllocation = SizeProbingDecrement;
+#endif
+
+        preferredStartAddress = coreclrLoadAddress - sizeOfAllocation;
         preferredStartAddressIncrement = 0;
     }
 
@@ -2161,10 +2194,10 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         }
 
         // Try to allocate a smaller region
-        sizeOfAllocation -= MemoryProbingIncrement;
+        sizeOfAllocation -= SizeProbingDecrement;
         preferredStartAddress += preferredStartAddressIncrement;
 
-    } while (sizeOfAllocation >= MemoryProbingIncrement);
+    } while (sizeOfAllocation >= SizeProbingDecrement);
 
     if (m_startAddress == nullptr)
     {
@@ -2189,6 +2222,26 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         {
             return;
         }
+
+        m_preferredRangeStart = m_startAddress;
+        m_preferredRangeEnd = (char*)m_startAddress + sizeOfAllocation;
+    }
+    else
+    {
+        // We managed to allocate memory close to libcoreclr, so include its memory address in the preferred range to allow
+        // generated code to use IP-relative addressing.
+        if ((char*)m_startAddress < (char*)coreclrLoadAddress)
+        {
+            m_preferredRangeStart = (void*)m_startAddress;
+            m_preferredRangeEnd = (char*)coreclrLoadAddress + CoreClrLibrarySize;
+        }
+        else
+        {
+            m_preferredRangeStart = (void*)coreclrLoadAddress;
+            m_preferredRangeEnd = (char*)m_startAddress + sizeOfAllocation;
+        }
+
+        _ASSERTE((char*)m_preferredRangeEnd - (char*)m_preferredRangeStart <= INT_MAX);
     }
 
     // Memory has been successfully reserved.

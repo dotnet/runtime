@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Enumeration
 {
@@ -10,7 +11,8 @@ namespace System.IO.Enumeration
     /// </summary>
     public unsafe ref partial struct FileSystemEntry
    {
-        internal Interop.Sys.DirectoryEntry _directoryEntry;
+        private Interop.Sys.DirectoryEntry _directoryEntry;
+        private bool _isDirectory;
         private FileStatus _status;
         private Span<char> _pathBuffer;
         private ReadOnlySpan<char> _fullPath;
@@ -32,38 +34,34 @@ namespace System.IO.Enumeration
             entry._pathBuffer = pathBuffer;
             entry._fullPath = ReadOnlySpan<char>.Empty;
             entry._fileName = ReadOnlySpan<char>.Empty;
-
+            entry._isDirectory = false;
             entry._status.InvalidateCaches();
 
             bool isDirectory = directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR;
             bool isSymlink   = directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK;
             bool isUnknown   = directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN;
 
-            // Some operating systems don't have the inode type in the dirent structure,
-            // so we use DT_UNKNOWN as a sentinel value. As such, check if the dirent is a
-            // symlink or a directory.
-            if (isUnknown)
+            if (isDirectory)
             {
-                isSymlink = entry.IsSymbolicLink;
-                // Need to fail silently in case we are enumerating
-                isDirectory = entry._status.IsDirectory(entry.FullPath, continueOnError: true);
+                entry._isDirectory = true;
             }
-            // Same idea as the directory check, just repeated for (and tweaked due to the
-            // nature of) symlinks.
-            // Whether we had the dirent structure or not, we treat a symlink to a directory as a directory,
-            // so we need to reflect that in our isDirectory variable.
             else if (isSymlink)
             {
-                // Need to fail silently in case we are enumerating
-                isDirectory = entry._status.IsDirectory(entry.FullPath, continueOnError: true);
+                entry._isDirectory = entry._status.IsDirectory(entry.FullPath, continueOnError: true);
+            }
+            else if (isUnknown)
+            {
+                entry._isDirectory = entry._status.IsDirectory(entry.FullPath, continueOnError: true);
+                if (entry._status.IsSymbolicLink(entry.FullPath, continueOnError: true))
+                {
+                    entry._directoryEntry.InodeType = Interop.Sys.NodeType.DT_LNK;
+                }
             }
 
-            entry._status.InitiallyDirectory = isDirectory;
-
             FileAttributes attributes = default;
-            if (isSymlink)
+            if (entry.IsSymbolicLink)
                 attributes |= FileAttributes.ReparsePoint;
-            if (isDirectory)
+            if (entry.IsDirectory)
                 attributes |= FileAttributes.Directory;
 
             return attributes;
@@ -91,11 +89,8 @@ namespace System.IO.Enumeration
             {
                 if (_directoryEntry.NameLength != 0 && _fileName.Length == 0)
                 {
-                    fixed (char* c = _fileNameBuffer)
-                    {
-                        Span<char> buffer = new Span<char>(c, Interop.Sys.DirectoryEntry.NameBufferSize);
-                        _fileName = _directoryEntry.GetName(buffer);
-                    }
+                    Span<char> buffer = MemoryMarshal.CreateSpan(ref _fileNameBuffer[0], Interop.Sys.DirectoryEntry.NameBufferSize);
+                    _fileName = _directoryEntry.GetName(buffer);
                 }
 
                 return _fileName;
@@ -119,20 +114,47 @@ namespace System.IO.Enumeration
 
         // Windows never fails getting attributes, length, or time as that information comes back
         // with the native enumeration struct. As such we must not throw here.
-        public FileAttributes Attributes => _status.GetAttributes(FullPath, FileName);
+        public FileAttributes Attributes
+        {
+            get
+            {
+                FileAttributes attributes = _status.GetAttributes(FullPath, FileName, continueOnError: true);
+                if (attributes != (FileAttributes)(-1))
+                {
+                    return attributes;
+                }
+
+                // File was removed before we retrieved attributes.
+                // Return what we know.
+                attributes = default;
+
+                if (IsSymbolicLink)
+                    attributes |= FileAttributes.ReparsePoint;
+
+                if (IsDirectory)
+                    attributes |= FileAttributes.Directory;
+
+                if (FileStatus.IsNameHidden(FileName))
+                    attributes |= FileAttributes.Hidden;
+
+                return attributes != default ? attributes : FileAttributes.Normal;
+            }
+        }
         public long Length => _status.GetLength(FullPath, continueOnError: true);
         public DateTimeOffset CreationTimeUtc => _status.GetCreationTime(FullPath, continueOnError: true);
         public DateTimeOffset LastAccessTimeUtc => _status.GetLastAccessTime(FullPath, continueOnError: true);
         public DateTimeOffset LastWriteTimeUtc => _status.GetLastWriteTime(FullPath, continueOnError: true);
-        public bool IsDirectory => _status.InitiallyDirectory;
-        public bool IsHidden => _status.IsHidden(FullPath, FileName);
-        internal bool IsReadOnly => _status.IsReadOnly(FullPath);
-        internal bool IsSymbolicLink => _status.IsSymbolicLink(FullPath);
+
+        public bool IsHidden => _status.IsFileSystemEntryHidden(FullPath, FileName);
+        internal bool IsReadOnly => _status.IsReadOnly(FullPath, continueOnError: true);
+
+        public bool IsDirectory => _isDirectory;
+        internal bool IsSymbolicLink => _directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK;
 
         public FileSystemInfo ToFileSystemInfo()
         {
             string fullPath = ToFullPath();
-            return FileSystemInfo.Create(fullPath, new string(FileName), ref _status);
+            return FileSystemInfo.Create(fullPath, new string(FileName), _isDirectory, ref _status);
         }
 
         /// <summary>

@@ -15,27 +15,27 @@ class GenInt : IGen<int>
 
 	public virtual void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread15.Xcounter);
 	}
 	
 	public static void ThreadPoolTest()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread15.nThreads];
 		IGen<int> obj = new GenInt();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread15.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(obj.Target));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread15.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread15.Eval(Test_thread15.Xcounter==Test_thread15.nThreads);
+		Test_thread15.Xcounter = 0;
 	}
 }
 
@@ -45,27 +45,27 @@ class GenDouble : IGen<double>
 
 	public virtual void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread15.Xcounter);
 	}
 	
 	public static void ThreadPoolTest()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread15.nThreads];
 		IGen<double> obj = new GenDouble();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread15.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(obj.Target));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread15.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread15.Eval(Test_thread15.Xcounter==Test_thread15.nThreads);
+		Test_thread15.Xcounter = 0;
 	}
 }
 
@@ -75,27 +75,27 @@ class GenString : IGen<string>
 
 	public virtual void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread15.Xcounter);
 	}
 	
 	public static void ThreadPoolTest()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread15.nThreads];
 		IGen<string> obj = new GenString();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread15.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(obj.Target));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread15.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread15.Eval(Test_thread15.Xcounter==Test_thread15.nThreads);
+		Test_thread15.Xcounter = 0;
 	}
 }
 
@@ -105,27 +105,27 @@ class GenObject : IGen<object>
 
 	public virtual void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread15.Xcounter);
 	}
 	
 	public static void ThreadPoolTest()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread15.nThreads];
 		IGen<object> obj = new GenObject();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread15.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(obj.Target));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread15.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread15.Eval(Test_thread15.Xcounter==Test_thread15.nThreads);
+		Test_thread15.Xcounter = 0;
 	}
 }
 
@@ -135,30 +135,30 @@ class GenGuid : IGen<Guid>
 
 	public virtual void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread15.Xcounter);
 	}
 	
 	public static void ThreadPoolTest()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread15.nThreads];
 		IGen<Guid> obj = new GenGuid();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread15.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(obj.Target));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread15.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread15.Eval(Test_thread15.Xcounter==Test_thread15.nThreads);
+		Test_thread15.Xcounter = 0;
 	}
 }
-public class Test
+public class Test_thread15
 {
 	public static int nThreads =50;
 	public static int counter = 0;

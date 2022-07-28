@@ -100,7 +100,7 @@ namespace System
                 // Simply "emulates" a 128-bit multiplication
                 //
                 // However: the resulting number only contains 64-bits. The least
-                // signficant 64-bits are only used for rounding the most significant
+                // significant 64-bits are only used for rounding the most significant
                 // 64-bits.
 
                 uint a = (uint)(f >> 32);

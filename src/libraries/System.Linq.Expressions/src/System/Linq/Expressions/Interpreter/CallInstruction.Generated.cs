@@ -13,9 +13,7 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal partial class CallInstruction
     {
-#if FEATURE_DLG_INVOKE
         private const int MaxHelpers = 5;
-#endif
 
 #if FEATURE_FAST_CREATE
         private const int MaxArgs = 3;
@@ -158,7 +156,6 @@ namespace System.Linq.Expressions.Interpreter
         }
 #endif
 
-#if FEATURE_DLG_INVOKE
         [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.PublicConstructors)]
         private static Type GetHelperType(MethodInfo info, Type[] arrTypes)
         {
@@ -211,10 +208,8 @@ namespace System.Linq.Expressions.Interpreter
             }
             return t;
         }
-#endif
     }
 
-#if FEATURE_DLG_INVOKE
     internal sealed class ActionCallInstruction : CallInstruction
     {
         private readonly Action _target;
@@ -577,6 +572,4 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string ToString() => "Call(" + _target.Method + ")";
     }
-
-#endif
 }

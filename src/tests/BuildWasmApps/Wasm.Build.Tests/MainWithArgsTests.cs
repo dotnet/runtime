@@ -81,12 +81,13 @@ namespace Wasm.Build.Tests
             if (dotnetWasmFromRuntimePack == null)
                 dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
-            Console.WriteLine ($"-- args: {buildArgs}, name: {projectName}");
+            _testOutput.WriteLine ($"-- args: {buildArgs}, name: {projectName}");
 
             BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                        id: id,
-                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack);
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                                DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42 + args.Length, args: string.Join(' ', args),
                 test: output =>

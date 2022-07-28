@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -22,83 +23,22 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
-            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
-
-            if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
+            base.CreateCollection(ref reader, ref state, options);
+            TCollection returnValue = (TCollection)state.Current.ReturnValue!;
+            if (returnValue.IsReadOnly)
             {
-                if (!TypeToConvert.IsAssignableFrom(RuntimeType))
-                {
-                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
-                }
-
-                state.Current.ReturnValue = new HashSet<TElement>();
-            }
-            else
-            {
-                if (typeInfo.CreateObject == null)
-                {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
-                }
-
-                TCollection returnValue = (TCollection)typeInfo.CreateObject()!;
-
-                if (returnValue.IsReadOnly)
-                {
-                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
-                }
-
-                state.Current.ReturnValue = returnValue;
+                state.Current.ReturnValue = null; // clear out for more accurate JsonPath reporting.
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
             }
         }
 
-        protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
-            IEnumerator<TElement> enumerator;
-            if (state.Current.CollectionEnumerator == null)
+            // Deserialize as HashSet<TElement> for interface types that support it.
+            if (jsonTypeInfo.CreateObject is null && TypeToConvert.IsAssignableFrom(typeof(HashSet<TElement>)))
             {
-                enumerator = value.GetEnumerator();
-                if (!enumerator.MoveNext())
-                {
-                    enumerator.Dispose();
-                    return true;
-                }
-            }
-            else
-            {
-                enumerator = (IEnumerator<TElement>)state.Current.CollectionEnumerator;
-            }
-
-            JsonConverter<TElement> converter = GetElementConverter(ref state);
-            do
-            {
-                if (ShouldFlush(writer, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-
-                TElement element = enumerator.Current;
-                if (!converter.TryWrite(writer, element, options, ref state))
-                {
-                    state.Current.CollectionEnumerator = enumerator;
-                    return false;
-                }
-            } while (enumerator.MoveNext());
-
-            enumerator.Dispose();
-            return true;
-        }
-
-        internal override Type RuntimeType
-        {
-            get
-            {
-                if (TypeToConvert.IsAbstract || TypeToConvert.IsInterface)
-                {
-                    return typeof(HashSet<TElement>);
-                }
-
-                return TypeToConvert;
+                Debug.Assert(TypeToConvert.IsInterface);
+                jsonTypeInfo.CreateObject = () => new HashSet<TElement>();
             }
         }
     }

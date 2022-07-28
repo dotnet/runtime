@@ -67,7 +67,7 @@ namespace System.Diagnostics.Metrics
             {
                 if (instrument is not null && !_disposed && !instrument.Meter.Disposed)
                 {
-                    _enabledMeasurementInstruments.AddIfNotExist(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2));
+                    _enabledMeasurementInstruments.AddIfNotExist(instrument, object.ReferenceEquals);
                     oldState = instrument.EnableMeasurement(new ListenerSubscription(this, state), out oldStateStored);
                     enabled = true;
                 }
@@ -98,7 +98,7 @@ namespace System.Diagnostics.Metrics
             object? state =  null;
             lock (Instrument.SyncObject)
             {
-                if (instrument is null || _enabledMeasurementInstruments.Remove(instrument, (instrument1, instrument2) => object.ReferenceEquals(instrument1, instrument2)) == default)
+                if (instrument is null || _enabledMeasurementInstruments.Remove(instrument, object.ReferenceEquals) == default)
                 {
                     return default;
                 }
@@ -117,33 +117,35 @@ namespace System.Diagnostics.Metrics
         /// <param name="measurementCallback">The callback which can be used to get measurement recording of numeric type T.</param>
         public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) where T : struct
         {
-            if (measurementCallback is MeasurementCallback<byte> byteCallback)
+            measurementCallback ??= (instrument, measurement, tags, state) => { /* no-op */};
+
+            if (typeof(T) == typeof(byte))
             {
-                _byteMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : byteCallback;
+                _byteMeasurementCallback = (MeasurementCallback<byte>)(object)measurementCallback;
             }
-            else if (measurementCallback is MeasurementCallback<int> intCallback)
+            else if (typeof(T) == typeof(int))
             {
-                _intMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : intCallback;
+                _intMeasurementCallback = (MeasurementCallback<int>)(object)measurementCallback;
             }
-            else if (measurementCallback is MeasurementCallback<float> floatCallback)
+            else if (typeof(T) == typeof(float))
             {
-                _floatMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : floatCallback;
+                _floatMeasurementCallback = (MeasurementCallback<float>)(object)measurementCallback;
             }
-            else if (measurementCallback is MeasurementCallback<double> doubleCallback)
+            else if (typeof(T) == typeof(double))
             {
-                _doubleMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : doubleCallback;
+                _doubleMeasurementCallback = (MeasurementCallback<double>)(object)measurementCallback;
             }
-            else if (measurementCallback is MeasurementCallback<decimal> decimalCallback)
+            else if (typeof(T) == typeof(decimal))
             {
-                _decimalMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : decimalCallback;
+                _decimalMeasurementCallback = (MeasurementCallback<decimal>)(object)measurementCallback;
             }
-            else if (measurementCallback is MeasurementCallback<short> shortCallback)
+            else if (typeof(T) == typeof(short))
             {
-                _shortMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : shortCallback;
+                _shortMeasurementCallback = (MeasurementCallback<short>)(object)measurementCallback;
             }
-            else if (measurementCallback is MeasurementCallback<long> longCallback)
+            else if (typeof(T) == typeof(long))
             {
-                _longMeasurementCallback = (measurementCallback is null) ? ((instrument, measurement, tags, state) => { /* no-op */}) : longCallback;
+                _longMeasurementCallback = (MeasurementCallback<long>)(object)measurementCallback;
             }
             else
             {
@@ -152,7 +154,7 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
-        /// Enable the listener to start listeneing to instruments measurement recording.
+        /// Enable the listener to start listening to instruments measurement recording.
         /// </summary>
         public void Start()
         {
@@ -185,20 +187,34 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public void RecordObservableInstruments()
         {
+            List<Exception>? exceptionsList = null;
             DiagNode<Instrument>? current = _enabledMeasurementInstruments.First;
             while (current is not null)
             {
                 if (current.Value.IsObservable)
                 {
-                    current.Value.Observe(this);
+                    try
+                    {
+                        current.Value.Observe(this);
+                    }
+                    catch (Exception e)
+                    {
+                        exceptionsList ??= new List<Exception>();
+                        exceptionsList.Add(e);
+                    }
                 }
 
                 current = current.Next;
             }
+
+            if (exceptionsList is not null)
+            {
+                throw new AggregateException(exceptionsList);
+            }
         }
 
         /// <summary>
-        /// Disposes the listeners which will stop it from listeneing to any instrument.
+        /// Disposes the listeners which will stop it from listening to any instrument.
         /// </summary>
         public void Dispose()
         {

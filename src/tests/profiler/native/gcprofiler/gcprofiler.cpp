@@ -31,11 +31,15 @@ HRESULT GCProfiler::Shutdown()
 
     if (_gcStarts == 0)
     {
-        printf("GCProfiler::Shutdown: FAIL: Expected GarbaseCollectionStarted to be called\n");
+        printf("GCProfiler::Shutdown: FAIL: Expected GarbageCollectionStarted to be called\n");
     }
     else if (_gcFinishes == 0)
     {
         printf("GCProfiler::Shutdown: FAIL: Expected GarbageCollectionFinished to be called\n");
+    }
+    else if (_allocatedByClassCalls == 0)
+    {
+        printf("GCProfiler::Shutdown: FAIL: Expected ObjectsAllocatedByClass to be called\n");
     }
     else if (_pohObjectsSeenRootReferences == 0 || _pohObjectsSeenObjectReferences == 0)
     {
@@ -66,6 +70,9 @@ HRESULT GCProfiler::GarbageCollectionStarted(int cGenerations, BOOL generationCo
         printf("GCProfiler::GarbageCollectionStarted: FAIL: Expected GCStart <= GCFinish+2. GCStart=%d, GCFinish=%d\n", (int)_gcStarts, (int)_gcFinishes);
     }
 
+    _objectReferencesSeen = {};
+    _rootReferencesSeen = {};
+
     return S_OK;
 }
 
@@ -80,9 +87,23 @@ HRESULT GCProfiler::GarbageCollectionFinished()
         printf("GCProfiler::GarbageCollectionFinished: FAIL: Expected GCStart >= GCFinish. Start=%d, Finish=%d\n", (int)_gcStarts, (int)_gcFinishes);
     }
 
-    _pohObjectsSeenObjectReferences += NumPOHObjectsSeen(_objectReferencesSeen);
-    _pohObjectsSeenRootReferences += NumPOHObjectsSeen(_rootReferencesSeen);
-    
+    _pohObjectsSeenObjectReferences += NumPOHObjectsSeen(std::move(_objectReferencesSeen));
+    _pohObjectsSeenRootReferences += NumPOHObjectsSeen(std::move(_rootReferencesSeen));
+
+    return S_OK;
+}
+
+HRESULT GCProfiler::ObjectsAllocatedByClass(ULONG cClassCount, ClassID classIds[], ULONG cObjects[])
+{
+    SHUTDOWNGUARD();
+
+    _allocatedByClassCalls++;
+    if (_gcStarts != _allocatedByClassCalls)
+    {
+        _failures++;
+        printf("GCProfiler::ObjectsAllocatedByClass: FAIL: Expected ObjectsAllocatedByClass Calls == GCStart. AllocatedByClassCalls=%d, GCStart=%d\n", (int)_allocatedByClassCalls, (int)_gcStarts);
+    }
+
     return S_OK;
 }
 

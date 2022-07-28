@@ -326,7 +326,14 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_ArgFeedsRangeCheck++;
                 break;
 
-            case InlineObservation::CALLEE_HAS_SWITCH:
+            case InlineObservation::CALLEE_CONST_ARG_FEEDS_ISCONST:
+                m_ConstArgFeedsIsKnownConst = true;
+                break;
+
+            case InlineObservation::CALLEE_ARG_FEEDS_ISCONST:
+                m_ArgFeedsIsKnownConst = true;
+                break;
+
             case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
                 propagate = true;
                 break;
@@ -970,7 +977,7 @@ int DefaultPolicy::CodeSizeEstimate()
     {
         // This is not something the DefaultPolicy explicitly computed,
         // since it uses a blended evaluation model (mixing size and time
-        // together for overall profitability). But it's effecitvely an
+        // together for overall profitability). But it's effectively an
         // estimate of the size impact.
         return (m_CalleeNativeSizeEstimate - m_CallsiteNativeSizeEstimate);
     }
@@ -1294,6 +1301,14 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
             m_FoldableBranch++;
             break;
 
+        case InlineObservation::CALLSITE_FOLDABLE_SWITCH:
+            m_FoldableSwitch++;
+            break;
+
+        case InlineObservation::CALLEE_HAS_SWITCH:
+            m_Switch++;
+            break;
+
         case InlineObservation::CALLSITE_DIV_BY_CNS:
             m_DivByCns++;
             break;
@@ -1327,7 +1342,14 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
         {
             assert(m_IsForceInlineKnown);
             assert(value != 0);
-            m_CodeSize = static_cast<unsigned>(value);
+            m_CodeSize           = static_cast<unsigned>(value);
+            unsigned maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxIL());
+
+            // TODO: Enable for PgoSource::Static as well if it's not the generic profile we bundle.
+            if (m_HasProfile && (m_RootCompiler->fgHaveTrustedProfileData()))
+            {
+                maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILProf());
+            }
 
             if (m_IsForceInline)
             {
@@ -1339,7 +1361,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                 // Candidate based on small size
                 SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
             }
-            else if (m_CodeSize <= (unsigned)JitConfig.JitExtDefaultPolicyMaxIL())
+            else if (m_CodeSize <= maxCodeSize)
             {
                 // Candidate, pending profitability evaluation
                 SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
@@ -1357,16 +1379,17 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             {
                 SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
             }
-            else if (!m_IsForceInline)
+            else if (!m_IsForceInline && !m_HasProfile && !m_ConstArgFeedsIsKnownConst && !m_ArgFeedsIsKnownConst)
             {
                 unsigned bbLimit = (unsigned)JitConfig.JitExtDefaultPolicyMaxBB();
                 if (m_IsPrejitRoot)
                 {
                     // We're not able to recognize arg-specific foldable branches
                     // in prejit-root mode.
-                    bbLimit += 3;
+                    bbLimit += 5 + m_Switch * 10;
                 }
-                bbLimit += m_FoldableBranch;
+                bbLimit += m_FoldableBranch + m_FoldableSwitch * 10;
+
                 if ((unsigned)value > bbLimit)
                 {
                     SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
@@ -1419,13 +1442,13 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 1.5;
+        multiplier += 2.0;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
     else if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 1.5;
+        multiplier += 2.0;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
                 multiplier);
     }
@@ -1451,13 +1474,13 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_ArgFeedsRangeCheck > 0)
     {
-        multiplier += 0.5;
+        multiplier += 1.0;
         JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
     }
 
     if (m_NonGenericCallsGeneric)
     {
-        multiplier += 1.5;
+        multiplier += 2.0;
         JITDUMP("\nInline candidate is generic and caller is not.  Multiplier increased to %g.", multiplier);
     }
 
@@ -1485,7 +1508,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // TODO: handle 'if (SomeMethod(constArg))' patterns in fgFindJumpTargets
         // The previous version of inliner optimistically assumed this is "has const arg that feeds a conditional"
         multiplier += 3.0;
-        JITDUMP("\nCallsite passes a consant.  Multiplier increased to %g.", multiplier);
+        JITDUMP("\nCallsite passes a constant.  Multiplier increased to %g.", multiplier);
     }
 
     if ((m_FoldableBox > 0) && m_NonGenericCallsGeneric)
@@ -1507,7 +1530,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_Intrinsic > 0)
     {
         // In most cases such intrinsics are lowered as single CPU instructions
-        multiplier += 1.5;
+        multiplier += 1.0 + m_Intrinsic * 0.3;
         JITDUMP("\nInline has %d intrinsics.  Multiplier increased to %g.", m_Intrinsic, multiplier);
     }
 
@@ -1636,6 +1659,28 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
             break;
     }
 
+    if (m_FoldableSwitch > 0)
+    {
+        multiplier += 6.0;
+        JITDUMP("\nInline candidate has %d foldable switches.  Multiplier increased to %g.", m_FoldableSwitch,
+                multiplier);
+    }
+    else if (m_Switch > 0)
+    {
+        if (m_IsPrejitRoot)
+        {
+            // Assume the switches can be foldable in PrejitRoot mode.
+            multiplier += 6.0;
+            JITDUMP("\nPrejit root candidate has %d switches.  Multiplier increased to %g.", m_Switch, multiplier);
+        }
+        else
+        {
+            // TODO: Investigate cases where it makes sense to inline non-foldable switches
+            multiplier = 0.0;
+            JITDUMP("\nInline candidate has %d switches.  Multiplier limited to %g.", m_Switch, multiplier);
+        }
+    }
+
     if (m_HasProfile)
     {
         // There are cases when Profile Data can be misleading or polluted:
@@ -1648,15 +1693,24 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         const double profileTrustCoef = (double)JitConfig.JitExtDefaultPolicyProfTrust() / 10.0;
         const double profileScale     = (double)JitConfig.JitExtDefaultPolicyProfScale() / 10.0;
 
-        multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
-        JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
+        if (m_RootCompiler->fgHaveTrustedProfileData())
+        {
+            multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
+        }
+        else
+        {
+            multiplier *= min(m_ProfileFrequency, 1.0) * profileScale;
+        }
+        JITDUMP("\nCallsite has profile data: %g.  Multiplier limited to %g.", m_ProfileFrequency, multiplier);
     }
 
-    if (m_RootCompiler->lvaTableCnt > ((unsigned)(JitConfig.JitMaxLocalsToTrack() / 4)))
+    // Slow down if there are already too many locals
+    if (m_RootCompiler->lvaTableCnt > 64)
     {
-        // Slow down inlining if we already have to many locals in the rootCompiler.
-        multiplier /= ((double)m_RootCompiler->lvaTableCnt / ((double)JitConfig.JitMaxLocalsToTrack() / 4.0));
-        JITDUMP("\nCaller %d locals.  Multiplier decreased to %g.", m_RootCompiler->lvaTableCnt, multiplier);
+        // E.g. MaxLocalsToTrack = 1024 and lvaTableCnt = 512 -> multiplier *= 0.5;
+        const double lclFullness = min(1.0, (double)m_RootCompiler->lvaTableCnt / JitConfig.JitMaxLocalsToTrack());
+        multiplier *= (1.0 - lclFullness);
+        JITDUMP("\nCaller has %d locals.  Multiplier decreased to %g.", m_RootCompiler->lvaTableCnt, multiplier);
     }
 
     if (m_BackwardJump)
@@ -1730,6 +1784,8 @@ void ExtendedDefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_I4(m_FoldableExpr)
     XATTR_I4(m_FoldableExprUn)
     XATTR_I4(m_FoldableBranch)
+    XATTR_I4(m_FoldableSwitch)
+    XATTR_I4(m_Switch)
     XATTR_I4(m_DivByCns)
     XATTR_B(m_ReturnsStructByValue)
     XATTR_B(m_IsFromValueClass)
@@ -1919,7 +1975,6 @@ void DiscretionaryPolicy::NoteDouble(InlineObservation obs, double value)
 {
     assert(obs == InlineObservation::CALLSITE_PROFILE_FREQUENCY);
     assert(value >= 0.0);
-    assert(m_ProfileFrequency == 0.0);
 
     m_ProfileFrequency = value;
 }
@@ -2592,6 +2647,8 @@ void DiscretionaryPolicy::DumpData(FILE* file) const
     fprintf(file, ",%u", m_ArgFeedsConstantTest);
     fprintf(file, ",%u", m_MethodIsMostlyLoadStore ? 1 : 0);
     fprintf(file, ",%u", m_ArgFeedsRangeCheck);
+    fprintf(file, ",%u", m_ConstArgFeedsIsKnownConst ? 1 : 0);
+    fprintf(file, ",%u", m_ArgFeedsIsKnownConst ? 1 : 0);
     fprintf(file, ",%u", m_ConstantArgFeedsConstantTest);
     fprintf(file, ",%d", m_CalleeNativeSizeEstimate);
     fprintf(file, ",%d", m_CallsiteNativeSizeEstimate);
@@ -3337,7 +3394,7 @@ bool ReplayPolicy::FindContext(InlineContext* context)
     // Token and Hash we're looking for.
     mdMethodDef contextToken  = m_RootCompiler->info.compCompHnd->getMethodDefFromMethod(context->GetCallee());
     unsigned    contextHash   = m_RootCompiler->compMethodHash(context->GetCallee());
-    unsigned    contextOffset = (unsigned)context->GetOffset();
+    unsigned    contextOffset = (unsigned)context->GetLocation().GetOffset();
 
     return FindInline(contextToken, contextHash, contextOffset);
 }
@@ -3527,7 +3584,7 @@ bool ReplayPolicy::FindInline(CORINFO_METHOD_HANDLE callee)
     int offset = -1;
     if (m_Offset != BAD_IL_OFFSET)
     {
-        offset = (int)jitGetILoffs(m_Offset);
+        offset = m_Offset;
     }
 
     unsigned calleeOffset = (unsigned)offset;

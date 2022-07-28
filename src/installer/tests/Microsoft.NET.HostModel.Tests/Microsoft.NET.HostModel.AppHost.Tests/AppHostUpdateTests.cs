@@ -375,7 +375,7 @@ namespace Microsoft.NET.HostModel.Tests
 
         private static int GetFilePermissionValue(string path)
         {
-            var modeValue = CoreFxFileStatusProvider.GetFileMode(path);
+            int modeValue = FileStatusProvider.GetFileMode(path);
 
             // st_mode is typically a 16-bits value, high 4 bits are filetype and low 12
             // bits are permission. we will clear first 20 bits (a byte and a nibble) with
@@ -389,23 +389,23 @@ namespace Microsoft.NET.HostModel.Tests
             return modeValue;
         }
 
-        private static class CoreFxFileStatusProvider
+        private static class FileStatusProvider
         {
-            private static FieldInfo s_fileSystem_fileStatusField, s_fileStatus_fileStatusField, s_fileStatusModeField;
+            private static FieldInfo s_fileSystem_fileStatusField, s_fileStatus_fileCacheField, s_fileStatusModeField;
 
-            static CoreFxFileStatusProvider()
+            static FileStatusProvider()
             {
                 if (!OperatingSystem.IsWindows())
                 {
                     try
                     {
                         s_fileSystem_fileStatusField = typeof(FileSystemInfo).GetField("_fileStatus", BindingFlags.NonPublic | BindingFlags.Instance);
-                        s_fileStatus_fileStatusField = s_fileSystem_fileStatusField.FieldType.GetField("_fileStatus", BindingFlags.NonPublic | BindingFlags.Instance);
-                        s_fileStatusModeField = s_fileStatus_fileStatusField.FieldType.GetField("Mode", BindingFlags.NonPublic | BindingFlags.Instance);
+                        s_fileStatus_fileCacheField = s_fileSystem_fileStatusField.FieldType.GetField("_fileCache", BindingFlags.NonPublic | BindingFlags.Instance);
+                        s_fileStatusModeField = s_fileStatus_fileCacheField.FieldType.GetField("Mode", BindingFlags.NonPublic | BindingFlags.Instance);
                     }
                     catch (Exception ex)
                     {
-                        throw new Exception("Cannot setup _fileStatus via private reflection from CoreFX. Verify if the FileSystem._fileStatus._fileStatus.Mode chain is intact in CoreFX, otherwise adjust this implementation", ex);
+                        throw new Exception("Cannot setup _fileStatus via private reflection from libraries. Verify if the FileSystem._fileStatus._fileCache.Mode chain is intact, otherwise adjust this implementation", ex);
                     }
                 }
             }
@@ -415,15 +415,15 @@ namespace Microsoft.NET.HostModel.Tests
                 try
                 {
                     var fileInfo = new FileInfo(path);
-                    _ = fileInfo.IsReadOnly; // this is to implicitly initialize FileInfo -> FileSystem -> fielStatus instance
+                    _ = fileInfo.IsReadOnly; // this is to implicitly initialize FileInfo -> FileSystem -> fileCache instance
 
                     return (int)s_fileStatusModeField.GetValue(
-                               s_fileStatus_fileStatusField.GetValue(
+                               s_fileStatus_fileCacheField.GetValue(
                                    s_fileSystem_fileStatusField.GetValue(fileInfo)));
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception("Cannot get stat (2) st_mode via private reflection from CoreFX. Verify if the FileSystem._fileStatus.Initialize logic is exercised via FileInfo.IsReadOnly in CoreFX, otherwise adjust this implementation.", ex);
+                    throw new Exception("Cannot get stat (2) st_mode via private reflection from libraries. Verify if the FileSystem._fileStatus.Initialize logic is exercised via FileInfo.IsReadOnly in FileStatus.Unix.cs, otherwise adjust this implementation.", ex);
                 }
             }
         }

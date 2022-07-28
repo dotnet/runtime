@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace GCTest
+namespace GCTest_arrres_cs
 {
-    internal class Test
+    public class Test
     {
         private int _indx;
         public bool m_die = false;
@@ -32,7 +33,8 @@ namespace GCTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Test1();
             Test2();

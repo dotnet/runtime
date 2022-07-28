@@ -11,16 +11,16 @@ internal static partial class Interop
         //  Idn APIs
         //
 
-        [DllImport("Normaliz.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern unsafe int IdnToAscii(
+        [LibraryImport("Normaliz.dll",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial int IdnToAscii(
                                         uint dwFlags,
                                         char* lpUnicodeCharStr,
                                         int cchUnicodeChar,
                                         char* lpASCIICharStr,
                                         int cchASCIIChar);
 
-        [DllImport("Normaliz.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern unsafe int IdnToUnicode(
+        [LibraryImport("Normaliz.dll",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial int IdnToUnicode(
                                         uint dwFlags,
                                         char* lpASCIICharStr,
                                         int cchASCIIChar,

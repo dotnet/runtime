@@ -208,7 +208,7 @@ namespace System.Reflection.Metadata
             return _reader.MethodDefTable.GetSignature(Handle);
         }
 
-        private int GetProjectedRelativeVirtualAddress()
+        private static int GetProjectedRelativeVirtualAddress()
         {
             return 0;
         }

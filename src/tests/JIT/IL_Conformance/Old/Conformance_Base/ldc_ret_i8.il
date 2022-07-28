@@ -148,5 +148,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_ret_i8.exe{}
+.assembly ldc_ret_i8{}
 

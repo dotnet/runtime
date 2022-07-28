@@ -62,7 +62,7 @@ namespace System.Text.Unicode.Tests
 
         public static byte[] DecodeHex(ReadOnlySpan<char> inputHex)
         {
-            Assert.True(Regex.IsMatch(inputHex.ToString(), "^([0-9a-fA-F]{2})*$"), "Input must be an even number of hex characters.");
+            Assert.Matches(@"^([0-9a-fA-F]{2})*$", inputHex.ToString());
 
             return Convert.FromHexString(inputHex);
         }

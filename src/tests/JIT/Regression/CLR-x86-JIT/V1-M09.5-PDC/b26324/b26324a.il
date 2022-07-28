@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-.module 'gcindir.exe'
 
 .assembly extern System.Console
 {
@@ -8,11 +7,12 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly 'gcindir'
+.assembly 'b26324a'
 {
   
   
 }
+.assembly extern xunit.core {}
 .namespace Test
 {
   .class public auto ansi FormatSpecException extends [mscorlib]System.Exception
@@ -126,6 +126,9 @@
     .field private static initonly class [mscorlib]System.String expResult
     .method private static int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  12
       .locals ([0] class Test.GCClass inst)

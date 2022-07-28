@@ -477,7 +477,7 @@ namespace System.Xml.Tests
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>
             {
-                LoadXSL("xmlResolver_document_function_absolute_uri_replaced.xsl", inputType, readerType);
+                LoadXSL(absoluteUriXslFile, inputType, readerType);
                 xslt.XmlResolver = new XmlUrlResolver();
                 Transform("fruits.xml", transformType, docType);
                 VerifyResult(@"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>");
@@ -1234,7 +1234,7 @@ namespace System.Xml.Tests
                     }
                     catch (System.InvalidOperationException e2)
                     {
-                        CheckExpectedError(e2, "system.xml", "Xslt_NoStylesheetLoaded", new string[] { "IDontExist.xsl" });
+                        CheckExpectedError(e2, "system.xml", "Xslt_NoStylesheetLoaded", new string[] { "" });
                         return;
                     }
                 }
@@ -2128,7 +2128,7 @@ namespace System.Xml.Tests
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>
             {
-                LoadXSL("xmlResolver_document_function_absolute_uri_replaced.xsl", inputType, readerType);
+                LoadXSL(absoluteUriXslFile, inputType, readerType);
                 TransformResolver("fruits.xml", transformType, docType, new XmlUrlResolver());
                 VerifyResult(@"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>");
             });
@@ -2470,7 +2470,7 @@ namespace System.Xml.Tests
 
             if (iCount.Equals(2))
                 return;
-            _output.WriteLine("Exception not generated for invalid ouput destinations");
+            _output.WriteLine("Exception not generated for invalid output destinations");
             Assert.True(false);
         }
 
@@ -2490,7 +2490,7 @@ namespace System.Xml.Tests
                 return;
             }
 
-            _output.WriteLine("Exception not generated for invalid ouput destination");
+            _output.WriteLine("Exception not generated for invalid output destination");
             Assert.True(false);
         }
 

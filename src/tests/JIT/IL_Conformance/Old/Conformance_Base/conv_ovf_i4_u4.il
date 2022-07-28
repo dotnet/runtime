@@ -166,4 +166,4 @@ END:
 }
 }
 
-.assembly conv_ovf_i4_u4.exe{}
+.assembly conv_ovf_i4_u4{}

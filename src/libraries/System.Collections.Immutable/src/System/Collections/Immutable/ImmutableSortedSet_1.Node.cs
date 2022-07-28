@@ -260,16 +260,22 @@ namespace System.Collections.Immutable
             internal ref readonly T ItemRef(int index)
             {
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
+
+                return ref ItemRefUnchecked(index);
+            }
+
+            private ref readonly T ItemRefUnchecked(int index)
+            {
                 Debug.Assert(_left != null && _right != null);
 
                 if (index < _left._count)
                 {
-                    return ref _left.ItemRef(index);
+                    return ref _left.ItemRefUnchecked(index);
                 }
 
                 if (index > _left._count)
                 {
-                    return ref _right.ItemRef(index - _left._count - 1);
+                    return ref _right.ItemRefUnchecked(index - _left._count - 1);
                 }
 
                 return ref _key;
@@ -452,8 +458,7 @@ namespace System.Collections.Immutable
                                 successor = successor._left;
                             }
 
-                            bool dummyMutated;
-                            var newRight = _right.Remove(successor._key, comparer, out dummyMutated);
+                            var newRight = _right.Remove(successor._key, comparer, out _);
                             result = successor.Mutate(left: _left, right: newRight);
                         }
                     }

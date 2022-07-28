@@ -31,7 +31,7 @@ PALTEST(filemapping_memmgt_VirtualProtect_test4_paltest_virtualprotect_test4, "f
     //Allocate the physical storage in memory or in the paging file on disk 
     lpVirtualAddress = VirtualAlloc(NULL,//determine where to allocate the region
             REGIONSIZE,      //specify the size
-            MEM_COMMIT,      //allocation type
+            MEM_COMMIT | MEM_RESERVE_EXECUTABLE,      //allocation type
             PAGE_READONLY);  //access protection
     if(NULL == lpVirtualAddress)
     {

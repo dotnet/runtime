@@ -68,14 +68,19 @@
 #error The Volatile type is currently only defined for Visual C++ and GNU C++
 #endif
 
-#if defined(__GNUC__) && !defined(HOST_X86) && !defined(HOST_AMD64) && !defined(HOST_ARM) && !defined(HOST_ARM64) && !defined(HOST_S390X)
-#error The Volatile type is currently only defined for GCC when targeting x86, AMD64, ARM, ARM64, or S390X CPUs
+#if defined(__GNUC__) && !defined(HOST_X86) && !defined(HOST_AMD64) && !defined(HOST_ARM) && !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_S390X) && !defined(HOST_POWERPC64)
+#error The Volatile type is currently only defined for GCC when targeting x86, AMD64, ARM, ARM64, LOONGARCH64, PPC64LE, or S390X CPUs
 #endif
 
 #if defined(__GNUC__)
-#if defined(HOST_ARM) || defined(HOST_ARM64)
+#if defined(HOST_ARMV6)
+// DMB ISH not valid on ARMv6
+#define VOLATILE_MEMORY_BARRIER() asm volatile ("mcr p15, 0, r0, c7, c10, 5" : : : "memory")
+#elif defined(HOST_ARM) || defined(HOST_ARM64)
 // This is functionally equivalent to the MemoryBarrier() macro used on ARM on Windows.
 #define VOLATILE_MEMORY_BARRIER() asm volatile ("dmb ish" : : : "memory")
+#elif defined(HOST_LOONGARCH64)
+#define VOLATILE_MEMORY_BARRIER() asm volatile ("dbar 0 " : : : "memory")
 #else
 //
 // For GCC, we prevent reordering by the compiler by inserting the following after a volatile
@@ -154,7 +159,6 @@ T VolatileLoad(T const * pt)
 #elif defined(HOST_ARM64) && defined(_MSC_VER)
 // silence warnings on casts in branches that are not taken.
 #pragma warning(push)
-#pragma warning(disable : 4302)
 #pragma warning(disable : 4311)
 #pragma warning(disable : 4312)
     T val;
@@ -213,7 +217,7 @@ T VolatileLoad(Volatile<T> const * pt)
 }
 
 //
-// VolatileStore stores a T into the target of a pointer to T.  Is is guaranteed that this store will
+// VolatileStore stores a T into the target of a pointer to T.  It is guaranteed that this store will
 // not be optimized away by the compiler, and that any operation that occurs before this store, in program
 // order, will not be moved after this store.  In general, it is not guaranteed that the store will be
 // atomic, though this is the case for most aligned scalar data types.  If you need atomic loads or stores,
@@ -240,7 +244,6 @@ void VolatileStore(T* pt, T val)
 #elif defined(HOST_ARM64) && defined(_MSC_VER)
 // silence warnings on casts in branches that are not taken.
 #pragma warning(push)
-#pragma warning(disable : 4302)
 #pragma warning(disable : 4311)
 #pragma warning(disable : 4312)
     T* pv = &val;
@@ -303,7 +306,7 @@ void VolatileLoadBarrier()
     __dmb(_ARM64_BARRIER_ISHLD);
 #else
     VOLATILE_MEMORY_BARRIER();
-#endif   
+#endif
 }
 
 //
@@ -326,6 +329,9 @@ void VolatileLoadBarrier()
 template <typename T>
 class Volatile
 {
+    // To enable the DAC table to correctly handle volatile DAC-ized statics while also being computed at compile time, we need to
+    // give the dac table type access to the internal field directly to take the address of it.
+    friend struct _DacGlobals;
 private:
     //
     // The data which we are treating as volatile
@@ -334,7 +340,7 @@ private:
 
 public:
     //
-    // Default constructor.  Results in an unitialized value!
+    // Default constructor.  Results in an uninitialized value!
     //
     inline Volatile()
     {

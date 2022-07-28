@@ -288,6 +288,15 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData("Yellow")]
+        [InlineData("Yellow,Orange")]
+        public static void Parse_NonExistentValue_IncludedInErrorMessage(string value)
+        {
+            ArgumentException e = Assert.Throws<ArgumentException>(() => Enum.Parse(typeof(SimpleEnum), value));
+            Assert.Contains(value, e.Message);
+        }
+
+        [Theory]
         [InlineData(SByteEnum.Min, "Min")]
         [InlineData(SByteEnum.One, "One")]
         [InlineData(SByteEnum.Two, "Two")]
@@ -1590,6 +1599,21 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("enumType", () => Enum.GetValues(enumType));
         }
 
+        private class ClassWithEnumConstraint<T> where T : Enum { }
+
+        [Fact]
+        public void EnumConstraint_ThrowsArgumentException()
+        {
+            Type genericArgumentWithEnumConstraint = typeof(ClassWithEnumConstraint<>).GetGenericArguments()[0];
+            Assert.True(genericArgumentWithEnumConstraint.IsEnum);
+
+            Assert.Throws<ArgumentException>(() => Enum.GetUnderlyingType(genericArgumentWithEnumConstraint));
+            Assert.Throws<ArgumentException>(() => Enum.IsDefined(genericArgumentWithEnumConstraint, 1));
+            Assert.Throws<ArgumentException>(() => Enum.GetName(genericArgumentWithEnumConstraint, 1));
+            Assert.Throws<ArgumentException>(() => Enum.GetNames(genericArgumentWithEnumConstraint));
+            Assert.Throws<ArgumentException>(() => Enum.GetValues(genericArgumentWithEnumConstraint));
+        }
+
         public static IEnumerable<object[]> ToString_Format_TestData()
         {
             // Format "D": the decimal equivalent of the value is returned.
@@ -1947,6 +1971,9 @@ namespace System.Tests
 
             // Format: F
             yield return new object[] { typeof(SimpleEnum), 1, "F", "Red" };
+
+            // Format: G with Flags Attribute
+            yield return new object[] { typeof(AttributeTargets), (int)(AttributeTargets.Class | AttributeTargets.Delegate), "G", "Class, Delegate" };
         }
 
         [Theory]
@@ -2056,7 +2083,7 @@ namespace System.Tests
             enumBuilder.DefineLiteral("Value1", true);
             enumBuilder.DefineLiteral("Value2", false);
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_charEnumType = GetCharEnumType();
@@ -2077,7 +2104,7 @@ namespace System.Tests
             enumBuilder.DefineLiteral("Value0x0010", (char)0x0010);
             enumBuilder.DefineLiteral("Value0x3f16", (char)0x3f16);
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_floatEnumType = GetFloatEnumType();
@@ -2098,7 +2125,7 @@ namespace System.Tests
             enumBuilder.DefineLiteral("Value0x0010", (float)0x0010);
             enumBuilder.DefineLiteral("Value0x3f16", (float)0x3f16);
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_doubleEnumType = GetDoubleEnumType();
@@ -2119,7 +2146,7 @@ namespace System.Tests
             enumBuilder.DefineLiteral("Value0x0010", (double)0x0010);
             enumBuilder.DefineLiteral("Value0x3f16", (double)0x3f16);
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_intPtrEnumType = GetIntPtrEnumType();
@@ -2129,7 +2156,7 @@ namespace System.Tests
             if (enumBuilder == null)
                 return null;
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_uintPtrEnumType = GetUIntPtrEnumType();
@@ -2139,7 +2166,7 @@ namespace System.Tests
             if (enumBuilder == null)
                 return null;
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
     }
 }

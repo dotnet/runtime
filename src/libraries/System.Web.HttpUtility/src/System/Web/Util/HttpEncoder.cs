@@ -14,8 +14,7 @@ namespace System.Web.Util
     {
         private static void AppendCharAsUnicodeJavaScript(StringBuilder builder, char c)
         {
-            builder.Append("\\u");
-            builder.Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
+            builder.Append($"\\u{(int)c:x4}");
         }
 
         private static bool CharRequiresJavaScriptEncoding(char c) =>
@@ -30,7 +29,7 @@ namespace System.Web.Util
                 || c == '\u2028'
                 || c == '\u2029';
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? HtmlAttributeEncode(string? value)
         {
             if (string.IsNullOrEmpty(value))
@@ -56,10 +55,8 @@ namespace System.Web.Util
             {
                 return;
             }
-            if (output == null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
+
+            ArgumentNullException.ThrowIfNull(output);
 
             HtmlAttributeEncodeInternal(value, output);
         }
@@ -108,28 +105,22 @@ namespace System.Web.Util
             }
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? HtmlDecode(string? value) => string.IsNullOrEmpty(value) ? value : WebUtility.HtmlDecode(value);
 
         internal static void HtmlDecode(string? value, TextWriter output)
         {
-            if (output == null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
+            ArgumentNullException.ThrowIfNull(output);
 
             output.Write(WebUtility.HtmlDecode(value));
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? HtmlEncode(string? value) => string.IsNullOrEmpty(value) ? value : WebUtility.HtmlEncode(value);
 
         internal static void HtmlEncode(string? value, TextWriter output)
         {
-            if (output == null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
+            ArgumentNullException.ThrowIfNull(output);
 
             output.Write(WebUtility.HtmlEncode(value));
         }
@@ -178,10 +169,7 @@ namespace System.Web.Util
                 // to the string builder when special characters are detected.
                 if (CharRequiresJavaScriptEncoding(c))
                 {
-                    if (b == null)
-                    {
-                        b = new StringBuilder(value.Length + 5);
-                    }
+                    b ??= new StringBuilder(value.Length + 5);
 
                     if (count > 0)
                     {
@@ -238,7 +226,7 @@ namespace System.Web.Util
             return b.ToString();
         }
 
-        [return: NotNullIfNotNull("bytes")]
+        [return: NotNullIfNotNull(nameof(bytes))]
         internal static byte[]? UrlDecode(byte[]? bytes, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
@@ -284,7 +272,7 @@ namespace System.Web.Util
             return decodedBytes;
         }
 
-        [return: NotNullIfNotNull("bytes")]
+        [return: NotNullIfNotNull(nameof(bytes))]
         internal static string? UrlDecode(byte[]? bytes, int offset, int count, Encoding encoding)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
@@ -347,7 +335,7 @@ namespace System.Web.Util
             return Utf16StringValidator.ValidateString(helper.GetString());
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? UrlDecode(string? value, Encoding encoding)
         {
             if (value == null)
@@ -419,7 +407,7 @@ namespace System.Web.Util
             return Utf16StringValidator.ValidateString(helper.GetString());
         }
 
-        [return: NotNullIfNotNull("bytes")]
+        [return: NotNullIfNotNull(nameof(bytes))]
         internal static byte[]? UrlEncode(byte[]? bytes, int offset, int count, bool alwaysCreateNewReturnValue)
         {
             byte[]? encoded = UrlEncode(bytes, offset, count);
@@ -429,7 +417,7 @@ namespace System.Web.Util
                 : encoded;
         }
 
-        [return: NotNullIfNotNull("bytes")]
+        [return: NotNullIfNotNull(nameof(bytes))]
         private static byte[]? UrlEncode(byte[]? bytes, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
@@ -552,7 +540,7 @@ namespace System.Web.Util
         }
 
         [Obsolete("This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncode(*).")]
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? UrlEncodeUnicode(string? value)
         {
             if (value == null)
@@ -597,7 +585,7 @@ namespace System.Web.Util
             return sb.ToString();
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? UrlPathEncode(string? value)
         {
             if (string.IsNullOrEmpty(value))
@@ -648,10 +636,7 @@ namespace System.Web.Util
                 return false;
             }
 
-            if (bytes == null)
-            {
-                throw new ArgumentNullException(nameof(bytes));
-            }
+            ArgumentNullException.ThrowIfNull(bytes);
             if (offset < 0 || offset > bytes.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -720,10 +705,7 @@ namespace System.Web.Util
                                 else
                 */
                 {
-                    if (_byteBuffer == null)
-                    {
-                        _byteBuffer = new byte[_bufferSize];
-                    }
+                    _byteBuffer ??= new byte[_bufferSize];
 
                     _byteBuffer[_numBytes++] = b;
                 }

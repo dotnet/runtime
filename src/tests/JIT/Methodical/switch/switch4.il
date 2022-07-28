@@ -11,12 +11,13 @@
 
 
 }
+.assembly extern xunit.core {}
 
-.module 'switch4.exe'
 
-.class public auto ansi Test
+.class public auto ansi Test_switch4
        extends ['mscorlib']System.Object
 {
+  .field private static int32 s_exitCode;
   .field public static int32 count
   .method private hidebysig static void  DoSwitch(int32 'value') il managed
   {
@@ -37,10 +38,10 @@
     IL_000b:  pop
     IL_000c:  br.s       IL_001e
 
-    IL_000e:  ldsfld     int32 Test::count
+    IL_000e:  ldsfld     int32 Test_switch4::count
     IL_0013:  ldc.i4.1
     IL_0014:  add
-    IL_0015:  stsfld     int32 Test::count
+    IL_0015:  stsfld     int32 Test_switch4::count
     IL_001a:  ldloc.0
     IL_001b:  ldc.i4.1
     IL_001c:  add
@@ -53,31 +54,33 @@
 
     IL_0025:  br.s       IL_0027
 
-    IL_0027:  ldsfld     int32 Test::count
+    IL_0027:  ldsfld     int32 Test_switch4::count
     IL_002c:  ldc.i4.s   10
     IL_002e:  bne.un.s   IL_0043
 
     IL_0030:  ldc.i4.s   100
-    IL_0032:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
+    IL_0032:  stsfld     int32 Test_switch4::s_exitCode
     IL_0037:  ldstr      "Test passed"
     IL_003c:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_0041:  br.s       IL_0053
 
     IL_0043:  ldc.i4.1
-    IL_0044:  call       void ['System.Runtime.Extensions']System.Environment::set_ExitCode(int32)
+    IL_0044:  stsfld     int32 Test_switch4::s_exitCode
     IL_0049:  ldstr      "Test failed"
     IL_004e:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_0053:  ret
   }
 
-  .method public hidebysig static void Main() il managed
+  .method public hidebysig static int32 Main() il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  8
     IL_0000:  ldc.i4.1
-    IL_0001:  call       void Test::DoSwitch(int32)
-    IL_0006:  call       int32 ['System.Runtime.Extensions']System.Environment::get_ExitCode()
-              call       void ['System.Runtime.Extensions']System.Environment::Exit(int32)
+    IL_0001:  call       void Test_switch4::DoSwitch(int32)
+              ldsfld     int32 Test_switch4::s_exitCode
               ret
   }
 

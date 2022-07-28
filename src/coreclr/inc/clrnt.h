@@ -163,7 +163,7 @@ typedef enum _SYSTEM_INFORMATION_CLASS {
     SystemContextSwitchInformation,
     SystemRegistryQuotaInformation,
     SystemExtendServiceTableInformation,
-    SystemPrioritySeperation,
+    SystemPrioritySeparation,
     SystemVerifierAddDriverInformation,
     SystemVerifierRemoveDriverInformation,
     SystemProcessorIdleInformation,
@@ -833,7 +833,7 @@ RtlVirtualUnwind_Unsafe(
 //
 
 #ifdef TARGET_X86
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 //
 // x86 ABI does not define RUNTIME_FUNCTION. Define our own to allow unification between x86 and other platforms.
 //
@@ -847,7 +847,7 @@ typedef struct _DISPATCHER_CONTEXT {
     _EXCEPTION_REGISTRATION_RECORD* RegistrationPointer;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 #endif // HOST_X86
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 
 #define RUNTIME_FUNCTION__BeginAddress(prf)             (prf)->BeginAddress
 #define RUNTIME_FUNCTION__SetBeginAddress(prf,addr)     ((prf)->BeginAddress = (addr))
@@ -859,8 +859,8 @@ typedef struct _DISPATCHER_CONTEXT {
 FORCEINLINE
 DWORD
 RtlpGetFunctionEndAddress (
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
-    __in TADDR ImageBase
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ TADDR ImageBase
     )
 {
     PTR_UNWIND_INFO pUnwindInfo = (PTR_UNWIND_INFO)(ImageBase + FunctionEntry->UnwindData);
@@ -879,13 +879,13 @@ NTSYSAPI
 PEXCEPTION_ROUTINE
 NTAPI
 RtlVirtualUnwind (
-    __in DWORD HandlerType,
-    __in DWORD ImageBase,
-    __in DWORD ControlPc,
-    __in PRUNTIME_FUNCTION FunctionEntry,
+    _In_ DWORD HandlerType,
+    _In_ DWORD ImageBase,
+    _In_ DWORD ControlPc,
+    _In_ PRUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
-    __out PVOID *HandlerData,
-    __out PDWORD EstablisherFrame,
+    _Out_ PVOID *HandlerData,
+    _Out_ PDWORD EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
 #endif // HOST_X86
@@ -909,8 +909,8 @@ RtlVirtualUnwind (
 FORCEINLINE
 ULONG
 RtlpGetFunctionEndAddress (
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
-    __in TADDR ImageBase
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ TADDR ImageBase
     )
 {
     ULONG FunctionLength;
@@ -943,13 +943,13 @@ NTSYSAPI
 PEXCEPTION_ROUTINE
 NTAPI
 RtlVirtualUnwind (
-    __in DWORD HandlerType,
-    __in DWORD ImageBase,
-    __in DWORD ControlPc,
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ DWORD HandlerType,
+    _In_ DWORD ImageBase,
+    _In_ DWORD ControlPc,
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
-    __out PVOID *HandlerData,
-    __out PDWORD EstablisherFrame,
+    _Out_ PVOID *HandlerData,
+    _Out_ PDWORD EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
 #endif // HOST_UNIX || HOST_X86
@@ -970,16 +970,29 @@ RtlVirtualUnwind (
 FORCEINLINE
 ULONG64
 RtlpGetFunctionEndAddress (
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
-    __in ULONG64 ImageBase
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ ULONG64 ImageBase
     )
 {
     ULONG64 FunctionLength;
 
     FunctionLength = FunctionEntry->UnwindData;
-    if ((FunctionLength & 3) != 0) {
-        FunctionLength = (FunctionLength >> 2) & 0x7ff;
-    } else {
+    if ((FunctionLength & 3) != 0)
+    {
+        // Compact form pdata.
+        if ((FunctionLength & 7) == 3)
+        {
+            // Long branch pdata, by standard this is 3 so size is 12.
+            FunctionLength = 3;
+        }
+        else
+        {
+            FunctionLength = (FunctionLength >> 2) & 0x7ff;
+        }
+    }
+    else
+    {
+        // Get from the xdata record.
         FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
@@ -1012,22 +1025,63 @@ RtlVirtualUnwind(
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
     );
 
-#ifndef IMAGE_FILE_MACHINE_ARM64
-#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
 #endif
 
-#ifndef IMAGE_REL_ARM64_BRANCH26
-#define IMAGE_REL_ARM64_BRANCH26        0x0003  // 26 bit offset << 2 & sign ext. for B & BL
-#endif
+#ifdef TARGET_LOONGARCH64
+#include "daccess.h"
 
-#ifndef IMAGE_REL_ARM64_PAGEBASE_REL21
-#define IMAGE_REL_ARM64_PAGEBASE_REL21  0x0004  // ADRP 21 bit PC-relative page address
-#endif
+#define UNW_FLAG_NHANDLER               0x0             /* any handler */
+#define UNW_FLAG_EHANDLER               0x1             /* filter handler */
+#define UNW_FLAG_UHANDLER               0x2             /* unwind handler */
 
-#ifndef IMAGE_REL_ARM64_PAGEOFFSET_12A
-#define IMAGE_REL_ARM64_PAGEOFFSET_12A  0x0006  // ADD 12 bit page offset
-#endif
+// This function returns the RVA of the end of the function (exclusive, so one byte after the actual end)
+// using the unwind info on LOONGARCH64. (see ExternalAPIs\Win9CoreSystem\inc\winnt.h)
+FORCEINLINE
+ULONG64
+RtlpGetFunctionEndAddress (
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ ULONG64 ImageBase
+    )
+{
+    ULONG64 FunctionLength;
 
-#endif
+    FunctionLength = FunctionEntry->UnwindData;
+    if ((FunctionLength & 3) != 0) {
+        FunctionLength = (FunctionLength >> 2) & 0x7ff;
+    } else {
+        memcpy(&FunctionLength, (void*)(ImageBase + FunctionLength), sizeof(UINT32));
+        FunctionLength &= 0x3ffff;
+    }
+
+    return FunctionEntry->BeginAddress + 4 * FunctionLength;
+}
+
+#define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)
+#define RUNTIME_FUNCTION__SetBeginAddress(FunctionEntry,address)    ((FunctionEntry)->BeginAddress = (address))
+
+#define RUNTIME_FUNCTION__EndAddress(FunctionEntry, ImageBase)      (RtlpGetFunctionEndAddress(FunctionEntry, (ULONG64)(ImageBase)))
+
+#define RUNTIME_FUNCTION__SetUnwindInfoAddress(prf,address)         do { (prf)->UnwindData = (address); } while (0)
+
+typedef struct _UNWIND_INFO {
+    // dummy
+} UNWIND_INFO, *PUNWIND_INFO;
+
+EXTERN_C
+NTSYSAPI
+PEXCEPTION_ROUTINE
+NTAPI
+RtlVirtualUnwind(
+    IN ULONG HandlerType,
+    IN ULONG64 ImageBase,
+    IN ULONG64 ControlPc,
+    IN PRUNTIME_FUNCTION FunctionEntry,
+    IN OUT PCONTEXT ContextRecord,
+    OUT PVOID *HandlerData,
+    OUT PULONG64 EstablisherFrame,
+    IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
+    );
+
+#endif // TARGET_LOONGARCH64
 
 #endif  // CLRNT_H_

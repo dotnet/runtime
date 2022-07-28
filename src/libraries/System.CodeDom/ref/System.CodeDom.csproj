@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Condition="'$(TargetFramework)' != 'net461'" Include="System.CodeDom.cs" />
-    <Compile Condition="'$(TargetFramework)' == 'net461'" Include="System.CodeDom.net461.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'net461'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" />
+    <Compile Include="System.CodeDom.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" />
+    <Compile Include="System.CodeDom.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
 </Project>

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Drawing.Drawing2D;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.Serialization.Formatters.Binary;

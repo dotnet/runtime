@@ -17,6 +17,8 @@ extern bool g_hostpolicy_embedded;
 #define PLATFORM_SHARED_LIB_SUFFIX_W PAL_SHLIB_SUFFIX_W
 #define PLATFORM_SHARED_LIB_PREFIX_W PAL_SHLIB_PREFIX_W
 #else // !TARGET_UNIX
+// The default for Windows OS is ".DLL". This causes issues with case-sensitive file systems on Windows.
+// We are using the lowercase version due to historical precedence and how common it is now.
 #define PLATFORM_SHARED_LIB_SUFFIX_W W(".dll")
 #define PLATFORM_SHARED_LIB_PREFIX_W W("")
 #endif // !TARGET_UNIX
@@ -51,6 +53,7 @@ namespace
             LIMITED_METHOD_CONTRACT;
             m_hr = E_FAIL;
             m_priorityOfLastError = 0;
+            m_message = SString(SString::Utf8, "\n");
         }
 
         VOID TrackErrorCode()
@@ -135,7 +138,18 @@ namespace
 
         void SetMessage(LPCSTR message)
         {
+#ifdef TARGET_UNIX
+            //Append dlerror() messages
+            SString new_message = SString(SString::Utf8, message);
+            SString::Iterator i = m_message.Begin();
+            if (!m_message.Find(i, new_message))
+            {
+                m_message += new_message;
+                m_message += SString(SString::Utf8, "\n");
+            }
+#else
             m_message = SString(SString::Utf8, message);
+#endif
         }
 
         HRESULT m_hr;
@@ -318,27 +332,14 @@ namespace
 #endif // !TARGET_UNIX
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
-        AppDomain* pDomain = GetAppDomain();
-        CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
-
-        PEFile *pManifestFile = pAssembly->GetManifestFile();
-        PTR_ICLRPrivBinder pBindingContext = pManifestFile->GetBindingContext();
+        PEAssembly *pManifestFile = pAssembly->GetPEAssembly();
+        PTR_AssemblyBinder pBinder = pManifestFile->GetAssemblyBinder();
 
         //Step 0: Check if  the assembly was bound using TPA.
-        //        The Binding Context can be null or an overridden TPA context
-        if (pBindingContext == NULL)
-        {
-            // If we do not have any binder associated, then return to the default resolution mechanism.
-            return NULL;
-        }
+        AssemblyBinder *pCurrentBinder = pBinder;
 
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-
-        // For assemblies bound via TPA binder, we should use the standard mechanism to make the pinvoke call.
-        if (AreSameBinderInstance(pCurrentBinder, pTPABinder))
+        // For assemblies bound via default binder, we should use the standard mechanism to make the pinvoke call.
+        if (pCurrentBinder->IsDefault())
         {
             return NULL;
         }
@@ -355,7 +356,7 @@ namespace
         GCPROTECT_BEGIN(pUnmanagedDllName);
 
         // Get the pointer to the managed assembly load context
-        INT_PTR ptrManagedAssemblyLoadContext = ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
+        INT_PTR ptrManagedAssemblyLoadContext = pCurrentBinder->GetManagedAssemblyLoadContext();
 
         // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
@@ -376,28 +377,8 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        PTR_ICLRPrivBinder pBindingContext = pAssembly->GetManifestFile()->GetBindingContext();
-        if (pBindingContext == NULL)
-        {
-            // GetBindingContext() returns NULL for System.Private.CoreLib
-            return NULL;
-        }
-
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        AppDomain *pDomain = GetAppDomain();
-        ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-
-        // The code here deals with two implementations of ICLRPrivBinder interface:
-        //    - CLRPrivBinderCoreCLR for the TPA binder in the default ALC, and
-        //    - CLRPrivBinderAssemblyLoadContext for custom ALCs.
-        // in order obtain the associated ALC handle.
-        INT_PTR ptrManagedAssemblyLoadContext = AreSameBinderInstance(pCurrentBinder, pDomain->GetTPABinderContext())
-            ? ((CLRPrivBinderCoreCLR *)pCurrentBinder)->GetManagedAssemblyLoadContext()
-            : ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
-
-        return ptrManagedAssemblyLoadContext;
+        PTR_AssemblyBinder pBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
+        return pBinder->GetManagedAssemblyLoadContext();
     }
 
     NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)
@@ -494,7 +475,7 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
 
-        SString path = pAssembly->GetManifestFile()->GetPath();
+        SString path = pAssembly->GetPEAssembly()->GetPath();
 
         SString::Iterator lastPathSeparatorIter = path.End();
         if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
@@ -559,7 +540,7 @@ namespace
             SString::CIterator it = libName.Begin();
             if (libName.Find(it, PLATFORM_SHARED_LIB_SUFFIX_W))
             {
-                it += COUNTOF(PLATFORM_SHARED_LIB_SUFFIX_W);
+                it += ARRAY_SIZE(PLATFORM_SHARED_LIB_SUFFIX_W);
                 containsSuffix = it == libName.End() || *it == (WCHAR)'.';
             }
 
@@ -607,26 +588,19 @@ namespace
 
         int varCount = 0;
 
-        // The purpose of following code is to workaround LoadLibrary limitation:
-        // LoadLibrary won't append extension if filename itself contains '.'. Thus it will break the following scenario:
-        // [DllImport("A.B")] // The full name for file is "A.B.dll". This is common code pattern for cross-platform PInvoke
-        // The workaround for above scenario is to call LoadLibrary with "A.B" first, if it fails, then call LoadLibrary with "A.B.dll"
-        auto it = libName.Begin();
-        if (!libNameIsRelativePath ||
-            !libName.Find(it, W('.')) ||
-            libName.EndsWith(W(".")) ||
-            libName.EndsWithCaseInsensitive(W(".dll")) ||
-            libName.EndsWithCaseInsensitive(W(".exe")))
+        // Follow LoadLibrary rules in MSDN doc: https://docs.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya
+        // To prevent the function from appending ".DLL" to the module name, include a trailing point character (.) in the module name string
+        // or provide an absolute path.
+        libNameVariations[varCount++] = NameFmt;
+
+        // The runtime will append the '.dll' extension if the path is relative and the name doesn't end with a "."
+        // or an existing known extension. This is done due to issues with case-sensitive file systems
+        // on Windows. The Windows loader always appends ".DLL" as opposed to the more common ".dll".
+        if (libNameIsRelativePath
+            && !libName.EndsWith(W("."))
+            && !libName.EndsWithCaseInsensitive(W(".dll"))
+            && !libName.EndsWithCaseInsensitive(W(".exe")))
         {
-            // Follow LoadLibrary rules in MSDN doc: https://msdn.microsoft.com/en-us/library/windows/desktop/ms684175(v=vs.85).aspx
-            // If the string specifies a full path, the function searches only that path for the module.
-            // If the string specifies a module name without a path and the file name extension is omitted, the function appends the default library extension .dll to the module name.
-            // To prevent the function from appending .dll to the module name, include a trailing point character (.) in the module name string.
-            libNameVariations[varCount++] = NameFmt;
-        }
-        else
-        {
-            libNameVariations[varCount++] = NameFmt;
             libNameVariations[varCount++] = NameSuffixFmt;
         }
 
@@ -643,7 +617,7 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
 
-#if defined(FEATURE_CORESYSTEM) && !defined(TARGET_UNIX)
+#if !defined(TARGET_UNIX)
         // Try to go straight to System32 for Windows API sets. This is replicating quick check from
         // the OS implementation of api sets.
         if (IsWindowsAPISet(wszLibName))
@@ -654,7 +628,7 @@ namespace
                 return hmod;
             }
         }
-#endif // FEATURE_CORESYSTEM && !TARGET_UNIX
+#endif // !TARGET_UNIX
 
         if (g_hostpolicy_embedded)
         {
@@ -681,7 +655,7 @@ namespace
         // (both of these are typically done to smooth over cross-platform differences).
         // We try to dlopen with such variations on the original.
         const WCHAR* prefixSuffixCombinations[MaxVariationCount] = {};
-        int numberOfVariations = COUNTOF(prefixSuffixCombinations);
+        int numberOfVariations = ARRAY_SIZE(prefixSuffixCombinations);
         DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, wszLibName, libNameIsRelativePath);
         for (int i = 0; i < numberOfVariations; i++)
         {
@@ -738,14 +712,14 @@ namespace
             while (COMCharacter::nativeIsWhiteSpace(*(++szComma)));
 
             AssemblySpec spec;
-            if (SUCCEEDED(spec.Init(szComma)))
+            SString ssAssemblyDisplayName(SString::Utf8, szComma);
+            if (SUCCEEDED(spec.InitNoThrow(ssAssemblyDisplayName)))
             {
                 // Need to perform case insensitive hashing.
                 SString moduleName(SString::Utf8, szLibName);
                 moduleName.LowerCase();
 
-                StackScratchBuffer buffer;
-                szLibName = (LPSTR)moduleName.GetUTF8(buffer);
+                szLibName = (LPSTR)moduleName.GetUTF8();
 
                 Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED);
                 Module *pModule = pAssembly->FindModuleByName(szLibName);
@@ -804,7 +778,7 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryByName(LPCWSTR libraryName, Asse
     }
     else
     {
-        GetDllImportSearchPathFlags(callingAssembly->GetManifestModule(),
+        GetDllImportSearchPathFlags(callingAssembly->GetModule(),
                                     &dllImportSearchPathFlags, &searchAssemblyDirectory);
     }
 

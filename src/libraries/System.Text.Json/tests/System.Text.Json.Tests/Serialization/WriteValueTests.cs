@@ -67,7 +67,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async static void NullValueWithNullableSuccess()
         {
-            byte[] nullUtf8Literal = Encoding.UTF8.GetBytes("null");
+            byte[] nullUtf8Literal = "null"u8.ToArray();
 
             var stream = new MemoryStream();
             Utf8JsonWriter writer = new Utf8JsonWriter(stream);
@@ -392,6 +392,72 @@ namespace System.Text.Json.Serialization.Tests
             CustomClassToExceedMaxBufferSize temp = new CustomClassToExceedMaxBufferSize();
 
             Assert.Throws<OutOfMemoryException>(() => JsonSerializer.Serialize(temp, typeof(CustomClassToExceedMaxBufferSize)));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        [InlineData(500)]
+        public static void MaxDepthFlowsToConverter(int maxDepth)
+        {
+            var converter = new InstrumentedConverter();
+            var options = new JsonSerializerOptions { Converters = { converter }, MaxDepth = maxDepth };
+            int effectiveMaxDepth = maxDepth == 0 ? 64 : maxDepth;
+
+            JsonSerializer.Serialize(value: 42, options);
+
+            Assert.Equal(effectiveMaxDepth, converter.WriterOptions.MaxDepth);
+        }
+
+        private class InstrumentedConverter : JsonConverter<int>
+        {
+            public JsonWriterOptions WriterOptions { get; private set; }
+
+            public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
+            public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+            {
+                WriterOptions = writer.Options;
+                writer.WriteNumberValue(value);
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        public static void CustomMaxDepth_DepthWithinLimit_Succeeds(int maxDepth)
+        {
+            var options = new JsonSerializerOptions { MaxDepth = maxDepth };
+            int effectiveMaxDepth = maxDepth == 0 ? 64 : maxDepth;
+
+            Peano? value = Peano.CreateFromNumber(effectiveMaxDepth);
+            JsonSerializer.Serialize(value, options);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        public static void CustomMaxDepth_DepthExceedsLimit_Fails(int maxDepth)
+        {
+            var options = new JsonSerializerOptions { MaxDepth = maxDepth };
+            int effectiveMaxDepth = maxDepth == 0 ? 64 : maxDepth;
+
+            Peano value = Peano.CreateFromNumber(effectiveMaxDepth + 1);
+            JsonException exn = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(value, options));
+            Assert.Contains("A possible object cycle was detected", exn.Message);
+        }
+
+        public class Peano
+        {
+            public Peano? Successor { get; init; }
+
+            public static Peano? CreateFromNumber(int value)
+            {
+                return value == 0 ? null : new Peano { Successor = CreateFromNumber(value - 1) };
+            }
         }
     }
 }

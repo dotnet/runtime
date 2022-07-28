@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 // This testcase reproduces a bug where the tree re-sequencing was not correct for 
 // fgMorphModToSubMulDiv(), resulting in an assert in LSRA.
 
-static class Test
+static class Test_DevDiv_359736
 {
     static byte GetVal()
     {

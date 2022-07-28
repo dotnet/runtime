@@ -472,7 +472,7 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(BadBOMCases))]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
         public static Task ParseJson_UnseekableStream_Async_BadBOM(string json)
         {
             byte[] data = Encoding.UTF8.GetBytes(json);
@@ -553,7 +553,7 @@ namespace System.Text.Json.Tests
 
                     using (var stream = new MemoryStream(dataUtf8))
                     using (var streamReader = new StreamReader(stream, Encoding.UTF8, false, 1024, true))
-                    using (JsonTextReader jsonReader = new JsonTextReader(streamReader))
+                    using (var jsonReader = new JsonTextReader(streamReader) { MaxDepth = null })
                     {
                         JToken jToken = JToken.ReadFrom(jsonReader);
 
@@ -2044,6 +2044,31 @@ namespace System.Text.Json.Tests
                 Assert.Throws<KeyNotFoundException>(() => root.GetProperty(InverseOddString));
                 Assert.Throws<KeyNotFoundException>(() => root.GetProperty(InverseOddString.AsSpan()));
                 Assert.Throws<KeyNotFoundException>(() => root.GetProperty(inverseOddBytes));
+            }
+        }
+
+        [Theory]
+        [InlineData(">>")]
+        [InlineData(">>>")]
+        [InlineData(">>a")]
+        [InlineData(">a>")]
+        public static void TryGetDateTimeAndOffset_InvalidPropertyValue(string testData)
+        {
+            string jsonString = JsonSerializer.Serialize(new { DateTimeProperty = testData });
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            using (JsonDocument doc = JsonDocument.Parse(dataUtf8, default))
+            {
+                JsonElement root = doc.RootElement;
+
+                Assert.False(root.GetProperty("DateTimeProperty").TryGetDateTime(out DateTime datetimeValue));
+                Assert.Equal(default, datetimeValue);
+                Assert.Throws<FormatException>(() => root.GetProperty("DateTimeProperty").GetDateTime());
+
+                Assert.False(root.GetProperty("DateTimeProperty").TryGetDateTimeOffset(out DateTimeOffset datetimeOffsetValue));
+                Assert.Equal(default, datetimeOffsetValue);
+                Assert.Throws<FormatException>(() => root.GetProperty("DateTimeProperty").GetDateTimeOffset());
             }
         }
 
@@ -3631,7 +3656,7 @@ namespace System.Text.Json.Tests
                 return existing;
             }
 
-            using (JsonTextReader jsonReader = new JsonTextReader(new StringReader(jsonString)))
+            using (var jsonReader = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null })
             {
                 jsonReader.FloatParseHandling = FloatParseHandling.Decimal;
                 JToken jtoken = JToken.ReadFrom(jsonReader);

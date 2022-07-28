@@ -11,14 +11,13 @@ namespace System.SpanTests
     public static partial class MemoryMarshalTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36885", TestPlatforms.tvOS)]
         public static void GetArrayDataReference_NullInput_ThrowsNullRef()
         {
             Assert.Throws<NullReferenceException>(() => MemoryMarshal.GetArrayDataReference<object>((object[])null));
             Assert.Throws<NullReferenceException>(() => MemoryMarshal.GetArrayDataReference((Array)null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public static void GetArrayDataReference_NonEmptyInput_ReturnsRefToFirstElement()
         {
             // szarray
@@ -51,7 +50,7 @@ namespace System.SpanTests
             Assert.True(Unsafe.AreSame(ref theRef, ref theMdArrayRef));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]

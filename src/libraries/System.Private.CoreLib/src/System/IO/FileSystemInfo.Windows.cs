@@ -4,16 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-
-#if MS_IO_REDIST
-using Microsoft.IO.Enumeration;
-
-namespace Microsoft.IO
-#else
 using System.IO.Enumeration;
 
 namespace System.IO
-#endif
 {
     public partial class FileSystemInfo
     {
@@ -42,10 +35,7 @@ namespace System.IO
             return info;
         }
 
-        internal void Invalidate()
-        {
-            _dataInitialized = -1;
-        }
+        internal void InvalidateCore() => _dataInitialized = -1;
 
         internal unsafe void Init(Interop.NtDll.FILE_FULL_DIR_INFORMATION* info)
         {
@@ -77,7 +67,7 @@ namespace System.IO
             get
             {
                 if (_dataInitialized == -1)
-                    Refresh();
+                    RefreshCore();
                 if (_dataInitialized != 0)
                 {
                     // Refresh was unable to initialize the data.
@@ -140,12 +130,20 @@ namespace System.IO
             }
         }
 
+#pragma warning disable CA1822
+        internal UnixFileMode UnixFileModeCore
+        {
+            get => (UnixFileMode)(-1);
+            set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
+        }
+#pragma warning restore CA1822
+
         private void EnsureDataInitialized()
         {
             if (_dataInitialized == -1)
             {
                 _data = default;
-                Refresh();
+                RefreshCore();
             }
 
             if (_dataInitialized != 0) // Refresh was unable to initialize the data
@@ -153,6 +151,12 @@ namespace System.IO
         }
 
         public void Refresh()
+        {
+            _linkTargetIsValid = false;
+            RefreshCore();
+        }
+
+        private void RefreshCore()
         {
             // This should not throw, instead we store the result so that we can throw it
             // when someone actually accesses a property

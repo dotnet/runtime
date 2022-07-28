@@ -7,7 +7,7 @@ using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-public class Test {
+public class Test_finalizeio {
 
     public class Dummy {
 

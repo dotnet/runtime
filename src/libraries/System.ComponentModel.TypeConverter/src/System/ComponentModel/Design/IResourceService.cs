@@ -15,7 +15,7 @@ namespace System.ComponentModel.Design
         /// Locates the resource reader for the specified culture and
         /// returns it.
         /// </summary>
-        IResourceReader GetResourceReader(CultureInfo info);
+        IResourceReader? GetResourceReader(CultureInfo info);
 
         /// <summary>
         /// Locates the resource writer for the specified culture

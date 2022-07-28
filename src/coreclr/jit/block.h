@@ -29,12 +29,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jithashtable.h"
 
 /*****************************************************************************/
-typedef BitVec EXPSET_TP;
-#if LARGE_EXPSET
+typedef BitVec          EXPSET_TP;
+typedef BitVec_ValArg_T EXPSET_VALARG_TP;
+typedef BitVec_ValRet_T EXPSET_VALRET_TP;
+
 #define EXPSET_SZ 64
-#else
-#define EXPSET_SZ 32
-#endif
 
 typedef BitVec          ASSERT_TP;
 typedef BitVec_ValArg_T ASSERT_VALARG_TP;
@@ -198,7 +197,7 @@ struct allMemoryKinds
 // BB2 of the corresponding handler to be an "EH successor" of BB1.  Because we
 // make the conservative assumption that control flow can jump from a try block
 // to its handler at any time, the immediate (regular control flow)
-// predecessor(s) of the the first block of a try block are also considered to
+// predecessor(s) of the first block of a try block are also considered to
 // have the first block of the handler as an EH successor.  This makes variables that
 // are "live-in" to the handler become "live-out" for these try-predecessor block,
 // so that they become live-in to the try -- which we require.
@@ -512,8 +511,8 @@ enum BasicBlockFlags : unsigned __int64
                                                 // cases, because the BB occurs in a loop, and we've determined that all
                                                 // paths in the loop body leading to BB include a call.
 
-    BBF_HAS_IDX_LEN          = MAKE_BBFLAG(20), // BB contains simple index or length expressions on an array local var.
-    BBF_HAS_NEWARRAY         = MAKE_BBFLAG(21), // BB contains 'new' of an array
+    BBF_HAS_IDX_LEN          = MAKE_BBFLAG(20), // BB contains simple index or length expressions on an SD array local var.
+    BBF_HAS_MD_IDX_LEN       = MAKE_BBFLAG(21), // BB contains simple index, length, or lower bound expressions on an MD array local var.
     BBF_HAS_NEWOBJ           = MAKE_BBFLAG(22), // BB contains 'new' of an object type.
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -527,38 +526,44 @@ enum BasicBlockFlags : unsigned __int64
 
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-    BBF_BACKWARD_JUMP        = MAKE_BBFLAG(24), // BB is surrounded by a backward jump/switch arc
-    BBF_RETLESS_CALL         = MAKE_BBFLAG(25), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
-                                                // BBJ_ALWAYS); see isBBCallAlwaysPair().
-    BBF_LOOP_PREHEADER       = MAKE_BBFLAG(26), // BB is a loop preheader block
-    BBF_COLD                 = MAKE_BBFLAG(27), // BB is cold
+    BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(24), // BB is surrounded by a backward jump/switch arc
+    BBF_RETLESS_CALL                   = MAKE_BBFLAG(25), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
+                                                          // BBJ_ALWAYS); see isBBCallAlwaysPair().
+    BBF_LOOP_PREHEADER                 = MAKE_BBFLAG(26), // BB is a loop preheader block
+    BBF_COLD                           = MAKE_BBFLAG(27), // BB is cold
 
-    BBF_PROF_WEIGHT          = MAKE_BBFLAG(28), // BB weight is computed from profile data
-    BBF_IS_LIR               = MAKE_BBFLAG(29), // Set if the basic block contains LIR (as opposed to HIR)
-    BBF_KEEP_BBJ_ALWAYS      = MAKE_BBFLAG(30), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
-                                                // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
-                                                // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
-                                                // finally.
-    BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG(31), // First block of a cloned finally region
+    BBF_PROF_WEIGHT                    = MAKE_BBFLAG(28), // BB weight is computed from profile data
+    BBF_IS_LIR                         = MAKE_BBFLAG(29), // Set if the basic block contains LIR (as opposed to HIR)
+    BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(30), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
+                                                          // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
+                                                          // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
+                                                          // finally.
+    BBF_CLONED_FINALLY_BEGIN           = MAKE_BBFLAG(31), // First block of a cloned finally region
 
-    BBF_CLONED_FINALLY_END   = MAKE_BBFLAG(32), // Last block of a cloned finally region
-    BBF_HAS_CALL             = MAKE_BBFLAG(33), // BB contains a call
+    BBF_CLONED_FINALLY_END             = MAKE_BBFLAG(32), // Last block of a cloned finally region
+    BBF_HAS_CALL                       = MAKE_BBFLAG(33), // BB contains a call
     BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(34), // Block is dominated by exceptional entry.
-    BBF_BACKWARD_JUMP_TARGET = MAKE_BBFLAG(35), // Block is a target of a backward jump
+    BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(35), // Block is a target of a backward jump
 
-    BBF_PATCHPOINT           = MAKE_BBFLAG(36), // Block is a patchpoint
-    BBF_HAS_CLASS_PROFILE    = MAKE_BBFLAG(37), // BB contains a call needing a class profile
+    BBF_PATCHPOINT                     = MAKE_BBFLAG(36), // Block is a patchpoint
+    BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(37), // BB contains a call needing a histogram profile
+    BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(38), // Block is a partial compilation patchpoint
+    BBF_HAS_ALIGN                      = MAKE_BBFLAG(39), // BB ends with 'align' instruction
+    BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(40), // BB has pred that has potential tail call
+
+    BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(41), // Block is a source of a backward jump
+    BBF_HAS_MDARRAYREF                 = MAKE_BBFLAG(42), // Block has a multi-dimensional array reference
 
     // The following are sets of flags.
 
     // Flags that relate blocks to loop structure.
 
-    BBF_LOOP_FLAGS = BBF_LOOP_PREHEADER | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1,
+    BBF_LOOP_FLAGS = BBF_LOOP_PREHEADER | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_ALIGN,
 
     // Flags to update when two blocks are compacted
 
-    BBF_COMPACT_UPD = BBF_CHANGED | BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_BACKWARD_JUMP | BBF_HAS_NEWARRAY | \
-                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK,
+    BBF_COMPACT_UPD = BBF_CHANGED | BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_BACKWARD_JUMP | \
+                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF,
 
     // Flags a block should not have had before it is split.
 
@@ -573,12 +578,11 @@ enum BasicBlockFlags : unsigned __int64
 
     // Flags gained by the bottom block when a block is split.
     // Note, this is a conservative guess.
-    // For example, the bottom block might or might not have BBF_HAS_NEWARRAY or BBF_HAS_NULLCHECK,
-    // but we assume it has BBF_HAS_NEWARRAY and BBF_HAS_NULLCHECK.
+    // For example, the bottom block might or might not have BBF_HAS_NULLCHECK, but we assume it has BBF_HAS_NULLCHECK.
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
-    BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY | BBF_PROF_WEIGHT | \
-                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_CLASS_PROFILE,
+    BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | \
+                       BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_MDARRAYREF,
 };
 
 inline constexpr BasicBlockFlags operator ~(BasicBlockFlags a)
@@ -649,9 +653,17 @@ struct BasicBlock : private LIR::Range
     {
         return ((bbFlags & BBF_LOOP_HEAD) != 0);
     }
+
     bool isLoopAlign() const
     {
         return ((bbFlags & BBF_LOOP_ALIGN) != 0);
+    }
+
+    void unmarkLoopAlign(Compiler* comp DEBUG_ARG(const char* reason));
+
+    bool hasAlign() const
+    {
+        return ((bbFlags & BBF_HAS_ALIGN) != 0);
     }
 
 #ifdef DEBUG
@@ -668,13 +680,10 @@ struct BasicBlock : private LIR::Range
     const char* dspToString(int blockNumPadding = 0);
 #endif // DEBUG
 
-    // Type used to hold block and edge weights
-    typedef float weight_t;
-
-#define BB_UNITY_WEIGHT 100.0f       // how much a normal execute once block weighs
+#define BB_UNITY_WEIGHT 100.0        // how much a normal execute once block weighs
 #define BB_UNITY_WEIGHT_UNSIGNED 100 // how much a normal execute once block weighs
-#define BB_LOOP_WEIGHT_SCALE 8.0f    // synthetic profile scale factor for loops
-#define BB_ZERO_WEIGHT 0.0f
+#define BB_LOOP_WEIGHT_SCALE 8.0     // synthetic profile scale factor for loops
+#define BB_ZERO_WEIGHT 0.0
 #define BB_MAX_WEIGHT FLT_MAX // maximum finite weight  -- needs rethinking.
 
     weight_t bbWeight; // The dynamic execution weight of this block
@@ -747,7 +756,7 @@ struct BasicBlock : private LIR::Range
 
     // Scale a blocks' weight by some factor.
     //
-    void scaleBBWeight(BasicBlock::weight_t scale)
+    void scaleBBWeight(weight_t scale)
     {
         this->bbWeight = this->bbWeight * scale;
 
@@ -817,6 +826,17 @@ struct BasicBlock : private LIR::Range
         BasicBlock* bbJumpDest; // basic block
         BBswtDesc*  bbJumpSwt;  // switch descriptor
     };
+
+    bool KindIs(BBjumpKinds kind) const
+    {
+        return bbJumpKind == kind;
+    }
+
+    template <typename... T>
+    bool KindIs(BBjumpKinds kind, T... rest) const
+    {
+        return KindIs(kind) || KindIs(rest...);
+    }
 
     // NumSucc() gives the number of successors, and GetSucc() returns a given numbered successor.
     //
@@ -898,8 +918,8 @@ struct BasicBlock : private LIR::Range
     };
 
     union {
-        unsigned bbStkTempsOut;      // base# for output stack temps
-        int      bbClassSchemaIndex; // schema index for class instrumentation
+        unsigned bbStkTempsOut;          // base# for output stack temps
+        int      bbHistogramSchemaIndex; // schema index for histogram instrumentation
     };
 
 #define MAX_XCPTN_INDEX (USHRT_MAX - 1)
@@ -990,6 +1010,16 @@ struct BasicBlock : private LIR::Range
         bbHndIndex = from->bbHndIndex;
     }
 
+    void copyTryIndex(const BasicBlock* from)
+    {
+        bbTryIndex = from->bbTryIndex;
+    }
+
+    void copyHndIndex(const BasicBlock* from)
+    {
+        bbHndIndex = from->bbHndIndex;
+    }
+
     static bool sameTryRegion(const BasicBlock* blk1, const BasicBlock* blk2)
     {
         return blk1->bbTryIndex == blk2->bbTryIndex;
@@ -1016,13 +1046,11 @@ struct BasicBlock : private LIR::Range
 
     // The following fields are used for loop detection
     typedef unsigned char loopNumber;
-    static const unsigned NOT_IN_LOOP = UCHAR_MAX;
+    static const unsigned NOT_IN_LOOP  = UCHAR_MAX;
+    static const unsigned MAX_LOOP_NUM = 64;
 
     loopNumber bbNatLoopNum; // Index, in optLoopTable, of most-nested loop that contains this block,
                              // or else NOT_IN_LOOP if this block is not in a loop.
-
-#define MAX_LOOP_NUM 16       // we're using a 'short' for the mask
-#define LOOP_MASK_TP unsigned // must be big enough for a mask
 
     // TODO-Cleanup: Get rid of bbStkDepth and use bbStackDepthOnEntry() instead
     union {
@@ -1138,24 +1166,18 @@ struct BasicBlock : private LIR::Range
      */
 
     union {
-        EXPSET_TP bbCseGen; // CSEs computed by block
-#if ASSERTION_PROP
+        EXPSET_TP bbCseGen;       // CSEs computed by block
         ASSERT_TP bbAssertionGen; // value assignments computed by block
-#endif
     };
 
     union {
-        EXPSET_TP bbCseIn; // CSEs available on entry
-#if ASSERTION_PROP
+        EXPSET_TP bbCseIn;       // CSEs available on entry
         ASSERT_TP bbAssertionIn; // value assignments available on entry
-#endif
     };
 
     union {
-        EXPSET_TP bbCseOut; // CSEs available on exit
-#if ASSERTION_PROP
+        EXPSET_TP bbCseOut;       // CSEs available on exit
         ASSERT_TP bbAssertionOut; // value assignments available on exit
-#endif
     };
 
     void* bbEmitCookie;
@@ -1240,7 +1262,6 @@ struct BasicBlock : private LIR::Range
         return StatementList(FirstNonPhiDef());
     }
 
-    GenTree* firstNode() const;
     GenTree* lastNode() const;
 
     bool endsWithJmpMethod(Compiler* comp) const;
@@ -1554,6 +1575,10 @@ public:
 // and must be non-null. E.g.,
 //    for (BasicBlock* const block : BasicBlockRangeList(startBlock, endBlock)) ...
 //
+// Note that endBlock->bbNext is captured at the beginning of the iteration. Thus, any blocks
+// inserted before that will continue the iteration. In particular, inserting blocks between endBlock
+// and endBlock->bbNext will yield unexpected results, as the iteration will continue longer than desired.
+//
 class BasicBlockRangeList
 {
     BasicBlock* m_begin;
@@ -1594,8 +1619,8 @@ struct BBswtDesc
 
     // Case number and likelihood of most likely case
     // (only known with PGO, only valid if bbsHasDominantCase is true)
-    unsigned             bbsDominantCase;
-    BasicBlock::weight_t bbsDominantFraction;
+    unsigned bbsDominantCase;
+    weight_t bbsDominantFraction;
 
     bool bbsHasDefault;      // true if last switch case is a default case
     bool bbsHasDominantCase; // true if switch has a dominant case
@@ -1778,9 +1803,9 @@ public:
     flowList* flNext; // The next BasicBlock in the list, nullptr for end of list.
 
 private:
-    BasicBlock*          m_block; // The BasicBlock of interest.
-    BasicBlock::weight_t flEdgeWeightMin;
-    BasicBlock::weight_t flEdgeWeightMax;
+    BasicBlock* m_block; // The BasicBlock of interest.
+    weight_t    flEdgeWeightMin;
+    weight_t    flEdgeWeightMax;
 
 public:
     unsigned flDupCount; // The count of duplicate "edges" (use only for switch stmts)
@@ -1796,12 +1821,12 @@ public:
         m_block = newBlock;
     }
 
-    BasicBlock::weight_t edgeWeightMin() const
+    weight_t edgeWeightMin() const
     {
         return flEdgeWeightMin;
     }
 
-    BasicBlock::weight_t edgeWeightMax() const
+    weight_t edgeWeightMax() const
     {
         return flEdgeWeightMax;
     }
@@ -1811,15 +1836,9 @@ public:
     // They return false if the newWeight is not between the current [min..max]
     // when slop is non-zero we allow for the case where our weights might be off by 'slop'
     //
-    bool setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
-                                 BasicBlock*          bDst,
-                                 BasicBlock::weight_t slop,
-                                 bool*                wbUsedSlop);
-    bool setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
-                                 BasicBlock*          bDst,
-                                 BasicBlock::weight_t slop,
-                                 bool*                wbUsedSlop);
-    void setEdgeWeights(BasicBlock::weight_t newMinWeight, BasicBlock::weight_t newMaxWeight, BasicBlock* bDst);
+    bool setEdgeWeightMinChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop);
+    bool setEdgeWeightMaxChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop);
+    void setEdgeWeights(weight_t newMinWeight, weight_t newMaxWeight, BasicBlock* bDst);
 
     flowList(BasicBlock* block, flowList* rest)
         : flNext(rest), m_block(block), flEdgeWeightMin(0), flEdgeWeightMax(0), flDupCount(0)

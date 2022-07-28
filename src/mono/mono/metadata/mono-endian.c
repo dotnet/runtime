@@ -29,7 +29,7 @@ typedef union {
 	guint64 i;
 } mono_rint64;
 
-guint16 
+guint16
 mono_read16 (const unsigned char *x)
 {
 	mono_rint16 r;
@@ -43,7 +43,7 @@ mono_read16 (const unsigned char *x)
 	return r.i;
 }
 
-guint32 
+guint32
 mono_read32 (const unsigned char *x)
 {
 	mono_rint32 r;
@@ -61,7 +61,7 @@ mono_read32 (const unsigned char *x)
 	return r.i;
 }
 
-guint64 
+guint64
 mono_read64 (const unsigned char *x)
 {
 	mono_rint64 r;

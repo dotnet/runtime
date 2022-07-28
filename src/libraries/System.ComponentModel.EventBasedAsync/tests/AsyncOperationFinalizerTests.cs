@@ -24,7 +24,7 @@ namespace System.ComponentModel.Tests
 
         private void Completed()
         {
-            // This is in a helper method to ensure the JIT doesn't artifically extend the lifetime of the operation.
+            // This is in a helper method to ensure the JIT doesn't artificially extend the lifetime of the operation.
             var tracker = new OperationCompletedTracker();
             AsyncOperationManager.SynchronizationContext = tracker;
             AsyncOperation operation = AsyncOperationManager.CreateOperation(new object());
@@ -34,7 +34,9 @@ namespace System.ComponentModel.Tests
             Assert.True(tracker.OperationDidComplete);
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        private static bool IsPreciseGcSupportedAndRemoteExecutorSupported => PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
+
+        [ConditionalFact(nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
         public void Finalizer_OperationNotCompleted_CompletesOperation()
         {
             RemoteExecutor.Invoke(() =>
@@ -51,7 +53,7 @@ namespace System.ComponentModel.Tests
 
         private void NotCompleted(OperationCompletedTracker tracker)
         {
-            // This is in a helper method to ensure the JIT doesn't artifically extend the lifetime of the operation.
+            // This is in a helper method to ensure the JIT doesn't artificially extend the lifetime of the operation.
             AsyncOperationManager.SynchronizationContext = tracker;
             AsyncOperation operation = AsyncOperationManager.CreateOperation(new object());
             Assert.False(tracker.OperationDidComplete);

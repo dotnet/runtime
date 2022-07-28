@@ -77,7 +77,7 @@ namespace System.Net.WebSockets.Tests
         public async Task ReceiveAsync_UTF8SplitAcrossMultipleBuffers_ValidDataReceived()
         {
             // 1 character - 2 bytes
-            byte[] payload = Encoding.UTF8.GetBytes("\u00E6");
+            byte[] payload = "\u00E6"u8.ToArray();
             var frame = new byte[payload.Length + 2];
             frame[0] = 0x81; // FIN = true, Opcode = Text
             frame[1] = (byte)payload.Length;
@@ -146,6 +146,37 @@ namespace System.Net.WebSockets.Tests
                         Assert.Equal('a', (char)buffer[0]);
                     }
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, false)] // max allowed value
+        [InlineData(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, true)]
+        public async Task ReceiveAsync_InvalidPayloadLength_AbortsAndThrowsException(byte[] lenBytes, bool shouldFail)
+        {
+            var frame = new byte[11];
+            frame[0] = 0b1_000_0010; // FIN, RSV, OPCODE
+            frame[1] = 0b0_1111111; // MASK, PAYLOAD_LEN
+            Assert.Equal(8, lenBytes.Length);
+            Array.Copy(lenBytes, 0, frame, 2, lenBytes.Length); // EXTENDED_PAYLOAD_LEN
+            frame[10] = (byte)'a';
+
+            using var stream = new MemoryStream(frame, writable: true);
+            using WebSocket websocket = CreateFromStream(stream, false, null, Timeout.InfiniteTimeSpan);
+
+            var buffer = new byte[1];
+            Task<WebSocketReceiveResult> t = websocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            if (shouldFail)
+            {
+                var exc = await Assert.ThrowsAsync<WebSocketException>(() => t);
+                Assert.Equal(WebSocketState.Aborted, websocket.State);
+            }
+            else
+            {
+                WebSocketReceiveResult result = await t;
+                Assert.False(result.EndOfMessage);
+                Assert.Equal(1, result.Count);
+                Assert.Equal('a', (char)buffer[0]);
             }
         }
 
@@ -263,7 +294,7 @@ namespace System.Net.WebSockets.Tests
                     Assert.Equal(WebSocketState.Open, socket.State);
 
                     // Ask server to send us a close
-                    await socket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(".close")), WebSocketMessageType.Text, true, default);
+                    await socket.SendAsync(new ArraySegment<byte>(".close"u8.ToArray()), WebSocketMessageType.Text, true, default);
 
                     // Verify received server-initiated close message.
                     WebSocketReceiveResult recvResult = await socket.ReceiveAsync(new ArraySegment<byte>(new byte[256]), default);

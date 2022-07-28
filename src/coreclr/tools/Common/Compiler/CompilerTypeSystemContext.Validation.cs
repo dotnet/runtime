@@ -71,12 +71,6 @@ namespace ILCompiler
 
                 if (parameterizedType.IsArray)
                 {
-                    if (parameterType.IsFunctionPointer)
-                    {
-                        // Arrays of function pointers are not currently supported
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                    }
-
                     LayoutInt elementSize = parameterType.GetElementSize();
                     if (!elementSize.IsIndeterminate && elementSize.AsInt >= ushort.MaxValue)
                     {
@@ -101,14 +95,20 @@ namespace ILCompiler
             }
             else if (type.IsFunctionPointer)
             {
-                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                var functionPointer = ((FunctionPointerType)type).Signature;
+                ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(functionPointer.ReturnType);
+
+                foreach (TypeDesc param in functionPointer)
+                {
+                    ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(param);
+                }
             }
             else
             {
                 // Validate classes, structs, enums, interfaces, and delegates
                 Debug.Assert(type.IsDefType);
 
-                // Don't validate generic definitons
+                // Don't validate generic definitions
                 if (type.IsGenericDefinition)
                 {
                     return type;

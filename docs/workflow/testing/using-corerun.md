@@ -75,7 +75,7 @@ variable `CORE_ROOT` to this directory &ndash; you don't have to set `CORE_LIBRA
 set PATH=%PATH%;<repo_root>\artifacts\Product\windows.x64.Debug
 set CORE_ROOT=<repo_root>\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root
 ```
-For example, the following runs the finalizerio test on Windows.
+For example, the following runs the finalizeio test on Windows.
 
 ```cmd
 corerun artifacts\tests\coreclr\windows.x64.Debug\GC\Features\Finalizer\finalizeio\finalizeio\finalizeio.dll
@@ -98,3 +98,6 @@ See `corerun --help` for additional details.
 
 `--debug` - Wait for a debugger to attach prior to loading the .NET runtime.
 - For example, `corerun --debug HelloWorld.dll`
+
+`--env` - Pass the path to a file in the [`dotenv`](https://github.com/motdotla/dotenv) format to specify environment variables for the test run.
+- For example, `corerun --env gcstress.env HelloWorld.dll`.

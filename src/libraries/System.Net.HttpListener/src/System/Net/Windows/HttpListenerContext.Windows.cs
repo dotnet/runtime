@@ -32,7 +32,7 @@ namespace System.Net
         {
             _mutualAuthentication = mutualAuthentication;
             _user = principal;
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"mutual: {(mutualAuthentication == null ? "<null>" : mutualAuthentication)}, Principal: {principal}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"mutual: {mutualAuthentication ?? "<null>"}, Principal: {principal}");
         }
 
         // This can be used to cache the results of HttpListener.ExtendedProtectionSelectorDelegate.
@@ -61,7 +61,6 @@ namespace System.Net
                 internalBuffer);
         }
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string? subProtocol,
             int receiveBufferSize,
             TimeSpan keepAliveInterval,

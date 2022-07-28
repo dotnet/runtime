@@ -163,6 +163,29 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        public void ClearingCacheDisposesTokenRegistration()
+        {
+            var cache = (MemoryCache)CreateCache();
+            string key = "myKey";
+            var value = new object();
+            var callbackInvoked = new ManualResetEvent(false);
+            var expirationToken = new TestExpirationToken() { ActiveChangeCallbacks = true };
+            cache.Set(key, value, new MemoryCacheEntryOptions()
+                .AddExpirationToken(expirationToken)
+                .RegisterPostEvictionCallback((subkey, subValue, reason, state) =>
+                {
+                    var localCallbackInvoked = (ManualResetEvent)state;
+                    localCallbackInvoked.Set();
+                }, state: callbackInvoked));
+            cache.Clear();
+
+            Assert.Equal(0, cache.Count);
+            Assert.NotNull(expirationToken.Registration);
+            Assert.True(expirationToken.Registration.Disposed);
+            Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
+        }
+
+        [Fact]
         public void AddExpiredTokenPreventsCaching()
         {
             var cache = CreateCache();

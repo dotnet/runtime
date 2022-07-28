@@ -24,6 +24,11 @@ namespace System
         // Main function that is called during construction to populate the three display names
         private static void TryPopulateTimeZoneDisplayNamesFromGlobalizationData(string timeZoneId, TimeSpan baseUtcOffset, ref string? standardDisplayName, ref string? daylightDisplayName, ref string? displayName)
         {
+            if (GlobalizationMode.Invariant)
+            {
+                return;
+            }
+
             // Determine the culture to use
             CultureInfo uiCulture = CultureInfo.CurrentUICulture;
             if (uiCulture.Name.Length == 0)
@@ -54,11 +59,13 @@ namespace System
             return standardDisplayName;
         }
 
+#pragma warning disable IDE0060
         // Helper function to get the full display name for the UTC static time zone instance
         private static string GetUtcFullDisplayName(string timeZoneId, string standardDisplayName)
         {
             return $"(UTC) {standardDisplayName}";
         }
+#pragma warning restore IDE0060
 
         // Helper function that retrieves various forms of time zone display names from ICU
         private static unsafe void GetDisplayName(string timeZoneId, Interop.Globalization.TimeZoneDisplayNameType nameType, string uiCulture, ref string? displayName)
@@ -125,7 +132,7 @@ namespace System
 
             // Get the base offset to prefix in front of the time zone.
             // Only UTC and its aliases have "(UTC)", handled earlier.  All other zones include an offset, even if it's zero.
-            string baseOffsetText = $"(UTC{(baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{baseUtcOffset:hh\\:mm})";
+            string baseOffsetText = string.Create(null, stackalloc char[128], $"(UTC{(baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{baseUtcOffset:hh\\:mm})");
 
             // Get the generic location name.
             string? genericLocationName = null;

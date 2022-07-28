@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly cpblk.exe{
+.assembly 'cpblk'{
 }
 
 .class public _cpblk {

@@ -107,7 +107,7 @@ namespace System.Net
             return Header;
         }
 
-        private static readonly byte[] s_CRLFArray = new byte[] { (byte)'\r', (byte)'\n' };
+        private static readonly byte[] s_CRLFArray = "\r\n"u8.ToArray();
 
         internal HttpResponseStreamAsyncResult(object asyncObject, object? userState, AsyncCallback? callback, byte[] buffer, int offset, int size, bool chunked, bool sentHeaders, ThreadPoolBoundHandle boundHandle) : base(asyncObject, userState, callback)
         {
@@ -185,8 +185,8 @@ namespace System.Net
 
         private static void IOCompleted(HttpResponseStreamAsyncResult asyncResult, uint errorCode, uint numBytes)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode:0x {errorCode.ToString("x8")} numBytes: {numBytes}");
-            object? result = null;
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode:0x{errorCode:x8} numBytes: {numBytes}");
+            object? result;
             try
             {
                 if (errorCode != Interop.HttpApi.ERROR_SUCCESS && errorCode != Interop.HttpApi.ERROR_HANDLE_EOF)

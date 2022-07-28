@@ -176,7 +176,7 @@ namespace System.Configuration
 
         internal int AppendCharEntity(char ch)
         {
-            string numberToWrite = ((int)ch).ToString("X", CultureInfo.InvariantCulture);
+            string numberToWrite = ((int)ch).ToString("X");
             Write('&');
             Write('#');
             Write('x');

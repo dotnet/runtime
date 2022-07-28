@@ -25,32 +25,29 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Gets a saved license key.
         /// </summary>
-        public override string GetSavedLicenseKey(Type type, Assembly resourceAssembly) => null;
+        public override string? GetSavedLicenseKey(Type type, Assembly? resourceAssembly) => null;
 
         /// <summary>
         /// Sets a saved license key.
         /// </summary>
         public override void SetSavedLicenseKey(Type type, string key)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
-            _savedLicenseKeys[type.AssemblyQualifiedName] = key;
+            _savedLicenseKeys[type.AssemblyQualifiedName!] = key;
         }
     }
 
     internal sealed class RuntimeLicenseContext : LicenseContext
     {
-        internal Hashtable _savedLicenseKeys;
+        internal Hashtable? _savedLicenseKeys;
 
         /// <summary>
         /// This method takes a file URL and converts it to a local path. The trick here is that
         /// if there is a '#' in the path, everything after this is treated as a fragment. So
         /// we need to append the fragment to the end of the path.
         /// </summary>
-        private string GetLocalPath(string fileName)
+        private static string GetLocalPath(string fileName)
         {
             Debug.Assert(fileName != null && fileName.Length > 0, "Cannot get local path, fileName is not valid");
 
@@ -60,19 +57,12 @@ namespace System.ComponentModel.Design
 
         [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
             Justification = "Suppressing the warning until gets fixed, see https://github.com/dotnet/runtime/issues/50821")]
-        public override string GetSavedLicenseKey(Type type, Assembly resourceAssembly)
+        public override string? GetSavedLicenseKey(Type type, Assembly? resourceAssembly)
         {
-            if (_savedLicenseKeys == null || _savedLicenseKeys[type.AssemblyQualifiedName] == null)
+            if (_savedLicenseKeys == null || _savedLicenseKeys[type.AssemblyQualifiedName!] == null)
             {
-                if (_savedLicenseKeys == null)
-                {
-                    _savedLicenseKeys = new Hashtable();
-                }
-
-                if (resourceAssembly == null)
-                {
-                    resourceAssembly = Assembly.GetEntryAssembly();
-                }
+                _savedLicenseKeys ??= new Hashtable();
+                resourceAssembly ??= Assembly.GetEntryAssembly();
 
                 if (resourceAssembly == null)
                 {
@@ -87,13 +77,11 @@ namespace System.ComponentModel.Design
 
                         string fileName = new FileInfo(location).Name;
 
-                        Stream s = asm.GetManifestResourceStream(fileName + ".licenses");
-                        if (s == null)
-                        {
-                            // Since the casing may be different depending on how the assembly was loaded,
-                            // we'll do a case insensitive lookup for this manifest resource stream...
-                            s = CaseInsensitiveManifestResourceStreamLookup(asm, fileName + ".licenses");
-                        }
+                        Stream? s = asm.GetManifestResourceStream(fileName + ".licenses");
+
+                        // Since the casing may be different depending on how the assembly was loaded,
+                        // we'll do a case insensitive lookup for this manifest resource stream...
+                        s ??= CaseInsensitiveManifestResourceStreamLookup(asm, fileName + ".licenses");
 
                         if (s != null)
                         {
@@ -111,12 +99,12 @@ namespace System.ComponentModel.Design
                         string licResourceName = fileName + ".licenses";
 
                         // First try the filename
-                        Stream s = resourceAssembly.GetManifestResourceStream(licResourceName);
+                        Stream? s = resourceAssembly.GetManifestResourceStream(licResourceName);
                         if (s == null)
                         {
-                            string resolvedName = null;
+                            string? resolvedName = null;
                             CompareInfo comparer = CultureInfo.InvariantCulture.CompareInfo;
-                            string shortAssemblyName = resourceAssembly.GetName().Name;
+                            string shortAssemblyName = resourceAssembly.GetName().Name!;
                             // If the assembly has been renamed, we try our best to find a good match in the available resources
                             // by looking at the assembly name (which doesn't change even after a file rename) + ".exe.licenses" or + ".dll.licenses"
                             foreach (string existingName in resourceAssembly.GetManifestResourceNames())
@@ -141,7 +129,7 @@ namespace System.ComponentModel.Design
                     }
                 }
             }
-            return (string)_savedLicenseKeys[type.AssemblyQualifiedName];
+            return (string?)_savedLicenseKeys[type.AssemblyQualifiedName!];
         }
 
         /**
@@ -150,14 +138,14 @@ namespace System.ComponentModel.Design
         * we are attempting to locate could have different casing
         * depending on how the assembly was loaded.
         **/
-        private Stream CaseInsensitiveManifestResourceStreamLookup(Assembly satellite, string name)
+        private static Stream? CaseInsensitiveManifestResourceStreamLookup(Assembly satellite, string name)
         {
             CompareInfo comparer = CultureInfo.InvariantCulture.CompareInfo;
 
             // Loop through the resource names in the assembly.
             // We try to handle the case where the assembly file name has been renamed
             // by trying to guess the original file name based on the assembly name.
-            string assemblyShortName = satellite.GetName().Name;
+            string assemblyShortName = satellite.GetName().Name!;
             foreach (string existingName in satellite.GetManifestResourceNames())
             {
                 if (comparer.Compare(existingName, name, CompareOptions.IgnoreCase) == 0 ||

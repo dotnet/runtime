@@ -15,7 +15,7 @@
        <TargetPath>lib\netstandard2.0\ILVerification.dll</TargetPath>
     </PackageFile>
     <Dependency Include="System.Reflection.Metadata">
-       <Version>1.8.1</Version>
+       <Version>$(SystemReflectionMetadataVersion)</Version>
        <TargetFramework>netstandard2.0</TargetFramework>
        <Exclude>Build,Analyzers</Exclude>
     </Dependency>

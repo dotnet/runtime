@@ -28,9 +28,9 @@ namespace System.Reflection.Metadata
 
         public unsafe BlobContentId(byte[] id)
         {
-            if (id == null)
+            if (id is null)
             {
-                throw new ArgumentNullException(nameof(id));
+                Throw.ArgumentNull(nameof(id));
             }
 
             if (id.Length != Size)
@@ -55,12 +55,12 @@ namespace System.Reflection.Metadata
 
         public static BlobContentId FromHash(byte[] hashCode)
         {
-            const int minHashSize = 20;
-
-            if (hashCode == null)
+            if (hashCode is null)
             {
-                throw new ArgumentNullException(nameof(hashCode));
+                Throw.ArgumentNull(nameof(hashCode));
             }
+
+            const int minHashSize = 20;
 
             if (hashCode.Length < minHashSize)
             {

@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>

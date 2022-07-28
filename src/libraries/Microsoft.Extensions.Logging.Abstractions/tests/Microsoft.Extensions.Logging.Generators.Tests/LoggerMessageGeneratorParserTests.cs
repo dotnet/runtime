@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,9 +13,24 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
     public class LoggerMessageGeneratorParserTests
     {
+        [Fact]
+        public async Task Valid_AdditionalAttributes()
+        {
+            Assert.Empty(await RunGenerator($@"
+                using System.Diagnostics.CodeAnalysis;
+                partial class C
+                {{
+                    [SuppressMessage(""CATEGORY1"", ""SOMEID1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    [SuppressMessage(""CATEGORY2"", ""SOMEID2"")]
+                    static partial void M1(ILogger logger);
+                }}
+            "));
+        }
+
         [Fact]
         public async Task InvalidMethodName()
         {
@@ -114,7 +130,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate.Id, diagnostics[0].Id);
-            Assert.Contains("Argument 'foo' is not referenced from the logging message", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+            Assert.Contains("foo", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
@@ -161,7 +177,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate.Id, diagnostics[0].Id);
-            Assert.Contains("Argument 'foo' is not referenced from the logging message", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+            Assert.Contains("foo", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
@@ -177,7 +193,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.TemplateHasNoCorrespondingArgument.Id, diagnostics[0].Id);
-            Assert.Contains("Template 'foo' is not provided as argument to the logging method", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+            Assert.Contains("foo", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
@@ -203,11 +219,15 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 {
                     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {ex} {ex2}"")]
                     static partial void M1(ILogger logger, System.Exception ex, System.Exception ex2);
+
+                    [LoggerMessage(EventId = 2, Level = LogLevel.Debug, Message = ""M2 {arg1}: {ex}"")]
+                    static partial void M2(ILogger logger, string arg1, System.Exception ex);
                 }
             ");
 
-            Assert.Single(diagnostics);
+            Assert.Equal(2, diagnostics.Count);
             Assert.Equal(DiagnosticDescriptors.ShouldntMentionExceptionInMessage.Id, diagnostics[0].Id);
+            Assert.Equal(DiagnosticDescriptors.ShouldntMentionExceptionInMessage.Id, diagnostics[1].Id);
         }
 
         [Fact]
@@ -233,11 +253,15 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 {
                     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {logger}"")]
                     static partial void M1(ILogger logger);
+
+                    [LoggerMessage(EventId = 2, Message = ""M2 {logger}"")]
+                    static partial void M2(ILogger logger, LogLevel level);
                 }
             ");
 
-            Assert.Single(diagnostics);
+            Assert.Equal(2, diagnostics.Count);
             Assert.Equal(DiagnosticDescriptors.ShouldntMentionLoggerInMessage.Id, diagnostics[0].Id);
+            Assert.Equal(DiagnosticDescriptors.ShouldntMentionLoggerInMessage.Id, diagnostics[1].Id);
         }
 
         [Fact]
@@ -350,6 +374,26 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(diagnostics);
         }
 
+#if ROSLYN4_0_OR_GREATER
+        [Fact]
+        public async Task FileScopedNamespaceOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using Microsoft.Extensions.Logging;
+
+                namespace MyLibrary;
+
+                internal partial class Logger
+                {
+                    [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = ""Hello {Name}!"")]
+                    public static partial void Greeting(ILogger logger, string name);
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+#endif
+
         [Theory]
         [InlineData("false")]
         [InlineData("true")]
@@ -380,6 +424,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     public class Void {}
                     public class String {}
                     public struct DateTime {}
+                    public abstract class Attribute {}
                 }
                 namespace System.Collections
                 {
@@ -392,10 +437,12 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
                 namespace Microsoft.Extensions.Logging
                 {
-                    public class LoggerMessageAttribute {}
+                    public class LoggerMessageAttribute : System.Attribute {}
                 }
                 partial class C
                 {
+                    [Microsoft.Extensions.Logging.LoggerMessage]
+                    public static partial void Log(ILogger logger);
                 }
             ", false, includeBaseReferences: false, includeLoggingReferences: false);
 
@@ -467,7 +514,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.ShouldntReuseEventIds.Id, diagnostics[0].Id);
-            Assert.Contains("in class MyClass", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+            Assert.Contains("MyClass", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
@@ -500,7 +547,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.MissingLoggerArgument.Id, diagnostics[0].Id);
-            Assert.Contains("One of the arguments to the static logging method 'M1' must implement the Microsoft.Extensions.Logging.ILogger interface", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+            string message = diagnostics[0].GetMessage();
+            Assert.Contains("M1", message, StringComparison.InvariantCulture);
+            Assert.Contains("Microsoft.Extensions.Logging.ILogger", message, StringComparison.InvariantCulture);
         }
 
         [Fact]
@@ -582,6 +631,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(DiagnosticDescriptors.LoggingMethodIsGeneric.Id, diagnostics[0].Id);
         }
 
+        [Theory]
+        [InlineData("ref")]
+        [InlineData("in")]
+        public async Task SupportsRefKindsInAndRef(string modifier)
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@$"
+                partial class C
+                {{
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {{P1}}"")]
+                    static partial void M(ILogger logger, {modifier} int p1);
+                }}");
+
+            Assert.Empty(diagnostics);
+        }
+
         [Fact]
         public async Task Templates()
         {
@@ -652,6 +716,55 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ");
 
             Assert.Empty(diagnostics);    // should fail quietly on broken code
+        }
+
+        [Fact]
+        internal void MultipleTypeDefinitions()
+        {
+            // Adding a dependency to an assembly that has internal definitions of public types
+            // should not result in a collision and break generation.
+            // Verify usage of the extension GetBestTypeByMetadataName(this Compilation) instead of Compilation.GetTypeByMetadataName().
+            var referencedSource = @"
+                namespace Microsoft.Extensions.Logging
+                {
+                    internal class LoggerMessageAttribute { }
+                }
+                namespace Microsoft.Extensions.Logging
+                {
+                    internal interface ILogger { }
+                    internal enum LogLevel { }
+                }";
+
+            // Compile the referenced assembly first.
+            Compilation referencedCompilation = CompilationHelper.CreateCompilation(referencedSource);
+
+            // Obtain the image of the referenced assembly.
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
+
+            // Generate the code
+            string source = @"
+                namespace Test
+                {
+                    using Microsoft.Extensions.Logging;
+
+                    partial class C
+                    {
+                        [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = ""M1"")]
+                        static partial void M1(ILogger logger);
+                    }
+                }";
+
+            MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
+            LoggerMessageGenerator generator = new LoggerMessageGenerator();
+
+            (ImmutableArray<Diagnostic> diagnostics, ImmutableArray<GeneratedSourceResult> generatedSources) =
+                RoslynTestUtils.RunGenerator(compilation, generator);
+
+            // Make sure compilation was successful.
+            Assert.Empty(diagnostics);
+            Assert.Equal(1, generatedSources.Length);
+            Assert.Equal(21, generatedSources[0].SourceText.Lines.Count);
         }
 
         private static async Task<IReadOnlyList<Diagnostic>> RunGenerator(

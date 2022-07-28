@@ -2,16 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-using Microsoft.Xunit.Performance;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace FractalPerf
 {
@@ -146,17 +138,6 @@ namespace FractalPerf
             double jResult = j.Render();
 
             return true;
-        }
-
-        [Benchmark]
-        public static void Test() {
-            foreach (var iteration in Benchmark.Iterations) {
-                using (iteration.StartMeasurement()) {
-                    for (int i = 0; i < Iterations; i++) {
-                        Bench();
-                    }
-                }
-            }
         }
 
         static bool TestBase() {

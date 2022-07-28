@@ -194,8 +194,7 @@ namespace System.Net.WebSockets
             eventArgs.StartOperationCommon(this, _inputStream.InternalHttpContext.RequestQueueBoundHandle);
             eventArgs.StartOperationReceive();
 
-            uint statusCode = 0;
-            bool completedAsynchronouslyOrWithError = false;
+            bool completedAsynchronouslyOrWithError;
             try
             {
                 Debug.Assert(eventArgs.Buffer != null, "'BufferList' is not supported for read operations.");
@@ -242,7 +241,7 @@ namespace System.Net.WebSockets
 
                 uint flags = 0;
                 uint bytesReturned = 0;
-                statusCode =
+                uint statusCode =
                     Interop.HttpApi.HttpReceiveRequestEntityBody(
                         _inputStream.InternalHttpContext.RequestQueueHandle,
                         _inputStream.InternalHttpContext.RequestId,
@@ -445,7 +444,7 @@ namespace System.Net.WebSockets
             eventArgs.StartOperationSend();
 
             uint statusCode;
-            bool completedAsynchronouslyOrWithError = false;
+            bool completedAsynchronouslyOrWithError;
             try
             {
                 if (_outputStream.Closed ||
@@ -598,22 +597,12 @@ namespace System.Net.WebSockets
         {
             if (disposing && Interlocked.Exchange(ref _cleanedUp, 1) == 0)
             {
-                if (_readTaskCompletionSource != null)
-                {
-                    _readTaskCompletionSource.TrySetCanceled();
-                }
+                _readTaskCompletionSource?.TrySetCanceled();
 
                 _writeTaskCompletionSource?.TrySetCanceled();
 
-                if (_readEventArgs != null)
-                {
-                    _readEventArgs.Dispose();
-                }
-
-                if (_writeEventArgs != null)
-                {
-                    _writeEventArgs.Dispose();
-                }
+                _readEventArgs?.Dispose();
+                _writeEventArgs?.Dispose();
 
                 try
                 {
@@ -944,11 +933,7 @@ namespace System.Net.WebSockets
                 if (Interlocked.CompareExchange(ref _operating, InProgress, Free) != Free)
                 {
                     // If it was already "in-use" check if Dispose was called.
-                    if (_disposeCalled)
-                    {
-                        // Dispose was called - throw ObjectDisposed.
-                        throw new ObjectDisposedException(GetType().FullName);
-                    }
+                    ObjectDisposedException.ThrowIf(_disposeCalled, this);
 
                     Debug.Fail("Only one outstanding async operation is allowed per HttpListenerAsyncEventArgs instance.");
                     // Only one at a time.

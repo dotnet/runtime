@@ -7,12 +7,13 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 4:2:2:0
 }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 4:1:2:0
 }
-.assembly ConsoleApp5
+.assembly 'NoVarianceCheckForStaticMethods'
 {
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
@@ -24,7 +25,6 @@
   .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module ConsoleApp5.dll
 // MVID: {580B623A-FB1A-403C-8F9C-8DB0E42D429C}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -41,6 +41,9 @@
 {
   .method private hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       34 (0x22)
     .maxstack  8

@@ -31,6 +31,8 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include "pal/palinternal.h"
 
+#include <clrconfignocache.h>
+
 #include <errno.h>
 #include <signal.h>
 
@@ -114,10 +116,6 @@ struct sigaction g_previous_sigabrt;
 
 #if !HAVE_MACH_EXCEPTIONS
 
-// Offset of the local variable containing pointer to windows style context in the common_signal_handler function.
-// This offset is relative to the frame pointer.
-int g_common_signal_handler_context_locvar_offset = 0;
-
 // TOP of special stack for handling stack overflow
 volatile void* g_stackOverflowHandlerStack = NULL;
 
@@ -145,9 +143,15 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
     TRACE("Initializing signal handlers %04x\n", flags);
 
 #if !HAVE_MACH_EXCEPTIONS
-    char* enableAlternateStackCheck = getenv("COMPlus_EnableAlternateStackCheck");
+    g_enable_alternate_stack_check = false;
 
-    g_enable_alternate_stack_check = enableAlternateStackCheck && (strtoul(enableAlternateStackCheck, NULL, 10) != 0);
+    CLRConfigNoCache stackCheck = CLRConfigNoCache::Get("EnableAlternateStackCheck", /*noprefix*/ false, &getenv);
+    if (stackCheck.IsSet())
+    {
+        DWORD value;
+        if (stackCheck.TryAsInteger(10, value))
+            g_enable_alternate_stack_check = (value != 0);
+    }
 #endif
 
     if (flags & PAL_INITIALIZE_REGISTER_SIGNALS)
@@ -232,8 +236,11 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
     }
 
 #ifdef INJECT_ACTIVATION_SIGNAL
-    handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
-    g_registered_activation_handler = true;
+    if (flags & PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
+    {
+        handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
+        g_registered_activation_handler = true;
+    }
 #endif
 
     return TRUE;
@@ -344,6 +351,26 @@ bool IsRunningOnAlternateStack(void *context)
 #endif // HAVE_MACH_EXCEPTIONS
 }
 
+static bool IsSaSigInfo(struct sigaction* action)
+{
+    return (action->sa_flags & SA_SIGINFO) != 0;
+}
+
+static bool IsSigDfl(struct sigaction* action)
+{
+    // macOS can return sigaction with SIG_DFL and SA_SIGINFO.
+    // SA_SIGINFO means we should use sa_sigaction, but here we want to check sa_handler.
+    // So we ignore SA_SIGINFO when sa_sigaction and sa_handler are at the same address.
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_DFL;
+}
+
+static bool IsSigIgn(struct sigaction* action)
+{
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_IGN;
+}
+
 /*++
 Function :
     invoke_previous_action
@@ -363,7 +390,30 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
 {
     _ASSERTE(action != NULL);
 
-    if (action->sa_flags & SA_SIGINFO)
+    if (IsSigIgn(action))
+    {
+        if (signalRestarts)
+        {
+            // This signal mustn't be ignored because it will be restarted.
+            PROCAbort(code);
+        }
+        return;
+    }
+    else if (IsSigDfl(action))
+    {
+        if (signalRestarts)
+        {
+            // Restore the original and restart h/w exception.
+            restore_signal(code, action);
+        }
+        else
+        {
+            // We can't invoke the original handler because returning from the
+            // handler doesn't restart the exception.
+            PROCAbort(code);
+        }
+    }
+    else if (IsSaSigInfo(action))
     {
         // Directly call the previous handler.
         _ASSERTE(action->sa_sigaction != NULL);
@@ -371,39 +421,14 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
     }
     else
     {
-        if (action->sa_handler == SIG_IGN)
-        {
-            if (signalRestarts)
-            {
-                // This signal mustn't be ignored because it will be restarted.
-                PROCAbort();
-            }
-            return;
-        }
-        else if (action->sa_handler == SIG_DFL)
-        {
-            if (signalRestarts)
-            {
-                // Restore the original and restart h/w exception.
-                restore_signal(code, action);
-            }
-            else
-            {
-                // We can't invoke the original handler because returning from the
-                // handler doesn't restart the exception.
-                PROCAbort();
-            }
-        }
-        else
-        {
-            // Directly call the previous handler.
-            _ASSERTE(action->sa_handler != NULL);
-            action->sa_handler(code);
-        }
+        // Directly call the previous handler.
+        _ASSERTE(action->sa_handler != NULL);
+        action->sa_handler(code);
     }
 
     PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
-    PROCCreateCrashDumpIfEnabled();
+
+    PROCCreateCrashDumpIfEnabled(code);
 }
 
 /*++
@@ -460,7 +485,7 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
 Function :
     signal_handler_worker
 
-    Handles signal on the original stack where the signal occured.
+    Handles signal on the original stack where the signal occurred.
     Invoked via setcontext.
 
 Parameters :
@@ -507,7 +532,7 @@ Function :
 Parameters :
     POSIX signal handler parameter list ("man sigaction" for details)
     sp - stack pointer of the stack to execute the handler on.
-         If sp == 0, execute it on the original stack where the signal has occured.
+         If sp == 0, execute it on the original stack where the signal has occurred.
 Return :
     The return value from the signal handler
 --*/
@@ -575,13 +600,13 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
                 if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
                 {
-                    PROCAbort();
+                    PROCAbort(SIGSEGV);
                 }
             }
             else
             {
                 (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-                PROCAbort();
+                PROCAbort(SIGSEGV);
             }
         }
 
@@ -732,6 +757,12 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
 {
     if (PALIsInitialized())
     {
+        CLRConfigNoCache enableDumpOnSigTerm = CLRConfigNoCache::Get("EnableDumpOnSigTerm", /*noprefix*/ false, &getenv);
+        DWORD val = 0;
+        if (enableDumpOnSigTerm.IsSet() && enableDumpOnSigTerm.TryAsInteger(10, val) && val == 1)
+        {
+            PROCCreateCrashDumpIfEnabled(code);
+        }
         // g_pSynchronizationManager shouldn't be null if PAL is initialized.
         _ASSERTE(g_pSynchronizationManager != nullptr);
 
@@ -827,6 +858,15 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
     // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
     // the process exits.
+
+#ifdef __APPLE__
+    // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
+    if (status == ENOTSUP)
+    {
+        return ERROR_NOT_SUPPORTED;
+    }
+#endif
+
     if ((status != 0) && (status != EAGAIN))
     {
         // Failure to send the signal is fatal. There are only two cases when sending
@@ -904,11 +944,12 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 #if !HAVE_MACH_EXCEPTIONS
     sigset_t signal_set;
     CONTEXT signalContextRecord;
+    CONTEXT* signalContextRecordPtr = &signalContextRecord;
     EXCEPTION_RECORD exceptionRecord;
     native_context_t *ucontext;
 
     ucontext = (native_context_t *)sigcontext;
-    g_common_signal_handler_context_locvar_offset = (int)((char*)&signalContextRecord - (char*)__builtin_frame_address(0));
+    g_hardware_exception_context_locvar_offset = (int)((char*)&signalContextRecordPtr - (char*)__builtin_frame_address(0));
 
     if (code == (SIGSEGV | StackOverflowFlag))
     {

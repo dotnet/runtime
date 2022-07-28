@@ -4,6 +4,6 @@
        needed by the IL SDK. -->
 
   <PropertyGroup>
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
   </PropertyGroup>
 </Project>

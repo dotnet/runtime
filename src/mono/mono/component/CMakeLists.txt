@@ -1,6 +1,5 @@
 set(MONO_COMPONENT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../component")
-set(SHARED_EVENTPIPE_INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../../native/")
-set(SHARED_EVENTPIPE_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../../native/eventpipe/")
+set(SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe/")
 set(MONO_EVENTPIPE_SHIM_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../eventpipe/")
 set(MONO_EVENTPIPE_GEN_INCLUDE_PATH "${CMAKE_CURRENT_BINARY_DIR}/eventpipe")
 
@@ -42,6 +41,7 @@ list(APPEND components
 )
 set(${MONO_HOT_RELOAD_COMPONENT_NAME}-sources
   ${MONO_COMPONENT_PATH}/hot_reload.c
+  ${MONO_COMPONENT_PATH}/hot_reload-internals.h
   ${MONO_COMPONENT_PATH}/hot_reload.h
   )
 set(${MONO_HOT_RELOAD_COMPONENT_NAME}-stub-sources
@@ -56,7 +56,6 @@ list(APPEND components
 include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/CMakeLists.txt)
 
 include_directories(
-  ${SHARED_EVENTPIPE_INCLUDE_PATH}
   ${MONO_EVENTPIPE_SHIM_SOURCE_PATH}
   ${MONO_EVENTPIPE_GEN_INCLUDE_PATH}
 )
@@ -66,6 +65,7 @@ set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-sources
   ${diagnostic_server_sources}
   ${MONO_COMPONENT_PATH}/event_pipe.c
   ${MONO_COMPONENT_PATH}/event_pipe.h
+  ${MONO_COMPONENT_PATH}/event_pipe-wasm.h
   ${MONO_COMPONENT_PATH}/diagnostics_server.c
   ${MONO_COMPONENT_PATH}/diagnostics_server.h
   )
@@ -82,6 +82,7 @@ set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-dependencies
 
 #define a library for each component and component stub
 function(define_component_libs)
+  # NOTE: keep library naming pattern in sync with RuntimeComponentManifest.targets
   if (NOT DISABLE_LIBS)
     foreach(component IN LISTS components)
       add_library("mono-component-${component}-static" STATIC $<TARGET_OBJECTS:${component}-objects>)
@@ -99,6 +100,7 @@ add_library(component_base INTERFACE)
 target_sources(component_base INTERFACE
   ${MONO_COMPONENT_PATH}/component.h
 )
+target_link_libraries(component_base INTERFACE monoapi)
 
 if(DISABLE_COMPONENTS OR DISABLE_LIBS)
   set(DISABLE_COMPONENT_OBJECTS 1)
@@ -121,6 +123,7 @@ endforeach()
 if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
   # define a shared library for each component
   foreach(component IN LISTS components)
+    # NOTE: keep library naming pattern in sync with RuntimeComponentManifest.targets
     if(HOST_WIN32)
       add_library("mono-component-${component}" SHARED "${${component}-sources}")
       target_compile_definitions("mono-component-${component}" PRIVATE -DCOMPILING_COMPONENT_DYNAMIC;-DMONO_DLL_IMPORT)
@@ -172,6 +175,26 @@ foreach(component IN LISTS components)
   list(APPEND mono-components-stub-objects $<TARGET_OBJECTS:${component}-stub-objects>)
 endforeach()
 
+if(NOT MONO_CROSS_COMPILE)
+  set(TemplateMonoRuntimeComponentSharedLibExt "${CMAKE_SHARED_LIBRARY_SUFFIX}")
+  set(TemplateMonoRuntimeComponentStaticLibExt "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  set(TemplateRuntimeIdentifier "${MONO_COMPONENTS_RID}")
+  if(DISABLE_COMPONENTS)
+    set(TemplateMonoRuntimeComponentLinking "static")
+    set(TemplateMonoRuntimeAvailableComponents "")
+  else()
+    list(TRANSFORM components REPLACE "^(.+)$" "{ \"identity\": \"\\1\", \"RuntimeIdentifier\": \"${TemplateRuntimeIdentifier}\" }," OUTPUT_VARIABLE TemplateMonoRuntimeAvailableComponentsList)
+    list(JOIN TemplateMonoRuntimeAvailableComponentsList "\n" TemplateMonoRuntimeAvailableComponents)
+    if(STATIC_COMPONENTS)
+      set(TemplateMonoRuntimeComponentLinking "static")
+    else()
+      set(TemplateMonoRuntimeComponentLinking "dynamic")
+    endif()
+  endif()
+  # Write a RuntimeComponentManifest.json file in the artifacts/obj/mono/<host>/build/ directory
+  # without the ../.. the file would go in artifacts/obj/mono/<host>/mono/mini
+  configure_file( "${MONO_COMPONENT_PATH}/RuntimeComponentManifest.json.in" "../../build/RuntimeComponentManifest.json")
+endif()
 
 # component tests
 set(MONO_EVENTPIPE_TEST_SOURCE_PATH "${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/test")

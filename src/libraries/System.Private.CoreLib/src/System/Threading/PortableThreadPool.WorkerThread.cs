@@ -12,7 +12,18 @@ namespace System.Threading
         /// </summary>
         private static class WorkerThread
         {
-            // This value represents an assumption of how much uncommited stack space a worker thread may use in the future.
+            private const int SemaphoreSpinCountDefaultBaseline = 70;
+#if !TARGET_ARM64 && !TARGET_ARM && !TARGET_LOONGARCH64
+            private const int SemaphoreSpinCountDefault = SemaphoreSpinCountDefaultBaseline;
+#else
+            // On systems with ARM processors, more spin-waiting seems to be necessary to avoid perf regressions from incurring
+            // the full wait when work becomes available soon enough. This is more noticeable after reducing the number of
+            // thread requests made to the thread pool because otherwise the extra thread requests cause threads to do more
+            // busy-waiting instead and adding to contention in trying to look for work items, which is less preferable.
+            private const int SemaphoreSpinCountDefault = SemaphoreSpinCountDefaultBaseline * 4;
+#endif
+
+            // This value represents an assumption of how much uncommitted stack space a worker thread may use in the future.
             // Used in calculations to estimate when to throttle the rate of thread injection to reduce the possibility of
             // preexisting threads from running out of memory when using new stack space in low-memory situations.
             public const int EstimatedAdditionalStackUsagePerThreadBytes = 64 << 10; // 64 KB
@@ -24,7 +35,10 @@ namespace System.Threading
                 new LowLevelLifoSemaphore(
                     0,
                     MaxPossibleThreadCount,
-                    AppContextConfigHelper.GetInt32Config("System.Threading.ThreadPool.UnfairSemaphoreSpinLimit", 70, false),
+                    AppContextConfigHelper.GetInt32Config(
+                        "System.Threading.ThreadPool.UnfairSemaphoreSpinLimit",
+                        SemaphoreSpinCountDefault,
+                        false),
                     onWait: () =>
                     {
                         if (NativeRuntimeEventSource.Log.IsEnabled())
@@ -105,7 +119,7 @@ namespace System.Threading
                     try
                     {
                         // At this point, the thread's wait timed out. We are shutting down this thread.
-                        // We are going to decrement the number of exisiting threads to no longer include this one
+                        // We are going to decrement the number of existing threads to no longer include this one
                         // and then change the max number of threads in the thread pool to reflect that we don't need as many
                         // as we had. Finally, we are going to tell hill climbing that we changed the max number of threads.
                         ThreadCounts counts = threadPoolInstance._separated.counts;
@@ -114,32 +128,27 @@ namespace System.Threading
                             // Since this thread is currently registered as an existing thread, if more work comes in meanwhile,
                             // this thread would be expected to satisfy the new work. Ensure that NumExistingThreads is not
                             // decreased below NumProcessingWork, as that would be indicative of such a case.
-                            short numExistingThreads = counts.NumExistingThreads;
-                            if (numExistingThreads <= counts.NumProcessingWork)
+                            if (counts.NumExistingThreads <= counts.NumProcessingWork)
                             {
                                 // In this case, enough work came in that this thread should not time out and should go back to work.
                                 break;
                             }
 
                             ThreadCounts newCounts = counts;
-                            newCounts.SubtractNumExistingThreads(1);
-                            short newNumExistingThreads = (short)(numExistingThreads - 1);
+                            short newNumExistingThreads = --newCounts.NumExistingThreads;
+                            short newNumThreadsGoal =
+                                Math.Max(
+                                    threadPoolInstance.MinThreadsGoal,
+                                    Math.Min(newNumExistingThreads, counts.NumThreadsGoal));
+                            newCounts.NumThreadsGoal = newNumThreadsGoal;
 
-                            ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
+                            ThreadCounts oldCounts =
+                                threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
                             if (oldCounts == counts)
                             {
-                                short newNumThreadsGoal =
-                                    Math.Max(
-                                        threadPoolInstance.MinThreadsGoal,
-                                        Math.Min(newNumExistingThreads, threadPoolInstance._separated.numThreadsGoal));
-                                if (threadPoolInstance._separated.numThreadsGoal != newNumThreadsGoal)
-                                {
-                                    threadPoolInstance._separated.numThreadsGoal = newNumThreadsGoal;
-                                    HillClimbing.ThreadPoolHillClimber.ForceChange(
-                                        newNumThreadsGoal,
-                                        HillClimbing.StateOrTransition.ThreadTimedOut);
-                                }
-
+                                HillClimbing.ThreadPoolHillClimber.ForceChange(
+                                    newNumThreadsGoal,
+                                    HillClimbing.StateOrTransition.ThreadTimedOut);
                                 if (NativeRuntimeEventSource.Log.IsEnabled())
                                 {
                                     NativeRuntimeEventSource.Log.ThreadPoolWorkerThreadStop((uint)newNumExistingThreads);
@@ -162,7 +171,23 @@ namespace System.Threading
             /// </summary>
             private static void RemoveWorkingWorker(PortableThreadPool threadPoolInstance)
             {
-                threadPoolInstance._separated.counts.InterlockedDecrementNumProcessingWork();
+                // A compare-exchange loop is used instead of Interlocked.Decrement or Interlocked.Add to defensively prevent
+                // NumProcessingWork from underflowing. See the setter for NumProcessingWork.
+                ThreadCounts counts = threadPoolInstance._separated.counts;
+                while (true)
+                {
+                    ThreadCounts newCounts = counts;
+                    newCounts.NumProcessingWork--;
+
+                    ThreadCounts countsBeforeUpdate =
+                        threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
+                    if (countsBeforeUpdate == counts)
+                    {
+                        break;
+                    }
+
+                    counts = countsBeforeUpdate;
+                }
 
                 // It's possible that we decided we had thread requests just before a request came in,
                 // but reduced the worker count *after* the request came in.  In this case, we might
@@ -181,7 +206,7 @@ namespace System.Threading
                 while (true)
                 {
                     numProcessingWork = counts.NumProcessingWork;
-                    if (numProcessingWork >= threadPoolInstance._separated.numThreadsGoal)
+                    if (numProcessingWork >= counts.NumThreadsGoal)
                     {
                         return;
                     }
@@ -224,8 +249,8 @@ namespace System.Threading
                     while (true)
                     {
                         ThreadCounts newCounts = counts;
-                        newCounts.SubtractNumProcessingWork((short)toCreate);
-                        newCounts.SubtractNumExistingThreads((short)toCreate);
+                        newCounts.NumProcessingWork -= (short)toCreate;
+                        newCounts.NumExistingThreads -= (short)toCreate;
 
                         ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
                         if (oldCounts == counts)
@@ -256,13 +281,13 @@ namespace System.Threading
                     // code from which this implementation was ported, which turns a processing thread into a retired thread
                     // and checks for pending requests like RemoveWorkingWorker. In this implementation there are
                     // no retired threads, so only the count of threads processing work is considered.
-                    if (counts.NumProcessingWork <= threadPoolInstance._separated.numThreadsGoal)
+                    if (counts.NumProcessingWork <= counts.NumThreadsGoal)
                     {
                         return false;
                     }
 
                     ThreadCounts newCounts = counts;
-                    newCounts.SubtractNumProcessingWork(1);
+                    newCounts.NumProcessingWork--;
 
                     ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
 

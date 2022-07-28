@@ -439,5 +439,14 @@ namespace System.Globalization.Tests
 
             Assert.NotEqual(lcid, new CultureInfo(lcid).LCID);
         }
+
+        [InlineData("zh-TW-u-co-zhuyin")]
+        [InlineData("de-DE-u-co-phoneb")]
+        [InlineData("de-u-co-phonebk")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        public void TestCreationWithMangledSortName(string cultureName)
+        {
+            Assert.True(CultureInfo.GetCultureInfo(cultureName).CompareInfo.Name.Equals(cultureName, StringComparison.OrdinalIgnoreCase));
+        }
     }
 }

@@ -58,6 +58,8 @@ namespace Thunkerator
             }
         }
 
+        record InstructionSetGroup(string Names, string Archs, string Sets);
+
         class InstructionSetImplication
         {
             public string Architecture { get; }
@@ -81,11 +83,13 @@ namespace Thunkerator
 
         List<InstructionSetInfo> _instructionSets = new List<InstructionSetInfo>();
         List<InstructionSetImplication> _implications = new List<InstructionSetImplication>();
+        List<InstructionSetGroup> _instructionSetsGroups = new List<InstructionSetGroup>();
         Dictionary<string, HashSet<string>> _64bitVariants = new Dictionary<string, HashSet<string>>();
         SortedDictionary<string,int> _r2rNamesByName = new SortedDictionary<string,int>();
         SortedDictionary<int,string> _r2rNamesByNumber = new SortedDictionary<int,string>();
         SortedSet<string> _architectures = new SortedSet<string>();
         Dictionary<string,List<string>> _architectureJitNames = new Dictionary<string,List<string>>();
+        Dictionary<string,List<string>> _architectureVectorInstructionSetJitNames = new Dictionary<string,List<string>>();
         HashSet<string> _64BitArchitectures = new HashSet<string>();
         Dictionary<string,string> _64BitVariantArchitectureJitNameSuffix = new Dictionary<string,string>();
 
@@ -96,6 +100,8 @@ namespace Thunkerator
             _architectures.Add(arch);
             if (!_architectureJitNames.ContainsKey(arch))
                 _architectureJitNames.Add(arch, new List<string>());
+            if (!_architectureVectorInstructionSetJitNames.ContainsKey(arch))
+                _architectureVectorInstructionSetJitNames.Add(arch, new List<string>());
         }
 
         void ValidateArchitectureEncountered(string arch)
@@ -162,6 +168,12 @@ namespace Thunkerator
                             _architectureJitNames[command[1]].Add(command[5]);
                             _instructionSets.Add(new InstructionSetInfo(command[1],command[2],command[3],command[4],command[5],command[6]));
                             break;
+                        case "vectorinstructionset":
+                            if (command.Length != 3)
+                                throw new Exception("Incorrect number of args for vectorinstructionset");
+                            ValidateArchitectureEncountered(command[1]);
+                            _architectureVectorInstructionSetJitNames[command[1]].Add(command[2]);
+                            break;
                         case "instructionset64bit":
                             if (command.Length != 3)
                                 throw new Exception("Incorrect number of args for instructionset");
@@ -174,6 +186,11 @@ namespace Thunkerator
                                 throw new Exception("Incorrect number of args for instructionset");
                             ValidateArchitectureEncountered(command[1]);
                             _implications.Add(new InstructionSetImplication(command[1],command[2], command[3]));
+                            break;
+                        case "instructionsetgroup":
+                            if (command.Length != 4)
+                                throw new Exception("Incorrect number of args for instructionsetgroup");
+                            _instructionSetsGroups.Add(new InstructionSetGroup(command[1], command[2], command[3]));
                             break;
                         case "copyinstructionsets":
                             if (command.Length != 3)
@@ -188,6 +205,10 @@ namespace Thunkerator
                                     continue;
                                 _instructionSets.Add(new InstructionSetInfo(targetarch, val));
                                 _architectureJitNames[targetarch].Add(val.JitName);
+                            }
+                            foreach (var val in _architectureVectorInstructionSetJitNames[arch].ToArray())
+                            {
+                                _architectureVectorInstructionSetJitNames[targetarch].Add(val);
                             }
                             foreach (var val in _implications.ToArray())
                             {
@@ -355,6 +376,7 @@ namespace Internal.ReadyToRunConstants
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Internal.TypeSystem;
 
@@ -365,23 +387,51 @@ namespace Internal.JitInterface
         ILLEGAL = 0,
         NONE = 63,
 ");
+
             foreach (string architecture in _architectures)
             {
-                int counter = 1;
                 foreach (var jitName in _architectureJitNames[architecture])
                 {
-                    tr.WriteLine($"        {architecture}_{jitName}={counter++},");
+                    tr.WriteLine($"        {architecture}_{jitName} = InstructionSet_{architecture}.{jitName},");
                 }
             }
 
-            tr.Write(@"
-    }
+            tr.Write(@"    }
 
-    public struct InstructionSetFlags : IEnumerable<InstructionSet>
+");
+
+            foreach (string architecture in _architectures)
+            {
+                tr.WriteLine($"    public enum InstructionSet_{architecture}");
+                tr.Write(@"    {
+        ILLEGAL = InstructionSet.ILLEGAL,
+        NONE = InstructionSet.NONE,
+");
+
+                int counter = 1;
+                foreach (var jitName in _architectureJitNames[architecture])
+                {
+                    tr.WriteLine($"        {jitName} = {counter++},");
+                }
+
+                tr.Write(@"    }
+
+");
+            }
+
+            tr.Write(@"    public struct InstructionSetFlags : IEnumerable<InstructionSet>
     {
-        ulong _flags;
-        
-        public void AddInstructionSet(InstructionSet instructionSet)
+        private ulong _flags;
+
+");
+
+            foreach (string architecture in _architectures)
+            {
+                tr.WriteLine($"        public IEnumerable<InstructionSet_{architecture}> {architecture}Flags => this.Select((x) => (InstructionSet_{architecture})x);");
+                tr.WriteLine();
+            }
+
+            tr.Write(@"        public void AddInstructionSet(InstructionSet instructionSet)
         {
             _flags = _flags | (((ulong)1) << (int)instructionSet);
         }
@@ -443,6 +493,48 @@ namespace Internal.JitInterface
             this = ExpandInstructionSetByImplicationHelper(architecture, this);
         }
 
+        public static InstructionSet ConvertToImpliedInstructionSetForVectorInstructionSets(TargetArchitecture architecture, InstructionSet input)
+        {
+            switch(architecture)
+            {
+");
+            foreach (string architecture in _architectures)
+            {
+                if (_architectureVectorInstructionSetJitNames[architecture].Count == 0)
+                    continue;
+
+                tr.Write($@"            case TargetArchitecture.{architecture}:
+                switch(input)
+                {{
+");
+                foreach (var vectorInstructionSet in _architectureVectorInstructionSetJitNames[architecture])
+                {
+                    string impliedInstructionSet = null;
+                    foreach (var implication in _implications)
+                    {
+                        if (implication.Architecture != architecture) continue;
+                        if (implication.JitName == vectorInstructionSet)
+                        {
+                            if (impliedInstructionSet != null)
+                            {
+                                throw new Exception($"Vector instruction set {vectorInstructionSet} implies multiple instruction sets");
+                            }
+                            impliedInstructionSet = implication.ImpliedJitName;
+                        }
+                    }
+                    if (impliedInstructionSet != null)
+                    {
+                        tr.WriteLine($"                case InstructionSet.{architecture}_{vectorInstructionSet}: return InstructionSet.{architecture}_{impliedInstructionSet};");
+                    }
+                }
+                tr.WriteLine(@"                }
+                break;");
+            }
+
+            tr.Write(@"            }
+            return input;
+        }
+
         public static InstructionSetFlags ExpandInstructionSetByImplicationHelper(TargetArchitecture architecture, InstructionSetFlags input)
         {
             InstructionSetFlags oldflags = input;
@@ -475,9 +567,9 @@ namespace Internal.JitInterface
                 tr.WriteLine("                    break;");
             }
 
-            tr.Write(@"
-                }
+            tr.Write(@"                }
             } while (!oldflags.Equals(resultflags));
+
             return resultflags;
         }
 
@@ -515,11 +607,33 @@ namespace Internal.JitInterface
                 tr.WriteLine("                    break;");
             }
 
-            tr.Write(@"
-                }
+            tr.Write(@"                }
             } while (!oldflags.Equals(resultflags));
+
             return resultflags;
         }
+
+        private static Dictionary<(string, TargetArchitecture), string> AllInstructionSetGroups { get; } = new()
+            {
+");
+            foreach (InstructionSetGroup group in _instructionSetsGroups)
+            {
+                foreach (string name in group.Names.Split(' '))
+                {
+                    foreach (string arch in group.Archs.Split(' '))
+                    {
+                        string key = $"\"{name}\",".PadRight(13, ' ') + $" TargetArchitecture.{arch}),".PadRight(27, ' ');
+                        tr.WriteLine($"                {{ ({key} \"{group.Sets}\" }},");
+                    }
+                }
+            }
+            tr.Write(@"            };
+
+        public static IEnumerable<string> AllCpuNames =>
+            AllInstructionSetGroups.Keys.Select(key => key.Item1).Distinct();
+
+        public static IEnumerable<string> CpuNameToInstructionSets(string cpu, TargetArchitecture arch) =>
+            AllInstructionSetGroups.TryGetValue((cpu, arch), out string value) ? value.Split(' ') : null;
 
         public struct InstructionSetInfo
         {
@@ -559,8 +673,8 @@ namespace Internal.JitInterface
                 }
                 tr.WriteLine("                    break;");
             }
-            tr.Write(@"
-            }
+
+            tr.Write(@"            }
         }
 
         public void Set64BitInstructionSetVariants(TargetArchitecture architecture)
@@ -586,8 +700,7 @@ namespace Internal.JitInterface
 
                 tr.WriteLine("                    break;");
             }
-            tr.Write(@"
-            }
+            tr.Write(@"            }
         }
 
         public void Set64BitInstructionSetVariantsUnconditionally(TargetArchitecture architecture)
@@ -610,13 +723,13 @@ namespace Internal.JitInterface
 
                 tr.WriteLine("                    break;");
             }
-            tr.Write(@"
-            }
+            tr.Write(@"            }
         }
     }
 }
 ");
             return;
+
             void AddReverseImplication(string architecture, string jitName, string impliedJitName)
             {
                 AddImplication(architecture, impliedJitName, jitName);

@@ -4,157 +4,157 @@
     <body>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateMessage">
         <source>Argument '{0}' is not referenced from the logging message</source>
-        <target state="new">Argument '{0}' is not referenced from the logging message</target>
+        <target state="translated">O argumento '{0}' não é referenciado na mensagem de registro em log</target>
         <note />
       </trans-unit>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateTitle">
         <source>Argument is not referenced from the logging message</source>
-        <target state="new">Argument is not referenced from the logging message</target>
+        <target state="translated">O argumento não é referenciado na mensagem de registro em log</target>
         <note />
       </trans-unit>
       <trans-unit id="GeneratingForMax6ArgumentsMessage">
         <source>Generating more than 6 arguments is not supported</source>
-        <target state="new">Generating more than 6 arguments is not supported</target>
+        <target state="translated">A geração de mais de 6 argumentos não é suportada</target>
         <note />
       </trans-unit>
       <trans-unit id="InconsistentTemplateCasingMessage">
         <source>Can't have the same template with different casing</source>
-        <target state="new">Can't have the same template with different casing</target>
+        <target state="translated">Não é possível ter o mesmo modelo com diferenças entre maiúsculas e minúsculas.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodNameMessage">
         <source>Logging method names cannot start with _</source>
-        <target state="new">Logging method names cannot start with _</target>
+        <target state="translated">Os nomes dos métodos de registro em log não podem começar com _</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterNameMessage">
         <source>Logging method parameter names cannot start with _</source>
-        <target state="new">Logging method parameter names cannot start with _</target>
+        <target state="translated">Os nomes dos parâmetros do método de registro em log não podem começar com _</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
-        <target state="new">Logging methods cannot have a body</target>
+        <target state="translated">Os métodos de registro em log não podem ter um corpo</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodIsGenericMessage">
         <source>Logging methods cannot be generic</source>
-        <target state="new">Logging methods cannot be generic</target>
+        <target state="translated">Os métodos de registro em log não podem ser genéricos</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
         <source>Logging methods must be partial</source>
-        <target state="new">Logging methods must be partial</target>
+        <target state="translated">Os métodos de registro em log devem ser parciais</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustReturnVoidMessage">
         <source>Logging methods must return void</source>
-        <target state="new">Logging methods must return void</target>
+        <target state="translated">Os métodos de registro em log devem retornar nulos</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
         <source>Logging methods must be static</source>
-        <target state="new">Logging methods must be static</target>
+        <target state="translated">Os métodos de registro em log devem ser estáticos</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Can't have malformed format strings (like dangling {, etc)</source>
-        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
+        <target state="translated">Não pode ter cadeia de caracteres de formato malformadas (como final {, etc)</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
         <source>A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</source>
-        <target state="new">A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</target>
+        <target state="translated">Um valor LogLevel deve ser fornecido no atributo LoggerMessage ou como um parâmetro para o método de registro em log</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLoggerArgumentMessage">
         <source>One of the arguments to the static logging method '{0}' must implement the Microsoft.Extensions.Logging.ILogger interface</source>
-        <target state="new">One of the arguments to the static logging method '{0}' must implement the Microsoft.Extensions.Logging.ILogger interface</target>
+        <target state="translated">Um dos argumentos para um método de log estático '{0}' deve implementar a interface Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingLoggerArgumentTitle">
         <source>One of the arguments to a static logging method must implement the Microsoft.Extensions.Logging.ILogger interface</source>
-        <target state="new">One of the arguments to a static logging method must implement the Microsoft.Extensions.Logging.ILogger interface</target>
+        <target state="translated">Um dos argumentos para um método de log estático deve implementar a interface Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingLoggerFieldMessage">
         <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
-        <target state="new">Couldn't find a field of type Microsoft.Extensions.Logging.ILogger in class {0}</target>
+        <target state="translated">Não foi possível encontrar um campo do tipo Microsoft.Extensions.Logging.ILogger na classe {0}</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingLoggerFieldTitle">
         <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger</source>
-        <target state="new">Couldn't find a field of type Microsoft.Extensions.Logging.ILogger</target>
+        <target state="translated">Não foi possível encontrar um campo do tipo Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingRequiredTypeMessage">
         <source>Could not find definition for type {0}</source>
-        <target state="new">Could not find definition for type {0}</target>
+        <target state="translated">Não foi possível encontrar a definição para o tipo {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingRequiredTypeTitle">
         <source>Could not find a required type definition</source>
-        <target state="new">Could not find a required type definition</target>
+        <target state="translated">Não foi possível encontrar uma definição de tipo necessária</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleLoggerFieldsMessage">
         <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
-        <target state="new">Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}</target>
+        <target state="translated">Múltiplos campos do tipo Microsoft.Extensions.Logging.ILogger encontrados na classe {0}</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MultipleLoggerFieldsTitle">
         <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger</source>
-        <target state="new">Found multiple fields of type Microsoft.Extensions.Logging.ILogger</target>
+        <target state="translated">Múltiplos campos encontrados do tipo Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
-        <target state="new">Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</target>
+        <target state="translated">Remova o qualificador redundante (Info:, Aviso:, Erro:, etc) da mensagem de log, pois está implícito no nível de log especificado.</target>
         <note />
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageTitle">
         <source>Redundant qualifier in logging message</source>
-        <target state="new">Redundant qualifier in logging message</target>
+        <target state="translated">Qualificador redundante na mensagem de registro de log</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntMentionExceptionInMessageTitle">
         <source>Don't include exception parameters as templates in the logging message</source>
-        <target state="new">Don't include exception parameters as templates in the logging message</target>
+        <target state="translated">Não inclua parâmetros de exceção como modelos na mensagem de registro em log</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntMentionInTemplateMessage">
         <source>Don't include a template for {0} in the logging message since it is implicitly taken care of</source>
-        <target state="new">Don't include a template for {0} in the logging message since it is implicitly taken care of</target>
+        <target state="translated">Não inclua um modelo para {0} na mensagem de registro em log, pois isso é implicitamente atendido</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntMentionLogLevelInMessageTitle">
         <source>Don't include log level parameters as templates in the logging message</source>
-        <target state="new">Don't include log level parameters as templates in the logging message</target>
+        <target state="translated">Não inclua parâmetros de nível de registro como modelos na mensagem de registro de log</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntMentionLoggerInMessageTitle">
         <source>Don't include logger parameters as templates in the logging message</source>
-        <target state="new">Don't include logger parameters as templates in the logging message</target>
+        <target state="translated">Não inclua parâmetros de agente como modelos na mensagem de registro em log</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventIdsMessage">
         <source>Multiple logging methods are using event id {0} in class {1}</source>
-        <target state="new">Multiple logging methods are using event id {0} in class {1}</target>
+        <target state="translated">Múltiplos métodos de registro em log estão usando a id de evento {0} na classe {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
-        <target state="new">Multiple logging methods cannot use the same event id within a class</target>
+        <target state="translated">Múltiplos métodos de registro em log não podem usar o mesmo id de evento dentro de uma classe</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
         <source>Template '{0}' is not provided as argument to the logging method</source>
-        <target state="new">Template '{0}' is not provided as argument to the logging method</target>
+        <target state="translated">O modelo '{0}' não é fornecido como argumento para o método de registro</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
         <source>Logging template has no corresponding method argument</source>
-        <target state="new">Logging template has no corresponding method argument</target>
+        <target state="translated">O modelo de registro em log não tem nenhum argumento de método correspondente</target>
         <note />
       </trans-unit>
     </body>

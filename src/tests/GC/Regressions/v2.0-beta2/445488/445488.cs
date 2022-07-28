@@ -22,7 +22,7 @@ public class Node
     }
 }
 
-public class Test
+public class Test_445488
 {
     //public static PerformanceCounter PC;
 
@@ -130,5 +130,5 @@ WARNING: Stack unwind information not available. Following frames may be wrong.
 1d 0012e738 7a7e24e0 System_ni!System.Diagnostics.PerformanceCounterLib.GetCategorySample(System.String, System.String)+0x36
 1e 0012e738 7a7e2651 System_ni!System.Diagnostics.PerformanceCounter.NextSample()+0x64
 1f 04ffb000 02c800f0 System_ni!System.Diagnostics.PerformanceCounter.NextValue()+0x21
-20 04ffb000 00000000 445488!Test.Main()+0x80
+20 04ffb000 00000000 445488!Test_445488.Main()+0x80
 */

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net461;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);netstandard2.1</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.1'">
     <Compile Include="Microsoft.Bcl.AsyncInterfaces.cs" />

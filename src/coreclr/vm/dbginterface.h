@@ -21,7 +21,7 @@ typedef void (*FAVORCALLBACK)(void *);
 
 //
 // The purpose of this object is to serve as an entry point to the
-// debugger, which used to reside in a seperate DLL.
+// debugger, which used to reside in a separate DLL.
 //
 
 class DebugInterface
@@ -68,20 +68,15 @@ public:
                             DWORD        dwModuleName,    // number of characters in file name excludign null
                             Assembly *   pAssembly,       // the assembly the module belongs to
                             AppDomain *  pAppDomain,      // the AppDomain the module is being loaded into
-                            DomainFile * pDomainFile,
+                            DomainAssembly * pDomainAssembly,
                             BOOL         fAttaching) = 0; // true if this notification is due to a debugger
                                                           // being attached to the process
-
-    // Called AFTER LoadModule, and after the module has reached FILE_LOADED. This lets
-    // dbgapi do any processing that needs to wait until the FILE_LOADED stage (e.g.,
-    // binding breakpoints in NGENd generics).
-    virtual void LoadModuleFinished(Module * pModule, AppDomain * pAppDomain) = 0;
 
     // Called for all modules in an AppDomain when the AppDomain is unloaded.
     // This includes domain neutral modules that are also loaded into other domains.
     // This is called only when a debugger is attached, and will occur after all UnloadClass
     // calls and before any UnloadAssembly or RemoveAppDomainFromIPCBlock calls realted
-    // to this module.  On CLR shutdown, we are not guarenteed to get UnloadModule calls for
+    // to this module.  On CLR shutdown, we are not guaranteed to get UnloadModule calls for
     // all outstanding loaded modules.
     virtual void UnloadModule(Module* pRuntimeModule, AppDomain *pAppDomain) = 0;
 
@@ -118,7 +113,7 @@ public:
     // pThread is thread that exception is on.
     // currentSP is stack frame of the throw site.
     // currentIP is ip of the throw site.
-    // pStubFrame = NULL if the currentSp is for a non-stub frame (ie, a regular JITed catched).
+    // pStubFrame = NULL if the currentSp is for a non-stub frame (ie, a regular JITed caught).
     // For stub-based throws, pStubFrame is the EE Frame of the stub.
     virtual bool FirstChanceManagedException(Thread *pThread, SIZE_T currentIP, SIZE_T currentSP) = 0;
 
@@ -247,7 +242,7 @@ public:
 
     // send a custom notification from the target to the RS. This will become an ICorDebugThread and
     // ICorDebugAppDomain on the RS.
-    virtual void SendCustomDebuggerNotification(Thread * pThread, DomainFile * pDomainFile, mdTypeDef classToken) = 0;
+    virtual void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomainAssembly, mdTypeDef classToken) = 0;
 
     // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
     virtual void SendMDANotification(
@@ -268,8 +263,8 @@ public:
 
     virtual void SendLogSwitchSetting (int iLevel,
                                        int iReason,
-                                       __in_z LPCWSTR pLogSwitchName,
-                                       __in_z LPCWSTR pParentSwitchName) = 0;
+                                       _In_z_ LPCWSTR pLogSwitchName,
+                                       _In_z_ LPCWSTR pParentSwitchName) = 0;
 
     virtual bool IsLoggingEnabled (void) = 0;
 
@@ -315,7 +310,7 @@ public:
     // This includes domain neutral assemblies that are also loaded into other domains.
     // This is called only when a debugger is attached, and will occur after all UnloadClass
     // and UnloadModule calls and before any RemoveAppDomainFromIPCBlock calls realted
-    // to this assembly.  On CLR shutdown, we are not guarenteed to get UnloadAssembly calls for
+    // to this assembly.  On CLR shutdown, we are not guaranteed to get UnloadAssembly calls for
     // all outstanding loaded assemblies.
     virtual void UnloadAssembly(DomainAssembly * pDomainAssembly) = 0;
 
@@ -363,7 +358,7 @@ public:
                                          SIZE_T                     *rgVal2,
                                          BYTE                      **rgpVCs) = 0;
 
-    virtual BOOL IsThreadContextInvalid(Thread *pThread) = 0;
+    virtual BOOL IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx) = 0;
 
     // For Just-My-Code (aka Just-User-Code).
     // The jit inserts probes that look like.
@@ -379,7 +374,7 @@ public:
     virtual DWORD* GetJMCFlagAddr(Module * pModule) = 0;
 
     // notification for SQL fiber debugging support
-    virtual void CreateConnection(CONNID dwConnectionId, __in_z WCHAR *wzName) = 0;
+    virtual void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName) = 0;
     virtual void DestroyConnection(CONNID dwConnectionId) = 0;
     virtual void ChangeConnection(CONNID dwConnectionId) = 0;
 

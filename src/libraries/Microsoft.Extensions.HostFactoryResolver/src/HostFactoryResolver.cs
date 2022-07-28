@@ -4,11 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-
-#nullable enable
 
 namespace Microsoft.Extensions.Hosting
 {
@@ -19,9 +18,25 @@ namespace Microsoft.Extensions.Hosting
         public const string BuildWebHost = nameof(BuildWebHost);
         public const string CreateWebHostBuilder = nameof(CreateWebHostBuilder);
         public const string CreateHostBuilder = nameof(CreateHostBuilder);
+        private const string TimeoutEnvironmentKey = "DOTNET_HOST_FACTORY_RESOLVER_DEFAULT_TIMEOUT_IN_SECONDS";
 
         // The amount of time we wait for the diagnostic source events to fire
-        private static readonly TimeSpan s_defaultWaitTimeout = Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan s_defaultWaitTimeout = SetupDefaultTimeout();
+
+        private static TimeSpan SetupDefaultTimeout()
+        {
+            if (Debugger.IsAttached)
+            {
+                return Timeout.InfiniteTimeSpan;
+            }
+
+            if (uint.TryParse(Environment.GetEnvironmentVariable(TimeoutEnvironmentKey), out uint timeoutInSeconds))
+            {
+                return TimeSpan.FromSeconds((int)timeoutInSeconds);
+            }
+
+            return TimeSpan.FromMinutes(5);
+        }
 
         public static Func<string[], TWebHost>? ResolveWebHostFactory<TWebHost>(Assembly assembly)
         {
@@ -144,6 +159,14 @@ namespace Microsoft.Extensions.Hosting
             {
                 return args =>
                 {
+                    static bool IsApplicationNameArg(string arg)
+                        => arg.Equals("--applicationName", StringComparison.OrdinalIgnoreCase) ||
+                            arg.Equals("/applicationName", StringComparison.OrdinalIgnoreCase);
+
+                    args = args.Any(arg => IsApplicationNameArg(arg)) || assembly.FullName is null
+                        ? args
+                        : args.Concat(new[] { "--applicationName", assembly.FullName }).ToArray();
+
                     var host = hostFactory(args);
                     return GetServiceProvider(host);
                 };
@@ -220,9 +243,9 @@ namespace Microsoft.Extensions.Hosting
 
                         // Try to set an exception if the entry point returns gracefully, this will force
                         // build to throw
-                        _hostTcs.TrySetException(new InvalidOperationException("Unable to build IHost"));
+                        _hostTcs.TrySetException(new InvalidOperationException("The entry point exited without ever building an IHost."));
                     }
-                    catch (TargetInvocationException tie) when (tie.InnerException is StopTheHostException)
+                    catch (TargetInvocationException tie) when (tie.InnerException?.GetType().Name == "HostAbortedException")
                     {
                         // The host was stopped by our own logic
                     }
@@ -259,7 +282,7 @@ namespace Microsoft.Extensions.Hosting
                     // Wait before throwing an exception
                     if (!_hostTcs.Task.Wait(_waitTimeout))
                     {
-                        throw new InvalidOperationException("Unable to build IHost");
+                        throw new InvalidOperationException($"Timed out waiting for the entry point to build the IHost after {s_defaultWaitTimeout}. This timeout can be modified using the '{TimeoutEnvironmentKey}' environment variable.");
                     }
                 }
                 catch (AggregateException) when (_hostTcs.Task.IsCompleted)
@@ -316,14 +339,29 @@ namespace Microsoft.Extensions.Hosting
                     if (_stopApplication)
                     {
                         // Stop the host from running further
-                        throw new StopTheHostException();
+                        ThrowHostAborted();
                     }
                 }
             }
 
-            private sealed class StopTheHostException : Exception
+            // HostFactoryResolver is used by tools that explicitly don't want to reference Microsoft.Extensions.Hosting assemblies.
+            // So don't depend on the public HostAbortedException directly. Instead, load the exception type dynamically if it can
+            // be found. If it can't (possibly because the app is using an older version), throw a private exception with the same name.
+            private void ThrowHostAborted()
             {
+                Type? publicHostAbortedExceptionType = Type.GetType("Microsoft.Extensions.Hosting.HostAbortedException, Microsoft.Extensions.Hosting.Abstractions", throwOnError: false);
+                if (publicHostAbortedExceptionType != null)
+                {
+                    throw (Exception)Activator.CreateInstance(publicHostAbortedExceptionType)!;
+                }
+                else
+                {
+                    throw new HostAbortedException();
+                }
+            }
 
+            private sealed class HostAbortedException : Exception
+            {
             }
         }
     }

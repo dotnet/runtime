@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <CLRTestPriority>1</CLRTestPriority>
+
+    <!-- This is an explicit crossgen test -->
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="test61104.cs" />
+  </ItemGroup>
+
+</Project>

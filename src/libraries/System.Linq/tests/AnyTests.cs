@@ -63,6 +63,20 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Any());
         }
 
+        public static IEnumerable<object[]> TestDataForGroupBy()
+        {
+            yield return new object[] { Array.Empty<int>().GroupBy(num => num), false };
+            yield return new object[] { new int[2] { 1, 2 }.GroupBy(num => num), true };
+            yield return new object[] { new int[5] { 1, 2, 1, 3, 2 }.GroupBy(n => n, (k, v) => v), true };
+        }
+
+        [Theory, MemberData(nameof(TestDataForGroupBy))]
+        public void Any_GroupBy(IEnumerable<object> values, bool expectedValue)
+        {
+            // Provide test coverage for `Any` calls over nonempty `IListSource` implementations.
+            Assert.Equal(expectedValue, values.Any());
+        }
+
         public static IEnumerable<object[]> TestDataWithPredicate()
         {
             yield return new object[] { new int[0], null, false };

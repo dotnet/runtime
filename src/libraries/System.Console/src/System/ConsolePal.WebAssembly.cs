@@ -3,10 +3,10 @@
 
 using System.IO;
 using System.Text;
-using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.InteropServices.JavaScript;
 
-using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
+#pragma warning disable CS0612 // using obsolete members until we finish https://github.com/dotnet/runtime/pull/66304/
 
 namespace System
 {
@@ -72,10 +72,10 @@ namespace System
         }
     }
 
-    internal static class ConsolePal
+    internal static partial class ConsolePal
     {
-        private static volatile bool s_consoleInitialized;
-        private static JSObject? s_console;
+        [JSImport("globalThis.console.clear")]
+        public static partial void Clear();
 
         private static Encoding? s_outputEncoding;
 
@@ -166,17 +166,6 @@ namespace System
             char sourceChar, ConsoleColor sourceForeColor,
             ConsoleColor sourceBackColor) => throw new PlatformNotSupportedException();
 
-        public static void Clear()
-        {
-            if (!s_consoleInitialized)
-            {
-                s_console = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("console");
-                s_consoleInitialized = true;
-            }
-
-            s_console?.Invoke("clear");
-        }
-
         public static void SetCursorPosition(int left, int top) => throw new PlatformNotSupportedException();
 
         public static int BufferWidth
@@ -224,14 +213,5 @@ namespace System
         public static void SetWindowPosition(int left, int top) => throw new PlatformNotSupportedException();
 
         public static void SetWindowSize(int width, int height) => throw new PlatformNotSupportedException();
-
-        internal sealed class ControlCHandlerRegistrar
-        {
-            internal ControlCHandlerRegistrar() => throw new PlatformNotSupportedException();
-
-            internal void Register() => throw new PlatformNotSupportedException();
-
-            internal void Unregister() => throw new PlatformNotSupportedException();
-        }
     }
 }

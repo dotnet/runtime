@@ -3,12 +3,8 @@
 //
 // Based on Eratosthenes Sieve Prime Number Program in C, Byte Magazine, January 1983.
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.BenchI
 {
@@ -54,17 +50,6 @@ public static class CSieve
         }
 
         return (count == 1027);
-    }
-
-    [Benchmark]
-    public static void Test() {
-        foreach (var iteration in Benchmark.Iterations) {
-            using (iteration.StartMeasurement()) {
-                for (int i = 0; i < Iterations; i++) {
-                    Bench();
-                }
-            }
-        }
     }
 
     static bool TestBase() {

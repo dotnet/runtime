@@ -8,7 +8,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
-public class Test
+public class Test_PinnedCollect
 {
     public static int Main()
     {

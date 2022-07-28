@@ -14,10 +14,7 @@ namespace System.Security.Authentication.ExtendedProtection
     {
         public ServiceNameCollection(ICollection items)
         {
-            if (items == null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
+            ArgumentNullException.ThrowIfNull(items);
 
             // Normalize and filter for duplicates.
             AddIfNew(items, expectStrings: true);
@@ -135,10 +132,7 @@ namespace System.Security.Authentication.ExtendedProtection
         /// </summary>
         private void AddIfNew(string serviceName)
         {
-            if (string.IsNullOrEmpty(serviceName))
-            {
-                throw new ArgumentException(SR.security_ServiceNameCollection_EmptyServiceName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(serviceName);
 
             serviceName = NormalizeServiceName(serviceName);
 
@@ -164,7 +158,7 @@ namespace System.Security.Authentication.ExtendedProtection
         // prefix/host:port
         // prefix/host/DistinguishedName
         // prefix/host:port/DistinguishedName
-        [return: NotNullIfNotNull("inputServiceName")]
+        [return: NotNullIfNotNull(nameof(inputServiceName))]
         private static string? NormalizeServiceName(string? inputServiceName)
         {
             if (string.IsNullOrWhiteSpace(inputServiceName))
@@ -217,8 +211,7 @@ namespace System.Security.Authentication.ExtendedProtection
                     port = hostAndPort.Substring(colonIndex + 1); // Excludes colon
 
                     // Loosely validate the port just to make sure it was a port and not something else.
-                    ushort portValue;
-                    if (!ushort.TryParse(port, NumberStyles.Integer, CultureInfo.InvariantCulture, out portValue))
+                    if (!ushort.TryParse(port, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
                     {
                         return inputServiceName;
                     }

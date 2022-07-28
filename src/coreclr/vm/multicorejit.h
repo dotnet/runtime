@@ -165,6 +165,8 @@ public:
 
     void StoreMethodCode(MethodDesc * pMethod, MulticoreJitCodeInfo codeInfo);
 
+    bool LookupMethodCode(MethodDesc * pMethod);
+
     MulticoreJitCodeInfo QueryAndRemoveMethodCode(MethodDesc * pMethod);
 
     inline unsigned GetRemainingMethodCount() const
@@ -207,7 +209,6 @@ private:
     LONG                    m_fSetProfileRootCalled;   // SetProfileRoot has been called
     LONG                    m_fAutoStartCalled;
     bool                    m_fRecorderActive;         // Manager open for recording/event, turned on when initialized properly, turned off when at full capacity
-    bool                    m_fAppxMode;
     CrstExplicitInit        m_playerLock;              // Thread protection (accessing m_pMulticoreJitRecorder)
     MulticoreJitPlayerStat  m_stats;                   // Statistics: normally gathered by player, written to profile
 
@@ -229,7 +230,6 @@ public:
         m_fSetProfileRootCalled = 0;
         m_fAutoStartCalled      = 0;
         m_fRecorderActive       = false;
-        m_fAppxMode             = false;
     }
 
     ~MulticoreJitManager()
@@ -260,7 +260,7 @@ public:
     void SetProfileRoot(const WCHAR * pProfilePath);
 
     // Multicore JIT API function: StartProfile
-    void StartProfile(AppDomain * pDomain, ICLRPrivBinder * pBinderContext, const WCHAR * pProfile, int suffix = -1);
+    void StartProfile(AppDomain * pDomain, AssemblyBinder * pBinder, const WCHAR * pProfile, int suffix = -1);
 
     // Multicore JIT API function (internal): AbortProfile
     void AbortProfile();
@@ -299,7 +299,7 @@ public:
 
     static void DisableMulticoreJit();
 
-    static bool IsSupportedModule(Module * pModule, bool fMethodJit, bool fAppx);
+    static bool IsSupportedModule(Module * pModule, bool fMethodJit);
 
     static FileLoadLevel GetModuleFileLoadLevel(Module * pModule);
 
@@ -313,14 +313,9 @@ public:
 };
 
 
-// For ecall.cpp
+// For qcallentrypoints.cpp
 
-class MultiCoreJITNative
-{
-public:
-    static void QCALLTYPE InternalSetProfileRoot(__in_z LPCWSTR directoryPath);
-
-    static void QCALLTYPE InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyLoadContext);
-};
+extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(_In_z_ LPCWSTR directoryPath);
+extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_z_ LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder);
 
 #endif // __MULTICORE_JIT_H__

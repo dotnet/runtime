@@ -3,8 +3,10 @@
 
 #include <xplatform.h>
 #include <ComHelpers.h>
+#ifdef WINDOWS
 #include <inspectable.h>
 #include <WeakReference.h>
+#endif // WINDOWS
 
 namespace
 {
@@ -44,9 +46,34 @@ namespace
 
         STDMETHOD(QueryInterface)(
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+            /* [iid_is][out] */ void ** ppvObject)
         {
+#ifdef WINDOWS
             return DoQueryInterface(riid, ppvObject, static_cast<IWeakReference*>(this));
+#else
+            if (ppvObject == nullptr)
+               return E_POINTER;
+
+            if (riid == __uuidof(IUnknown))
+            {
+                *ppvObject = static_cast<IUnknown*>(this);
+            }
+            else
+            {
+                if (riid == __uuidof(IWeakReference))
+                {
+                    *ppvObject = static_cast<IWeakReference*>(this);
+                }
+                else
+                {
+                    *ppvObject = nullptr;
+                    return E_NOINTERFACE;
+                }
+            }
+
+            DoAddRef();
+            return S_OK;
+#endif
         }
 
         DEFINE_REF_COUNTING()
@@ -55,7 +82,7 @@ namespace
     struct WeakReferencableObject : public IWeakReferenceSource, public IInspectable, public UnknownImpl
     {
         ComSmartPtr<WeakReference> _weakReference;
-        STDMETHOD(GetWeakReference)(_COM_Outptr_ IWeakReference** ppWeakReference)
+        STDMETHOD(GetWeakReference)(IWeakReference** ppWeakReference)
         {
             if (!_weakReference)
             {
@@ -87,9 +114,33 @@ namespace
 
         STDMETHOD(QueryInterface)(
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+            /* [iid_is][out] */ void ** ppvObject)
         {
-            HRESULT hr = DoQueryInterface(riid, ppvObject, static_cast<IWeakReferenceSource*>(this), static_cast<IInspectable*>(this), static_cast<IWeakReferenceSource*>(this));
+            HRESULT hr;
+#ifdef WINDOWS
+            hr = DoQueryInterface(riid, ppvObject, static_cast<IWeakReferenceSource*>(this), static_cast<IInspectable*>(this), static_cast<IWeakReferenceSource*>(this));
+#else
+            if (ppvObject == nullptr)
+               return E_POINTER;
+
+            if (riid == __uuidof(IUnknown) || riid == __uuidof(IWeakReferenceSource))
+            {
+                *ppvObject = static_cast<IWeakReferenceSource*>(this);
+                hr = S_OK;
+            }
+            else if (riid == __uuidof(IInspectable))
+            {
+                *ppvObject = static_cast<IInspectable*>(this);
+                hr = S_OK;
+            }
+            else
+            {
+                *ppvObject = nullptr;
+                return E_NOINTERFACE;
+            }
+
+            DoAddRef();
+#endif
             if (SUCCEEDED(hr) && _weakReference)
             {
                 _weakReference->AddStrongRef();
@@ -116,8 +167,122 @@ namespace
             return UnknownImpl::DoRelease();
         }
     };
+
+    struct WeakReferenceSource : public IWeakReferenceSource, public IInspectable
+    {
+    private:
+        IUnknown* _outerUnknown;
+        ComSmartPtr<WeakReference> _weakReference;
+    public:
+        WeakReferenceSource(IUnknown* outerUnknown)
+            :_outerUnknown(outerUnknown),
+            _weakReference(new WeakReference(this, 1))
+        {
+        }
+
+        STDMETHOD(GetWeakReference)(IWeakReference** ppWeakReference)
+        {
+            _weakReference->AddRef();
+            *ppWeakReference = _weakReference;
+            return S_OK;
+        }
+
+        STDMETHOD(QueryInterface)(
+            /* [in] */ REFIID riid,
+            /* [iid_is][out] */ void ** ppvObject)
+        {
+            if (riid == __uuidof(IWeakReferenceSource))
+            {
+                *ppvObject = static_cast<IWeakReferenceSource*>(this);
+                _weakReference->AddStrongRef();
+                return S_OK;
+            }
+            return _outerUnknown->QueryInterface(riid, ppvObject);
+        }
+        STDMETHOD_(ULONG, AddRef)(void)
+        {
+            return _weakReference->AddStrongRef();
+        }
+        STDMETHOD_(ULONG, Release)(void)
+        {
+            return _weakReference->ReleaseStrongRef();
+        }
+
+        STDMETHOD(GetRuntimeClassName)(HSTRING* pRuntimeClassName)
+        {
+            return E_NOTIMPL;
+        }
+
+        STDMETHOD(GetIids)(
+            ULONG *iidCount,
+            IID   **iids)
+        {
+            return E_NOTIMPL;
+        }
+
+        STDMETHOD(GetTrustLevel)(TrustLevel *trustLevel)
+        {
+            *trustLevel = FullTrust;
+            return S_OK;
+        }
+    };
+
+    struct AggregatedWeakReferenceSource : IInspectable
+    {
+    private:
+        IUnknown* _outerUnknown;
+        ComSmartPtr<WeakReferenceSource> _weakReference;
+    public:
+        AggregatedWeakReferenceSource(IUnknown* outerUnknown)
+            :_outerUnknown(outerUnknown),
+            _weakReference(new WeakReferenceSource(outerUnknown))
+        {
+        }
+
+        STDMETHOD(GetRuntimeClassName)(HSTRING* pRuntimeClassName)
+        {
+            return E_NOTIMPL;
+        }
+
+        STDMETHOD(GetIids)(
+            ULONG *iidCount,
+            IID   **iids)
+        {
+            return E_NOTIMPL;
+        }
+
+        STDMETHOD(GetTrustLevel)(TrustLevel *trustLevel)
+        {
+            *trustLevel = FullTrust;
+            return S_OK;
+        }
+
+        STDMETHOD(QueryInterface)(
+            /* [in] */ REFIID riid,
+            /* [iid_is][out] */ void ** ppvObject)
+        {
+            if (riid == __uuidof(IWeakReferenceSource))
+            {
+                return _weakReference->QueryInterface(riid, ppvObject);
+            }
+            return _outerUnknown->QueryInterface(riid, ppvObject);
+        }
+        STDMETHOD_(ULONG, AddRef)(void)
+        {
+            return _outerUnknown->AddRef();
+        }
+        STDMETHOD_(ULONG, Release)(void)
+        {
+            return _outerUnknown->Release();
+        }
+    };
 }
 extern "C" DLL_EXPORT WeakReferencableObject* STDMETHODCALLTYPE CreateWeakReferencableObject()
 {
     return new WeakReferencableObject();
+}
+
+extern "C" DLL_EXPORT AggregatedWeakReferenceSource* STDMETHODCALLTYPE CreateAggregatedWeakReferenceObject(IUnknown* pOuter)
+{
+    return new AggregatedWeakReferenceSource(pOuter);
 }

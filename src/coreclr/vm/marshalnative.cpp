@@ -45,7 +45,7 @@
 
 // Prelink
 // Does advance loading of an N/Direct library
-VOID QCALLTYPE MarshalNative::Prelink(MethodDesc * pMD)
+extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
 {
     QCALL_CONTRACT;
 
@@ -72,7 +72,7 @@ VOID QCALLTYPE MarshalNative::Prelink(MethodDesc * pMD)
 // IsBuiltInComSupported
 // Built-in COM support is only checked from the native side to ensure the runtime
 // is in a consistent state
-BOOL QCALLTYPE MarshalNative::IsBuiltInComSupported()
+extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported()
 {
     QCALL_CONTRACT;
 
@@ -245,39 +245,6 @@ FCIMPL2(VOID, MarshalNative::DestroyStructure, LPVOID ptr, ReflectClassBaseObjec
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, MarshalNative::IsPinnable, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(obj);
-
-    if (obj == NULL)
-        FC_RETURN_BOOL(TRUE);
-
-    if (obj->GetMethodTable() == g_pStringClass)
-        FC_RETURN_BOOL(TRUE);
-
-    if (obj->GetMethodTable()->IsArray())
-    {
-        BASEARRAYREF asArray = (BASEARRAYREF)ObjectToOBJECTREF(obj);
-        if (CorTypeInfo::IsPrimitiveType(asArray->GetArrayElementType()))
-            FC_RETURN_BOOL(TRUE);
-
-        TypeHandle th = asArray->GetArrayElementTypeHandle();
-        if (!th.IsTypeDesc())
-        {
-            MethodTable *pMT = th.AsMethodTable();
-            if (pMT->IsValueType() && pMT->IsBlittable())
-                FC_RETURN_BOOL(TRUE);
-        }
-
-        FC_RETURN_BOOL(FALSE);
-    }
-
-    FC_RETURN_BOOL(obj->GetMethodTable()->IsBlittable());
-}
-FCIMPLEND
-
 /************************************************************************
  * PInvoke.SizeOf(Class)
  */
@@ -341,7 +308,7 @@ FCIMPL1(UINT32, MarshalNative::OffsetOfHelper, ReflectFieldObject *pFieldUNSAFE)
         return pField->GetOffset();
     }
 
-    UINT32 externalOffset;
+    UINT32 externalOffset = 0;
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(refField);
     {
@@ -434,11 +401,11 @@ namespace
     }
 }
 
-MarshalNative::IsInCooperativeGCMode_fn QCALLTYPE MarshalNative::GetIsInCooperativeGCModeFunctionPointer()
+extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGCModeFunctionPointer()
 {
     QCALL_CONTRACT;
 
-    MarshalNative::IsInCooperativeGCMode_fn ret = NULL;
+    IsInCooperativeGCMode_fn ret = NULL;
 
     BEGIN_QCALL;
 
@@ -488,33 +455,9 @@ void ValidatePinnedObject(OBJECTREF obj)
     }
     CONTRACTL_END;
 
-    // NULL is fine.
-    if (obj == NULL)
-        return;
-
-    if (obj->GetMethodTable() == g_pStringClass)
-        return;
-
-    if (obj->GetMethodTable()->IsArray())
-    {
-        BASEARRAYREF asArray = (BASEARRAYREF) obj;
-        if (CorTypeInfo::IsPrimitiveType(asArray->GetArrayElementType()))
-            return;
-
-        TypeHandle th = asArray->GetArrayElementTypeHandle();
-        if (!th.IsTypeDesc())
-        {
-            MethodTable *pMT = th.AsMethodTable();
-            if (pMT->IsValueType() && pMT->IsBlittable())
-                return;
-        }
-    }
-    else if (obj->GetMethodTable()->IsBlittable())
-    {
-        return;
-    }
-
-    COMPlusThrow(kArgumentException, IDS_EE_NOTISOMORPHIC);
+    // Identical logic exists in managed code for Marshal.IsPinnable()
+    if (obj != NULL && obj->GetMethodTable()->ContainsPointers())
+        COMPlusThrow(kArgumentException, IDS_EE_NOTISOMORPHIC);
 }
 
 NOINLINE static OBJECTHANDLE FCDiagCreateHandle(OBJECTREF objRef, int type)
@@ -809,7 +752,7 @@ FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknownNative, IUnknown* pUnk
     // Ensure COM is started up.
     EnsureComStarted();
 
-    GetObjectRefFromComIP(&oref, pUnk, NULL, NULL, ObjFromComIP::UNIQUE_OBJECT);
+    GetObjectRefFromComIP(&oref, pUnk, NULL, ObjFromComIP::UNIQUE_OBJECT);
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(oref);
@@ -1140,7 +1083,7 @@ FCIMPL2(void, MarshalNative::GetNativeVariantForObjectNative, Object* ObjUNSAFE,
         COMPlusThrowArgumentException(W("obj"), W("Argument_NeedNonGenericObject"));
     }
 
-    // intialize the output variant
+    // initialize the output variant
     SafeVariantInit((VARIANT*)pDestNativeVariant);
     OleVariant::MarshalOleVariantForObject(&Obj, (VARIANT*)pDestNativeVariant);
 
@@ -1364,7 +1307,7 @@ int MarshalNative::GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
     }
 }
 
-void QCALLTYPE MarshalNative::GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType)
+extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType)
 {
     QCALL_CONTRACT;
 

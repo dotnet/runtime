@@ -3,7 +3,7 @@
 
 using System;
 
-internal class Test
+internal class Test_alloca3
 {
     private static int s_x = 25;
 

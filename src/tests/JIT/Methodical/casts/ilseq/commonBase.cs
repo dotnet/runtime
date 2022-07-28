@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
+namespace Test_commonBase_cs
+{
 internal class Base { };
 internal class Sibling1 : Base { };
 internal class Sibling2 : Base { };
 
-internal static class Repro
+public static class Repro
 {
     private static int Bug(object o)
     {
@@ -39,8 +42,10 @@ internal static class Repro
         return 0;
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Bug(new Sibling2());
     }
+}
 }

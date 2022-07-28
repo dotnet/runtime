@@ -9,10 +9,12 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern unsafe bool CancelIoEx(SafeHandle handle, NativeOverlapped* lpOverlapped);
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool CancelIoEx(SafeHandle handle, NativeOverlapped* lpOverlapped);
 
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern unsafe bool CancelIoEx(IntPtr handle, NativeOverlapped* lpOverlapped);
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool CancelIoEx(IntPtr handle, NativeOverlapped* lpOverlapped);
     }
 }

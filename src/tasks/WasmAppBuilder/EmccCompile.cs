@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -33,13 +34,29 @@ namespace Microsoft.WebAssembly.Build.Tasks
         public bool         DisableParallelCompile { get; set; }
         public string       Arguments              { get; set; } = string.Empty;
         public string?      WorkingDirectory       { get; set; }
+        public string       OutputMessageImportance{ get; set; } = "Low";
 
         [Output]
         public ITaskItem[]? OutputFiles            { get; private set; }
 
         private string? _tempPath;
+        private int _totalFiles;
+        private int _numCompiled;
 
         public override bool Execute()
+        {
+            try
+            {
+                return ExecuteActual();
+            }
+            catch (LogAsErrorException laee)
+            {
+                Log.LogError(laee.Message);
+                return false;
+            }
+        }
+
+        private bool ExecuteActual()
         {
             if (SourceFiles.Length == 0)
             {
@@ -54,10 +71,50 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 return false;
             }
 
+            if (!Enum.TryParse(OutputMessageImportance, ignoreCase: true, out MessageImportance messageImportance))
+            {
+                Log.LogError($"Invalid value for OutputMessageImportance={OutputMessageImportance}. Valid values: {string.Join(", ", Enum.GetNames(typeof(MessageImportance)))}");
+                return false;
+            }
+
+            _totalFiles = SourceFiles.Length;
             IDictionary<string, string> envVarsDict = GetEnvironmentVariablesDict();
             ConcurrentBag<ITaskItem> outputItems = new();
             try
             {
+                List<(string, string)> filesToCompile = new();
+                foreach (ITaskItem srcItem in SourceFiles)
+                {
+                    string srcFile = srcItem.ItemSpec;
+                    string objFile = srcItem.GetMetadata("ObjectFile");
+                    string depMetadata = srcItem.GetMetadata("Dependencies");
+                    string[] depFiles = string.IsNullOrEmpty(depMetadata)
+                                            ? Array.Empty<string>()
+                                            : depMetadata.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    if (!ShouldCompile(srcFile, objFile, depFiles, out string reason))
+                    {
+                        Log.LogMessage(MessageImportance.Low, $"Skipping {srcFile} because {reason}.");
+                        outputItems.Add(CreateOutputItemFor(srcFile, objFile));
+                    }
+                    else
+                    {
+                        Log.LogMessage(MessageImportance.Low, $"Compiling {srcFile} because {reason}.");
+                        filesToCompile.Add((srcFile, objFile));
+                    }
+                }
+
+                _numCompiled = SourceFiles.Length - filesToCompile.Count;
+                if (_numCompiled == _totalFiles)
+                {
+                    // nothing to do!
+                    OutputFiles = outputItems.ToArray();
+                    return !Log.HasLoggedErrors;
+                }
+
+                if (_numCompiled > 0)
+                    Log.LogMessage(MessageImportance.High, $"[{_numCompiled}/{SourceFiles.Length}] skipped unchanged files");
+
                 Log.LogMessage(MessageImportance.Low, "Using environment variables:");
                 foreach (var kvp in envVarsDict)
                     Log.LogMessage(MessageImportance.Low, $"\t{kvp.Key} = {kvp.Value}");
@@ -68,32 +125,53 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 _tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
                 Directory.CreateDirectory(_tempPath);
 
-                int allowedParallelism = Math.Min(SourceFiles.Length, Environment.ProcessorCount);
-#if false // Enable this when we bump msbuild to 16.1.0
+                int allowedParallelism = DisableParallelCompile ? 1 : Math.Min(SourceFiles.Length, Environment.ProcessorCount);
                 if (BuildEngine is IBuildEngine9 be9)
                     allowedParallelism = be9.RequestCores(allowedParallelism);
-#endif
 
-                if (DisableParallelCompile || allowedParallelism == 1)
-                {
-                    foreach (ITaskItem srcItem in SourceFiles)
-                    {
-                        if (!ProcessSourceFile(srcItem))
-                            return false;
-                    }
-                }
-                else
-                {
-                    ParallelLoopResult result = Parallel.ForEach(SourceFiles,
-                                                    new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
-                                                    (srcItem, state) =>
-                    {
-                        if (!ProcessSourceFile(srcItem))
-                            state.Stop();
-                    });
+                /*
+                    From: https://github.com/dotnet/runtime/issues/46146#issuecomment-754021690
 
-                    if (!result.IsCompleted && !Log.HasLoggedErrors)
-                        Log.LogError("Unknown failed occured while compiling");
+                    Stephen Toub:
+                    "As such, by default ForEach works on a scheme whereby each
+                    thread takes one item each time it goes back to the enumerator,
+                    and then after a few times of this upgrades to taking two items
+                    each time it goes back to the enumerator, and then four, and
+                    then eight, and so on. This amortizes the cost of taking and
+                    releasing the lock across multiple items, while still enabling
+                    parallelization for enumerables containing just a few items. It
+                    does, however, mean that if you've got a case where the body
+                    takes a really long time and the work for every item is
+                    heterogeneous, you can end up with an imbalance."
+
+                    The time taken by individual compile jobs here can vary a
+                    lot, depending on various factors like file size. This can
+                    create an imbalance, like mentioned above, and we can end up
+                    in a situation where one of the partitions has a job that
+                    takes very long to execute, by which time other partitions
+                    have completed, so some cores are idle.  But the idle
+                    ones won't get any of the remaining jobs, because they are
+                    all assigned to that one partition.
+
+                    Instead, we want to use work-stealing so jobs can be run by any partition.
+                */
+                ParallelLoopResult result = Parallel.ForEach(
+                                                Partitioner.Create(filesToCompile, EnumerablePartitionerOptions.NoBuffering),
+                                                new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
+                                                (toCompile, state) =>
+                {
+                    if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2))
+                        state.Stop();
+                });
+
+                if (!result.IsCompleted && !Log.HasLoggedErrors)
+                    Log.LogError("Unknown failure occurred while compiling. Check logs to get more details.");
+
+                if (!Log.HasLoggedErrors)
+                {
+                    int numUnchanged = _totalFiles - _numCompiled;
+                    if (numUnchanged > 0)
+                        Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalFiles}] unchanged.");
                 }
             }
             finally
@@ -105,37 +183,110 @@ namespace Microsoft.WebAssembly.Build.Tasks
             OutputFiles = outputItems.ToArray();
             return !Log.HasLoggedErrors;
 
-            bool ProcessSourceFile(ITaskItem srcItem)
+            bool ProcessSourceFile(string srcFile, string objFile)
             {
-                string srcFile = srcItem.ItemSpec;
-                string objFile = srcItem.GetMetadata("ObjectFile");
-
+                string tmpObjFile = Path.GetTempFileName();
                 try
                 {
-                    string command = $"emcc {Arguments} -c -o {objFile} {srcFile}";
+                    string command = $"emcc {Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
+                    var startTime = DateTime.Now;
 
                     // Log the command in a compact format which can be copy pasted
                     StringBuilder envStr = new StringBuilder(string.Empty);
                     foreach (var key in envVarsDict.Keys)
                         envStr.Append($"{key}={envVarsDict[key]} ");
                     Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}{command}");
-                    (int exitCode, string output) = Utils.RunShellCommand(command, envVarsDict, workingDir: Environment.CurrentDirectory);
+                    (int exitCode, string output) = Utils.RunShellCommand(
+                                                            Log,
+                                                            command,
+                                                            envVarsDict,
+                                                            workingDir: Environment.CurrentDirectory,
+                                                            logStdErrAsMessage: true,
+                                                            debugMessageImportance: messageImportance,
+                                                            label: Path.GetFileName(srcFile));
 
+                    var endTime = DateTime.Now;
+                    var elapsedSecs = (endTime - startTime).TotalSeconds;
                     if (exitCode != 0)
                     {
-                        Log.LogError($"Failed to compile {srcFile} -> {objFile}: {output}");
+                        Log.LogError($"Failed to compile {srcFile} -> {objFile}{Environment.NewLine}{output} [took {elapsedSecs:F}s]");
                         return false;
                     }
 
-                    ITaskItem newItem = new TaskItem(objFile);
-                    newItem.SetMetadata("SourceFile", srcFile);
-                    outputItems.Add(newItem);
+                    if (!Utils.CopyIfDifferent(tmpObjFile, objFile, useHash: true))
+                        Log.LogMessage(MessageImportance.Low, $"Did not overwrite {objFile} as the contents are unchanged");
+                    else
+                        Log.LogMessage(MessageImportance.Low, $"Copied {tmpObjFile} to {objFile}");
 
-                    return true;
+                    outputItems.Add(CreateOutputItemFor(srcFile, objFile));
+
+                    int count = Interlocked.Increment(ref _numCompiled);
+                    Log.LogMessage(MessageImportance.High, $"[{count}/{_totalFiles}] {Path.GetFileName(srcFile)} -> {Path.GetFileName(objFile)} [took {elapsedSecs:F}s]");
+
+                    return !Log.HasLoggedErrors;
                 }
                 catch (Exception ex)
                 {
-                    Log.LogError($"Failed to compile {srcFile} -> {objFile}: {ex.Message}");
+                    Log.LogError($"Failed to compile {srcFile} -> {objFile}{Environment.NewLine}{ex.Message}");
+                    return false;
+                }
+                finally
+                {
+                    File.Delete(tmpObjFile);
+                }
+            }
+
+            ITaskItem CreateOutputItemFor(string srcFile, string objFile)
+            {
+                ITaskItem newItem = new TaskItem(objFile);
+                newItem.SetMetadata("SourceFile", srcFile);
+                return newItem;
+            }
+        }
+
+        private bool ShouldCompile(string srcFile, string objFile, string[] depFiles, out string reason)
+        {
+            if (!File.Exists(srcFile))
+                throw new LogAsErrorException($"Could not find source file {srcFile}");
+
+            if (!File.Exists(objFile))
+            {
+                reason = $"output file {objFile} doesn't exist";
+                return true;
+            }
+
+            if (IsNewerThanOutput(srcFile, objFile, out reason))
+                return true;
+
+            foreach (string depFile in depFiles)
+            {
+                if (IsNewerThanOutput(depFile, objFile, out reason))
+                    return true;
+            }
+
+            reason = "everything is up-to-date";
+            return false;
+
+            bool IsNewerThanOutput(string inFile, string outFile, out string reason)
+            {
+                if (!File.Exists(inFile))
+                {
+                    reason = $"Could not find dependency file {inFile} needed for compiling {srcFile} to {outFile}";
+                    Log.LogWarning(reason);
+                    return true;
+                }
+
+                DateTime lastWriteTimeSrc = File.GetLastWriteTimeUtc(inFile);
+                DateTime lastWriteTimeDst = File.GetLastWriteTimeUtc(outFile);
+
+                if (lastWriteTimeSrc > lastWriteTimeDst)
+                {
+                    reason = $"{inFile} is newer than {outFile}";
+                    return true;
+                }
+                else
+                {
+                    reason = $"{inFile} is older than {outFile}";
                     return false;
                 }
             }

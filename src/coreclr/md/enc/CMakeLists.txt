@@ -22,7 +22,6 @@ set(MDRUNTIMERW_HEADERS
   ../../inc/sstring.inl
   ../compiler/importhelper.h
   ../compiler/regmeta.h
-  ../hotdata/hotdataformat.h
   ../inc/liteweightstgdb.h
   ../inc/mdinternalrw.h
   ../inc/mdlog.h

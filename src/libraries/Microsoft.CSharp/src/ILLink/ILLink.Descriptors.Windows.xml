@@ -1,5 +1,5 @@
 <linker>
-  <assembly fullname="Microsoft.CSharp">
+  <assembly fullname="Microsoft.CSharp" feature="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" featurevalue="true" featuredefault="true">
     <!-- Required for COM event dispatch -->
     <type fullname="System.Runtime.InteropServices.ComEventsSink"/>
   </assembly>

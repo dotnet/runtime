@@ -879,7 +879,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void CompileRelationOveratorswithIsLiftToNullTrue(bool useInterpreter)
+        public static void CompileRelationOperatorsWithIsLiftToNullTrue(bool useInterpreter)
         {
             int? x = 10;
             int? y = 2;
@@ -1486,7 +1486,6 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51952", TestPlatforms.tvOS)]
         public static void ConvertNullToInt(bool useInterpreter)
         {
             Assert.Throws<NullReferenceException>(() =>

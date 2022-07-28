@@ -109,13 +109,13 @@ namespace System.Net.Http
                             InitialTwoByteLengthMask => 2,
                             InitialFourByteLengthMask => 4,
                             _ => 8 // LengthEightByte
-                    };
+                        };
 
                     Span<byte> temp = (stackalloc byte[8])[..length];
                     if (reader.TryCopyTo(temp))
                     {
                         bool result = TryRead(temp, out value, out int bytesRead);
-                        Debug.Assert(result == true);
+                        Debug.Assert(result);
                         Debug.Assert(bytesRead == length);
 
                         reader.Advance(bytesRead);
@@ -149,7 +149,7 @@ namespace System.Net.Http
             Debug.Assert(longToEncode >= 0);
             Debug.Assert(longToEncode <= EightByteLimit);
 
-            if (longToEncode < OneByteLimit)
+            if (longToEncode <= OneByteLimit)
             {
                 if (buffer.Length != 0)
                 {
@@ -158,7 +158,7 @@ namespace System.Net.Http
                     return true;
                 }
             }
-            else if (longToEncode < TwoByteLimit)
+            else if (longToEncode <= TwoByteLimit)
             {
                 if (BinaryPrimitives.TryWriteUInt16BigEndian(buffer, (ushort)((uint)longToEncode | TwoByteLengthMask)))
                 {
@@ -166,7 +166,7 @@ namespace System.Net.Http
                     return true;
                 }
             }
-            else if (longToEncode < FourByteLimit)
+            else if (longToEncode <= FourByteLimit)
             {
                 if (BinaryPrimitives.TryWriteUInt32BigEndian(buffer, (uint)longToEncode | FourByteLengthMask))
                 {
@@ -190,7 +190,7 @@ namespace System.Net.Http
         public static int WriteInteger(Span<byte> buffer, long longToEncode)
         {
             bool res = TryWrite(buffer, longToEncode, out int bytesWritten);
-            Debug.Assert(res == true);
+            Debug.Assert(res);
             return bytesWritten;
         }
 
@@ -200,9 +200,9 @@ namespace System.Net.Http
             Debug.Assert(value <= EightByteLimit);
 
             return
-                value < OneByteLimit ? 1 :
-                value < TwoByteLimit ? 2 :
-                value < FourByteLimit ? 4 :
+                value <= OneByteLimit ? 1 :
+                value <= TwoByteLimit ? 2 :
+                value <= FourByteLimit ? 4 :
                 8; // EightByteLimit
         }
     }

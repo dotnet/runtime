@@ -91,7 +91,7 @@ OPCODE DecodeOpcode(const BYTE *pCode, DWORD *pdwLen)
     return opcode;
 }
 //------------------------------------------------------------------
-WCHAR* UtfToUnicode(__in __nullterminated const char* sz)
+WCHAR* UtfToUnicode(_In_ __nullterminated const char* sz)
 {
     WCHAR* wz = wzUniBuf;
     if (WszMultiByteToWideChar(CP_UTF8,0,sz,-1,wz,UNIBUF_SIZE/2) == 0)
@@ -100,7 +100,7 @@ WCHAR* UtfToUnicode(__in __nullterminated const char* sz)
     }
     return wz;
 }
-char* UnicodeToAnsi(__in __nullterminated const WCHAR* wz)
+char* UnicodeToAnsi(_In_ __nullterminated const WCHAR* wz)
 {
     char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
     if (WszWideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,UNIBUF_SIZE,NULL,NULL) == 0)
@@ -109,7 +109,7 @@ char* UnicodeToAnsi(__in __nullterminated const WCHAR* wz)
     }
     return sz;
 }
-WCHAR* AnsiToUnicode(__in __nullterminated const char* sz)
+WCHAR* AnsiToUnicode(_In_ __nullterminated const char* sz)
 {
     WCHAR* wz = wzUniBuf;
     if (WszMultiByteToWideChar(g_uConsoleCP,0,sz,-1,wz,UNIBUF_SIZE/2) == 0)
@@ -118,7 +118,7 @@ WCHAR* AnsiToUnicode(__in __nullterminated const char* sz)
     }
     return wz;
 }
-char* UnicodeToUtf(__in __nullterminated const WCHAR* wz)
+char* UnicodeToUtf(_In_ __nullterminated const WCHAR* wz)
 {
     char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
     if (WszWideCharToMultiByte(CP_UTF8,0,wz,-1,sz,UNIBUF_SIZE,NULL,NULL) == 0)
@@ -127,9 +127,9 @@ char* UnicodeToUtf(__in __nullterminated const WCHAR* wz)
     }
     return sz;
 }
-char* AnsiToUtf(__in __nullterminated const char* sz) { return UnicodeToUtf(AnsiToUnicode(sz));}
+char* AnsiToUtf(_In_ __nullterminated const char* sz) { return UnicodeToUtf(AnsiToUnicode(sz));}
 
-static void UnicodeToConsoleOrMsgBox(__in __nullterminated const WCHAR* wz)
+static void UnicodeToConsoleOrMsgBox(_In_ __nullterminated const WCHAR* wz)
 {
     {
         //DWORD dw;
@@ -139,14 +139,14 @@ static void UnicodeToConsoleOrMsgBox(__in __nullterminated const WCHAR* wz)
         printf("%s\n",UnicodeToAnsi(wz));
     }
 }
-static void UnicodeToFile(__in __nullterminated const WCHAR* wz, FILE* pF)
+static void UnicodeToFile(_In_ __nullterminated const WCHAR* wz, FILE* pF)
 {
     unsigned endofline = 0x000A000D;
     int L;
     if((L=(int)wcslen(wz))) fwrite(wz,L*sizeof(WCHAR),1,pF);
     fwrite(&endofline,4,1,pF);
 }
-static void ToGUIOrFile(__in __nullterminated const char* sz, void* GUICookie)
+static void ToGUIOrFile(_In_ __nullterminated const char* sz, void* GUICookie)
 {
     {
         if(g_fDumpRTF) fprintf((FILE*)GUICookie,"%s\\line\n",sz);
@@ -154,7 +154,7 @@ static void ToGUIOrFile(__in __nullterminated const char* sz, void* GUICookie)
     }
 }
 //------------------------------------------------------------------
-void printError(void* GUICookie, __in __nullterminated const char* string)
+void printError(void* GUICookie, _In_ __nullterminated const char* string)
 {
     {
         //DWORD dw;
@@ -166,7 +166,7 @@ void printError(void* GUICookie, __in __nullterminated const char* string)
         fprintf(stderr,"%s\n",UnicodeToAnsi(UtfToUnicode(string)));
     }
 }
-void printLine(void* GUICookie, __in __nullterminated const char* string)
+void printLine(void* GUICookie, _In_ __nullterminated const char* string)
 {
     const char* sz = string;
 
@@ -194,7 +194,7 @@ void printLine(void* GUICookie, __in __nullterminated const char* string)
     ToGUIOrFile(sz,GUICookie);
 }
 
-void printLineW(void* GUICookie, __in __nullterminated const WCHAR* string)
+void printLineW(void* GUICookie, _In_ __nullterminated const WCHAR* string)
 {
     const char* sz = (const char*)string;
 
@@ -217,8 +217,8 @@ void printLineW(void* GUICookie, __in __nullterminated const WCHAR* string)
 }
 
 char * DumpQString(void* GUICookie,
-                   __in __nullterminated const char* szToDump,
-                   __in __nullterminated const char* szPrefix,
+                   _In_ __nullterminated const char* szToDump,
+                   _In_ __nullterminated const char* szPrefix,
                    unsigned uMaxLen)
 {
     unsigned Lwt = (unsigned)strlen(szString);
@@ -458,7 +458,7 @@ void dumpOneEHInfo(DasmExceptionInfoClause* ehInfo, IMDInternalImport *pImport, 
     /*
     if(ehInfo->GetFlags() & ERR_OUT_OF_CODE)
     {
-        _snprintf_s(szString, _countof(szString), _TRUNCATE, "%s// WARNING: Boundary outside the method code",g_szAsmCodeIndent);
+        _snprintf_s(szString, ARRAY_SIZE(szString), _TRUNCATE, "%s// WARNING: Boundary outside the method code",g_szAsmCodeIndent);
         printLine(GUICookie,szString);
     }
     */
@@ -555,7 +555,7 @@ char* DumpDataPtr(__inout __nullterminated char* buffer, DWORD ptr, DWORD size)
     return buffer;
 }
 
-void DumpLocals(IMDInternalImport *pImport,COR_ILMETHOD_DECODER *pMethod, __in __nullterminated char* szVarPrefix, void* GUICookie)
+void DumpLocals(IMDInternalImport *pImport,COR_ILMETHOD_DECODER *pMethod, _In_ __nullterminated char* szVarPrefix, void* GUICookie)
 {
     if (pMethod->GetLocalVarSigTok())
     {
@@ -659,7 +659,7 @@ void LoadScope(ISymUnmanagedScope       *pIScope,
 }
 //#define SHOW_LEXICAL_SCOPES
 void OpenScope(ISymUnmanagedScope                        *pIScope,
-               __inout_ecount(ulLocals) ParamDescriptor  *pLV,
+               _Inout_updates_(ulLocals) ParamDescriptor  *pLV,
                ULONG                                     ulLocals)
 {
     ULONG32 dummy;
@@ -726,7 +726,7 @@ void OpenScope(ISymUnmanagedScope                        *pIScope,
 
 char* DumpUnicodeString(void* GUICookie,
                         __inout __nullterminated char* szString,
-                        __in_ecount(cbString) WCHAR* pszString,
+                        _In_reads_(cbString) WCHAR* pszString,
                         ULONG cbString,
                         bool SwapString )
 {
@@ -795,7 +795,7 @@ DumpAsByteArray:
 }
 
 // helper to avoid mixing of SEH and stack objects with destructors
-BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, __out_ecount(nSize) WCHAR* pFileName, UINT nSize)
+BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, _Out_writes_(nSize) WCHAR* pFileName, UINT nSize)
 {
     _ASSERTE(nSize > 0);
     memset(pFileName, 0, nSize * sizeof(WCHAR));
@@ -846,7 +846,7 @@ BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, __out_ecount(nSize)
             /*
             BOOL fHasEmbeddedSource=FALSE;
             ((ISymUnmanagedDocument*)(pParam->pLCD->FileToken))->HasEmbeddedSource(&fHasEmbeddedSource);
-            _snprintf_s(szString, _countof(szString), _TRUNCATE, "%s// PDB has %sembedded source",g_szAsmCodeIndent,
+            _snprintf_s(szString, ARRAY_SIZE(szString), _TRUNCATE, "%s// PDB has %sembedded source",g_szAsmCodeIndent,
                         fHasEmbeddedSource ? "" : "no ");
             printLine(pParam->GUICookie,szString);
             */
@@ -1568,7 +1568,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 else
                     _gcvt_s(szf,32,(double)f, 8);
                 float fd = (float)atof(szf);
-                // Must compare as underlying bytes, not floating point otherwise optmizier will
+                // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and comapre 80-bit precision number with 32-bit precision number!!!!
                 if(((__int32&)fd == v)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s", pszInstrName, szf);
@@ -1607,14 +1607,14 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 else
                     _gcvt_s(szf,32,d, 17);
                 double df = strtod(szf, &pch); //atof(szf);
-                // Must compare as underlying bytes, not floating point otherwise optmizier will
+                // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and comapre 80-bit precision number with 64-bit precision number!!!!
                 if (((__int64&)df == v)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s", pszInstrName, szf);
                 else
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),
                         "%-10s (%2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X)",
-                        pszInstrName, 
+                        pszInstrName,
                         pCode[PC], pCode[PC+1], pCode[PC+2], pCode[PC+3],
                         pCode[PC+4], pCode[PC+5], pCode[PC+6], pCode[PC+7]);
                 PC += 8;
@@ -2586,7 +2586,7 @@ struct Indx
     {
         for(int i = 1; i < 128; i++) delete ((Indx*)(table[i]));
     };
-    void IndexString(__in __nullterminated const char* psz, __out const char** pkywd)
+    void IndexString(_In_ __nullterminated const char* psz, _Out_ const char** pkywd)
     {
         int i = (int) *psz;
         if(i == 0)
@@ -2604,7 +2604,7 @@ struct Indx
             pInd->IndexString(psz+1,pkywd);
         }
     }
-    const char**  FindString(__in __nullterminated const char* psz)
+    const char**  FindString(_In_ __nullterminated const char* psz)
     {
         if(*psz == 0)
             return (const char**)(table[0]);

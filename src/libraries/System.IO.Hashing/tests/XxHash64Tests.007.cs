@@ -38,6 +38,8 @@ namespace System.IO.Hashing.Tests
         private const string DotNetNCHashing = ".NET now has non-crypto hashing";
         private const string SixtyThreeBytes = "A sixty-three byte test input requires substantial forethought!";
         private const string SixtyThreeBytes3 = SixtyThreeBytes + SixtyThreeBytes + SixtyThreeBytes;
+        private const string ThirtyTwoBytes = "This string has 32 ASCII bytes..";
+        private const string ThirtyTwoBytes3 = ThirtyTwoBytes + ThirtyTwoBytes + ThirtyTwoBytes;
 
         protected static IEnumerable<TestCase> TestCaseDefinitions { get; } =
             new[]
@@ -45,19 +47,19 @@ namespace System.IO.Hashing.Tests
                 // Same inputs as the main XxHash64 tests, but with the seed applied.
                 new TestCase(
                     "Nobody inspects the spammish repetition",
-                    Encoding.ASCII.GetBytes("Nobody inspects the spammish repetition"),
+                    "Nobody inspects the spammish repetition"u8.ToArray(),
                     "C86A41E2F34280A0"),
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog"),
+                    "The quick brown fox jumps over the lazy dog"u8.ToArray(),
                     "BB05857F11B054EB"),
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog.",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog."),
+                    "The quick brown fox jumps over the lazy dog."u8.ToArray(),
                     "618682461CB28F83"),
                 new TestCase(
                     "abc",
-                    Encoding.ASCII.GetBytes("abc"),
+                    "abc"u8.ToArray(),
                     "6BF4B26E3CA10C20"),
                 new TestCase(
                     "123456",
@@ -87,6 +89,11 @@ namespace System.IO.Hashing.Tests
                     $"{SixtyThreeBytes} (x3)",
                     Encoding.ASCII.GetBytes(SixtyThreeBytes3),
                     "D6095B93EB10BEDA"),
+                // stripe size
+                new TestCase(
+                    $"{ThirtyTwoBytes} (x3)",
+                    Encoding.ASCII.GetBytes(ThirtyTwoBytes3),
+                    "45116421CF932B1F")
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new XxHash64(Seed);
@@ -115,7 +122,6 @@ namespace System.IO.Hashing.Tests
             InstanceAppendAllocateAndResetDriver(testCase);
         }
 
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/54007", RuntimeConfiguration.Checked)]
         [Theory]
         [MemberData(nameof(TestCases))]
         public void InstanceMultiAppendGetCurrentHash(TestCase testCase)

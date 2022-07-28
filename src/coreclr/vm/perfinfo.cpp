@@ -27,28 +27,28 @@ PerfInfo::PerfInfo(int pid)
 }
 
 // Logs image loads into the process' perfinfo-%d.map file
-void PerfInfo::LogImage(PEFile* pFile, WCHAR* guid)
+void PerfInfo::LogImage(PEAssembly* pPEAssembly, WCHAR* guid)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        PRECONDITION(pFile != nullptr);
+        PRECONDITION(pPEAssembly != nullptr);
         PRECONDITION(guid != nullptr);
     } CONTRACTL_END;
 
     SString value;
-    const SString& path = pFile->GetPath();
+    const SString& path = pPEAssembly->GetPath();
     if (path.IsEmpty())
     {
         return;
     }
 
     SIZE_T baseAddr = 0;
-    if (pFile->IsILImageReadyToRun())
+    if (pPEAssembly->IsReadyToRun())
     {
-        PEImageLayout *pLoadedLayout = pFile->GetLoaded();
+        PEImageLayout *pLoadedLayout = pPEAssembly->GetLoadedLayout();
         if (pLoadedLayout)
         {
             baseAddr = (SIZE_T)pLoadedLayout->GetBase();
@@ -85,8 +85,7 @@ void PerfInfo::WriteLine(SString& type, SString& value)
 
     EX_TRY
     {
-        StackScratchBuffer scratch;
-        const char* strLine = line.GetANSI(scratch);
+        const char* strLine = line.GetUTF8();
         ULONG inCount = line.GetCount();
         ULONG outCount;
 

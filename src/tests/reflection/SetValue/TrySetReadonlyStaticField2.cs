@@ -14,7 +14,7 @@ public class TestSetValueDirect
     public static readonly string MagicString = "";
 }
 
-class Test
+class Test_TrySetReadonlyStaticField2
 {
     public static int Main()
     {

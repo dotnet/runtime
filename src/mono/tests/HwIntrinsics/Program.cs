@@ -38,17 +38,17 @@ class HWIntrinsicsTests
         Console.WriteLine ();
 
         if (sse1Methods != 92)
-            throw new Exception ("New changes in Sse (don't forget to update simd-intrinsics-netcore.c if necessary)");
+            throw new Exception ("New changes in Sse (don't forget to update simd-intrinsics.c if necessary)");
         if (sse2Methods != 302)
-            throw new Exception ("New changes in Sse2 (don't forget to update simd-intrinsics-netcore.c if necessary)");
+            throw new Exception ("New changes in Sse2 (don't forget to update simd-intrinsics.c if necessary)");
         if (sse3Methods != 23)
-            throw new Exception ("New changes in Sse3 (don't forget to update simd-intrinsics-netcore.c if necessary)");
+            throw new Exception ("New changes in Sse3 (don't forget to update simd-intrinsics.c if necessary)");
         if (ssse3Methods != 29)
-            throw new Exception ("New changes in Ssse3 (don't forget to update simd-intrinsics-netcore.c if necessary)");
+            throw new Exception ("New changes in Ssse3 (don't forget to update simd-intrinsics.c if necessary)");
         if (sse41Methods != 144)
-            throw new Exception ("New changes in Sse41 (don't forget to update simd-intrinsics-netcore.c if necessary)");
+            throw new Exception ("New changes in Sse41 (don't forget to update simd-intrinsics.c if necessary)");
         if (sse42Methods != 9)
-            throw new Exception ("New changes in Sse42 (don't forget to update simd-intrinsics-netcore.c if necessary)");
+            throw new Exception ("New changes in Sse42 (don't forget to update simd-intrinsics.c if necessary)");
 
         int skipped = 0;
         var tests = new SseTests ();

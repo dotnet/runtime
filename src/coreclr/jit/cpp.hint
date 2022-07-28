@@ -7,8 +7,6 @@
 // See the article on hints in MSDN for more information on their necessity and use:
 //    http://msdn.microsoft.com/en-us/library/dd997977.aspx
 
-#define FOREACH_REGISTER_FILE(file) for (;;)
-
 // From jit.h
 
 #define INDEBUG(x)          x

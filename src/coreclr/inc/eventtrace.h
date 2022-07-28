@@ -57,7 +57,7 @@ struct ProfilingScanContext : ScanContext
 };
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 
 namespace ETW
 {
@@ -184,7 +184,7 @@ namespace ETW
         static VOID OnTypesKeywordTurnedOff();
     };
 
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
 
     // Class to wrap all GC logic for ETW
@@ -202,54 +202,14 @@ namespace ETW
         // we'll attach this sequence number to that GC instead of to the WPA-induced GC,
         // but who cares? When parsing ETW logs later on, it's indistinguishable if both
         // GCs really were induced at around the same time.
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
         static volatile LONGLONG s_l64LastClientSequenceNumber;
-#else // FEATURE_REDHAWK
+#else // FEATURE_NATIVEAOT
         static Volatile<LONGLONG> s_l64LastClientSequenceNumber;
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
     public:
         typedef union st_GCEventInfo {
-            typedef struct _GenerationInfo {
-                ULONGLONG GenerationSize;
-                ULONGLONG TotalPromotedSize;
-            } GenerationInfo;
-
-            struct {
-                GenerationInfo GenInfo[4]; // the heap info on gen0, gen1, gen2 and the large object heap.
-                ULONGLONG        FinalizationPromotedSize; //not available per generation
-                ULONGLONG         FinalizationPromotedCount; //not available per generation
-                ULONG          PinnedObjectCount;
-                ULONG          SinkBlockCount;
-                ULONG          GCHandleCount;
-            } HeapStats;
-
-            typedef enum _HeapType {
-                SMALL_OBJECT_HEAP, LARGE_OBJECT_HEAP, READ_ONLY_HEAP
-            } HeapType;
-            struct {
-                ULONGLONG Address;
-                ULONGLONG Size;
-                HeapType Type;
-            } GCCreateSegment;
-
-            struct {
-                ULONGLONG Address;
-            } GCFreeSegment;
-            struct {
-                ULONG Count;
-                ULONG Depth;
-            } GCEnd;
-
-            typedef enum _AllocationKind {
-                AllocationSmall = 0,
-                AllocationLarge
-            }AllocationKind;
-            struct {
-                ULONG Allocation;
-                AllocationKind Kind;
-            } AllocationTick;
-
             // These values are gotten from the gc_reason
             // in gcimpl.h
             typedef  enum _GC_REASON {
@@ -271,48 +231,23 @@ namespace ETW
                 GC_BGC = 1,
                 GC_FGC = 2
             } GC_TYPE;
-            typedef  enum _GC_ROOT_KIND {
-              GC_ROOT_STACK = 0,
-              GC_ROOT_FQ = 1,
-              GC_ROOT_HANDLES = 2,
-              GC_ROOT_OLDER = 3,
-              GC_ROOT_SIZEDREF = 4,
-              GC_ROOT_OVERFLOW = 5
-            } GC_ROOT_KIND;
             struct {
                 ULONG Count;
                 ULONG Depth;
                 GC_REASON Reason;
                 GC_TYPE Type;
             } GCStart;
-
-            struct {
-                ULONG Count; // how many finalizers we called.
-            } GCFinalizers;
-
             struct {
                 ULONG Reason;
                 // This is only valid when SuspendEE is called by GC (ie, Reason is either
                 // SUSPEND_FOR_GC or SUSPEND_FOR_GC_PREP.
                 ULONG GcCount;
             } SuspendEE;
-
-            struct {
-                ULONG HeapNum;
-            } GCMark;
-
             struct {
                 ULONGLONG SegmentSize;
                 ULONGLONG LargeObjectSegmentSize;
                 BOOL ServerGC; // TRUE means it's server GC; FALSE means it's workstation.
             } GCSettings;
-
-            struct {
-                // The generation that triggered this notification.
-                ULONG Count;
-                // 1 means the notification was due to allocation; 0 means it was due to other factors.
-                ULONG Alloc;
-            } GCFullNotify;
         } ETW_GC_INFO, *PETW_GC_INFO;
 
 #ifdef FEATURE_EVENT_TRACE

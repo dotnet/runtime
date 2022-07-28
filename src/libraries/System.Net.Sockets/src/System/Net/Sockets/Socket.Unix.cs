@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Sockets
 {
@@ -164,6 +165,7 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_connect_multiconnect_notsupported);
         }
 
+#pragma warning disable CA1822
         private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool unused, string propertyName, out SafeSocketHandle? handle)
         {
             // AcceptSocket is not supported on Unix.
@@ -175,6 +177,7 @@ namespace System.Net.Sockets
             handle = null;
             return null;
         }
+#pragma warning restore CA1822
 
         private static void CheckTransmitFileOptions(TransmitFileOptions flags)
         {
@@ -190,12 +193,11 @@ namespace System.Net.Sockets
         {
             CheckTransmitFileOptions(flags);
 
+            SocketError errorCode = SocketError.Success;
+
             // Open the file, if any
             // Open it before we send the preBuffer so that any exception happens first
-            FileStream? fileStream = OpenFile(fileName);
-
-            SocketError errorCode = SocketError.Success;
-            using (fileStream)
+            using (SafeFileHandle? fileHandle = OpenFileHandle(fileName))
             {
                 // Send the preBuffer, if any
                 // This will throw on error
@@ -205,10 +207,10 @@ namespace System.Net.Sockets
                 }
 
                 // Send the file, if any
-                if (fileStream != null)
+                if (fileHandle != null)
                 {
                     // This can throw ObjectDisposedException.
-                    errorCode = SocketPal.SendFile(_handle, fileStream);
+                    errorCode = SocketPal.SendFile(_handle, fileHandle);
                 }
             }
 

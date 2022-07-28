@@ -10,45 +10,26 @@
 #include "eeconfig.h"
 #include "appdomain.inl"
 #include "eventtrace.h"
-#include "../binder/inc/clrprivbindercoreclr.h"
-
-#include "clr/fs/path.h"
-using namespace clr::fs;
+#include "../binder/inc/defaultassemblybinder.h"
 
 // static
-void QCALLTYPE AppDomainNative::CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyName, QCall::StackCrawlMarkHandle stackMark, INT32 access, QCall::ObjectHandleOnStack assemblyLoadContext, QCall::ObjectHandleOnStack retAssembly)
+extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyLoadContext, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, QCall::ObjectHandleOnStack retAssembly)
 {
     QCALL_CONTRACT;
 
-    BEGIN_QCALL
+    BEGIN_QCALL;
 
     GCX_COOP();
 
-    //<TODO>
-    // @TODO: there MUST be a better way to do this...
-    //</TODO>
-    CreateDynamicAssemblyArgs   args;
-    ZeroMemory(&args, sizeof(args));
+    LOADERALLOCATORREF keepAlive = NULL;
+    GCPROTECT_BEGIN(keepAlive);
 
-    GCPROTECT_BEGIN((CreateDynamicAssemblyArgsGC&)args);
+    _ASSERTE(assemblyLoadContext.Get() != NULL);
 
-    args.assemblyName           = (ASSEMBLYNAMEREF)assemblyName.Get();
-    args.loaderAllocator        = NULL;
+    INT_PTR nativeAssemblyBinder = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
+    AssemblyBinder* pBinder = reinterpret_cast<AssemblyBinder*>(nativeAssemblyBinder);
 
-    args.access                 = access;
-    args.stackMark              = stackMark;
-
-    Assembly*       pAssembly = nullptr;
-    ICLRPrivBinder* pBinderContext = nullptr;
-
-    if (assemblyLoadContext.Get() != NULL)
-    {
-        INT_PTR nativeAssemblyLoadContext = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyLoadContext();
-
-        pBinderContext = reinterpret_cast<ICLRPrivBinder*>(nativeAssemblyLoadContext);
-    }
-
-    pAssembly = Assembly::CreateDynamic(GetAppDomain(), pBinderContext, &args);
+    Assembly* pAssembly = Assembly::CreateDynamic(pBinder, pAssemblyNameParts, hashAlgorithm, access, &keepAlive);
 
     retAssembly.Set(pAssembly->GetExposedObject());
 

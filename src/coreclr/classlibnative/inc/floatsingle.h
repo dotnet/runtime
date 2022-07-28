@@ -9,7 +9,6 @@
 
 class COMSingle {
 public:
-    FCDECL1_V(static float, Abs, float x);
     FCDECL1_V(static float, Acos, float x);
     FCDECL1_V(static float, Acosh, float x);
     FCDECL1_V(static float, Asin, float x);
@@ -25,7 +24,6 @@ public:
     FCDECL1_V(static float, Floor, float x);
     FCDECL2_VV(static float, FMod, float x, float y);
     FCDECL3_VVV(static float, FusedMultiplyAdd, float x, float y, float z);
-    FCDECL1_V(static int, ILogB, float x);
     FCDECL1_V(static float, Log, float x);
     FCDECL1_V(static float, Log2, float x);
     FCDECL1_V(static float, Log10, float x);

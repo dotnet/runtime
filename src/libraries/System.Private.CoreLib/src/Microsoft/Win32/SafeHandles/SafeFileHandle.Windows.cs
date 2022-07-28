@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Strategies;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -13,6 +12,8 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal const FileOptions NoBuffering = (FileOptions)0x20000000;
+        private long _length = -1; // negative means that hasn't been fetched.
+        private bool _lengthCanBeCached; // file has been opened for reading and not shared for writing.
         private volatile FileOptions _fileOptions = (FileOptions)(-1);
         private volatile int _fileType = -1;
 
@@ -20,35 +21,38 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
-        public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)
-        {
-            SetHandle(preexistingHandle);
-        }
-
         public bool IsAsync => (GetFileOptions() & FileOptions.Asynchronous) != 0;
+
+        internal bool IsNoBuffering => (GetFileOptions() & NoBuffering) != 0;
 
         internal bool CanSeek => !IsClosed && GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
 
-        internal bool IsPipe => GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
-
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
-        internal static unsafe SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        internal bool TryGetCachedLength(out long cachedLength)
         {
+            cachedLength = _length;
+            return _lengthCanBeCached && cachedLength >= 0;
+        }
+
+        internal static unsafe SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode = null)
+        {
+            Debug.Assert(!unixCreateMode.HasValue);
+
             using (DisableMediaInsertionPrompt.Create())
             {
                 // we don't use NtCreateFile as there is no public and reliable way
                 // of converting DOS to NT file paths (RtlDosPathNameToRelativeNtPathName_U_WithStatus is not documented)
                 SafeFileHandle fileHandle = CreateFile(fullPath, mode, access, share, options);
 
-                if (FileStreamHelpers.ShouldPreallocate(preallocationSize, access, mode))
+                if (preallocationSize > 0)
                 {
                     Preallocate(fullPath, preallocationSize, fileHandle);
                 }
 
                 if ((options & FileOptions.Asynchronous) != 0)
                 {
-                    // the handle has not been exposed yet, so we don't need to aquire a lock
+                    // the handle has not been exposed yet, so we don't need to acquire a lock
                     fileHandle.InitThreadPoolBinding();
                 }
 
@@ -105,10 +109,13 @@ namespace Microsoft.Win32.SafeHandles
                     errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
                 }
 
+                fileHandle.Dispose();
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
 
+            fileHandle._path = fullPath;
             fileHandle._fileOptions = options;
+            fileHandle._lengthCanBeCached = (share & FileShare.Write) == 0 && (access & FileAccess.Write) == 0;
             return fileHandle;
         }
 
@@ -127,19 +134,19 @@ namespace Microsoft.Win32.SafeHandles
             {
                 int errorCode = Marshal.GetLastPInvokeError();
 
-                // we try to mimic the atomic NtCreateFile here:
-                // if preallocation fails, close the handle and delete the file
-                fileHandle.Dispose();
-                Interop.Kernel32.DeleteFile(fullPath);
-
-                switch (errorCode)
+                // Only throw for errors that indicate there is not enough space.
+                if (errorCode == Interop.Errors.ERROR_DISK_FULL ||
+                    errorCode == Interop.Errors.ERROR_FILE_TOO_LARGE)
                 {
-                    case Interop.Errors.ERROR_DISK_FULL:
-                        throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, preallocationSize));
-                    case Interop.Errors.ERROR_FILE_TOO_LARGE:
-                        throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, preallocationSize));
-                    default:
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+                    fileHandle.Dispose();
+
+                    // Delete the file we've created.
+                    Interop.Kernel32.DeleteFile(fullPath);
+
+                    throw new IOException(SR.Format(errorCode == Interop.Errors.ERROR_DISK_FULL
+                                                        ? SR.IO_DiskFull_Path_AllocationSize
+                                                        : SR.IO_FileTooLarge_Path_AllocationSize,
+                                            fullPath, preallocationSize));
                 }
             }
         }
@@ -257,6 +264,35 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return fileType;
+        }
+
+        internal long GetFileLength()
+        {
+            if (!_lengthCanBeCached)
+            {
+                return GetFileLengthCore();
+            }
+
+            // On Windows, when the file is locked for writes we can cache file length
+            // in memory and avoid subsequent native calls which are expensive.
+            if (_length < 0)
+            {
+                _length = GetFileLengthCore();
+            }
+
+            return _length;
+
+            unsafe long GetFileLengthCore()
+            {
+                Interop.Kernel32.FILE_STANDARD_INFO info;
+
+                if (!Interop.Kernel32.GetFileInformationByHandleEx(this, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
+                {
+                    throw Win32Marshal.GetExceptionForLastWin32Error(Path);
+                }
+
+                return info.EndOfFile;
+            }
         }
     }
 }

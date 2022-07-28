@@ -15,6 +15,11 @@ namespace System.Drawing
         public static int ToOle(System.Drawing.Color c) { throw null; }
         public static int ToWin32(System.Drawing.Color c) { throw null; }
     }
+    public sealed partial class Graphics
+    {
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public object GetContextInfo() { throw null; }
+    }
     public static partial class SystemColors
     {
         public static System.Drawing.Color ActiveBorder { get { throw null; } }

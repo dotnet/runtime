@@ -11,7 +11,7 @@ namespace System.Xml.Xsl
     /// Cardinality of part of XmlQueryType
     /// struct is being used because enum doesn't allow members
     /// </summary>
-    internal struct XmlQueryCardinality
+    internal readonly struct XmlQueryCardinality : IEquatable<XmlQueryCardinality>
     {
         private readonly int _value;
 

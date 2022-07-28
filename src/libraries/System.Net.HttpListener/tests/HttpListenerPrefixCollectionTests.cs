@@ -359,6 +359,7 @@ namespace System.Net.Tests
 
         [Theory]
         [MemberData(nameof(InvalidPrefix_TestData))]
+        [SkipOnPlatform(TestPlatforms.FreeBSD, "FreeBSD accepts some inputs as valid and test hangs")]
         public void Add_InvalidPrefixNotStarted_ThrowsHttpListenerExceptionOnStart(string uriPrefix)
         {
             var listener = new HttpListener();
@@ -371,6 +372,7 @@ namespace System.Net.Tests
 
         [Theory]
         [MemberData(nameof(InvalidPrefix_TestData))]
+        [SkipOnPlatform(TestPlatforms.FreeBSD, "FreeBSD accepts some inputs as valid and test hangs")]
         public void Add_InvalidPrefixAlreadyStarted_ThrowsHttpListenerExceptionOnAdd(string uriPrefix)
         {
             using (var factory = new HttpListenerFactory())

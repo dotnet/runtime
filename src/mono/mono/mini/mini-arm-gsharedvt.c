@@ -118,7 +118,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 	GSharedVtCallInfo *info;
 	CallInfo *caller_cinfo, *callee_cinfo;
 	MonoMethodSignature *caller_sig, *callee_sig;
-	int aindex, i;
+	int aindex;
 	gboolean var_ret = FALSE;
 	gboolean have_fregs = FALSE;
 	CallInfo *cinfo, *gcinfo;
@@ -257,7 +257,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 			src [0] |= (arg_marshal << 24);
 		nslots = MIN (nsrc, ndst);
 
-		for (i = 0; i < nslots; ++i)
+		for (int i = 0; i < nslots; ++i)
 			add_to_map (map, src [i], dst [i]);
 
 		g_free (src);
@@ -279,7 +279,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 	}
 	info->vcall_offset = vcall_offset;
 	info->map_count = map->len / 2;
-	for (i = 0; i < map->len; ++i)
+	for (guint i = 0; i < map->len; ++i)
 		info->map [i] = GPOINTER_TO_UINT (g_ptr_array_index (map, i));
 	g_ptr_array_free (map, TRUE);
 
@@ -287,13 +287,13 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 	if (var_ret) {
 		switch (cinfo->ret.storage) {
 		case RegTypeGeneral:
-			if (gsharedvt_in && !sig->ret->byref && sig->ret->type == MONO_TYPE_I1)
+			if (gsharedvt_in && !m_type_is_byref (sig->ret) && sig->ret->type == MONO_TYPE_I1)
 				info->ret_marshal = GSHAREDVT_RET_I1;
-			else if (gsharedvt_in && !sig->ret->byref && (sig->ret->type == MONO_TYPE_U1 || sig->ret->type == MONO_TYPE_BOOLEAN))
+			else if (gsharedvt_in && !m_type_is_byref (sig->ret) && (sig->ret->type == MONO_TYPE_U1 || sig->ret->type == MONO_TYPE_BOOLEAN))
 				info->ret_marshal = GSHAREDVT_RET_U1;
-			else if (gsharedvt_in && !sig->ret->byref && sig->ret->type == MONO_TYPE_I2)
+			else if (gsharedvt_in && !m_type_is_byref (sig->ret) && sig->ret->type == MONO_TYPE_I2)
 				info->ret_marshal = GSHAREDVT_RET_I2;
-			else if (gsharedvt_in && !sig->ret->byref && (sig->ret->type == MONO_TYPE_U2 || sig->ret->type == MONO_TYPE_CHAR))
+			else if (gsharedvt_in && !m_type_is_byref (sig->ret) && (sig->ret->type == MONO_TYPE_U2 || sig->ret->type == MONO_TYPE_CHAR))
 				info->ret_marshal = GSHAREDVT_RET_U2;
 			else
 				info->ret_marshal = GSHAREDVT_RET_IREG;

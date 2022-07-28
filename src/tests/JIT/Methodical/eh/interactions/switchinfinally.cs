@@ -4,6 +4,7 @@
 // switch statement in a finally 
 
 using System;
+using Xunit;
 
 namespace test3
 {
@@ -61,7 +62,7 @@ namespace test3
     /// <summary>
     /// Summary description for Class1.
     /// </summary>
-    class Class1
+    public class Class1
     {
         private static TestUtil.TestLog testLog;
 
@@ -85,12 +86,13 @@ namespace test3
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             //Start recording
             testLog.StartRecording();
             MyClass x = new MyClass(1234);
-            x.testit(args.Length);
+            x.testit(0);
             Console.WriteLine(x.val);
 
             // stop recoding

@@ -18,8 +18,6 @@
 
 RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
 
-#define NON_SUPPORTED_PLATFORM_MSGBOX_TITLE             W("Platform not supported")
-#define NON_SUPPORTED_PLATFORM_MSGBOX_TEXT              W("The minimum supported platform is Windows 7")
 #define NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE     0xBAD1BAD1
 
 //*****************************************************************************
@@ -81,10 +79,8 @@ CHECK_SUPPORTED:
 
     if (!fSupportedPlatform)
     {
-        // The current platform isn't supported. Display a message box to this effect and exit.
-        // Note that this should never happen since the .NET Fx setup should not install on
-        // non supported platforms (which is why the message box text isn't localized).
-        UtilMessageBoxCatastrophicNonLocalized(NON_SUPPORTED_PLATFORM_MSGBOX_TEXT, NON_SUPPORTED_PLATFORM_MSGBOX_TITLE, MB_OK | MB_ICONERROR, TRUE);
+        // The current platform isn't supported. Display a message to this effect and exit.
+        fprintf(stderr, "Platform not supported: The minimum supported platform is Windows 7\n");
         TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
     }
 #endif // TARGET_UNIX
@@ -341,7 +337,7 @@ void GetDebuggerSettingInfo(SString &ssDebuggerString, BOOL *pfAuto)
 //     * wszDebuggerString can be NULL.   When wszDebuggerString is NULL, pcchDebuggerString should
 //     * point to a DWORD of zero.   pcchDebuggerString cannot be NULL, and the DWORD pointed by
 //     * pcchDebuggerString will store the used or required string buffer size in characters.
-HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, *pcchDebuggerString) LPWSTR wszDebuggerString, DWORD * pcchDebuggerString, BOOL * pfAuto)
+HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *pcchDebuggerString) LPWSTR wszDebuggerString, DWORD * pcchDebuggerString, BOOL * pfAuto)
 {
     CONTRACTL
     {
@@ -437,7 +433,7 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
                 if ((ret == ERROR_SUCCESS) && (valueType == REG_SZ) && (valueSize / sizeof(WCHAR) < MAX_LONGPATH))
                 {
                     WCHAR wzAutoKey[MAX_LONGPATH];
-                    valueSize = NumItems(wzAutoKey) * sizeof(WCHAR);
+                    valueSize = ARRAY_SIZE(wzAutoKey) * sizeof(WCHAR);
                     WszRegQueryValueEx(hKeyHolder, kUnmanagedDebuggerAutoValue, NULL, NULL, reinterpret_cast< LPBYTE >(wzAutoKey), &valueSize);
 
                     // The OS's behavior is to consider Auto to be FALSE unless the first character is set
@@ -478,7 +474,7 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
 //*****************************************************************************
 HRESULT GetStr(
                                  DWORD  hHexNum,
-    __out_ecount((cbHexNum * 2)) LPWSTR szHexNum,
+    _Out_writes_((cbHexNum * 2)) LPWSTR szHexNum,
                                  DWORD  cbHexNum)
 {
     CONTRACTL
@@ -512,7 +508,7 @@ HRESULT GetStr(
 int
 GuidToLPWSTR(
                           GUID   Guid,      // The GUID to convert.
-    __out_ecount(cchGuid) LPWSTR szGuid,    // String into which the GUID is stored
+    _Out_writes_(cchGuid) LPWSTR szGuid,    // String into which the GUID is stored
                           DWORD  cchGuid)   // Count in wchars
 {
     CONTRACTL
@@ -579,7 +575,7 @@ GuidToLPWSTR(
 //*****************************************************************************
 HRESULT GetHex(
                                 DWORD * phHexNum,
-    __in_ecount((cbHexNum * 2)) LPCWSTR szHexNum,
+    _In_reads_((cbHexNum * 2)) LPCWSTR szHexNum,
                                 DWORD   cbHexNum)
 {
     CONTRACTL
@@ -624,7 +620,7 @@ HRESULT GetHex(
 BOOL
 LPWSTRToGuid(
                          GUID  * Guid,      // [OUT] The GUID to fill in
-    __in_ecount(cchGuid) LPCWSTR szGuid,    // [IN] String to parse
+    _In_reads_(cchGuid) LPCWSTR szGuid,    // [IN] String to parse
                          DWORD   cchGuid)   // [IN] Count in wchars in string
 {
     CONTRACTL
@@ -693,27 +689,6 @@ LPWSTRToGuid(
     return TRUE;
 } // GuidToLPWSTR
 
-
-#ifdef _DEBUG
-// Always write regardless of registry.
-void _cdecl DbgWriteEx(LPCTSTR szFmt, ...)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    WCHAR rcBuff[1024];
-    va_list marker;
-
-    va_start(marker, szFmt);
-    _vsnwprintf_s(rcBuff, _countof(rcBuff), _TRUNCATE, szFmt, marker);
-    va_end(marker);
-    WszOutputDebugString(rcBuff);
-}
-#endif //_DEBUG
-
 /**************************************************************************/
 void ConfigDWORD::init(const CLRConfig::ConfigDWORDInfo & info)
 {
@@ -742,7 +717,7 @@ void ConfigDWORD::init(const CLRConfig::ConfigDWORDInfo & info)
 //          terminator); [out] Points to length in chars of trimmed substring (not
 //          counting null terminator)
 //
-void TrimWhiteSpace(__deref_inout_ecount(*pcch)  LPCWSTR *pwsz, __inout LPDWORD pcch)
+void TrimWhiteSpace(_Outptr_result_buffer_(*pcch)  LPCWSTR *pwsz, __inout LPDWORD pcch)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -770,7 +745,20 @@ void TrimWhiteSpace(__deref_inout_ecount(*pcch)  LPCWSTR *pwsz, __inout LPDWORD 
     *pcch = cch;
 } // TrimWhiteSpace
 
-BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStack)
+void OutputDebugStringUtf8(LPCUTF8 utf8DebugMsg)
+{
+#ifdef TARGET_UNIX
+    OutputDebugStringA(utf8DebugMsg);
+#else
+    if (utf8DebugMsg == NULL)
+        utf8DebugMsg = "";
+
+    MAKE_WIDEPTR_FROMUTF8_NOTHROW(wideDebugMsg, utf8DebugMsg);
+    OutputDebugStringW(wideDebugMsg);
+#endif // !TARGET_UNIX
+}
+
+BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommittedStack)
 {
     // We need to make sure there will be a reserved but never committed page at the end
     // of the stack. We do here the check NT does when it creates the user stack to decide
@@ -781,7 +769,7 @@ BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStac
     // If we are not it will bomb out. We will also bomb out if we touch the hard guard
     // page.
     //
-    // For situation B, teb->StackLimit is at the beggining of the user stack (ie
+    // For situation B, teb->StackLimit is at the beginning of the user stack (ie
     // before updating StackLimit it checks if it was able to create a new guard page,
     // in this case, it can't), which makes the check fail in RtlUnwind.
     //
@@ -802,13 +790,12 @@ BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStac
 
     // OS rounds up sizes the following way to decide if it marks a guard page
     sizeReservedStack = ALIGN(sizeReservedStack, ((size_t)sysInfo.dwAllocationGranularity));   // Allocation granularity
-    sizeCommitedStack = ALIGN(sizeCommitedStack, ((size_t)sysInfo.dwPageSize));  // Page Size
+    sizeCommittedStack = ALIGN(sizeCommittedStack, ((size_t)sysInfo.dwPageSize));  // Page Size
 
     // OS wont create guard page, we can't execute managed code safely.
     // We also have to make sure we have a 'hard' guard, thus we add another
     // page to the memory we would need comitted.
     // That is, the following code will check if sizeReservedStack is at least 2 pages
-    // more than sizeCommitedStack.
-    return (sizeReservedStack > sizeCommitedStack + ((size_t)sysInfo.dwPageSize));
+    // more than sizeCommittedStack.
+    return (sizeReservedStack > sizeCommittedStack + ((size_t)sysInfo.dwPageSize));
 } // ThreadWillCreateGuardPage
-

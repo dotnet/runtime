@@ -9,17 +9,15 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
+using SysTx = System.Transactions;
 
 namespace System.Data.OleDb
 {
-    using SysTx = Transactions;
-
     // wraps the OLEDB IDBInitialize interface which represents a connection
     // Notes about connection pooling
-    // 1. Connection pooling isn't supported on Win95
-    // 2. Only happens if we use the IDataInitialize or IDBPromptInitialize interfaces
+    // 1. Only happens if we use the IDataInitialize or IDBPromptInitialize interfaces
     //    it won't happen if you directly create the provider and set its properties
-    // 3. First call on IDBInitialize must be Initialize, can't QI for any other interfaces before that
+    // 2. First call on IDBInitialize must be Initialize, can't QI for any other interfaces before that
     [DefaultEvent("InfoMessage")]
     public sealed partial class OleDbConnection : DbConnection, ICloneable, IDbConnection
     {
@@ -70,7 +68,7 @@ namespace System.Data.OleDb
         {
             get
             {
-                object? value = null;
+                object? value;
                 if (IsOpen)
                 {
                     value = GetDataSourceValue(OleDbPropertySetGuid.DBInit, ODB.DBPROP_INIT_TIMEOUT);
@@ -178,8 +176,7 @@ namespace System.Data.OleDb
             get
             {
                 OleDbConnectionString? constr = this.OleDbConnectionStringValue;
-                string? value = ((null != constr) ? constr.ConvertValueToString(ODB.Provider, null) : null);
-                return ((null != value) ? value : string.Empty);
+                return constr?.ConvertValueToString(ODB.Provider, null) ?? string.Empty;
             }
         }
 
@@ -219,9 +216,8 @@ namespace System.Data.OleDb
             if (IsOpen)
             {
                 object? value = GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_CONNECTIONSTATUS);
-                if (value is int)
+                if (value is int connectionStatus)
                 {
-                    int connectionStatus = (int)value;
                     switch (connectionStatus)
                     {
                         case ODB.DBPROPVAL_CS_UNINITIALIZED: // provider closed on us
@@ -235,7 +231,7 @@ namespace System.Data.OleDb
                             break;
 
                         default: // have to assume everything is okay
-                            Debug.Assert(false, "Unknown 'Connection Status' value " + connectionStatus.ToString("G", CultureInfo.InvariantCulture));
+                            Debug.Assert(false, $"Unknown 'Connection Status' value {connectionStatus.ToString("G", CultureInfo.InvariantCulture)}");
                             break;
                     }
                 }
@@ -306,8 +302,6 @@ namespace System.Data.OleDb
             }
             return quotedIdentifierCase;
         }
-
-        internal bool ForceNewConnection { get { return false; } set {; } }
 
         public new OleDbTransaction BeginTransaction()
         {
@@ -583,36 +577,38 @@ namespace System.Data.OleDb
 
             // ErrorInfo object is to be checked regardless the hresult returned by the function called
             Exception? e = null;
-            UnsafeNativeMethods.IErrorInfo? errorInfo = null;
-            OleDbHResult hr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
+            OleDbHResult hr = UnsafeNativeMethods.GetErrorInfo(0, out UnsafeNativeMethods.IErrorInfo? errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((OleDbHResult.S_OK == hr) && (null != errorInfo))
             {
-                if (hresult < 0)
+                try
                 {
-                    // UNDONE: if authentication failed - throw a unique exception object type
-                    //if (/*OLEDB_Error.DB_SEC_E_AUTH_FAILED*/unchecked((int)0x80040E4D) == hr) {
-                    //}
-                    //else if (/*OLEDB_Error.DB_E_CANCELED*/unchecked((int)0x80040E4E) == hr) {
-                    //}
-                    // else {
-                    e = OleDbException.CreateException(errorInfo, hresult, null);
-                    //}
-
-                    if (OleDbHResult.DB_E_OBJECTOPEN == hresult)
+                    if (hresult < 0)
                     {
-                        e = ADP.OpenReaderExists(e);
-                    }
+                        // UNDONE: if authentication failed - throw a unique exception object type
+                        //if (/*OLEDB_Error.DB_SEC_E_AUTH_FAILED*/unchecked((int)0x80040E4D) == hr) {
+                        //}
+                        //else if (/*OLEDB_Error.DB_E_CANCELED*/unchecked((int)0x80040E4E) == hr) {
+                        //}
+                        // else {
+                        e = OleDbException.CreateException(errorInfo, hresult, null);
+                        //}
 
-                    ResetState(connection);
+                        if (OleDbHResult.DB_E_OBJECTOPEN == hresult)
+                        {
+                            e = ADP.OpenReaderExists(e);
+                        }
+
+                        ResetState(connection);
+                    }
+                    else
+                    {
+                        connection?.OnInfoMessage(errorInfo, hresult);
+                    }
                 }
-                else if (null != connection)
+                finally
                 {
-                    connection.OnInfoMessage(errorInfo, hresult);
+                    UnsafeNativeMethods.ReleaseErrorInfoObject(errorInfo);
                 }
-                else
-                {
-                }
-                Marshal.ReleaseComObject(errorInfo);
             }
             else if (0 < hresult)
             {
@@ -620,7 +616,7 @@ namespace System.Data.OleDb
             }
             else if ((int)hresult < 0)
             {
-                e = ODB.NoErrorInformation((null != connection) ? connection.Provider : null, hresult, null); // OleDbException
+                e = ODB.NoErrorInformation(connection?.Provider, hresult, null); // OleDbException
 
                 ResetState(connection);
             }
@@ -641,10 +637,7 @@ namespace System.Data.OleDb
 
         private static void ResetState(OleDbConnection? connection)
         {
-            if (null != connection)
-            {
-                connection.ResetState();
-            }
+            connection?.ResetState();
         }
     }
 }

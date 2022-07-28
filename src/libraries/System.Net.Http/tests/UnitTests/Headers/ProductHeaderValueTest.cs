@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -166,53 +162,22 @@ namespace System.Net.Http.Tests
             CheckInvalidParse("  ,,");
         }
 
-        [Fact]
-        public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
-        {
-            CheckValidTryParse(" y/1 ", new ProductHeaderValue("y", "1"));
-            CheckValidTryParse(" custom / 1.0 ", new ProductHeaderValue("custom", "1.0"));
-            CheckValidTryParse("custom / 1.0 ", new ProductHeaderValue("custom", "1.0"));
-            CheckValidTryParse("custom / 1.0", new ProductHeaderValue("custom", "1.0"));
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
-        {
-            CheckInvalidTryParse("product/version="); // only delimiter ',' allowed after last product
-            CheckInvalidTryParse("product otherproduct");
-            CheckInvalidTryParse("product[");
-            CheckInvalidTryParse("=");
-
-            CheckInvalidTryParse(null);
-            CheckInvalidTryParse(string.Empty);
-            CheckInvalidTryParse("  ");
-            CheckInvalidTryParse("  ,,");
-        }
-
         #region Helper methods
 
         private void CheckValidParse(string input, ProductHeaderValue expectedResult)
         {
             ProductHeaderValue result = ProductHeaderValue.Parse(input);
             Assert.Equal(expectedResult, result);
+
+            Assert.True(ProductHeaderValue.TryParse(input, out result));
+            Assert.Equal(expectedResult, result);
         }
 
         private void CheckInvalidParse(string input)
         {
             Assert.Throws<FormatException>(() => { ProductHeaderValue.Parse(input); });
-        }
 
-        private void CheckValidTryParse(string input, ProductHeaderValue expectedResult)
-        {
-            ProductHeaderValue result = null;
-            Assert.True(ProductHeaderValue.TryParse(input, out result));
-            Assert.Equal(expectedResult, result);
-        }
-
-        private void CheckInvalidTryParse(string input)
-        {
-            ProductHeaderValue result = null;
-            Assert.False(ProductHeaderValue.TryParse(input, out result));
+            Assert.False(ProductHeaderValue.TryParse(input, out ProductHeaderValue result));
             Assert.Null(result);
         }
 

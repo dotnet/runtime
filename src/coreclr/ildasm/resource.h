@@ -8,19 +8,14 @@
 
 #define IDS_RTL                         48
 
-#define IDS_USAGE_TITLE                 200
-#define IDS_USAGE_01                    IDS_USAGE_TITLE + 1
+#define IDS_USAGE_01                    201
 #define IDS_USAGE_02                    IDS_USAGE_01 + 1
 #define IDS_USAGE_03                    IDS_USAGE_02 + 1
 #define IDS_USAGE_04                    IDS_USAGE_03 + 1
 #define IDS_USAGE_04A                   IDS_USAGE_04 + 1
 #define IDS_USAGE_04B                   IDS_USAGE_04A + 1
 #define IDS_USAGE_05                    IDS_USAGE_04B + 1
-#ifdef OWNER_OPTION_ENABLED
-#define IDS_USAGE_06                    IDS_USAGE_05 + 1
-#else
 #define IDS_USAGE_06                    IDS_USAGE_05
-#endif
 #define IDS_USAGE_07                    IDS_USAGE_06 + 1
 #define IDS_USAGE_08                    IDS_USAGE_07 + 1
 #define IDS_USAGE_09                    IDS_USAGE_08 + 1
@@ -94,11 +89,8 @@
 #define IDS_E_NOCORHDR                  403
 #define IDS_E_BADCORHDR                 404
 #define IDS_E_OPENMD                    405
-#define IDS_E_COPYRIGHT                 406
 #define IDS_E_DASMOK                    408
 #define IDS_E_PARTDASM                  409
-#define IDS_E_INSTRDT                   410
-#define IDS_E_NOCOMPR                   411
 #define IDS_E_CLSENUM                   412
 #define IDS_E_SELFNSTD                  413
 #define IDS_E_NOENCLOS                  414
@@ -146,41 +138,16 @@
 
 #define IDS_E_MULTIPLEINPUT             458
 #define IDS_E_INVALIDOPTION             459
-#define IDS_PROGRESSBOX                 460
-#define IDS_DISASSEMBLING               461
-#define IDS_PB_FILE                     462
-#define IDS_PB_FILE1                    463
-#define IDS_PB_TOFILE                   464
-#define IDS_PB_TOFILE1                  465
-#define IDS_PB_CLASSESDONE              466
-#define IDS_PB_GLOBALSDONE              467
-#define IDS_PB_CANCEL                   468
-#define IDS_PB_WRITINGDATA              469
 #define IDS_W_CREATEDW32RES             470
 #define IDS_E_CORRUPTW32RES             471
 #define IDS_E_CANTOPENW32RES            472
 #define IDS_E_CANTACCESSW32RES          473
-#define IDS_CANTVIEW_TX                 474
-#define IDS_CANTVIEW_HD                 475
-#define IDS_ONLYPEINGUI                 476
-#define IDS_BADFILETYPE                 477
 #define IDS_E_CANTOPENOUT               478
-#define IDS_E_CANTCREATEPROC            479
-#define IDS_TEXTTOOLARGEFORGUI          480
-#define IDS_FILTER_IN                   481
-#define IDS_FILTER_OUT                  482
-#define IDS_FILTER_OUT2                 483
-#define IDS_CANNOTOPENFILE              484
-#define IDS_UNABLETOREGLIBS             485
 #define IDS_ERRORREOPENINGFILE          486
 #define IDS_ASSEMNAMETOOLONG            487
 #define IDS_ASMREFNAMETOOLONG           488
-#define IDS_ERRORCAPTION                489
-#define IDS_ILDASM_TITLE                490
-#define IDS_VERSION                     491
 #define IDS_W_CREATEDMRES               492
 #define IDS_E_READINGMRES               493
-#define IDS_LEGALCOPYRIGHT              494
 #define IDS_E_INVALIDRECORD             495
 
 #define IDC_CHECK1                      1000

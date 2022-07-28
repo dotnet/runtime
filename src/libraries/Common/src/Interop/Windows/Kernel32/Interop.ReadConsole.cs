@@ -8,8 +8,9 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "ReadConsoleW")]
-        internal static extern unsafe bool ReadConsole(
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "ReadConsoleW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool ReadConsole(
             IntPtr hConsoleInput,
             byte* lpBuffer,
             int nNumberOfCharsToRead,

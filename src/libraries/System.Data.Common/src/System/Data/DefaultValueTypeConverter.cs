@@ -19,14 +19,9 @@ namespace System.Data
         {
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
+            ArgumentNullException.ThrowIfNull(destinationType);
 
             if (destinationType == typeof(string))
             {
@@ -43,7 +38,7 @@ namespace System.Data
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object? value)
         {
             if (value != null && value.GetType() == typeof(string))
             {
@@ -60,6 +55,5 @@ namespace System.Data
 
             return base.ConvertFrom(context, culture, value);
         }
-#nullable enable
     }
 }

@@ -1,0 +1,22 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="../Directory.Build.props" />
+
+  <PropertyGroup>
+    <OutputPath>$(RuntimeBinDir)/build/</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="*.*" Exclude="$(MSBuildProjectFile)" />
+  </ItemGroup>
+
+  <Target Name="Build">
+    <Copy SourceFiles="@(Content)" DestinationFolder="$(OutputPath)" />
+
+    <!-- Create breadcrumb to disable dynamic linking of release crt for debug runtime -->
+    <WriteLinesToFile
+      File="$(RuntimeBinDir)/aotsdk/debugucrt.txt"
+      Condition="'$(TargetsWindows)'=='true' and '$(Configuration)' != 'Release'" />
+  </Target>
+
+  <Target Name="Restore" />
+</Project>

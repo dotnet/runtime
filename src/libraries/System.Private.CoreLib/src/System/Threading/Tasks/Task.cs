@@ -10,13 +10,11 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
@@ -138,36 +136,36 @@ namespace System.Threading.Tasks
 
         private Task? ParentForDebugger => m_contingentProperties?.m_parent; // Private property used by a debugger to access this Task's parent
         private int StateFlagsForDebugger => m_stateFlags; // Private property used by a debugger to access this Task's state flags
+        private TaskStateFlags StateFlags => (TaskStateFlags)(m_stateFlags & ~(int)TaskStateFlags.OptionsMask); // Private property used to help with debugging
 
-        // State constants for m_stateFlags;
-        // The bits of m_stateFlags are allocated as follows:
-        //   0x40000000 - TaskBase state flag
-        //   0x3FFF0000 - Task state flags
-        //   0x0000FF00 - internal TaskCreationOptions flags
-        //   0x000000FF - publicly exposed TaskCreationOptions flags
-        //
-        // See TaskCreationOptions for bit values associated with TaskCreationOptions
-        //
-        private const int OptionsMask = 0xFFFF; // signifies the Options portion of m_stateFlags bin: 0000 0000 0000 0000 1111 1111 1111 1111
-        internal const int TASK_STATE_STARTED = 0x10000;                                      // bin: 0000 0000 0000 0001 0000 0000 0000 0000
-        internal const int TASK_STATE_DELEGATE_INVOKED = 0x20000;                             // bin: 0000 0000 0000 0010 0000 0000 0000 0000
-        internal const int TASK_STATE_DISPOSED = 0x40000;                                     // bin: 0000 0000 0000 0100 0000 0000 0000 0000
-        internal const int TASK_STATE_EXCEPTIONOBSERVEDBYPARENT = 0x80000;                    // bin: 0000 0000 0000 1000 0000 0000 0000 0000
-        internal const int TASK_STATE_CANCELLATIONACKNOWLEDGED = 0x100000;                    // bin: 0000 0000 0001 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_FAULTED = 0x200000;                                     // bin: 0000 0000 0010 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_CANCELED = 0x400000;                                    // bin: 0000 0000 0100 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_WAITING_ON_CHILDREN = 0x800000;                         // bin: 0000 0000 1000 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_RAN_TO_COMPLETION = 0x1000000;                          // bin: 0000 0001 0000 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_WAITINGFORACTIVATION = 0x2000000;                       // bin: 0000 0010 0000 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_COMPLETION_RESERVED = 0x4000000;                        // bin: 0000 0100 0000 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_WAIT_COMPLETION_NOTIFICATION = 0x10000000;              // bin: 0001 0000 0000 0000 0000 0000 0000 0000
-        // This could be moved to InternalTaskOptions enum
-        internal const int TASK_STATE_EXECUTIONCONTEXT_IS_NULL = 0x20000000;                  // bin: 0010 0000 0000 0000 0000 0000 0000 0000
-        internal const int TASK_STATE_TASKSCHEDULED_WAS_FIRED = 0x40000000;                   // bin: 0100 0000 0000 0000 0000 0000 0000 0000
+        [Flags]
+        internal enum TaskStateFlags
+        {
+            // State constants for m_stateFlags;
+            // The bits of m_stateFlags are allocated as follows:
+            //   0x7FFF0000 - Task state flags
+            //   0x0000FF00 - internal TaskCreationOptions flags
+            //   0x000000FF - publicly exposed TaskCreationOptions flags
+            // See TaskCreationOptions for bit values associated with TaskCreationOptions
 
-        // A mask for all of the final states a task may be in.
-        // SOS DumpAsync command depends on these values.
-        private const int TASK_STATE_COMPLETED_MASK = TASK_STATE_CANCELED | TASK_STATE_FAULTED | TASK_STATE_RAN_TO_COMPLETION;
+            Started = 0x10000,                       // bin: 0000 0000 0000 0001 0000 0000 0000 0000
+            DelegateInvoked = 0x20000,               // bin: 0000 0000 0000 0010 0000 0000 0000 0000
+            Disposed = 0x40000,                      // bin: 0000 0000 0000 0100 0000 0000 0000 0000
+            ExceptionObservedByParent = 0x80000,     // bin: 0000 0000 0000 1000 0000 0000 0000 0000
+            CancellationAcknowledged = 0x100000,     // bin: 0000 0000 0001 0000 0000 0000 0000 0000
+            Faulted = 0x200000,                      // bin: 0000 0000 0010 0000 0000 0000 0000 0000
+            Canceled = 0x400000,                     // bin: 0000 0000 0100 0000 0000 0000 0000 0000
+            WaitingOnChildren = 0x800000,            // bin: 0000 0000 1000 0000 0000 0000 0000 0000
+            RanToCompletion = 0x1000000,             // bin: 0000 0001 0000 0000 0000 0000 0000 0000
+            WaitingForActivation = 0x2000000,        // bin: 0000 0010 0000 0000 0000 0000 0000 0000
+            CompletionReserved = 0x4000000,          // bin: 0000 0100 0000 0000 0000 0000 0000 0000
+            WaitCompletionNotification = 0x10000000, // bin: 0001 0000 0000 0000 0000 0000 0000 0000
+            ExecutionContextIsNull = 0x20000000,     // bin: 0010 0000 0000 0000 0000 0000 0000 0000
+            TaskScheduledWasFired = 0x40000000,      // bin: 0100 0000 0000 0000 0000 0000 0000 0000
+
+            CompletedMask = Canceled | Faulted | RanToCompletion, // A mask for all of the final states a task may be in. SOS DumpAsync command depends on these values.
+            OptionsMask = 0xFFFF,                    // signifies the Options portion of m_stateFlags bin: 0000 0000 0000 0000 1111 1111 1111 1111
+        }
 
         // Values for ContingentProperties.m_internalCancellationRequested.
         private const int CANCELLATION_REQUESTED = 0x1;
@@ -260,7 +258,21 @@ namespace System.Threading.Tasks
             internal void SetCompleted()
             {
                 ManualResetEventSlim? mres = m_completionEvent;
-                if (mres != null) mres.Set();
+                if (mres != null) SetEvent(mres);
+            }
+
+            internal static void SetEvent(ManualResetEventSlim mres)
+            {
+                try
+                {
+                    mres.Set();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // The event may have been exposed to external code, in which case it could have been disposed
+                    // prematurely / erroneously.  To avoid that causing problems for the unrelated stack trying to
+                    // set the event, eat any disposed exceptions.
+                }
             }
 
             /// <summary>
@@ -294,7 +306,7 @@ namespace System.Threading.Tasks
             int optionFlags = (int)creationOptions;
             if (canceled)
             {
-                m_stateFlags = TASK_STATE_CANCELED | TASK_STATE_CANCELLATIONACKNOWLEDGED | optionFlags;
+                m_stateFlags = (int)TaskStateFlags.Canceled | (int)TaskStateFlags.CancellationAcknowledged | optionFlags;
                 m_contingentProperties = new ContingentProperties() // can't have children, so just instantiate directly
                 {
                     m_cancellationToken = ct,
@@ -303,14 +315,14 @@ namespace System.Threading.Tasks
             }
             else
             {
-                m_stateFlags = TASK_STATE_RAN_TO_COMPLETION | optionFlags;
+                m_stateFlags = (int)TaskStateFlags.RanToCompletion | optionFlags;
             }
         }
 
         /// <summary>Constructor for use with promise-style tasks that aren't configurable.</summary>
         internal Task()
         {
-            m_stateFlags = TASK_STATE_WAITINGFORACTIVATION | (int)InternalTaskOptions.PromiseTask;
+            m_stateFlags = (int)TaskStateFlags.WaitingForActivation | (int)InternalTaskOptions.PromiseTask;
         }
 
         // Special constructor for use with promise-style tasks.
@@ -559,10 +571,10 @@ namespace System.Threading.Tasks
 
             // Assign options to m_stateAndOptionsFlag.
             Debug.Assert(m_stateFlags == 0, "TaskConstructorCore: non-zero m_stateFlags");
-            Debug.Assert((((int)creationOptions) | OptionsMask) == OptionsMask, "TaskConstructorCore: options take too many bits");
+            Debug.Assert((((int)creationOptions) | (int)TaskStateFlags.OptionsMask) == (int)TaskStateFlags.OptionsMask, "TaskConstructorCore: options take too many bits");
             int tmpFlags = (int)creationOptions | (int)internalOptions; // one write to the volatile m_stateFlags instead of two when setting the above options
             m_stateFlags = m_action == null || (internalOptions & InternalTaskOptions.ContinuationTask) != 0 ?
-                tmpFlags | TASK_STATE_WAITINGFORACTIVATION :
+                tmpFlags | (int)TaskStateFlags.WaitingForActivation :
                 tmpFlags;
 
             // Now is the time to add the new task to the children list
@@ -674,8 +686,8 @@ namespace System.Threading.Tasks
         // a read of the volatile m_stateFlags field.
         internal static TaskCreationOptions OptionsMethod(int flags)
         {
-            Debug.Assert((OptionsMask & 1) == 1, "OptionsMask needs a shift in Options.get");
-            return (TaskCreationOptions)(flags & OptionsMask);
+            Debug.Assert(((int)TaskStateFlags.OptionsMask & 1) == 1, "OptionsMask needs a shift in Options.get");
+            return (TaskCreationOptions)(flags & (int)TaskStateFlags.OptionsMask);
         }
 
         // Atomically OR-in newBits to m_stateFlags, while making sure that
@@ -720,7 +732,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Sets or clears the TASK_STATE_WAIT_COMPLETION_NOTIFICATION state bit.
+        /// Sets or clears the TaskStateFlags.WaitCompletionNotification state bit.
         /// The debugger sets this bit to aid it in "stepping out" of an async method body.
         /// If enabled is true, this must only be called on a task that has not yet been completed.
         /// If enabled is false, this may be called on completed tasks.
@@ -734,15 +746,15 @@ namespace System.Threading.Tasks
 
             if (enabled)
             {
-                // Atomically set the TASK_STATE_WAIT_COMPLETION_NOTIFICATION bit
-                bool success = AtomicStateUpdate(TASK_STATE_WAIT_COMPLETION_NOTIFICATION,
-                                  TASK_STATE_COMPLETED_MASK | TASK_STATE_COMPLETION_RESERVED);
+                // Atomically set the TaskStateFlags.WaitCompletionNotification bit
+                bool success = AtomicStateUpdate((int)TaskStateFlags.WaitCompletionNotification,
+                                  (int)TaskStateFlags.CompletedMask | (int)TaskStateFlags.CompletionReserved);
                 Debug.Assert(success, "Tried to set enabled on completed Task");
             }
             else
             {
-                // Atomically clear the TASK_STATE_WAIT_COMPLETION_NOTIFICATION bit
-                Interlocked.And(ref m_stateFlags, ~TASK_STATE_WAIT_COMPLETION_NOTIFICATION);
+                // Atomically clear the TaskStateFlags.WaitCompletionNotification bit
+                Interlocked.And(ref m_stateFlags, ~(int)TaskStateFlags.WaitCompletionNotification);
             }
         }
 
@@ -785,8 +797,8 @@ namespace System.Threading.Tasks
         internal bool IsWaitNotificationEnabledOrNotRanToCompletion
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (m_stateFlags & (Task.TASK_STATE_WAIT_COMPLETION_NOTIFICATION | Task.TASK_STATE_RAN_TO_COMPLETION))
-                        != Task.TASK_STATE_RAN_TO_COMPLETION;
+            get => (m_stateFlags & ((int)TaskStateFlags.WaitCompletionNotification | (int)TaskStateFlags.RanToCompletion))
+                        != (int)TaskStateFlags.RanToCompletion;
         }
 
         /// <summary>
@@ -796,7 +808,7 @@ namespace System.Threading.Tasks
         /// harmful).  Derived implementations may choose to only conditionally call down to this base
         /// implementation.
         /// </summary>
-        internal virtual bool ShouldNotifyDebuggerOfWaitCompletion // ideally would be familyAndAssembly, but that can't be done in C#
+        private protected virtual bool ShouldNotifyDebuggerOfWaitCompletion
         {
             get
             {
@@ -812,7 +824,7 @@ namespace System.Threading.Tasks
         /// <summary>Gets whether the task's debugger notification for wait completion bit is set.</summary>
         /// <returns>true if the bit is set; false if it's not set.</returns>
         internal bool IsWaitNotificationEnabled => // internal only to enable unit tests; would otherwise be private
-            (m_stateFlags & TASK_STATE_WAIT_COMPLETION_NOTIFICATION) != 0;
+            (m_stateFlags & (int)TaskStateFlags.WaitCompletionNotification) != 0;
 
         /// <summary>Placeholder method used as a breakpoint target by the debugger.  Must not be inlined or optimized.</summary>
         /// <remarks>All joins with a task should end up calling this if their debugger notification bit is set.</remarks>
@@ -834,14 +846,14 @@ namespace System.Threading.Tasks
         // Atomically mark a Task as started while making sure that it is not canceled.
         internal bool MarkStarted()
         {
-            return AtomicStateUpdate(TASK_STATE_STARTED, TASK_STATE_CANCELED | TASK_STATE_STARTED);
+            return AtomicStateUpdate((int)TaskStateFlags.Started, (int)TaskStateFlags.Canceled | (int)TaskStateFlags.Started);
         }
 
         internal void FireTaskScheduledIfNeeded(TaskScheduler ts)
         {
-            if ((m_stateFlags & Task.TASK_STATE_TASKSCHEDULED_WAS_FIRED) == 0)
+            if ((m_stateFlags & (int)TaskStateFlags.TaskScheduledWasFired) == 0)
             {
-                m_stateFlags |= Task.TASK_STATE_TASKSCHEDULED_WAS_FIRED;
+                m_stateFlags |= (int)TaskStateFlags.TaskScheduledWasFired;
 
                 if (TplEventSource.Log.IsEnabled())
                 {
@@ -1119,7 +1131,7 @@ namespace System.Threading.Tasks
             }
             else
             {
-                Debug.Assert((m_stateFlags & TASK_STATE_CANCELED) != 0, "Task.RunSynchronously: expected TASK_STATE_CANCELED to be set");
+                Debug.Assert((m_stateFlags & (int)TaskStateFlags.Canceled) != 0, "Task.RunSynchronously: expected TaskStateFlags.Canceled to be set");
                 // Can't call this method on canceled task.
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Task_RunSynchronously_TaskCompleted);
             }
@@ -1269,13 +1281,13 @@ namespace System.Threading.Tasks
                 // execution of this method.
                 int sf = m_stateFlags;
 
-                if ((sf & TASK_STATE_FAULTED) != 0) rval = TaskStatus.Faulted;
-                else if ((sf & TASK_STATE_CANCELED) != 0) rval = TaskStatus.Canceled;
-                else if ((sf & TASK_STATE_RAN_TO_COMPLETION) != 0) rval = TaskStatus.RanToCompletion;
-                else if ((sf & TASK_STATE_WAITING_ON_CHILDREN) != 0) rval = TaskStatus.WaitingForChildrenToComplete;
-                else if ((sf & TASK_STATE_DELEGATE_INVOKED) != 0) rval = TaskStatus.Running;
-                else if ((sf & TASK_STATE_STARTED) != 0) rval = TaskStatus.WaitingToRun;
-                else if ((sf & TASK_STATE_WAITINGFORACTIVATION) != 0) rval = TaskStatus.WaitingForActivation;
+                if ((sf & (int)TaskStateFlags.Faulted) != 0) rval = TaskStatus.Faulted;
+                else if ((sf & (int)TaskStateFlags.Canceled) != 0) rval = TaskStatus.Canceled;
+                else if ((sf & (int)TaskStateFlags.RanToCompletion) != 0) rval = TaskStatus.RanToCompletion;
+                else if ((sf & (int)TaskStateFlags.WaitingOnChildren) != 0) rval = TaskStatus.WaitingForChildrenToComplete;
+                else if ((sf & (int)TaskStateFlags.DelegateInvoked) != 0) rval = TaskStatus.Running;
+                else if ((sf & (int)TaskStateFlags.Started) != 0) rval = TaskStatus.WaitingToRun;
+                else if ((sf & (int)TaskStateFlags.WaitingForActivation) != 0) rval = TaskStatus.WaitingForActivation;
                 else rval = TaskStatus.Created;
 
                 return rval;
@@ -1295,7 +1307,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public bool IsCanceled =>
                 // Return true if canceled bit is set and faulted bit is not set
-                (m_stateFlags & (TASK_STATE_CANCELED | TASK_STATE_FAULTED)) == TASK_STATE_CANCELED;
+                (m_stateFlags & ((int)TaskStateFlags.Canceled | (int)TaskStateFlags.Faulted)) == (int)TaskStateFlags.Canceled;
 
         /// <summary>
         /// Returns true if this task has a cancellation token and it was signaled.
@@ -1353,7 +1365,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Gets whether this <see cref="Task"/> threw an OperationCanceledException while its CancellationToken was signaled.
         /// </summary>
-        internal bool IsCancellationAcknowledged => (m_stateFlags & TASK_STATE_CANCELLATIONACKNOWLEDGED) != 0;
+        internal bool IsCancellationAcknowledged => (m_stateFlags & (int)TaskStateFlags.CancellationAcknowledged) != 0;
 
         /// <summary>
         /// Gets whether this <see cref="Task">Task</see> has completed.
@@ -1377,10 +1389,10 @@ namespace System.Threading.Tasks
         // rather than reading the volatile m_stateFlags field.
         private static bool IsCompletedMethod(int flags)
         {
-            return (flags & TASK_STATE_COMPLETED_MASK) != 0;
+            return (flags & (int)TaskStateFlags.CompletedMask) != 0;
         }
 
-        public bool IsCompletedSuccessfully => (m_stateFlags & TASK_STATE_COMPLETED_MASK) == TASK_STATE_RAN_TO_COMPLETION;
+        public bool IsCompletedSuccessfully => (m_stateFlags & (int)TaskStateFlags.CompletedMask) == (int)TaskStateFlags.RanToCompletion;
 
         /// <summary>
         /// Gets the <see cref="System.Threading.Tasks.TaskCreationOptions">TaskCreationOptions</see> used
@@ -1418,7 +1430,7 @@ namespace System.Threading.Tasks
             // forces allocation of a true WaitHandle when called.
             get
             {
-                bool isDisposed = (m_stateFlags & TASK_STATE_DISPOSED) != 0;
+                bool isDisposed = (m_stateFlags & (int)TaskStateFlags.Disposed) != 0;
                 if (isDisposed)
                 {
                     ThrowHelper.ThrowObjectDisposedException(ExceptionResource.Task_ThrowIfDisposed);
@@ -1483,7 +1495,7 @@ namespace System.Threading.Tasks
                     {
                         // We published the event as unset, but the task has subsequently completed.
                         // Set the event's state properly so that callers don't deadlock.
-                        newMre.Set();
+                        ContingentProperties.SetEvent(newMre);
                     }
                 }
 
@@ -1513,18 +1525,18 @@ namespace System.Threading.Tasks
         /// </remarks>
         public bool IsFaulted =>
             // Faulted is "king" -- if that bit is present (regardless of other bits), we are faulted.
-            (m_stateFlags & TASK_STATE_FAULTED) != 0;
+            (m_stateFlags & (int)TaskStateFlags.Faulted) != 0;
 
         /// <summary>
         /// The captured execution context for the current task to run inside
-        /// If the TASK_STATE_EXECUTIONCONTEXT_IS_NULL flag is set, this means ExecutionContext.Capture returned null, otherwise
+        /// If the TaskStateFlags.ExecutionContextIsNull flag is set, this means ExecutionContext.Capture returned null, otherwise
         /// If the captured context is the default, nothing is saved, otherwise the m_contingentProperties inflates to save the context
         /// </summary>
         internal ExecutionContext? CapturedContext
         {
             get
             {
-                if ((m_stateFlags & TASK_STATE_EXECUTIONCONTEXT_IS_NULL) == TASK_STATE_EXECUTIONCONTEXT_IS_NULL)
+                if ((m_stateFlags & (int)TaskStateFlags.ExecutionContextIsNull) == (int)TaskStateFlags.ExecutionContextIsNull)
                 {
                     return null;
                 }
@@ -1538,7 +1550,7 @@ namespace System.Threading.Tasks
                 // There is no need to atomically set this bit because this set() method is only called during construction, and therefore there should be no contending accesses to m_stateFlags
                 if (value == null)
                 {
-                    m_stateFlags |= TASK_STATE_EXECUTIONCONTEXT_IS_NULL;
+                    m_stateFlags |= (int)TaskStateFlags.ExecutionContextIsNull;
                 }
                 else if (value != ExecutionContext.Default) // not the default context, then inflate the contingent properties and set it
                 {
@@ -1619,7 +1631,7 @@ namespace System.Threading.Tasks
                         // will deadlock; an ensuing Set() will not wake them up.  In the event of an AppDomainUnload,
                         // there is no guarantee that anyone else is going to signal the event, and it does no harm to
                         // call Set() twice on m_completionEvent.
-                        if (!ev.IsSet) ev.Set();
+                        ContingentProperties.SetEvent(ev);
 
                         // Finally, dispose of the event
                         ev.Dispose();
@@ -1629,10 +1641,10 @@ namespace System.Threading.Tasks
 
             // We OR the flags to indicate the object has been disposed. The task
             // has already completed at this point, and the only conceivable race condition would
-            // be with the unsetting of the TASK_STATE_WAIT_COMPLETION_NOTIFICATION flag, which
+            // be with the unsetting of the TaskStateFlags.WaitCompletionNotification flag, which
             // is extremely unlikely and also benign.  (Worst case: we hit a breakpoint
             // twice instead of once in the debugger.  Weird, but not lethal.)
-            m_stateFlags |= TASK_STATE_DISPOSED;
+            m_stateFlags |= (int)TaskStateFlags.Disposed;
         }
 
         /////////////
@@ -1641,17 +1653,17 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Schedules the task for execution.
         /// </summary>
-        /// <param name="needsProtection">If true, TASK_STATE_STARTED bit is turned on in
-        /// an atomic fashion, making sure that TASK_STATE_CANCELED does not get set
-        /// underneath us.  If false, TASK_STATE_STARTED bit is OR-ed right in.  This
+        /// <param name="needsProtection">If true, TaskStateFlags.Started bit is turned on in
+        /// an atomic fashion, making sure that TaskStateFlags.Canceled does not get set
+        /// underneath us.  If false, TaskStateFlags.Started bit is OR-ed right in.  This
         /// allows us to streamline things a bit for StartNew(), where competing cancellations
         /// are not a problem.</param>
         internal void ScheduleAndStart(bool needsProtection)
         {
             Debug.Assert(m_taskScheduler != null, "expected a task scheduler to have been selected");
-            Debug.Assert((m_stateFlags & TASK_STATE_STARTED) == 0, "task has already started");
+            Debug.Assert((m_stateFlags & (int)TaskStateFlags.Started) == 0, "task has already started");
 
-            // Set the TASK_STATE_STARTED bit
+            // Set the TaskStateFlags.Started bit
             if (needsProtection)
             {
                 if (!MarkStarted())
@@ -1662,7 +1674,7 @@ namespace System.Threading.Tasks
             }
             else
             {
-                m_stateFlags |= TASK_STATE_STARTED;
+                m_stateFlags |= (int)TaskStateFlags.Started;
             }
 
             if (s_asyncDebuggingEnabled)
@@ -1863,6 +1875,12 @@ namespace System.Threading.Tasks
             return Volatile.Read(ref m_contingentProperties)?.m_exceptionsHolder?.GetCancellationExceptionDispatchInfo(); // may be null
         }
 
+        /// <summary>Marks any exceptions stored in the Task as having been handled.</summary>
+        internal void MarkExceptionsAsHandled()
+        {
+            Volatile.Read(ref m_contingentProperties)?.m_exceptionsHolder?.MarkAsHandled(calledFromFinalizer: false);
+        }
+
         /// <summary>
         /// Throws an aggregate exception if the task contains exceptions.
         /// </summary>
@@ -1904,18 +1922,18 @@ namespace System.Threading.Tasks
                 }
             }
 
-#if CORERT
+#if NATIVEAOT
             RuntimeExceptionHelpers.ReportUnhandledException(edi.SourceException);
 #else
             // Propagate the exception(s) on the ThreadPool
             ThreadPool.QueueUserWorkItem(static state => ((ExceptionDispatchInfo)state!).Throw(), edi);
 
-#endif // CORERT
+#endif // NATIVEAOT
         }
 
         /// <summary>
         /// Checks whether this is an attached task, and whether we are being called by the parent task.
-        /// And sets the TASK_STATE_EXCEPTIONOBSERVEDBYPARENT status flag based on that.
+        /// And sets the TaskStateFlags.ExceptionObservedByParent status flag based on that.
         ///
         /// This is meant to be used internally when throwing an exception, and when WaitAll is gathering
         /// exceptions for tasks it waited on. If this flag gets set, the implicit wait on children
@@ -1932,21 +1950,21 @@ namespace System.Threading.Tasks
                 && ((parent.CreationOptions & TaskCreationOptions.DenyChildAttach) == 0)
                 && Task.InternalCurrent == parent)
             {
-                m_stateFlags |= TASK_STATE_EXCEPTIONOBSERVEDBYPARENT;
+                m_stateFlags |= (int)TaskStateFlags.ExceptionObservedByParent;
             }
         }
 
         /// <summary>
-        /// Checks whether the TASK_STATE_EXCEPTIONOBSERVEDBYPARENT status flag is set,
+        /// Checks whether the TaskStateFlags.ExceptionObservedByParent status flag is set,
         /// This will only be used by the implicit wait to prevent double throws
         ///
         /// </summary>
-        internal bool IsExceptionObservedByParent => (m_stateFlags & TASK_STATE_EXCEPTIONOBSERVEDBYPARENT) != 0;
+        internal bool IsExceptionObservedByParent => (m_stateFlags & (int)TaskStateFlags.ExceptionObservedByParent) != 0;
 
         /// <summary>
         /// Checks whether the body was ever invoked. Used by task scheduler code to verify custom schedulers actually ran the task.
         /// </summary>
-        internal bool IsDelegateInvoked => (m_stateFlags & TASK_STATE_DELEGATE_INVOKED) != 0;
+        internal bool IsDelegateInvoked => (m_stateFlags & (int)TaskStateFlags.DelegateInvoked) != 0;
 
         /// <summary>
         /// Signals completion of this particular task.
@@ -2000,11 +2018,11 @@ namespace System.Threading.Tasks
 
                     // We have to use an atomic update for this and make sure not to overwrite a final state,
                     // because at this very moment the last child's thread may be concurrently completing us.
-                    // Otherwise we risk overwriting the TASK_STATE_RAN_TO_COMPLETION, _CANCELED or _FAULTED bit which may have been set by that child task.
-                    // Note that the concurrent update by the last child happening in FinishStageTwo could still wipe out the TASK_STATE_WAITING_ON_CHILDREN flag,
+                    // Otherwise we risk overwriting the TaskStateFlags.RanToCompletion, _CANCELED or _FAULTED bit which may have been set by that child task.
+                    // Note that the concurrent update by the last child happening in FinishStageTwo could still wipe out the TaskStateFlags.WaitingOnChildren flag,
                     // but it is not critical to maintain, therefore we dont' need to intruduce a full atomic update into FinishStageTwo
 
-                    AtomicStateUpdate(TASK_STATE_WAITING_ON_CHILDREN, TASK_STATE_FAULTED | TASK_STATE_CANCELED | TASK_STATE_RAN_TO_COMPLETION);
+                    AtomicStateUpdate((int)TaskStateFlags.WaitingOnChildren, (int)TaskStateFlags.Faulted | (int)TaskStateFlags.Canceled | (int)TaskStateFlags.RanToCompletion);
                 }
 
                 // Now is the time to prune exceptional children. We'll walk the list and removes the ones whose exceptions we might have observed after they threw.
@@ -2039,7 +2057,7 @@ namespace System.Threading.Tasks
             int completionState;
             if (ExceptionRecorded)
             {
-                completionState = TASK_STATE_FAULTED;
+                completionState = (int)TaskStateFlags.Faulted;
                 if (TplEventSource.Log.IsEnabled())
                     TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Error);
 
@@ -2048,14 +2066,14 @@ namespace System.Threading.Tasks
             }
             else if (IsCancellationRequested && IsCancellationAcknowledged)
             {
-                // We transition into the TASK_STATE_CANCELED final state if the task's CT was signalled for cancellation,
+                // We transition into the TaskStateFlags.Canceled final state if the task's CT was signalled for cancellation,
                 // and the user delegate acknowledged the cancellation request by throwing an OCE,
-                // and the task hasn't otherwise transitioned into faulted state. (TASK_STATE_FAULTED trumps TASK_STATE_CANCELED)
+                // and the task hasn't otherwise transitioned into faulted state. (TaskStateFlags.Faulted trumps TaskStateFlags.Canceled)
                 //
                 // If the task threw an OCE without cancellation being requestsed (while the CT not being in signaled state),
                 // then we regard it as a regular exception
 
-                completionState = TASK_STATE_CANCELED;
+                completionState = (int)TaskStateFlags.Canceled;
                 if (TplEventSource.Log.IsEnabled())
                     TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Canceled);
 
@@ -2064,7 +2082,7 @@ namespace System.Threading.Tasks
             }
             else
             {
-                completionState = TASK_STATE_RAN_TO_COMPLETION;
+                completionState = (int)TaskStateFlags.RanToCompletion;
                 if (TplEventSource.Log.IsEnabled())
                     TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
 
@@ -2124,7 +2142,7 @@ namespace System.Threading.Tasks
             Task? parent = m_contingentProperties?.m_parent;
             if (parent != null
                  && ((parent.CreationOptions & TaskCreationOptions.DenyChildAttach) == 0)
-                 && (((TaskCreationOptions)(m_stateFlags & OptionsMask)) & TaskCreationOptions.AttachedToParent) != 0)
+                 && (((TaskCreationOptions)(m_stateFlags & (int)TaskStateFlags.OptionsMask)) & TaskCreationOptions.AttachedToParent) != 0)
             {
                 parent.ProcessChildCompletion(this);
             }
@@ -2227,9 +2245,9 @@ namespace System.Threading.Tasks
             // However we don't want this exception to be throw if the task was already canceled, because it's a
             // legitimate scenario for custom schedulers to dequeue a task and mark it as canceled (example: throttling scheduler)
             int previousState = 0;
-            if (!AtomicStateUpdate(TASK_STATE_DELEGATE_INVOKED,
-                                    TASK_STATE_DELEGATE_INVOKED | TASK_STATE_COMPLETED_MASK,
-                                    ref previousState) && (previousState & TASK_STATE_CANCELED) == 0)
+            if (!AtomicStateUpdate((int)TaskStateFlags.DelegateInvoked,
+                                    (int)TaskStateFlags.DelegateInvoked | (int)TaskStateFlags.CompletedMask,
+                                    ref previousState) && (previousState & (int)TaskStateFlags.Canceled) == 0)
             {
                 // This task has already been invoked.  Don't invoke it again.
                 return false;
@@ -2258,7 +2276,7 @@ namespace System.Threading.Tasks
         internal void ExecuteEntryUnsafe(Thread? threadPoolThread) // used instead of ExecuteEntry() when we don't have to worry about double-execution prevent
         {
             // Remember that we started running the task delegate.
-            m_stateFlags |= TASK_STATE_DELEGATE_INVOKED;
+            m_stateFlags |= (int)TaskStateFlags.DelegateInvoked;
 
             if (!IsCancellationRequested & !IsCanceled)
             {
@@ -2274,8 +2292,8 @@ namespace System.Threading.Tasks
         {
             if (!IsCanceled)
             {
-                int prevState = Interlocked.Exchange(ref m_stateFlags, m_stateFlags | TASK_STATE_CANCELED);
-                if ((prevState & TASK_STATE_CANCELED) == 0)
+                int prevState = Interlocked.Exchange(ref m_stateFlags, m_stateFlags | (int)TaskStateFlags.Canceled);
+                if ((prevState & (int)TaskStateFlags.Canceled) == 0)
                 {
                     CancellationCleanupLogic();
                 }
@@ -2422,7 +2440,6 @@ namespace System.Threading.Tasks
         #region Await Support
         /// <summary>Gets an awaiter used to await this <see cref="System.Threading.Tasks.Task"/>.</summary>
         /// <returns>An awaiter instance.</returns>
-        /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
         public TaskAwaiter GetAwaiter()
         {
             return new TaskAwaiter(this);
@@ -2619,15 +2636,40 @@ namespace System.Threading.Tasks
         /// infinite time-out -or- timeout is greater than
         /// <see cref="int.MaxValue"/>.
         /// </exception>
-        public bool Wait(TimeSpan timeout)
+        public bool Wait(TimeSpan timeout) => Wait(timeout, default);
+
+        /// <summary>
+        /// Waits for the <see cref="Task"/> to complete execution.
+        /// </summary>
+        /// <param name="timeout">The time to wait, or <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely</param>
+        /// <param name="cancellationToken">
+        /// A <see cref="CancellationToken"/> to observe while waiting for the task to complete.
+        /// </param>
+        /// <returns>
+        /// true if the <see cref="Task"/> completed execution within the allotted time; otherwise, false.
+        /// </returns>
+        /// <exception cref="AggregateException">
+        /// The <see cref="Task"/> was canceled -or- an exception was thrown during the execution of the <see
+        /// cref="Task"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents an
+        /// infinite time-out -or- timeout is greater than
+        /// <see cref="int.MaxValue"/>.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The <paramref name="cancellationToken"/> was canceled.
+        /// </exception>
+        public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
             }
+            cancellationToken.ThrowIfCancellationRequested();
 
-            return Wait((int)totalMilliseconds, default);
+            return Wait((int)totalMilliseconds, cancellationToken);
         }
 
         /// <summary>
@@ -2727,7 +2769,7 @@ namespace System.Threading.Tasks
                 ThrowIfExceptional(true);
             }
 
-            Debug.Assert((m_stateFlags & TASK_STATE_FAULTED) == 0, "Task.Wait() completing when in Faulted state.");
+            Debug.Assert((m_stateFlags & (int)TaskStateFlags.Faulted) == 0, "Task.Wait() completing when in Faulted state.");
 
             return true;
         }
@@ -3060,7 +3102,7 @@ namespace System.Threading.Tasks
             bool popped = false;
 
             // If started, and running in a task context, we can try to pop the chore.
-            if ((m_stateFlags & TASK_STATE_STARTED) != 0)
+            if ((m_stateFlags & (int)TaskStateFlags.Started) != 0)
             {
                 TaskScheduler? ts = m_taskScheduler;
                 try
@@ -3081,24 +3123,24 @@ namespace System.Threading.Tasks
 
             // Determine whether we need to clean up
             // This will be the case
-            //     1) if we were able to pop, and we are able to update task state to TASK_STATE_CANCELED
+            //     1) if we were able to pop, and we are able to update task state to TaskStateFlags.Canceled
             //     2) if the task seems to be yet unstarted, and we can transition to
-            //        TASK_STATE_CANCELED before anyone else can transition into _STARTED or _CANCELED or
+            //        TaskStateFlags.Canceled before anyone else can transition into _STARTED or _CANCELED or
             //        _RAN_TO_COMPLETION or _FAULTED
-            // Note that we do not check for TASK_STATE_COMPLETION_RESERVED.  That only applies to promise-style
+            // Note that we do not check for TaskStateFlags.CompletionReserved.  That only applies to promise-style
             // tasks, and a promise-style task should not enter into this codepath.
             bool mustCleanup = false;
             if (popped)
             {
-                // Include TASK_STATE_DELEGATE_INVOKED in "illegal" bits to protect against the situation where
+                // Include TaskStateFlags.DelegateInvoked in "illegal" bits to protect against the situation where
                 // TS.TryDequeue() returns true but the task is still left on the queue.
-                mustCleanup = AtomicStateUpdate(TASK_STATE_CANCELED, TASK_STATE_CANCELED | TASK_STATE_DELEGATE_INVOKED);
+                mustCleanup = AtomicStateUpdate((int)TaskStateFlags.Canceled, (int)TaskStateFlags.Canceled | (int)TaskStateFlags.DelegateInvoked);
             }
-            else if ((m_stateFlags & TASK_STATE_STARTED) == 0)
+            else if ((m_stateFlags & (int)TaskStateFlags.Started) == 0)
             {
-                mustCleanup = AtomicStateUpdate(TASK_STATE_CANCELED,
-                    TASK_STATE_CANCELED | TASK_STATE_STARTED | TASK_STATE_RAN_TO_COMPLETION |
-                    TASK_STATE_FAULTED | TASK_STATE_DELEGATE_INVOKED);
+                mustCleanup = AtomicStateUpdate((int)TaskStateFlags.Canceled,
+                    (int)TaskStateFlags.Canceled | (int)TaskStateFlags.Started | (int)TaskStateFlags.RanToCompletion |
+                    (int)TaskStateFlags.Faulted | (int)TaskStateFlags.DelegateInvoked);
             }
 
             // do the cleanup (i.e. set completion event and finish continuations)
@@ -3125,12 +3167,12 @@ namespace System.Threading.Tasks
             // - it was canceled, which won't have happened without a token
             // - it was run as a continuation, which won't have happened because this method is only invoked once
             // As a result, we can take an optimized path that avoids inflating contingent properties.
-            const int IllegalFlags = TASK_STATE_STARTED | TASK_STATE_COMPLETED_MASK | TASK_STATE_DELEGATE_INVOKED;
+            const int IllegalFlags = (int)TaskStateFlags.Started | (int)TaskStateFlags.CompletedMask | (int)TaskStateFlags.DelegateInvoked;
             Debug.Assert((m_stateFlags & IllegalFlags) == 0, "The continuation was in an invalid state.");
-            Debug.Assert((m_stateFlags & TASK_STATE_WAITINGFORACTIVATION) != 0, "Expected continuation to be waiting for activation");
+            Debug.Assert((m_stateFlags & (int)TaskStateFlags.WaitingForActivation) != 0, "Expected continuation to be waiting for activation");
             Debug.Assert(m_contingentProperties is null || m_contingentProperties.m_cancellationToken == default);
 
-            m_stateFlags |= TASK_STATE_CANCELED; // no synchronization necessary, per above comment
+            m_stateFlags |= (int)TaskStateFlags.Canceled; // no synchronization necessary, per above comment
             CancellationCleanupLogic();
         }
 
@@ -3181,14 +3223,14 @@ namespace System.Threading.Tasks
         // And this method should be called at most once per task.
         internal void CancellationCleanupLogic()
         {
-            Debug.Assert((m_stateFlags & (TASK_STATE_CANCELED | TASK_STATE_COMPLETION_RESERVED)) != 0, "Task.CancellationCleanupLogic(): Task not canceled or reserved.");
+            Debug.Assert((m_stateFlags & ((int)TaskStateFlags.Canceled | (int)TaskStateFlags.CompletionReserved)) != 0, "Task.CancellationCleanupLogic(): Task not canceled or reserved.");
             // We'd like to be able to:
             //     Debug.Assert((m_completionEvent == null) || !m_completionEvent.IsSet, "Task.CancellationCleanupLogic(): Completion event already set.");
             // However, there is a small window for a race condition.  If someone calls Wait() between InternalCancel() and
             // here, that will set m_completionEvent, leading to a meaningless/harmless assertion.
 
             // This may have been set already, but we need to make sure.
-            Interlocked.Exchange(ref m_stateFlags, m_stateFlags | TASK_STATE_CANCELED);
+            Interlocked.Exchange(ref m_stateFlags, m_stateFlags | (int)TaskStateFlags.Canceled);
 
             // Fire completion event if it has been lazily initialized
             ContingentProperties? cp = Volatile.Read(ref m_contingentProperties);
@@ -3216,7 +3258,7 @@ namespace System.Threading.Tasks
             Debug.Assert(this == Task.InternalCurrent, "SetCancellationAcknowledged() should only be called while this is still the current task");
             Debug.Assert(IsCancellationRequested, "SetCancellationAcknowledged() should not be called if the task's CT wasn't signaled");
 
-            m_stateFlags |= TASK_STATE_CANCELLATIONACKNOWLEDGED;
+            m_stateFlags |= (int)TaskStateFlags.CancellationAcknowledged;
         }
 
         /// <summary>Completes a promise task as RanToCompletion.</summary>
@@ -3227,8 +3269,8 @@ namespace System.Threading.Tasks
             Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
 
             if (AtomicStateUpdate(
-                TASK_STATE_COMPLETION_RESERVED | TASK_STATE_RAN_TO_COMPLETION,
-                TASK_STATE_COMPLETION_RESERVED | TASK_STATE_RAN_TO_COMPLETION | TASK_STATE_FAULTED | TASK_STATE_CANCELED))
+                (int)TaskStateFlags.CompletionReserved | (int)TaskStateFlags.RanToCompletion,
+                (int)TaskStateFlags.CompletionReserved | (int)TaskStateFlags.RanToCompletion | (int)TaskStateFlags.Faulted | (int)TaskStateFlags.Canceled))
             {
                 ContingentProperties? props = m_contingentProperties;
                 if (props != null)
@@ -3275,8 +3317,8 @@ namespace System.Threading.Tasks
             // anyway.  Some downstream logic may depend upon an inflated m_contingentProperties.
             EnsureContingentPropertiesInitialized();
             if (AtomicStateUpdate(
-                TASK_STATE_COMPLETION_RESERVED,
-                TASK_STATE_COMPLETION_RESERVED | TASK_STATE_RAN_TO_COMPLETION | TASK_STATE_FAULTED | TASK_STATE_CANCELED))
+                (int)TaskStateFlags.CompletionReserved,
+                (int)TaskStateFlags.CompletionReserved | (int)TaskStateFlags.RanToCompletion | (int)TaskStateFlags.Faulted | (int)TaskStateFlags.Canceled))
             {
                 AddException(exceptionObject); // handles singleton exception or exception collection
                 Finish(false);
@@ -3315,8 +3357,8 @@ namespace System.Threading.Tasks
             //
             // If the reservation is successful, then record the cancellation and finish completion processing.
             if (AtomicStateUpdate(
-                TASK_STATE_COMPLETION_RESERVED,
-                TASK_STATE_COMPLETION_RESERVED | TASK_STATE_CANCELED | TASK_STATE_FAULTED | TASK_STATE_RAN_TO_COMPLETION))
+                (int)TaskStateFlags.CompletionReserved,
+                (int)TaskStateFlags.CompletionReserved | (int)TaskStateFlags.Canceled | (int)TaskStateFlags.Faulted | (int)TaskStateFlags.RanToCompletion))
             {
                 RecordInternalCancellationRequest(tokenToRecord, cancellationException);
                 CancellationCleanupLogic(); // perform cancellation cleanup actions
@@ -3553,9 +3595,6 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
-        /// has already been disposed.
-        /// </exception>
         public Task ContinueWith(Action<Task> continuationAction, CancellationToken cancellationToken)
         {
             return ContinueWith(continuationAction, TaskScheduler.Current, cancellationToken, TaskContinuationOptions.None);
@@ -3656,9 +3695,6 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
-        /// has already been disposed.
-        /// </exception>
         public Task ContinueWith(Action<Task> continuationAction, CancellationToken cancellationToken,
                                  TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
@@ -3737,9 +3773,6 @@ namespace System.Threading.Tasks
         /// </remarks>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
-        /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
-        /// has already been disposed.
         /// </exception>
         public Task ContinueWith(Action<Task, object?> continuationAction, object? state, CancellationToken cancellationToken)
         {
@@ -3843,9 +3876,6 @@ namespace System.Threading.Tasks
         /// </exception>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
-        /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
-        /// has already been disposed.
         /// </exception>
         public Task ContinueWith(Action<Task, object?> continuationAction, object? state, CancellationToken cancellationToken,
                                  TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
@@ -4398,7 +4428,7 @@ namespace System.Threading.Tasks
             if (!continuationTask.IsCompleted)
             {
                 // We need additional correlation produced here to ensure that at least the continuation
-                // code will be correlatable to the currrent activity that initiated "this" task:
+                // code will be correlatable to the current activity that initiated "this" task:
                 //  . when the antecendent ("this") is a promise we have very little control over where
                 //    the code for the promise will run (e.g. it can be a task from a user provided
                 //    TaskCompletionSource or from a classic Begin/End async operation); this user or
@@ -4558,7 +4588,7 @@ namespace System.Threading.Tasks
                     // Find continuationObject in the continuation list
                     int index = continuationsLocalListRef.IndexOf(continuationObject);
 
-                    if (index != -1)
+                    if (index >= 0)
                     {
                         // null out that TaskContinuation entry, which will be interpreted as "to be cleaned up"
                         continuationsLocalListRef[index] = null;
@@ -5413,7 +5443,6 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task Run(Func<Task?> function, CancellationToken cancellationToken)
         {
-            // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
 
             // Short-circuit if we are given a pre-canceled token
@@ -5458,7 +5487,6 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function, CancellationToken cancellationToken)
         {
-            // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
 
             // Short-circuit if we are given a pre-canceled token
@@ -5633,6 +5661,20 @@ namespace System.Threading.Tasks
                 _registration = token.UnsafeRegister(static (state, cancellationToken) =>
                 {
                     var thisRef = (DelayPromiseWithCancellation)state!;
+
+                    // Normally RunContinuationsAsynchronously is set at construction time.  We don't want to
+                    // set it at construction because we want the timer firing (already on a thread pool thread with
+                    // a stack in which it's fine to execute arbitrary code) to synchronously invoke any continuations
+                    // from this task.  However, a cancellation request will come synchronously from a call to
+                    // CancellationTokenSource.Cancel, and we don't want to invoke arbitrary continuations from
+                    // this delay task as part of that Cancel call.  As such, we set RunContinuationsAsynchronously
+                    // after the fact, only when the task is being completed due to cancellation.  There is a race
+                    // condition here, such that if the timer also fired concurrently, it might win, in which case
+                    // it might also observe this RunContinuationsAsynchronously, but that's benign.  An alternative
+                    // is to make the whole cancellation registration queue, but that's visible in that the Task's
+                    // IsCompleted wouldn't be set synchronously as part of IsCompleted.
+                    thisRef.AtomicStateUpdate((int)TaskCreationOptions.RunContinuationsAsynchronously, 0);
+
                     if (thisRef.TrySetCanceled(cancellationToken))
                     {
                         thisRef.Cleanup();
@@ -5889,7 +5931,7 @@ namespace System.Threading.Tasks
             /// Returns whether we should notify the debugger of a wait completion.  This returns
             /// true iff at least one constituent task has its bit set.
             /// </summary>
-            internal override bool ShouldNotifyDebuggerOfWaitCompletion =>
+            private protected override bool ShouldNotifyDebuggerOfWaitCompletion =>
                 base.ShouldNotifyDebuggerOfWaitCompletion &&
                 AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
         }
@@ -6128,7 +6170,7 @@ namespace System.Threading.Tasks
             /// Returns whether we should notify the debugger of a wait completion.  This returns true
             /// iff at least one constituent task has its bit set.
             /// </summary>
-            internal override bool ShouldNotifyDebuggerOfWaitCompletion =>
+            private protected override bool ShouldNotifyDebuggerOfWaitCompletion =>
                 base.ShouldNotifyDebuggerOfWaitCompletion &&
                 AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
         }
@@ -6193,11 +6235,16 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task> WhenAny(Task task1, Task task2) =>
-            (task1 is null) || (task2 is null) ? throw new ArgumentNullException(task1 is null ? nameof(task1) : nameof(task2)) :
-            task1.IsCompleted ? FromResult(task1) :
-            task2.IsCompleted ? FromResult(task2) :
-            new TwoTaskWhenAnyPromise<Task>(task1, task2);
+        public static Task<Task> WhenAny(Task task1, Task task2)
+        {
+            ArgumentNullException.ThrowIfNull(task1);
+            ArgumentNullException.ThrowIfNull(task2);
+
+            return
+                task1.IsCompleted ? FromResult(task1) :
+                task2.IsCompleted ? FromResult(task2) :
+                new TwoTaskWhenAnyPromise<Task>(task1, task2);
+        }
 
         /// <summary>A promise type used by WhenAny to wait on exactly two tasks.</summary>
         /// <typeparam name="TTask">Specifies the type of the task.</typeparam>
@@ -6305,8 +6352,14 @@ namespace System.Threading.Tasks
                     return WhenAny(taskArray);
                 }
 
+                int count = taskCollection.Count;
+                if (count <= 0)
+                {
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
+                }
+
                 int index = 0;
-                taskArray = new Task[taskCollection.Count];
+                taskArray = new Task[count];
                 foreach (Task task in tasks)
                 {
                     if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
@@ -6380,11 +6433,16 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1, Task<TResult> task2) =>
-            (task1 is null) || (task2 is null) ? throw new ArgumentNullException(task1 is null ? nameof(task1) : nameof(task2)) :
-            task1.IsCompleted ? FromResult(task1) :
-            task2.IsCompleted ? FromResult(task2) :
-            new TwoTaskWhenAnyPromise<Task<TResult>>(task1, task2);
+        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1, Task<TResult> task2)
+        {
+            ArgumentNullException.ThrowIfNull(task1);
+            ArgumentNullException.ThrowIfNull(task2);
+
+            return
+                task1.IsCompleted ? FromResult(task1) :
+                task2.IsCompleted ? FromResult(task2) :
+                new TwoTaskWhenAnyPromise<Task<TResult>>(task1, task2);
+        }
 
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
@@ -6863,7 +6921,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Transfer the completion status from "task" to ourself.</summary>
-        /// <param name="task">The source task whose results should be transfered to this.</param>
+        /// <param name="task">The source task whose results should be transferred to this.</param>
         /// <param name="lookForOce">Whether or not to look for OperationCanceledExceptions in task's exceptions if it faults.</param>
         /// <returns>true if the transfer was successful; otherwise, false.</returns>
         private bool TrySetFromTask(Task task, bool lookForOce)

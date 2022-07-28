@@ -8,5 +8,5 @@ namespace System.ComponentModel.Design
     /// <see cref='System.ComponentModel.Design.IComponentChangeService.ComponentRemoved'/> event raised
     /// for component-level events.
     /// </summary>
-    public delegate void ComponentEventHandler(object sender, ComponentEventArgs e);
+    public delegate void ComponentEventHandler(object? sender, ComponentEventArgs e);
 }

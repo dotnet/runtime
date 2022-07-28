@@ -29,4 +29,4 @@ FAIL:
 	ret
 }
 }
-.assembly starg_ref.exe{}
+.assembly starg_ref{}

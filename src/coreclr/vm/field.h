@@ -34,12 +34,9 @@
 class FieldDesc
 {
     friend class MethodTableBuilder;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
   protected:
-    RelativePointer<PTR_MethodTable> m_pMTOfEnclosingClass;  // This is used to hold the log2 of the field size temporarily during class loading.  Yuck.
+    PTR_MethodTable m_pMTOfEnclosingClass;  // This is used to hold the log2 of the field size temporarily during class loading.  Yuck.
 
     // See also: FieldDesc::InitializeFrom method
 
@@ -89,7 +86,7 @@ public:
 #ifndef DACCESS_COMPILE
     void InitializeFrom(const FieldDesc& sourceField, MethodTable *pMT)
     {
-        m_pMTOfEnclosingClass.SetValue(pMT);
+        m_pMTOfEnclosingClass = pMT;
 
         m_mb = sourceField.m_mb;
         m_isStatic = sourceField.m_isStatic;
@@ -122,7 +119,7 @@ public:
     void SetMethodTable(MethodTable* mt)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pMTOfEnclosingClass.SetValue(mt);
+        m_pMTOfEnclosingClass = mt;
     }
 #endif
 
@@ -192,13 +189,11 @@ public:
         return m_prot;
     }
 
-        // Please only use this in a path that you have already guarenteed
+        // Please only use this in a path that you have already guaranteed
         // the assert is true
     DWORD GetOffsetUnsafe()
     {
         LIMITED_METHOD_CONTRACT;
-
-        g_IBCLogger.LogFieldDescsAccess(this);
         _ASSERTE(m_dwOffset <= FIELD_OFFSET_LAST_REAL_OFFSET);
         return m_dwOffset;
     }
@@ -206,7 +201,6 @@ public:
     DWORD GetOffset()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        g_IBCLogger.LogFieldDescsAccess(this);
         return GetOffset_NoLogging();
     }
 
@@ -356,10 +350,7 @@ public:
 
     BOOL IsObjRef();
 
-#ifdef FEATURE_PREJIT
-    void SaveContents(DataImage *image);
-    void Fixup(DataImage *image);
-#endif // FEATURE_PREJIT
+    BOOL IsByRef();
 
     UINT LoadSize();
 
@@ -395,13 +386,12 @@ public:
     PTR_MethodTable GetApproxEnclosingMethodTable_NoLogging()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pMTOfEnclosingClass.GetValue(PTR_HOST_MEMBER_TADDR(FieldDesc, this, m_pMTOfEnclosingClass));
+        return m_pMTOfEnclosingClass;
     }
 
     PTR_MethodTable GetApproxEnclosingMethodTable()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        g_IBCLogger.LogFieldDescsAccess(this);
         return GetApproxEnclosingMethodTable_NoLogging();
     }
 
@@ -591,15 +581,6 @@ public:
         return GetApproxEnclosingMethodTable()->GetModule();
     }
 
-    BOOL IsZapped()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // Field Desc's are currently always saved into the same module as their
-        // corresponding method table.
-        return GetApproxEnclosingMethodTable()->IsZapped();
-    }
-
     Module *GetLoaderModule()
     {
         WRAPPER_NO_CONTRACT;
@@ -671,7 +652,6 @@ public:
         return GetMDImport()->GetNameOfFieldDef(GetMemberDef(), pszName);
     }
 
-    void PrecomputeNameHash();
     BOOL MightHaveName(ULONG nameHashValue);
 
     // <TODO>@TODO: </TODO>This is slow, don't use it!

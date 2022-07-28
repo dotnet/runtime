@@ -4,14 +4,6 @@
 
 #include "transitions.h"
 
-Transitions::Transitions() :
-    _failures(0),
-    _sawEnter(false),
-    _sawLeave(false)
-{
-
-}
-
 GUID Transitions::GetClsid()
 {
     // {027AD7BB-578E-4921-B29F-B540363D83EC}
@@ -31,6 +23,20 @@ HRESULT Transitions::Initialize(IUnknown* pICorProfilerInfoUnk)
         return hr;
     }
 
+    constexpr ULONG bufferSize = 1024;
+    ULONG envVarLen = 0;
+    WCHAR envVar[bufferSize];
+    if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("PInvoke_Transition_Expected_Name"), bufferSize, &envVarLen, envVar)))
+    {
+        return E_FAIL;
+    }
+    expectedPinvokeName = envVar;
+    if (FAILED(hr = pCorProfilerInfo->GetEnvironmentVariable(WCHAR("ReversePInvoke_Transition_Expected_Name"), bufferSize, &envVarLen, envVar)))
+    {
+        return E_FAIL;
+    }
+    expectedReversePInvokeName = envVar;
+
     return S_OK;
 }
 
@@ -38,33 +44,45 @@ HRESULT Transitions::Shutdown()
 {
     Profiler::Shutdown();
 
-    if (_failures == 0 && _sawEnter && _sawLeave)
+    bool successPinvoke = _pinvoke.ManagedToUnmanaged == COR_PRF_TRANSITION_CALL
+                    && _pinvoke.UnmanagedToManaged == COR_PRF_TRANSITION_RETURN;
+
+    bool successReversePinvoke = _reversePinvoke.ManagedToUnmanaged == COR_PRF_TRANSITION_RETURN
+                    && _reversePinvoke.UnmanagedToManaged == COR_PRF_TRANSITION_CALL;
+
+    if (_failures == 0 && successPinvoke && successReversePinvoke)
     {
-        // If we're here, that means we were Released enough to trigger the destructor
         printf("PROFILER TEST PASSES\n");
     }
     else
     {
         auto boolFmt = [](bool b) { return b ? "true" : "false"; };
-        printf("Test failed _failures=%d _sawEnter=%s _sawLeave=%s\n", 
-                _failures.load(), boolFmt(_sawEnter), boolFmt(_sawLeave));
+        printf("Test failed _failures=%d _pinvoke=%s _reversePinvoke=%s\n",
+                _failures.load(), boolFmt(successPinvoke), boolFmt(successReversePinvoke));
     }
 
     return S_OK;
 }
 
-extern "C" EXPORT void STDMETHODCALLTYPE DoPInvoke(int i)
+extern "C" EXPORT void STDMETHODCALLTYPE DoPInvoke(int(*callback)(int), int i)
 {
-    printf("PInvoke received i=%d\n", i);
+    printf("PInvoke received i=%d\n", callback(i));
 }
+
 
 HRESULT Transitions::UnmanagedToManagedTransition(FunctionID functionID, COR_PRF_TRANSITION_REASON reason)
 {
     SHUTDOWNGUARD();
 
-    if (FunctionIsTargetFunction(functionID))
+    TransitionInstance* inst;
+    if (FunctionIsTargetFunction(functionID, &inst))
     {
-        _sawEnter = true;
+        if (inst->UnmanagedToManaged != NO_TRANSITION)
+        {
+            // Report a failure for duplicate transitions.
+            _failures++;
+        }
+        inst->UnmanagedToManaged = reason;
     }
 
     return S_OK;
@@ -74,16 +92,36 @@ HRESULT Transitions::ManagedToUnmanagedTransition(FunctionID functionID, COR_PRF
 {
     SHUTDOWNGUARD();
 
-    if (FunctionIsTargetFunction(functionID))
+    TransitionInstance* inst;
+    if (FunctionIsTargetFunction(functionID, &inst))
     {
-        _sawLeave = true;
+        if (inst->ManagedToUnmanaged != NO_TRANSITION)
+        {
+            // Report a failure for duplicate transitions.
+            _failures++;
+        }
+        inst->ManagedToUnmanaged = reason;
     }
 
     return S_OK;
 }
 
-bool Transitions::FunctionIsTargetFunction(FunctionID functionID)
+bool Transitions::FunctionIsTargetFunction(FunctionID functionID, TransitionInstance** inst)
 {
     String name = GetFunctionIDName(functionID);
-    return name == WCHAR("DoPInvoke");
+
+    if (name == expectedPinvokeName)
+    {
+        *inst = &_pinvoke;
+    }
+    else if (name == expectedReversePInvokeName)
+    {
+        *inst = &_reversePinvoke;
+    }
+    else
+    {
+        return false;
+    }
+
+    return true;
 }

@@ -24,7 +24,7 @@ namespace System.Diagnostics
         private volatile bool _initialized;
         private bool _initializing;
         private volatile string _switchValueString = string.Empty;
-        private readonly string? _defaultValue;
+        private readonly string _defaultValue;
         private object? _initializedLock;
 
         private static readonly List<WeakReference<Switch>> s_switches = new List<WeakReference<Switch>>();
@@ -53,13 +53,10 @@ namespace System.Diagnostics
         {
         }
 
-        protected Switch(string displayName, string? description, string? defaultSwitchValue)
+        protected Switch(string displayName, string? description, string defaultSwitchValue)
         {
-            // displayName is used as a hashtable key, so it can never
-            // be null.
-            if (displayName == null) displayName = string.Empty;
-
-            _displayName = displayName;
+            // displayName is used as a hashtable key, so it can never be null.
+            _displayName = displayName ?? string.Empty;
             _description = description;
 
             // Add a weakreference to this switch and cleanup invalid references
@@ -115,7 +112,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return (_description == null) ? string.Empty : _description;
+                return _description ?? string.Empty;
             }
         }
 
@@ -124,9 +121,7 @@ namespace System.Diagnostics
             get
             {
                 Initialize();
-                if (_attributes == null)
-                    _attributes = new StringDictionary();
-                return _attributes;
+                return _attributes ??= new StringDictionary();
             }
         }
 
@@ -203,7 +198,7 @@ namespace System.Diagnostics
                     // called again, we don't want to get caught in an infinite loop.
                     _initializing = true;
 
-                    _switchValueString = _defaultValue!;
+                    _switchValueString = _defaultValue;
                     OnValueChanged();
                     _initialized = true;
                     _initializing = false;

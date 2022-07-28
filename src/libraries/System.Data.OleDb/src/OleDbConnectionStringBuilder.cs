@@ -540,17 +540,17 @@ namespace System.Data.OleDb
             {
             }
 
-            public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
+            public override bool GetStandardValuesSupported(ITypeDescriptorContext? context)
             {
                 return true;
             }
 
-            public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
+            public override bool GetStandardValuesExclusive(ITypeDescriptorContext? context)
             {
                 return false;
             }
 
-            public override StandardValuesCollection? GetStandardValues(ITypeDescriptorContext context)
+            public override StandardValuesCollection? GetStandardValues(ITypeDescriptorContext? context)
             {
                 StandardValuesCollection? dataSourceNames = _standardValues;
                 if (null == _standardValues)
@@ -608,13 +608,13 @@ namespace System.Data.OleDb
             {
             }
 
-            public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
             {
                 // Only know how to convert from a string
                 return ((typeof(string) == sourceType) || base.CanConvertFrom(context, sourceType));
             }
 
-            public override object ConvertFrom(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value)
+            public override object? ConvertFrom(ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value)
             {
                 string? svalue = (value as string);
                 if (null != svalue)
@@ -632,50 +632,50 @@ namespace System.Data.OleDb
                             string[] values = svalue.Split(new char[] { ',' });
                             foreach (string v in values)
                             {
-                                convertedValue |= (int)(OleDbServiceValues)Enum.Parse(typeof(OleDbServiceValues), v, true);
+                                convertedValue |= (int)Enum.Parse<OleDbServiceValues>(v, true);
                             }
-                            return (int)convertedValue;
+                            return convertedValue;
                         }
                         else
                         {
-                            return (int)(OleDbServiceValues)Enum.Parse(typeof(OleDbServiceValues), svalue, true);
+                            return (int)Enum.Parse<OleDbServiceValues>(svalue, true);
                         }
                     }
                 }
                 return base.ConvertFrom(context, culture, value);
             }
 
-            public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+            public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
             {
                 // Only know how to convert to the NetworkLibrary enumeration
                 return ((typeof(string) == destinationType) || base.CanConvertTo(context, destinationType));
             }
 
-            public override object ConvertTo(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, Type destinationType)
+            public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
             {
                 if ((typeof(string) == destinationType) && (null != value) && (typeof(int) == value.GetType()))
                 {
-                    return Enum.Format(typeof(OleDbServiceValues), ((OleDbServiceValues)(int)value), "G");
+                    return ((OleDbServiceValues)(int)(value)).ToString("G");
                 }
                 return base.ConvertTo(context, culture, value, destinationType);
             }
 
-            public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
+            public override bool GetStandardValuesSupported(ITypeDescriptorContext? context)
             {
                 return true;
             }
 
-            public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
+            public override bool GetStandardValuesExclusive(ITypeDescriptorContext? context)
             {
                 return false;
             }
 
-            public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+            public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
             {
                 StandardValuesCollection? standardValues = _standardValues;
                 if (null == standardValues)
                 {
-                    Array objValues = Enum.GetValues(typeof(OleDbServiceValues));
+                    OleDbServiceValues[] objValues = Enum.GetValues<OleDbServiceValues>();
                     Array.Sort(objValues, 0, objValues.Length);
                     standardValues = new StandardValuesCollection(objValues);
                     _standardValues = standardValues;
@@ -683,7 +683,7 @@ namespace System.Data.OleDb
                 return standardValues;
             }
 
-            public override bool IsValid(ITypeDescriptorContext context, object value)
+            public override bool IsValid(ITypeDescriptorContext? context, object? value)
             {
                 return true;
                 //return Enum.IsDefined(type, value);
@@ -697,7 +697,7 @@ namespace System.Data.OleDb
             {
             }
 
-            public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+            public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
             {
                 if (typeof(System.ComponentModel.Design.Serialization.InstanceDescriptor) == destinationType)
                 {
@@ -706,7 +706,7 @@ namespace System.Data.OleDb
                 return base.CanConvertTo(context, destinationType);
             }
 
-            public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+            public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
             {
                 if (destinationType == null)
                 {
@@ -723,7 +723,7 @@ namespace System.Data.OleDb
                 return base.ConvertTo(context, culture, value, destinationType);
             }
 
-            private System.ComponentModel.Design.Serialization.InstanceDescriptor ConvertToInstanceDescriptor(OleDbConnectionStringBuilder options)
+            private static System.ComponentModel.Design.Serialization.InstanceDescriptor ConvertToInstanceDescriptor(OleDbConnectionStringBuilder options)
             {
                 Type[] ctorParams = new Type[] { typeof(string) };
                 object[] ctorValues = new object[] { options.ConnectionString };

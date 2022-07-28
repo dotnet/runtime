@@ -6,6 +6,7 @@
 // (but it actually doesn't) will not be loadable.
 
 .assembly extern System.Runtime { }
+.assembly extern xunit.core {}
 
 .assembly notimplemented { }
 
@@ -48,6 +49,9 @@
 
 .method public hidebysig static int32 Main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
 
   .try

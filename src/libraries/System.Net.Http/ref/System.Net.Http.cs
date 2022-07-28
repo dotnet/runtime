@@ -37,7 +37,12 @@ namespace System.Net.Http
     }
     public partial class FormUrlEncodedContent : System.Net.Http.ByteArrayContent
     {
-        public FormUrlEncodedContent(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string?, string?>> nameValueCollection) : base (default(byte[])) { }
+        public FormUrlEncodedContent(
+            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<
+                #nullable disable
+                string, string
+                #nullable restore
+            >> nameValueCollection) : base (default(byte[])) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public delegate System.Text.Encoding? HeaderEncodingSelector<TContext>(string headerName, TContext context);
@@ -54,41 +59,41 @@ namespace System.Net.Http
         public long MaxResponseContentBufferSize { get { throw null; } set { } }
         public System.TimeSpan Timeout { get { throw null; } set { } }
         public void CancelPendingRequests() { }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> DeleteAsync(string? requestUri) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> DeleteAsync(string? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> DeleteAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> DeleteAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> DeleteAsync(System.Uri? requestUri) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> DeleteAsync(System.Uri? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> GetAsync(string? requestUri) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> GetAsync(string? requestUri, System.Net.Http.HttpCompletionOption completionOption) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> GetAsync(string? requestUri, System.Net.Http.HttpCompletionOption completionOption, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> GetAsync(string? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> GetAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> GetAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpCompletionOption completionOption) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> GetAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpCompletionOption completionOption, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> GetAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> GetAsync(System.Uri? requestUri) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> GetAsync(System.Uri? requestUri, System.Net.Http.HttpCompletionOption completionOption) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> GetAsync(System.Uri? requestUri, System.Net.Http.HttpCompletionOption completionOption, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> GetAsync(System.Uri? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task<byte[]> GetByteArrayAsync(string? requestUri) { throw null; }
-        public System.Threading.Tasks.Task<byte[]> GetByteArrayAsync(string? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<byte[]> GetByteArrayAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri) { throw null; }
+        public System.Threading.Tasks.Task<byte[]> GetByteArrayAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<byte[]> GetByteArrayAsync(System.Uri? requestUri) { throw null; }
         public System.Threading.Tasks.Task<byte[]> GetByteArrayAsync(System.Uri? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> GetStreamAsync(string? requestUri) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> GetStreamAsync(string? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> GetStreamAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> GetStreamAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> GetStreamAsync(System.Uri? requestUri) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> GetStreamAsync(System.Uri? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task<string> GetStringAsync(string? requestUri) { throw null; }
-        public System.Threading.Tasks.Task<string> GetStringAsync(string? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<string> GetStringAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri) { throw null; }
+        public System.Threading.Tasks.Task<string> GetStringAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<string> GetStringAsync(System.Uri? requestUri) { throw null; }
         public System.Threading.Tasks.Task<string> GetStringAsync(System.Uri? requestUri, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync(string? requestUri, System.Net.Http.HttpContent? content) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync(string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpContent? content) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PatchAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync(string? requestUri, System.Net.Http.HttpContent? content) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync(string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpContent? content) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PostAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(string? requestUri, System.Net.Http.HttpContent? content) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpContent? content) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> PutAsync(System.Uri? requestUri, System.Net.Http.HttpContent? content, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -134,6 +139,8 @@ namespace System.Net.Http
         public bool PreAuthenticate { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public System.Net.IWebProxy? Proxy { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Func<System.Net.Http.HttpRequestMessage, System.Security.Cryptography.X509Certificates.X509Certificate2?, System.Security.Cryptography.X509Certificates.X509Chain?, System.Net.Security.SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback { get { throw null; } set { } }
@@ -149,7 +156,14 @@ namespace System.Net.Http
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool UseProxy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
+        //
+        // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
+        // API compat will fail until this is fixed
+        //
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttributeUnsupportedOSPlatform("ios")]
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttributeUnsupportedOSPlatform("tvos")]
         protected internal override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
@@ -217,12 +231,18 @@ namespace System.Net.Http
         public static System.Net.Http.HttpMethod Post { get { throw null; } }
         public static System.Net.Http.HttpMethod Put { get { throw null; } }
         public static System.Net.Http.HttpMethod Trace { get { throw null; } }
+        public static System.Net.Http.HttpMethod Connect { get { throw null; } }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Net.Http.HttpMethod? other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Net.Http.HttpMethod? left, System.Net.Http.HttpMethod? right) { throw null; }
         public static bool operator !=(System.Net.Http.HttpMethod? left, System.Net.Http.HttpMethod? right) { throw null; }
         public override string ToString() { throw null; }
+    }
+    public sealed class HttpProtocolException : System.IO.IOException
+    {
+        public HttpProtocolException(long errorCode, string? message, System.Exception? innerException) { }
+        public long ErrorCode { get { throw null; } }
     }
     public partial class HttpRequestException : System.Exception
     {
@@ -235,12 +255,12 @@ namespace System.Net.Http
     public partial class HttpRequestMessage : System.IDisposable
     {
         public HttpRequestMessage() { }
-        public HttpRequestMessage(System.Net.Http.HttpMethod method, string? requestUri) { }
+        public HttpRequestMessage(System.Net.Http.HttpMethod method, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? requestUri) { }
         public HttpRequestMessage(System.Net.Http.HttpMethod method, System.Uri? requestUri) { }
         public System.Net.Http.HttpContent? Content { get { throw null; } set { } }
         public System.Net.Http.Headers.HttpRequestHeaders Headers { get { throw null; } }
         public System.Net.Http.HttpMethod Method { get { throw null; } set { } }
-        [Obsolete("Use Options instead.")]
+        [System.ObsoleteAttribute("HttpRequestMessage.Properties has been deprecated. Use Options instead.")]
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
         public HttpRequestOptions Options { get { throw null; } }
         public System.Uri? RequestUri { get { throw null; } set { } }
@@ -353,6 +373,7 @@ namespace System.Net.Http
     public sealed partial class SocketsHttpHandler : System.Net.Http.HttpMessageHandler
     {
         public SocketsHttpHandler() { }
+        public int InitialHttp2StreamWindowSize { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("browser")]
         public static bool IsSupported { get { throw null; } }
         public bool AllowAutoRedirect { get { throw null; } set { } }
@@ -388,6 +409,8 @@ namespace System.Net.Http
         public bool EnableMultipleHttp2Connections { get { throw null; } set { } }
         public Func<SocketsHttpConnectionContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.IO.Stream>>? ConnectCallback { get { throw null; } set { } }
         public Func<SocketsHttpPlaintextStreamFilterContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.IO.Stream>>? PlaintextStreamFilter { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Diagnostics.DistributedContextPropagator? ActivityHeadersPropagator { get { throw null; } set { } }
     }
     public sealed class SocketsHttpConnectionContext
     {
@@ -422,8 +445,10 @@ namespace System.Net.Http
     public partial class StringContent : System.Net.Http.ByteArrayContent
     {
         public StringContent(string content) : base (default(byte[])) { }
+        public StringContent(string content, System.Net.Http.Headers.MediaTypeHeaderValue mediaType) : base (default(byte[])) { }
         public StringContent(string content, System.Text.Encoding? encoding) : base (default(byte[])) { }
-        public StringContent(string content, System.Text.Encoding? encoding, string? mediaType) : base (default(byte[])) { }
+        public StringContent(string content, System.Text.Encoding? encoding, System.Net.Http.Headers.MediaTypeHeaderValue mediaType) : base (default(byte[])) { }
+        public StringContent(string content, System.Text.Encoding? encoding, string mediaType) : base (default(byte[])) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
 }
@@ -637,6 +662,7 @@ namespace System.Net.Http.Headers
         public System.DateTimeOffset? IfUnmodifiedSince { get { throw null; } set { } }
         public int? MaxForwards { get { throw null; } set { } }
         public System.Net.Http.Headers.HttpHeaderValueCollection<System.Net.Http.Headers.NameValueHeaderValue> Pragma { get { throw null; } }
+        public string? Protocol { get { throw null; } set { } }
         public System.Net.Http.Headers.AuthenticationHeaderValue? ProxyAuthorization { get { throw null; } set { } }
         public System.Net.Http.Headers.RangeHeaderValue? Range { get { throw null; } set { } }
         public System.Uri? Referrer { get { throw null; } set { } }
@@ -677,6 +703,7 @@ namespace System.Net.Http.Headers
     {
         protected MediaTypeHeaderValue(System.Net.Http.Headers.MediaTypeHeaderValue source) { }
         public MediaTypeHeaderValue(string mediaType) { }
+        public MediaTypeHeaderValue(string mediaType, string? charSet) { }
         public string? CharSet { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public string? MediaType { get { throw null; } set { } }

@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn),CA1050</NoWarn>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(TargetFrameworkForNETCoreTasks)'">
+    <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(TargetFrameworkForNETFrameworkTasks)'">
+    <!-- On .NET Framework, make sure we don't include a copy of the MSBuild assemblies with the task. The NETCore version doesn't do it already. -->
+    <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" IncludeAssets="compile" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" IncludeAssets="compile" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" PrivateAssets="All" />
+    <!-- These versions should not be newer than what Visual Studio MSBuild uses -->
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" PrivateAssets="all" />
+    <PackageReference Include="System.Text.Json" Version="5.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="ILStrip\AssemblyStripper\AssemblyStripper.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="ILStrip\ILStrip.cs" />
+    <Compile Include="..\Common\Utils.cs" />
+    <Compile Include="RuntimeConfigParser\RuntimeConfigParser.cs" />
+    <Compile Include="JsonToItemsTaskFactory\JsonToItemsTaskFactory.cs" />
+    <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib\src\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+  </ItemGroup>
+
+  <!-- GetFilesToPackage assists to place `MonoTargetsTasks.dll` in a NuGet package in Microsoft.NET.Runtime.MonoTargets.Sdk.pkgproj for external use -->
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <_PublishFramework Remove="@(_PublishFramework)" />
+      <_PublishFramework Include="$(TargetFrameworks)" />
+
+      <!-- Copies every assembly that is in the artifacts/bin/MonoTargetsTasks/ subfolders.  Be careful not to include too much. -->
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.pdb" TargetPath="tasks\%(_PublishFramework.Identity)" />
+    </ItemGroup>
+  </Target>
+</Project>

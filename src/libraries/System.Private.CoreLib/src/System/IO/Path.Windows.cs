@@ -5,14 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
-#if MS_IO_REDIST
-using System;
-using System.IO;
-
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
     public static partial class Path
     {
@@ -34,11 +27,20 @@ namespace System.IO
             (char)31
         };
 
+        private static bool ExistsCore(string fullPath, out bool isDirectory)
+        {
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            int errorCode = FileSystem.FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
+            bool result = (errorCode == Interop.Errors.ERROR_SUCCESS) && (data.dwFileAttributes != -1);
+            isDirectory = result && (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0;
+
+            return result;
+        }
+
         // Expands the given path to a fully qualified path.
         public static string GetFullPath(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            ArgumentNullException.ThrowIfNull(path);
 
             // If the path would normalize to string empty, we'll consider it empty
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
@@ -50,25 +52,13 @@ namespace System.IO
             if (path.Contains('\0'))
                 throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
 
-            if (PathInternal.IsExtended(path.AsSpan()))
-            {
-                // \\?\ paths are considered normalized by definition. Windows doesn't normalize \\?\
-                // paths and neither should we. Even if we wanted to GetFullPathName does not work
-                // properly with device paths. If one wants to pass a \\?\ path through normalization
-                // one can chop off the prefix, pass it to GetFullPath and add it again.
-                return path;
-            }
-
-            return PathHelper.Normalize(path);
+            return GetFullPathInternal(path);
         }
 
         public static string GetFullPath(string path, string basePath)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (basePath == null)
-                throw new ArgumentNullException(nameof(basePath));
+            ArgumentNullException.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(basePath);
 
             if (!IsPathFullyQualified(basePath))
                 throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));
@@ -77,7 +67,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidPathChars);
 
             if (IsPathFullyQualified(path))
-                return GetFullPath(path);
+                return GetFullPathInternal(path);
 
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 return basePath;
@@ -129,7 +119,25 @@ namespace System.IO
 
             return PathInternal.IsDevice(combinedPath.AsSpan())
                 ? PathInternal.RemoveRelativeSegments(combinedPath, PathInternal.GetRootLength(combinedPath.AsSpan()))
-                : GetFullPath(combinedPath);
+                : GetFullPathInternal(combinedPath);
+        }
+
+        // Gets the full path without argument validation
+        private static string GetFullPathInternal(string path)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(path));
+            Debug.Assert(!path.Contains('\0'));
+
+            if (PathInternal.IsExtended(path.AsSpan()))
+            {
+                // \\?\ paths are considered normalized by definition. Windows doesn't normalize \\?\
+                // paths and neither should we. Even if we wanted to GetFullPathName does not work
+                // properly with device paths. If one wants to pass a \\?\ path through normalization
+                // one can chop off the prefix, pass it to GetFullPath and add it again.
+                return path;
+            }
+
+            return PathHelper.Normalize(path);
         }
 
         public static string GetTempPath()

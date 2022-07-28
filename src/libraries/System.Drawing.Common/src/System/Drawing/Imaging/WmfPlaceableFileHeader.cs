@@ -1,7 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 
 namespace System.Drawing.Imaging
 {
@@ -101,5 +106,18 @@ namespace System.Drawing.Imaging
             get { return _checksum; }
             set { _checksum = value; }
         }
+
+        internal ref int GetPinnableReference() => ref _key;
+
+#if NET7_0_OR_GREATER
+        [CustomMarshaller(typeof(WmfPlaceableFileHeader), MarshalMode.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
+        internal static unsafe class PinningMarshaller
+        {
+            public static ref int GetPinnableReference(WmfPlaceableFileHeader managed) => ref (managed is null ? ref Unsafe.NullRef<int>() : ref managed.GetPinnableReference());
+
+            // All usages in our currently supported scenarios will always go through GetPinnableReference
+            public static int* ConvertToUnmanaged(WmfPlaceableFileHeader managed) => throw new UnreachableException();
+        }
+#endif
     }
 }

@@ -17,37 +17,53 @@ namespace System.Diagnostics.Tests
         public static bool CanWriteToPerfCounters { get => PlatformDetection.IsNotWindowsNanoServer; }
         public static bool CanReadNetPerfCounters { get => File.Exists(Environment.SystemDirectory + Path.DirectorySeparatorChar + "netfxperf.dll"); }
 
-        public static string CreateCategory(string name, PerformanceCounterCategoryType categoryType)
+        public static void CreateCategory(string categoryName, PerformanceCounterCategoryType categoryType)
         {
-            var category = name + "_Category";
-
-            // If the categry already exists, delete it, then create it.
-            DeleteCategory(name);
-            PerformanceCounterCategory.Create(category, "description", categoryType, name, "counter description");
-
-            Assert.True(PerformanceCounterCategoryCreated(category));
-            return category;
+            string counterName = categoryName.Replace("_Category", "_Counter");
+            CreateCategory(categoryName, counterName, categoryType);
         }
 
-        public static bool PerformanceCounterCategoryCreated(string category)
+        public static void CreateCategory(string categoryName, string counterName, PerformanceCounterCategoryType categoryType)
         {
+            Assert.EndsWith("_Category", categoryName);
+            Assert.EndsWith("_Counter", counterName);
+
+            // If the category already exists, delete it, then create it.
+            DeleteCategory(categoryName);
+            PerformanceCounterCategory.Create(categoryName, "description", categoryType, counterName, "counter description");
+
+            VerifyPerformanceCounterCategoryCreated(categoryName);
+        }
+
+        public static void VerifyPerformanceCounterCategoryCreated(string categoryName)
+        {
+            Assert.EndsWith("_Category", categoryName);
             int tries = 0;
-            while (!PerformanceCounterCategory.Exists(category) && tries < 10)
+            while (!PerformanceCounterCategory.Exists(categoryName) && tries < 10)
             {
                 System.Threading.Thread.Sleep(100);
                 tries++;
             }
 
-            return PerformanceCounterCategory.Exists(category);
+            Assert.True(PerformanceCounterCategory.Exists(categoryName));
         }
 
-        public static void DeleteCategory(string name)
+        public static void DeleteCategory(string categoryName)
         {
-            var category = name + "_Category";
-            if (PerformanceCounterCategory.Exists(category))
+            Assert.EndsWith("_Category", categoryName);
+            if (PerformanceCounterCategory.Exists(categoryName))
             {
-                PerformanceCounterCategory.Delete(category);
+                PerformanceCounterCategory.Delete(categoryName);
             }
+
+            int tries = 0;
+            while (PerformanceCounterCategory.Exists(categoryName) && tries < 10)
+            {
+                System.Threading.Thread.Sleep(100);
+                tries++;
+            }
+
+            Assert.True(!PerformanceCounterCategory.Exists(categoryName));
         }
 
         public static T RetryOnAllPlatforms<T>(Func<T> func)

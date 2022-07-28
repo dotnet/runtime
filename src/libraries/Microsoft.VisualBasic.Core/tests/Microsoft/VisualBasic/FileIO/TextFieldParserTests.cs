@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace Microsoft.VisualBasic.FileIO.Tests
@@ -371,6 +374,74 @@ ghi,789");
                 parser.Delimiters = new[] { "," };
                 Assert.Throws<MalformedLineException>(() => parser.ReadFields());
             }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ReadFields_PartialReadsFromStream_Large(bool fieldsInQuotes) =>
+            ReadFields_PartialReadsFromStream(fieldsInQuotes, 1023);
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework doesn't properly handle streams frequently returning much less than requested")]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ReadFields_PartialReadsFromStream_Small(bool fieldsInQuotes) =>
+            ReadFields_PartialReadsFromStream(fieldsInQuotes, 10);
+
+        private void ReadFields_PartialReadsFromStream(bool fieldsInQuotes, int maxCount)
+        {
+            // Generate some data
+            var rand = new Random(42);
+            string[][] expected = Enumerable
+                .Range(0, 10_000)
+                .Select(_ => Enumerable.Range(0, 4).Select(_ => new string('s', rand.Next(0, 10))).ToArray())
+                .ToArray();
+
+            // Write it out
+            Stream s = new DribbleStream() { MaxCount = maxCount };
+            using (var writer = new StreamWriter(s, Encoding.UTF8, 1024, leaveOpen: true))
+            {
+                foreach (string[] line in expected)
+                {
+                    string separator = "";
+                    foreach (string part in line)
+                    {
+                        writer.Write(separator);
+                        separator = ",";
+                        if (fieldsInQuotes) writer.Write('"');
+                        writer.Write(part);
+                        if (fieldsInQuotes) writer.Write('"');
+                    }
+                    writer.WriteLine();
+                }
+            }
+
+            // Read/parse it back in
+            s.Position = 0;
+            using (var parser = new TextFieldParser(s))
+            {
+                parser.TextFieldType = FieldType.Delimited;
+                parser.SetDelimiters(new[] { "," });
+                parser.HasFieldsEnclosedInQuotes = fieldsInQuotes;
+
+                int i = 0;
+                while (!parser.EndOfData)
+                {
+                    string[]? actual = parser.ReadFields();
+                    Assert.Equal(expected[i], actual);
+                    i++;
+                }
+                Assert.Equal(expected.Length, i);
+            }
+        }
+
+        private sealed class DribbleStream : MemoryStream
+        {
+            public int MaxCount { get; set; } = 1;
+
+            public override int Read(byte[] buffer, int offset, int count) =>
+                base.Read(buffer, offset, Math.Min(count, MaxCount));
         }
     }
 }

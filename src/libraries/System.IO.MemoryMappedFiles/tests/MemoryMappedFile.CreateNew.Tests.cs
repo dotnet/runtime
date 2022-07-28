@@ -11,7 +11,6 @@ namespace System.IO.MemoryMappedFiles.Tests
     /// <summary>
     /// Tests for MemoryMappedFile.CreateNew.
     /// </summary>
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49104", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class MemoryMappedFileTests_CreateNew : MemoryMappedFilesTestBase
     {
         /// <summary>
@@ -104,6 +103,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", TestPlatforms.Browser)]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)] // Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)
         [Fact]
         public void TooLargeCapacity_Unix()

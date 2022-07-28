@@ -143,7 +143,12 @@ g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **gerror)
 
 	t = g_build_filename (g_get_tmp_dir (), tmpl, (const char*)NULL);
 
+	#ifdef HOST_WASI
+	g_critical ("g_file_open_tmp is not implemented for WASI");
+	return 0;
+	#else
 	fd = mkstemp (t);
+	#endif
 
 	if (fd == -1) {
 		if (gerror) {
@@ -160,27 +165,4 @@ g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **gerror)
 		g_free (t);
 	}
 	return fd;
-}
-
-gchar *
-g_get_current_dir (void)
-{
-	int s = 32;
-	char *buffer = NULL, *r;
-	gboolean fail;
-	
-	do {
-		buffer = g_realloc (buffer, s);
-		r = getcwd (buffer, s);
-		fail = (r == NULL && errno == ERANGE);
-		if (fail) {
-			s <<= 1;
-		}
-	} while (fail);
-
-	/* On amd64 sometimes the bottom 32-bits of r == the bottom 32-bits of buffer
-	 * but the top 32-bits of r have overflown to 0xffffffff (seriously, getcwd
-	 * so we return the buffer here since it has a pointer to the valid string
-	 */
-	return buffer;
 }

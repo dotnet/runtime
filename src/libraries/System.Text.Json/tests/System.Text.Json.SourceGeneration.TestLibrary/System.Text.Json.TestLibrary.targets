@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="TestClasses.cs" />
+  </ItemGroup>
+
+  <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <CustomAdditionalCompileInputs Include="@(Analyzer)" />
+    </ItemGroup>
+  </Target>
+</Project>

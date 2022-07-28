@@ -44,14 +44,19 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "MemoryMarshal");
         }
 
-        public static MetadataType GetStubHelpers(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System.StubHelpers", "StubHelpers");
-        }
-
         public static MetadataType GetNativeFunctionPointerWrapper(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "NativeFunctionPointerWrapper");
+        }
+
+        public static MetadataType GetMarshalDirectiveException(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "MarshalDirectiveException");
+        }
+
+        public static MetadataType GetVariant(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "Variant");
         }
 
         public static bool IsSafeHandle(TypeSystemContext context, TypeDesc type)
@@ -92,6 +97,16 @@ namespace Internal.TypeSystem.Interop
             return IsCoreNamedType(context, type, "System", "Decimal");
         }
 
+        public static bool IsSystemDelegate(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "Delegate");
+        }
+
+        public static bool IsSystemMulticastDelegate(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "MulticastDelegate");
+        }
+
         public static bool IsSystemGuid(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System", "Guid");
@@ -100,11 +115,6 @@ namespace Internal.TypeSystem.Interop
         public static bool IsSystemArgIterator(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System", "ArgIterator");
-        }
-
-        public static bool IsSystemByReference(TypeSystemContext context, TypeDesc type)
-        {
-            return IsCoreNamedType(context, type, "System", "ByReference`1");
         }
 
         public static bool IsSystemSpan(TypeSystemContext context, TypeDesc type)

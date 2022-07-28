@@ -44,16 +44,16 @@ public struct Gen<T>
     {
         T temp = t1;
 
-        Test.Eval(t1.Equals(PassAsIn(temp)));
-        Test.Eval(t1.Equals(PassAsRef(ref temp, t2)));
-        Test.Eval(t2.Equals(temp));
+        Test_instance_passing_struct01.Eval(t1.Equals(PassAsIn(temp)));
+        Test_instance_passing_struct01.Eval(t1.Equals(PassAsRef(ref temp, t2)));
+        Test_instance_passing_struct01.Eval(t2.Equals(temp));
         temp = t1;
         PassAsOut(out temp, t2);
-        Test.Eval(t2.Equals(temp));
+        Test_instance_passing_struct01.Eval(t2.Equals(temp));
     }
 }
 
-public class Test
+public class Test_instance_passing_struct01
 {
     public static int counter = 0;
     public static bool result = true;

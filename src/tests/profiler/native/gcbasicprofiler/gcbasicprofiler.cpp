@@ -15,7 +15,7 @@ HRESULT GCBasicProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     Profiler::Initialize(pICorProfilerInfoUnk);
 
     HRESULT hr = S_OK;
-    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(0, 0x10)))
+    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(0, COR_PRF_HIGH_BASIC_GC)))
     {
         _failures++;
         printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x", hr);
@@ -31,7 +31,7 @@ HRESULT GCBasicProfiler::Shutdown()
 
     if (_gcStarts == 0)
     {
-        printf("GCBasicProfiler::Shutdown: FAIL: Expected GarbaseCollectionStarted to be called\n");
+        printf("GCBasicProfiler::Shutdown: FAIL: Expected GarbageCollectionStarted to be called\n");
     }
     else if (_gcFinishes == 0)
     {
@@ -68,21 +68,19 @@ HRESULT GCBasicProfiler::GarbageCollectionStarted(int cGenerations, BOOL generat
         ULONG nObjectRanges;
         bool fHeapAlloc = false;
         COR_PRF_GC_GENERATION_RANGE* pObjectRanges = nullptr;
-        {
-            const ULONG cRanges = 32;
-            COR_PRF_GC_GENERATION_RANGE objectRangesStackBuffer[cRanges];
+        const ULONG cRanges = 32;
+        COR_PRF_GC_GENERATION_RANGE objectRangesStackBuffer[cRanges];
 
-            HRESULT hr = pCorProfilerInfo->GetGenerationBounds(cRanges, &nObjectRanges, objectRangesStackBuffer);
-            if (FAILED(hr))
-            {
-                _failures++;
-                printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: GetGenerationBounds hr=0x%x\n", hr);
-                return S_OK;
-            }
-            if (nObjectRanges <= cRanges)
-            {
-                pObjectRanges = objectRangesStackBuffer;
-            }
+        HRESULT hr = pCorProfilerInfo->GetGenerationBounds(cRanges, &nObjectRanges, objectRangesStackBuffer);
+        if (FAILED(hr))
+        {
+            _failures++;
+            printf("GCBasicProfiler::GarbageCollectionStarted: FAIL: GetGenerationBounds hr=0x%x\n", hr);
+            return S_OK;
+        }
+        if (nObjectRanges <= cRanges)
+        {
+            pObjectRanges = objectRangesStackBuffer;
         }
 
         if (pObjectRanges == nullptr)

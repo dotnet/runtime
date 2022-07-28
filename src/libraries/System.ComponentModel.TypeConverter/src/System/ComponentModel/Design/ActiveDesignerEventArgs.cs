@@ -13,7 +13,7 @@ namespace System.ComponentModel.Design
         /// Initializes a new instance of the <see cref='System.ComponentModel.Design.ActiveDesignerEventArgs'/>
         /// class.
         /// </summary>
-        public ActiveDesignerEventArgs(IDesignerHost oldDesigner, IDesignerHost newDesigner)
+        public ActiveDesignerEventArgs(IDesignerHost? oldDesigner, IDesignerHost? newDesigner)
         {
             OldDesigner = oldDesigner;
             NewDesigner = newDesigner;
@@ -22,11 +22,11 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Gets or sets the document that is losing activation.
         /// </summary>
-        public IDesignerHost OldDesigner { get; }
+        public IDesignerHost? OldDesigner { get; }
 
         /// <summary>
         /// Gets or sets the document that is gaining activation.
         /// </summary>
-        public IDesignerHost NewDesigner { get; }
+        public IDesignerHost? NewDesigner { get; }
     }
 }

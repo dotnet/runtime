@@ -9,13 +9,14 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, EntryPoint = "OpenSemaphoreW", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        internal static extern SafeWaitHandle OpenSemaphore(uint desiredAccess, bool inheritHandle, string name);
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "OpenSemaphoreW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial SafeWaitHandle OpenSemaphore(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, string name);
 
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateSemaphoreExW", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        internal static extern SafeWaitHandle CreateSemaphoreEx(IntPtr lpSecurityAttributes, int initialCount, int maximumCount, string? name, uint flags, uint desiredAccess);
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateSemaphoreExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial SafeWaitHandle CreateSemaphoreEx(IntPtr lpSecurityAttributes, int initialCount, int maximumCount, string? name, uint flags, uint desiredAccess);
 
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool ReleaseSemaphore(SafeWaitHandle handle, int releaseCount, out int previousCount);
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool ReleaseSemaphore(SafeWaitHandle handle, int releaseCount, out int previousCount);
     }
 }

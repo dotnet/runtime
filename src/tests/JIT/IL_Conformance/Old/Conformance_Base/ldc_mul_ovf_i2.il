@@ -1878,5 +1878,5 @@ END:
 }
 
 
-.assembly ldc_mul_ovf_i2.exe{}
+.assembly ldc_mul_ovf_i2{}
 

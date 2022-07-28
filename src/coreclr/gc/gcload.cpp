@@ -78,10 +78,12 @@ GC_Initialize(
     // various components may want to query the current configuration.
     GCConfig::Initialize();
 
+#ifndef FEATURE_NATIVEAOT // GCToOSInterface is initialized directly
     if (!GCToOSInterface::Initialize())
     {
         return E_FAIL;
     }
+#endif
 
     IGCHandleManager* handleManager = CreateGCHandleManager();
     if (handleManager == nullptr)

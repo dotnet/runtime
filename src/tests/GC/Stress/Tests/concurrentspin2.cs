@@ -160,6 +160,7 @@ internal class ConcurrentRepro
         for (int i = 0; i < threads.Length; i++)
         {
             threads[i] = new Thread(startDelegate);
+            threads[i].IsBackground = true;
             threads[i].Name = String.Format("Thread{0}", i);
             //if (i % 2 == 0)
             //{

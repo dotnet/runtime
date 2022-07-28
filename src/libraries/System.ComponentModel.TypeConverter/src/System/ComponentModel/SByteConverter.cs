@@ -24,7 +24,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Convert the given value to a string using the given formatInfo
         /// </summary>
-        internal override object FromString(string value, NumberFormatInfo formatInfo)
+        internal override object FromString(string value, NumberFormatInfo? formatInfo)
         {
             return sbyte.Parse(value, NumberStyles.Integer, formatInfo);
         }
@@ -32,7 +32,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Convert the given value from a string using the given formatInfo
         /// </summary>
-        internal override string ToString(object value, NumberFormatInfo formatInfo)
+        internal override string ToString(object value, NumberFormatInfo? formatInfo)
         {
             return ((sbyte)value).ToString("G", formatInfo);
         }

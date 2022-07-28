@@ -7,6 +7,7 @@
 // b.DoBar() will invoke MyBar::DoSelfBar().
 
 .assembly extern mscorlib{}
+.assembly extern xunit.core {}
 .assembly self_override2{}
 
 .class public auto ansi beforefieldinit MyBar
@@ -61,6 +62,9 @@
 {
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       43 (0x2b)
     .maxstack  2

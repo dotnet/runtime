@@ -8,8 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
-using System.Text.Unicode;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -64,11 +62,9 @@ namespace System.Globalization
         /// </summary>
         public static CompareInfo GetCompareInfo(int culture, Assembly assembly)
         {
+            ArgumentNullException.ThrowIfNull(assembly);
+
             // Parameter checking.
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
             if (assembly != typeof(object).Module.Assembly)
             {
                 throw new ArgumentException(SR.Argument_OnlyMscorlib, nameof(assembly));
@@ -84,14 +80,9 @@ namespace System.Globalization
         /// </summary>
         public static CompareInfo GetCompareInfo(string name, Assembly assembly)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(assembly);
+
             if (assembly != typeof(object).Module.Assembly)
             {
                 throw new ArgumentException(SR.Argument_OnlyMscorlib, nameof(assembly));
@@ -119,25 +110,19 @@ namespace System.Globalization
         /// </summary>
         public static CompareInfo GetCompareInfo(string name)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             return CultureInfo.GetCultureInfo(name).CompareInfo;
         }
 
         public static bool IsSortable(char ch)
         {
-            return IsSortable(MemoryMarshal.CreateReadOnlySpan(ref ch, 1));
+            return IsSortable(new ReadOnlySpan<char>(in ch));
         }
 
         public static bool IsSortable(string text)
         {
-            if (text == null)
-            {
-                throw new ArgumentNullException(nameof(text));
-            }
+            ArgumentNullException.ThrowIfNull(text);
 
             return IsSortable(text.AsSpan());
         }
@@ -191,7 +176,7 @@ namespace System.Globalization
             }
             else
             {
-                IcuInitSortHandle();
+                IcuInitSortHandle(culture.InteropName!);
             }
         }
 
@@ -300,12 +285,10 @@ namespace System.Globalization
             return retVal;
         }
 
-        internal int CompareOptionIgnoreCase(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2)
-        {
-            return GlobalizationMode.Invariant ?
-                Ordinal.CompareIgnoreCaseInvariantMode(ref MemoryMarshal.GetReference(string1), string1.Length, ref MemoryMarshal.GetReference(string2), string2.Length) :
+        internal int CompareOptionIgnoreCase(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2) =>
+             GlobalizationMode.Invariant ?
+                InvariantModeCasing.CompareStringIgnoreCase(ref MemoryMarshal.GetReference(string1), string1.Length, ref MemoryMarshal.GetReference(string2), string2.Length) :
                 CompareStringCore(string1, string2, CompareOptions.IgnoreCase);
-        }
 
         /// <summary>
         /// Compares the specified regions of the two strings with the given
@@ -811,7 +794,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return IndexOf(source, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            return IndexOf(source, new ReadOnlySpan<char>(in value), options);
         }
 
         public int IndexOf(string source, string value, CompareOptions options)
@@ -883,7 +866,7 @@ namespace System.Globalization
 
                 if ((uint)startIndex > (uint)source.Length)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 }
                 else
                 {
@@ -891,7 +874,7 @@ namespace System.Globalization
                 }
             }
 
-            int result = IndexOf(sourceSpan, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            int result = IndexOf(sourceSpan, new ReadOnlySpan<char>(in value), options);
             if (result >= 0)
             {
                 result += startIndex;
@@ -917,7 +900,7 @@ namespace System.Globalization
 
                 if ((uint)startIndex > (uint)source.Length)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 }
                 else
                 {
@@ -1144,7 +1127,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return LastIndexOf(source, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            return LastIndexOf(source, new ReadOnlySpan<char>(in value), options);
         }
 
         public int LastIndexOf(string source, string value, CompareOptions options)
@@ -1228,7 +1211,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
                 }
             }
 
@@ -1239,7 +1222,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            int retVal = LastIndexOf(sourceSpan, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            int retVal = LastIndexOf(sourceSpan, new ReadOnlySpan<char>(in value), options);
             if (retVal >= 0)
             {
                 retVal += startIndex;
@@ -1288,7 +1271,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
                 }
             }
 

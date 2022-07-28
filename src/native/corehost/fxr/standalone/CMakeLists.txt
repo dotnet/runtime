@@ -56,3 +56,7 @@ else()
 endif(WIN32)
 
 target_link_libraries(hostfxr libhostcommon)
+
+if (CLR_CMAKE_TARGET_ARCH_ARMV6)
+    target_link_libraries(${DOTNET_PROJECT_NAME} atomic)
+endif()

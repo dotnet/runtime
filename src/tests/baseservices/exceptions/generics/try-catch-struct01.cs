@@ -34,12 +34,12 @@ public struct Gen<T>
 			}
 			if (throwException)
 			{
-				Test.Eval(false);
+				Test_try_catch_struct01.Eval(false);
 			}
 		}
 		catch(Exception E)
 		{
-			Test.Eval(E is GenException<T>);
+			Test_try_catch_struct01.Eval(E is GenException<T>);
 		}		
 	}
 	
@@ -50,7 +50,7 @@ public struct Gen<T>
 	
 }
 
-public class Test
+public class Test_try_catch_struct01
 {
 	public static int counter = 0;
 	public static bool result = true;

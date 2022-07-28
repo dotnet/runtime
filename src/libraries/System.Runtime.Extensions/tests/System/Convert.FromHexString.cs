@@ -25,7 +25,7 @@ namespace System.Tests
             for (int i = 0; i < values.Length; i++)
             {
                 values[i] = (byte)i;
-                sb.Append(i.ToString("X2"));
+                sb.Append($"{i:X2}");
             }
 
             TestSequence(values, sb.ToString());

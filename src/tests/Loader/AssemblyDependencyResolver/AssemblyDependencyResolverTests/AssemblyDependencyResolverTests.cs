@@ -7,8 +7,6 @@ using System.Runtime.Loader;
 using TestLibrary;
 using Xunit;
 
-using Assert = Xunit.Assert;
-
 namespace AssemblyDependencyResolverTests
 {
     class AssemblyDependencyResolverTests : TestBase
@@ -37,10 +35,10 @@ namespace AssemblyDependencyResolverTests
             const string errorMessageFirstLine = "First line: failure";
             const string errorMessageSecondLine = "Second line: value";
 
-            using (HostPolicyMock.MockValues_corehost_set_error_writer errorWriterMock = 
+            using (HostPolicyMock.MockValues_corehost_set_error_writer errorWriterMock =
                 HostPolicyMock.Mock_corehost_set_error_writer())
             {
-                using (HostPolicyMock.MockValues_corehost_resolve_component_dependencies resolverMock = 
+                using (HostPolicyMock.MockValues_corehost_resolve_component_dependencies resolverMock =
                     HostPolicyMock.Mock_corehost_resolve_component_dependencies(
                         134,
                         "",
@@ -76,7 +74,7 @@ namespace AssemblyDependencyResolverTests
         public void TestComponentLoadFailureWithPreviousErrorWriter()
         {
             IntPtr previousWriter = System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(
-                (HostPolicyMock.ErrorWriterDelegate)((string _) => { Assert.True(false, "Should never get here"); }));
+                (HostPolicyMock.ErrorWriterDelegate)((string _) => { Assert.True(false); }));
 
             using (HostPolicyMock.MockValues_corehost_set_error_writer errorWriterMock =
                 HostPolicyMock.Mock_corehost_set_error_writer(previousWriter))
@@ -105,7 +103,7 @@ namespace AssemblyDependencyResolverTests
             string assemblyDependencyPath = CreateMockAssembly("AssemblyDependency.dll");
 
             IntPtr previousWriter = System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(
-                (HostPolicyMock.ErrorWriterDelegate)((string _) => { Assert.True(false, "Should never get here"); }));
+                (HostPolicyMock.ErrorWriterDelegate)((string _) => { Assert.True(false); }));
 
             using (HostPolicyMock.MockValues_corehost_set_error_writer errorWriterMock =
                 HostPolicyMock.Mock_corehost_set_error_writer(previousWriter))

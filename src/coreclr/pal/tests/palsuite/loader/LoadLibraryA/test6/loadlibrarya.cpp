@@ -7,9 +7,9 @@
 **
 ** Purpose: Positive test the LoadLibrary API. Test will verify
 **          that it is unable to load the library twice. Once by
-**          using the full path name and secondly by using the 
+**          using the full path name and secondly by using the
 **          short name.
-**          
+**
 
 **
 **============================================================*/
@@ -25,14 +25,13 @@ typedef int (*dllfunct)();
 #define GETATTACHCOUNTNAME "_GetAttachCount@0"
 #endif
 
-
 /* Helper function to test the loaded library.
  */
 BOOL PALAPI TestDll(HMODULE hLib)
 {
     int     RetVal;
     char    FunctName[] = GETATTACHCOUNTNAME;
-    FARPROC DllFunc;  
+    FARPROC DllFunc;
 
     /* Access a function from the loaded library.
      */
@@ -45,7 +44,7 @@ BOOL PALAPI TestDll(HMODULE hLib)
         return (FALSE);
     }
 
-    /* Verify that the DLL_PROCESS_ATTACH is only 
+    /* Verify that the DLL_PROCESS_ATTACH is only
      * accessed once.*/
     RetVal = DllFunc();
     if (RetVal != 1)
@@ -70,7 +69,7 @@ PALTEST(loader_LoadLibraryA_test6_paltest_loadlibrarya_test6, "loader/LoadLibrar
     char fname[_MAX_FNAME];
     char ext[_MAX_EXT];
 
-	
+
 
     /* Initialize the PAL. */
     if ((PAL_Initialize(argc, argv)) != 0)
@@ -78,21 +77,21 @@ PALTEST(loader_LoadLibraryA_test6_paltest_loadlibrarya_test6, "loader/LoadLibrar
         return (FAIL);
     }
 
-    /* Initalize the buffer.
+    /* Initialize the buffer.
      */
     memset(fullPath, 0, _MAX_DIR);
 
     /* Get the full path to the library (DLL).
      */
-  
-	if (NULL != _fullpath(fullPath,argv[0],_MAX_DIR)) {
-	
+
+	if (NULL != realpath(argv[0],fullpath)) {
+
 	 _splitpath(fullPath,drive,dir,fname,ext);
 	 _makepath(fullPath,drive,dir,LibraryName,"");
-	 
-	
+
+
 	} else {
-		Fail("ERROR: conversion from relative path \" %s \" to absolute path failed. _fullpath returned NULL\n",argv[0]);
+		Fail("ERROR: conversion from relative path \" %s \" to absolute path failed. realpath returned NULL\n",argv[0]);
 	}
 
     /* Call Load library with the short name of
@@ -101,11 +100,11 @@ PALTEST(loader_LoadLibraryA_test6_paltest_loadlibrarya_test6, "loader/LoadLibrar
     hShortLib = LoadLibrary(LibraryName);
     if(hShortLib == NULL)
     {
-        Fail("ERROR:%u:Unable to load library %s\n", 
-             GetLastError(), 
+        Fail("ERROR:%u:Unable to load library %s\n",
+             GetLastError(),
              LibraryName);
     }
-    
+
     /* Test the loaded library.
      */
     if (!TestDll(hShortLib))
@@ -120,8 +119,8 @@ PALTEST(loader_LoadLibraryA_test6_paltest_loadlibrarya_test6, "loader/LoadLibrar
     hFullLib = LoadLibrary(fullPath);
     if(hFullLib == NULL)
     {
-        Trace("ERROR:%u:Unable to load library %s\n", 
-              GetLastError(), 
+        Trace("ERROR:%u:Unable to load library %s\n",
+              GetLastError(),
               fullPath);
         iRetVal = FAIL;
         goto cleanUpTwo;
@@ -141,11 +140,11 @@ PALTEST(loader_LoadLibraryA_test6_paltest_loadlibrarya_test6, "loader/LoadLibrar
 
 cleanUpTwo:
 
-    /* Call the FreeLibrary API. 
-     */ 
+    /* Call the FreeLibrary API.
+     */
     if (!FreeLibrary(hFullLib))
     {
-        Trace("ERROR:%u: Unable to free library \"%s\"\n", 
+        Trace("ERROR:%u: Unable to free library \"%s\"\n",
               GetLastError(),
               fullPath);
         iRetVal = FAIL;
@@ -153,11 +152,11 @@ cleanUpTwo:
 
 cleanUpOne:
 
-    /* Call the FreeLibrary API. 
-     */ 
+    /* Call the FreeLibrary API.
+     */
     if (!FreeLibrary(hShortLib))
     {
-        Trace("ERROR:%u: Unable to free library \"%s\"\n", 
+        Trace("ERROR:%u: Unable to free library \"%s\"\n",
               GetLastError(),
               LibraryName);
         iRetVal = FAIL;
@@ -167,5 +166,4 @@ cleanUpOne:
      */
     PAL_TerminateEx(iRetVal);
     return iRetVal;
-
 }

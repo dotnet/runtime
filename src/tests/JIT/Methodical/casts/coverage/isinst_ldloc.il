@@ -10,7 +10,8 @@
 .assembly isinst_ldloc
 {
 }
-.namespace JitTest
+.assembly extern xunit.core {}
+.namespace JitTest_isinst_ldloc_il
 {
   .class private auto ansi beforefieldinit BaseClass
          extends [mscorlib]System.Object
@@ -27,8 +28,8 @@
 
   } // end of class BaseClass
 
-  .class private auto ansi beforefieldinit TestClass
-         extends JitTest.BaseClass
+  .class public auto ansi beforefieldinit TestClass
+         extends JitTest_isinst_ldloc_il.BaseClass
   {
     .method private hidebysig static bool 
             Test_LDLOC(object _obj,
@@ -37,7 +38,7 @@
       // Code size       43 (0x2b)
       .maxstack  2
       .locals (object V_0,
-               class JitTest.TestClass V_1,
+               class JitTest_isinst_ldloc_il.TestClass V_1,
                bool V_2)
       IL_0000:  ldarg.0
       IL_0001:  stloc.0
@@ -47,7 +48,7 @@
         IL_0003:  brfalse.s  IL_0016
 
         IL_0005:  ldloc 0
-        IL_0006:  isinst     JitTest.TestClass
+        IL_0006:  isinst     JitTest_isinst_ldloc_il.TestClass
         IL_000b:  stloc.1
         IL_000c:  ldloc.1
         IL_000d:  ldnull
@@ -58,7 +59,7 @@
         IL_0014:  leave.s    IL_0029
 
         IL_0016:  ldloc 0
-        IL_0017:  isinst     JitTest.TestClass
+        IL_0017:  isinst     JitTest_isinst_ldloc_il.TestClass
         IL_001c:  stloc.1
         IL_001d:  ldloc.1
         IL_001e:  ldnull
@@ -79,15 +80,18 @@
       IL_002a:  ret
     } // end of method TestClass::Test_LDLOC
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       139 (0x8b)
       .maxstack  2
-      IL_0000:  newobj     instance void JitTest.TestClass::.ctor()
+      IL_0000:  newobj     instance void JitTest_isinst_ldloc_il.TestClass::.ctor()
       IL_0005:  ldc.i4.1
-      IL_0006:  call       bool JitTest.TestClass::Test_LDLOC(object,
+      IL_0006:  call       bool JitTest_isinst_ldloc_il.TestClass::Test_LDLOC(object,
                                                               bool)
       IL_000b:  brtrue.s   IL_001a
 
@@ -96,9 +100,9 @@
       IL_0017:  ldc.i4.s   101
       IL_0019:  ret
 
-      IL_001a:  newobj     instance void JitTest.DerivedClass::.ctor()
+      IL_001a:  newobj     instance void JitTest_isinst_ldloc_il.DerivedClass::.ctor()
       IL_001f:  ldc.i4.1
-      IL_0020:  call       bool JitTest.TestClass::Test_LDLOC(object,
+      IL_0020:  call       bool JitTest_isinst_ldloc_il.TestClass::Test_LDLOC(object,
                                                               bool)
       IL_0025:  brtrue.s   IL_0034
 
@@ -107,9 +111,9 @@
       IL_0031:  ldc.i4.s   102
       IL_0033:  ret
 
-      IL_0034:  newobj     instance void JitTest.BaseClass::.ctor()
+      IL_0034:  newobj     instance void JitTest_isinst_ldloc_il.BaseClass::.ctor()
       IL_0039:  ldc.i4.0
-      IL_003a:  call       bool JitTest.TestClass::Test_LDLOC(object,
+      IL_003a:  call       bool JitTest_isinst_ldloc_il.TestClass::Test_LDLOC(object,
                                                               bool)
       IL_003f:  brtrue.s   IL_004e
 
@@ -118,9 +122,9 @@
       IL_004b:  ldc.i4.s   103
       IL_004d:  ret
 
-      IL_004e:  newobj     instance void JitTest.OtherClass::.ctor()
+      IL_004e:  newobj     instance void JitTest_isinst_ldloc_il.OtherClass::.ctor()
       IL_0053:  ldc.i4.0
-      IL_0054:  call       bool JitTest.TestClass::Test_LDLOC(object,
+      IL_0054:  call       bool JitTest_isinst_ldloc_il.TestClass::Test_LDLOC(object,
                                                               bool)
       IL_0059:  brtrue.s   IL_0068
 
@@ -131,7 +135,7 @@
 
       IL_0068:  ldnull
       IL_0069:  ldc.i4.0
-      IL_006a:  call       bool JitTest.TestClass::Test_LDLOC(object,
+      IL_006a:  call       bool JitTest_isinst_ldloc_il.TestClass::Test_LDLOC(object,
                                                               bool)
       IL_006f:  brtrue.s   IL_007e
 
@@ -152,14 +156,14 @@
       // Code size       7 (0x7)
       .maxstack  8
       IL_0000:  ldarg.0
-      IL_0001:  call       instance void JitTest.BaseClass::.ctor()
+      IL_0001:  call       instance void JitTest_isinst_ldloc_il.BaseClass::.ctor()
       IL_0006:  ret
     } // end of method TestClass::.ctor
 
   } // end of class TestClass
 
   .class private auto ansi beforefieldinit DerivedClass
-         extends JitTest.TestClass
+         extends JitTest_isinst_ldloc_il.TestClass
   {
     .method public hidebysig specialname rtspecialname 
             instance void .ctor() cil managed
@@ -167,7 +171,7 @@
       // Code size       7 (0x7)
       .maxstack  8
       IL_0000:  ldarg.0
-      IL_0001:  call       instance void JitTest.TestClass::.ctor()
+      IL_0001:  call       instance void JitTest_isinst_ldloc_il.TestClass::.ctor()
       IL_0006:  ret
     } // end of method DerivedClass::.ctor
 
@@ -188,7 +192,7 @@
 
   } // end of class OtherClass
 
-} // end of namespace JitTest
+} // end of namespace JitTest_isinst_ldloc_il
 
 //*********** DISASSEMBLY COMPLETE ***********************
 // WARNING: Created Win32 resource file isinst_ldloc.res

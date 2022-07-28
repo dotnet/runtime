@@ -30,8 +30,14 @@ namespace System.Configuration
         /// </summary>
         public object GetValue(string key, Type type)
         {
-            if (key == null) throw new ArgumentNullException(nameof(key));
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
 
             string val = _map[key];
 
@@ -74,7 +80,7 @@ namespace System.Configuration
             }
         }
 
-        private int GetNoneNesting(string val)
+        private static int GetNoneNesting(string val)
         {
             int count = 0;
             int len = val.Length;

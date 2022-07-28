@@ -56,6 +56,8 @@ namespace System.Net.Sockets
 
         public static unsafe SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
         {
+            socket = new SafeSocketHandle();
+
             IntPtr fd;
             SocketError errorCode;
             Interop.Error error = Interop.Sys.Socket(addressFamily, socketType, protocolType, &fd);
@@ -86,8 +88,13 @@ namespace System.Net.Sockets
                 errorCode = GetSocketErrorForErrorCode(error);
             }
 
-            socket = new SafeSocketHandle(fd, ownsHandle: true);
+            Marshal.InitHandle(socket, fd);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
+            if (socket.IsInvalid)
+            {
+                socket.Dispose();
+            }
 
             return errorCode;
         }
@@ -682,7 +689,7 @@ namespace System.Net.Sockets
             {
                 // Due to fd recyling, TryCompleteConnect may be called when there was a write event
                 // for the previous socket that used the fd.
-                // The SocketErrorOption in that case is the same as for a succesful connect.
+                // The SocketErrorOption in that case is the same as for a successful connect.
                 // To filter out these false events, we check whether the socket is writable, before
                 // reading the socket option.
                 Interop.PollEvents outEvents;
@@ -1089,6 +1096,8 @@ namespace System.Net.Sockets
 
         public static SocketError Accept(SafeSocketHandle listenSocket, byte[] socketAddress, ref int socketAddressLen, out SafeSocketHandle socket)
         {
+            socket = new SafeSocketHandle();
+
             IntPtr acceptedFd;
             SocketError errorCode;
             if (!listenSocket.IsNonBlocking)
@@ -1097,14 +1106,14 @@ namespace System.Net.Sockets
             }
             else
             {
-                bool completed = TryCompleteAccept(listenSocket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode);
-                if (!completed)
+                if (!TryCompleteAccept(listenSocket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode))
                 {
                     errorCode = SocketError.WouldBlock;
                 }
             }
 
-            socket = new SafeSocketHandle(acceptedFd, ownsHandle: true);
+            Marshal.InitHandle(socket, acceptedFd);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, socket);
 
             return errorCode;
@@ -1172,18 +1181,15 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        public static SocketError SendFile(SafeSocketHandle handle, FileStream fileStream)
+        public static SocketError SendFile(SafeSocketHandle handle, SafeFileHandle fileHandle)
         {
             long offset = 0;
-            long length = fileStream.Length;
-
-            SafeFileHandle fileHandle = fileStream.SafeFileHandle;
-
+            long length = RandomAccess.GetLength(fileHandle);
             long bytesTransferred = 0;
 
             if (!handle.IsNonBlocking)
             {
-                return handle.AsyncContext.SendFile(fileHandle, offset, length, handle.SendTimeout, out bytesTransferred);
+                return handle.AsyncContext.SendFile(fileHandle, offset, length, handle.SendTimeout, out _);
             }
 
             SocketError errorCode;
@@ -1227,7 +1233,7 @@ namespace System.Net.Sockets
             else
             {
                 int socketAddressLen = 0;
-                if (!TryCompleteReceiveFrom(handle, buffers, socketFlags, null, ref socketAddressLen, out bytesTransferred, out socketFlags, out errorCode))
+                if (!TryCompleteReceiveFrom(handle, buffers, socketFlags, null, ref socketAddressLen, out bytesTransferred, out _, out errorCode))
                 {
                     errorCode = SocketError.WouldBlock;
                 }
@@ -1907,10 +1913,10 @@ namespace System.Net.Sockets
             return GetSocketErrorForErrorCode(err);
         }
 
-        private static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, long offset, long count, CancellationToken cancellationToken, Action<long, SocketError> callback)
+        private static SocketError SendFileAsync(SafeSocketHandle handle, SafeFileHandle fileHandle, long offset, long count, CancellationToken cancellationToken, Action<long, SocketError> callback)
         {
             long bytesSent;
-            SocketError socketError = handle.AsyncContext.SendFileAsync(fileStream.SafeFileHandle, offset, count, out bytesSent, callback, cancellationToken);
+            SocketError socketError = handle.AsyncContext.SendFileAsync(fileHandle, offset, count, out bytesSent, callback, cancellationToken);
             if (socketError == SocketError.Success)
             {
                 callback(bytesSent, SocketError.Success);
@@ -1918,14 +1924,14 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        public static async void SendPacketsAsync(
-            Socket socket, TransmitFileOptions options, SendPacketsElement[] elements, FileStream[] files, CancellationToken cancellationToken, Action<long, SocketError> callback)
+        public static async Task SendPacketsAsync(
+            Socket socket, TransmitFileOptions options, SendPacketsElement[] elements, SafeFileHandle[] fileHandles, CancellationToken cancellationToken, Action<long, SocketError> callback)
         {
             SocketError error = SocketError.Success;
             long bytesTransferred = 0;
             try
             {
-                Debug.Assert(elements.Length == files.Length);
+                Debug.Assert(elements.Length == fileHandles.Length);
                 for (int i = 0; i < elements.Length; i++)
                 {
                     SendPacketsElement e = elements[i];
@@ -1933,19 +1939,21 @@ namespace System.Net.Sockets
                     {
                         if (e.MemoryBuffer != null)
                         {
-                            bytesTransferred += await socket.SendAsync(e.MemoryBuffer.Value, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                            bytesTransferred = await socket.SendAsync(e.MemoryBuffer.Value, SocketFlags.None, cancellationToken).ConfigureAwait(false) + bytesTransferred;
                         }
                         else
                         {
-                            FileStream fs = files[i] ?? e.FileStream!;
-                            if (e.Count > fs.Length - e.OffsetLong)
+                            SafeFileHandle fileHandle = fileHandles[i] ?? e.FileStream!.SafeFileHandle;
+                            long fsLength = RandomAccess.GetLength(fileHandle);
+
+                            if (e.Count > fsLength - e.OffsetLong)
                             {
                                 throw new ArgumentOutOfRangeException();
                             }
 
                             var tcs = new TaskCompletionSource<SocketError>();
-                            error = SendFileAsync(socket.InternalSafeHandle, fs, e.OffsetLong,
-                                e.Count > 0 ? e.Count : fs.Length - e.OffsetLong,
+                            error = SendFileAsync(socket.InternalSafeHandle, fileHandle, e.OffsetLong,
+                                e.Count > 0 ? e.Count : fsLength - e.OffsetLong,
                                 cancellationToken,
                                 (transferred, se) =>
                                 {
@@ -1975,7 +1983,7 @@ namespace System.Net.Sockets
             }
             catch (Exception exc)
             {
-                foreach (FileStream fs in files)
+                foreach (SafeFileHandle fs in fileHandles)
                 {
                     fs?.Dispose();
                 }
@@ -2008,6 +2016,32 @@ namespace System.Net.Sockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, res);
             return res;
+        }
+
+        internal static bool HasNonBlockingConnectCompleted(SafeSocketHandle handle, out bool success)
+        {
+            Interop.Error err = Interop.Sys.Poll(handle, Interop.PollEvents.POLLOUT, timeout: 0, out Interop.PollEvents outEvents);
+            if (err != Interop.Error.SUCCESS)
+            {
+                throw new SocketException((int)GetSocketErrorForErrorCode(err));
+            }
+
+            // When connect completes the socket is writable.
+            if ((outEvents & Interop.PollEvents.POLLOUT) == 0)
+            {
+                success = false;
+                return false;
+            }
+
+            // Get the connect result from SocketOptionName.Error.
+            SocketError errorCode = GetSockOpt(handle, SocketOptionLevel.Socket, SocketOptionName.Error, out int optionValue);
+            if (errorCode != SocketError.Success)
+            {
+                throw new SocketException((int)errorCode);
+            }
+
+            success = (SocketError)optionValue == SocketError.Success;
+            return true;
         }
     }
 }

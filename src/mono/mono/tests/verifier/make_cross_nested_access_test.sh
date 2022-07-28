@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -39,7 +39,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/CONSTRU
   .ver  0:0:0:0
 }
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly extern mscorlib
@@ -60,7 +60,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/CONSTRU
 	.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
 		ret
 	}
@@ -73,7 +73,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/CONSTRU
 		.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 		{
 			.maxstack 8
-			ldarg.0 
+			ldarg.0
 			call instance void object::.ctor()
 			ret
 		}
@@ -82,8 +82,8 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/CONSTRU
 		{
 			.maxstack 8
 			ldc.i4.0
-			ret 
-		}		
+			ret
+		}
 	}
 
 	.class nested public Test EXTENDS
@@ -91,7 +91,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/CONSTRU
 		.method public hidebysig specialname rtspecialname instance default void .ctor () cil managed
 		{
 			.maxstack 8
-			ldarg.0 
+			ldarg.0
 			CONSTRUCTOR
 			ret
 		}
@@ -103,7 +103,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/CONSTRU
 			OPCODE // VALIDITY.
 			pop
 			ret
-		}	
+		}
 	}
 }
 

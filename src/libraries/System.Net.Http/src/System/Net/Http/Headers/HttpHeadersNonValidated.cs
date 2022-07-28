@@ -25,15 +25,15 @@ namespace System.Net.Http.Headers
 
         /// <summary>Gets the number of headers stored in the collection.</summary>
         /// <remarks>Multiple header values associated with the same header name are considered to be one header as far as this count is concerned.</remarks>
-        public int Count => _headers?.HeaderStore?.Count ?? 0;
+        public int Count => _headers?.Count ?? 0;
 
         /// <summary>Gets whether the collection contains the specified header.</summary>
         /// <param name="headerName">The name of the header.</param>
         /// <returns>true if the collection contains the header; otherwise, false.</returns>
         public bool Contains(string headerName) =>
             _headers is HttpHeaders headers &&
-            HeaderDescriptor.TryGet(headerName, out HeaderDescriptor descriptor) &&
-            headers.TryGetHeaderValue(descriptor, out _);
+            headers.TryGetHeaderDescriptor(headerName, out HeaderDescriptor descriptor) &&
+            headers.Contains(descriptor);
 
         /// <summary>Gets the values for the specified header name.</summary>
         /// <param name="headerName">The name of the header.</param>
@@ -62,7 +62,7 @@ namespace System.Net.Http.Headers
         public bool TryGetValues(string headerName, out HeaderStringValues values)
         {
             if (_headers is HttpHeaders headers &&
-                HeaderDescriptor.TryGet(headerName, out HeaderDescriptor descriptor) &&
+                headers.TryGetHeaderDescriptor(headerName, out HeaderDescriptor descriptor) &&
                 headers.TryGetHeaderValue(descriptor, out object? info))
             {
                 HttpHeaders.GetStoreValuesAsStringOrStringArray(descriptor, info, out string? singleValue, out string[]? multiValue);
@@ -83,8 +83,8 @@ namespace System.Net.Http.Headers
         /// <summary>Gets an enumerator that iterates through the <see cref="HttpHeadersNonValidated"/>.</summary>
         /// <returns>An enumerator that iterates through the <see cref="HttpHeadersNonValidated"/>.</returns>
         public Enumerator GetEnumerator() =>
-            _headers is HttpHeaders headers && headers.HeaderStore is Dictionary<HeaderDescriptor, object> store ?
-                new Enumerator(store.GetEnumerator()) :
+            _headers is HttpHeaders headers && headers.GetEntriesArray() is HeaderEntry[] entries ?
+                new Enumerator(entries, headers.Count) :
                 default;
 
         /// <inheritdoc/>
@@ -120,35 +120,34 @@ namespace System.Net.Http.Headers
         /// <summary>Enumerates the elements of a <see cref="HttpHeadersNonValidated"/>.</summary>
         public struct Enumerator : IEnumerator<KeyValuePair<string, HeaderStringValues>>
         {
-            /// <summary>The wrapped enumerator for the underlying headers dictionary.</summary>
-            private Dictionary<HeaderDescriptor, object>.Enumerator _headerStoreEnumerator;
-            /// <summary>The current value.</summary>
+            private readonly HeaderEntry[] _entries;
+            private readonly int _numberOfEntries;
+            private int _index;
             private KeyValuePair<string, HeaderStringValues> _current;
-            /// <summary>true if the enumerator was constructed via the ctor; otherwise, false./</summary>
-            private bool _valid;
 
-            /// <summary>Initializes the enumerator.</summary>
-            /// <param name="headerStoreEnumerator">The underlying dictionary enumerator.</param>
-            internal Enumerator(Dictionary<HeaderDescriptor, object>.Enumerator headerStoreEnumerator)
+            internal Enumerator(HeaderEntry[] entries, int numberOfEntries)
             {
-                _headerStoreEnumerator = headerStoreEnumerator;
+                _entries = entries;
+                _numberOfEntries = numberOfEntries;
+                _index = 0;
                 _current = default;
-                _valid = true;
             }
 
             /// <inheritdoc/>
             public bool MoveNext()
             {
-                if (_valid && _headerStoreEnumerator.MoveNext())
+                int index = _index;
+                if (_entries is HeaderEntry[] entries && index < _numberOfEntries && (uint)index < (uint)entries.Length)
                 {
-                    KeyValuePair<HeaderDescriptor, object> current = _headerStoreEnumerator.Current;
+                    HeaderEntry entry = entries[index];
+                    _index++;
 
-                    HttpHeaders.GetStoreValuesAsStringOrStringArray(current.Key, current.Value, out string? singleValue, out string[]? multiValue);
+                    HttpHeaders.GetStoreValuesAsStringOrStringArray(entry.Key, entry.Value, out string? singleValue, out string[]? multiValue);
                     Debug.Assert(singleValue is not null ^ multiValue is not null);
 
                     _current = new KeyValuePair<string, HeaderStringValues>(
-                        current.Key.Name,
-                        singleValue is not null ? new HeaderStringValues(current.Key, singleValue) : new HeaderStringValues(current.Key, multiValue!));
+                        entry.Key.Name,
+                        singleValue is not null ? new HeaderStringValues(entry.Key, singleValue) : new HeaderStringValues(entry.Key, multiValue!));
                     return true;
                 }
 

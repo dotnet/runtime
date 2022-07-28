@@ -27,8 +27,9 @@ struct RegSlotIdKey
     {
     }
 
-    RegSlotIdKey(unsigned short regNum, unsigned short flags) : m_regNum(regNum), m_flags(flags)
+    RegSlotIdKey(unsigned short regNum, unsigned flags) : m_regNum(regNum), m_flags((unsigned short)flags)
     {
+        assert(m_flags == flags);
     }
 
     static unsigned GetHashCode(RegSlotIdKey rsk)
@@ -52,8 +53,10 @@ struct StackSlotIdKey
     {
     }
 
-    StackSlotIdKey(int offset, bool fpRel, unsigned short flags) : m_offset(offset), m_fpRel(fpRel), m_flags(flags)
+    StackSlotIdKey(int offset, bool fpRel, unsigned flags)
+        : m_offset(offset), m_fpRel(fpRel), m_flags((unsigned short)flags)
     {
+        assert(flags == m_flags);
     }
 
     static unsigned GetHashCode(StackSlotIdKey ssk)
@@ -320,12 +323,13 @@ public:
                                            // might accidentally be violated in the future.)
     };
 
-    WriteBarrierForm gcIsWriteBarrierCandidate(GenTree* tgt, GenTree* assignVal);
-    bool gcIsWriteBarrierStoreIndNode(GenTree* op);
-
-    // Returns a WriteBarrierForm decision based on the form of "tgtAddr", which is assumed to be the
-    // argument of a GT_IND LHS.
+    WriteBarrierForm gcIsWriteBarrierCandidate(GenTreeStoreInd* store);
     WriteBarrierForm gcWriteBarrierFormFromTargetAddress(GenTree* tgtAddr);
+
+    bool gcIsWriteBarrierStoreIndNode(GenTreeStoreInd* store)
+    {
+        return gcIsWriteBarrierCandidate(store) != WBF_NoBarrier;
+    }
 
     //-------------------------------------------------------------------------
     //

@@ -1076,7 +1076,7 @@ namespace System.Xml.Tests
                 for (int i = 0; i < bytes; i++)
                 {
                     CError.Write(bbb[i].ToString());
-                    output.AppendFormat(bbb[i].ToString());
+                    output.Append(bbb[i]);
                 }
             }
             CError.WriteLine();

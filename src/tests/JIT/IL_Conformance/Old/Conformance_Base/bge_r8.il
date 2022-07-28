@@ -598,4 +598,4 @@ FAIL:
 	ret
 
 }
-.assembly bge_r8.exe{}
+.assembly bge_r8{}

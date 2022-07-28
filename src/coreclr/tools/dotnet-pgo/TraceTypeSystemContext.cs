@@ -16,6 +16,7 @@ using System.IO.MemoryMappedFiles;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System.Reflection.Metadata;
 using ILCompiler.Reflection.ReadyToRun;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
@@ -24,11 +25,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         private readonly PgoTraceProcess _pgoTraceProcess;
         private readonly ModuleLoadLogger _moduleLoadLogger;
         private int _clrInstanceID;
+        private bool _automaticReferences;
 
-        private readonly Dictionary<string,string> _normalizedFilePathToFilePath = new Dictionary<string,string> (StringComparer.OrdinalIgnoreCase);
+        public readonly Dictionary<string,string> _normalizedFilePathToFilePath = new Dictionary<string,string> (StringComparer.OrdinalIgnoreCase);
 
-        public TraceTypeSystemContext(PgoTraceProcess traceProcess, int clrInstanceID, Logger logger)
+        public TraceTypeSystemContext(PgoTraceProcess traceProcess, int clrInstanceID, Logger logger, bool automaticReferences)
         {
+            _automaticReferences = automaticReferences;
             foreach (var traceData in traceProcess.TraceProcess.EventsInProcess.ByEventType<ModuleLoadUnloadTraceData>())
             {
                 if (traceData.ModuleILPath != null)
@@ -123,21 +126,24 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 string filePath = null;
 
-                foreach (var module in _pgoTraceProcess.EnumerateLoadedManagedModules())
+                if (_automaticReferences)
                 {
-                    var managedModule = module.ManagedModule;
-
-                    if (module.ClrInstanceID != _clrInstanceID)
-                        continue;
-
-                    if (PgoTraceProcess.CompareModuleAgainstSimpleName(simpleName, managedModule))
+                    foreach (var module in _pgoTraceProcess.EnumerateLoadedManagedModules())
                     {
-                        string filePathTemp = PgoTraceProcess.ComputeFilePathOnDiskForModule(managedModule);
+                        var managedModule = module.ManagedModule;
 
-                        // This path may be normalized
-                        if (File.Exists(filePathTemp) || !_normalizedFilePathToFilePath.TryGetValue(filePathTemp, out filePath))
-                            filePath = filePathTemp;
-                        break;
+                        if (module.ClrInstanceID != _clrInstanceID)
+                            continue;
+
+                        if (PgoTraceProcess.CompareModuleAgainstSimpleName(simpleName, managedModule))
+                        {
+                            string filePathTemp = PgoTraceProcess.ComputeFilePathOnDiskForModule(managedModule);
+
+                            // This path may be normalized
+                            if (File.Exists(filePathTemp) || !_normalizedFilePathToFilePath.TryGetValue(filePathTemp, out filePath))
+                                filePath = filePathTemp;
+                            break;
+                        }
                     }
                 }
 
@@ -181,9 +187,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
-        public EcmaModule GetModuleFromPath(string filePath)
+        public EcmaModule GetModuleFromPath(string filePath, bool throwIfNotLoadable = true)
         {
-            return GetOrAddModuleFromPath(filePath, null, true);
+            return GetOrAddModuleFromPath(filePath, null, true, throwIfNotLoadable: throwIfNotLoadable);
         }
 
         public EcmaModule GetMetadataOnlyModuleFromPath(string filePath)
@@ -196,7 +202,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return GetOrAddModuleFromPath(filePath, moduleData, false);
         }
 
-        private EcmaModule GetOrAddModuleFromPath(string filePath, byte[] moduleData, bool useForBinding)
+        private EcmaModule GetOrAddModuleFromPath(string filePath, byte[] moduleData, bool useForBinding, bool throwIfNotLoadable = true)
         {
             // This method is not expected to be called frequently. Linear search is acceptable.
             foreach (var entry in ModuleHashtable.Enumerator.Get(_moduleHashtable))
@@ -208,10 +214,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             bool succeeded = false;
             try
             {
-                EcmaModule returnValue = AddModule(filePath, null, moduleData, useForBinding);
-                _moduleLoadLogger.LogModuleLoadSuccess(returnValue.Assembly.GetName().Name, filePath);
-                succeeded = true;
-                return returnValue;
+                EcmaModule returnValue = AddModule(filePath, null, moduleData, useForBinding, throwIfNotLoadable: throwIfNotLoadable);
+                if (returnValue != null)
+                {
+                    _moduleLoadLogger.LogModuleLoadSuccess(returnValue.Assembly.GetName().Name, filePath);
+                    succeeded = true;
+                    return returnValue;
+                }
             }
             finally
             {
@@ -220,6 +229,20 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     _moduleLoadLogger.LogModuleLoadFailure(Path.GetFileNameWithoutExtension(filePath), filePath);
                 }
             }
+            return null;
+        }
+
+        private static ConditionalWeakTable<PEReader, string> s_peReaderToPath = new ConditionalWeakTable<PEReader, string>();
+
+        // Get the file path used to load a PEReader or "Memory" if it wasn't loaded from a file
+        public string PEReaderToFilePath(PEReader reader)
+        {
+            if (!s_peReaderToPath.TryGetValue(reader, out string filepath))
+            {
+                filepath = "Memory";
+            }
+
+            return filepath;
         }
 
         public static unsafe PEReader OpenPEFile(string filePath, byte[] moduleBytes, out MemoryMappedViewAccessor mappedViewAccessor)
@@ -242,13 +265,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             try
             {
                 // Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
-                fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
+                fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
                 mappedFile = MemoryMappedFile.CreateFromFile(
                     fileStream, null, fileStream.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
                 accessor = mappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
 
                 var safeBuffer = accessor.SafeMemoryMappedViewHandle;
                 var peReader = new PEReader((byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);
+                s_peReaderToPath.Add(peReader, filePath);
 
                 // MemoryMappedFile does not need to be kept around. MemoryMappedViewAccessor is enough.
 
@@ -259,22 +283,23 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
             finally
             {
-                if (accessor != null)
-                    accessor.Dispose();
-                if (mappedFile != null)
-                    mappedFile.Dispose();
-                if (fileStream != null)
-                    fileStream.Dispose();
+                accessor?.Dispose();
+                mappedFile?.Dispose();
+                fileStream?.Dispose();
             }
         }
 
-        private EcmaModule AddModule(string filePath, string expectedSimpleName, byte[] moduleDataBytes, bool useForBinding)
+        private EcmaModule AddModule(string filePath, string expectedSimpleName, byte[] moduleDataBytes, bool useForBinding, bool throwIfNotLoadable = true)
         {
             MemoryMappedViewAccessor mappedViewAccessor = null;
             PdbSymbolReader pdbReader = null;
             try
             {
                 PEReader peReader = OpenPEFile(filePath, moduleDataBytes, out mappedViewAccessor);
+                if ((!peReader.HasMetadata) && !throwIfNotLoadable)
+                {
+                    return null;
+                }
                 pdbReader = OpenAssociatedSymbolFile(filePath, peReader);
 
                 EcmaModule module = EcmaModule.Create(this, peReader, containingAssembly: null, pdbReader);
@@ -308,13 +333,17 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             return actualModuleData.Module;
                         }
                     }
-                    mappedViewAccessor = null; // Ownership has been transfered
+                    mappedViewAccessor = null; // Ownership has been transferred
                     pdbReader = null; // Ownership has been transferred
 
                     _moduleHashtable.AddOrGetExisting(moduleData);
                 }
 
                 return module;
+            }
+            catch when (!throwIfNotLoadable)
+            {
+                return null;
             }
             finally
             {
@@ -332,33 +361,35 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         private PdbSymbolReader OpenAssociatedSymbolFile(string peFilePath, PEReader peReader)
         {
-            // Assume that the .pdb file is next to the binary
-            var pdbFilename = Path.ChangeExtension(peFilePath, ".pdb");
+            string pdbFileName = null;
+            BlobContentId pdbContentId = default;
 
-            if (!File.Exists(pdbFilename))
+            foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
             {
-                pdbFilename = null;
+                if (debugEntry.Type != DebugDirectoryEntryType.CodeView)
+                    continue;
 
-                // If the file doesn't exist, try the path specified in the CodeView section of the image
-                foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
+                CodeViewDebugDirectoryData debugDirectoryData = peReader.ReadCodeViewDebugDirectoryData(debugEntry);
+
+                string candidatePath = debugDirectoryData.Path;
+                if (!Path.IsPathRooted(candidatePath) || !File.Exists(candidatePath))
                 {
-                    if (debugEntry.Type != DebugDirectoryEntryType.CodeView)
+                    // Also check next to the PE file
+                    candidatePath = Path.Combine(Path.GetDirectoryName(peFilePath), Path.GetFileName(candidatePath));
+                    if (!File.Exists(candidatePath))
                         continue;
-
-                    string candidateFileName = peReader.ReadCodeViewDebugDirectoryData(debugEntry).Path;
-                    if (Path.IsPathRooted(candidateFileName) && File.Exists(candidateFileName))
-                    {
-                        pdbFilename = candidateFileName;
-                        break;
-                    }
                 }
 
-                if (pdbFilename == null)
-                    return null;
+                pdbFileName = candidatePath;
+                pdbContentId = new BlobContentId(debugDirectoryData.Guid, debugEntry.Stamp);
+                break;
             }
 
+            if (pdbFileName == null)
+                return null;
+
             // Try to open the symbol file as portable pdb first
-            PdbSymbolReader reader = PortablePdbSymbolReader.TryOpen(pdbFilename, GetMetadataStringDecoder());
+            PdbSymbolReader reader = PortablePdbSymbolReader.TryOpen(pdbFileName, GetMetadataStringDecoder(), pdbContentId);
 
             return reader;
         }
@@ -375,12 +406,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         IAssemblyMetadata IAssemblyResolver.FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
         {
+            using var triggerErrors = new ModuleLoadLogger.LoadFailuresAsErrors();
             EcmaAssembly ecmaAssembly = (EcmaAssembly)this.GetModuleForSimpleName(metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name), false);
             return new StandaloneAssemblyMetadata(ecmaAssembly.PEReader);
         }
 
         IAssemblyMetadata IAssemblyResolver.FindAssembly(string simpleName, string parentFile)
         {
+            using var triggerErrors = new ModuleLoadLogger.LoadFailuresAsErrors();
             EcmaAssembly ecmaAssembly = (EcmaAssembly)this.GetModuleForSimpleName(simpleName, false);
             return new StandaloneAssemblyMetadata(ecmaAssembly.PEReader);
         }

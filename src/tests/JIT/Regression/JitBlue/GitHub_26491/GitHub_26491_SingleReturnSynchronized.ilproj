@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestProjectToRun>GitHub_26491_MultipleReturns.ilproj</CLRTestProjectToRun>
-    <CLRTestExecutionArguments>SingleReturnSynchronized</CLRTestExecutionArguments>
-    <!-- Generated shell script has no corresponding assembly -->
-    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'Android'">true</CLRTestTargetUnsupported>
-  </PropertyGroup>
-</Project>

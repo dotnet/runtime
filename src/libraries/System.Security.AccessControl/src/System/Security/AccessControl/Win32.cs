@@ -66,7 +66,7 @@ namespace System.Security.AccessControl
         // Wrapper around advapi32.GetSecurityInfo
         //
 
-        internal static int GetSecurityInfo(
+        internal static unsafe int GetSecurityInfo(
             ResourceType resourceType,
             string? name,
             SafeHandle? handle,
@@ -130,7 +130,7 @@ namespace System.Security.AccessControl
                     }
                     else
                     {
-                        errorCode = (int)Interop.Advapi32.GetSecurityInfoByHandle(handle, (uint)resourceType, (uint)SecurityInfos, out SidOwner, out SidGroup, out Dacl, out Sacl, out ByteArray);
+                        errorCode = (int)Interop.Advapi32.GetSecurityInfoByHandle(handle, (uint)resourceType, (uint)SecurityInfos, &SidOwner, &SidGroup, &Dacl, &Sacl, &ByteArray);
                     }
                 }
                 else
@@ -168,18 +168,12 @@ namespace System.Security.AccessControl
             catch
             {
                 // protection against exception filter-based luring attacks
-                if (privilege != null)
-                {
-                    privilege.Revert();
-                }
+                privilege?.Revert();
                 throw;
             }
             finally
             {
-                if (privilege != null)
-                {
-                    privilege.Revert();
-                }
+                privilege?.Revert();
             }
 
             //
@@ -321,18 +315,12 @@ namespace System.Security.AccessControl
             catch
             {
                 // protection against exception filter-based luring attacks
-                if (securityPrivilege != null)
-                {
-                    securityPrivilege.Revert();
-                }
+                securityPrivilege?.Revert();
                 throw;
             }
             finally
             {
-                if (securityPrivilege != null)
-                {
-                    securityPrivilege.Revert();
-                }
+                securityPrivilege?.Revert();
             }
 
             return 0;

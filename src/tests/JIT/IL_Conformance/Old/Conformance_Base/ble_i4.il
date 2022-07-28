@@ -311,4 +311,4 @@ FAIL:
 	ret
 }
 }
-.assembly ble_i4.exe{}
+.assembly ble_i4{}

@@ -8,7 +8,9 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool GetProcessTimes(SafeProcessHandle handle, out long creation, out long exit, out long kernel, out long user);
+        [LibraryImport(Libraries.Kernel32,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool GetProcessTimes(
+            SafeProcessHandle handle, out long creation, out long exit, out long kernel, out long user);
     }
 }

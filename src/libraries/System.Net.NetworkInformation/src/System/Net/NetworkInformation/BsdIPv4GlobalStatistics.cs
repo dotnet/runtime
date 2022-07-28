@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Net.NetworkInformation
 {
@@ -45,7 +46,7 @@ namespace System.Net.NetworkInformation
         public unsafe BsdIPv4GlobalStatistics()
         {
             Interop.Sys.IPv4GlobalStatistics statistics;
-            if (Interop.Sys.GetIPv4GlobalStatistics(out statistics) == -1)
+            if (Interop.Sys.GetIPv4GlobalStatistics(&statistics) == -1)
             {
                 throw new NetworkInformationException(SR.net_PInvokeError);
             }
@@ -95,18 +96,38 @@ namespace System.Net.NetworkInformation
 
         public override long OutputPacketRequests { get { return _outboundPackets; } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long OutputPacketRoutingDiscards { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long OutputPacketsDiscarded { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long OutputPacketsWithNoRoute { get { return _outputPacketsNoRoute; } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long PacketFragmentFailures { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long PacketReassembliesRequired { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long PacketReassemblyFailures { get { return _cantFrags; } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long PacketReassemblyTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long PacketsFragmented { get { return _datagramsFragmented; } }

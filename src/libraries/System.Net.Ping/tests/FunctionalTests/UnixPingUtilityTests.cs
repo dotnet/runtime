@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.NetworkInformation.Tests
 {
@@ -19,7 +20,7 @@ namespace System.Net.NetworkInformation.Tests
     {
         private const int IcmpHeaderLengthInBytes = 8;
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(0)]
         [InlineData(100)]
         [InlineData(1000)]
@@ -32,13 +33,26 @@ namespace System.Net.NetworkInformation.Tests
             p.StartInfo.RedirectStandardError = true;
             p.StartInfo.RedirectStandardOutput = true;
 
+            bool destinationNetUnreachable = false;
+            p.OutputDataReceived += delegate (object sendingProcess, DataReceivedEventArgs outputLine)
+            {
+                if (outputLine.Data?.Contains("Destination Net Unreachable", StringComparison.OrdinalIgnoreCase) == true)
+                    destinationNetUnreachable = true;
+            };
+
             Stopwatch stopWatch = Stopwatch.StartNew();
-                        
+
             p.Start();
+            p.BeginOutputReadLine();
             p.WaitForExit();
 
-            //ensure that the process takes longer than or equal to 'timeout'
-            Assert.True(stopWatch.ElapsedMilliseconds >= timeout);
+            if (destinationNetUnreachable)
+            {
+                throw new SkipTestException($"Network doesn't route {TestSettings.UnreachableAddress}, skipping test.");
+            }
+
+            //ensure that the process takes longer than or within 10ms of 'timeout', with a 5s maximum
+            Assert.InRange(stopWatch.ElapsedMilliseconds, timeout - 10, 5000);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -47,7 +61,6 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(50)]
         [InlineData(1000)]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests un-priviledged Ping support on Unix
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         public static async Task PacketSizeIsRespected(int payloadSize)
         {
             var stdOutLines = new List<string>();
@@ -55,15 +68,15 @@ namespace System.Net.NetworkInformation.Tests
 
             Process p = ConstructPingProcess(await TestSettings.GetLocalIPAddressAsync(), payloadSize, 1000);
             p.StartInfo.RedirectStandardOutput = true;
-            p.OutputDataReceived += delegate (object sendingProcess, DataReceivedEventArgs outputLine) 
-            { 
-                stdOutLines.Add(outputLine.Data); 
+            p.OutputDataReceived += delegate (object sendingProcess, DataReceivedEventArgs outputLine)
+            {
+                stdOutLines.Add(outputLine.Data);
             };
 
             p.StartInfo.RedirectStandardError = true;
-            p.ErrorDataReceived += delegate (object sendingProcess, DataReceivedEventArgs errorLine) 
-            { 
-                stdErrLines.Add(errorLine.Data); 
+            p.ErrorDataReceived += delegate (object sendingProcess, DataReceivedEventArgs errorLine)
+            {
+                stdErrLines.Add(errorLine.Data);
             };
 
             p.Start();

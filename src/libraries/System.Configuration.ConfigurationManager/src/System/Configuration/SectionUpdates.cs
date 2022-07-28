@@ -29,10 +29,10 @@ namespace System.Configuration
         // Find the SectionUpdates for a configKey, and create it if it does not exist.
         private SectionUpdates FindSectionUpdates(string configKey, bool isGroup)
         {
-            string group, dummy;
+            string group;
 
             if (isGroup) group = configKey;
-            else BaseConfigurationRecord.SplitConfigKey(configKey, out group, out dummy);
+            else BaseConfigurationRecord.SplitConfigKey(configKey, out group, out _);
 
             Debug.Assert(string.IsNullOrEmpty(_name), "FindSectionUpdates assumes search is from root record");
             SectionUpdates sectionUpdates = this;

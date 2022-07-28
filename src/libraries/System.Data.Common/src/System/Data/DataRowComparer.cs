@@ -74,10 +74,8 @@ namespace System.Data
                         return CompareEquatableArray((int[])a, (int[])b);
                     case TypeCode.Int64:
                         return CompareEquatableArray((long[])a, (long[])b);
-#nullable disable
                     case TypeCode.String:
                         return CompareEquatableArray((string[])a, (string[])b);
-#nullable enable
                 }
             }
 

@@ -18,17 +18,14 @@ namespace System.Net.Security
 
                 SafeChannelBindingHandle bindingHandle = new SafeChannelBindingHandle(ChannelBindingKind.Endpoint);
 
-                using (HashAlgorithm hashAlgo = GetHashForChannelBinding(cert))
-                {
-                    byte[] bindingHash = hashAlgo.ComputeHash(cert.RawData);
-                    bindingHandle.SetCertHash(bindingHash);
-                }
+                byte[] bindingHash = GetHashForChannelBinding(cert);
+                bindingHandle.SetCertHash(bindingHash);
 
                 return bindingHandle;
             }
         }
 
-        private static HashAlgorithm GetHashForChannelBinding(X509Certificate2 cert)
+        private static byte[] GetHashForChannelBinding(X509Certificate2 cert)
         {
             Oid signatureAlgorithm = cert.SignatureAlgorithm;
             switch (signatureAlgorithm.Value)
@@ -43,17 +40,17 @@ namespace System.Net.Security
                 case "2.16.840.1.101.3.4.2.1": // SHA256
                 case "1.2.840.10045.4.3.2": // SHA256ECDSA
                 case "1.2.840.113549.1.1.11": // SHA256RSA
-                    return SHA256.Create();
+                    return SHA256.HashData(cert.RawDataMemory.Span);
 
                 case "2.16.840.1.101.3.4.2.2": // SHA384
                 case "1.2.840.10045.4.3.3": // SHA384ECDSA
                 case "1.2.840.113549.1.1.12": // SHA384RSA
-                    return SHA384.Create();
+                    return SHA384.HashData(cert.RawDataMemory.Span);
 
                 case "2.16.840.1.101.3.4.2.3": // SHA512
                 case "1.2.840.10045.4.3.4": // SHA512ECDSA
                 case "1.2.840.113549.1.1.13": // SHA512RSA
-                    return SHA512.Create();
+                    return SHA512.HashData(cert.RawDataMemory.Span);
 
                 default:
                     throw new ArgumentException(signatureAlgorithm.Value);

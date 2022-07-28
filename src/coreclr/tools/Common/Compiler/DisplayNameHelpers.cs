@@ -1,16 +1,34 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Reflection.Metadata;
 using System.Text;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    internal static class DisplayNameHelpers
+    public static class DisplayNameHelpers
     {
+        public static string GetDisplayName(this TypeSystemEntity entity)
+        {
+            return entity switch
+            {
+                MethodDesc method => method.GetDisplayName(),
+                FieldDesc field => field.GetDisplayName(),
+                TypeDesc type => type.GetDisplayName(),
+#if !READYTORUN
+                PropertyPseudoDesc property => property.GetDisplayName(),
+                EventPseudoDesc @event => @event.GetDisplayName(),
+#endif
+                _ => throw new InvalidOperationException(),
+            };
+        }
+
         public static string GetDisplayName(this MethodDesc method)
         {
             var sb = new StringBuilder();
@@ -21,6 +39,13 @@ namespace ILCompiler
             if (method.IsConstructor)
             {
                 sb.Append(method.OwningType.GetDisplayNameWithoutNamespace());
+            }
+            else if (method.GetPropertyForAccessor() is PropertyPseudoDesc property)
+            {
+                sb.Append(property.Name);
+                sb.Append('.');
+                sb.Append(property.GetMethod == method ? "get" : "set");
+                return sb.ToString();
             }
             else
             {
@@ -52,6 +77,20 @@ namespace ILCompiler
             return sb.ToString();
         }
 
+        public static string GetParameterDisplayName(this EcmaMethod method, int parameterIndex)
+        {
+            var reader = method.MetadataReader;
+            var methodDefinition = reader.GetMethodDefinition(method.Handle);
+            foreach (var parameterHandle in methodDefinition.GetParameters())
+            {
+                var parameter = reader.GetParameter(parameterHandle);
+                if (parameter.SequenceNumber == parameterIndex + 1)
+                    return reader.GetString(parameter.Name);
+            }
+
+            return $"#{parameterIndex}";
+        }
+
         public static string GetDisplayName(this FieldDesc field)
         {
             return new StringBuilder(field.OwningType.GetDisplayName())
@@ -65,6 +104,13 @@ namespace ILCompiler
             return new StringBuilder(property.OwningType.GetDisplayName())
                 .Append('.')
                 .Append(property.Name).ToString();
+        }
+
+        public static string GetDisplayName(this EventPseudoDesc @event)
+        {
+            return new StringBuilder(@event.OwningType.GetDisplayName())
+                .Append('.')
+                .Append(@event.Name).ToString();
         }
 #endif
 

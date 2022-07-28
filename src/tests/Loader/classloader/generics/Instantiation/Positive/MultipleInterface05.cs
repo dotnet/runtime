@@ -21,7 +21,7 @@ class Gen<T> : IGenX<T[]>, IGenY<T>
   	}
 }
 
-public class Test
+public class Test_MultipleInterface05
 {
 	public static int counter = 0;
 	public static bool result = true;

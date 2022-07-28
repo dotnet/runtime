@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
@@ -15,7 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             _serviceProvider = serviceProvider;
         }
 
-        public override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
+        public override Func<ServiceProviderEngineScope, object?> RealizeService(ServiceCallSite callSite)
         {
             int callCount = 0;
             return scope =>
@@ -36,7 +37,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         }
                         catch (Exception ex)
                         {
-                            DependencyInjectionEventSource.Log.ServiceRealizationFailed(ex);
+                            DependencyInjectionEventSource.Log.ServiceRealizationFailed(ex, _serviceProvider.GetHashCode());
+
+                            Debug.Fail($"We should never get exceptions from the background compilation.{Environment.NewLine}{ex}");
                         }
                     },
                     null);

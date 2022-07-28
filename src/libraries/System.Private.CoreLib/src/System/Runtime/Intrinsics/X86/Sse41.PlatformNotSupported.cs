@@ -26,26 +26,26 @@ namespace System.Runtime.Intrinsics.X86
             /// <summary>
             /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
             ///   PEXTRQ reg/m64, xmm, imm8
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static long Extract(Vector128<long> value, byte index) { throw new PlatformNotSupportedException(); }
             /// <summary>
             /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
             ///   PEXTRQ reg/m64, xmm, imm8
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong Extract(Vector128<ulong> value, byte index) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
             ///   PINSRQ xmm, reg/m64, imm8
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static Vector128<long> Insert(Vector128<long> value, long data, byte index) { throw new PlatformNotSupportedException(); }
             /// <summary>
             /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
             ///   PINSRQ xmm, reg/m64, imm8
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static Vector128<ulong> Insert(Vector128<ulong> value, ulong data, byte index) { throw new PlatformNotSupportedException(); }
         }
@@ -675,12 +675,40 @@ namespace System.Runtime.Intrinsics.X86
         ///   PTEST xmm, xmm/m128
         /// </summary>
         public static bool TestC(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestC(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -688,12 +716,40 @@ namespace System.Runtime.Intrinsics.X86
         ///   PTEST xmm, xmm/m128
         /// </summary>
         public static bool TestNotZAndNotC(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestNotZAndNotC(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -701,12 +757,40 @@ namespace System.Runtime.Intrinsics.X86
         ///   PTEST xmm, xmm/m128
         /// </summary>
         public static bool TestZ(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
         public static bool TestZ(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
     }
 }

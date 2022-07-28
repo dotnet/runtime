@@ -15,9 +15,6 @@
 
 #include "common.h"
 #include "array.h"
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -106,6 +103,8 @@ UINT32 STUB_COLLIDE_WRITE_PCT = 100;
 UINT32 STUB_COLLIDE_MONO_PCT  =   0;
 #endif // STUB_LOGGING
 
+FastTable::NumCallStubs_t FastTable::NumCallStubs;
+
 FastTable* BucketTable::dead = NULL;    //linked list of the abandoned buckets
 
 DispatchCache *g_resolveCache = NULL;    //cache of dispatch stubs for in line lookup by resolve stubs.
@@ -138,7 +137,7 @@ void VirtualCallStubManager::StartupLogging()
     {
         FAULT_NOT_FATAL(); // We handle filecreation problems locally
         SString str;
-        str.Printf(W("StubLog_%d.log"), GetCurrentProcessId());
+        str.Printf("StubLog_%d.log", GetCurrentProcessId());
         g_hStubLogFile = WszCreateFile (str.GetUnicode(),
                                         GENERIC_WRITE,
                                         0,
@@ -190,142 +189,142 @@ void VirtualCallStubManager::LoggingDump()
     if(g_hStubLogFile)
     {
 #ifdef STUB_LOGGING
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nstub tuning parameters\r\n");
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\nstub tuning parameters\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\t%-30s %3d  (0x%02x)\r\n", "STUB_MISS_COUNT_VALUE",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\t%-30s %3d  (0x%02x)\r\n", "STUB_MISS_COUNT_VALUE",
                 STUB_MISS_COUNT_VALUE, STUB_MISS_COUNT_VALUE);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\t%-30s %3d%% (0x%02x)\r\n", "STUB_COLLIDE_WRITE_PCT",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\t%-30s %3d%% (0x%02x)\r\n", "STUB_COLLIDE_WRITE_PCT",
                 STUB_COLLIDE_WRITE_PCT, STUB_COLLIDE_WRITE_PCT);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\t%-30s %3d%% (0x%02x)\r\n", "STUB_COLLIDE_MONO_PCT",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\t%-30s %3d%% (0x%02x)\r\n", "STUB_COLLIDE_MONO_PCT",
                 STUB_COLLIDE_MONO_PCT, STUB_COLLIDE_MONO_PCT);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\t%-30s %3d%% (0x%02x)\r\n", "DumpLogCounter",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\t%-30s %3d%% (0x%02x)\r\n", "DumpLogCounter",
                 g_dumpLogCounter, g_dumpLogCounter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\t%-30s %3d%% (0x%02x)\r\n", "DumpLogIncr",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\t%-30s %3d%% (0x%02x)\r\n", "DumpLogIncr",
                 g_dumpLogCounter, g_dumpLogIncr);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\t%-30s %3d%% (0x%02x)\r\n", "ResetCacheCounter",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\t%-30s %3d%% (0x%02x)\r\n", "ResetCacheCounter",
                 g_resetCacheCounter, g_resetCacheCounter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\t%-30s %3d%% (0x%02x)\r\n", "ResetCacheIncr",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\t%-30s %3d%% (0x%02x)\r\n", "ResetCacheIncr",
                 g_resetCacheCounter, g_resetCacheIncr);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 #endif // STUB_LOGGING
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nsite data\r\n");
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\nsite data\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
         //output counters
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "site_counter", g_site_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "site_counter", g_site_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "site_write", g_site_write);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "site_write", g_site_write);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "site_write_mono", g_site_write_mono);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "site_write_mono", g_site_write_mono);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "site_write_poly", g_site_write_poly);
-        WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\n%-30s %d\r\n", "reclaim_counter", g_reclaim_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "site_write_poly", g_site_write_poly);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nstub data\r\n");
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\n%-30s %d\r\n", "reclaim_counter", g_reclaim_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "stub_lookup_counter", g_stub_lookup_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\nstub data\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "stub_mono_counter", g_stub_mono_counter);
+
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "stub_lookup_counter", g_stub_lookup_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "stub_poly_counter", g_stub_poly_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "stub_mono_counter", g_stub_mono_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "stub_vtable_counter", g_stub_vtable_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "stub_poly_counter", g_stub_poly_counter);
+        WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "stub_vtable_counter", g_stub_vtable_counter);
         WriteFile(g_hStubLogFile, szPrintStr, (DWORD)strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "stub_space", g_stub_space);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "stub_space", g_stub_space);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
 #ifdef STUB_LOGGING
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nlookup stub data\r\n");
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\nlookup stub data\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
         UINT32 total_calls = g_mono_call_counter + g_poly_call_counter;
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "lookup_call_counter", g_call_lookup_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "lookup_call_counter", g_call_lookup_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\n%-30s %d\r\n", "total stub dispatch calls", total_calls);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\n%-30s %d\r\n", "total stub dispatch calls", total_calls);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\n%-30s %#5.2f%%\r\n", "mono stub data",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\n%-30s %#5.2f%%\r\n", "mono stub data",
                 100.0 * double(g_mono_call_counter)/double(total_calls));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "mono_call_counter", g_mono_call_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "mono_call_counter", g_mono_call_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "mono_miss_counter", g_mono_miss_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "mono_miss_counter", g_mono_miss_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_PCT, "miss percent",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_PCT, "miss percent",
                 100.0 * double(g_mono_miss_counter)/double(g_mono_call_counter));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\n%-30s %#5.2f%%\r\n", "poly stub data",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\n%-30s %#5.2f%%\r\n", "poly stub data",
                 100.0 * double(g_poly_call_counter)/double(total_calls));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "poly_call_counter", g_poly_call_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "poly_call_counter", g_poly_call_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "poly_miss_counter", g_poly_miss_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "poly_miss_counter", g_poly_miss_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_PCT, "miss percent",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_PCT, "miss percent",
                 100.0 * double(g_poly_miss_counter)/double(g_poly_call_counter));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 #endif // STUB_LOGGING
 
 #ifdef CHAIN_LOOKUP
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nchain lookup data\r\n");
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\nchain lookup data\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
 #ifdef STUB_LOGGING
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "chained_lookup_call_counter", g_chained_lookup_call_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "chained_lookup_call_counter", g_chained_lookup_call_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "chained_lookup_miss_counter", g_chained_lookup_miss_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "chained_lookup_miss_counter", g_chained_lookup_miss_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_PCT, "miss percent",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_PCT, "miss percent",
                 100.0 * double(g_chained_lookup_miss_counter)/double(g_chained_lookup_call_counter));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "chained_lookup_external_call_counter", g_chained_lookup_external_call_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "chained_lookup_external_call_counter", g_chained_lookup_external_call_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "chained_lookup_external_miss_counter", g_chained_lookup_external_miss_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "chained_lookup_external_miss_counter", g_chained_lookup_external_miss_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_PCT, "miss percent",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_PCT, "miss percent",
                 100.0 * double(g_chained_lookup_external_miss_counter)/double(g_chained_lookup_external_call_counter));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 #endif // STUB_LOGGING
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "chained_entry_promoted", g_chained_entry_promoted);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "chained_entry_promoted", g_chained_entry_promoted);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 #endif // CHAIN_LOOKUP
 
 #ifdef STUB_LOGGING
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\n%-30s %#5.2f%%\r\n", "worker (slow resolver) data",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\n%-30s %#5.2f%%\r\n", "worker (slow resolver) data",
                 100.0 * double(g_worker_call)/double(total_calls));
 #else // !STUB_LOGGING
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nworker (slow resolver) data\r\n");
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\nworker (slow resolver) data\r\n");
 #endif // !STUB_LOGGING
                 WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "worker_call", g_worker_call);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "worker_call", g_worker_call);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "worker_call_no_patch", g_worker_call_no_patch);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "worker_call_no_patch", g_worker_call_no_patch);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "external_call", g_external_call);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "external_call", g_external_call);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "external_call_no_patch", g_external_call_no_patch);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "external_call_no_patch", g_external_call_no_patch);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "worker_collide_to_mono", g_worker_collide_to_mono);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "worker_collide_to_mono", g_worker_collide_to_mono);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
         UINT32 total_inserts = g_insert_cache_external
@@ -333,74 +332,74 @@ void VirtualCallStubManager::LoggingDump()
                              + g_insert_cache_dispatch
                              + g_insert_cache_resolve;
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\n%-30s %d\r\n", "insert cache data", total_inserts);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\n%-30s %d\r\n", "insert cache data", total_inserts);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_external", g_insert_cache_external,
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_external", g_insert_cache_external,
                 100.0 * double(g_insert_cache_external)/double(total_inserts));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_shared", g_insert_cache_shared,
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_shared", g_insert_cache_shared,
                 100.0 * double(g_insert_cache_shared)/double(total_inserts));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_dispatch", g_insert_cache_dispatch,
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_dispatch", g_insert_cache_dispatch,
                 100.0 * double(g_insert_cache_dispatch)/double(total_inserts));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_resolve", g_insert_cache_resolve,
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_resolve", g_insert_cache_resolve,
                 100.0 * double(g_insert_cache_resolve)/double(total_inserts));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_hit", g_insert_cache_hit,
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_hit", g_insert_cache_hit,
                 100.0 * double(g_insert_cache_hit)/double(total_inserts));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_miss", g_insert_cache_miss,
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_miss", g_insert_cache_miss,
                 100.0 * double(g_insert_cache_miss)/double(total_inserts));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_collide", g_insert_cache_collide,
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_collide", g_insert_cache_collide,
                 100.0 * double(g_insert_cache_collide)/double(total_inserts));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_write", g_insert_cache_write,
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT_PCT, "insert_cache_write", g_insert_cache_write,
                 100.0 * double(g_insert_cache_write)/double(total_inserts));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\ncache data\r\n");
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\ncache data\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
         size_t total, used;
         g_resolveCache->GetLoadFactor(&total, &used);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_SIZE, "cache_entry_used", used);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_SIZE, "cache_entry_used", used);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_counter", g_cache_entry_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_counter", g_cache_entry_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_space", g_cache_entry_space);
-        WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nstub hash table data\r\n");
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_space", g_cache_entry_space);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "bucket_space", g_bucket_space);
-        WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "bucket_space_dead", g_bucket_space_dead);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\nstub hash table data\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\ncache_load:\t%zu used, %zu total, utilization %#5.2f%%\r\n",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "bucket_space", g_bucket_space);
+        WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "bucket_space_dead", g_bucket_space_dead);
+        WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
+
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\ncache_load:\t%zu used, %zu total, utilization %#5.2f%%\r\n",
                 used, total, 100.0 * double(used) / double(total));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
 #ifdef STUB_LOGGING
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\ncache entry write counts\r\n");
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\ncache entry write counts\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
         DispatchCache::CacheEntryData *rgCacheData = g_resolveCache->cacheData;
         for (UINT16 i = 0; i < CALL_STUB_CACHE_SIZE; i++)
         {
-            sprintf_s(szPrintStr, COUNTOF(szPrintStr), " %4d", rgCacheData[i]);
+            sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), " %4d", rgCacheData[i]);
             WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
             if (i % 16 == 15)
             {
-                sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\n");
+                sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\n");
                 WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
             }
         }
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\n");
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 #endif // STUB_LOGGING
 
@@ -409,7 +408,7 @@ void VirtualCallStubManager::LoggingDump()
         {
             if (ContractImplMap::deltasDescs[i] != 0)
             {
-                sprintf_s(szPrintStr, COUNTOF(szPrintStr), "deltasDescs[%d]\t%d\r\n", i, ContractImplMap::deltasDescs[i]);
+                sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "deltasDescs[%d]\t%d\r\n", i, ContractImplMap::deltasDescs[i]);
                 WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
             }
         }
@@ -417,19 +416,19 @@ void VirtualCallStubManager::LoggingDump()
         {
             if (ContractImplMap::deltasSlots[i] != 0)
             {
-                sprintf_s(szPrintStr, COUNTOF(szPrintStr), "deltasSlots[%d]\t%d\r\n", i, ContractImplMap::deltasSlots[i]);
+                sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "deltasSlots[%d]\t%d\r\n", i, ContractImplMap::deltasSlots[i]);
                 WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
             }
         }
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "cout of maps:\t%d\r\n", ContractImplMap::countMaps);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "cout of maps:\t%d\r\n", ContractImplMap::countMaps);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "count of interfaces:\t%d\r\n", ContractImplMap::countInterfaces);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "count of interfaces:\t%d\r\n", ContractImplMap::countInterfaces);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "count of deltas:\t%d\r\n", ContractImplMap::countDelta);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "count of deltas:\t%d\r\n", ContractImplMap::countDelta);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "total delta for descs:\t%d\r\n", ContractImplMap::totalDeltaDescs);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "total delta for descs:\t%d\r\n", ContractImplMap::totalDeltaDescs);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "total delta for slots:\t%d\r\n", ContractImplMap::totalDeltaSlots);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "total delta for slots:\t%d\r\n", ContractImplMap::totalDeltaSlots);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
 #endif // 0
@@ -533,7 +532,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     // Setup an expected number of items to commit and reserve
     //
     // The commit number is not that important as we always commit at least one page worth of items
-    // The reserve number shoudl be high enough to cover a typical lare application,
+    // The reserve number should be high enough to cover a typical lare application,
     // in order to minimize the fragmentation of our rangelists
     //
 
@@ -641,7 +640,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
                               dwTotalReserveMemSize);
         }
 
-        initReservedMem = ClrVirtualAllocExecutable (dwTotalReserveMemSize, MEM_RESERVE, PAGE_NOACCESS);
+        initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
         m_initialReservedMemForHeaps = (BYTE *) initReservedMem;
 
@@ -696,7 +695,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> indcell_heap_holder(
                                new LoaderHeap(indcell_heap_reserve_size, indcell_heap_commit_size,
                                               initReservedMem, indcell_heap_reserve_size,
-                                              NULL, FALSE));
+                                              NULL, UnlockedLoaderHeap::HeapKind::Data));
 
     initReservedMem += indcell_heap_reserve_size;
 
@@ -704,7 +703,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> cache_entry_heap_holder(
                                new LoaderHeap(cache_entry_heap_reserve_size, cache_entry_heap_commit_size,
                                               initReservedMem, cache_entry_heap_reserve_size,
-                                              &cache_entry_rangeList, FALSE));
+                                              &cache_entry_rangeList, UnlockedLoaderHeap::HeapKind::Data));
 
     initReservedMem += cache_entry_heap_reserve_size;
 
@@ -712,7 +711,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> lookup_heap_holder(
                                new LoaderHeap(lookup_heap_reserve_size, lookup_heap_commit_size,
                                               initReservedMem, lookup_heap_reserve_size,
-                                              &lookup_rangeList, TRUE));
+                                              &lookup_rangeList, UnlockedLoaderHeap::HeapKind::Executable));
 
     initReservedMem += lookup_heap_reserve_size;
 
@@ -720,7 +719,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> dispatch_heap_holder(
                                new LoaderHeap(dispatch_heap_reserve_size, dispatch_heap_commit_size,
                                               initReservedMem, dispatch_heap_reserve_size,
-                                              &dispatch_rangeList, TRUE));
+                                              &dispatch_rangeList, UnlockedLoaderHeap::HeapKind::Executable));
 
     initReservedMem += dispatch_heap_reserve_size;
 
@@ -728,7 +727,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> resolve_heap_holder(
                                new LoaderHeap(resolve_heap_reserve_size, resolve_heap_commit_size,
                                               initReservedMem, resolve_heap_reserve_size,
-                                              &resolve_rangeList, TRUE));
+                                              &resolve_rangeList, UnlockedLoaderHeap::HeapKind::Executable));
 
     initReservedMem += resolve_heap_reserve_size;
 
@@ -736,7 +735,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> vtable_heap_holder(
                                new LoaderHeap(vtable_heap_reserve_size, vtable_heap_commit_size,
                                               initReservedMem, vtable_heap_reserve_size,
-                                              &vtable_rangeList, TRUE));
+                                              &vtable_rangeList, UnlockedLoaderHeap::HeapKind::Executable));
 
     initReservedMem += vtable_heap_reserve_size;
 
@@ -1029,13 +1028,6 @@ BOOL VirtualCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
     BOOL fIsOwner = isStub(stubStartAddress);
 
-#if defined(TARGET_X86) && defined(FEATURE_PREJIT)
-    if (!fIsOwner)
-    {
-        fIsOwner = (stubStartAddress == GetEEFuncEntryPoint(StubDispatchFixupStub));
-    }
-#endif // defined(TARGET_X86) && defined(FEATURE_PREJIT)
-
     return fIsOwner;
 }
 
@@ -1051,14 +1043,6 @@ BOOL VirtualCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinatio
     LOG((LF_CORDB, LL_EVERYTHING, "VirtualCallStubManager::DoTraceStub called\n"));
 
     _ASSERTE(CheckIsStub_Internal(stubStartAddress));
-
-#ifdef FEATURE_PREJIT
-    if (stubStartAddress == GetEEFuncEntryPoint(StubDispatchFixupStub))
-    {
-        trace->InitForManagerPush(GetEEFuncEntryPoint(StubDispatchFixupPatchLabel), this);
-        return TRUE;
-    }
-#endif
 
     // @workaround: Well, we really need the context to figure out where we're going, so
     // we'll do a TRACE_MGR_PUSH so that TraceManager gets called and we can use
@@ -1080,17 +1064,6 @@ BOOL VirtualCallStubManager::TraceManager(Thread *thread,
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
-
-#ifdef FEATURE_PREJIT
-    // This is the case for the lazy slot fixup
-    if (GetIP(pContext) == GetEEFuncEntryPoint(StubDispatchFixupPatchLabel)) {
-
-        *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
-
-        // The destination for the virtual invocation
-        return StubManager::TraceStub(StubManagerHelpers::GetTailCallTarget(pContext), trace);
-    }
-#endif // FEATURE_PREJIT
 
     TADDR pStub = GetIP(pContext);
 
@@ -1173,7 +1146,6 @@ PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(!MethodTable::VTableIndir_t::isRelative /* Not yet supported */);
         POSTCONDITION(RETVAL != NULL);
     } CONTRACT_END;
 
@@ -1203,13 +1175,13 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(!MethodTable::VTableIndir_t::isRelative /* Not yet supported */);
         POSTCONDITION(RETVAL != NULL);
     } CONTRACT_END;
 
     //allocate from the requisite heap and copy the template over it.
-    VTableCallHolder * pHolder = (VTableCallHolder*)(void*)vtable_heap->AllocAlignedMem(VTableCallHolder::GetHolderSize(slot), CODE_SIZE_ALIGN);
-    ExecutableWriterHolder<VTableCallHolder> vtableWriterHolder(pHolder, sizeof(VTableCallHolder));
+    size_t vtableHolderSize = VTableCallHolder::GetHolderSize(slot);
+    VTableCallHolder * pHolder = (VTableCallHolder*)(void*)vtable_heap->AllocAlignedMem(vtableHolderSize, CODE_SIZE_ALIGN);
+    ExecutableWriterHolder<VTableCallHolder> vtableWriterHolder(pHolder, vtableHolderSize);
     vtableWriterHolder.GetRW()->Initialize(slot);
 
     ClrFlushInstructionCache(pHolder->stub(), pHolder->stub()->size());
@@ -1228,131 +1200,6 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
 
     RETURN(pHolder);
 }
-
-#ifdef FEATURE_PREJIT
-extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBlock,
-                                                 TADDR siteAddrForRegisterIndirect,
-                                                 DWORD sectionIndex,
-                                                 Module * pModule)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        ENTRY_POINT;
-    } CONTRACTL_END;
-
-    PCODE pTarget = NULL;
-
-    MAKE_CURRENT_THREAD_AVAILABLE();
-
-#ifdef _DEBUG
-    Thread::ObjectRefFlush(CURRENT_THREAD);
-#endif
-
-    FrameWithCookie<StubDispatchFrame> frame(pTransitionBlock);
-    StubDispatchFrame * pSDFrame = &frame;
-
-    PCODE returnAddress = pSDFrame->GetUnadjustedReturnAddress();
-
-    StubCallSite callSite(siteAddrForRegisterIndirect, returnAddress);
-
-    TADDR pIndirectCell = (TADDR)callSite.GetIndirectCell();
-
-    // FUTURE: Consider always passing in module and section index to avoid the lookups
-    if (pModule == NULL)
-    {
-        pModule = ExecutionManager::FindZapModule(pIndirectCell);
-        sectionIndex = (DWORD)-1;
-    }
-    _ASSERTE(pModule != NULL);
-
-    pSDFrame->SetCallSite(pModule, pIndirectCell);
-
-    pSDFrame->Push(CURRENT_THREAD);
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-
-    PEImageLayout *pNativeImage = pModule->GetNativeOrReadyToRunImage();
-
-    DWORD rva = pNativeImage->GetDataRva(pIndirectCell);
-
-    PTR_CORCOMPILE_IMPORT_SECTION pImportSection;
-    if (sectionIndex != (DWORD) -1)
-    {
-        pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
-        _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
-    }
-    else
-    {
-        pImportSection = pModule->GetImportSectionForRVA(rva);
-    }
-    _ASSERTE(pImportSection != NULL);
-
-    _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
-
-    COUNT_T index = (rva - VAL32(pImportSection->Section.VirtualAddress)) / sizeof(TADDR);
-
-    // Get the stub manager for this module
-    VirtualCallStubManager *pMgr = pModule->GetLoaderAllocator()->GetVirtualCallStubManager();
-
-    // Force a GC on every jit if the stress level is high enough
-    GCStress<cfg_any>::MaybeTrigger();
-
-    // Get the data section
-    PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
-
-    PCCOR_SIGNATURE pBlob = (BYTE *)pNativeImage->GetRvaData(pSignatures[index]);
-
-    BYTE kind = *pBlob++;
-
-    Module * pInfoModule = pModule;
-    if (kind & ENCODE_MODULE_OVERRIDE)
-    {
-        DWORD moduleIndex = CorSigUncompressData(pBlob);
-        pInfoModule = pModule->GetModuleFromIndex(moduleIndex);
-        kind &= ~ENCODE_MODULE_OVERRIDE;
-    }
-    _ASSERTE(kind == ENCODE_VIRTUAL_ENTRY_SLOT);
-
-    DWORD slot = CorSigUncompressData(pBlob);
-
-    TypeHandle ownerType = ZapSig::DecodeType(pModule, pInfoModule, pBlob);
-
-    MethodTable * pMT = ownerType.GetMethodTable();
-
-    DispatchToken token;
-    if (pMT->IsInterface())
-        token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
-    else
-        token = DispatchToken::CreateDispatchToken(slot);
-
-    OBJECTREF *protectedObj = pSDFrame->GetThisPtr();
-    _ASSERTE(protectedObj != NULL);
-    if (*protectedObj == NULL) {
-        COMPlusThrow(kNullReferenceException);
-    }
-
-    pTarget = pMgr->ResolveWorker(&callSite, protectedObj, token, VirtualCallStubManager::SK_LOOKUP);
-    _ASSERTE(pTarget != NULL);
-
-#if _DEBUG
-    if (pSDFrame->GetGCRefMap() != NULL)
-    {
-        GCX_PREEMP();
-        _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), pSDFrame->GetFunction(), true));
-    }
-#endif // _DEBUG
-
-    // Ready to return
-
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    pSDFrame->Pop(CURRENT_THREAD);
-
-    return pTarget;
-}
-#endif // FEATURE_PREJIT
 
 //+----------------------------------------------------------------------------
 //
@@ -1919,7 +1766,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 #ifdef CHAIN_LOOKUP
                     pResolverFcn  = (PCODE) GetEEFuncEntryPoint(ResolveWorkerChainLookupAsmStub);
 #else // CHAIN_LOOKUP
-                    // Use the the slow resolver
+                    // Use the slow resolver
                     pResolverFcn = (PCODE) GetEEFuncEntryPoint(ResolveWorkerAsmStub);
 #endif
 
@@ -2046,7 +1893,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
             if (insertKind != DispatchCache::IK_NONE)
             {
                 // Because the TransparentProxy MT is process-global, we cannot cache targets for
-                // unshared interfaces because there is the possiblity of caching a
+                // unshared interfaces because there is the possibility of caching a
                 // <token, TPMT, target> entry where target is in AD1, and then matching against
                 // this entry from AD2 which happens to be using the same token, perhaps for a
                 // completely different interface.
@@ -2183,8 +2030,6 @@ VirtualCallStubManager::Resolver(
     }
 #endif // _DEBUG
 
-    g_IBCLogger.LogMethodTableAccess(pMT);
-
     // NOTE: CERs are not hardened against transparent proxy types,
     // so no need to worry about throwing an exception from here.
 
@@ -2200,7 +2045,6 @@ VirtualCallStubManager::Resolver(
     // this target and backpatch the callsite.
     if (!implSlot.IsNull())
     {
-        g_IBCLogger.LogDispatchTableSlotAccess(&implSlot);
 #if defined(LOGGING) || defined(_DEBUG)
         {
             pMD = implSlot.GetMethodDesc();
@@ -2267,10 +2111,6 @@ VirtualCallStubManager::Resolver(
                     //           to change.
                     fShouldPatch = TRUE;
                 }
-                else
-                {
-                    g_IBCLogger.LogMethodDescAccess(pMD);
-                }
             }
         }
     }
@@ -2314,8 +2154,8 @@ VirtualCallStubManager::Resolver(
         }
 
         ReflectClassBaseObject* resultTypeObj = ((ReflectClassBaseObject*)OBJECTREFToObject(impTypeObj));
-        TypeHandle resulTypeHnd = resultTypeObj->GetType();
-        MethodTable *pResultMT = resulTypeHnd.GetMethodTable();
+        TypeHandle resultTypeHnd = resultTypeObj->GetType();
+        MethodTable *pResultMT = resultTypeHnd.GetMethodTable();
 
         return Resolver(pResultMT, token, protectedObj, ppTarget, throwOnConflict);
     }
@@ -2766,11 +2606,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     }
 #endif
 
-    ExecutableWriterHolder<DispatchHolder> dispatchWriterHolder(holder, sizeof(DispatchHolder)
-#ifdef TARGET_AMD64
-                                                                        + sizeof(DispatchStubShort)
-#endif
-                                                               );
+    ExecutableWriterHolder<DispatchHolder> dispatchWriterHolder(holder, dispatchHolderSize);
     dispatchWriterHolder.GetRW()->Initialize(holder, addrOfCode,
                        addrOfFail,
                        (size_t)pMTExpected
@@ -2833,9 +2669,9 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
     } CONTRACT_END;
 
     //allocate from the requisite heap and copy the template over it.
-    DispatchHolder * holder = (DispatchHolder*) (void*)
-        dispatch_heap->AllocAlignedMem(DispatchHolder::GetHolderSize(DispatchStub::e_TYPE_LONG), CODE_SIZE_ALIGN);
-    ExecutableWriterHolder<DispatchHolder> dispatchWriterHolder(holder, sizeof(DispatchHolder) + sizeof(DispatchStubLong));
+    size_t dispatchHolderSize = DispatchHolder::GetHolderSize(DispatchStub::e_TYPE_LONG);
+    DispatchHolder * holder = (DispatchHolder*) (void*)dispatch_heap->AllocAlignedMem(dispatchHolderSize, CODE_SIZE_ALIGN);
+    ExecutableWriterHolder<DispatchHolder> dispatchWriterHolder(holder, dispatchHolderSize);
 
     dispatchWriterHolder.GetRW()->Initialize(holder, addrOfCode,
                        addrOfFail,
@@ -2910,7 +2746,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 
         if ((cur_block != NULL) && (cur_block->used < counter_block::MAX_COUNTER_ENTRIES))
         {
-            counter_index = FastInterlockIncrement((LONG*)&cur_block->used) - 1;
+            counter_index = InterlockedIncrement((LONG*)&cur_block->used) - 1;
             if (counter_index < counter_block::MAX_COUNTER_ENTRIES)
             {
                 // Typical case we allocate the next free counter in the block
@@ -3132,38 +2968,38 @@ void VirtualCallStubManager::LogStats()
     if (g_hStubLogFile && (stats.site_write != 0))
     {
         //output counters
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "site_counter", stats.site_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "site_counter", stats.site_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "site_write", stats.site_write);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "site_write", stats.site_write);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "site_write_mono", stats.site_write_mono);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "site_write_mono", stats.site_write_mono);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "site_write_poly", stats.site_write_poly);
-        WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nstub data\r\n");
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "site_write_poly", stats.site_write_poly);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "stub_lookup_counter", stats.stub_lookup_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\nstub data\r\n");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "stub_mono_counter", stats.stub_mono_counter);
+
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "stub_lookup_counter", stats.stub_lookup_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "stub_poly_counter", stats.stub_poly_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "stub_mono_counter", stats.stub_mono_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "stub_space", stats.stub_space);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "stub_poly_counter", stats.stub_poly_counter);
+        WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "stub_space", stats.stub_space);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
         size_t total, used;
         g_resolveCache->GetLoadFactor(&total, &used);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_SIZE, "cache_entry_used", used);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_SIZE, "cache_entry_used", used);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_counter", stats.cache_entry_counter);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_counter", stats.cache_entry_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_space", stats.cache_entry_space);
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), OUTPUT_FORMAT_INT, "cache_entry_space", stats.cache_entry_space);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\ncache_load:\t%zu used, %zu total, utilization %#5.2f%%\r\n",
+        sprintf_s(szPrintStr, ARRAY_SIZE(szPrintStr), "\r\ncache_load:\t%zu used, %zu total, utilization %#5.2f%%\r\n",
                 used, total, 100.0 * double(used) / double(total));
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
     }
@@ -3315,7 +3151,7 @@ BOOL Prober::GrabEntry(size_t entryValue)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return FastInterlockCompareExchangePointer(&base[index],
+    return InterlockedCompareExchangeT(&base[index],
         entryValue, static_cast<size_t>(CALL_STUB_EMPTY_ENTRY)) == CALL_STUB_EMPTY_ENTRY;
 }
 
@@ -3329,7 +3165,7 @@ inline void FastTable::IncrementCount()
     // at the same time and one increment is lost, then the size will be inaccurate and
     // BucketTable::GetMoreSpace will never succeed, resulting in an infinite loop trying
     // to add a new entry.
-    FastInterlockIncrement((LONG *)&contents[CALL_STUB_COUNT_INDEX]);
+    InterlockedIncrement((LONG *)&contents[CALL_STUB_COUNT_INDEX]);
 }
 
 size_t FastTable::Add(size_t entry, Prober* probe)
@@ -3415,7 +3251,7 @@ BOOL BucketTable::GetMoreSpace(const Prober* p)
     // replacing the entry, then we will just put the new bucket we just created in the
     // dead list instead of risking a race condition which would put a duplicate of the old
     // bucket in the dead list (and even possibly cause a cyclic list).
-    if (FastInterlockCompareExchangePointer(reinterpret_cast<FastTable * volatile *>(&buckets[index]), newBucket, oldBucket) != oldBucket)
+    if (InterlockedCompareExchangeT(reinterpret_cast<FastTable * volatile *>(&buckets[index]), newBucket, oldBucket) != oldBucket)
         oldBucket = newBucket;
 
     // Link the old onto the "to be reclaimed" list.
@@ -3424,7 +3260,7 @@ BOOL BucketTable::GetMoreSpace(const Prober* p)
     do {
         list = VolatileLoad(&dead);
         oldBucket->contents[CALL_STUB_DEAD_LINK] = (size_t) list;
-    } while (FastInterlockCompareExchangePointer(&dead, oldBucket, list) != list);
+    } while (InterlockedCompareExchangeT(&dead, oldBucket, list) != list);
 
 #ifdef _DEBUG
     {
@@ -3482,7 +3318,7 @@ void BucketTable::Reclaim()
     //We are assuming that we are assuming the actually having to do anything is rare
     //so that the interlocked overhead is acceptable.  If this is not true, then
     //we need to examine exactly how and when we may be called during shutdown.
-    if (FastInterlockCompareExchangePointer(&dead, NULL, list) != list)
+    if (InterlockedCompareExchangeT(&dead, NULL, list) != list)
         return;
 
 #ifdef _DEBUG
@@ -3506,7 +3342,7 @@ void BucketTable::Reclaim()
     while (list)
     {
         size_t next = list->contents[CALL_STUB_DEAD_LINK];
-        delete [] (size_t*)list;
+        delete list;
         list = (FastTable*) next;
     }
 }
@@ -3536,7 +3372,7 @@ BOOL BucketTable::SetUpProber(size_t keyA, size_t keyB, Prober *prober)
     // scenario each processor could see old memory values that would cause us to
     // leak memory.
     //
-    // Since this a a fairly hot code path and it is very rare for buckets[index]
+    // Since this is a fairly hot code path and it is very rare for buckets[index]
     // to be CALL_STUB_EMPTY_ENTRY, we can first try a non-volatile read and then
     // if it looks like we need to create a new FastTable we double check by doing
     // a volatile read.
@@ -3557,7 +3393,7 @@ BOOL BucketTable::SetUpProber(size_t keyA, size_t keyB, Prober *prober)
 
         // Doing an interlocked exchange here ensures that if someone has raced and beaten us to
         // replacing the entry, then we will free the new bucket we just created.
-        bucket = FastInterlockCompareExchangePointer(&buckets[index], reinterpret_cast<size_t>(newBucket), static_cast<size_t>(CALL_STUB_EMPTY_ENTRY));
+        bucket = InterlockedCompareExchangeT(&buckets[index], reinterpret_cast<size_t>(newBucket), static_cast<size_t>(CALL_STUB_EMPTY_ENTRY));
         if (bucket == CALL_STUB_EMPTY_ENTRY)
         {
             // We successfully wrote newBucket into buckets[index], overwritting the CALL_STUB_EMPTY_ENTRY value

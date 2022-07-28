@@ -334,7 +334,7 @@ namespace System.ServiceModel.Syndication.Tests
 
                 Assert.Equal("updated", elements[2].Name.LocalName);
                 DateTimeOffset now = DateTimeOffset.UtcNow;
-                Assert.True(now > DateTimeOffset.ParseExact(elements[2].Value, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture));
+                Assert.True(now >= DateTimeOffset.ParseExact(elements[2].Value, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture));
             }
         }
 
@@ -900,7 +900,7 @@ namespace System.ServiceModel.Syndication.Tests
 
                 TextSyndicationContent content = Assert.IsType<TextSyndicationContent>(item.Content);
                 Assert.Empty(content.AttributeExtensions);
-                Assert.Equal("overriden", content.Text);
+                Assert.Equal("overridden", content.Text);
                 Assert.Equal("text", content.Type);
 
                 Assert.Equal(3, item.Contributors.Count);
@@ -1411,7 +1411,7 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 reader.Skip();
 
-                content = new TextSyndicationContent("overriden");
+                content = new TextSyndicationContent("overridden");
                 return true;
             }
 

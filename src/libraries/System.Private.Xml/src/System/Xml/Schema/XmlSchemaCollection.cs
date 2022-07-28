@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Collections;
+using System.Xml.Schema;
+using System.Runtime.Versioning;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Threading;
-    using System.Collections;
-    using System.Xml.Schema;
-    using System.Runtime.Versioning;
-
-
     /// <summary>
     /// The XmlSchemaCollection contains a set of namespace URI's.
     /// Each namespace also have an associated private data cache
@@ -19,7 +19,7 @@ namespace System.Xml.Schema
     /// The Validate method then uses this internal representation for
     /// efficient runtime validation of any given subtree.
     /// </summary>
-    [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
+    [Obsolete("XmlSchemaCollection has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation instead.")]
     public sealed class XmlSchemaCollection : ICollection
     {
         private readonly Hashtable _collection;
@@ -44,10 +44,7 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchemaCollection(XmlNameTable nametable)
         {
-            if (nametable == null)
-            {
-                throw new ArgumentNullException(nameof(nametable));
-            }
+            ArgumentNullException.ThrowIfNull(nametable);
 
             _nameTable = nametable;
             _collection = Hashtable.Synchronized(new Hashtable());
@@ -96,7 +93,7 @@ namespace System.Xml.Schema
         /// If the given schema references other namespaces, the schemas for those other
         /// namespaces are NOT automatically loaded.
         /// </summary>
-        public XmlSchema? Add(string? ns, string uri)
+        public XmlSchema? Add(string? ns, [StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
             if (uri == null || uri.Length == 0)
                 throw new ArgumentNullException(nameof(uri));
@@ -128,8 +125,8 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchema? Add(string? ns, XmlReader reader, XmlResolver? resolver)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
+
             XmlNameTable readerNameTable = reader.NameTable;
             SchemaInfo schemaInfo = new SchemaInfo();
 
@@ -164,8 +161,7 @@ namespace System.Xml.Schema
 
         public XmlSchema? Add(XmlSchema schema, XmlResolver? resolver)
         {
-            if (schema == null)
-                throw new ArgumentNullException(nameof(schema));
+            ArgumentNullException.ThrowIfNull(schema);
 
             SchemaInfo schemaInfo = new SchemaInfo();
             schemaInfo.SchemaType = SchemaType.XSD;
@@ -178,8 +174,8 @@ namespace System.Xml.Schema
         /// </summary>
         public void Add(XmlSchemaCollection schema)
         {
-            if (schema == null)
-                throw new ArgumentNullException(nameof(schema));
+            ArgumentNullException.ThrowIfNull(schema);
+
             if (this == schema)
                 return;
             IDictionaryEnumerator enumerator = schema._collection.GetEnumerator();
@@ -198,24 +194,21 @@ namespace System.Xml.Schema
         {
             get
             {
-                XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[(ns != null) ? ns : string.Empty];
-                return (node != null) ? node.Schema : null;
+                XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[ns ?? string.Empty];
+                return node?.Schema;
             }
         }
 
         public bool Contains(XmlSchema schema)
         {
-            if (schema == null)
-            {
-                throw new ArgumentNullException(nameof(schema));
-            }
+            ArgumentNullException.ThrowIfNull(schema);
 
             return this[schema.TargetNamespace] != null;
         }
 
         public bool Contains(string? ns)
         {
-            return _collection[(ns != null) ? ns : string.Empty] != null;
+            return _collection[ns ?? string.Empty] != null;
         }
 
         /// <summary>
@@ -233,8 +226,8 @@ namespace System.Xml.Schema
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)
@@ -249,8 +242,8 @@ namespace System.Xml.Schema
 
         public void CopyTo(XmlSchema[] array, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)
@@ -285,8 +278,8 @@ namespace System.Xml.Schema
 
         internal SchemaInfo? GetSchemaInfo(string? ns)
         {
-            XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[(ns != null) ? ns : string.Empty];
-            return (node != null) ? node.SchemaInfo : null;
+            XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[ns ?? string.Empty];
+            return node?.SchemaInfo;
         }
 
         internal SchemaNames GetSchemaNames(XmlNameTable nt)
@@ -297,11 +290,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                if (_schemaNames == null)
-                {
-                    _schemaNames = new SchemaNames(_nameTable);
-                }
-                return _schemaNames;
+                return _schemaNames ??= new SchemaNames(_nameTable);
             }
         }
 
@@ -322,7 +311,7 @@ namespace System.Xml.Schema
                         errorCount = 1;
                     }
 
-                    ns = schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
+                    ns = schema.TargetNamespace ?? string.Empty;
                 }
                 errorCount += schema.ErrorCount;
             }

@@ -17,7 +17,7 @@ namespace System.Net.Security.Tests
         public void AllowRenegotiation_Get_Set_Succeeds()
         {
             Assert.True(_clientOptions.AllowRenegotiation);
-            Assert.True(_serverOptions.AllowRenegotiation);
+            Assert.False(_serverOptions.AllowRenegotiation);
 
             _clientOptions.AllowRenegotiation = true;
             _serverOptions.AllowRenegotiation = true;
@@ -41,7 +41,7 @@ namespace System.Net.Security.Tests
             Assert.Null(_clientOptions.ApplicationProtocols);
             Assert.Null(_serverOptions.ApplicationProtocols);
 
-            List<SslApplicationProtocol> applnProtos = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
+            List<SslApplicationProtocol> applnProtos = new List<SslApplicationProtocol> { SslApplicationProtocol.Http3, SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
             _clientOptions.ApplicationProtocols = applnProtos;
             _serverOptions.ApplicationProtocols = applnProtos;
 
@@ -150,11 +150,13 @@ namespace System.Net.Security.Tests
             Assert.Equal(EncryptionPolicy.RequireEncryption, _clientOptions.EncryptionPolicy);
             Assert.Equal(EncryptionPolicy.RequireEncryption, _serverOptions.EncryptionPolicy);
 
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
             _clientOptions.EncryptionPolicy = EncryptionPolicy.AllowNoEncryption;
             _serverOptions.EncryptionPolicy = EncryptionPolicy.NoEncryption;
 
             Assert.Equal(EncryptionPolicy.AllowNoEncryption, _clientOptions.EncryptionPolicy);
             Assert.Equal(EncryptionPolicy.NoEncryption, _serverOptions.EncryptionPolicy);
+#pragma warning restore SYSLIB0040
 
             Assert.Throws<ArgumentException>(() => _clientOptions.EncryptionPolicy = (EncryptionPolicy)3);
             Assert.Throws<ArgumentException>(() => _serverOptions.EncryptionPolicy = (EncryptionPolicy)3);

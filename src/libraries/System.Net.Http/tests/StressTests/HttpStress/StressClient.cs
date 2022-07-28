@@ -65,8 +65,8 @@ namespace HttpStress
                 }
             }
 
-            return new HttpClient(CreateHttpHandler()) 
-            { 
+            return new HttpClient(CreateHttpHandler())
+            {
                 BaseAddress = _baseAddress,
                 Timeout = _config.DefaultTimeout,
                 DefaultRequestVersion = _config.HttpVersion,
@@ -106,6 +106,7 @@ namespace HttpStress
             }
             _stopwatch.Stop();
             _cts.Dispose();
+            _eventListener?.Dispose();
         }
 
         public void PrintFinalReport()
@@ -125,7 +126,6 @@ namespace HttpStress
         public void Dispose()
         {
             Stop();
-            _eventListener?.Dispose();
         }
 
         private async Task InitializeClient()
@@ -283,7 +283,7 @@ namespace HttpStress
             public void RecordFailure(Exception exn, int operationIndex, TimeSpan elapsed, bool isCancelled, int taskNum, long iteration)
             {
                 DateTime timestamp = DateTime.Now;
-                
+
                 Interlocked.Increment(ref _totalRequests);
                 Interlocked.Increment(ref _failures[operationIndex]);
 

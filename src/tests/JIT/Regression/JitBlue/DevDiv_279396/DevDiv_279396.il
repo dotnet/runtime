@@ -3,7 +3,7 @@
 
 .assembly extern mscorlib {}
 .assembly DevDiv_279396 {}
-.module DevDiv_279396.exe
+.assembly extern xunit.core {}
 
 // This test originally triggered an assertion in the emitter that ensured that no lclVar or lclFld access exceeded the
 // bounds of its containing method's frame. The problematic access was created during morphing by folding
@@ -20,6 +20,9 @@
 
     .method private static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
 
         ldc.i4 100

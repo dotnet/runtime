@@ -26,10 +26,9 @@ namespace System.Net.Http.Headers
         private const string sharedMaxAgeString = "s-maxage";
 
         private static readonly HttpHeaderParser s_nameValueListParser = GenericHeaderParser.MultipleValueNameValueParser;
-        private static readonly Action<string> s_checkIsValidToken = CheckIsValidToken;
 
         private bool _noCache;
-        private ObjectCollection<string>? _noCacheHeaders;
+        private TokenObjectCollection? _noCacheHeaders;
         private bool _noStore;
         private TimeSpan? _maxAge;
         private TimeSpan? _sharedMaxAge;
@@ -40,10 +39,10 @@ namespace System.Net.Http.Headers
         private bool _onlyIfCached;
         private bool _publicField;
         private bool _privateField;
-        private ObjectCollection<string>? _privateHeaders;
+        private TokenObjectCollection? _privateHeaders;
         private bool _mustRevalidate;
         private bool _proxyRevalidate;
-        private ObjectCollection<NameValueHeaderValue>? _extensions;
+        private UnvalidatedObjectCollection<NameValueHeaderValue>? _extensions;
 
         public bool NoCache
         {
@@ -51,7 +50,7 @@ namespace System.Net.Http.Headers
             set { _noCache = value; }
         }
 
-        public ICollection<string> NoCacheHeaders => _noCacheHeaders ??= new ObjectCollection<string>(s_checkIsValidToken);
+        public ICollection<string> NoCacheHeaders => _noCacheHeaders ??= new TokenObjectCollection();
 
         public bool NoStore
         {
@@ -113,7 +112,7 @@ namespace System.Net.Http.Headers
             set { _privateField = value; }
         }
 
-        public ICollection<string> PrivateHeaders => _privateHeaders ??= new ObjectCollection<string>(s_checkIsValidToken);
+        public ICollection<string> PrivateHeaders => _privateHeaders ??= new TokenObjectCollection();
 
         public bool MustRevalidate
         {
@@ -127,7 +126,7 @@ namespace System.Net.Http.Headers
             set { _proxyRevalidate = value; }
         }
 
-        public ICollection<NameValueHeaderValue> Extensions => _extensions ??= new ObjectCollection<NameValueHeaderValue>();
+        public ICollection<NameValueHeaderValue> Extensions => _extensions ??= new UnvalidatedObjectCollection<NameValueHeaderValue>();
 
         public CacheControlHeaderValue()
         {
@@ -205,7 +204,7 @@ namespace System.Net.Http.Headers
                 {
                     // In the corner case where the value is negative, ensure it uses
                     // the invariant's negative sign rather than the current culture's.
-                    sb.Append(maxAge.ToString(NumberFormatInfo.InvariantInfo));
+                    sb.Append(NumberFormatInfo.InvariantInfo, $"{maxAge}");
                 }
             }
 
@@ -222,7 +221,7 @@ namespace System.Net.Http.Headers
                 {
                     // In the corner case where the value is negative, ensure it uses
                     // the invariant's negative sign rather than the current culture's.
-                    sb.Append(sharedMaxAge.ToString(NumberFormatInfo.InvariantInfo));
+                    sb.Append(NumberFormatInfo.InvariantInfo, $"{sharedMaxAge}");
                 }
             }
 
@@ -241,7 +240,7 @@ namespace System.Net.Http.Headers
                     {
                         // In the corner case where the value is negative, ensure it uses
                         // the invariant's negative sign rather than the current culture's.
-                        sb.Append(maxStaleLimit.ToString(NumberFormatInfo.InvariantInfo));
+                        sb.Append(NumberFormatInfo.InvariantInfo, $"{maxStaleLimit}");
                     }
                 }
             }
@@ -259,7 +258,7 @@ namespace System.Net.Http.Headers
                 {
                     // In the corner case where the value is negative, ensure it uses
                     // the invariant's negative sign rather than the current culture's.
-                    sb.Append(minFresh.ToString(NumberFormatInfo.InvariantInfo));
+                    sb.Append(NumberFormatInfo.InvariantInfo, $"{minFresh}");
                 }
             }
 
@@ -339,7 +338,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (var noCacheHeader in _noCacheHeaders)
                 {
-                    result = result ^ StringComparer.OrdinalIgnoreCase.GetHashCode(noCacheHeader);
+                    result ^= StringComparer.OrdinalIgnoreCase.GetHashCode(noCacheHeader);
                 }
             }
 
@@ -347,7 +346,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (var privateHeader in _privateHeaders)
                 {
-                    result = result ^ StringComparer.OrdinalIgnoreCase.GetHashCode(privateHeader);
+                    result ^= StringComparer.OrdinalIgnoreCase.GetHashCode(privateHeader);
                 }
             }
 
@@ -355,7 +354,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (var extension in _extensions)
                 {
-                    result = result ^ extension.GetHashCode();
+                    result ^= extension.GetHashCode();
                 }
             }
 
@@ -414,11 +413,7 @@ namespace System.Net.Http.Headers
             // Cache-Control is a header supporting lists of values. However, expose the header as an instance of
             // CacheControlHeaderValue. So if we already have an instance of CacheControlHeaderValue, add the values
             // from this string to the existing instances.
-            CacheControlHeaderValue? result = storeValue;
-            if (result == null)
-            {
-                result = new CacheControlHeaderValue();
-            }
+            CacheControlHeaderValue? result = storeValue ?? new CacheControlHeaderValue();
 
             if (!TrySetCacheControlValues(result, nameValueList))
             {
@@ -525,7 +520,7 @@ namespace System.Net.Http.Headers
         }
 
         private static bool TrySetOptionalTokenList(NameValueHeaderValue nameValue, ref bool boolField,
-            ref ObjectCollection<string>? destination)
+            ref TokenObjectCollection? destination)
         {
             Debug.Assert(nameValue != null);
 
@@ -538,7 +533,7 @@ namespace System.Net.Http.Headers
             // We need the string to be at least 3 chars long: 2x quotes and at least 1 character. Also make sure we
             // have a quoted string. Note that NameValueHeaderValue will never have leading/trailing whitespace.
             string valueString = nameValue.Value;
-            if ((valueString.Length < 3) || (valueString[0] != '\"') || (valueString[valueString.Length - 1] != '\"'))
+            if ((valueString.Length < 3) || !valueString.StartsWith('\"') || !valueString.EndsWith('\"'))
             {
                 return false;
             }
@@ -546,12 +541,11 @@ namespace System.Net.Http.Headers
             // We have a quoted string. Now verify that the string contains a list of valid tokens separated by ','.
             int current = 1; // skip the initial '"' character.
             int maxLength = valueString.Length - 1; // -1 because we don't want to parse the final '"'.
-            bool separatorFound = false;
             int originalValueCount = destination == null ? 0 : destination.Count;
             while (current < maxLength)
             {
                 current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(valueString, current, true,
-                    out separatorFound);
+                    out _);
 
                 if (current == maxLength)
                 {
@@ -567,10 +561,10 @@ namespace System.Net.Http.Headers
                     return false;
                 }
 
-                destination ??= new ObjectCollection<string>(s_checkIsValidToken);
+                destination ??= new TokenObjectCollection();
                 destination.Add(valueString.Substring(current, tokenLength));
 
-                current = current + tokenLength;
+                current += tokenLength;
             }
 
             // After parsing a valid token list, we expect to have at least one value
@@ -620,7 +614,7 @@ namespace System.Net.Http.Headers
             sb.Append(value);
         }
 
-        private static void AppendValues(StringBuilder sb, ObjectCollection<string> values)
+        private static void AppendValues(StringBuilder sb, TokenObjectCollection values)
         {
             bool first = true;
             foreach (string value in values)
@@ -638,14 +632,14 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private static void CheckIsValidToken(string item)
-        {
-            HeaderUtilities.CheckValidToken(item, nameof(item));
-        }
-
         object ICloneable.Clone()
         {
             return new CacheControlHeaderValue(this);
+        }
+
+        private sealed class TokenObjectCollection : ObjectCollection<string>
+        {
+            public override void Validate(string item) => HeaderUtilities.CheckValidToken(item, nameof(item));
         }
     }
 }

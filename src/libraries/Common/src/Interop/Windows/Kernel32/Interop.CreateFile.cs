@@ -13,8 +13,8 @@ internal static partial class Interop
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use CreateFile.
         /// </summary>
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
-        private static extern unsafe SafeFileHandle CreateFilePrivate(
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateFileW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        private static unsafe partial SafeFileHandle CreateFilePrivate(
             string lpFileName,
             int dwDesiredAccess,
             FileShare dwShareMode,

@@ -314,7 +314,11 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 	if (!name) {
 		pthread_setname_np (tid, "");
 	} else {
+#if defined(__FreeBSD__)
+		char n [20];
+#else
 		char n [16];
+#endif
 
 		strncpy (n, name, sizeof (n) - 1);
 		n [sizeof (n) - 1] = '\0';

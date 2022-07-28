@@ -21,7 +21,7 @@ namespace System.IO.Strategies
         private int _readPos;
         private int _readLen;
         // The last successful Task returned from ReadAsync (perf optimization for successive reads of the same size)
-        private Task<int>? _lastSyncCompletedReadTask;
+        private CachedCompletedInt32Task _lastSyncCompletedReadTask;
 
         internal BufferedFileStreamStrategy(FileStreamStrategy strategy, int bufferSize)
         {
@@ -29,21 +29,6 @@ namespace System.IO.Strategies
 
             _strategy = strategy;
             _bufferSize = bufferSize;
-        }
-
-        ~BufferedFileStreamStrategy()
-        {
-            try
-            {
-                // the finalizer must at least try to flush the write buffer
-                // so we enforce it by passing always true
-                Dispose(true);
-            }
-            catch (Exception e) when (FileStreamHelpers.IsIoRelatedException(e))
-            {
-                // On finalization, ignore failures from trying to flush the write buffer,
-                // e.g. if this stream is wrapping a pipe and the pipe is now broken.
-            }
         }
 
         public override bool CanRead => _strategy.CanRead;
@@ -137,23 +122,21 @@ namespace System.IO.Strategies
             }
         }
 
-        internal override void DisposeInternal(bool disposing) => Dispose(disposing);
-
-        protected override void Dispose(bool disposing)
+        protected sealed override void Dispose(bool disposing)
         {
+            if (_strategy.IsClosed)
+            {
+                return;
+            }
+
             try
             {
-                if (disposing && !_strategy.IsClosed)
-                {
-                    try
-                    {
-                        Flush();
-                    }
-                    finally
-                    {
-                        _strategy.Dispose();
-                    }
-                }
+                Flush();
+            }
+            catch (Exception e) when (!disposing && FileStreamHelpers.IsIoRelatedException(e))
+            {
+                // On finalization, ignore failures from trying to flush the write buffer,
+                // e.g. if this stream is wrapping a pipe and the pipe is now broken.
             }
             finally
             {
@@ -161,10 +144,10 @@ namespace System.IO.Strategies
                 // when users have a race condition in their code (i.e. they call
                 // FileStream.Close when calling another method on FileStream like Read).
 
-                // Call base.Dispose(bool) to cleanup async IO resources
-                base.Dispose(disposing);
-
+                // There is no need to call base.Dispose as it's empty
                 _writePos = 0;
+
+                _strategy.DisposeInternal(disposing);
             }
         }
 
@@ -247,7 +230,7 @@ namespace System.IO.Strategies
 
             // If we are reading from a device with no clear EOF like a
             // serial port or a pipe, this will cause us to block incorrectly.
-            if (!_strategy.IsPipe)
+            if (_strategy.CanSeek)
             {
                 // If we hit the end of the buffer and didn't have enough bytes, we must
                 // read some more from the underlying stream.  However, if we got
@@ -310,21 +293,8 @@ namespace System.IO.Strategies
             ValueTask<int> readResult = ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken);
 
             return readResult.IsCompletedSuccessfully
-                ? LastSyncCompletedReadTask(readResult.Result)
+                ? _lastSyncCompletedReadTask.GetTask(readResult.Result)
                 : readResult.AsTask();
-
-            Task<int> LastSyncCompletedReadTask(int val)
-            {
-                Task<int>? t = _lastSyncCompletedReadTask;
-                Debug.Assert(t == null || t.IsCompletedSuccessfully);
-
-                if (t != null && t.Result == val)
-                    return t;
-
-                t = Task.FromResult<int>(val);
-                _lastSyncCompletedReadTask = t;
-                return t;
-            }
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -340,9 +310,9 @@ namespace System.IO.Strategies
             Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen),
                 "We're either reading or writing, but not both.");
 
-            if (_strategy.IsPipe) // pipes have a very limited support for buffering
+            if (!_strategy.CanSeek)
             {
-                return ReadFromPipeAsync(buffer, cancellationToken);
+                return ReadFromNonSeekableAsync(buffer, cancellationToken);
             }
 
             SemaphoreSlim semaphore = EnsureAsyncActiveSemaphoreInitialized();
@@ -383,9 +353,9 @@ namespace System.IO.Strategies
             return ReadAsyncSlowPath(semaphoreLockTask, buffer, cancellationToken);
         }
 
-        private async ValueTask<int> ReadFromPipeAsync(Memory<byte> destination, CancellationToken cancellationToken)
+        private async ValueTask<int> ReadFromNonSeekableAsync(Memory<byte> destination, CancellationToken cancellationToken)
         {
-            Debug.Assert(_strategy.IsPipe);
+            Debug.Assert(!_strategy.CanSeek);
 
             // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
             await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -423,10 +393,11 @@ namespace System.IO.Strategies
             }
         }
 
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> ReadAsyncSlowPath(Task semaphoreLockTask, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             Debug.Assert(_asyncActiveSemaphore != null);
-            Debug.Assert(!_strategy.IsPipe);
+            Debug.Assert(_strategy.CanSeek);
 
             // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
             await semaphoreLockTask.ConfigureAwait(false);
@@ -472,7 +443,7 @@ namespace System.IO.Strategies
                 // If the requested read is larger than buffer size, avoid the buffer and still use a single read:
                 if (buffer.Length >= _bufferSize)
                 {
-                    return bytesAlreadySatisfied + await _strategy.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                    return await _strategy.ReadAsync(buffer, cancellationToken).ConfigureAwait(false) + bytesAlreadySatisfied;
                 }
 
                 // Ok. We can fill the buffer:
@@ -633,13 +604,13 @@ namespace System.IO.Strategies
             Debug.Assert(!_strategy.IsClosed, "FileStream ensures that strategy is not closed");
             Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen),
                 "We're either reading or writing, but not both.");
-            Debug.Assert(!_strategy.IsPipe || (_readPos == 0 && _readLen == 0),
+            Debug.Assert(_strategy.CanSeek || (_readPos == 0 && _readLen == 0),
                 "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
 
-            if (_strategy.IsPipe)
+            if (!_strategy.CanSeek)
             {
                 // avoid async buffering with pipes, as doing so can lead to deadlocks (see comments in ReadFromPipeAsync)
-                return WriteToPipeAsync(buffer, cancellationToken);
+                return WriteToNonSeekableAsync(buffer, cancellationToken);
             }
 
             SemaphoreSlim semaphore = EnsureAsyncActiveSemaphoreInitialized();
@@ -690,9 +661,9 @@ namespace System.IO.Strategies
             return WriteAsyncSlowPath(semaphoreLockTask, buffer, cancellationToken);
         }
 
-        private async ValueTask WriteToPipeAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        private async ValueTask WriteToNonSeekableAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            Debug.Assert(_strategy.IsPipe);
+            Debug.Assert(!_strategy.CanSeek);
 
             await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(false);
             try
@@ -705,10 +676,11 @@ namespace System.IO.Strategies
             }
         }
 
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
         private async ValueTask WriteAsyncSlowPath(Task semaphoreLockTask, ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(_asyncActiveSemaphore != null);
-            Debug.Assert(!_strategy.IsPipe);
+            Debug.Assert(_strategy.CanSeek);
 
             await semaphoreLockTask.ConfigureAwait(false);
             try
@@ -878,7 +850,6 @@ namespace System.IO.Strategies
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            ValidateCopyToArguments(destination, bufferSize);
             EnsureNotClosed();
             EnsureCanRead();
 
@@ -921,7 +892,6 @@ namespace System.IO.Strategies
 
         public override void CopyTo(Stream destination, int bufferSize)
         {
-            ValidateCopyToArguments(destination, bufferSize);
             EnsureNotClosed();
             EnsureCanRead();
 
@@ -974,11 +944,12 @@ namespace System.IO.Strategies
             // Otherwise we will throw away the buffer. This can only happen on read, as we flushed write data above.
 
             // The offset of the new/updated seek pointer within _buffer:
-            _readPos = (int)(newPos - (oldPos - _readPos));
+            long readPos = (newPos - (oldPos - _readPos));
 
             // If the offset of the updated seek pointer in the buffer is still legal, then we can keep using the buffer:
-            if (0 <= _readPos && _readPos < _readLen)
+            if (0 <= readPos && readPos < _readLen)
             {
+                _readPos = (int)readPos;
                 // Adjust the seek pointer of the underlying stream to reflect the amount of useful bytes in the read buffer:
                 _strategy.Seek(_readLen - _readPos, SeekOrigin.Current);
             }
@@ -987,7 +958,7 @@ namespace System.IO.Strategies
                 _readPos = _readLen = 0;
             }
 
-            Debug.Assert(newPos == Position, "newPos (=" + newPos + ") == Position (=" + Position + ")");
+            Debug.Assert(newPos == Position, $"newPos (={newPos}) == Position (={Position})");
             return newPos;
         }
 
@@ -1025,7 +996,7 @@ namespace System.IO.Strategies
         /// </summary>
         private void ClearReadBufferBeforeWrite()
         {
-            Debug.Assert(_readPos <= _readLen, "_readPos <= _readLen [" + _readPos + " <= " + _readLen + "]");
+            Debug.Assert(_readPos <= _readLen, $"_readPos <= _readLen [{_readPos} <= {_readLen}]");
 
             // No read data in the buffer:
             if (_readPos == _readLen)

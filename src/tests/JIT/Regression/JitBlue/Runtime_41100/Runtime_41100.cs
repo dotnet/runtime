@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// The test was showing a wrong copy propogation when a struct field was rewritten by 
+// The test was showing a wrong copy propagation when a struct field was rewritten by
 // a call assignment to the parent struct but that assignment was not supported by copyprop.
 
 using System;
@@ -20,7 +20,7 @@ class X
     public static ImmutableArray<string> H()
     {
         string[] a = new string[100];
-        
+
         for (int i = 0; i < a.Length; i++)
         {
             a[i] = "hello";
@@ -29,7 +29,7 @@ class X
         return ImmutableArray.Create<string>(a);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]    
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int F()
     {
         var a = H();
@@ -49,7 +49,7 @@ class X
             {
                 if (s.Equals("hello")) r--;
             }
-        
+
             aa = G();
 
             foreach (var s in a)

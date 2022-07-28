@@ -6,6 +6,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 
 
@@ -17,13 +18,12 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 2:0:0:0
 }
-.assembly b441487
+.assembly 'test'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module b441487.exe
 // MVID: {9AF9288D-3BE9-4952-AFD0-E77098E2DD26}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -35,7 +35,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public auto ansi beforefieldinit Test.Widget`1<T>
+.class public auto ansi beforefieldinit Test_test.Widget`1<T>
        extends [mscorlib]System.Object
 {
   .method public hidebysig instance void 
@@ -49,7 +49,7 @@
     IL_000b:  nop
     IL_000c:  ldnull
     IL_000d:  starg      0
-    IL_0011:  call       void class Test.Widget`1<!T>::Hello()    // Here was the exception: System.NullReferenceException: Object reference not set to an instance of an object
+    IL_0011:  call       void class Test_test.Widget`1<!T>::Hello()    // Here was the exception: System.NullReferenceException: Object reference not set to an instance of an object
     IL_0016:  nop
     IL_0017:  ret
   } // end of method Widget`1::Foo
@@ -73,11 +73,14 @@
 
 } // end of class Test.Widget`1
 
-.class public abstract auto ansi sealed beforefieldinit Test.Program
+.class public abstract auto ansi sealed beforefieldinit Test_test.Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       51 (0x33)
     .maxstack  2
@@ -87,7 +90,7 @@
     IL_0000:  nop
     IL_0001:  ldc.i4.0
     IL_0002:  stloc.0
-    IL_0003:  call       int32 Test.Program::RunTests<string>()
+    IL_0003:  call       int32 Test_test.Program::RunTests<string>()
     IL_0008:  ldc.i4.0
     IL_0009:  ceq
     IL_000b:  stloc.2
@@ -132,8 +135,8 @@
     IL_0016:  ldc.i4.0
     IL_0017:  stloc.0
     IL_0018:  nop
-    IL_0019:  newobj     instance void class Test.Widget`1<!!T>::.ctor()
-    IL_001e:  call       instance void class Test.Widget`1<!!T>::Foo()
+    IL_0019:  newobj     instance void class Test_test.Widget`1<!!T>::.ctor()
+    IL_001e:  call       instance void class Test_test.Widget`1<!!T>::Foo()
     IL_0023:  nop
     IL_0024:  nop
     IL_0025:  leave.s    IL_004c

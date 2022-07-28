@@ -23,7 +23,7 @@
 #include "metadata/method-builder.h"
 #include "metadata/abi-details.h"
 #include "metadata/class-abi-details.h"
-#include "metadata/mono-gc.h"
+#include <mono/metadata/mono-gc.h>
 #include "metadata/runtime.h"
 #include "metadata/sgen-bridge-internals.h"
 #include "metadata/sgen-mono.h"
@@ -118,7 +118,7 @@ mono_gc_wbarrier_value_copy_internal (gpointer dest, gconstpointer src, int coun
 	if (sgen_ptr_in_nursery (dest) || ptr_on_stack (dest) || !sgen_gc_descr_has_references ((mword)m_class_get_gc_descr (klass))) {
 		size_t element_size = mono_class_value_size (klass, NULL);
 		size_t size = count * element_size;
-		mono_gc_memmove_atomic (dest, src, size);		
+		mono_gc_memmove_atomic (dest, src, size);
 		return;
 	}
 
@@ -154,7 +154,7 @@ mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src)
 		size = m_class_get_instance_size (mono_object_class (obj));
 		mono_gc_memmove_aligned ((char*)obj + MONO_ABI_SIZEOF (MonoObject), (char*)src + MONO_ABI_SIZEOF (MonoObject),
 				size - MONO_ABI_SIZEOF (MonoObject));
-		return;	
+		return;
 	}
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
@@ -501,7 +501,7 @@ mono_gc_invoke_finalizers (void)
 MonoBoolean
 mono_gc_pending_finalizers (void)
 {
-	return sgen_have_pending_finalizers ();
+	return !!sgen_have_pending_finalizers ();
 }
 
 void
@@ -1066,7 +1066,7 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean know
 
 	if (sgen_collect_before_allocs)
 		return NULL;
-	if (m_class_get_instance_size (klass) > sgen_tlab_size)
+	if (GINT_TO_UINT32(m_class_get_instance_size (klass)) > sgen_tlab_size)
 		return NULL;
 	if (known_instance_size && ALIGN_TO (m_class_get_instance_size (klass), SGEN_ALLOC_ALIGN) >= SGEN_MAX_SMALL_OBJ_SIZE)
 		return NULL;
@@ -1812,13 +1812,13 @@ report_pin_queue (void)
 	//sort the addresses
 	sgen_pointer_queue_sort_uniq (&pinned_objects);
 
-	for (int i = 0; i < pinned_objects.next_slot; ++i) {
+	for (gsize i = 0; i < pinned_objects.next_slot; ++i) {
 		GCObject *obj = (GCObject*)pinned_objects.data [i];
 		ssize_t size = sgen_safe_object_get_size (obj);
 
 		ssize_t addr = (ssize_t)obj;
-		lower_bound = MIN (lower_bound, addr);
-		upper_bound = MAX (upper_bound, addr + size);
+		lower_bound = MIN (lower_bound, GSSIZE_TO_SIZE(addr));
+		upper_bound = MAX (upper_bound, GSSIZE_TO_SIZE(addr + size));
 	}
 
 	report_stack_roots ();
@@ -2163,9 +2163,9 @@ sgen_client_thread_attach (SgenThreadInfo* info)
 	if (mono_gc_get_gc_callbacks ()->thread_attach_func)
 		info->client_info.runtime_data = mono_gc_get_gc_callbacks ()->thread_attach_func ();
 
-	sgen_binary_protocol_thread_register ((gpointer)mono_thread_info_get_tid (info));
+	sgen_binary_protocol_thread_register ((gpointer)(gsize) mono_thread_info_get_tid (info));
 
-	SGEN_LOG (3, "registered thread %p (%p) stack end %p", info, (gpointer)mono_thread_info_get_tid (info), info->client_info.info.stack_end);
+	SGEN_LOG (3, "registered thread %p (%p) stack end %p", info, (gpointer)(gsize) mono_thread_info_get_tid (info), info->client_info.info.stack_end);
 
 	info->client_info.info.handle_stack = mono_handle_stack_alloc ();
 }
@@ -2199,8 +2199,8 @@ sgen_client_thread_detach_with_lock (SgenThreadInfo *p)
 		p->client_info.runtime_data = NULL;
 	}
 
-	sgen_binary_protocol_thread_unregister ((gpointer)tid);
-	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)tid);
+	sgen_binary_protocol_thread_unregister ((gpointer)(gsize) tid);
+	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)(gsize) tid);
 
 	HandleStack *handles = p->client_info.info.handle_stack;
 	p->client_info.info.handle_stack = NULL;
@@ -2335,7 +2335,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 			skip_reason = 4;
 		}
 
-		sgen_binary_protocol_scan_stack ((gpointer)mono_thread_info_get_tid (info), info->client_info.stack_start, info->client_info.info.stack_end, skip_reason);
+		sgen_binary_protocol_scan_stack ((gpointer)(gsize) mono_thread_info_get_tid (info), info->client_info.stack_start, info->client_info.info.stack_end, skip_reason);
 
 		if (skip_reason) {
 			if (precise) {
@@ -2816,9 +2816,6 @@ mono_gchandle_set_target (MonoGCHandle gchandle, MonoObject *obj)
 void
 sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
 {
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->gc_num_handles);
-#endif
 
 	MONO_PROFILER_RAISE (gc_handle_created, (handle, (MonoGCHandleType)handle_type, obj));
 }
@@ -2826,9 +2823,6 @@ sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
 void
 sgen_client_gchandle_destroyed (int handle_type, guint32 handle)
 {
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_dec_i32 (&mono_perfcounters->gc_num_handles);
-#endif
 
 	MONO_PROFILER_RAISE (gc_handle_deleted, (handle, (MonoGCHandleType)handle_type));
 }
@@ -2848,7 +2842,7 @@ sgen_client_ensure_weak_gchandles_accessible (void)
 	 * should wait for bridge processing but would fail to do so.
 	 */
 	if (G_UNLIKELY (mono_bridge_processing_in_progress))
-		mono_gc_wait_for_bridge_processing ();
+		mono_gc_wait_for_bridge_processing_internal ();
 }
 
 void*
@@ -3165,12 +3159,6 @@ sgen_client_binary_protocol_collection_begin (int minor_gc_count, int generation
 		MONO_PROFILER_RAISE (gc_root_register, (SPECIAL_ADDRESS_TOGGLEREF, 1, MONO_ROOT_SOURCE_TOGGLEREF, NULL, "ToggleRefs"));
 	}
 
-#ifndef DISABLE_PERFCOUNTERS
-	if (generation == GENERATION_NURSERY)
-		mono_atomic_inc_i32 (&mono_perfcounters->gc_collections0);
-	else
-		mono_atomic_inc_i32 (&mono_perfcounters->gc_collections1);
-#endif
 }
 
 void

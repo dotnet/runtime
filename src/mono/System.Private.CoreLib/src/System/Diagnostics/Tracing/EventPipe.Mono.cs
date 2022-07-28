@@ -57,7 +57,10 @@ namespace System.Diagnostics.Tracing
         internal static extern unsafe bool GetNextEvent(ulong sessionID, EventPipeEventInstanceData* pInstance);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr GetWaitHandle(ulong sessionID);
+        internal static extern unsafe bool SignalSession(ulong sessionID);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern unsafe bool WaitForSessionSignal(ulong sessionID, int timeoutMs);
 #endif // FEATURE_PERFTRACING
 
         //
@@ -76,7 +79,8 @@ namespace System.Diagnostics.Tracing
             GC_LARGE_OBJECT_SIZE_BYTES,
             GC_LAST_PERCENT_TIME_IN_GC,
             JIT_IL_BYTES_JITTED,
-            JIT_METHODS_JITTED
+            JIT_METHODS_JITTED,
+            JIT_TICKS_IN_JIT
         }
 
 #if FEATURE_PERFTRACING

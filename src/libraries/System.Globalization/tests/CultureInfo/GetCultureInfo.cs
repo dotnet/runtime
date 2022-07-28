@@ -32,12 +32,15 @@ namespace System.Globalization.Tests
 
             if (PlatformDetection.IsIcuGlobalization)
             {
-                yield return new object[] { "x\u0000X-Yy", "x" }; // Null byte
+                if (PlatformDetection.IsNotWindows)
+                {
+                    yield return new object[] { "x\u0000X-Yy", "x" }; // Null byte
+                    yield return new object[] { "zh-cmn", "zh-CMN" };
+                    yield return new object[] { "zh-CMN-HANS" };
+                    yield return new object[] { "zh-cmn-Hant", "zh-CMN-HANT" };
+                }
                 yield return new object[] { "sgn-BE-FR" };
                 yield return new object[] { "zh-min-nan", "nan" };
-                yield return new object[] { "zh-cmn", "zh-CMN" };
-                yield return new object[] { "zh-CMN-HANS" };
-                yield return new object[] { "zh-cmn-Hant", "zh-CMN-HANT" };
                 yield return new object[] { "zh-gan", "gan" };
                 yield return new object[] { "zh-Hans-CN" };
                 yield return new object[] { "zh-Hans-SG" };
@@ -56,6 +59,17 @@ namespace System.Globalization.Tests
                 yield return new object[] { "zh-Hant-MO", "zh-MO" };
                 yield return new object[] { "zh-Hant-TW", "zh-TW" };
             }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)] // Windows specific behavior
+        [InlineData("x\u0000X-Yy")]
+        [InlineData("zh-cmn")]
+        [InlineData("zh-CMN-HANS")]
+        [InlineData("zh-cmn-Hant")]
+        public void TestIvalidCultureNames(string cultureName)
+        {
+            Assert.Throws<CultureNotFoundException>(() => new CultureInfo(cultureName));
         }
 
         [ConditionalTheory(nameof(PlatformSupportsFakeCulture))]
@@ -116,6 +130,7 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(nameof(PlatformSupportsFakeCultureAndRemoteExecutor))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [InlineData("1", "xx-XY")]
         [InlineData("1", "zx-ZY")]
         [InlineData("0", "xx-XY")]
@@ -142,6 +157,7 @@ namespace System.Globalization.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [InlineData(true, true, false)]
         [InlineData(true, true, true)]
         [InlineData(true, false, true)]
@@ -195,7 +211,7 @@ namespace System.Globalization.Tests
                     Assert.NotNull(exception);
                     Assert.IsType<ArgumentNullException>(exception);
                     Assert.Equal("collection", (exception as ArgumentNullException).ParamName);
-                    Assert.Equal("The collection argument is null. (Parameter 'collection')", exception.Message);
+                    Assert.Equal("Value cannot be null. (Parameter 'collection')", exception.Message);
                 }
                 else
                 {

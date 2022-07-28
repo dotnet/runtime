@@ -79,4 +79,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldind_i.exe{}
+.assembly ldind_i{}

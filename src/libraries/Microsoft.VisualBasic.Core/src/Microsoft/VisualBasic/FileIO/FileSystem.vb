@@ -2022,7 +2022,7 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <summary>
         ''' A simple tree node to build up the directory structure used for a snapshot in Copy / Move Directory.
         ''' </summary>
-        Private Class DirectoryNode
+        Private NotInheritable Class DirectoryNode
             ''' <summary>
             ''' Given a DirectoryPath, create the node and add the sub-directory nodes.
             ''' </summary>
@@ -2083,7 +2083,7 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' This class will take care of text spanning byte arrays by caching a part of the array and use it in
         '''      the next IsTextFound() call.
         ''' </remarks>
-        Private Class TextSearchHelper
+        Private NotInheritable Class TextSearchHelper
             ''' <summary>
             ''' Constructs a new helper with a given encoding and a text to search for.
             ''' </summary>
@@ -2123,7 +2123,7 @@ Namespace Microsoft.VisualBasic.FileIO
                 If m_CheckPreamble Then
                     If BytesMatch(ByteBuffer, m_Preamble) Then
                         ByteBufferStartIndex = m_Preamble.Length
-                        Count -= m_Preamble.Length ' Reduce the valid byte count if ByteBuffer was shrinked.
+                        Count -= m_Preamble.Length ' Reduce the valid byte count if ByteBuffer was shrunk.
                     End If
                     m_CheckPreamble = False
                     ' In case of an empty file with BOM at the beginning return FALSE.

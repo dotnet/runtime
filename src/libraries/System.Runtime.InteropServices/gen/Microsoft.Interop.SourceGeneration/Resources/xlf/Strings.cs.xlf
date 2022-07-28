@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="cs" original="../Strings.resx">
+    <body>
+      <trans-unit id="ArraySizeMustBeSpecified">
+        <source>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</source>
+        <target state="translated">Zařazování pole z nespravovaného na spravované vyžaduje aby pole SizeParamIndex nebo SizeConst byla nastavena buď na MarshalAsAttribute, nebo aby byly vlastnosti ConstantElementCount nebo CountElementName nastaveny na MarshalUsingAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BidirectionalMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">Zadaný parametr musí být zařazený ze spravovaného do nespravovaného a z nespravovaného do spravovaného, ale zařazovací typ {0} to nepodporuje.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
+        <source>The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</source>
+        <target state="translated">Zadaný parametr velikosti kolekce musí být u kolekce celočíselný. Pokud se informace o velikosti použijí na vnořenou kolekci, parametr velikosti musí být kolekce o jednu nižší úrovně vnoření s integrálním elementem.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConstantAndElementCountInfoDisallowed">
+        <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
+        <target state="translated">U atributu MarshalUsingAttribute pro daný ElementIndirectionDepth se může se použít jen jeden z prvků ConstantElementCount nebo ElementCountInfo</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CyclicalCountInfo">
+        <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
+        <target state="translated">Tento prvek nesmí záviset na {0} pro informace o velikost kolekce bez toho, aby došlo k vytvoření cyklu závislosti.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateCountInfo">
+        <source>Count information for a given element at a given indirection level can only be specified once</source>
+        <target state="translated">Informace o počtu pro daný prvek na dané úrovni indirekce se dají určit jenom jednou</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateMarshallingInfo">
+        <source>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</source>
+        <target state="translated">Více atributů zařazování pro každý prvek za úroveň indirekce se nepodporuje, ale byly poskytnuty duplicitní informace pro úroveň indirekce {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ExtraneousMarshallingInfo">
+        <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
+        <target state="translated">Informace o zařazování se určily pro ElementIndirectionDepth {0}, ale informace o zařazování byly potřebné pouze pro {1} úrovně indirekce.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GraphHasCycles">
+        <source>The provided graph has cycles and cannot be topologically sorted.</source>
+        <target state="translated">Poskytnutý graf obsahuje cykly a nelze ho řadit topologicky.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeNotSupportedWithoutOut">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</source>
+        <target state="translated">Atribut „[In]“ se nepodporuje, pokud není zároveň použit i atribut „[Out]“. Chování atributu „[In]“ bez atributu „[Out]“ je stejné, jako výchozí chování.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeByRefNotSupported">
+        <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
+        <target state="translated">Atributy „[In]“ a „[Out]“ se nepodporují u parametrů předaných odkazem. Použijte místo nich klíčová slova „in“, „ref“ nebo „out“.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeMarshalerNotSupported">
+        <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
+        <target state="translated">Poskytnuté atributy „[In]“ a „[Out]“ u tohoto parametru se na tomto parametru nepodporují.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">Určený parametr musí být zařazený ze spravovaného do nespravovaného, ale zařazovací typ {0} to nepodporuje.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
+        <source>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</source>
+        <target state="translated">Typ vstupního bodu řadiče „{0}“ pro spravovaný typ „{1}“ musí mít aritu o jednu větší než spravovaný typ.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
+        <target state="translated">Typ zařazovače {0} pro spravovaný typ {1} musí být statický.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
+        <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">Logická hodnota zařazování bez výslovných informací zařazování se nepodporuje. Určete buď MarshalUsingAttribute nebo MarshalAsAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
+        <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
+        <target state="translated">Zařazování datového typu char se StringMarshalling.{0} se nepodporuje. Místo toho ručně převeďte datový typ char na požadovanou bajtovou reprezentaci a předejte do zdrojem generovaného volání P/Invoke.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
+        <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
+        <target state="translated">Zařazování datového typu char se StringMarshalling.Custom se nepodporuje. Pokud chcete použít zařazování vlastního typu, zadejte MarshalUsingAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">Zařazování řetězce nebo znaku bez explicitních informací o zařazování se nepodporuje. Zadejte LibraryImportAttribute.StringMarshalling, LibraryImportAttribute.StringMarshallingCustomType, MarshalUsingAttribute nebo MarshalAsAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeMarshallingMustBeDisabled">
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">Aby se povolilo zařazování tohoto typu, musí se v tomto projektu zakázat zařazování modulu runtime použitím atributu System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute u sestavení.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SafeHandleByRefMustBeConcrete">
+        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
+        <target state="translated">Abstraktní typ odvozený ze SafeHandle nelze zařadit pomocí odkazu. Poskytnutý typ musí být konkrétní.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">Určený parametr musí být zařazený z nespravovaného do spravovaného, ale zařazovací typ {0} to nepodporuje.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

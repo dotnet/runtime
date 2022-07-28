@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -13,24 +14,17 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class IcallTableGenerator : Task
+internal sealed class IcallTableGenerator
 {
-    [Required]
-    public string? RuntimeIcallTableFile { get; set; }
-    [Required]
-    public ITaskItem[]? Assemblies { get; set; }
-    [Required]
-    public string? OutputPath { get; set; }
+    public string[]? Cookies { get; private set; }
 
-    private List<Icall> _icalls = new List<Icall> ();
-    private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass> ();
+    private List<Icall> _icalls = new List<Icall>();
+    private List<string> _signatures = new List<string>();
+    private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass>();
 
-    public override bool Execute()
-    {
-        Log.LogMessage(MessageImportance.Normal, $"Generating icall table to '{OutputPath}'.");
-        GenIcallTable(RuntimeIcallTableFile!, Assemblies!.Select(item => item.ItemSpec).ToArray());
-        return true;
-    }
+    private TaskLoggingHelper Log { get; set; }
+
+    public IcallTableGenerator(TaskLoggingHelper log) => Log = log;
 
     //
     // Given the runtime generated icall table, and a set of assemblies, generate
@@ -38,11 +32,16 @@ public class IcallTableGenerator : Task
     // The runtime icall table should be generated using
     // mono --print-icall-table
     //
-    public void GenIcallTable(string runtimeIcallTableFile, string[] assemblies)
+    public IEnumerable<string> GenIcallTable(string? runtimeIcallTableFile, string[] assemblies, string? outputPath)
     {
-        ReadTable (runtimeIcallTableFile);
+        _icalls.Clear();
+        _signatures.Clear();
+
+        if (runtimeIcallTableFile != null)
+            ReadTable(runtimeIcallTableFile);
+
         var resolver = new PathAssemblyResolver(assemblies);
-        var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
+        using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
         foreach (var aname in assemblies)
         {
             var a = mlc.LoadFromAssemblyPath(aname);
@@ -50,226 +49,261 @@ public class IcallTableGenerator : Task
                 ProcessType(type);
         }
 
-        using (var w = File.CreateText(OutputPath!))
-            EmitTable (w);
+        if (outputPath != null)
+        {
+            string tmpFileName = Path.GetTempFileName();
+            try
+            {
+                using (var w = File.CreateText(tmpFileName))
+                    EmitTable(w);
+
+                if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
+                    Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{outputPath}'.");
+                else
+                    Log.LogMessage(MessageImportance.Low, $"Icall table in {outputPath} is unchanged.");
+            }
+            finally
+            {
+                File.Delete(tmpFileName);
+            }
+        }
+
+        return _signatures;
     }
 
-    private void EmitTable (StreamWriter w)
+    private void EmitTable(StreamWriter w)
     {
-        var assemblyMap = new Dictionary<string, string> ();
+        var assemblyMap = new Dictionary<string, string>();
         foreach (var icall in _icalls)
-            assemblyMap [icall.Assembly!] = icall.Assembly!;
+            assemblyMap[icall.Assembly!] = icall.Assembly!;
 
         foreach (var assembly in assemblyMap.Keys)
         {
-            var sorted = _icalls.Where (i => i.Assembly == assembly).ToArray ();
-            Array.Sort (sorted);
+            var sorted = _icalls.Where(i => i.Assembly == assembly).ToArray();
+            Array.Sort(sorted);
 
             string aname;
             if (assembly == "System.Private.CoreLib")
                 aname = "corlib";
             else
-                aname = assembly.Replace (".", "_");
-            w.WriteLine ($"#define ICALL_TABLE_{aname} 1\n");
+                aname = assembly.Replace(".", "_");
+            w.WriteLine($"#define ICALL_TABLE_{aname} 1\n");
 
-            w.WriteLine ($"static int {aname}_icall_indexes [] = {{");
+            w.WriteLine($"static int {aname}_icall_indexes [] = {{");
             foreach (var icall in sorted)
-                w.WriteLine (string.Format ("{0},", icall.TokenIndex));
-            w.WriteLine ("};");
+                w.WriteLine(string.Format("{0},", icall.TokenIndex));
+            w.WriteLine("};");
             foreach (var icall in sorted)
-                w.WriteLine (GenIcallDecl (icall));
-            w.WriteLine ($"static void *{aname}_icall_funcs [] = {{");
+                w.WriteLine(GenIcallDecl(icall));
+            w.WriteLine($"static void *{aname}_icall_funcs [] = {{");
             foreach (var icall in sorted)
             {
-                w.WriteLine (string.Format ("// token {0},", icall.TokenIndex));
-                w.WriteLine (string.Format ("{0},", icall.Func));
+                w.WriteLine(string.Format("// token {0},", icall.TokenIndex));
+                w.WriteLine(string.Format("{0},", icall.Func));
             }
-            w.WriteLine ("};");
-            w.WriteLine ($"static uint8_t {aname}_icall_handles [] = {{");
+            w.WriteLine("};");
+            w.WriteLine($"static uint8_t {aname}_icall_handles [] = {{");
             foreach (var icall in sorted)
-                w.WriteLine (string.Format ("{0},", icall.Handles ? "1" : "0"));
-            w.WriteLine ("};");
+                w.WriteLine(string.Format("{0},", icall.Handles ? "1" : "0"));
+            w.WriteLine("};");
         }
     }
 
     // Read the icall table generated by mono --print-icall-table
-    private void ReadTable (string filename)
+    private void ReadTable(string filename)
     {
-        JsonDocument json;
-        using (var stream = File.Open (filename, FileMode.Open))
-        {
-            json = JsonDocument.Parse (stream);
-        }
+        using var stream = File.OpenRead(filename);
+        using JsonDocument json = JsonDocument.Parse(stream);
 
         var arr = json.RootElement;
-        foreach (var v in arr.EnumerateArray ())
+        foreach (var v in arr.EnumerateArray())
         {
-            var className = v.GetProperty ("klass").GetString ()!;
+            var className = v.GetProperty("klass").GetString()!;
             if (className == "")
                 // Dummy value
                 continue;
-            var icallClass = new IcallClass (className);
-            _runtimeIcalls [icallClass.Name] = icallClass;
-            foreach (var icall_j in v.GetProperty ("icalls").EnumerateArray ())
-            {
-                if (!icall_j.TryGetProperty ("name", out var nameElem))
-                    continue;
-                string name = nameElem.GetString ()!;
-                string func = icall_j.GetProperty ("func").GetString ()!;
-                bool handles = icall_j.GetProperty ("handles").GetBoolean ();
 
-                icallClass.Icalls.Add (name, new Icall (name, func, handles));
+            var icallClass = new IcallClass(className);
+            _runtimeIcalls[icallClass.Name] = icallClass;
+            foreach (var icall_j in v.GetProperty("icalls").EnumerateArray())
+            {
+                if (!icall_j.TryGetProperty("name", out var nameElem))
+                    continue;
+
+                string name = nameElem.GetString()!;
+                string func = icall_j.GetProperty("func").GetString()!;
+                bool handles = icall_j.GetProperty("handles").GetBoolean();
+
+                icallClass.Icalls.Add(name, new Icall(name, func, handles));
             }
         }
     }
 
-    private void ProcessType (Type type)
+    private void ProcessType(Type type)
     {
-        foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static|BindingFlags.Instance))
+        foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
         {
             if ((method.GetMethodImplementationFlags() & MethodImplAttributes.InternalCall) == 0)
                 continue;
 
+            AddSignature(type, method);
+
             var className = method.DeclaringType!.FullName!;
-            if (!_runtimeIcalls.ContainsKey (className))
+            if (!_runtimeIcalls.ContainsKey(className))
                 // Registered at runtime
                 continue;
 
-            var icallClass = _runtimeIcalls [className];
+            var icallClass = _runtimeIcalls[className];
 
             Icall? icall = null;
 
             // Try name first
-            icallClass.Icalls.TryGetValue (method.Name, out icall);
+            icallClass.Icalls.TryGetValue(method.Name, out icall);
             if (icall == null)
             {
-                // Then with signature
-                var sig = new StringBuilder (method.Name + "(");
-                int pindex = 0;
-                foreach (var par in method.GetParameters())
-                {
-                    if (pindex > 0)
-                        sig.Append (',');
-                    var t = par.ParameterType;
-                    AppendType (sig, t);
-                    pindex++;
-                }
-                sig.Append (')');
-                if (icallClass.Icalls.ContainsKey (sig.ToString ()))
-                    icall = icallClass.Icalls [sig.ToString ()];
+                string? methodSig = BuildSignature(method, className);
+                if (methodSig != null && icallClass.Icalls.ContainsKey(methodSig))
+                    icall = icallClass.Icalls[methodSig];
             }
             if (icall == null)
                 // Registered at runtime
                 continue;
+
             icall.Method = method;
             icall.TokenIndex = (int)method.MetadataToken & 0xffffff;
             icall.Assembly = method.DeclaringType.Module.Assembly.GetName().Name;
-            _icalls.Add (icall);
-         }
+            _icalls.Add(icall);
+        }
 
         foreach (var nestedType in type.GetNestedTypes())
             ProcessType(nestedType);
+
+        string? BuildSignature(MethodInfo method, string className)
+        {
+            // Then with signature
+            var sig = new StringBuilder(method.Name + "(");
+            int pindex = 0;
+            foreach (var par in method.GetParameters())
+            {
+                if (pindex > 0)
+                    sig.Append(',');
+
+                var t = par.ParameterType;
+                try
+                {
+                    AppendType(sig, t);
+                }
+                catch (NotImplementedException nie)
+                {
+                    Log.LogWarning($"Failed to generate icall function for method '[{method.DeclaringType!.Assembly.GetName().Name}] {className}::{method.Name}'" +
+                                    $" because type '{nie.Message}' is not supported for parameter named '{par.Name}'. Ignoring.");
+                    return null;
+                }
+                pindex++;
+            }
+            sig.Append(')');
+
+            return sig.ToString();
+        }
+
+        void AddSignature(Type type, MethodInfo method)
+        {
+            string? signature = SignatureMapper.MethodToSignature(method);
+            if (signature == null)
+            {
+                throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
+            }
+
+            Log.LogMessage(MessageImportance.Normal, $"[icall] Adding signature {signature} for method '{type.FullName}.{method.Name}'");
+            _signatures.Add(signature);
+        }
     }
 
     // Append the type name used by the runtime icall tables
-    private void AppendType (StringBuilder sb, Type t) {
+    private void AppendType(StringBuilder sb, Type t)
+    {
         if (t.IsArray)
         {
-            AppendType (sb, t.GetElementType()!);
-            sb.Append ("[]");
+            AppendType(sb, t.GetElementType()!);
+            sb.Append("[]");
         }
         else if (t.IsByRef)
         {
-            AppendType (sb, t.GetElementType()!);
-            sb.Append ('&');
+            AppendType(sb, t.GetElementType()!);
+            sb.Append('&');
         }
         else if (t.IsPointer)
         {
-            AppendType (sb, t.GetElementType()!);
-            sb.Append ('*');
+            AppendType(sb, t.GetElementType()!);
+            sb.Append('*');
         }
         else
         {
-            string name = t.Name;
-
-            switch (name)
+            sb.Append(t.Name switch
             {
-            case "Char": sb.Append ("char"); break;
-            case "Boolean": sb.Append ("bool"); break;
-            case "Int8": sb.Append ("sbyte"); break;
-            case "UInt8": sb.Append ("byte"); break;
-            case "Int16": sb.Append ("int16"); break;
-            case "UInt16": sb.Append ("uint16"); break;
-            case "Int32": sb.Append ("int"); break;
-            case "UInt32": sb.Append ("uint"); break;
-            case "Int64": sb.Append ("long"); break;
-            case "UInt64": sb.Append ("ulong"); break;
-            case "IntPtr": sb.Append ("intptr"); break;
-            case "UIntPtr": sb.Append ("uintptr"); break;
-            case "Single": sb.Append ("single"); break;
-            case "Double": sb.Append ("double"); break;
-            case "Object": sb.Append ("object"); break;
-            case "String": sb.Append ("string"); break;
-            default:
-                throw new NotImplementedException (t.FullName);
-            }
+                nameof(Char) => "char",
+                nameof(Boolean) => "bool",
+                nameof(SByte) => "sbyte",
+                nameof(Byte) => "byte",
+                nameof(Int16) => "int16",
+                nameof(UInt16) => "uint16",
+                nameof(Int32) => "int",
+                nameof(UInt32) => "uint",
+                nameof(Int64) => "long",
+                nameof(UInt64) => "ulong",
+                nameof(IntPtr) => "intptr",
+                nameof(UIntPtr) => "uintptr",
+                nameof(Single) => "single",
+                nameof(Double) => "double",
+                nameof(Object) => "object",
+                nameof(String) => "string",
+                _ => throw new NotImplementedException(t.FullName)
+            });
         }
     }
 
-    private static string MapType (Type t)
+    private static string MapType(Type t) => t.Name switch
     {
-        switch (t.Name)
-        {
-        case "Void":
-            return "void";
-        case "Double":
-            return "double";
-        case "Single":
-            return "float";
-        case "Int64":
-            return "int64_t";
-        case "UInt64":
-            return "uint64_t";
-        default:
-            return "int";
-        }
-    }
+        "Void" => "void",
+        nameof(Double) => "double",
+        nameof(Single) => "float",
+        nameof(Int64) => "int64_t",
+        nameof(UInt64) => "uint64_t",
+        _ => "int",
+    };
 
-    private static string GenIcallDecl (Icall icall)
+    private static string GenIcallDecl(Icall icall)
     {
-        var sb = new StringBuilder ();
+        var sb = new StringBuilder();
         var method = icall.Method!;
-        sb.Append (MapType (method.ReturnType));
-        sb.Append ($" {icall.Func} (");
-        int pindex = 0;
+        sb.Append(MapType(method.ReturnType));
+        sb.Append($" {icall.Func} (");
         int aindex = 0;
         if (!method.IsStatic)
         {
-            sb.Append ("int");
+            sb.Append("int");
             aindex++;
         }
-        foreach (var p in method.GetParameters ())
+        foreach (var p in method.GetParameters())
         {
             if (aindex > 0)
-                sb.Append (',');
-            sb.Append (MapType (p.ParameterType));
-            pindex++;
+                sb.Append(',');
+            sb.Append(MapType(p.ParameterType));
             aindex++;
         }
         if (icall.Handles)
         {
             if (aindex > 0)
-                sb.Append (',');
-            sb.Append ("int");
-            pindex++;
+                sb.Append(',');
+            sb.Append("int");
         }
-        sb.Append (");");
-        return sb.ToString ();
+        sb.Append(");");
+        return sb.ToString();
     }
 
-    private class Icall : IComparable<Icall>
+    private sealed class Icall : IComparable<Icall>
     {
-        public Icall (string name, string func, bool handles)
+        public Icall(string name, string func, bool handles)
         {
             Name = name;
             Func = func;
@@ -284,17 +318,18 @@ public class IcallTableGenerator : Task
         public int TokenIndex;
         public MethodInfo? Method;
 
-        public int CompareTo (Icall? other) {
+        public int CompareTo(Icall? other)
+        {
             return TokenIndex - other!.TokenIndex;
         }
     }
 
-    private class IcallClass
+    private sealed class IcallClass
     {
-        public IcallClass (string name)
+        public IcallClass(string name)
         {
             Name = name;
-            Icalls = new Dictionary<string, Icall> ();
+            Icalls = new Dictionary<string, Icall>();
         }
 
         public string Name;

@@ -47,11 +47,6 @@ MONO_API MonoImage*    mono_assembly_load_module_checked (MonoAssembly *assembly
 
 MonoAssembly* mono_assembly_load_with_partial_name_internal (const char *name, MonoAssemblyLoadContext *alc, MonoImageOpenStatus *status);
 
-
-typedef gboolean (*MonoAssemblyAsmCtxFromPathFunc) (const char *absfname, MonoAssembly *requesting_assembly, gpointer user_data, MonoAssemblyContextKind *out_asmctx);
-
-void mono_install_assembly_asmctx_from_path_hook (MonoAssemblyAsmCtxFromPathFunc func, gpointer user_data);
-
 typedef MonoAssembly * (*MonoAssemblyPreLoadFuncV2) (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, char **assemblies_path, gpointer user_data, MonoError *error);
 
 void mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, gpointer user_data, gboolean append);
@@ -73,13 +68,15 @@ mono_assembly_invoke_load_hook_internal (MonoAssemblyLoadContext *alc, MonoAssem
 typedef gboolean (*MonoAssemblyCandidatePredicate)(MonoAssembly *, gpointer);
 
 typedef struct MonoAssemblyLoadRequest {
-	/* Assembly Load context that is requesting an assembly. */
-	MonoAssemblyContextKind asmctx;
 	MonoAssemblyLoadContext *alc;
 	/* Predicate to apply to candidate assemblies. Optional. */
 	MonoAssemblyCandidatePredicate predicate;
 	/* user_data for predicate. Optional. */
 	gpointer predicate_ud;
+	/* Don't invoke the search hooks to find the assembly. Optional */
+	gboolean no_invoke_search_hook;
+	/* Don't fire managed assembly loaded event. Optional. */
+	gboolean no_managed_load_event;
 } MonoAssemblyLoadRequest;
 
 typedef struct MonoAssemblyOpenRequest {
@@ -101,15 +98,12 @@ typedef struct MonoAssemblyByNameRequest {
 } MonoAssemblyByNameRequest;
 
 void                   mono_assembly_request_prepare_load (MonoAssemblyLoadRequest *req,
-							   MonoAssemblyContextKind asmctx,
 							   MonoAssemblyLoadContext *alc);
 
 void                   mono_assembly_request_prepare_open (MonoAssemblyOpenRequest *req,
-							   MonoAssemblyContextKind asmctx,
 							   MonoAssemblyLoadContext *alc);
 
 MONO_COMPONENT_API void mono_assembly_request_prepare_byname (MonoAssemblyByNameRequest *req,
-							     MonoAssemblyContextKind asmctx,
 							     MonoAssemblyLoadContext *alc);
 
 MonoAssembly*          mono_assembly_request_open (const char *filename,

@@ -16,13 +16,11 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         // When running both inner and outer loop together, dump only once
         private static bool s_dumpedRuntimeInfo = false;
 
-        private static readonly bool s_isInHelix = Environment.GetEnvironmentVariables().Keys.Cast<string>().Where(key => key.StartsWith("HELIX")).Any();
-
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "throws PNSE when binariesLocation is not an empty string.")]
         public void DumpRuntimeInformationToConsole()
         {
-            if (s_dumpedRuntimeInfo || !s_isInHelix)
+            if (s_dumpedRuntimeInfo || !PlatformDetection.IsInHelix)
                 return;
 
             s_dumpedRuntimeInfo = true;
@@ -70,7 +68,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             {
                 var sb = new StringBuilder();
                 sb.AppendLine("### PROCESS INFORMATION:");
-                sb.AppendFormat($"###\tArchitecture: {RuntimeInformation.ProcessArchitecture.ToString()}").AppendLine();
+                sb.AppendLine($"###\tArchitecture: {RuntimeInformation.ProcessArchitecture}");
                 foreach (string prop in new string[]
                 {
                         nameof(p.BasePriority),

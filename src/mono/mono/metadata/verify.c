@@ -24,19 +24,16 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/class-init.h>
-#include <mono/metadata/security-manager.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/attrdefs.h>
-#include <mono/utils/mono-counters.h>
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-error-internals.h>
 #include <string.h>
 #include <ctype.h>
 
 /*
- * Returns TURE if @type is VAR or MVAR
+ * Returns TRUE if @type is VAR or MVAR
  */
 static gboolean
 mono_type_is_generic_argument (MonoType *type)

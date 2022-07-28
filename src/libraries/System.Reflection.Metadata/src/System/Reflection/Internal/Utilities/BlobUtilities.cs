@@ -16,7 +16,7 @@ namespace System.Reflection
         {
             if (byteCount == 0)
             {
-                return EmptyArray<byte>.Instance;
+                return Array.Empty<byte>();
             }
 
             byte[] result = new byte[byteCount];
@@ -252,8 +252,7 @@ namespace System.Reflection
 
         internal static unsafe int GetUTF8ByteCount(char* str, int charCount)
         {
-            char* remainder;
-            return GetUTF8ByteCount(str, charCount, int.MaxValue, out remainder);
+            return GetUTF8ByteCount(str, charCount, int.MaxValue, out _);
         }
 
         internal static int GetUTF8ByteCount(char* str, int charCount, int byteLimit, out char* remainder)

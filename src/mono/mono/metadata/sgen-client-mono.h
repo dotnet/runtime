@@ -60,7 +60,7 @@ struct _SgenClientThreadInfo {
 
 #include "metadata/profiler-private.h"
 #include "utils/dtrace.h"
-#include "utils/mono-counters.h"
+#include <mono/utils/mono-counters.h>
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-time.h"
 #include "utils/mono-os-semaphore.h"
@@ -250,10 +250,13 @@ sgen_client_bridge_processing_stw_step (void)
 	sgen_bridge_processing_stw_step ();
 }
 
+void
+mono_gc_wait_for_bridge_processing_internal (void);
+
 static void G_GNUC_UNUSED
 sgen_client_bridge_wait_for_processing (void)
 {
-	mono_gc_wait_for_bridge_processing ();
+	mono_gc_wait_for_bridge_processing_internal ();
 }
 
 static void G_GNUC_UNUSED
@@ -694,7 +697,7 @@ sgen_client_binary_protocol_ephemeron_ref (gpointer list, gpointer key, gpointer
 /* Enter must be visible before anything is done in the critical region. */
 #define ENTER_CRITICAL_REGION do { mono_atomic_store_acquire (&IN_CRITICAL_REGION, 1); } while (0)
 
-/* Exit must make sure all critical regions stores are visible before it signal the end of the region. 
+/* Exit must make sure all critical regions stores are visible before it signal the end of the region.
  * We don't need to emit a full barrier since we
  */
 #define EXIT_CRITICAL_REGION  do { mono_atomic_store_release (&IN_CRITICAL_REGION, 0); } while (0)

@@ -123,7 +123,7 @@ public class E
 
 }
 
-public class Test
+public class Test_CircularCctorThreeThreads03
 {
 
 	public static void RunGetA()

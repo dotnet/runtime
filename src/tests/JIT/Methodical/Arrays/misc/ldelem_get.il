@@ -20,7 +20,7 @@
            
   
 }
-.assembly 'test'
+.assembly 'ldelem_get'
 {
 
 
@@ -28,10 +28,10 @@
   
   
 }
-.module 'test.exe'
-.namespace JitTest
+.assembly extern xunit.core {}
+.namespace JitTest_ldelem_get_misc_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
     .method private hidebysig static int32 
@@ -94,8 +94,11 @@
       ret
     } // end of method 'Test::try_index'
 
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  4
       .locals (float64[10000...10005] V_0,
@@ -139,49 +142,49 @@
       			ldloc.0
       			ldc.i4		-10000
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(float64[10000...10005], int32, int32)
+      			call		int32 JitTest_ldelem_get_misc_il.Test::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4.m1
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(float64[10000...10005], int32, int32)
+      			call		int32 JitTest_ldelem_get_misc_il.Test::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4.0
       			ldc.i4.1
-      			call		int32 JitTest.Test::try_index(float64[10000...10005], int32, int32)
+      			call		int32 JitTest_ldelem_get_misc_il.Test::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4.1
       			ldc.i4.1
-      			call		int32 JitTest.Test::try_index(float64[10000...10005], int32, int32)
+      			call		int32 JitTest_ldelem_get_misc_il.Test::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		5
       			ldc.i4.1
-      			call		int32 JitTest.Test::try_index(float64[10000...10005], int32, int32)
+      			call		int32 JitTest_ldelem_get_misc_il.Test::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		6
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(float64[10000...10005], int32, int32)
+      			call		int32 JitTest_ldelem_get_misc_il.Test::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		10005
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(float64[10000...10005], int32, int32)
+      			call		int32 JitTest_ldelem_get_misc_il.Test::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		10006
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(float64[10000...10005], int32, int32)
+      			call		int32 JitTest_ldelem_get_misc_il.Test::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
       			
       			ldc.i4    0x64
@@ -207,5 +210,5 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_ldelem_get_misc_il'
 

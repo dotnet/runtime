@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration
     {
         private readonly IConfigurationRoot _root;
         private readonly string _path;
-        private string _key;
+        private string? _key;
 
         /// <summary>
         /// Initializes a new instance.
@@ -23,15 +23,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="path">The path to this section.</param>
         public ConfigurationSection(IConfigurationRoot root, string path)
         {
-            if (root == null)
-            {
-                throw new ArgumentNullException(nameof(root));
-            }
-
-            if (path == null)
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
+            ThrowHelper.ThrowIfNull(root);
+            ThrowHelper.ThrowIfNull(path);
 
             _root = root;
             _path = path;
@@ -45,23 +38,14 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Gets the key this section occupies in its parent.
         /// </summary>
-        public string Key
-        {
-            get
-            {
-                if (_key == null)
-                {
-                    // Key is calculated lazily as last portion of Path
-                    _key = ConfigurationPath.GetSectionKey(_path);
-                }
-                return _key;
-            }
-        }
+        public string Key =>
+            // Key is calculated lazily as last portion of Path
+            _key ??= ConfigurationPath.GetSectionKey(_path);
 
         /// <summary>
         /// Gets or sets the section value.
         /// </summary>
-        public string Value
+        public string? Value
         {
             get
             {
@@ -78,13 +62,12 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="key">The configuration key.</param>
         /// <returns>The configuration value.</returns>
-        public string this[string key]
+        public string? this[string key]
         {
             get
             {
                 return _root[ConfigurationPath.Combine(Path, key)];
             }
-
             set
             {
                 _root[ConfigurationPath.Combine(Path, key)] = value;

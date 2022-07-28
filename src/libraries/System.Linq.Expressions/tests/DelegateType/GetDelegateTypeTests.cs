@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text.RegularExpressions;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -57,17 +57,20 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ManagedPointerTypeArgs))]
         public void CantBeFunc(Type[] typeArgs)
         {
-#if !FEATURE_COMPILE
-            Assert.Throws<PlatformNotSupportedException>(() => Expression.GetDelegateType(typeArgs));
-#else
-            Type delType = Expression.GetDelegateType(typeArgs);
-            Assert.True(typeof(MulticastDelegate).IsAssignableFrom(delType));
-            Assert.DoesNotMatch(new Regex(@"System\.Action"), delType.FullName);
-            Assert.DoesNotMatch(new Regex(@"System\.Func"), delType.FullName);
-            Reflection.MethodInfo method = delType.GetMethod("Invoke");
-            Assert.Equal(typeArgs.Last(), method.ReturnType);
-            Assert.Equal(typeArgs.Take(typeArgs.Length - 1), method.GetParameters().Select(p => p.ParameterType));
-#endif
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Expression.GetDelegateType(typeArgs));
+            }
+            else
+            {
+                Type delType = Expression.GetDelegateType(typeArgs);
+                Assert.True(typeof(MulticastDelegate).IsAssignableFrom(delType));
+                Assert.DoesNotContain("System.Action", delType.FullName);
+                Assert.DoesNotContain("System.Func", delType.FullName);
+                Reflection.MethodInfo method = delType.GetMethod("Invoke");
+                Assert.Equal(typeArgs.Last(), method.ReturnType);
+                Assert.Equal(typeArgs.Take(typeArgs.Length - 1), method.GetParameters().Select(p => p.ParameterType));
+            }
         }
 
         [Theory]
@@ -80,17 +83,20 @@ namespace System.Linq.Expressions.Tests
         public void CantBeAction(Type[] typeArgs)
         {
             Type[] delegateArgs = typeArgs.Append(typeof(void)).ToArray();
-#if !FEATURE_COMPILE
-            Assert.Throws<PlatformNotSupportedException>(() => Expression.GetDelegateType(delegateArgs));
-#else
-            Type delType = Expression.GetDelegateType(delegateArgs);
-            Assert.True(typeof(MulticastDelegate).IsAssignableFrom(delType));
-            Assert.DoesNotMatch(new Regex(@"System\.Action"), delType.FullName);
-            Assert.DoesNotMatch(new Regex(@"System\.Func"), delType.FullName);
-            Reflection.MethodInfo method = delType.GetMethod("Invoke");
-            Assert.Equal(typeof(void), method.ReturnType);
-            Assert.Equal(typeArgs, method.GetParameters().Select(p => p.ParameterType));
-#endif
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Expression.GetDelegateType(delegateArgs));
+            }
+            else
+            {
+                Type delType = Expression.GetDelegateType(delegateArgs);
+                Assert.True(typeof(MulticastDelegate).IsAssignableFrom(delType));
+                Assert.DoesNotContain("System.Action", delType.FullName);
+                Assert.DoesNotContain("System.Func", delType.FullName);
+                Reflection.MethodInfo method = delType.GetMethod("Invoke");
+                Assert.Equal(typeof(void), method.ReturnType);
+                Assert.Equal(typeArgs, method.GetParameters().Select(p => p.ParameterType));
+            }
         }
 
         // Open generic type args aren't useful directly with Expressions, but creating them is allowed.

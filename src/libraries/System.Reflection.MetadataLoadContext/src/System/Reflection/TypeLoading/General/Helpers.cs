@@ -11,7 +11,7 @@ namespace System.Reflection.TypeLoading
 {
     internal static class Helpers
     {
-        [return: NotNullIfNotNull("original")]
+        [return: NotNullIfNotNull(nameof(original))]
         public static T[]? CloneArray<T>(this T[]? original)
         {
             if (original == null)
@@ -241,7 +241,7 @@ namespace System.Reflection.TypeLoading
 
         public static bool HasSameMetadataDefinitionAsCore<M>(this M thisMember, MemberInfo other) where M : MemberInfo
         {
-            if (other == null)
+            if (other is null)
                 throw new ArgumentNullException(nameof(other));
 
             // Ensure that "other" is one of our MemberInfo objects. Do this check before calling any methods on it!
@@ -273,16 +273,12 @@ namespace System.Reflection.TypeLoading
             MetadataLoadContext loader = defaultAssembly.Loader;
 
             Func<AssemblyName, Assembly> assemblyResolver =
-                delegate (AssemblyName assemblyName)
-                {
-                    return loader.LoadFromAssemblyName(assemblyName);
-                };
+                loader.LoadFromAssemblyName;
 
             Func<Assembly?, string, bool, Type?> typeResolver =
                 delegate (Assembly? assembly, string fullName, bool ignoreCase2)
                 {
-                    if (assembly == null)
-                        assembly = defaultAssembly;
+                    assembly ??= defaultAssembly;
 
                     Debug.Assert(assembly is RoAssembly);
                     RoAssembly roAssembly = (RoAssembly)assembly;
@@ -367,8 +363,22 @@ namespace System.Reflection.TypeLoading
 
         public static byte[] ToUtf8(this string s) => Encoding.UTF8.GetBytes(s);
 
-        public static string ToUtf16(this ReadOnlySpan<byte> utf8) => ToUtf16(utf8.ToArray());
-        public static string ToUtf16(this byte[] utf8) => Encoding.UTF8.GetString(utf8);
+#if NETCOREAPP
+        public static string ToUtf16(this ReadOnlySpan<byte> utf8) => Encoding.UTF8.GetString(utf8);
+#else
+        public static unsafe string ToUtf16(this ReadOnlySpan<byte> utf8)
+        {
+            if (utf8.IsEmpty)
+            {
+                return string.Empty;
+            }
+
+            fixed (byte* ptr = utf8)
+            {
+                return Encoding.UTF8.GetString(ptr, utf8.Length);
+            }
+        }
+#endif
 
         // Guards ToString() implementations. Sample usage:
         //

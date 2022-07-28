@@ -37,4 +37,15 @@ typedef int(HOSTPOLICY_CALLTYPE *corehost_initialize_fn)(
     uint32_t options,
     corehost_context_contract *handle);
 
+typedef void(HOSTPOLICY_CALLTYPE* corehost_resolve_component_dependencies_result_fn)(
+    const pal::char_t* assembly_paths,
+    const pal::char_t* native_search_paths,
+    const pal::char_t* resource_search_paths);
+
+SHARED_API corehost_error_writer_fn HOSTPOLICY_CALLTYPE corehost_set_error_writer(corehost_error_writer_fn error_writer);
+
+SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
+    const pal::char_t* component_main_assembly_path,
+    corehost_resolve_component_dependencies_result_fn result);
+
 #endif //__HOSTPOLICY_H__

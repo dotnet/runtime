@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Text;
+using System.Diagnostics;
+
 namespace System.Xml.Schema
 {
-    using System.Collections;
-    using System.Text;
-    using System.Diagnostics;
-
     internal class NamespaceList
     {
         public enum ListType
@@ -286,7 +286,7 @@ namespace System.Xml.Schema
         private NamespaceList? CompareSetToOther(NamespaceList other)
         {
             //clause 5.1
-            NamespaceList? nslist = null;
+            NamespaceList? nslist;
             if (_set!.Contains(other._targetNamespace!))
             { //S contains negated ns
                 if (_set.Contains(string.Empty))
@@ -341,7 +341,6 @@ namespace System.Xml.Schema
             }
             else if (o1._type == ListType.Set && o2._type == ListType.Set)
             { //clause 4
-                nslist = o1.Clone();
                 nslist = new NamespaceList();
                 nslist._type = ListType.Set;
                 nslist._set = new Hashtable();

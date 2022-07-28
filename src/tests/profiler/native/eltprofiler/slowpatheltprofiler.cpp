@@ -19,12 +19,12 @@ using std::atomic;
 
 shared_ptr<SlowPathELTProfiler> SlowPathELTProfiler::s_profiler;
 
+#define PROFILER_STUB static void STDMETHODCALLTYPE
+
 #ifndef WIN32
 #define UINT_PTR_FORMAT "lx"
-#define PROFILER_STUB EXTERN_C __attribute__((visibility("hidden"))) void STDMETHODCALLTYPE
 #else // WIN32
 #define UINT_PTR_FORMAT "llx"
-#define PROFILER_STUB EXTERN_C void STDMETHODCALLTYPE
 #endif // WIN32
 
 PROFILER_STUB EnterStub(FunctionIDOrClientID functionId, COR_PRF_ELT_INFO eltInfo)
@@ -94,10 +94,10 @@ HRESULT SlowPathELTProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 
     SlowPathELTProfiler::s_profiler = shared_ptr<SlowPathELTProfiler>(this);
 
-    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(COR_PRF_MONITOR_ENTERLEAVE 
+    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(COR_PRF_MONITOR_ENTERLEAVE
                                                     | COR_PRF_ENABLE_FUNCTION_ARGS
                                                     | COR_PRF_ENABLE_FUNCTION_RETVAL
-                                                    | COR_PRF_ENABLE_FRAME_INFO, 
+                                                    | COR_PRF_ENABLE_FRAME_INFO,
                                                     0)))
     {
         wcout << L"FAIL: IpCorProfilerInfo::SetEventMask2() failed hr=0x" << std::hex << hr << endl;
@@ -122,41 +122,56 @@ HRESULT SlowPathELTProfiler::Shutdown()
 
     if (_testType == TestType::EnterHooks)
     {
-        if (_failures == 0 
-             && _testType == TestType::EnterHooks
-             && _sawSimpleFuncEnter
-             && _sawMixedStructFuncEnter
-             && _sawLargeStructFuncEnter)
+        bool _sawFuncsEnter = true;
+
+        for (auto p: _sawFuncEnter)
+        {
+            _sawFuncsEnter = _sawFuncsEnter && p.second;
+        }
+
+        if ((_failures == 0) && _sawFuncsEnter)
         {
             wcout << L"PROFILER TEST PASSES" << endl;
         }
         else
         {
-            wcout << L"TEST FAILED _failures=" << _failures.load() << L", _sawSimpleFuncEnter=" << _sawSimpleFuncEnter 
-                    << L", _sawMixedStructFuncEnter=" << _sawMixedStructFuncEnter << L", _sawLargeStructFuncEnter=" 
-                    << _sawLargeStructFuncEnter << endl;
-        }    
+            wcout << L"TEST FAILED _failures=" << _failures.load() << endl;
+
+            if (!_sawFuncsEnter)
+            {
+                for (auto p: _sawFuncEnter)
+                {
+                    if (!p.second)
+                        wcout << L"_sawFuncEnter[" << p.first << L"]=" << p.second << endl;
+                }
+            }
+        }
     }
     else if (_testType == TestType::LeaveHooks)
     {
-        if (_failures == 0
-              && _testType == TestType::LeaveHooks
-              && _sawSimpleFuncLeave
-              && _sawMixedStructFuncLeave
-              && _sawLargeStructFuncLeave
-              && _sawIntegerStructFuncLeave
-              && _sawFloatingPointStructFuncLeave
-              && _sawDoubleRetFuncLeave)
+        bool _sawFuncsLeave = true;
+
+        for (auto p: _sawFuncLeave)
+        {
+            _sawFuncsLeave = _sawFuncsLeave && p.second;
+        }
+
+        if ((_failures == 0) && _sawFuncsLeave)
         {
             wcout << L"PROFILER TEST PASSES" << endl;
         }
         else
         {
-            wcout << L"TEST FAILED _failures=" << _failures.load() << L", _sawSimpleFuncLeave=" << _sawSimpleFuncLeave 
-                    << L", _sawMixedStructFuncLeave=" << _sawMixedStructFuncLeave << L", _sawLargeStructFuncLeave=" 
-                    << _sawLargeStructFuncLeave << L"_sawIntegerStructFuncLeave=" << _sawIntegerStructFuncLeave 
-                    << L"_sawFloatingPointStructFuncLeave=" << _sawFloatingPointStructFuncLeave 
-                    << L"_sawDoubleRetFuncLeave=" << _sawDoubleRetFuncLeave << endl;
+            wcout << L"TEST FAILED _failures=" << _failures.load() << endl;
+
+            if (!_sawFuncsLeave)
+            {
+                for (auto p: _sawFuncLeave)
+                {
+                    if (!p.second)
+                        wcout << L"_sawFuncLeave[" << p.first << L"]=" << p.second << endl;
+                }
+            }
         }
     }
 
@@ -195,11 +210,16 @@ HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::EnterCallback(FunctionIDOrClientI
         }
     }
 
+    Fp32x2Struct fp32x2 = {1.2f, 3.5f};
+    Fp32x3Struct fp32x3 = {6.7f, 10.11f, 13.14f};
+    Fp32x4Struct fp32x4 = {15.17f, 19.21f, 22.23f, 26.29f};
+    Fp64x2Struct fp64x2 = {1.2, 3.5};
+    Fp64x3Struct fp64x3 = {6.7, 10.11, 13.14};
+    Fp64x4Struct fp64x4 = {15.17, 19.21, 22.23, 26.29};
+
     String functionName = GetFunctionIDName(functionIdOrClientID.functionID);
     if (functionName == WCHAR("SimpleArgsFunc"))
     {
-        _sawSimpleFuncEnter = true;
-
         int x = -123;
         float f = -4.3f;
         const WCHAR *str = WCHAR("Hello, test!");
@@ -209,26 +229,174 @@ HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::EnterCallback(FunctionIDOrClientI
                                                     { sizeof(UINT_PTR), (void *)str, [&](UINT_PTR ptr){ return ValidateString(ptr, str); } } };
 
         hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("MixedStructFunc"))
     {
-        _sawMixedStructFuncEnter = true;
-
         // On linux structs can be split with some in int registers and some in float registers
         // so a struct with interleaved ints/doubles is interesting.
         MixedStruct ss = { 1, 1.0 };
         vector<ExpectedArgValue> expectedValues = { { sizeof(MixedStruct), (void *)&ss, [&](UINT_PTR ptr){ return ValidateMixedStruct(ptr, ss); } } };
-        
+
         hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("LargeStructFunc"))
     {
-        _sawLargeStructFuncEnter = true;
-
         LargeStruct ls = { 0, 0.0, 1, 1.0, 2, 2.0, 3, 3.0 };
         vector<ExpectedArgValue> expectedValues = { { sizeof(LargeStruct), (void *)&ls, [&](UINT_PTR ptr){ return ValidateLargeStruct(ptr, ls); } } };;
 
         hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp32x2StructFunc"))
+    {
+        vector<ExpectedArgValue> expectedValues = { { sizeof(Fp32x2Struct), (void *)&fp32x2, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x2); } } };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp32x2StructFp32x3StructFunc"))
+    {
+        vector<ExpectedArgValue> expectedValues = {
+            { sizeof(Fp32x2Struct), (void *)&fp32x2, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x2); } },
+            { sizeof(Fp32x3Struct), (void *)&fp32x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x3); } }
+        };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+     else if (functionName == WCHAR("Fp32x3StructFunc"))
+    {
+        vector<ExpectedArgValue> expectedValues = { { sizeof(Fp32x3Struct), (void *)&fp32x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x3); } } };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp32x3StructFp32x2StructFunc"))
+    {
+        vector<ExpectedArgValue> expectedValues = {
+            { sizeof(Fp32x3Struct), (void *)&fp32x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x3); } },
+            { sizeof(Fp32x2Struct), (void *)&fp32x2, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x2); } }
+        };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp32x3StructSingleFp32x3StructSingleFunc"))
+    {
+        float flt1 = 1.2f;
+        float flt2 = 3.5f;
+
+        vector<ExpectedArgValue> expectedValues = {
+            { sizeof(Fp32x3Struct), (void *)&fp32x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x3); } },
+            { sizeof(float), (void *)&flt1, [&](UINT_PTR ptr){ return ValidateFloat(ptr, flt1); } },
+            { sizeof(Fp32x3Struct), (void *)&fp32x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x3); } },
+            { sizeof(float), (void *)&flt2, [&](UINT_PTR ptr){ return ValidateFloat(ptr, flt2); } }
+        };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp32x4StructFunc"))
+    {
+        vector<ExpectedArgValue> expectedValues ={ { sizeof(Fp32x4Struct), (void *)&fp32x4, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x4); } } };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp32x4StructFp32x4StructFunc"))
+    {
+        vector<ExpectedArgValue> expectedValues = {
+            { sizeof(Fp32x4Struct), (void *)&fp32x4, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x4); } },
+            { sizeof(Fp32x4Struct), (void *)&fp32x4, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x4); } }
+        };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp64x2StructFunc"))
+    {
+        vector<ExpectedArgValue> expectedValues = { { sizeof(Fp64x2Struct), (void *)&fp64x2, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x2); } } };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp64x2StructFp64x3StructFunc"))
+    {
+        vector<ExpectedArgValue> expectedValues = {
+            { sizeof(Fp64x2Struct), (void *)&fp64x2, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x2); } },
+            { sizeof(Fp64x3Struct), (void *)&fp64x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x3); } }
+        };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+     else if (functionName == WCHAR("Fp64x3StructFunc"))
+    {
+        vector<ExpectedArgValue> expectedValues = { { sizeof(Fp64x3Struct), (void *)&fp64x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x3); } } };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp64x3StructFp64x2StructFunc"))
+    {
+        vector<ExpectedArgValue> expectedValues = {
+            { sizeof(Fp64x3Struct), (void *)&fp64x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x3); } },
+            { sizeof(Fp64x2Struct), (void *)&fp64x2, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x2); } }
+        };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp64x3StructDoubleFp64x3StructDoubleFunc"))
+    {
+        double dbl1 = 1.2;
+        double dbl2 = 3.5;
+
+        vector<ExpectedArgValue> expectedValues = {
+            { sizeof(Fp64x3Struct), (void *)&fp64x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x3); } },
+            { sizeof(double), (void *)&dbl1, [&](UINT_PTR ptr){ return ValidateDouble(ptr, dbl1); } },
+            { sizeof(Fp64x3Struct), (void *)&fp64x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x3); } },
+            { sizeof(double), (void *)&dbl2, [&](UINT_PTR ptr){ return ValidateDouble(ptr, dbl2); } }
+        };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp64x4StructFunc"))
+    {
+        vector<ExpectedArgValue> expectedValues ={ { sizeof(Fp64x4Struct), (void *)&fp64x4, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x4); } } };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp64x4StructFp64x4StructFunc"))
+    {
+        vector<ExpectedArgValue> expectedValues = {
+            { sizeof(Fp64x4Struct), (void *)&fp64x4, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x4); } },
+            { sizeof(Fp64x4Struct), (void *)&fp64x4, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x4); } }
+        };
+
+        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
+
+        _sawFuncEnter[functionName.ToWString()] = true;
     }
 
     return hr;
@@ -240,7 +408,7 @@ HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::LeaveCallback(FunctionIDOrClientI
     {
         return S_OK;
     }
-    
+
     COR_PRF_FRAME_INFO frameInfo;
     COR_PRF_FUNCTION_ARGUMENT_RANGE * pRetvalRange = new COR_PRF_FUNCTION_ARGUMENT_RANGE;
     HRESULT hr = pCorProfilerInfo->GetFunctionLeave3Info(functionIdOrClientID.functionID, eltInfo, &frameInfo, pRetvalRange);
@@ -251,58 +419,139 @@ HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::LeaveCallback(FunctionIDOrClientI
         return hr;
     }
 
+    Fp32x2Struct fp32x2 = { 1.2f, 2 };
+    Fp32x3Struct fp32x3 = { 6.7f, 10.11f, 3 };
+    Fp32x4Struct fp32x4 = { 15.17f, 19.21f, 22.23f, 4 };
+    Fp64x2Struct fp64x2 = { 1.2, 2 };
+    Fp64x3Struct fp64x3 = { 6.7, 10.11, 3 };
+    Fp64x4Struct fp64x4 = { 15.17, 19.21, 22.23, 4 };
+
     String functionName = GetFunctionIDName(functionIdOrClientID.functionID);
     if (functionName == WCHAR("SimpleArgsFunc"))
     {
-        _sawSimpleFuncLeave = true;
-
         const WCHAR *str = WCHAR("Hello from SimpleArgsFunc!");
 
         ExpectedArgValue simpleRetValue = { sizeof(UINT_PTR), (void *)str, [&](UINT_PTR ptr){ return ValidateString(ptr, str); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, simpleRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("MixedStructFunc"))
     {
-        _sawMixedStructFuncLeave = true;
-
         MixedStruct ss = { 4, 1.0 };
         ExpectedArgValue MixedStructRetValue = { sizeof(MixedStruct), (void *)&ss, [&](UINT_PTR ptr){ return ValidateMixedStruct(ptr, ss); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, MixedStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("LargeStructFunc"))
     {
-        _sawLargeStructFuncLeave = true;
-
         int32_t val = 3;
         ExpectedArgValue largeStructRetValue = { sizeof(int32_t), (void *)&val, [&](UINT_PTR ptr){ return ValidateInt(ptr, val); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, largeStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("IntegerStructFunc"))
     {
-        _sawIntegerStructFuncLeave = true;
-
         IntegerStruct is = { 21, 256 };
         ExpectedArgValue integerStructRetValue = { sizeof(IntegerStruct), (void *)&is, [&](UINT_PTR ptr){ return ValidateIntegerStruct(ptr, is); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, integerStructRetValue);
-    }
-    else if (functionName == WCHAR("FloatingPointStructFunc"))
-    {
-        _sawFloatingPointStructFuncLeave = true;
 
-        FloatingPointStruct fps = { 13.0, 256.8 };
-        ExpectedArgValue floatingPointStructRetValue = { sizeof(FloatingPointStruct), (void *)&fps, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fps); } };
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp32x2StructFunc"))
+    {
+        ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp32x2Struct), (void *)&fp32x2, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x2); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp32x3StructFunc"))
+    {
+        ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp32x3Struct), (void *)&fp32x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x3); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp32x4StructFunc"))
+    {
+        ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp32x4Struct), (void *)&fp32x4, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x4); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp64x2StructFunc"))
+    {
+        ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp64x2Struct), (void *)&fp64x2, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x2); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp64x3StructFunc"))
+    {
+        ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp64x3Struct), (void *)&fp64x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x3); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("Fp64x4StructFunc"))
+    {
+        ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp64x4Struct), (void *)&fp64x4, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x4); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("DoubleRetFunc"))
     {
-        _sawDoubleRetFuncLeave = true;
-
         double d = 13.0;
         ExpectedArgValue doubleRetValue = { sizeof(double), (void *)&d, [&](UINT_PTR ptr){ return ValidateDouble(ptr, d); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, doubleRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("IntegerSseStructFunc"))
+    {
+        IntegerSseStruct val = { 1, 2, 3.5 };
+        ExpectedArgValue expectedRetValue = { sizeof(IntegerSseStruct), (void*)&val, [&](UINT_PTR ptr) { return ValidateIntegerSseStruct(ptr, val); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, expectedRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("SseIntegerStructFunc"))
+    {
+        SseIntegerStruct val = { 1.2f, 3.5f, 6 };
+        ExpectedArgValue expectedRetValue = { sizeof(SseIntegerStruct), (void*)&val, [&](UINT_PTR ptr) { return ValidateSseIntegerStruct(ptr, val); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, expectedRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("MixedSseStructFunc"))
+    {
+        MixedSseStruct val = { 1.2f, 3, 5.6f, 7.10f };
+        ExpectedArgValue expectedRetValue = { sizeof(MixedSseStruct), (void*)&val, [&](UINT_PTR ptr) { return ValidateMixedSseStruct(ptr, val); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, expectedRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("SseMixedStructFunc"))
+    {
+        SseMixedStruct val = { 1.2f, 3.5f, 6, 7.10f };
+        ExpectedArgValue expectedRetValue = { sizeof(SseMixedStruct), (void*)&val, [&](UINT_PTR ptr) { return ValidateSseMixedStruct(ptr, val); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, expectedRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("MixedMixedStructFunc"))
+    {
+        MixedMixedStruct val = { 1.2f, 3, 5, 6.7f };
+        ExpectedArgValue expectedRetValue = { sizeof(MixedMixedStruct), (void*)&val, [&](UINT_PTR ptr) { return ValidateMixedMixedStruct(ptr, val); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, expectedRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
 
-    return hr;   
+    return hr;
 }
 
 HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::TailcallCallback(FunctionIDOrClientID functionIdOrClientID, COR_PRF_ELT_INFO eltInfo)
@@ -318,7 +567,7 @@ HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::TailcallCallback(FunctionIDOrClie
 
     // Tailcalls don't happen on debug builds, and there's no arguments to verify from GetFunctionTailcallinfo3
 
-    return hr;    
+    return hr;
 }
 
 void SlowPathELTProfiler::PrintBytes(const BYTE *bytes, size_t length)
@@ -415,23 +664,84 @@ bool SlowPathELTProfiler::ValidateLargeStruct(UINT_PTR ptr, LargeStruct expected
     LargeStruct lhs = *(LargeStruct *)ptr;
     return lhs.x0 == expected.x0
             && lhs.x1 == expected.x1
-            && lhs.x2 == expected.x2 
+            && lhs.x2 == expected.x2
             && lhs.x3 == expected.x3
             && lhs.d0 == expected.d0
             && lhs.d1 == expected.d1
-            && lhs.d2 == expected.d2 
+            && lhs.d2 == expected.d2
             && lhs.d3 == expected.d3;
 }
 
-bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, FloatingPointStruct expected)
+bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x2Struct expected)
 {
     if (ptr == NULL)
     {
         return false;
     }
 
-    FloatingPointStruct lhs = *(FloatingPointStruct *)ptr;
-    return lhs.d1 == expected.d1 && lhs.d2 == expected.d2;
+    Fp32x2Struct lhs = *(Fp32x2Struct *)ptr;
+    return lhs.x == expected.x && lhs.y == expected.y;
+}
+
+bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x3Struct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    Fp32x3Struct lhs = *(Fp32x3Struct *)ptr;
+    return lhs.x == expected.x && lhs.y == expected.y && lhs.z == expected.z;
+}
+
+bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x4Struct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    Fp32x4Struct lhs = *(Fp32x4Struct *)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z
+        && lhs.w == expected.w;
+}
+
+bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x2Struct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    Fp64x2Struct lhs = *(Fp64x2Struct *)ptr;
+    return lhs.x == expected.x && lhs.y == expected.y;
+}
+
+bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x3Struct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    Fp64x3Struct lhs = *(Fp64x3Struct *)ptr;
+    return lhs.x == expected.x && lhs.y == expected.y && lhs.z == expected.z;
+}
+
+bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x4Struct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    Fp64x4Struct lhs = *(Fp64x4Struct *)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z
+        && lhs.w == expected.w;
 }
 
 bool SlowPathELTProfiler::ValidateIntegerStruct(UINT_PTR ptr, IntegerStruct expected)
@@ -445,6 +755,73 @@ bool SlowPathELTProfiler::ValidateIntegerStruct(UINT_PTR ptr, IntegerStruct expe
     return lhs.x == expected.x && lhs.y == expected.y;
 }
 
+bool SlowPathELTProfiler::ValidateIntegerSseStruct(UINT_PTR ptr, IntegerSseStruct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    IntegerSseStruct lhs = *(IntegerSseStruct*)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z;
+}
+
+bool SlowPathELTProfiler::ValidateSseIntegerStruct(UINT_PTR ptr, SseIntegerStruct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    SseIntegerStruct lhs = *(SseIntegerStruct*)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z;
+}
+
+bool SlowPathELTProfiler::ValidateMixedSseStruct(UINT_PTR ptr, MixedSseStruct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    MixedSseStruct lhs = *(MixedSseStruct*)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z
+        && lhs.w == expected.w;
+}
+
+bool SlowPathELTProfiler::ValidateSseMixedStruct(UINT_PTR ptr, SseMixedStruct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    SseMixedStruct lhs = *(SseMixedStruct*)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z
+        && lhs.w == expected.w;
+}
+
+bool SlowPathELTProfiler::ValidateMixedMixedStruct(UINT_PTR ptr, MixedMixedStruct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    MixedMixedStruct lhs = *(MixedMixedStruct*)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z
+        && lhs.w == expected.w;
+}
 
 HRESULT SlowPathELTProfiler::ValidateOneArgument(COR_PRF_FUNCTION_ARGUMENT_RANGE *pArgRange,
                                         String functionName,
@@ -453,7 +830,7 @@ HRESULT SlowPathELTProfiler::ValidateOneArgument(COR_PRF_FUNCTION_ARGUMENT_RANGE
 {
     if (pArgRange->length != expectedValue.length)
     {
-        wcout << L"Argument " << argPos << L" for function " << functionName << " expected length " << expectedValue.length 
+        wcout << L"Argument " << argPos << L" for function " << functionName << " expected length " << expectedValue.length
                 << L" but got length " << pArgRange->length << endl;
         _failures++;
         return E_FAIL;
@@ -466,11 +843,11 @@ HRESULT SlowPathELTProfiler::ValidateOneArgument(COR_PRF_FUNCTION_ARGUMENT_RANGE
 
         // Print out the bytes so you don't have to debug if something mismatches
         BYTE *expectedBytes = (BYTE *)expectedValue.value;
-        wcout << L"Expected bytes: "; 
+        wcout << L"Expected bytes: ";
         PrintBytes(expectedBytes, expectedValue.length);
 
         BYTE *actualBytes = (BYTE *)pArgRange->startAddress;
-        wcout << L"Actual bytes  : "; 
+        wcout << L"Actual bytes  : ";
         PrintBytes(actualBytes, pArgRange->length);
 
         return E_FAIL;

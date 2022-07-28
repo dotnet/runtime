@@ -1,0 +1,532 @@
+Compat issues with assembly mscorlib:
+TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+CannotRemoveAttribute : Attribute 'System.Runtime.InteropServices.DispIdAttribute' exists on 'System.Collections.IEnumerable.GetEnumerator()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.AppendChar(System.Char)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.InsertAt(System.Int32, System.Char)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.RemoveAt(System.Int32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.SetAt(System.Int32, System.Char)' in the contract but not the implementation.
+Compat issues with assembly netstandard:
+TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+CannotRemoveAttribute : Attribute 'System.Runtime.InteropServices.DispIdAttribute' exists on 'System.Collections.IEnumerable.GetEnumerator()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.ComponentModel.BackgroundWorker' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.BackgroundWorker.CancellationPending' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.BackgroundWorker.IsBusy' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerReportsProgress' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerSupportsCancellation' in the contract but not the implementation.
+CannotSealType : Type 'System.ComponentModel.BaseNumberConverter' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.ComponentModel.BaseNumberConverter..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.ComponentModel.BaseNumberConverter.CanConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.ComponentModel.BaseNumberConverter.CanConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.RunWorkerCompletedEventArgs.UserState' in the contract but not the implementation.
+CannotSealType : Type 'System.Data.Constraint' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.Data.Constraint..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.String System.Data.Constraint.ConstraintName' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Data.DataTable System.Data.Constraint.Table' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'protected System.Data.DataSet System.Data.Constraint._DataSet' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.String System.Data.Constraint.ConstraintName.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public void System.Data.Constraint.ConstraintName.set(System.String)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Data.DataTable System.Data.Constraint.Table.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.String System.Data.Constraint.ToString()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'protected System.Data.DataSet System.Data.Constraint._DataSet.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultPropertyAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.BasePriority' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.EnableRaisingEvents' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.Process.EnableRaisingEvents' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.ExitCode' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.ExitCode' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.ExitTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.ExitTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.Handle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Handle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.HandleCount' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.HasExited' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.HasExited' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Id' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.MachineName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MachineName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.MainModule' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MainModule' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MainWindowHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MainWindowTitle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MaxWorkingSet' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MinWorkingSet' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.Modules' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Modules' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.NonpagedSystemMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.NonpagedSystemMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PagedMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PagedMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PagedSystemMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PagedSystemMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakPagedMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakPagedMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakVirtualMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakVirtualMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakWorkingSet' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakWorkingSet64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PriorityBoostEnabled' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PriorityClass' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PrivateMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PrivateMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PrivilegedProcessorTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.ProcessName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.ProcessorAffinity' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Responding' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.SafeHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.SafeHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.SessionId' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.StandardError' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StandardError' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.StandardInput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StandardInput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.StandardOutput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StandardOutput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.StartInfo' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StartInfo' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StartTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.Process.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.Threads' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Threads' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.TotalProcessorTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.UserProcessorTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.VirtualMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.VirtualMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.WorkingSet' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.WorkingSet64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.ErrorDataReceived' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.CategoryAttribute' exists on 'System.Diagnostics.Process.Exited' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.OutputDataReceived' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessModule.FileVersionInfo' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Arguments' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Arguments' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Arguments' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.CreateNoWindow' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.CreateNoWindow' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Domain' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.EnvironmentVariables' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.EnvironmentVariables' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.EnvironmentVariables' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.ErrorDialog' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.ErrorDialog' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.ErrorDialogParentHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.ErrorDialogParentHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.FileName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.FileName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.FileName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.LoadUserProfile' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.PasswordInClearText' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.PasswordInClearText' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardError' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardError' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardInput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardInput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardOutput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardOutput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.UserName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.UseShellExecute' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.UseShellExecute' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Verb' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Verbs' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Verbs' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WindowStyle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WorkingDirectory' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WorkingDirectory' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WorkingDirectory' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessThread.IdealProcessor' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessThread.ProcessorAffinity' in the contract but not the implementation.
+CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Class | AttributeTargets.Constructor | AttributeTargets.Event | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Constructor | AttributeTargets.Event | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]' in the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.IO.FileSystemWatcher' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.EnableRaisingEvents' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.Filter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.IO.FileSystemWatcher.Filter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.IncludeSubdirectories' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.InternalBufferSize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.InternalBufferSize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.NotifyFilter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.Path' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.IO.FileSystemWatcher.Path' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.Site' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.Error' in the contract but not the implementation.
+CannotSealType : Type 'System.Linq.EnumerableExecutor' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.AppendChar(System.Char)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.InsertAt(System.Int32, System.Char)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.RemoveAt(System.Int32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.SetAt(System.Int32, System.Char)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Serialization.OptionalFieldAttribute' exists on 'System.TimeSpan System.Text.RegularExpressions.Regex.internalMatchTimeout' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.CategoryAttribute' exists on 'System.Timers.Timer.AutoReset' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.CategoryAttribute' exists on 'System.Timers.Timer.Enabled' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.CategoryAttribute' exists on 'System.Timers.Timer.Interval' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Timers.Timer.Interval' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.Timers.Timer.Interval' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Timers.Timer.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.CategoryAttribute' exists on 'System.Timers.Timer.Elapsed' in the contract but not the implementation.
+CannotSealType : Type 'System.Xml.Schema.XmlSchemaDatatype' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.Xml.Schema.XmlSchemaDatatype..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.XmlTokenizedType System.Xml.Schema.XmlSchemaDatatype.TokenizedType' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlTypeCode System.Xml.Schema.XmlSchemaDatatype.TypeCode' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Type System.Xml.Schema.XmlSchemaDatatype.ValueType' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaDatatypeVariety System.Xml.Schema.XmlSchemaDatatype.Variety' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.Xml.Schema.XmlSchemaDatatype.IsDerivedFrom(System.Xml.Schema.XmlSchemaDatatype)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.Xml.Schema.XmlSchemaDatatype.ParseValue(System.String, System.Xml.XmlNameTable, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.XmlTokenizedType System.Xml.Schema.XmlSchemaDatatype.TokenizedType.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlTypeCode System.Xml.Schema.XmlSchemaDatatype.TypeCode.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Type System.Xml.Schema.XmlSchemaDatatype.ValueType.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaDatatypeVariety System.Xml.Schema.XmlSchemaDatatype.Variety.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotSealType : Type 'System.Xml.Schema.XmlSchemaGroupBase' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.Xml.Schema.XmlSchemaGroupBase..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items.get()' is non-virtual in the implementation but is virtual in the contract.
+Compat issues with assembly System:
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.ComponentModel.BackgroundWorker' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.BackgroundWorker.CancellationPending' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.BackgroundWorker.IsBusy' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerReportsProgress' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerSupportsCancellation' in the contract but not the implementation.
+CannotSealType : Type 'System.ComponentModel.BaseNumberConverter' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.ComponentModel.BaseNumberConverter..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.ComponentModel.BaseNumberConverter.CanConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.ComponentModel.BaseNumberConverter.CanConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.RunWorkerCompletedEventArgs.UserState' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultPropertyAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.BasePriority' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.EnableRaisingEvents' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.Process.EnableRaisingEvents' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.ExitCode' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.ExitCode' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.ExitTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.ExitTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.Handle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Handle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.HandleCount' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.HasExited' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.HasExited' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Id' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.MachineName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MachineName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.MainModule' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MainModule' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MainWindowHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MainWindowTitle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MaxWorkingSet' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MinWorkingSet' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.Modules' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Modules' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.NonpagedSystemMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.NonpagedSystemMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PagedMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PagedMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PagedSystemMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PagedSystemMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakPagedMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakPagedMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakVirtualMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakVirtualMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakWorkingSet' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakWorkingSet64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PriorityBoostEnabled' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PriorityClass' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PrivateMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PrivateMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PrivilegedProcessorTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.ProcessName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.ProcessorAffinity' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Responding' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.SafeHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.SafeHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.SessionId' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.StandardError' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StandardError' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.StandardInput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StandardInput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.StandardOutput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StandardOutput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.StartInfo' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StartInfo' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StartTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.Process.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.Threads' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Threads' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.TotalProcessorTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.UserProcessorTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.VirtualMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.VirtualMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.WorkingSet' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.WorkingSet64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.ErrorDataReceived' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.CategoryAttribute' exists on 'System.Diagnostics.Process.Exited' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.OutputDataReceived' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessModule.FileVersionInfo' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Arguments' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Arguments' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Arguments' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.CreateNoWindow' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.CreateNoWindow' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Domain' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.EnvironmentVariables' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.EnvironmentVariables' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.EnvironmentVariables' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.ErrorDialog' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.ErrorDialog' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.ErrorDialogParentHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.ErrorDialogParentHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.FileName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.FileName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.FileName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.LoadUserProfile' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.PasswordInClearText' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.PasswordInClearText' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardError' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardError' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardInput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardInput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardOutput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardOutput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.UserName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.UseShellExecute' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.UseShellExecute' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Verb' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Verbs' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Verbs' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WindowStyle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WorkingDirectory' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WorkingDirectory' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WorkingDirectory' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessThread.IdealProcessor' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessThread.ProcessorAffinity' in the contract but not the implementation.
+CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Class | AttributeTargets.Constructor | AttributeTargets.Event | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Constructor | AttributeTargets.Event | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]' in the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.IO.FileSystemWatcher' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.EnableRaisingEvents' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.Filter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.IO.FileSystemWatcher.Filter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.IncludeSubdirectories' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.InternalBufferSize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.InternalBufferSize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.NotifyFilter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.Path' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.IO.FileSystemWatcher.Path' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.Site' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.Error' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Serialization.OptionalFieldAttribute' exists on 'System.TimeSpan System.Text.RegularExpressions.Regex.internalMatchTimeout' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.CategoryAttribute' exists on 'System.Timers.Timer.AutoReset' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.CategoryAttribute' exists on 'System.Timers.Timer.Enabled' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.CategoryAttribute' exists on 'System.Timers.Timer.Interval' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Timers.Timer.Interval' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.Timers.Timer.Interval' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Timers.Timer.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.CategoryAttribute' exists on 'System.Timers.Timer.Elapsed' in the contract but not the implementation.
+Compat issues with assembly System.ComponentModel.EventBasedAsync:
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.ComponentModel.BackgroundWorker' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.BackgroundWorker.CancellationPending' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.BackgroundWorker.IsBusy' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerReportsProgress' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.ComponentModel.BackgroundWorker.WorkerSupportsCancellation' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.ComponentModel.RunWorkerCompletedEventArgs.UserState' in the contract but not the implementation.
+Compat issues with assembly System.ComponentModel.TypeConverter:
+CannotSealType : Type 'System.ComponentModel.BaseNumberConverter' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.ComponentModel.BaseNumberConverter..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.ComponentModel.BaseNumberConverter.CanConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.ComponentModel.BaseNumberConverter.CanConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.ComponentModel.BaseNumberConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+Compat issues with assembly System.Core:
+CannotSealType : Type 'System.Linq.EnumerableExecutor' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Data:
+CannotSealType : Type 'System.Data.Constraint' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.Data.Constraint..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.String System.Data.Constraint.ConstraintName' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Data.DataTable System.Data.Constraint.Table' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'protected System.Data.DataSet System.Data.Constraint._DataSet' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.String System.Data.Constraint.ConstraintName.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public void System.Data.Constraint.ConstraintName.set(System.String)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Data.DataTable System.Data.Constraint.Table.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.String System.Data.Constraint.ToString()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'protected System.Data.DataSet System.Data.Constraint._DataSet.get()' is non-virtual in the implementation but is virtual in the contract.
+Compat issues with assembly System.Diagnostics.Process:
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultPropertyAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.BasePriority' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.EnableRaisingEvents' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.Process.EnableRaisingEvents' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.ExitCode' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.ExitCode' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.ExitTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.ExitTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.Handle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Handle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.HandleCount' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.HasExited' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.HasExited' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Id' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.MachineName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MachineName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.MainModule' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MainModule' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MainWindowHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MainWindowTitle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MaxWorkingSet' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.MinWorkingSet' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.Modules' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Modules' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.NonpagedSystemMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.NonpagedSystemMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PagedMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PagedMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PagedSystemMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PagedSystemMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakPagedMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakPagedMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakVirtualMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakVirtualMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakWorkingSet' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PeakWorkingSet64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PriorityBoostEnabled' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PriorityClass' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PrivateMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PrivateMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.PrivilegedProcessorTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.ProcessName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.ProcessorAffinity' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Responding' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.SafeHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.SafeHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.SessionId' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.StandardError' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StandardError' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.StandardInput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StandardInput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.StandardOutput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StandardOutput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.StartInfo' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StartInfo' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.StartTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.Process.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.Threads' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.Threads' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.TotalProcessorTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.UserProcessorTime' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.VirtualMemorySize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.VirtualMemorySize64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.WorkingSet' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.Process.WorkingSet64' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.ErrorDataReceived' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.CategoryAttribute' exists on 'System.Diagnostics.Process.Exited' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.Process.OutputDataReceived' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessModule.FileVersionInfo' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Arguments' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Arguments' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Arguments' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.CreateNoWindow' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.CreateNoWindow' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Domain' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Environment' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.EnvironmentVariables' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.EnvironmentVariables' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.EnvironmentVariables' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.ErrorDialog' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.ErrorDialog' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.ErrorDialogParentHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.ErrorDialogParentHandle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.FileName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.FileName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.FileName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.LoadUserProfile' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.PasswordInClearText' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.PasswordInClearText' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardError' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardError' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardInput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardInput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardOutput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.RedirectStandardOutput' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.UserName' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.UseShellExecute' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.UseShellExecute' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Verb' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Verbs' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DesignerSerializationVisibilityAttribute' exists on 'System.Diagnostics.ProcessStartInfo.Verbs' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WindowStyle' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WorkingDirectory' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.NotifyParentPropertyAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WorkingDirectory' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.Diagnostics.ProcessStartInfo.WorkingDirectory' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessThread.IdealProcessor' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.Diagnostics.ProcessThread.ProcessorAffinity' in the contract but not the implementation.
+Compat issues with assembly System.IO.FileSystem.Watcher:
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.IO.FileSystemWatcher' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.EnableRaisingEvents' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.Filter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.IO.FileSystemWatcher.Filter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.IncludeSubdirectories' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.InternalBufferSize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.InternalBufferSize' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.NotifyFilter' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.Path' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.SettingsBindableAttribute' exists on 'System.IO.FileSystemWatcher.Path' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.Site' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultValueAttribute' exists on 'System.IO.FileSystemWatcher.SynchronizingObject' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.BrowsableAttribute' exists on 'System.IO.FileSystemWatcher.Error' in the contract but not the implementation.
+Compat issues with assembly System.Linq.Queryable:
+CannotSealType : Type 'System.Linq.EnumerableExecutor' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Runtime:
+CannotRemoveAttribute : Attribute 'System.Runtime.InteropServices.DispIdAttribute' exists on 'System.Collections.IEnumerable.GetEnumerator()' in the contract but not the implementation.
+Compat issues with assembly System.Security.SecureString:
+CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.AppendChar(System.Char)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.InsertAt(System.Int32, System.Char)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.RemoveAt(System.Int32)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute' exists on 'System.Security.SecureString.SetAt(System.Int32, System.Char)' in the contract but not the implementation.
+Compat issues with assembly System.Text.RegularExpressions:
+CannotRemoveAttribute : Attribute 'System.Runtime.Serialization.OptionalFieldAttribute' exists on 'System.TimeSpan System.Text.RegularExpressions.Regex.internalMatchTimeout' in the contract but not the implementation.
+Compat issues with assembly System.Xml:
+CannotSealType : Type 'System.Xml.Schema.XmlSchemaDatatype' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.Xml.Schema.XmlSchemaDatatype..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.XmlTokenizedType System.Xml.Schema.XmlSchemaDatatype.TokenizedType' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlTypeCode System.Xml.Schema.XmlSchemaDatatype.TypeCode' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Type System.Xml.Schema.XmlSchemaDatatype.ValueType' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaDatatypeVariety System.Xml.Schema.XmlSchemaDatatype.Variety' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Boolean System.Xml.Schema.XmlSchemaDatatype.IsDerivedFrom(System.Xml.Schema.XmlSchemaDatatype)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Object System.Xml.Schema.XmlSchemaDatatype.ParseValue(System.String, System.Xml.XmlNameTable, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.XmlTokenizedType System.Xml.Schema.XmlSchemaDatatype.TokenizedType.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlTypeCode System.Xml.Schema.XmlSchemaDatatype.TypeCode.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Type System.Xml.Schema.XmlSchemaDatatype.ValueType.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaDatatypeVariety System.Xml.Schema.XmlSchemaDatatype.Variety.get()' is non-virtual in the implementation but is virtual in the contract.
+CannotSealType : Type 'System.Xml.Schema.XmlSchemaGroupBase' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
+MembersMustExist : Member 'protected void System.Xml.Schema.XmlSchemaGroupBase..ctor()' does not exist in the implementation but it does exist in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items' is non-virtual in the implementation but is virtual in the contract.
+CannotMakeMemberNonVirtual : Member 'public System.Xml.Schema.XmlSchemaObjectCollection System.Xml.Schema.XmlSchemaGroupBase.Items.get()' is non-virtual in the implementation but is virtual in the contract.
+Total Issues: 517

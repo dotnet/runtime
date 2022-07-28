@@ -6,8 +6,6 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/37073", TestPlatforms.Android)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/51376", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     public class ActivityTests : IDisposable
     {
         [Fact]
@@ -47,7 +45,7 @@ namespace System.Diagnostics.Tests
 
             // In Debug builds of System.Diagnostics.DiagnosticSource, the child operation Id will be constructed as follows
             // "|parent.RootId.<child.OperationName.Replace(., -)>-childCount.".
-            // This is for debugging purposes to know which operation the child Id is comming from.
+            // This is for debugging purposes to know which operation the child Id is coming from.
             //
             // In Release builds of System.Diagnostics.DiagnosticSource, it will not contain the operation name to keep it simple and it will be as
             // "|parent.RootId.childCount.".

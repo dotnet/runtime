@@ -15,6 +15,6 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options instance being validated.</param>
         /// <param name="options">The options instance.</param>
         /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
-        ValidateOptionsResult Validate(string name, TOptions options);
+        ValidateOptionsResult Validate(string? name, TOptions options);
     }
 }

@@ -47,6 +47,16 @@ namespace SerializationTypes
                 return (x.P1 == y.P1) && (x.P2 == y.P2);
             }
         }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is SimpleType st)
+                return AreEqual(this, st);
+
+            return base.Equals(obj);
+        }
+
+        public override int GetHashCode() => base.GetHashCode();
     }
 
     public class TypeWithGetSetArrayMembers
@@ -850,6 +860,35 @@ namespace SerializationTypes
         public object Value2 = new SimpleType[1];
 
     }
+
+    namespace TypeNameClashA
+    {
+        [System.Xml.Serialization.XmlType("TypeClashA")]
+        public class TypeNameClash
+        {
+            public string Name { get; set; }
+        }
+    }
+
+    namespace TypeNameClashB
+    {
+        [System.Xml.Serialization.XmlType("TypeClashB")]
+        public class TypeNameClash
+        {
+            public string Name { get; set; }
+        }
+    }
+
+    [System.Xml.Serialization.XmlRootAttribute("Root")]
+    [System.Xml.Serialization.XmlType("ContainerType")]
+    public class NamespaceTypeNameClashContainer
+    {
+        [System.Xml.Serialization.XmlElementAttribute("A")]
+        public TypeNameClashA.TypeNameClash[] A { get; set; }
+
+        [System.Xml.Serialization.XmlElementAttribute("B")]
+        public TypeNameClashB.TypeNameClash[] B { get; set; }
+    }
 }
 
 public class TypeWithXmlElementProperty
@@ -869,6 +908,22 @@ public class TypeWithBinaryProperty
     public byte[] BinaryHexContent { get; set; }
     [XmlElement(DataType = "base64Binary")]
     public byte[] Base64Content { get; set; }
+}
+
+public class TypeWithDateTimeOffsetProperties
+{
+    public DateTimeOffset DTO { get; set; }
+    public DateTimeOffset DTO2 { get; set; }
+
+    [XmlElement(ElementName = "DefaultDTO")]
+    [DefaultValue(typeof(DateTimeOffset), "1/1/0001 0:00:00 AM +00:00")]
+    public DateTimeOffset DTOWithDefault { get; set; }
+
+    public DateTimeOffset? NullableDTO { get; set; }
+
+    [XmlElement(ElementName = "NullableDefaultDTO")]
+    [DefaultValue(typeof(DateTimeOffset), "1/1/0001 0:00:00 AM +00:00")]
+    public DateTimeOffset? NullableDTOWithDefault { get; set; }
 }
 
 public class TypeWithTimeSpanProperty
@@ -920,7 +975,6 @@ public class TypeWithXmlNodeArrayProperty
     [XmlText]
     public XmlNode[] CDATA { get; set; }
 }
-
 
 public class Animal
 {

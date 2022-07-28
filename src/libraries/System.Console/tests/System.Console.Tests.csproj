@@ -3,9 +3,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CancelKeyPress.cs" />
+    <Compile Include="ConsoleStreamTests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="ReadAndWrite.cs" />
     <Compile Include="ConsoleKeyInfoTests.cs" />
@@ -13,7 +15,6 @@
     <Compile Include="SetIn.cs" />
     <Compile Include="Color.cs" />
     <Compile Include="SetOut.cs" />
-    <Compile Include="NegativeTesting.cs" />
     <Compile Include="ConsoleEncoding.cs" />
     <Compile Include="SyncTextReader.cs" />
     <Compile Include="SyncTextWriter.cs" />
@@ -23,21 +24,25 @@
     <Compile Include="TermInfo.cs" />
     <Compile Include="RedirectedStream.cs" />
     <Compile Include="ReadKey.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonTestPath)System\IO\InterceptStreamWriter.cs"
              Link="Common\System\IO\InterceptStreamWriter.cs" />
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs"
              Link="Common\System\ShouldNotBeInvokedException.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
+             Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="WindowAndCursorProps.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)TestData\**\*"
-          Link="%(RecursiveDir)%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest" />
+             Link="%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="ConsoleEncoding.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="CancelKeyPress.Unix.cs" />
     <Compile Include="NonStandardConfiguration.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"

@@ -19,11 +19,11 @@ namespace System.IO.Tests
     {
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
-            string pipeName = FileSystemTest.GetNamedPipeServerStreamName();
+            string pipeName = GetNamedPipeServerStreamName();
             string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
 
             var server = new NamedPipeServerStream(pipeName, PipeDirection.In);
-            var clienStream = new FileStream(File.OpenHandle(pipePath, FileMode.Open, FileAccess.Write, FileShare.None), FileAccess.Write);
+            var clienStream = new FileStream(pipePath, FileMode.Open, FileAccess.Write, FileShare.None);
 
             await server.WaitForConnectionAsync();
 
@@ -42,7 +42,6 @@ namespace System.IO.Tests
     }
 
     [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class SeekableDeviceFileStreamStandaloneConformanceTests : UnbufferedAsyncFileStreamStandaloneConformanceTests
     {
         protected override string GetTestFilePath(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
@@ -77,7 +76,7 @@ namespace System.IO.Tests
     }
 
     [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
-    [Collection("NoParallelTests")] // don't run in parallel, as file sharing logic is not thread-safe
+    [Collection(nameof(DisableParallelization))] // don't run in parallel, as file sharing logic is not thread-safe
     [OuterLoop("Requires admin privileges to create a file share")]
     [ConditionalClass(typeof(UncFilePathFileStreamStandaloneConformanceTests), nameof(CanShareFiles))]
     public class UncFilePathFileStreamStandaloneConformanceTests : UnbufferedAsyncFileStreamStandaloneConformanceTests
@@ -181,7 +180,6 @@ namespace System.IO.Tests
     [PlatformSpecific(TestPlatforms.Windows)] // the test setup is Windows-specifc
     [OuterLoop("Has a very complex setup logic that in theory might have some side-effects")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class DeviceInterfaceTests
     {
         [Fact]
@@ -263,9 +261,9 @@ namespace System.IO.Tests
                     {
                         return new FileStream(devicePath, FileMode.Open, FileAccess.Read, FileShare.Read, 0, FileOptions.Asynchronous);
                     }
-                    catch (IOException)
+                    catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
                     {
-                        continue; // device has been locked by another process
+                        continue; // device has been locked by another process or we don't have permissions to access it
                     }
                 }
             }

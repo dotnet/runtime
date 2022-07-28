@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.BenchI
 {
@@ -81,15 +77,6 @@ public static class Midpoint
         }
 
         return (mid[2000] == 17018);
-    }
-
-    [Benchmark]
-    public static void Test() {
-        foreach (var iteration in Benchmark.Iterations) {
-            using (iteration.StartMeasurement()) {
-                Bench();
-            }
-        }
     }
 
     static bool TestBase() {

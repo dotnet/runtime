@@ -2,8 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>System.Resources</RootNamespace>
-    <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Resources\__FastResourceComparer.cs" />
@@ -17,6 +16,5 @@
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
 </Project>

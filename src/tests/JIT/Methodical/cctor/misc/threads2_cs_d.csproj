@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->
@@ -10,6 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="threads2.cs" />
-    <ProjectReference Include="testlib.csproj" />
+    <ProjectReference Include="testlib_misc.csproj" />
   </ItemGroup>
 </Project>

@@ -4,9 +4,6 @@
 // File: stubhelpers.cpp
 //
 
-//
-
-
 #include "common.h"
 
 #include "mlinfo.h"
@@ -222,14 +219,6 @@ FORCEINLINE static SOleTlsData *GetOrCreateOleTlsData()
     return pOleTlsData;
 }
 
-FORCEINLINE static void *GetCOMIPFromRCW_GetTargetNoInterception(IUnknown *pUnk, ComPlusCallInfo *pComInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    LPVOID *lpVtbl = *(LPVOID **)pUnk;
-    return lpVtbl[pComInfo->m_cachedComSlot];
-}
-
 FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache(RCW *pRCW, MethodTable * pItfMT)
 {
     LIMITED_METHOD_CONTRACT;
@@ -246,35 +235,6 @@ FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache(RCW *pRCW, 
             if (pRCW->m_aInterfaceEntries[i].m_pMT == pItfMT)
             {
                 return pRCW->m_aInterfaceEntries[i].m_pUnknown;
-            }
-        }
-    }
-
-    return NULL;
-}
-
-// Like GetCOMIPFromRCW_GetIUnknownFromRCWCache but also computes the target. This is a couple of instructions
-// faster than GetCOMIPFromRCW_GetIUnknownFromRCWCache + GetCOMIPFromRCW_GetTargetNoInterception.
-FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache_NoInterception(RCW *pRCW, ComPlusCallInfo *pComInfo, void **ppTarget)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // The code in this helper is the "fast path" that used to be generated directly
-    // to compiled ML stubs. The idea is to aim for an efficient RCW cache hit.
-    SOleTlsData *pOleTlsData = GetOrCreateOleTlsData();
-    MethodTable *pItfMT = pComInfo->m_pInterfaceMT;
-
-    // test for free-threaded after testing for context match to optimize for apartment-bound objects
-    if (pOleTlsData->pCurrentCtx == pRCW->GetWrapperCtxCookie() || pRCW->IsFreeThreaded())
-    {
-        for (int i = 0; i < INTERFACE_ENTRY_CACHE_SIZE; i++)
-        {
-            if (pRCW->m_aInterfaceEntries[i].m_pMT == pItfMT)
-            {
-                IUnknown *pUnk = pRCW->m_aInterfaceEntries[i].m_pUnknown;
-                _ASSERTE(pUnk != NULL);
-                *ppTarget = GetCOMIPFromRCW_GetTargetNoInterception(pUnk, pComInfo);
-                return pUnk;
             }
         }
     }
@@ -461,7 +421,7 @@ FCIMPL4(Object*, StubHelpers::InterfaceMarshaler__ConvertToManaged, IUnknown **p
 }
 FCIMPLEND
 
-void QCALLTYPE StubHelpers::InterfaceMarshaler__ClearNative(IUnknown * pUnk)
+extern "C" void QCALLTYPE InterfaceMarshaler__ClearNative(IUnknown * pUnk)
 {
     QCALL_CONTRACT;
 
@@ -495,34 +455,6 @@ FCIMPL0(void, StubHelpers::ClearLastError)
 }
 FCIMPLEND
 
-NOINLINE static void InitDeclaringTypeHelper(MethodTable *pMT)
-{
-    FC_INNER_PROLOG(StubHelpers::InitDeclaringType);
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-    pMT->CheckRunClassInitThrowing();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-// Triggers cctor of pNMD's declarer, similar to code:JIT_InitClass.
-#include <optsmallperfcritical.h>
-FCIMPL1(void, StubHelpers::InitDeclaringType, NDirectMethodDesc* pNMD)
-{
-    FCALL_CONTRACT;
-
-    MethodTable *pMT = pNMD->GetMethodTable();
-    _ASSERTE(!pMT->IsClassPreInited());
-
-    if (pMT->GetDomainLocalModule()->IsClassInitialized(pMT))
-        return;
-
-    FC_INNER_RETURN_VOID(InitDeclaringTypeHelper(pMT));
-}
-FCIMPLEND
-#include <optdefault.h>
-
 FCIMPL1(void*, StubHelpers::GetNDirectTarget, NDirectMethodDesc* pNMD)
 {
     FCALL_CONTRACT;
@@ -532,7 +464,7 @@ FCIMPL1(void*, StubHelpers::GetNDirectTarget, NDirectMethodDesc* pNMD)
 }
 FCIMPLEND
 
-FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT_PTR *ppStubArg)
+FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 {
     PCODE pEntryPoint = NULL;
 
@@ -555,19 +487,9 @@ FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT
     // See code:GenericPInvokeCalliHelper
     // The lowest bit is used to distinguish between MD and target on 64-bit.
     target = (target << 1) | 1;
+#endif // HOST_64BIT
 
-    // On 64-bit we pass the real target to the stub-for-host through this out argument,
-    // see IL code gen in NDirectStubLinker::DoNDirect for details.
-    *ppStubArg = target;
-
-#elif defined(TARGET_ARM)
-    // @ARMTODO: Nothing to do for ARM yet since we don't support the hosted path.
-#endif // HOST_64BIT, TARGET_ARM
-
-    if (pEntryPoint == NULL)
-    {
-        pEntryPoint = orefThis->GetMethodPtrAux();
-    }
+    pEntryPoint = orefThis->GetMethodPtrAux();
 
 #ifdef _DEBUG
     END_PRESERVE_LAST_ERROR;
@@ -610,17 +532,6 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
     DELEGATEREF dref = (DELEGATEREF)ObjectToOBJECTREF(unsafe_pThis);
     HELPER_METHOD_FRAME_BEGIN_RET_1(dref);
 
-    bool fReverseInterop = false;
-
-    if (NULL == pThread)
-    {
-        // This is our signal for the reverse interop cases.
-        fReverseInterop = true;
-        pThread = GET_THREAD();
-        // the secret param in this casee is the UMEntryThunk
-        pRealMD = ((UMEntryThunk*)pSecretParam)->GetMethod();
-    }
-    else
     if (pSecretParam == 0)
     {
         // Secret param is null.  This is the calli pinvoke case or the unmanaged delegate case.
@@ -652,14 +563,7 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
     {
         GCX_PREEMP_THREAD_EXISTS(pThread);
 
-        if (fReverseInterop)
-        {
-            ProfilerUnmanagedToManagedTransitionMD(pRealMD, COR_PRF_TRANSITION_CALL);
-        }
-        else
-        {
-            ProfilerManagedToUnmanagedTransitionMD(pRealMD, COR_PRF_TRANSITION_CALL);
-        }
+        ProfilerManagedToUnmanagedTransitionMD(pRealMD, COR_PRF_TRANSITION_CALL);
     }
 
     HELPER_METHOD_FRAME_END();
@@ -687,25 +591,9 @@ FCIMPL2(void, StubHelpers::ProfilerEndTransitionCallback, MethodDesc* pRealMD, T
     // and the transition requires us to set up a HMF.
     HELPER_METHOD_FRAME_BEGIN_0();
     {
-        bool fReverseInterop = false;
-
-        if (NULL == pThread)
-        {
-            // if pThread is null, we are doing reverse interop
-            pThread = GET_THREAD();
-            fReverseInterop = true;
-        }
-
         GCX_PREEMP_THREAD_EXISTS(pThread);
 
-        if (fReverseInterop)
-        {
-            ProfilerManagedToUnmanagedTransitionMD(pRealMD, COR_PRF_TRANSITION_RETURN);
-        }
-        else
-        {
-            ProfilerUnmanagedToManagedTransitionMD(pRealMD, COR_PRF_TRANSITION_RETURN);
-        }
+        ProfilerUnmanagedToManagedTransitionMD(pRealMD, COR_PRF_TRANSITION_RETURN);
     }
     HELPER_METHOD_FRAME_END();
 
@@ -1007,17 +895,6 @@ FCIMPL2(void, StubHelpers::LogPinnedArgument, MethodDesc *target, Object *pinned
     }
 }
 FCIMPLEND
-
-#ifdef TARGET_64BIT
-FCIMPL0(void*, StubHelpers::GetStubContextAddr)
-{
-    FCALL_CONTRACT;
-
-    FCUnique(0xa1);
-    UNREACHABLE_MSG("This is a JIT intrinsic!");
-}
-FCIMPLEND
-#endif // TARGET_64BIT
 
 FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
 {

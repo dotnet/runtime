@@ -6,7 +6,7 @@
 
 using System;
 
-public class Test
+public class Test_LoadType
 {
 	public static int Main()
 	{

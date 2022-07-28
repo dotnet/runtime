@@ -6,6 +6,7 @@
 .assembly extern System.Console { auto }
 
 .assembly DevDiv_590772 { }
+.assembly extern xunit.core {}
 
 .class public auto ansi beforefieldinit DevDiv_590772
        extends [System.Runtime]System.Object
@@ -120,6 +121,9 @@
   .method private hidebysig static int32 
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       34 (0x22)
     .maxstack  7

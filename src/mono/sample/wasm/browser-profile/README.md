@@ -9,34 +9,33 @@
  public static void StopProfile(){}
 ```
 
-2. Initialize the profiler in the main javascript (e.g. runtime.js)
+2. Initialize the profiler in the main javascript (e.g. main.js)
 
 ```
-var Module = {
-  onRuntimeInitialized: function () {
-    ...
-
-    if (config.enable_profiler)
-    {
-      config.aot_profiler_options = {
-        write_at: "<Namespace.Class::StopProfile>",
-        send_to: "System.Runtime.InteropServices.JavaScript.Runtime::DumpAotProfileData"
-    }
-  }
+await createDotnetRuntime(() => ({
+    onConfigLoaded: () => {
+        if (config.enable_profiler) {
+            config.aot_profiler_options = {
+                write_at: "<Namespace.Class::StopProfile>",
+                send_to: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
+            }
+        }
+    },
+}));
 ```
 
 3. Call the `write_at` method at the end of the app, either in C# or in JS. To call the `write_at` method in JS, make use of bindings:
 
-`BINDING.call_static_method("<[ProjectName] Namespace.Class::StopProfile">, []);`
+`BINDING.bind_static_method("<[ProjectName] Namespace.Class::StopProfile">)();`
 
-When the `write_at` method is called, the `send_to` method `DumpAotProfileData` stores the profile data into `Module.aot_profile_data`
+When the `write_at` method is called, the `send_to` method `DumpAotProfileData` stores the profile data into `INTERNAL.aot_profile_data`
 
-4. Download `Module.aot_profile_data` in JS, using something similar to:
+4. Download `INTERNAL.aot_profile_data` in JS, using something similar to:
 
 ```
 function saveProfile() {
   var a = document.createElement('a');
-  var blob = new Blob([Module.aot_profile_data]);
+  var blob = new Blob([INTERNAL.aot_profile_data]);
   a.href = URL.createObjectURL(blob);
   a.download = "data.aotprofile";
   // Append anchor to body.

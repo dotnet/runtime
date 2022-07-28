@@ -52,8 +52,6 @@ Therefore the managed portion of each test **must not contain**:
 * Exclude test from JIT stress runs runs by adding the following to the csproj:
     * `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
 * Add NuGet references by updating the following [test project](https://github.com/dotnet/runtime/blob/main/src/tests/Common/test_dependencies/test_dependencies.csproj).
-* Get access to System.Private.CoreLib types and methods that are not exposed via public surface by adding the following to the csproj:
-    * `<ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>`
 * Any System.Private.CoreLib types and methods used by tests must be available for building on all platforms.
 This means there must be enough implementation for the C# compiler to find the referenced types and methods. Unsupported target platforms
 should simply `throw new PlatformNotSupportedException()` in its dummy method implementations.
@@ -68,28 +66,31 @@ should simply `throw new PlatformNotSupportedException()` in its dummy method im
 
 1. Set the `<CLRTestKind>`/`<CLRTestPriority>` properties.
 1. Add source files to the new project.
-1. Indicate the success of the test by returning `100`. Failure can be indicated by any non-`100` value.
+1. Add test cases using the Xunit `Fact` attribute.
 
-    Example:
-    ```CSharp
-        static public int Main(string[] notUsed)
-        {
-            try
-            {
-                // Test scenario here
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Test Failure: {e.Message}");
-                return 101;
-            }
+    - We use a source generator to construct the `Main` entry point for test projects. The source generator will discover all methods marked with `Fact` and call them from the generated `Main`.
+    - Alternatively, `Main` can be user-defined. On success, the test returns `100`. Failure can be indicated by any non-`100` value.
 
-            return 100;
-        }
-    ```
+      Example:
+      ```CSharp
+          static public int Main(string[] notUsed)
+          {
+              try
+              {
+                  // Test scenario here
+              }
+              catch (Exception e)
+              {
+                  Console.WriteLine($"Test Failure: {e}");
+                  return 101;
+              }
+
+              return 100;
+          }
+      ```
 
 1. Add any other projects as a dependency, if needed.
     * Managed reference: `<ProjectReference Include="../ManagedDll.csproj" />`
-    * Native reference: `<ProjectReference Include="../NativeDll/CMakeLists.txt" />`
+    * CMake reference: `<CMakeProjectReference Include="../NativeDll/CMakeLists.txt" />`
 1. Build the test.
 1. Follow the steps to re-run a failed test to validate the new test.

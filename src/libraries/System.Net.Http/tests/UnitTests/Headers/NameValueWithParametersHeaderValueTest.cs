@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Linq;
 using System.Net.Http.Headers;
 
@@ -192,21 +191,25 @@ namespace System.Net.Http.Tests
         public void Parse_SetOfValidValueStrings_ParsedCorrectly()
         {
             NameValueWithParametersHeaderValue expected = new NameValueWithParametersHeaderValue("custom");
-            CheckValidParse("\r\n custom  ", expected);
+            CheckValidParse(" custom  ", expected);
             CheckValidParse("custom", expected);
 
             // We don't have to test all possible input strings, since most of the pieces are handled by other parsers.
             // The purpose of this test is to verify that these other parsers are combined correctly to build a
             // transfer-coding parser.
             expected.Parameters.Add(new NameValueHeaderValue("name", "value"));
-            CheckValidParse("\r\n custom ;  name =   value ", expected);
+            CheckValidParse(" custom ;  name =   value ", expected);
             CheckValidParse("  custom;name=value", expected);
             CheckValidParse("  custom ; name=value", expected);
+
+            expected.Parameters.Add(new NameValueHeaderValue("foo", "bar"));
+            CheckValidParse("custom; name=value; foo=bar", expected);
         }
 
         [Fact]
         public void Parse_SetOfInvalidValueStrings_Throws()
         {
+            CheckInvalidParse("custom\n");
             CheckInvalidParse("custom\u4F1A");
             CheckInvalidParse("custom; name=value;");
             CheckInvalidParse("custom; name1=value1; name2=value2;");
@@ -216,58 +219,31 @@ namespace System.Net.Http.Tests
             CheckInvalidParse("  ,,");
         }
 
-        [Fact]
-        public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
-        {
-            NameValueWithParametersHeaderValue expected = new NameValueWithParametersHeaderValue("custom");
-            CheckValidTryParse("\r\n custom  ", expected);
-            CheckValidTryParse("custom", expected);
-
-            // We don't have to test all possible input strings, since most of the pieces are handled by other parsers.
-            // The purpose of this test is to verify that these other parsers are combined correctly to build a
-            // transfer-coding parser.
-            expected.Parameters.Add(new NameValueHeaderValue("name", "value"));
-            CheckValidTryParse("\r\n custom ;  name =   value ", expected);
-            CheckValidTryParse("  custom;name=value", expected);
-            CheckValidTryParse("  custom ; name=value", expected);
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
-        {
-            CheckInvalidTryParse("custom\u4F1A");
-            CheckInvalidTryParse("custom; name=value;");
-            CheckInvalidTryParse("custom; name1=value1; name2=value2;");
-            CheckInvalidTryParse(null);
-            CheckInvalidTryParse(string.Empty);
-            CheckInvalidTryParse("  ");
-            CheckInvalidTryParse("  ,,");
-        }
-
         #region Helper methods
 
         private void CheckValidParse(string input, NameValueWithParametersHeaderValue expectedResult)
         {
             NameValueWithParametersHeaderValue result = NameValueWithParametersHeaderValue.Parse(input);
             Assert.Equal(expectedResult, result);
+
+            Assert.True(NameValueWithParametersHeaderValue.TryParse(input, out result));
+            Assert.Equal(expectedResult, result);
+
+            // New lines are never allowed
+            for (int i = 0; i < input.Length; i++)
+            {
+                CheckInvalidParse(input.Insert(i, "\r"));
+                CheckInvalidParse(input.Insert(i, "\n"));
+                CheckInvalidParse(input.Insert(i, "\r\n"));
+                CheckInvalidParse(input.Insert(i, "\r\n "));
+            }
         }
 
         private void CheckInvalidParse(string input)
         {
             Assert.Throws<FormatException>(() => { NameValueWithParametersHeaderValue.Parse(input); });
-        }
 
-        private void CheckValidTryParse(string input, NameValueWithParametersHeaderValue expectedResult)
-        {
-            NameValueWithParametersHeaderValue result = null;
-            Assert.True(NameValueWithParametersHeaderValue.TryParse(input, out result));
-            Assert.Equal(expectedResult, result);
-        }
-
-        private void CheckInvalidTryParse(string input)
-        {
-            NameValueWithParametersHeaderValue result = null;
-            Assert.False(NameValueWithParametersHeaderValue.TryParse(input, out result));
+            Assert.False(NameValueWithParametersHeaderValue.TryParse(input, out NameValueWithParametersHeaderValue result));
             Assert.Null(result);
         }
 

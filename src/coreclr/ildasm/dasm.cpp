@@ -11,6 +11,7 @@
 #include "dynamicarray.h"
 #include <metamodelpub.h>
 #include "formattype.h"
+#include "readytorun.h"
 
 #define DECLARE_DATA
 #include "dasmenum.hpp"
@@ -27,10 +28,6 @@
 // Disable the "initialization of static local vars is no thread safe" error
 #ifdef _MSC_VER
 #pragma warning(disable : 4640)
-#endif
-
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-#include <corcompile.h>
 #endif
 
 #ifdef TARGET_UNIX
@@ -98,9 +95,7 @@ BOOL                    g_fThisIsInstanceMethod;
 BOOL                    g_fTryInCode = TRUE;
 
 BOOL                    g_fLimitedVisibility = FALSE;
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-BOOL                    g_fNGenNativeMetadata = FALSE;
-#endif
+BOOL                    g_fR2RNativeManifestMetadata = FALSE;
 BOOL                    g_fHidePub = TRUE;
 BOOL                    g_fHidePriv = TRUE;
 BOOL                    g_fHideFam = TRUE;
@@ -128,7 +123,6 @@ BOOL                    g_fCustomInstructionEncodingSystem = FALSE;
 COR_FIELD_OFFSET        *g_rFieldOffset = NULL;
 ULONG                   g_cFieldsMax, g_cFieldOffsets;
 
-char*                   g_pszExeFile;
 char                    g_szInputFile[MAX_FILENAME_LENGTH]; // in UTF-8
 WCHAR                   g_wszFullInputFile[MAX_PATH + 1]; // in UTF-16
 char                    g_szOutputFile[MAX_FILENAME_LENGTH]; // in UTF-8
@@ -156,14 +150,14 @@ ULONG                   g_ulMetaInfoFilter = MDInfo::dumpDefault;
 // Validator module type.
 DWORD g_ValModuleType = ValidatorModuleTypeInvalid;
 IMetaDataDispenserEx *g_pDisp = NULL;
-void DisplayFile(__in __nullterminated WCHAR* szFile,
+void DisplayFile(_In_ __nullterminated WCHAR* szFile,
                  BOOL isFile,
                  ULONG DumpFilter,
-                 __in_opt __nullterminated WCHAR* szObjFile,
+                 _In_opt_z_ WCHAR* szObjFile,
                  strPassBackFn pDisplayString);
 extern mdMethodDef      g_tkEntryPoint; // integration with MetaInfo
 
-DWORD   DumpResourceToFile(__in __nullterminated WCHAR*   wzFileName); // see DRES.CPP
+DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName); // see DRES.CPP
 
 struct VTableRef
 {
@@ -190,7 +184,7 @@ void DumpCustomAttributeProps(mdToken tkCA, mdToken tkType, mdToken tkOwner, BYT
 WCHAR* RstrW(unsigned id)
 {
     static WCHAR buffer[1024];
-    DWORD cchBuff = (DWORD)COUNTOF(buffer);
+    DWORD cchBuff = (DWORD)ARRAY_SIZE(buffer);
     WCHAR* buff = (WCHAR*)buffer;
     memset(buffer,0,sizeof(buffer));
     switch(id)
@@ -228,7 +222,7 @@ WCHAR* RstrW(unsigned id)
         case IDS_E_CANTACCESSW32RES:
         case IDS_E_CANTOPENW32RES:
         case IDS_ERRORREOPENINGFILE:
-            wcscpy_s(buffer,COUNTOF(buffer),W("// "));
+            wcscpy_s(buffer,ARRAY_SIZE(buffer),W("// "));
             buff +=3;
             cchBuff -= 3;
             break;
@@ -239,12 +233,12 @@ WCHAR* RstrW(unsigned id)
         case IDS_E_CODESIZE:
         case IDS_W_CREATEDMRES:
         case IDS_E_READINGMRES:
-            wcscpy_s(buffer,COUNTOF(buffer),W("%s// "));
+            wcscpy_s(buffer,ARRAY_SIZE(buffer),W("%s// "));
             buff +=5;
             cchBuff -= 5;
             break;
         case IDS_E_NORVA:
-            wcscpy_s(buffer,COUNTOF(buffer),W("/* "));
+            wcscpy_s(buffer,ARRAY_SIZE(buffer),W("/* "));
             buff += 3;
             cchBuff -= 3;
             break;
@@ -1350,7 +1344,7 @@ mdToken ResolveTypeDefReflectionNotation(IMDInternalImport *pIMDI,
 }
 
 mdToken ResolveTypeRefReflectionNotation(IMDInternalImport *pIMDI,
-                                         __in __nullterminated const char* szNamespace,
+                                         _In_ __nullterminated const char* szNamespace,
                                          __inout __nullterminated char* szName,
                                          mdToken tkResScope)
 {
@@ -1922,7 +1916,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                     if(n) appendStr(out," ");
                     _gcvt_s(str,64,*((float*)dataPtr), 8);
                     float df = (float)atof(str);
-                    // Must compare as underlying bytes, not floating point otherwise optmizier will
+                    // Must compare as underlying bytes, not floating point otherwise optimizer will
                     // try to enregister and comapre 80-bit precision number with 32-bit precision number!!!!
                     if((*(ULONG*)&df != (ULONG)GET_UNALIGNED_VAL32(dataPtr))||IsSpecialNumber(str))
                         sprintf_s(str, 64,"0x%08X",(ULONG)GET_UNALIGNED_VAL32(dataPtr));
@@ -1941,7 +1935,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                     char *pch;
                     _gcvt_s(str,64,*((double*)dataPtr), 17);
                     double df = strtod(str, &pch);
-                    // Must compare as underlying bytes, not floating point otherwise optmizier will
+                    // Must compare as underlying bytes, not floating point otherwise optimizer will
                     // try to enregister and comapre 80-bit precision number with 64-bit precision number!!!!
                     if((*(ULONGLONG*)&df != (ULONGLONG)GET_UNALIGNED_VAL64(dataPtr))||IsSpecialNumber(str))
                         sprintf_s(str, 64, "0x%I64X",(ULONGLONG)GET_UNALIGNED_VAL64(dataPtr));
@@ -2223,7 +2217,7 @@ BOOL PrettyPrintCustomAttributeBlob(mdToken tkType, BYTE* pBlob, ULONG ulLen, vo
 {
     char* initszptr = szString + strlen(szString);
     PCCOR_SIGNATURE typePtr;            // type to convert,
-    ULONG typeLen;                  // the lenght of 'typePtr'
+    ULONG typeLen;                  // the length of 'typePtr'
     CHECK_LOCAL_STATIC_VAR(static CQuickBytes out); // where to put the pretty printed string
 
     IMDInternalImport *pIMDI = g_pImport; // ptr to IMDInternalImport class with ComSig
@@ -2613,7 +2607,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
                 char szf[32];
                 _gcvt_s(szf,32,MDDV.m_fltValue, 8);
                 float df = (float)atof(szf);
-                // Must compare as underlying bytes, not floating point otherwise optmizier will
+                // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and comapre 80-bit precision number with 32-bit precision number!!!!
                 if((*(ULONG*)&df == MDDV.m_ulValue)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(%s)",KEYWORD("float32"),szf);
@@ -2628,7 +2622,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
                 _gcvt_s(szf,32,MDDV.m_dblValue, 17);
                 double df = strtod(szf, &pch); //atof(szf);
                 szf[31]=0;
-                // Must compare as underlying bytes, not floating point otherwise optmizier will
+                // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and comapre 80-bit precision number with 64-bit precision number!!!!
                 if((*(ULONGLONG*)&df == MDDV.m_ullValue)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr)," = %s(%s)",KEYWORD("float64"),szf);
@@ -2851,7 +2845,7 @@ void DumpPermissions(mdToken tkOwner, void* GUICookie)
 }
 
 void PrettyPrintMethodSig(__inout __nullterminated char* szString, unsigned* puStringLen, CQuickBytes* pqbMemberSig, PCCOR_SIGNATURE pComSig, ULONG cComSig,
-                          __inout __nullterminated char* buff, __in_opt __nullterminated char* szArgPrefix, void* GUICookie)
+                          __inout __nullterminated char* buff, _In_opt_z_ char* szArgPrefix, void* GUICookie)
 {
     unsigned uMaxWidth = 40;
     if(g_fDumpHTML || g_fDumpRTF) uMaxWidth = 240;
@@ -3037,7 +3031,7 @@ BOOL PrettyPrintGP(                     // prints name of generic param, or retu
 }
 
 // Pretty-print formal type parameters for a class or method
-char *DumpGenericPars(__inout_ecount(SZSTRING_SIZE) char* szString, mdToken tok, void* GUICookie/*=NULL*/, BOOL fSplit/*=FALSE*/)
+char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok, void* GUICookie/*=NULL*/, BOOL fSplit/*=FALSE*/)
 {
     WCHAR *wzArgName = wzUniBuf;
     ULONG chName;
@@ -3087,8 +3081,15 @@ char *DumpGenericPars(__inout_ecount(SZSTRING_SIZE) char* szString, mdToken tok,
         if ((attr & gpNotNullableValueTypeConstraint) != 0)
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "valuetype ");
         CHECK_REMAINING_SIZE;
+        if ((attr & gpAcceptByRefLike) != 0)
+            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "byreflike ");
+        CHECK_REMAINING_SIZE;
         if ((attr & gpDefaultConstructorConstraint) != 0)
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), ".ctor ");
+        CHECK_REMAINING_SIZE;
+        DWORD unknownAttr = attr & ~(gpSpecialConstraintMask | gpVarianceMask);
+        if (unknownAttr != 0)
+            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "flags(0x%x) ", unknownAttr);
         CHECK_REMAINING_SIZE;
         if (NumConstrs)
         {
@@ -3340,8 +3341,8 @@ void PrettyPrintOverrideDecl(ULONG i, __inout __nullterminated char* szString, v
         // In that case the full "method" syntax must be used
         if ((TypeFromToken(tkOverrider) == mdtMethodDef) && !needsFullTokenPrint)
         {
-            PCCOR_SIGNATURE pComSigDecl;
-            ULONG cComSigDecl;
+            PCCOR_SIGNATURE pComSigDecl = NULL;
+            ULONG cComSigDecl = 0;
             mdToken tkDeclSigTok = tkDecl;
             bool successfullyGotDeclSig = false;
             bool successfullyGotBodySig = false;
@@ -3702,7 +3703,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
                 if (FAILED(g_pImport->GetParamDefProps(tkArg, &wSequence, &dwAttr, &szName)))
                 {
                     char sz[256];
-                    sprintf_s(sz, COUNTOF(sz), RstrUTF(IDS_E_INVALIDRECORD), tkArg);
+                    sprintf_s(sz, ARRAY_SIZE(sz), RstrUTF(IDS_E_INVALIDRECORD), tkArg);
                     printError(GUICookie, sz);
                     continue;
                 }
@@ -3882,7 +3883,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
             szString[0] = 0;
             if (dwTargetRVA != 0)
             {
-                void* newTarget;
+                void* newTarget = NULL;
                 if(g_pPELoader->getVAforRVA(dwTargetRVA,&newTarget))
                 {
                     DisassembleWrapper(g_pImport, (unsigned char*)newTarget, GUICookie, FuncToken,pszArgname, ulArgs);
@@ -5156,7 +5157,7 @@ void DumpCodeManager(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
         WCHAR        rcguid[128];
         GUID         Guid = *pcm;
         SwapGuid(&Guid);
-        StringFromGUID2(Guid, rcguid, NumItems(rcguid));
+        StringFromGUID2(Guid, rcguid, ARRAY_SIZE(rcguid));
         sprintf_s(szString,SZSTRING_SIZE,"//   [0x%08x]    %S", i, rcguid);
         printLine(GUICookie,szStr);
         pcm++;
@@ -6063,7 +6064,7 @@ void DumpStatistics(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
         {
             ++methodBodies;
 
-            COR_ILMETHOD_FAT *pMethod;
+            COR_ILMETHOD_FAT *pMethod = NULL;
             g_pPELoader->getVAforRVA(rva, (void **) &pMethod);
             if (pMethod->IsFat())
             {
@@ -6653,8 +6654,8 @@ void DumpEATEntries(void* GUICookie,
 #endif
                     if(pExpTable->dwNumATEntries && pExpTable->dwAddrTableRVA)
                     {
-                        DWORD* pExpAddr;
-                        BYTE *pCont;
+                        DWORD* pExpAddr = NULL;
+                        BYTE *pCont = NULL;
                         DWORD dwTokRVA;
                         mdToken* pTok;
                         g_pPELoader->getVAforRVA(VAL32(pExpTable->dwAddrTableRVA), (void **) &pExpAddr);
@@ -6702,9 +6703,9 @@ void DumpEATEntries(void* GUICookie,
                     }
                     if(pExpTable->dwNumNamePtrs && pExpTable->dwNamePtrRVA && pExpTable->dwOrdTableRVA)
                     {
-                        DWORD *pNamePtr;
-                        WORD    *pOrd;
-                        char*   szName;
+                        DWORD*  pNamePtr = NULL;
+                        WORD*   pOrd     = NULL;
+                        char*   szName   = NULL;
                         g_pPELoader->getVAforRVA(VAL32(pExpTable->dwNamePtrRVA), (void **) &pNamePtr);
                         g_pPELoader->getVAforRVA(VAL32(pExpTable->dwOrdTableRVA), (void **) &pOrd);
 #ifdef _DEBUG
@@ -6930,7 +6931,7 @@ void DumpVtable(void* GUICookie)
     }
 }
 // MetaInfo integration:
-void DumpMI(__in __nullterminated const char *str)
+void DumpMI(_In_ __nullterminated const char *str)
 {
     static BOOL fInit = TRUE;
     static char* szStr = &szString[0];
@@ -6962,7 +6963,7 @@ void DumpMI(__in __nullterminated const char *str)
     }
 }
 
-void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nullterminated const char* pszObjFileName, void* GUICookie)
+void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ const char* pszObjFileName, void* GUICookie)
 {
     const WCHAR* pch = wcsrchr(pwzFileName,L'.');
 
@@ -6971,8 +6972,8 @@ void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nul
     if(pch && (!_wcsicmp(pch+1,W("lib")) || !_wcsicmp(pch+1,W("obj"))))
     {   // This works only when all the rest does not
         // Init and run.
-        if (MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
-            IID_IMetaDataDispenserEx, (void **)&g_pDisp))
+        if (SUCCEEDED(MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
+            IID_IMetaDataDispenserEx, (void **)&g_pDisp)))
                 {
                     WCHAR *pwzObjFileName=NULL;
                     if (pszObjFileName)
@@ -7002,8 +7003,16 @@ void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nul
             if(g_pAssemblyImport==NULL) g_pAssemblyImport = GetAssemblyImport(NULL);
             printLine(GUICookie,RstrUTF(IDS_E_MISTART));
             //MDInfo metaDataInfo(g_pPubImport, g_pAssemblyImport, (LPCWSTR)pwzFileName, DumpMI, g_ulMetaInfoFilter);
-            MDInfo metaDataInfo(g_pDisp,(LPCWSTR)pwzFileName, DumpMI, g_ulMetaInfoFilter);
-            metaDataInfo.DisplayMD();
+            if (g_fR2RNativeManifestMetadata)
+            {
+                MDInfo metaDataInfo(g_pDisp, (PBYTE)g_pMetaData, g_cbMetaData, DumpMI, g_ulMetaInfoFilter);
+                metaDataInfo.DisplayMD();
+            }
+            else
+            {
+                MDInfo metaDataInfo(g_pDisp,(LPCWSTR)pwzFileName, DumpMI, g_ulMetaInfoFilter);
+                metaDataInfo.DisplayMD();
+            }
             printLine(GUICookie,RstrUTF(IDS_E_MIEND));
         }
     }
@@ -7020,7 +7029,7 @@ void DumpPreamble()
     else if(g_fDumpRTF)
     {
     }
-    sprintf_s(szString,SZSTRING_SIZE,"//  Microsoft (R) .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
+    sprintf_s(szString,SZSTRING_SIZE,"//  .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
     printLine(g_pFile,COMMENT(szString));
     if(g_fDumpHTML)
     {
@@ -7341,7 +7350,7 @@ void CloseNamespace(__inout __nullterminated char* szString)
     }
 }
 
-FILE* OpenOutput(__in __nullterminated const WCHAR* wzFileName)
+FILE* OpenOutput(_In_ __nullterminated const WCHAR* wzFileName)
 {
     FILE*   pfile = NULL;
         if(g_uCodePage == 0xFFFFFFFF) _wfopen_s(&pfile,wzFileName,W("wb"));
@@ -7355,7 +7364,7 @@ FILE* OpenOutput(__in __nullterminated const WCHAR* wzFileName)
     return pfile;
 }
 
-FILE* OpenOutput(__in __nullterminated const char* szFileName)
+FILE* OpenOutput(_In_ __nullterminated const char* szFileName)
 {
     return OpenOutput(UtfToUnicode(szFileName));
 }
@@ -7447,29 +7456,41 @@ BOOL DumpFile()
     g_tkEntryPoint = VAL32(IMAGE_COR20_HEADER_FIELD(*g_CORHeader, EntryPointToken)); // integration with MetaInfo
 
 
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-    if (g_fNGenNativeMetadata)
+    if (g_fR2RNativeManifestMetadata)
     {
-        //if this is an ngen image, use the native metadata.
-        if( !g_CORHeader->ManagedNativeHeader.Size )
+        //if this is a r2r image, use the native metadata.
+        if( !(g_CORHeader->ManagedNativeHeader.Size >= sizeof(READYTORUN_HEADER) ) )
         {
-            printError( g_pFile, "/native only works on NGen images." );
+            printError( g_pFile, "/r2rnativemetadata only works on non-composite R2R images." );
             goto exit;
         }
-        CORCOMPILE_HEADER * pNativeHeader;
-        g_pPELoader->getVAforRVA(VAL32(g_CORHeader->ManagedNativeHeader.VirtualAddress), (void**)&pNativeHeader);
+        READYTORUN_HEADER * pR2RHeader = NULL;
+        g_pPELoader->getVAforRVA(VAL32(g_CORHeader->ManagedNativeHeader.VirtualAddress), (void**)&pR2RHeader);
 
-        if (pNativeHeader->Signature != CORCOMPILE_SIGNATURE)
+        if (pR2RHeader == NULL || pR2RHeader->Signature != READYTORUN_SIGNATURE)
         {
-            printError( g_pFile, "/native only works on NGen images." );
+            printError( g_pFile, "/r2rnativemetadata only works on non-composite R2R images." );
             goto exit;
         }
 
-        g_pPELoader->getVAforRVA(VAL32(pNativeHeader->ManifestMetaData.VirtualAddress), &g_pMetaData);
-        g_cbMetaData = VAL32(pNativeHeader->ManifestMetaData.Size);
+        g_cbMetaData = 0;
+        READYTORUN_SECTION *pSections = (READYTORUN_SECTION *)((&pR2RHeader->CoreHeader) + 1);
+        for (DWORD iSection = 0; iSection < pR2RHeader->CoreHeader.NumberOfSections; iSection++)
+        {
+            if (pSections[iSection].Type == ReadyToRunSectionType::ManifestMetadata)
+            {
+                g_pPELoader->getVAforRVA(VAL32(pSections[iSection].Section.VirtualAddress), &g_pMetaData);
+                g_cbMetaData = VAL32(pSections[iSection].Section.Size);
+                break;
+            }
+        }
+        if (g_cbMetaData == 0)
+        {
+            printError( g_pFile, "This R2R file does not have an R2R manifest metadata" );
+            goto exit;
+        }
     }
     else
-#endif
     {
     if (g_pPELoader->getVAforRVA(VAL32(g_CORHeader->MetaData.VirtualAddress),&g_pMetaData) == FALSE)
     {

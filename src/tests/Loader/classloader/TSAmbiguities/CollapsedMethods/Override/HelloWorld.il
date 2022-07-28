@@ -2,13 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 4.0.20508.0
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-
-
-
-// Metadata version: v4.0.20508
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
@@ -22,7 +17,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module HelloWorld.exe
 // MVID: {30A53143-221A-4FEF-A46B-0607BADC72A0}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -40,6 +34,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       313 (0x139)
     .maxstack  2

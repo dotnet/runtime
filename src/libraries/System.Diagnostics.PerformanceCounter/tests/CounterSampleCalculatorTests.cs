@@ -13,9 +13,9 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void CounterSampleCalculator_ElapsedTime()
         {
-            var name = nameof(CounterSampleCalculator_ElapsedTime) + "_Counter";
+            string categoryName = nameof(CounterSampleCalculator_ElapsedTime) + "_Category";
 
-            PerformanceCounter counterSample = CreateCounter(name, PerformanceCounterType.ElapsedTime);
+            PerformanceCounter counterSample = CreateCounter(categoryName, PerformanceCounterType.ElapsedTime);
 
             counterSample.RawValue = Stopwatch.GetTimestamp();
             DateTime Start = DateTime.Now;
@@ -25,27 +25,26 @@ namespace System.Diagnostics.Tests
 
             var counterVal = Helpers.RetryOnAllPlatforms(() => counterSample.NextValue());
             var dateTimeVal = DateTime.Now.Subtract(Start).TotalSeconds;
-            Helpers.DeleteCategory(name);
+            Helpers.DeleteCategory(categoryName);
             Assert.True(Math.Abs(dateTimeVal - counterVal) < .3);
         }
 
-        public static PerformanceCounter CreateCounter(string name, PerformanceCounterType counterType)
+        public static PerformanceCounter CreateCounter(string categoryName, PerformanceCounterType counterType)
         {
-            var category = name + "_Category";
-            var instance = name + "_Instance";
+            string counterName = categoryName + "_Counter";
 
             CounterCreationDataCollection ccdc = new CounterCreationDataCollection();
             CounterCreationData ccd = new CounterCreationData();
             ccd.CounterType = counterType;
-            ccd.CounterName = name;
+            ccd.CounterName = counterName;
             ccdc.Add(ccd);
 
-            Helpers.DeleteCategory(name);
-            PerformanceCounterCategory.Create(category, "description", PerformanceCounterCategoryType.SingleInstance, ccdc);
+            Helpers.DeleteCategory(categoryName);
+            PerformanceCounterCategory.Create(categoryName, "description", PerformanceCounterCategoryType.SingleInstance, ccdc);
 
-            Assert.True(Helpers.PerformanceCounterCategoryCreated(category));
+            Helpers.VerifyPerformanceCounterCategoryCreated(categoryName);
 
-            return new PerformanceCounter(category, name, false);
+            return new PerformanceCounter(categoryName, counterName, readOnly:false);
         }
     }
 }

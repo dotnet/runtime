@@ -56,24 +56,16 @@ namespace System.Reflection.Emit.Tests
         [Theory]
         [MemberData(nameof(SetConstant_ReferenceTypes_TestData))]
         [MemberData(nameof(SetConstant_NullableValueTypes_TestData))]
+        [MemberData(nameof(SetConstant_ValueTypes_TestData))]
         public void SetConstant_Null_fully_supported(Type parameterType)
         {
             SetConstant_Null(parameterType);
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Passing null for SetConstant on value types not supported on NETFX")]
-        [MemberData(nameof(SetConstant_ValueTypes_TestData))]
-        public void SetConstant_Null_not_supported_on_NETFX(Type parameterType)
-        {
-            SetConstant_Null(parameterType);
-        }
-
-        [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Passing non-null value for SetConstant on nullable enum types not supported on NETFX")]
         [InlineData(typeof(AttributeTargets?), AttributeTargets.All, (int)AttributeTargets.All)]
         [InlineData(typeof(AttributeTargets?), (int)AttributeTargets.All, (int)AttributeTargets.All)]
-        public void SetConstant_NonNull_on_nullable_enum_not_supported_on_NETFX(Type parameterType, object valueToWrite, object expectedValueWhenRead)
+        public void SetConstant_NonNull_on_nullable_enum(Type parameterType, object valueToWrite, object expectedValueWhenRead)
         {
             SetConstant(parameterType, valueToWrite, expectedValueWhenRead);
         }
@@ -98,7 +90,7 @@ namespace System.Reflection.Emit.Tests
 
         private static ParameterInfo GetCreatedParameter(TypeBuilder type, string methodName, int parameterIndex)
         {
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo createdMethod = createdType.GetMethod(methodName);
             if (parameterIndex > 0)
             {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -17,14 +18,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         private StringWriter _stdOutCapture;
         private StringWriter _stdErrCapture;
 
-        private Action<string> _stdOutForward;
-        private Action<string> _stdErrForward;
-
-        private Action<string> _stdOutHandler;
-        private Action<string> _stdErrHandler;
-
         private bool _running = false;
-        private bool _quietBuildReporter = false;
 
         public Process Process { get; }
 
@@ -120,7 +114,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 }
                 else
                 {
-                    // Search the path to see if we can find it 
+                    // Search the path to see if we can find it
                     foreach (var path in System.Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
                     {
                         var candidate = Path.Combine(path, executable + ".exe");
@@ -160,12 +154,6 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
-        public Command QuietBuildReporter()
-        {
-            _quietBuildReporter = true;
-            return this;
-        }
-
         public CommandResult Execute()
         {
             return Execute(false);
@@ -180,7 +168,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             {
                 Process.OutputDataReceived += (sender, args) =>
                 {
-                    ProcessData(args.Data, _stdOutCapture, _stdOutForward, _stdOutHandler);
+                    ProcessData(args.Data, _stdOutCapture);
                 };
             }
 
@@ -188,7 +176,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             {
                 Process.ErrorDataReceived += (sender, args) =>
                 {
-                    ProcessData(args.Data, _stdErrCapture, _stdErrForward, _stdErrHandler);
+                    ProcessData(args.Data, _stdErrCapture);
                 };
             }
 
@@ -196,7 +184,20 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
             ReportExecBegin();
 
-            Process.Start();
+            // Retry if we hit ETXTBSY due to Linux race
+            // https://github.com/dotnet/runtime/issues/58964
+            for (int i = 0; ; i++)
+            {
+                try
+                {
+                    Process.Start();
+                    break;
+                }
+                catch (Win32Exception e) when (i < 4 && e.Message.Contains("Text file busy"))
+                {
+                    Thread.Sleep(i * 20);
+                }
+            }
 
             if (Process.StartInfo.RedirectStandardOutput)
             {
@@ -211,9 +212,15 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
-        public CommandResult WaitForExit(bool fExpectedToFail, int timeoutMilliseconds = Timeout.Infinite)
+        /// <summary>
+        /// Wait for the command to exit and dispose of the underlying process.
+        /// </summary>
+        /// <param name="expectedToFail">Whether or not the command is expected to fail (non-zero exit code)</param>
+        /// <param name="timeoutMilliseconds">Time in milliseconds to wait for the command to exit</param>
+        /// <returns>Result of the command</returns>
+        public CommandResult WaitForExit(bool expectedToFail, int timeoutMilliseconds = Timeout.Infinite)
         {
-            ReportExecWaitOnExit();
+           ReportExecWaitOnExit();
 
             int exitCode;
             if (!Process.WaitForExit(timeoutMilliseconds))
@@ -225,7 +232,9 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 exitCode = Process.ExitCode;
             }
 
-            ReportExecEnd(exitCode, fExpectedToFail);
+            ReportExecEnd(exitCode, expectedToFail);
+
+            Process.Dispose();
 
             return new CommandResult(
                 Process.StartInfo,
@@ -234,31 +243,27 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 _stdErrCapture?.GetStringBuilder()?.ToString());
         }
 
-        public CommandResult Execute(bool fExpectedToFail)
+        /// <summary>
+        /// Execute the command and wait for it to exit.
+        /// </summary>
+        /// <param name="expectedToFail">Whether or not the command is expected to fail (non-zero exit code)</param>
+        /// <returns>Result of the command</returns>
+        public CommandResult Execute(bool expectedToFail)
         {
+            // Clear out any enabling of dump creation if failure is expected
+            if (expectedToFail)
+            {
+                EnvironmentVariable("COMPlus_DbgEnableMiniDump", null);
+                EnvironmentVariable("DOTNET_DbgEnableMiniDump", null);
+            }
+
             Start();
-            return WaitForExit(fExpectedToFail);
+            return WaitForExit(expectedToFail);
         }
 
         public Command WorkingDirectory(string projectDirectory)
         {
             Process.StartInfo.WorkingDirectory = projectDirectory;
-            return this;
-        }
-
-        public Command WithUserProfile(string userprofile)
-        {
-            string userDir;
-            if (OperatingSystem.IsWindows())
-            {
-                userDir = "USERPROFILE";
-            }
-            else
-            {
-                userDir = "HOME";
-            }
-
-            Process.StartInfo.Environment[userDir] = userprofile;
             return this;
         }
 
@@ -271,6 +276,12 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
             Process.StartInfo.Environment[name] = value;
 
+            return this;
+        }
+
+        public Command RemoveEnvironmentVariable(string name)
+        {
+            Process.StartInfo.Environment.Remove(name);
             return this;
         }
 
@@ -290,60 +301,6 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
-        public Command ForwardStdOut(TextWriter to = null)
-        {
-            ThrowIfRunning();
-            Process.StartInfo.RedirectStandardOutput = true;
-            if (to == null)
-            {
-                _stdOutForward = Reporter.Output.WriteLine;
-            }
-            else
-            {
-                _stdOutForward = to.WriteLine;
-            }
-            return this;
-        }
-
-        public Command ForwardStdErr(TextWriter to = null)
-        {
-            ThrowIfRunning();
-            Process.StartInfo.RedirectStandardError = true;
-            if (to == null)
-            {
-                _stdErrForward = Reporter.Error.WriteLine;
-            }
-            else
-            {
-                _stdErrForward = to.WriteLine;
-            }
-            return this;
-        }
-
-        public Command OnOutputLine(Action<string> handler)
-        {
-            ThrowIfRunning();
-            Process.StartInfo.RedirectStandardOutput = true;
-            if (_stdOutHandler != null)
-            {
-                throw new InvalidOperationException("Already handling stdout!");
-            }
-            _stdOutHandler = handler;
-            return this;
-        }
-
-        public Command OnErrorLine(Action<string> handler)
-        {
-            ThrowIfRunning();
-            Process.StartInfo.RedirectStandardError = true;
-            if (_stdErrHandler != null)
-            {
-                throw new InvalidOperationException("Already handling stderr!");
-            }
-            _stdErrHandler = handler;
-            return this;
-        }
-
         private string FormatProcessInfo(ProcessStartInfo info, bool includeWorkingDirectory)
         {
             string prefix = includeWorkingDirectory ?
@@ -360,40 +317,31 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         private void ReportExecBegin()
         {
-            if (!_quietBuildReporter)
-            {
-                BuildReporter.BeginSection("EXEC", FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: false));
-            }
+            BuildReporter.BeginSection("EXEC", FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: false));
         }
 
         private void ReportExecWaitOnExit()
         {
-            if (!_quietBuildReporter)
-            {
-                BuildReporter.SectionComment("EXEC", $"Waiting for process {Process.Id} to exit...");
-            }
+            BuildReporter.SectionComment("EXEC", $"Waiting for process {Process.Id} to exit...");
         }
 
         private void ReportExecEnd(int exitCode, bool fExpectedToFail)
         {
-            if (!_quietBuildReporter)
+            bool success = exitCode == 0;
+            string msgExpectedToFail = "";
+
+            if (fExpectedToFail)
             {
-                bool success = exitCode == 0;
-                string msgExpectedToFail = "";
-
-                if (fExpectedToFail)
-                {
-                    success = !success;
-                    msgExpectedToFail = "failed as expected and ";
-                }
-
-                var message = $"{FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: !success)} {msgExpectedToFail}exited with {exitCode}";
-
-                BuildReporter.EndSection(
-                    "EXEC",
-                    success ? message.Green() : message.Red().Bold(),
-                    success);
+                success = !success;
+                msgExpectedToFail = "failed as expected and ";
             }
+
+            var message = $"{FormatProcessInfo(Process.StartInfo, includeWorkingDirectory: !success)} {msgExpectedToFail}exited with {exitCode}";
+
+            BuildReporter.EndSection(
+                "EXEC",
+                success ? message.Green() : message.Red().Bold(),
+                success);
         }
 
         private void ThrowIfRunning([CallerMemberName] string memberName = null)
@@ -404,7 +352,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             }
         }
 
-        private void ProcessData(string data, StringWriter capture, Action<string> forward, Action<string> handler)
+        private void ProcessData(string data, StringWriter capture)
         {
             if (data == null)
             {
@@ -415,10 +363,6 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             {
                 capture.WriteLine(data);
             }
-
-            forward?.Invoke(data);
-
-            handler?.Invoke(data);
         }
     }
 }

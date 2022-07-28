@@ -7,9 +7,6 @@
 #include "log.h"
 #include "methoddescbackpatchinfo.h"
 
-#ifdef CROSSGEN_COMPILE
-    #error This file is not expected to be included into CrossGen
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // EntryPointSlots
@@ -35,7 +32,7 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
             break;
 
         case SlotType_Vtable:
-            ((MethodTable::VTableIndir2_t *)slot)->SetValue(entryPoint);
+            *((MethodTable::VTableIndir2_t *)slot) = entryPoint;
             break;
 
         case SlotType_Executable:
@@ -80,9 +77,7 @@ void MethodDescBackpatchInfoTracker::Backpatch_Locked(MethodDesc *pMethodDesc, P
     _ASSERTE(IsLockOwnedByCurrentThread());
     _ASSERTE(pMethodDesc != nullptr);
 
-    GCX_COOP();
-
-    auto lambda = [&entryPoint](OBJECTREF obj, MethodDesc *pMethodDesc, UINT_PTR slotData)
+    auto lambda = [&entryPoint](LoaderAllocator *pLoaderAllocatorOfSlot, MethodDesc *pMethodDesc, UINT_PTR slotData)
     {
 
         TADDR slot;
@@ -103,8 +98,6 @@ void MethodDescBackpatchInfoTracker::AddSlotAndPatch_Locked(MethodDesc *pMethodD
     _ASSERTE(IsLockOwnedByCurrentThread());
     _ASSERTE(pMethodDesc != nullptr);
     _ASSERTE(pMethodDesc->MayHaveEntryPointSlotsToBackpatch());
-
-    GCX_COOP();
 
     UINT_PTR slotData;
     slotData = EntryPointSlots::ConvertSlotAndTypePairToUINT_PTR(slot, slotType);

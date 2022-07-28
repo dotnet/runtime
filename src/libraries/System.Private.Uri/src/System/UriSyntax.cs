@@ -7,7 +7,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace System
 {

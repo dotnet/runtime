@@ -57,7 +57,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackCall has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -197,7 +197,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackInvokeDefault1 has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -212,7 +212,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackInvokeDefault2 has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -383,7 +383,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function 'LateGet
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackGet has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -600,7 +600,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackIndexSetComplex has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -778,7 +778,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub 'LateIndexSet
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackIndexSet has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -824,7 +824,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackSetComplex has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -876,7 +876,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackSet has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -1216,25 +1216,39 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Friend Shared Function MatchesPropertyRequirements(ByVal targetProcedure As Method, ByVal flags As BindingFlags) As MethodInfo
             Debug.Assert(targetProcedure.IsProperty, "advertised property method isn't.")
 
+            Dim propInfo As PropertyInfo = targetProcedure.AsProperty()
             If HasFlag(flags, BindingFlagsSetProperty) Then
-                Return targetProcedure.AsProperty.GetSetMethod
+                Return If(HasIsExternalInitModifier(propInfo.GetSetMethod), Nothing, propInfo.GetSetMethod)
             Else
-                Return targetProcedure.AsProperty.GetGetMethod
+                Return propInfo.GetGetMethod
             End If
         End Function
 
         Friend Shared Function ReportPropertyMismatch(ByVal targetProcedure As Method, ByVal flags As BindingFlags) As Exception
             Debug.Assert(targetProcedure.IsProperty, "advertised property method isn't.")
 
+            Dim propInfo As PropertyInfo = targetProcedure.AsProperty()
             If HasFlag(flags, BindingFlagsSetProperty) Then
-                Debug.Assert(targetProcedure.AsProperty.GetSetMethod Is Nothing, "expected error condition")
+                Debug.Assert(propInfo.GetSetMethod Is Nothing OrElse HasIsExternalInitModifier(propInfo.GetSetMethod), "expected error condition")
                 Return New MissingMemberException(
-                    SR.Format(SR.NoSetProperty1, targetProcedure.AsProperty.Name))
+                    SR.Format(SR.NoSetProperty1, propInfo.Name))
             Else
-                Debug.Assert(targetProcedure.AsProperty.GetGetMethod Is Nothing, "expected error condition")
+                Debug.Assert(propInfo.GetGetMethod Is Nothing, "expected error condition")
                 Return New MissingMemberException(
-                    SR.Format(SR.NoGetProperty1, targetProcedure.AsProperty.Name))
+                    SR.Format(SR.NoGetProperty1, propInfo.Name))
             End If
+        End Function
+
+        Private Shared Function HasIsExternalInitModifier(method As MethodInfo) As Boolean
+            Dim customModifierTypes As Type() = method?.ReturnParameter.GetRequiredCustomModifiers()
+            If customModifierTypes IsNot Nothing Then
+                For Each customModifierType As Type In customModifierTypes
+                    If customModifierType.Name = "IsExternalInit" AndAlso Not customModifierType.IsNested AndAlso customModifierType.Namespace = "System.Runtime.CompilerServices" Then
+                        Return True
+                    End If
+                Next
+            End If
+            Return False
         End Function
 
         <RequiresUnreferencedCode(LateBindingTrimMessage)>

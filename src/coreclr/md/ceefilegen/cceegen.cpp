@@ -98,7 +98,7 @@ STDMETHODIMP CCeeGen::SetInitialGrowth(DWORD growth)
     return S_OK;
 }
 
-STDMETHODIMP CCeeGen::EmitString (__in LPWSTR lpString, ULONG *RVA)
+STDMETHODIMP CCeeGen::EmitString (_In_ LPWSTR lpString, ULONG *RVA)
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -452,7 +452,7 @@ HRESULT CCeeGen::getSectionCreate (const char *name, DWORD flags, CeeSection **s
         name = ".text";
     else if (strcmp(name, ".rdata") == 0)
         name = ".text";
-    for (int i=0; i<m_numSections; i++) {
+    for (short i=0; i<m_numSections; i++) {
         if (strcmp((const char *)m_sections[i]->name(), name) == 0) {
             if (section)
                 *section = m_sections[i];

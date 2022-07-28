@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// The path to the file, including the file name. Return null if the file is not directly accessible.
         /// </summary>
-        string PhysicalPath { get; }
+        string? PhysicalPath { get; }
 
         /// <summary>
         /// The name of the file or directory, not including any path.

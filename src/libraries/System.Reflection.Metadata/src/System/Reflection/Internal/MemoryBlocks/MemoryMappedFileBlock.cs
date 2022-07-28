@@ -7,11 +7,13 @@ using System.Threading;
 
 namespace System.Reflection.Internal
 {
-    internal unsafe sealed class MemoryMappedFileBlock : AbstractMemoryBlock
+    internal sealed unsafe class MemoryMappedFileBlock : AbstractMemoryBlock
     {
         private sealed class DisposableData : CriticalDisposableObject
         {
-            private IDisposable? _accessor; // MemoryMappedViewAccessor
+            // Usually a MemoryMappedViewAccessor, but kept
+            // as an IDisposable for better testability.
+            private IDisposable? _accessor;
             private SafeBuffer? _safeBuffer;
             private byte* _pointer;
 

@@ -512,84 +512,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.DoesNotContain("Path: $", ex.Message);
         }
 
-        [Fact]
-        public static void DeserializeUnsupportedType()
-        {
-            // Any test payload is fine.
-            string json = @"""Some string""";
-
-            RunTest<Type>(json);
-            RunTest<SerializationInfo>(json);
-            RunTest<IntPtr>(json);
-            RunTest<UIntPtr>(json);
-
-            void RunTest<T>(string json)
-            {
-                string fullName = typeof(T).FullName;
-
-                NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<T>(json));
-                string exAsStr = ex.ToString();
-                Assert.Contains(fullName, exAsStr);
-                Assert.Contains("$", exAsStr);
-
-                json = $@"{{""Prop"":{json}}}";
-
-                ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithType<T>>(json));
-                exAsStr = ex.ToString();
-                Assert.Contains(fullName, exAsStr);
-                Assert.Contains("$.Prop", exAsStr);
-
-                // NSE is not thrown because the serializer handles null.
-                if (!typeof(T).IsValueType)
-                {
-                    Assert.Null(JsonSerializer.Deserialize<T>("null"));
-
-                    ClassWithType<T> obj = JsonSerializer.Deserialize<ClassWithType<T>>(@"{""Prop"":null}");
-                    Assert.Null(obj.Prop);
-                }
-            }
-        }
-
-        [Fact]
-        public static void SerializeUnsupportedType()
-        {
-            RunTest<Type>(typeof(int));
-            RunTest<SerializationInfo>(new SerializationInfo(typeof(Type), new FormatterConverter()));
-            RunTest<IntPtr>((IntPtr)123);
-            RunTest<UIntPtr>((UIntPtr)123);
-
-            void RunTest<T>(T value)
-            {
-                Type type = typeof(T);
-                string fullName = type.FullName;
-
-                NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(value));
-                string exAsStr = ex.ToString();
-                Assert.Contains(fullName, exAsStr);
-                Assert.Contains("$", exAsStr);
-
-                ClassWithType<T> obj = new ClassWithType<T> { Prop = value };
-
-                ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj));
-                exAsStr = ex.ToString();
-                Assert.Contains(fullName, exAsStr);
-                Assert.Contains("$.Prop", exAsStr);
-
-                if (!type.IsValueType)
-                {
-                    string serialized = JsonSerializer.Serialize((T)(object)null);
-                    Assert.Equal("null", serialized);
-
-                    obj.Prop = (T)(object)null;
-                    serialized = JsonSerializer.Serialize(obj);
-                    Assert.Equal(@"{""Prop"":null}", serialized);
-
-                    serialized = JsonSerializer.Serialize(obj, new JsonSerializerOptions { IgnoreNullValues = true });
-                    Assert.Equal(@"{}", serialized);
-                }
-            }
-        }
-
         [Theory]
         [InlineData(typeof(ClassWithBadCtor))]
         [InlineData(typeof(StructWithBadCtor))]
@@ -606,9 +528,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Each constructor parameter must bind to an object property or field.
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("{}", type));
-            string exAsStr = ex.ToString();
-            Assert.Contains(typeof(SerializationInfo).FullName, exAsStr);
-            Assert.Contains(typeof(StreamingContext).FullName, exAsStr);
+            Assert.Contains(type.FullName, ex.ToString());
         }
 
         [Theory]
@@ -676,6 +596,39 @@ namespace System.Text.Json.Serialization.Tests
             [JsonConstructor]
             public StructWithBadCtor_WithProps(SerializationInfo info, StreamingContext ctx) =>
                 (Info, Ctx) = (info, ctx);
+        }
+
+        [Fact]
+        public static void CustomConverterThrowingJsonException_Serialization_ShouldNotOverwriteMetadata()
+        {
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(new { Value = new PocoUsingCustomConverterThrowingJsonException() }));
+            Assert.Equal(PocoConverterThrowingCustomJsonException.ExceptionMessage, ex.Message);
+            Assert.Equal(PocoConverterThrowingCustomJsonException.ExceptionPath, ex.Path);
+        }
+
+        [Fact]
+        public static void CustomConverterThrowingJsonException_Deserialization_ShouldNotOverwriteMetadata()
+        {
+            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<PocoUsingCustomConverterThrowingJsonException[]>(@"[{}]"));
+            Assert.Equal(PocoConverterThrowingCustomJsonException.ExceptionMessage, ex.Message);
+            Assert.Equal(PocoConverterThrowingCustomJsonException.ExceptionPath, ex.Path);
+        }
+
+        [JsonConverter(typeof(PocoConverterThrowingCustomJsonException))]
+        public class PocoUsingCustomConverterThrowingJsonException
+        {
+        }
+
+        public class PocoConverterThrowingCustomJsonException : JsonConverter<PocoUsingCustomConverterThrowingJsonException>
+        {
+            public const string ExceptionMessage = "Custom JsonException mesage";
+            public const string ExceptionPath = "$.CustomPath";
+
+            public override PocoUsingCustomConverterThrowingJsonException? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => throw new JsonException(ExceptionMessage, ExceptionPath, 0, 0);
+
+            public override void Write(Utf8JsonWriter writer, PocoUsingCustomConverterThrowingJsonException value, JsonSerializerOptions options)
+                => throw new JsonException(ExceptionMessage, ExceptionPath, 0, 0);
         }
     }
 }

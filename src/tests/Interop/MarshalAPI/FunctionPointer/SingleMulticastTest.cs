@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 partial class FunctionPtr
 {
@@ -18,7 +18,7 @@ partial class FunctionPtr
 
         {
             IntPtr fcnptr = Marshal.GetFunctionPointerForDelegate<DelegateWithLong>(s_DelWithLongBool);
-            Assert.IsTrue(FunctionPointerNative.CheckFcnPtr(fcnptr));
+            Assert.True(FunctionPointerNative.CheckFcnPtr(fcnptr));
         }
 
         {

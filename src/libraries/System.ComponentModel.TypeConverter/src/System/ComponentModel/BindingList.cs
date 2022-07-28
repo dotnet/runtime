@@ -20,16 +20,16 @@ namespace System.ComponentModel
         private bool raiseItemChangedEvents; // Do not rename (binary serialization)
 
         [NonSerialized]
-        private PropertyDescriptorCollection _itemTypeProperties;
+        private PropertyDescriptorCollection? _itemTypeProperties;
 
         [NonSerialized]
-        private PropertyChangedEventHandler _propertyChangedEventHandler;
+        private PropertyChangedEventHandler? _propertyChangedEventHandler;
 
         [NonSerialized]
-        private AddingNewEventHandler _onAddingNew;
+        private AddingNewEventHandler? _onAddingNew;
 
         [NonSerialized]
-        private ListChangedEventHandler _onListChanged;
+        private ListChangedEventHandler? _onListChanged;
 
         [NonSerialized]
         private int _lastChangeIndex = -1;
@@ -73,7 +73,7 @@ namespace System.ComponentModel
             }
         }
 
-        private bool ItemTypeHasDefaultConstructor
+        private static bool ItemTypeHasDefaultConstructor
         {
             get
             {
@@ -124,7 +124,7 @@ namespace System.ComponentModel
         protected virtual void OnAddingNew(AddingNewEventArgs e) => _onAddingNew?.Invoke(this, e);
 
         // Private helper method
-        private object FireAddingNew()
+        private object? FireAddingNew()
         {
             AddingNewEventArgs e = new AddingNewEventArgs(null);
             OnAddingNew(e);
@@ -283,16 +283,16 @@ namespace System.ComponentModel
         ///
         /// Add operations are cancellable via the <see cref="ICancelAddNew" /> interface. The position of the
         /// new item is tracked until the add operation is either cancelled by a call to <see cref="CancelNew" />,
-        /// explicitly commited by a call to <see cref="EndNew" />, or implicitly commmited some other operation
+        /// explicitly committed by a call to <see cref="EndNew" />, or implicitly commmited some other operation
         /// changes the contents of the list (such as an Insert or Remove). When an add operation is
         /// cancelled, the new item is removed from the list.
         /// </summary>
-        public T AddNew() => (T)((this as IBindingList).AddNew());
+        public T AddNew() => (T)((this as IBindingList).AddNew())!;
 
-        object IBindingList.AddNew()
+        object? IBindingList.AddNew()
         {
             // Create new item and add it to list
-            object newItem = AddNewCore();
+            object? newItem = AddNewCore();
 
             // Record position of new item (to support cancellation later on)
             addNewPos = (newItem != null) ? IndexOf((T)newItem) : -1;
@@ -310,20 +310,15 @@ namespace System.ComponentModel
         /// supply a custom item to add to the list. Otherwise an item of type T is created.
         /// The new item is then added to the end of the list.
         /// </summary>
-        protected virtual object AddNewCore()
+        protected virtual object? AddNewCore()
         {
             // Allow event handler to supply the new item for us
-            object newItem = FireAddingNew();
-
-            // If event hander did not supply new item, create one ourselves
-            if (newItem == null)
-            {
-                newItem = Activator.CreateInstance(typeof(T));
-            }
+            // If event handler did not supply new item, create one ourselves
+            object? newItem = FireAddingNew() ?? Activator.CreateInstance(typeof(T));
 
             // Add item to end of list. Note: If event handler returned an item not of type T,
             // the cast below will trigger an InvalidCastException. This is by design.
-            Add((T)newItem);
+            Add((T)newItem!);
 
             // Return new item to caller
             return newItem;
@@ -405,9 +400,9 @@ namespace System.ComponentModel
 
         protected virtual bool IsSortedCore => false;
 
-        PropertyDescriptor IBindingList.SortProperty => SortPropertyCore;
+        PropertyDescriptor? IBindingList.SortProperty => SortPropertyCore;
 
-        protected virtual PropertyDescriptor SortPropertyCore => null;
+        protected virtual PropertyDescriptor? SortPropertyCore => null;
 
         ListSortDirection IBindingList.SortDirection => SortDirectionCore;
 
@@ -457,10 +452,7 @@ namespace System.ComponentModel
             // Note: inpc may be null if item is null, so always check.
             if (item is INotifyPropertyChanged inpc)
             {
-                if (_propertyChangedEventHandler == null)
-                {
-                    _propertyChangedEventHandler = new PropertyChangedEventHandler(Child_PropertyChanged);
-                }
+                _propertyChangedEventHandler ??= new PropertyChangedEventHandler(Child_PropertyChanged);
                 inpc.PropertyChanged += _propertyChangedEventHandler;
             }
         }
@@ -475,7 +467,7 @@ namespace System.ComponentModel
         }
 
         [RequiresUnreferencedCode("Raises ListChanged events with PropertyDescriptors. PropertyDescriptors require unreferenced code.")]
-        private void Child_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void Child_PropertyChanged(object? sender, PropertyChangedEventArgs? e)
         {
             if (RaiseListChangedEvents)
             {
@@ -506,7 +498,7 @@ namespace System.ComponentModel
                     // somehow the item has been removed from our list without our knowledge.
                     int pos = _lastChangeIndex;
 
-                    if (pos < 0 || pos >= Count || !this[pos].Equals(item))
+                    if (pos < 0 || pos >= Count || !this[pos]!.Equals(item))
                     {
                         pos = IndexOf(item);
                         _lastChangeIndex = pos;
@@ -529,7 +521,7 @@ namespace System.ComponentModel
                             Debug.Assert(_itemTypeProperties != null);
                         }
 
-                        PropertyDescriptor pd = _itemTypeProperties.Find(e.PropertyName, true);
+                        PropertyDescriptor? pd = _itemTypeProperties.Find(e.PropertyName, true);
 
                         // Create event args. If there was no matching property descriptor,
                         // we raise the list changed anyway.

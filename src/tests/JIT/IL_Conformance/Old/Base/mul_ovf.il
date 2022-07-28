@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly mul_ovf.exe{}
+.assembly mul_ovf{}
 
 .class public mul_ovf {
 

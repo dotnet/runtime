@@ -35,10 +35,10 @@ namespace System.Net.WebSockets.Compression
 
         public void ReleaseBuffer()
         {
-            if (_buffer is not null)
+            if (_buffer is byte[] toReturn)
             {
-                ArrayPool<byte>.Shared.Return(_buffer);
                 _buffer = null;
+                ArrayPool<byte>.Shared.Return(toReturn);
             }
         }
 
@@ -46,15 +46,11 @@ namespace System.Net.WebSockets.Compression
         {
             Debug.Assert(_buffer is null, "Invalid state, ReleaseBuffer not called.");
 
-            // Do not try to rent more than 1MB initially, because it will actually allocate
-            // instead of renting. Be optimistic that what we're sending is actually going to fit.
-            const int MaxInitialBufferLength = 1024 * 1024;
-
             // For small payloads there might actually be overhead in the compression and the resulting
             // output might be larger than the payload. This is why we rent at least 4KB initially.
             const int MinInitialBufferLength = 4 * 1024;
 
-            _buffer = ArrayPool<byte>.Shared.Rent(Math.Clamp(payload.Length, MinInitialBufferLength, MaxInitialBufferLength));
+            _buffer = ArrayPool<byte>.Shared.Rent(Math.Max(payload.Length, MinInitialBufferLength));
             int position = 0;
 
             while (true)
@@ -74,8 +70,11 @@ namespace System.Net.WebSockets.Compression
                 // Rent a 30% bigger buffer
                 byte[] newBuffer = ArrayPool<byte>.Shared.Rent((int)(_buffer.Length * 1.3));
                 _buffer.AsSpan(0, position).CopyTo(newBuffer);
-                ArrayPool<byte>.Shared.Return(_buffer);
+
+                byte[] toReturn = _buffer;
                 _buffer = newBuffer;
+
+                ArrayPool<byte>.Shared.Return(toReturn);
             }
 
             return new ReadOnlySpan<byte>(_buffer, 0, position);
@@ -145,7 +144,13 @@ namespace System.Net.WebSockets.Compression
                 consumed = input.Length - (int)_stream.AvailIn;
                 written = output.Length - (int)_stream.AvailOut;
 
-                needsMoreBuffer = errorCode == ErrorCode.BufError || _stream.AvailIn > 0;
+                // It is important here to also check that we haven't
+                // exhausted the output buffer because after deflating we're
+                // always going to issue a flush and a flush with empty output
+                // is going to throw.
+                needsMoreBuffer = errorCode == ErrorCode.BufError
+                    || _stream.AvailIn > 0
+                    || written == output.Length;
             }
         }
 
@@ -153,6 +158,7 @@ namespace System.Net.WebSockets.Compression
         {
             Debug.Assert(_stream is not null);
             Debug.Assert(_stream.AvailIn == 0);
+            Debug.Assert(output.Length > 0);
 
             fixed (byte* fixedOutput = output)
             {
@@ -204,7 +210,7 @@ namespace System.Net.WebSockets.Compression
 
         private ZLibStreamHandle CreateDeflater()
         {
-            ZLibStreamHandle stream;
+            ZLibStreamHandle? stream = null;
             ErrorCode errorCode;
             try
             {
@@ -216,6 +222,7 @@ namespace System.Net.WebSockets.Compression
             }
             catch (Exception cause)
             {
+                stream?.Dispose();
                 throw new WebSocketException(SR.ZLibErrorDLLLoadError, cause);
             }
 

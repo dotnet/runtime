@@ -6,7 +6,7 @@
 using System;
 using System.Collections;
 
-public class Test {
+public class Test_keepalivefinalize {
 	
 	public class Dummy1 {
 		public static bool visited;

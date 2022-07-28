@@ -6,9 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Globalization
 {
-    /// <summary>
-    /// This class implements a set of methods for retrieving
-    /// </summary>
+    /// <summary>Represents the result of mapping a string to its sort key.</summary>
     public sealed partial class SortKey
     {
         private readonly CompareInfo _compareInfo;
@@ -47,14 +45,8 @@ namespace System.Globalization
         /// </summary>
         public static int Compare(SortKey sortkey1, SortKey sortkey2)
         {
-            if (sortkey1 == null)
-            {
-                throw new ArgumentNullException(nameof(sortkey1));
-            }
-            if (sortkey2 == null)
-            {
-                throw new ArgumentNullException(nameof(sortkey2));
-            }
+            ArgumentNullException.ThrowIfNull(sortkey1);
+            ArgumentNullException.ThrowIfNull(sortkey2);
 
             byte[] key1Data = sortkey1._keyData;
             byte[] key2Data = sortkey2._keyData;
@@ -67,20 +59,11 @@ namespace System.Globalization
             return new ReadOnlySpan<byte>(key1Data).SequenceCompareTo(key2Data);
         }
 
-        public override bool Equals([NotNullWhen(true)] object? value)
-        {
-            return value is SortKey other
-                && new ReadOnlySpan<byte>(_keyData).SequenceEqual(other._keyData);
-        }
+        public override bool Equals([NotNullWhen(true)] object? value) =>
+            value is SortKey other && new ReadOnlySpan<byte>(_keyData).SequenceEqual(other._keyData);
 
-        public override int GetHashCode()
-        {
-            return _compareInfo.GetHashCode(_string, _options);
-        }
+        public override int GetHashCode() => _compareInfo.GetHashCode(_string, _options);
 
-        public override string ToString()
-        {
-            return "SortKey - " + _compareInfo.Name + ", " + _options + ", " + _string;
-        }
+        public override string ToString() => $"SortKey - {_compareInfo.Name}, {_options}, {_string}";
     }
 }

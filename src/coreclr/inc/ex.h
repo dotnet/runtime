@@ -186,6 +186,10 @@ class Exception
  public:
     Exception() {LIMITED_METHOD_DAC_CONTRACT; m_innerException = NULL;}
     virtual ~Exception() {LIMITED_METHOD_DAC_CONTRACT; if (m_innerException != NULL) Exception::Delete(m_innerException); }
+#ifdef DACCESS_COMPILE
+    void * operator new(size_t size);
+    void operator delete(void* ptr);
+#endif
     virtual BOOL IsDomainBound() {return m_innerException!=NULL && m_innerException->IsDomainBound();} ;
     virtual HRESULT GetHR() = 0;
     virtual void GetMessage(SString &s);
@@ -228,7 +232,7 @@ class Exception
         HandlerState();
 
         void CleanupTry();
-        void SetupCatch(INDEBUG_COMMA(__in_z const char * szFile) int lineNum);
+        void SetupCatch(INDEBUG_COMMA(_In_z_ const char * szFile) int lineNum);
         void SucceedCatch();
 
         BOOL DidCatch() { return (m_dwFlags & Caught); }
@@ -440,7 +444,9 @@ class COMException : public HRException
 
     // Virtual overrides
     IErrorInfo *GetErrorInfo();
+#ifdef FEATURE_COMINTEROP
     void GetMessage(SString &result);
+#endif
 
  protected:
     virtual Exception *CloneHelper()
@@ -1206,7 +1212,7 @@ inline void Exception::HandlerState::CleanupTry()
     LIMITED_METHOD_DAC_CONTRACT;
 }
 
-inline void Exception::HandlerState::SetupCatch(INDEBUG_COMMA(__in_z const char * szFile) int lineNum)
+inline void Exception::HandlerState::SetupCatch(INDEBUG_COMMA(_In_z_ const char * szFile) int lineNum)
 {
     WRAPPER_NO_CONTRACT;
 

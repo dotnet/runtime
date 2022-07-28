@@ -52,7 +52,7 @@ LIR::Use& LIR::Use::operator=(Use&& other)
 }
 
 //------------------------------------------------------------------------
-// LIR::Use::GetDummyUse: Returns a dummy use for a node.
+// LIR::Use::MakeDummyUse: Make a use into a dummy use.
 //
 // This method is provided as a convenience to allow transforms to work
 // uniformly over Use values. It allows the creation of a Use given a node
@@ -61,20 +61,17 @@ LIR::Use& LIR::Use::operator=(Use&& other)
 // Arguments:
 //    range - The range that contains the node.
 //    node - The node for which to create a dummy use.
+//    dummyUse - [out] the resulting dummy use
 //
-// Return Value:
-//
-LIR::Use LIR::Use::GetDummyUse(Range& range, GenTree* node)
+void LIR::Use::MakeDummyUse(Range& range, GenTree* node, LIR::Use* dummyUse)
 {
     assert(node != nullptr);
 
-    Use dummyUse;
-    dummyUse.m_range = &range;
-    dummyUse.m_user  = node;
-    dummyUse.m_edge  = &dummyUse.m_user;
+    dummyUse->m_range = &range;
+    dummyUse->m_user  = node;
+    dummyUse->m_edge  = &dummyUse->m_user;
 
-    assert(dummyUse.IsInitialized());
-    return dummyUse;
+    assert(dummyUse->IsInitialized());
 }
 
 //------------------------------------------------------------------------
@@ -154,7 +151,7 @@ void LIR::Use::AssertIsValid() const
 //
 //    GenTree* constantOne = compiler->gtNewIconNode(1);
 //    range.InsertAfter(opEq.Def(), constantOne);
-//    opEq.ReplaceWith(compiler, constantOne);
+//    opEq.ReplaceWith(constantOne);
 //
 // Which would produce something like the following LIR:
 //
@@ -179,13 +176,11 @@ void LIR::Use::AssertIsValid() const
 //          *  jmpTrue   void
 //
 // Arguments:
-//    compiler - The Compiler context.
 //    replacement - The replacement node.
 //
-void LIR::Use::ReplaceWith(Compiler* compiler, GenTree* replacement)
+void LIR::Use::ReplaceWith(GenTree* replacement)
 {
     assert(IsInitialized());
-    assert(compiler != nullptr);
     assert(replacement != nullptr);
     assert(IsDummyUse() || m_range->Contains(m_user));
     assert(m_range->Contains(replacement));
@@ -273,7 +268,7 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
 
     m_range->InsertAfter(node, store, load);
 
-    ReplaceWith(compiler, load);
+    ReplaceWith(load);
 
     JITDUMP("ReplaceWithLclVar created store :\n");
     DISPNODE(store);
@@ -1183,18 +1178,12 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
 
             // Mark the node's operands
             firstNode->VisitOperands([&markCount](GenTree* operand) -> GenTree::VisitResult {
-                // Do not mark nodes that do not appear in the execution order
-                if (operand->OperGet() == GT_ARGPLACE)
-                {
-                    return GenTree::VisitResult::Continue;
-                }
-
                 operand->gtLIRFlags |= LIR::Flags::Mark;
                 markCount++;
                 return GenTree::VisitResult::Continue;
             });
 
-            // Unmark the the node and update `firstNode`
+            // Unmark the node and update `firstNode`
             firstNode->gtLIRFlags &= ~LIR::Flags::Mark;
             markCount--;
         }
@@ -1340,7 +1329,11 @@ public:
     CheckLclVarSemanticsHelper(Compiler*         compiler,
                                const LIR::Range* range,
                                SmallHashTable<GenTree*, bool, 32U>& unusedDefs)
-        : compiler(compiler), range(range), unusedDefs(unusedDefs), unusedLclVarReads(compiler->getAllocator())
+        : compiler(compiler)
+        , range(range)
+        , unusedDefs(unusedDefs)
+        , unusedLclVarReads(compiler->getAllocator(CMK_DebugOnly))
+        , lclVarReadsMapsCache(compiler->getAllocator(CMK_DebugOnly))
     {
     }
 
@@ -1358,15 +1351,65 @@ public:
             }
 
             AliasSet::NodeInfo nodeInfo(compiler, node);
-            if (nodeInfo.IsLclVarRead() && !unusedDefs.Contains(node))
+            if (nodeInfo.IsLclVarRead() && node->IsValue() && !unusedDefs.Contains(node))
             {
-                int count = 0;
-                unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &count);
-                unusedLclVarReads.AddOrUpdate(nodeInfo.LclNum(), count + 1);
+                PushLclVarRead(nodeInfo);
             }
 
-            // If this node is a lclVar write, it must be to a lclVar that does not have an outstanding read.
-            assert(!nodeInfo.IsLclVarWrite() || !unusedLclVarReads.Contains(nodeInfo.LclNum()));
+            if (nodeInfo.IsLclVarWrite())
+            {
+                // If this node is a lclVar write, it must be not alias a lclVar with an outstanding read
+                SmallHashTable<GenTree*, GenTree*>* reads;
+                if (unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &reads))
+                {
+                    for (auto read : *reads)
+                    {
+                        GenTree*           readNode = read.Key();
+                        AliasSet::NodeInfo readInfo(compiler, readNode);
+                        assert(readInfo.IsLclVarRead() && readInfo.LclNum() == nodeInfo.LclNum());
+
+                        unsigned readStart  = readInfo.LclOffs();
+                        unsigned readEnd    = readStart + genTypeSize(readNode);
+                        unsigned writeStart = nodeInfo.LclOffs();
+                        unsigned writeEnd   = writeStart + genTypeSize(node);
+                        if ((readEnd > writeStart) && (writeEnd > readStart))
+                        {
+                            JITDUMP("Write to local overlaps outstanding read (write: %u..%u, read: %u..%u)\n",
+                                    writeStart, writeEnd, readStart, readEnd);
+
+                            LIR::Use use;
+                            bool     found = const_cast<LIR::Range*>(range)->TryGetUse(readNode, &use);
+                            GenTree* user  = found ? use.User() : nullptr;
+
+                            for (GenTree* rangeNode : *range)
+                            {
+                                const char* prefix = nullptr;
+                                if (rangeNode == readNode)
+                                {
+                                    prefix = "read:  ";
+                                }
+                                else if (rangeNode == node)
+                                {
+                                    prefix = "write: ";
+                                }
+                                else if (rangeNode == user)
+                                {
+                                    prefix = "user:  ";
+                                }
+                                else
+                                {
+                                    prefix = "       ";
+                                }
+
+                                compiler->gtDispLIRNode(rangeNode, prefix);
+                            }
+
+                            assert(!"Write to unaliased local overlaps outstanding read");
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         return true;
@@ -1382,28 +1425,66 @@ private:
     {
         for (GenTree* operand : node->Operands())
         {
-            if (!operand->IsLIR())
-            {
-                // ARGPLACE nodes are not represented in the LIR sequence. Ignore them.
-                assert(operand->OperIs(GT_ARGPLACE));
-                continue;
-            }
             if (operand->isContained())
             {
                 UseNodeOperands(operand);
             }
+
             AliasSet::NodeInfo operandInfo(compiler, operand);
             if (operandInfo.IsLclVarRead())
             {
-                int        count;
-                const bool removed = unusedLclVarReads.TryRemove(operandInfo.LclNum(), &count);
-                assert(removed);
-
-                if (count > 1)
-                {
-                    unusedLclVarReads.AddOrUpdate(operandInfo.LclNum(), count - 1);
-                }
+                PopLclVarRead(operandInfo);
             }
+        }
+    }
+
+    //------------------------------------------------------------------------
+    // PushLclVarRead: add a local def the list of outstanding reads.
+    //
+    // Arguments:
+    //    defInfo - the node info representing the def.
+    //
+    void PushLclVarRead(const AliasSet::NodeInfo& defInfo)
+    {
+        SmallHashTable<GenTree*, GenTree*>* reads;
+        if (!unusedLclVarReads.TryGetValue(defInfo.LclNum(), &reads))
+        {
+            if (!lclVarReadsMapsCache.Empty())
+            {
+                reads = lclVarReadsMapsCache.Pop();
+            }
+            else
+            {
+                reads = new (compiler, CMK_DebugOnly)
+                    SmallHashTable<GenTree*, GenTree*>(compiler->getAllocator(CMK_DebugOnly));
+            }
+
+            unusedLclVarReads.AddOrUpdate(defInfo.LclNum(), reads);
+        }
+
+        reads->AddOrUpdate(defInfo.Node(), defInfo.Node());
+    }
+
+    //------------------------------------------------------------------------
+    // PopLclVarRead: remove a local def from the list of outstanding reads.
+    //
+    // Arguments:
+    //    defInfo - the node info representing the def.
+    //
+    void PopLclVarRead(const AliasSet::NodeInfo& defInfo)
+    {
+        SmallHashTable<GenTree*, GenTree*>* reads;
+        const bool foundReads = unusedLclVarReads.TryGetValue(defInfo.LclNum(), &reads);
+        assert(foundReads);
+
+        bool found = reads->TryRemove(defInfo.Node());
+
+        assert(found || !"Could not find consumed local in unusedLclVarReads");
+
+        if (reads->Count() == 0)
+        {
+            unusedLclVarReads.Remove(defInfo.LclNum());
+            lclVarReadsMapsCache.Push(reads);
         }
     }
 
@@ -1411,7 +1492,8 @@ private:
     Compiler*         compiler;
     const LIR::Range* range;
     SmallHashTable<GenTree*, bool, 32U>& unusedDefs;
-    SmallHashTable<int, int, 32U>        unusedLclVarReads;
+    SmallHashTable<int, SmallHashTable<GenTree*, GenTree*>*, 16U> unusedLclVarReads;
+    ArrayStack<SmallHashTable<GenTree*, GenTree*>*> lclVarReadsMapsCache;
 };
 
 //------------------------------------------------------------------------
@@ -1424,8 +1506,6 @@ private:
 // - Uses are correctly linked into the block
 // - Nodes that do not produce values are not used
 // - Only LIR nodes are present in the block
-// - If any phi nodes are present in the range, they precede all other
-//   nodes
 //
 // The first four properties are verified by walking the range's LIR in execution order,
 // inserting defs into a set as they are visited, and removing them as they are used. The
@@ -1483,12 +1563,12 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
     for (Iterator node = begin(), end = this->end(); node != end; prev = *node, ++node)
     {
         // Verify that the node is allowed in LIR.
-        assert(node->IsLIR());
+        assert(node->OperIsLIR());
 
         // Some nodes should never be marked unused, as they must be contained in the backend.
         // These may be marked as unused during dead code elimination traversal, but they *must* be subsequently
         // removed.
-        assert(!node->IsUnusedValue() || !node->OperIs(GT_FIELD_LIST, GT_LIST, GT_INIT_VAL));
+        assert(!node->IsUnusedValue() || !node->OperIs(GT_FIELD_LIST, GT_INIT_VAL));
 
         // Verify that the REVERSE_OPS flag is not set. NOTE: if we ever decide to reuse the bit assigned to
         // GTF_REVERSE_OPS for an LIR-only flag we will need to move this check to the points at which we
@@ -1508,12 +1588,8 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
                 // Stack arguments do not produce a value, but they are considered children of the call.
                 // It may be useful to remove these from being call operands, but that may also impact
                 // other code that relies on being able to reach all the operands from a call node.
-                // The GT_NOP case is because sometimes we eliminate stack argument stores as dead, but
-                // instead of removing them we replace with a NOP.
-                // ARGPLACE nodes are not represented in the LIR sequence. Ignore them.
                 // The argument of a JTRUE doesn't produce a value (just sets a flag).
-                assert(((node->OperGet() == GT_CALL) &&
-                        (def->OperIsStore() || def->OperIs(GT_PUTARG_STK, GT_NOP, GT_ARGPLACE))) ||
+                assert(((node->OperGet() == GT_CALL) && def->OperIs(GT_PUTARG_STK)) ||
                        ((node->OperGet() == GT_JTRUE) && (def->TypeGet() == TYP_VOID) &&
                         ((def->gtFlags & GTF_SET_FLAGS) != 0)));
                 continue;
@@ -1619,7 +1695,7 @@ LIR::Range LIR::SeqTree(Compiler* compiler, GenTree* tree)
     // point.
 
     compiler->gtSetEvalOrder(tree);
-    return Range(compiler->fgSetTreeSeq(tree, nullptr, true), tree);
+    return Range(compiler->fgSetTreeSeq(tree, /* isLIR */ true), tree);
 }
 
 //------------------------------------------------------------------------
@@ -1638,7 +1714,7 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
     LIR::Range& blockRange = LIR::AsRange(block);
 
     GenTree* insertionPoint = nullptr;
-    if ((block->bbJumpKind == BBJ_COND) || (block->bbJumpKind == BBJ_SWITCH) || (block->bbJumpKind == BBJ_RETURN))
+    if (block->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_RETURN))
     {
         insertionPoint = blockRange.LastNode();
         assert(insertionPoint != nullptr);

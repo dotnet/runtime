@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 
 namespace System.Net.Test.Common
@@ -129,6 +131,39 @@ namespace System.Net.Test.Common
         public static int EncodeInteger(Span<byte> buffer, int value, byte prefix, byte prefixMask)
         {
             return HPackEncoder.EncodeInteger(value, prefix, prefixMask, buffer);
+        }
+
+        // from System.Net.Http.QPack.H3StaticTable
+        private static readonly Dictionary<int, int> s_statusIndex = new Dictionary<int, int>
+        {
+            [103] = 24,
+            [200] = 25,
+            [304] = 26,
+            [404] = 27,
+            [503] = 28,
+            [100] = 63,
+            [204] = 64,
+            [206] = 65,
+            [302] = 66,
+            [400] = 67,
+            [403] = 68,
+            [421] = 69,
+            [425] = 70,
+            [500] = 71,
+        };
+
+        public static int EncodeStatusCode(int statusCode, Span<byte> buffer)
+        {
+            if (s_statusIndex.TryGetValue(statusCode, out var statusIdx))
+            {
+                // Indexed Header Field
+                return EncodeHeader(buffer, statusIdx);
+            }
+            else
+            {
+                // Literal Header Field With Name Reference -- Index of any status present in the table can be used for reference
+                return EncodeHeader(buffer, s_statusIndex[100], statusCode.ToString(CultureInfo.InvariantCulture), valueEncoding: null);
+            }
         }
     }
 

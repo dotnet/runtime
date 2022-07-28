@@ -61,7 +61,7 @@ public class ArrayTest<T>
     }
 }
 
-public class Test
+public class Test_struct01_gen
 {
     public static int counter = 0;
     public static bool result = true;

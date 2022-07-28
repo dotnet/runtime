@@ -17,7 +17,7 @@ sealed class BaseSealed : Base {}
 // The jit can devirtualize the call to Foo when initializing y,
 // but not when initializing x.
 
-public class Test
+public class Test_sealeddefault
 {
     public static int Main()
     {

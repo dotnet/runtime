@@ -14,11 +14,12 @@ namespace System.Text.Json
         /// <summary>
         /// Reads one JSON value (including objects or arrays) from the provided reader into a <typeparamref name="TValue"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="reader">The reader to read.</param>
         /// <param name="options">Options to control the serializer behavior during reading.</param>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or a value could not be read from the reader.
         /// </exception>
@@ -38,8 +39,8 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
-        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
         ///     the state it was in when the method was called.
         ///   </para>
         ///
@@ -54,8 +55,12 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
-            => ReadUsingOptions<TValue>(ref reader, typeof(TValue), options);
+        {
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            return Read<TValue>(ref reader, jsonTypeInfo);
+        }
 
         /// <summary>
         /// Reads one JSON value (including objects or arrays) from the provided reader into a <paramref name="returnType"/>.
@@ -68,7 +73,7 @@ namespace System.Text.Json
         /// <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <paramref name="returnType"/> is not compatible with the JSON,
         /// or a value could not be read from the reader.
         /// </exception>
@@ -88,8 +93,8 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
-        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
         ///     the state it was in when the method was called.
         ///   </para>
         ///
@@ -103,24 +108,27 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options = null)
         {
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
 
-            return ReadUsingOptions<object?>(ref reader, returnType, options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
+            return Read<object?>(ref reader, jsonTypeInfo);
         }
 
         /// <summary>
         /// Reads one JSON value (including objects or arrays) from the provided reader into a <typeparamref name="TValue"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="reader">The reader to read.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or a value could not be read from the reader.
         /// </exception>
@@ -140,8 +148,8 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
-        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
         ///     the state it was in when the method was called.
         ///   </para>
         ///
@@ -157,12 +165,12 @@ namespace System.Text.Json
         /// </remarks>
         public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return ReadUsingMetadata<TValue>(ref reader, jsonTypeInfo);
+            return Read<TValue>(ref reader, jsonTypeInfo);
         }
 
         /// <summary>
@@ -176,7 +184,7 @@ namespace System.Text.Json
         /// <paramref name="returnType"/> or <paramref name="context"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <paramref name="returnType"/> is not compatible with the JSON,
         /// or a value could not be read from the reader.
         /// </exception>
@@ -200,8 +208,8 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
-        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
         ///     the state it was in when the method was called.
         ///   </para>
         ///
@@ -216,29 +224,22 @@ namespace System.Text.Json
         /// </remarks>
         public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerContext context)
         {
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
-            return ReadUsingMetadata<object>(ref reader, GetTypeInfo(context, returnType));
+            return Read<object>(ref reader, GetTypeInfo(context, returnType));
         }
 
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static TValue? ReadUsingOptions<TValue>(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options)
-        {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(returnType, options);
-            return ReadUsingMetadata<TValue>(ref reader, jsonTypeInfo);
-        }
-
-        private static TValue? ReadUsingMetadata<TValue>(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
+        private static TValue? Read<TValue>(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
         {
             ReadStack state = default;
+            jsonTypeInfo.EnsureConfigured();
             state.Initialize(jsonTypeInfo);
 
             JsonReaderState readerState = reader.CurrentState;
@@ -399,7 +400,7 @@ namespace System.Text.Json
             {
                 reader = restore;
                 // Re-throw with Path information.
-                ThrowHelper.ReThrowWithPath(state, ex);
+                ThrowHelper.ReThrowWithPath(ref state, ex);
             }
 
             int length = valueSpan.IsEmpty ? checked((int)valueSequence.Length) : valueSpan.Length;
@@ -421,7 +422,7 @@ namespace System.Text.Json
 
                 var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
 
-                JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
+                JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.EffectiveConverter;
                 TValue? value = ReadCore<TValue>(jsonConverter, ref newReader, jsonTypeInfo.Options, ref state);
 
                 // The reader should have thrown if we have remaining bytes.

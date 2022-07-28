@@ -2,6 +2,7 @@ project (COMClientPrimitives)
 include_directories( ${INC_PLATFORM_DIR} )
 include_directories( "../../ServerContracts" )
 include_directories( "../../NativeServer" )
+include_directories("../")
 set(SOURCES
     Client.cpp
     NumericTests.cpp

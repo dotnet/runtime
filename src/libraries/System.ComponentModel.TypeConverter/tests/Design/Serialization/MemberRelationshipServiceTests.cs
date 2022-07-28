@@ -84,7 +84,7 @@ namespace System.ComponentModel.Design.Serialization.Tests
             MemberRelationship source = new MemberRelationship(owner, member);
 
             var service = new NotSupportingMemberRelationshipService();
-            Assert.Throws<ArgumentException>(null, () => service[source] = source);
+            AssertExtensions.Throws<ArgumentException>(null, () => service[source] = source);
         }
 
         private class TestClass

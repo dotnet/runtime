@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
-
 namespace System.IO.Compression
 {
     public static partial class ZipFileExtensions
@@ -21,8 +19,7 @@ namespace System.IO.Compression
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The path specified in destinationFileName is invalid (for example, it is on
         /// an unmapped drive).</exception>
-        /// <exception cref="IOException">destinationFileName already exists.
-        /// -or- An I/O error has occurred. -or- The entry is currently open for writing.
+        /// <exception cref="IOException">An I/O error has occurred. -or- The entry is currently open for writing.
         /// -or- The entry has been deleted from the archive.</exception>
         /// <exception cref="NotSupportedException">destinationFileName is in an invalid format
         /// -or- The ZipArchive that this entry belongs to was opened in a write-only mode.</exception>
@@ -50,8 +47,7 @@ namespace System.IO.Compression
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The path specified in destinationFileName is invalid
         /// (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">destinationFileName exists and overwrite is false.
-        /// -or- An I/O error has occurred.
+        /// <exception cref="IOException">An I/O error has occurred.
         /// -or- The entry is currently open for writing.
         /// -or- The entry has been deleted from the archive.</exception>
         /// <exception cref="NotSupportedException">destinationFileName is in an invalid format
@@ -66,22 +62,39 @@ namespace System.IO.Compression
         /// <param name="overwrite">True to indicate overwrite.</param>
         public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(destinationFileName);
 
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
+            FileStreamOptions fileStreamOptions = new()
+            {
+                Access = FileAccess.Write,
+                Mode = overwrite ? FileMode.Create : FileMode.CreateNew,
+                Share = FileShare.None,
+                BufferSize = 0x1000
+            };
 
-            // Rely on FileStream's ctor for further checking destinationFileName parameter
-            FileMode fMode = overwrite ? FileMode.Create : FileMode.CreateNew;
+            const UnixFileMode OwnershipPermissions =
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherWrite |  UnixFileMode.OtherExecute;
 
-            using (Stream fs = new FileStream(destinationFileName, fMode, FileAccess.Write, FileShare.None, bufferSize: 0x1000, useAsync: false))
+            // Restore Unix permissions.
+            // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).
+            // We don't apply UnixFileMode.None because .zip files created on Windows and .zip files created
+            // with previous versions of .NET don't include permissions.
+            UnixFileMode mode = (UnixFileMode)(source.ExternalAttributes >> 16) & OwnershipPermissions;
+            if (mode != UnixFileMode.None && !OperatingSystem.IsWindows())
+            {
+                fileStreamOptions.UnixCreateMode = mode;
+            }
+
+            using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
             {
                 using (Stream es = source.Open())
                     es.CopyTo(fs);
             }
 
-            File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
+            ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, source.LastWriteTime);
         }
 
         internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName) =>
@@ -89,11 +102,8 @@ namespace System.IO.Compression
 
         internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            if (destinationDirectoryName == null)
-                throw new ArgumentNullException(nameof(destinationDirectoryName));
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(destinationDirectoryName);
 
             // Note that this will give us a good DirectoryInfo even if destinationDirectoryName exists:
             DirectoryInfo di = Directory.CreateDirectory(destinationDirectoryName);
@@ -101,7 +111,7 @@ namespace System.IO.Compression
             if (!destinationDirectoryFullPath.EndsWith(Path.DirectorySeparatorChar))
                 destinationDirectoryFullPath += Path.DirectorySeparatorChar;
 
-            string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, source.FullName));
+            string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(source.FullName)));
 
             if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
                 throw new IOException(SR.IO_ExtractingResultsInOutside);

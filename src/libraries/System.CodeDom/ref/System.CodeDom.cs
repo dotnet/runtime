@@ -11,9 +11,9 @@ namespace Microsoft.CSharp
         public CSharpCodeProvider() { }
         public CSharpCodeProvider(System.Collections.Generic.IDictionary<string, string> providerOptions) { }
         public override string FileExtension { get { throw null; } }
-        [System.ObsoleteAttribute("Callers should not use the ICodeCompiler interface and should instead use the methods directly on the CodeDomProvider class.")]
+        [System.ObsoleteAttribute("ICodeCompiler has been deprecated. Use the methods directly on the CodeDomProvider class instead.")]
         public override System.CodeDom.Compiler.ICodeCompiler CreateCompiler() { throw null; }
-        [System.ObsoleteAttribute("Callers should not use the ICodeGenerator interface and should instead use the methods directly on the CodeDomProvider class.")]
+        [System.ObsoleteAttribute("ICodeGenerator has been deprecated. Use the methods directly on the CodeDomProvider class instead.")]
         public override System.CodeDom.Compiler.ICodeGenerator CreateGenerator() { throw null; }
         public override void GenerateCodeFromMember(System.CodeDom.CodeTypeMember member, System.IO.TextWriter writer, System.CodeDom.Compiler.CodeGeneratorOptions options) { }
         public override System.ComponentModel.TypeConverter GetConverter(System.Type type) { throw null; }
@@ -27,9 +27,9 @@ namespace Microsoft.VisualBasic
         public VBCodeProvider(System.Collections.Generic.IDictionary<string, string> providerOptions) { }
         public override string FileExtension { get { throw null; } }
         public override System.CodeDom.Compiler.LanguageOptions LanguageOptions { get { throw null; } }
-        [System.ObsoleteAttribute("Callers should not use the ICodeCompiler interface and should instead use the methods directly on the CodeDomProvider class.")]
+        [System.ObsoleteAttribute("ICodeCompiler has been deprecated. Use the methods directly on the CodeDomProvider class instead.")]
         public override System.CodeDom.Compiler.ICodeCompiler CreateCompiler() { throw null; }
-        [System.ObsoleteAttribute("Callers should not use the ICodeGenerator interface and should instead use the methods directly on the CodeDomProvider class.")]
+        [System.ObsoleteAttribute("ICodeGenerator has been deprecated. Use the methods directly on the CodeDomProvider class instead.")]
         public override System.CodeDom.Compiler.ICodeGenerator CreateGenerator() { throw null; }
         public override void GenerateCodeFromMember(System.CodeDom.CodeTypeMember member, System.IO.TextWriter writer, System.CodeDom.Compiler.CodeGeneratorOptions options) { }
         public override System.ComponentModel.TypeConverter GetConverter(System.Type type) { throw null; }
@@ -884,14 +884,14 @@ namespace System.CodeDom.Compiler
         public virtual System.CodeDom.Compiler.CompilerResults CompileAssemblyFromDom(System.CodeDom.Compiler.CompilerParameters options, params System.CodeDom.CodeCompileUnit[] compilationUnits) { throw null; }
         public virtual System.CodeDom.Compiler.CompilerResults CompileAssemblyFromFile(System.CodeDom.Compiler.CompilerParameters options, params string[] fileNames) { throw null; }
         public virtual System.CodeDom.Compiler.CompilerResults CompileAssemblyFromSource(System.CodeDom.Compiler.CompilerParameters options, params string[] sources) { throw null; }
-        [System.ObsoleteAttribute("Callers should not use the ICodeCompiler interface and should instead use the methods directly on the CodeDomProvider class. Those inheriting from CodeDomProvider must still implement this interface, and should exclude this warning or also obsolete this method.")]
+        [System.ObsoleteAttribute("ICodeCompiler has been deprecated. Use the methods directly on the CodeDomProvider class instead. Classes inheriting from CodeDomProvider must still implement this interface, and should suppress this warning or also mark this method as obsolete.")]
         public abstract System.CodeDom.Compiler.ICodeCompiler CreateCompiler();
         public virtual string CreateEscapedIdentifier(string value) { throw null; }
-        [System.ObsoleteAttribute("Callers should not use the ICodeGenerator interface and should instead use the methods directly on the CodeDomProvider class. Those inheriting from CodeDomProvider must still implement this interface, and should exclude this warning or also obsolete this method.")]
+        [System.ObsoleteAttribute("ICodeGenerator has been deprecated. Use the methods directly on the CodeDomProvider class instead. Classes inheriting from CodeDomProvider must still implement this interface, and should suppress this warning or also mark this method as obsolete.")]
         public abstract System.CodeDom.Compiler.ICodeGenerator CreateGenerator();
         public virtual System.CodeDom.Compiler.ICodeGenerator CreateGenerator(System.IO.TextWriter output) { throw null; }
         public virtual System.CodeDom.Compiler.ICodeGenerator CreateGenerator(string fileName) { throw null; }
-        [System.ObsoleteAttribute("Callers should not use the ICodeParser interface and should instead use the methods directly on the CodeDomProvider class. Those inheriting from CodeDomProvider must still implement this interface, and should exclude this warning or also obsolete this method.")]
+        [System.ObsoleteAttribute("ICodeParser has been deprecated. Use the methods directly on the CodeDomProvider class instead. Classes inheriting from CodeDomProvider must still implement this interface, and should suppress this warning or also mark this method as obsolete.")]
         public virtual System.CodeDom.Compiler.ICodeParser CreateParser() { throw null; }
         public static System.CodeDom.Compiler.CodeDomProvider CreateProvider(string language) { throw null; }
         public static System.CodeDom.Compiler.CodeDomProvider CreateProvider(string language, System.Collections.Generic.IDictionary<string, string> providerOptions) { throw null; }

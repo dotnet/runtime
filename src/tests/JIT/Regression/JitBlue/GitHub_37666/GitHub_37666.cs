@@ -16,7 +16,7 @@ public struct TwoBools
     }
 }
 
-class Test
+class Test_GitHub_37666
 {
     public static int Main()
     {

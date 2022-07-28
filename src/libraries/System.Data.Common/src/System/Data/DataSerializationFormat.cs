@@ -6,6 +6,10 @@ namespace System.Data
     public enum SerializationFormat
     {
         Xml = 0,
+
+        [Obsolete(
+            Obsoletions.SystemDataSerializationFormatBinaryMessage,
+            DiagnosticId = Obsoletions.SystemDataSerializationFormatBinaryDiagId)]
         Binary = 1
     }
 }

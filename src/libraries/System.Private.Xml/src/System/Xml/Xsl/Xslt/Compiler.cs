@@ -192,7 +192,7 @@ namespace System.Xml.Xsl.Xslt
             }
             else
             {
-                return prefix + ':' + localName;
+                return $"{prefix}:{localName}";
             }
         }
 
@@ -230,7 +230,7 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        public void ValidatePiName(string name, IErrorHelper errorHelper)
+        public static void ValidatePiName(string name, IErrorHelper errorHelper)
         {
             Debug.Assert(name != null);
             try
@@ -252,15 +252,15 @@ namespace System.Xml.Xsl.Xslt
         public string CreatePhantomNamespace()
         {
             // Prepend invalid XmlChar to ensure this name would not clash with any namespace name in the stylesheet
-            return "\0namespace" + _phantomNsCounter++;
+            return $"\0namespace{_phantomNsCounter++}";
         }
 
-        public bool IsPhantomNamespace(string namespaceName)
+        public static bool IsPhantomNamespace(string namespaceName)
         {
             return namespaceName.Length > 0 && namespaceName[0] == '\0';
         }
 
-        public bool IsPhantomName(QilName qname)
+        public static bool IsPhantomName(QilName qname)
         {
             string nsUri = qname.NamespaceUri;
             return nsUri.Length > 0 && nsUri[0] == '\0';

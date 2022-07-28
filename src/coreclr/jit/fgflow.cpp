@@ -219,7 +219,7 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
             {
                 // Set the max edge weight to be the minimum of block's or blockPred's weight
                 //
-                BasicBlock::weight_t newWeightMax = min(block->bbWeight, blockPred->bbWeight);
+                weight_t newWeightMax = min(block->bbWeight, blockPred->bbWeight);
 
                 // If we are inserting a conditional block the minimum weight is zero,
                 // otherwise it is the same as the edge's max weight.
@@ -821,7 +821,7 @@ void Compiler::fgComputePreds()
     {
         if (ehDsc->HasFilter())
         {
-            // The first block of a filter has an artifical extra refcount.
+            // The first block of a filter has an artificial extra refcount.
             ehDsc->ebdFilter->bbRefs++;
         }
 
@@ -921,7 +921,8 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         // can create a new epoch, thus invalidating all existing BlockSet objects, such as
         // reachability information stored in the blocks. To avoid that, we just use a local BitVec.
 
-        BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
+        unsigned     bbNumMax = impInlineRoot()->fgBBNumMax;
+        BitVecTraits blockVecTraits(bbNumMax + 1, this);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&blockVecTraits));
         for (BasicBlock* const targ : switchBlk->SwitchTargets())
         {

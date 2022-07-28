@@ -1122,7 +1122,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38817", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [SkipOnPlatform(TestPlatforms.Browser, "uses a lot of stack")]
         public async Task TestReceiveAsync_LongChain()
         {
@@ -1763,7 +1762,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             source.Complete();
 
             await encapsulated.Completion;
-            Assert.Equal(messagesReceived, messagesSent);
+            Assert.Equal(messagesSent, messagesReceived);
         }
 
         [Fact]
@@ -1924,7 +1923,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38817", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [SkipOnPlatform(TestPlatforms.Browser, "uses a lot of stack")]
         public async Task TestOutputAvailableAsync_LongSequence()
         {

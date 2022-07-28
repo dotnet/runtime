@@ -1161,5 +1161,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_conv_ovf_i4_u4.exe{}
+.assembly ldc_conv_ovf_i4_u4{}
 

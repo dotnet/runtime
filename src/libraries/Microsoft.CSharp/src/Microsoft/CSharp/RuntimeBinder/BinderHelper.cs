@@ -70,13 +70,13 @@ namespace Microsoft.CSharp.RuntimeBinder
                 {
                     if (o.Value is double && double.IsNaN((double)o.Value))
                     {
-                        MethodInfo isNaN = s_DoubleIsNaN ?? (s_DoubleIsNaN = typeof(double).GetMethod("IsNaN"));
+                        MethodInfo isNaN = s_DoubleIsNaN ??= typeof(double).GetMethod("IsNaN");
                         Expression e = Expression.Call(null, isNaN, o.Expression);
                         restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(e));
                     }
                     else if (o.Value is float && float.IsNaN((float)o.Value))
                     {
-                        MethodInfo isNaN = s_SingleIsNaN ?? (s_SingleIsNaN = typeof(float).GetMethod("IsNaN"));
+                        MethodInfo isNaN = s_SingleIsNaN ??= typeof(float).GetMethod("IsNaN");
                         Expression e = Expression.Call(null, isNaN, o.Expression);
                         restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(e));
                     }
@@ -146,11 +146,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public static void ValidateBindArgument(DynamicMetaObject argument, string paramName)
         {
-            if (argument == null)
-            {
-                throw Error.ArgumentNull(paramName);
-            }
-
+            ArgumentNullException.ThrowIfNull(argument, paramName);
             if (!argument.HasValue)
             {
                 throw Error.DynamicArgumentNeedsValue(paramName);

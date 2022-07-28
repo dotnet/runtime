@@ -7,12 +7,8 @@
 // Reinhold P. Weicker
 // Communications of the ACM, Volume 27 Issue 10, Oct 1984, Pages 1013-1030
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.BenchI
 {
@@ -263,15 +259,6 @@ public static class NDhrystone
         m_array2Glob = AllocArray<int>(51, 51);
         Proc0();
         return true;
-    }
-
-    [Benchmark]
-    public static void Test() {
-        foreach (var iteration in Benchmark.Iterations) {
-            using (iteration.StartMeasurement()) {
-                Bench();
-            }
-        }
     }
 
     static bool TestBase() {

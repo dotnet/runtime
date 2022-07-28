@@ -3,27 +3,33 @@
   "isRoot": true,
   "tools": {
     "coverlet.console": {
-      "version": "1.7.2",
+      "version": "3.1.2",
       "commands": [
         "coverlet"
       ]
     },
     "dotnet-reportgenerator-globaltool": {
-      "version": "4.5.8",
+      "version": "5.0.2",
       "commands": [
         "reportgenerator"
       ]
     },
     "microsoft.dotnet.xharness.cli": {
-      "version": "1.0.0-prerelease.21330.2",
+      "version": "1.0.0-prerelease.22375.5",
       "commands": [
         "xharness"
       ]
     },
     "microsoft.visualstudio.slngen.tool": {
-      "version": "5.0.5",
+      "version": "8.1.6",
       "commands": [
         "slngen"
+      ]
+    },
+    "dotnet-format": {
+      "version": "6.0.240501",
+      "commands": [
+        "dotnet-format"
       ]
     }
   }

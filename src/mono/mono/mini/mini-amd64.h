@@ -176,12 +176,12 @@ struct sigcontext {
 
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 
-/* fixme: align to 16byte instead of 32byte (we align to 32byte to get 
+/* fixme: align to 16byte instead of 32byte (we align to 32byte to get
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
 struct MonoLMF {
-	/* 
+	/*
 	 * The rsp field points to the stack location where the caller ip is saved.
 	 * If the second lowest bit is set, then this is a MonoLMFExt structure, and
 	 * the other fields are not valid.
@@ -256,10 +256,10 @@ typedef struct {
 	gpointer addr;
 	/* The trampoline reads this, so keep the size explicit */
 	int ret_marshal;
-	/* If ret_marshal != NONE, this is the reg of the vret arg, else -1 (used in out case) */
+	/* If ret_marshal != NONE, this is the reg of the vret arg, else -1 (used bu "out" case) */
 	/* Equivalent of vret_arg_slot in the x86 implementation. */
 	int vret_arg_reg;
-	/* The stack slot where the return value will be stored (used in in case) */
+	/* The stack slot where the return value will be stored (used by "in" case) */
 	int vret_slot;
 	int stack_usage, map_count;
 	/* If not -1, then make a virtual call using this vtable offset */
@@ -306,12 +306,12 @@ typedef enum {
 
 typedef struct {
 	gint16 offset;
-	gint8  reg;
+	guint8  reg;
 	ArgStorage storage : 8;
 
 	/* Only if storage == ArgValuetypeInReg */
 	ArgStorage pair_storage [2];
-	gint8 pair_regs [2];
+	guint8 pair_regs [2];
 	/* The size of each pair (bytes) */
 	int pair_size [2];
 	int nregs;
@@ -364,7 +364,7 @@ typedef struct {
 
 #else
 
-/* 
+/*
  * __builtin_frame_address () is broken on some older gcc versions in the presence of
  * frame pointer elimination, see bug #82095.
  */
@@ -382,7 +382,7 @@ typedef struct {
 
 #define MONO_ARCH_USE_SIGACTION 1
 
-#ifdef HAVE_WORKING_SIGALTSTACK
+#ifdef ENABLE_SIGALTSTACK
 
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
@@ -434,8 +434,6 @@ typedef struct {
 #define MONO_ARCH_INTERPRETER_SUPPORTED 1
 #define MONO_ARCH_AOT_SUPPORTED 1
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
-
-#define MONO_ARCH_SUPPORT_TASKLETS 1
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
 #define MONO_ARCH_DYN_CALL_SUPPORTED 1
@@ -500,7 +498,7 @@ typedef struct {
 // can pass context to generics or interfaces?
 #define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1
 
-void 
+void
 mono_amd64_patch (unsigned char* code, gpointer target);
 
 void
@@ -644,5 +642,5 @@ mono_arch_unwindinfo_validate_size (GSList *unwind_ops, guint max_size)
 
 CallInfo* mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig);
 
-#endif /* __MONO_MINI_AMD64_H__ */  
+#endif /* __MONO_MINI_AMD64_H__ */
 

@@ -484,6 +484,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60586", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void GetDriveInfo_Drive()
         {
             var Drives = System.IO.DriveInfo.GetDrives();

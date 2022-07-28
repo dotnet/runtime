@@ -9,11 +9,8 @@ using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
-    public partial class NoParallelTests { }
-
-    // Mutable static comparision in the implementation
-    [Collection("NoParallelTests")]
+    // Mutable static comparison in the implementation
+    [Collection(nameof(DisableParallelization))]
     public class MemberDescriptorTests
     {
         [Theory]

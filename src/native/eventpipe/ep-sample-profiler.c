@@ -13,7 +13,6 @@
 #define NUM_NANOSECONDS_IN_1_MS 1000000
 
 static volatile uint32_t _profiling_enabled = (uint32_t)false;
-static ep_rt_thread_handle_t _sampling_thread = NULL;
 static EventPipeProvider *_sampling_provider = NULL;
 static EventPipeEvent *_thread_time_event = NULL;
 static ep_rt_wait_event_handle_t _thread_shutdown_event;
@@ -47,11 +46,11 @@ sample_profiler_reset_time_granularity (void);
 
 static
 bool
-sample_profiler_load_dependecies (void);
+sample_profiler_load_dependencies (void);
 
 static
 void
-sample_profiler_unload_dependecies (void);
+sample_profiler_unload_dependencies (void);
 
 static
 void
@@ -75,14 +74,6 @@ void
 sample_profiler_store_profiling_enabled (bool enabled)
 {
 	ep_rt_volatile_store_uint32_t (&_profiling_enabled, enabled ? 1 : 0);
-}
-
-static
-inline
-bool
-sample_profiler_load_can_start_sampling (void)
-{
-	return (ep_rt_volatile_load_uint32_t (&_can_start_sampling) != 0) ? true : false;
 }
 
 static
@@ -152,7 +143,7 @@ sample_profiler_reset_time_granularity (void)
 
 static
 bool
-sample_profiler_load_dependecies (void)
+sample_profiler_load_dependencies (void)
 {
 #ifdef HOST_WIN32
 	if (_ref_count > 0)
@@ -177,7 +168,7 @@ sample_profiler_load_dependecies (void)
 
 static
 void
-sample_profiler_unload_dependecies (void)
+sample_profiler_unload_dependencies (void)
 {
 #ifdef HOST_WIN32
 	if (_multimedia_library_handle != NULL) {
@@ -198,10 +189,7 @@ sample_profiler_enable (void)
 
 	ep_requires_lock_held ();
 
-	const bool result = sample_profiler_load_dependecies ();
-	EP_ASSERT (result);
-
-	if (result && !sample_profiler_load_profiling_enabled ()) {
+	if (!sample_profiler_load_profiling_enabled ()) {
 		sample_profiler_store_profiling_enabled (true);
 
 		EP_ASSERT (!ep_rt_wait_event_is_valid (&_thread_shutdown_event));
@@ -273,6 +261,8 @@ ep_sample_profiler_enable (void)
 	if (!ep_event_is_enabled (_thread_time_event))
 		return;
 
+	sample_profiler_load_dependencies ();
+
 	if (_can_start_sampling)
 		sample_profiler_enable ();
 
@@ -305,7 +295,7 @@ ep_sample_profiler_disable (void)
 		if (_time_period_is_set)
 			sample_profiler_reset_time_granularity ();
 
-		sample_profiler_unload_dependecies ();
+		sample_profiler_unload_dependencies ();
 	}
 
 	--_ref_count;
@@ -346,7 +336,7 @@ ep_sample_profiler_get_sampling_rate (void)
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_sample_profiler;
 const char quiet_linker_empty_file_warning_eventpipe_sample_profiler = 0;
 #endif

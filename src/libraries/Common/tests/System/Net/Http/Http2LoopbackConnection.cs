@@ -24,9 +24,10 @@ namespace System.Net.Test.Common
         private Stream _connectionStream;
         private TaskCompletionSource<bool> _ignoredSettingsAckPromise;
         private bool _ignoreWindowUpdates;
-        private TaskCompletionSource<PingFrame> _expectPingFrame;
+        private bool _transparentPingResponse;
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
+        private bool _expectClientDisconnect;
 
         private readonly byte[] _prefix = new byte[24];
         public string PrefixString => Encoding.UTF8.GetString(_prefix, 0, _prefix.Length);
@@ -34,11 +35,12 @@ namespace System.Net.Test.Common
         public Stream Stream => _connectionStream;
         public Task<bool> SettingAckWaiter => _ignoredSettingsAckPromise?.Task;
 
-        private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout)
+        private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout, bool transparentPingResponse)
         {
             _connectionSocket = socket;
             _connectionStream = stream;
             _timeout = timeout;
+            _transparentPingResponse = transparentPingResponse;
         }
 
         public static Task<Http2LoopbackConnection> CreateAsync(SocketWrapper socket, Stream stream, Http2Options httpOptions)
@@ -76,7 +78,7 @@ namespace System.Net.Test.Common
                 stream = sslStream;
             }
 
-            var con = new Http2LoopbackConnection(socket, stream, timeout);
+            var con = new Http2LoopbackConnection(socket, stream, timeout, httpOptions.EnableTransparentPingResponse);
             await con.ReadPrefixAsync().ConfigureAwait(false);
 
             return con;
@@ -98,10 +100,10 @@ namespace System.Net.Test.Common
                 // Since those tests are not set up to handle multiple retries, we instead just send back an invalid response here
                 // so that SocketsHttpHandler will not induce retry.
                 // The contents of what we send don't really matter, as long as it is interpreted by SocketsHttpHandler as an invalid response.
-                await _connectionStream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/2.0 400 Bad Request\r\n\r\n"));
+                await _connectionStream.WriteAsync("HTTP/2.0 400 Bad Request\r\n\r\n"u8.ToArray());
                 _connectionSocket.Shutdown(SocketShutdown.Send);
                 // If WinHTTP doesn't support streaming a request without a length then it will fallback
-                // to HTTP/1.1. Throwing an exception to detect this case in WinHttpHandler tests. 
+                // to HTTP/1.1. Throwing an exception to detect this case in WinHttpHandler tests.
                 throw new Exception("HTTP/1.1 request sent to HTTP/2 connection.");
             }
         }
@@ -121,11 +123,24 @@ namespace System.Net.Test.Common
             clientSettings = await ReadFrameAsync(_timeout).ConfigureAwait(false);
         }
 
-        public async Task WriteFrameAsync(Frame frame)
+        public async Task WriteFrameAsync(Frame frame, CancellationToken cancellationToken = default)
         {
             byte[] writeBuffer = new byte[Frame.FrameHeaderLength + frame.Length];
             frame.WriteTo(writeBuffer);
-            await _connectionStream.WriteAsync(writeBuffer, 0, writeBuffer.Length).ConfigureAwait(false);
+            await _connectionStream.WriteAsync(writeBuffer, 0, writeBuffer.Length, cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task WriteFramesAsync(Frame[] frames, CancellationToken cancellationToken = default)
+        {
+            byte[] writeBuffer = new byte[frames.Sum(frame => Frame.FrameHeaderLength + frame.Length)];
+
+            int offset = 0;
+            foreach (Frame frame in frames)
+            {
+                frame.WriteTo(writeBuffer.AsSpan(offset));
+                offset += Frame.FrameHeaderLength + frame.Length;
+            }
+            await _connectionStream.WriteAsync(writeBuffer, 0, writeBuffer.Length, cancellationToken).ConfigureAwait(false);
         }
 
         // Read until the buffer is full
@@ -159,7 +174,7 @@ namespace System.Net.Test.Common
             return await ReadFrameAsync(timeoutCts.Token).ConfigureAwait(false);
         }
 
-        private async Task<Frame> ReadFrameAsync(CancellationToken cancellationToken)
+        public async Task<Frame> ReadFrameAsync(CancellationToken cancellationToken)
         {
             // First read the frame headers, which should tell us how long the rest of the frame is.
             byte[] headerBytes = new byte[Frame.FrameHeaderLength];
@@ -198,11 +213,12 @@ namespace System.Net.Test.Common
                 return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            if (_expectPingFrame != null && header.Type == FrameType.Ping)
+            if (header.Type == FrameType.Ping && _transparentPingResponse)
             {
-                _expectPingFrame.SetResult(PingFrame.ReadFrom(header, data));
-                _expectPingFrame = null;
-                return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
+                PingFrame pingFrame = PingFrame.ReadFrom(header, data);
+
+                bool processed = await TryProcessExpectedPingFrameAsync(pingFrame);
+                return processed ? await ReadFrameAsync(cancellationToken).ConfigureAwait(false) : pingFrame;
             }
 
             // Construct the correct frame type and return it.
@@ -224,9 +240,29 @@ namespace System.Net.Test.Common
                     return GoAwayFrame.ReadFrom(header, data);
                 case FrameType.Continuation:
                     return ContinuationFrame.ReadFrom(header, data);
+                case FrameType.WindowUpdate:
+                    return WindowUpdateFrame.ReadFrom(header, data);
                 default:
                     return header;
             }
+        }
+
+        private async Task<bool> TryProcessExpectedPingFrameAsync(PingFrame pingFrame)
+        {
+            if (_transparentPingResponse && !pingFrame.AckFlag)
+            {
+                try
+                {
+                    await SendPingAckAsync(pingFrame.Data);
+                }
+                catch (IOException ex) when (_expectClientDisconnect && ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown)
+                {
+                    // couldn't send PING ACK, because client is already disconnected
+                    _transparentPingResponse = false;
+                }
+                return true;
+            }
+            return false;
         }
 
         // Reset and return underlying networking objects.
@@ -263,15 +299,6 @@ namespace System.Net.Test.Common
             _ignoreWindowUpdates = true;
         }
 
-        // Set up loopback server to expect PING frames among other frames.
-        // Once PING frame is read in ReadFrameAsync, the returned task is completed.
-        // The returned task is canceled in ReadPingAsync if no PING frame has been read so far.
-        public Task<PingFrame> ExpectPingFrameAsync()
-        {
-            _expectPingFrame ??= new TaskCompletionSource<PingFrame>();
-            return _expectPingFrame.Task;
-        }
-
         public async Task ReadRstStreamAsync(int streamId)
         {
             Frame frame = await ReadFrameAsync(_timeout);
@@ -297,6 +324,7 @@ namespace System.Net.Test.Common
         {
             IgnoreWindowUpdates();
 
+            _expectClientDisconnect = true;
             Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
             if (frame != null)
             {
@@ -543,13 +571,16 @@ namespace System.Net.Test.Common
             do
             {
                 frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
-                if (frame == null && expectEndOfStream)
+
+                // Check if it was a zero-byte read or we got a RST_STREAM with the CANCEL code.
+                if (expectEndOfStream
+                    && (frame == null || (frame.Type == FrameType.RstStream && ((RstStreamFrame)frame).ErrorCode == 0x8)))
                 {
                     break;
                 }
                 else if (frame == null || frame.Type == FrameType.RstStream)
                 {
-                    throw new IOException( frame == null ? "End of stream" : "Got RST");
+                    throw new IOException(frame == null ? "End of stream" : "Got RST");
                 }
 
                 Assert.Equal(FrameType.Data, frame.Type);
@@ -568,7 +599,7 @@ namespace System.Net.Test.Common
 
                         body.CopyTo(newBuffer, 0);
                         dataFrame.Data.Span.CopyTo(newBuffer.AsSpan(body.Length));
-                        body= newBuffer;
+                        body = newBuffer;
                     }
                 }
             }
@@ -720,19 +751,20 @@ namespace System.Net.Test.Common
             PingFrame ping = new PingFrame(pingData, FrameFlags.None, 0);
             await WriteFrameAsync(ping).ConfigureAwait(false);
             PingFrame pingAck = (PingFrame)await ReadFrameAsync(_timeout).ConfigureAwait(false);
+
             if (pingAck == null || pingAck.Type != FrameType.Ping || !pingAck.AckFlag)
             {
-                throw new Exception("Expected PING ACK");
+                string faultDetails = pingAck == null ? "" : $" frame.Type:{pingAck.Type} frame.AckFlag: {pingAck.AckFlag}";
+                throw new Exception("Expected PING ACK" + faultDetails);
             }
 
             Assert.Equal(pingData, pingAck.Data);
         }
 
+        public Task<PingFrame> ReadPingAsync() => ReadPingAsync(_timeout);
+
         public async Task<PingFrame> ReadPingAsync(TimeSpan timeout)
         {
-            _expectPingFrame?.TrySetCanceled();
-            _expectPingFrame = null;
-
             Frame frame = await ReadFrameAsync(timeout).ConfigureAwait(false);
             Assert.NotNull(frame);
             Assert.Equal(FrameType.Ping, frame.Type);
@@ -743,7 +775,7 @@ namespace System.Net.Test.Common
             return Assert.IsAssignableFrom<PingFrame>(frame);
         }
 
-        public async Task SendPingAckAsync(long payload)
+        public async Task SendPingAckAsync(long payload, CancellationToken cancellationToken = default)
         {
             PingFrame pingAck = new PingFrame(payload, FrameFlags.Ack, 0);
             await WriteFrameAsync(pingAck).ConfigureAwait(false);
@@ -819,12 +851,12 @@ namespace System.Net.Test.Common
             await SendResponseDataAsync(streamId, responseBody, isFinal).ConfigureAwait(false);
         }
 
-        public override void Dispose()
+        public override async ValueTask DisposeAsync()
         {
             // Might have been already shutdown manually via WaitForConnectionShutdownAsync which nulls the _connectionStream.
             if (_connectionStream != null)
             {
-                ShutdownIgnoringErrorsAsync(_lastStreamId).GetAwaiter().GetResult();
+                await ShutdownIgnoringErrorsAsync(_lastStreamId);
             }
         }
 
@@ -845,7 +877,7 @@ namespace System.Net.Test.Common
             return ReadBodyAsync();
         }
 
-        public override async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
+        public async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
         {
             if (headers != null)
             {
@@ -891,25 +923,30 @@ namespace System.Net.Test.Common
             else
             {
                 await SendResponseHeadersAsync(streamId, endStream: false, (HttpStatusCode)statusCode, endHeaders: true, headers: headers);
-                await SendResponseBodyAsync(content, isFinal: isFinal, requestId: streamId);
+                await SendResponseBodyAsync(content, isFinal: isFinal);
             }
         }
 
-        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        public override Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
         {
-            int streamId = requestId == 0 ? _lastStreamId : requestId;
+            return SendResponseAsync(statusCode, headers, content, isFinal, requestId: 0);
+        }
+
+        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
+        {
+            int streamId = _lastStreamId;
             return SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, endHeaders: true, headers);
         }
 
-        public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
         {
-            int streamId = requestId == 0 ? _lastStreamId : requestId;
+            int streamId = _lastStreamId;
             return SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, endHeaders: false, headers);
         }
 
-        public override Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0)
+        public override Task SendResponseBodyAsync(byte[] content, bool isFinal = true)
         {
-            int streamId = requestId == 0 ? _lastStreamId : requestId;
+            int streamId = _lastStreamId;
             return SendResponseBodyAsync(streamId, content, isFinal);
         }
 
@@ -923,11 +960,11 @@ namespace System.Net.Test.Common
 
             if (string.IsNullOrEmpty(content))
             {
-                await SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
+                await SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers: headers).ConfigureAwait(false);
             }
             else
             {
-                await SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
+                await SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, headers: headers).ConfigureAwait(false);
                 await SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(content)).ConfigureAwait(false);
             }
 
@@ -936,9 +973,9 @@ namespace System.Net.Test.Common
             return requestData;
         }
 
-        public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)
+        public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true)
         {
-            int streamId = requestId == 0 ? _lastStreamId : requestId;
+            int streamId = _lastStreamId;
 
             Frame frame;
             do
@@ -957,6 +994,13 @@ namespace System.Net.Test.Common
             } while (frame.Type != FrameType.RstStream);
 
             Assert.Equal(streamId, frame.StreamId);
+            RstStreamFrame rstStreamFrame = Assert.IsType<RstStreamFrame>(frame);
+            Assert.Equal((int)ProtocolErrors.CANCEL, rstStreamFrame.ErrorCode);
+        }
+
+        public override Task WaitForCloseAsync(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -9,12 +9,26 @@ namespace System.IO.Tests.Enumeration
 {
     public class AttributeTests : FileSystemTest
     {
-        private class DefaultFileAttributes : FileSystemEnumerator<string>
+        private class FileSystemEntryProperties
         {
-            public DefaultFileAttributes(string directory, EnumerationOptions options)
+            public string FileName { get; init; }
+            public FileAttributes Attributes { get; init; }
+            public DateTimeOffset CreationTimeUtc { get; init; }
+            public bool IsDirectory { get; init; }
+            public bool IsHidden { get; init; }
+            public DateTimeOffset LastAccessTimeUtc { get; init; }
+            public DateTimeOffset LastWriteTimeUtc { get; init; }
+            public long Length { get; init; }
+            public string Directory { get; init; }
+            public string FullPath { get; init; }
+            public string SpecifiedFullPath { get; init; }
+        }
+
+        private class GetPropertiesEnumerator : FileSystemEnumerator<FileSystemEntryProperties>
+        {
+            public GetPropertiesEnumerator(string directory, EnumerationOptions options)
                 : base(directory, options)
-            {
-            }
+            { }
 
             protected override bool ContinueOnError(int error)
             {
@@ -22,93 +36,160 @@ namespace System.IO.Tests.Enumeration
                 return false;
             }
 
-            protected override bool ShouldIncludeEntry(ref FileSystemEntry entry)
-                => !entry.IsDirectory;
-
-            protected override string TransformEntry(ref FileSystemEntry entry)
+            protected override FileSystemEntryProperties TransformEntry(ref FileSystemEntry entry)
             {
-                string path = entry.ToFullPath();
-                File.Delete(path);
-
-                // Attributes require a stat call on Unix- ensure that we have the right attributes
-                // even if the returned file is deleted.
-                Assert.Equal(FileAttributes.Normal, entry.Attributes);
-                Assert.Equal(path, entry.ToFullPath());
-                return new string(entry.FileName);
+                return new FileSystemEntryProperties
+                {
+                    FileName = new string(entry.FileName),
+                    Attributes = entry.Attributes,
+                    CreationTimeUtc = entry.CreationTimeUtc,
+                    IsDirectory = entry.IsDirectory,
+                    IsHidden = entry.IsHidden,
+                    LastAccessTimeUtc = entry.LastAccessTimeUtc,
+                    LastWriteTimeUtc = entry.LastWriteTimeUtc,
+                    Length = entry.Length,
+                    Directory = new string(entry.Directory),
+                    FullPath = entry.ToFullPath(),
+                    SpecifiedFullPath = entry.ToSpecifiedFullPath()
+                };
             }
         }
 
-        [Fact]
-        public void FileAttributesAreExpected()
+        public static IEnumerable<object[]> PropertiesWhenItemNoLongerExists_Data
+        {
+            get
+            {
+                yield return new object[] { "file1", "dir2" };
+                yield return new object[] { "dir1", "dir2" };
+                yield return new object[] { "dir1", "file2" };
+                yield return new object[] { "file1", "file2" };
+
+                if (MountHelper.CanCreateSymbolicLinks)
+                {
+                    yield return new object[] { "dir1", "link2" };
+                    yield return new object[] { "file1", "link2" };
+                    yield return new object[] { "link1", "file2" };
+                    yield return new object[] { "link1", "dir2" };
+                    yield return new object[] { "link1", "link2" };
+                }
+            }
+        }
+
+        // The test is performed using two items with different properties (file/dir, file length)
+        // to check cached values from the previous entry don't leak into the non-existing entry.
+        [Theory]
+        [MemberData(nameof(PropertiesWhenItemNoLongerExists_Data))]
+        public void PropertiesWhenItemNoLongerExists(string item1, string item2)
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
-            FileInfo fileOne = new FileInfo(Path.Combine(testDirectory.FullName, GetTestFileName()));
 
-            fileOne.Create().Dispose();
+            FileSystemInfo item1Info = CreateItem(testDirectory, item1);
+            FileSystemInfo item2Info = CreateItem(testDirectory, item2);
 
-            if (PlatformDetection.IsWindows)
+            using (var enumerator = new GetPropertiesEnumerator(testDirectory.FullName, new EnumerationOptions() { AttributesToSkip = 0 }))
             {
-                // Archive should always be set on a new file. Clear it and other expected flags to
-                // see that we get "Normal" as the default when enumerating.
+                // Move to the first item.
+                Assert.True(enumerator.MoveNext(), "Move first");
+                FileSystemEntryProperties entry = enumerator.Current;
 
-                Assert.True((fileOne.Attributes & FileAttributes.Archive) != 0);
-                fileOne.Attributes &= ~(FileAttributes.Archive | FileAttributes.NotContentIndexed);
+                Assert.True(entry.FileName == item1 || entry.FileName == item2, "Unexpected item");
+
+                // Delete both items.
+                DeleteItem(testDirectory, item1);
+                DeleteItem(testDirectory, item2);
+
+                // Move to the second item.
+                FileSystemInfo expected = entry.FileName == item1 ? item2Info : item1Info;
+                Assert.True(enumerator.MoveNext(), "Move second");
+                entry = enumerator.Current;
+
+                // Names and paths.
+                Assert.Equal(expected.Name, entry.FileName);
+                Assert.Equal(testDirectory.FullName, entry.Directory);
+                Assert.Equal(expected.FullName, entry.FullPath);
+                Assert.Equal(expected.FullName, entry.SpecifiedFullPath);
+
+                // Values determined during enumeration.
+                if (PlatformDetection.IsBrowser)
+                {
+                    // For Browser, all items are typed as DT_UNKNOWN.
+                    Assert.False(entry.IsDirectory);
+                    Assert.Equal(entry.FileName.StartsWith('.') ? FileAttributes.Hidden : FileAttributes.Normal, entry.Attributes);
+                }
+                else
+                {
+                    Assert.Equal(expected is DirectoryInfo, entry.IsDirectory);
+                    Assert.Equal(expected.Attributes, entry.Attributes);
+                }
+
+                if (PlatformDetection.IsWindows)
+                {
+                    Assert.Equal((expected.Attributes & FileAttributes.Hidden) != 0, entry.IsHidden);
+                    Assert.Equal(expected.CreationTimeUtc, entry.CreationTimeUtc);
+                    Assert.Equal(expected.LastAccessTimeUtc, entry.LastAccessTimeUtc);
+                    Assert.Equal(expected.LastWriteTimeUtc, entry.LastWriteTimeUtc);
+                    if (expected is FileInfo fileInfo)
+                    {
+                        Assert.Equal(fileInfo.Length, entry.Length);
+                    }
+                }
+                else
+                {
+                    // On Unix, these values were not determined during enumeration.
+                    // Because the file was deleted, the values can no longer be retrieved and sensible defaults are returned.
+                    Assert.Equal(entry.FileName.StartsWith('.'), entry.IsHidden);
+                    DateTimeOffset defaultTime = new DateTimeOffset(DateTime.FromFileTimeUtc(0));
+                    Assert.Equal(defaultTime, entry.CreationTimeUtc);
+                    Assert.Equal(defaultTime, entry.LastAccessTimeUtc);
+                    Assert.Equal(defaultTime, entry.LastWriteTimeUtc);
+                    Assert.Equal(0, entry.Length);
+                }
+
+                Assert.False(enumerator.MoveNext(), "Move final");
             }
 
-            using (var enumerator = new DefaultFileAttributes(testDirectory.FullName, new EnumerationOptions()))
+            static FileSystemInfo CreateItem(DirectoryInfo testDirectory, string item)
             {
-                Assert.True(enumerator.MoveNext());
-                Assert.Equal(fileOne.Name, enumerator.Current);
-                Assert.False(enumerator.MoveNext());
-            }
-        }
+                string fullPath = Path.Combine(testDirectory.FullName, item);
 
-        private class DefaultDirectoryAttributes : FileSystemEnumerator<string>
-        {
-            public DefaultDirectoryAttributes(string directory, EnumerationOptions options)
-                : base(directory, options)
-            {
-            }
+                // use the last char to have different lengths for different files.
+                Assert.True(item.EndsWith('1') || item.EndsWith('2'));
+                int length = (int)item[item.Length - 1];
 
-            protected override bool ShouldIncludeEntry(ref FileSystemEntry entry)
-                => entry.IsDirectory;
-
-            protected override bool ContinueOnError(int error)
-            {
-                Assert.False(true, $"Should not have errored {error}");
-                return false;
-            }
-
-            protected override string TransformEntry(ref FileSystemEntry entry)
-            {
-                string path = entry.ToFullPath();
-                Directory.Delete(path);
-
-                // Attributes require a stat call on Unix- ensure that we have the right attributes
-                // even if the returned directory is deleted.
-                Assert.Equal(FileAttributes.Directory, entry.Attributes);
-                Assert.Equal(path, entry.ToFullPath());
-                return new string(entry.FileName);
-            }
-        }
-
-        [Fact]
-        public void DirectoryAttributesAreExpected()
-        {
-            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
-            DirectoryInfo subDirectory = Directory.CreateDirectory(Path.Combine(testDirectory.FullName, GetTestFileName()));
-
-            if (PlatformDetection.IsWindows)
-            {
-                // Clear possible extra flags to see that we get Directory
-                subDirectory.Attributes &= ~FileAttributes.NotContentIndexed;
+                if (item.StartsWith("dir"))
+                {
+                    Directory.CreateDirectory(fullPath);
+                    var info = new DirectoryInfo(fullPath);
+                    info.Refresh();
+                    return info;
+                }
+                else if (item.StartsWith("link"))
+                {
+                    File.CreateSymbolicLink(fullPath, new string('_', length));
+                    var info = new FileInfo(fullPath);
+                    info.Refresh();
+                    return info;
+                }
+                else
+                {
+                    File.WriteAllBytes(fullPath, new byte[length]);
+                    var info = new FileInfo(fullPath);
+                    info.Refresh();
+                    return info;
+                }
             }
 
-            using (var enumerator = new DefaultDirectoryAttributes(testDirectory.FullName, new EnumerationOptions()))
+            static void DeleteItem(DirectoryInfo testDirectory, string item)
             {
-                Assert.True(enumerator.MoveNext());
-                Assert.Equal(subDirectory.Name, enumerator.Current);
-                Assert.False(enumerator.MoveNext());
+                string fullPath = Path.Combine(testDirectory.FullName, item);
+                if (item.StartsWith("dir"))
+                {
+                    Directory.Delete(fullPath);
+                }
+                else
+                {
+                    File.Delete(fullPath);
+                }
             }
         }
 
@@ -182,6 +263,9 @@ namespace System.IO.Tests.Enumeration
             };
 
             Assert.Equal(new string[] { fileTwo.FullName }, enumerable);
+
+            // Cleanup
+            fileTwo.Attributes &= ~FileAttributes.ReadOnly;
         }
     }
 }

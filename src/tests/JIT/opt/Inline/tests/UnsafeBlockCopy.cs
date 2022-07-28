@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Test 
+class Test_UnsafeBlockCopy 
 {
     static int SIZE = 100;
 

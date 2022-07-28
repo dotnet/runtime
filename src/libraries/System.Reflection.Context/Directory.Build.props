@@ -3,9 +3,5 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.3.0</AssemblyVersion>
     <StrongNameKeyId>ECMA</StrongNameKeyId>
-    <PackageDescription>Provides classes that enable customized reflection contexts.
-
-Commonly Used Types:
-System.Reflection.Context.CustomReflectionContext</PackageDescription>
   </PropertyGroup>
 </Project>

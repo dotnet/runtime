@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace Test
 {
-    internal class S
+    public class S
     {
         private T _nvalue;
         public S(T t) { _nvalue = t; }
     }
 
-    internal struct T
+    public struct T
     {
         private static T s_stat;
         private S _gcref;
@@ -21,7 +22,8 @@ namespace Test
 
         private void DoMethod() { }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             s_stat =
                 new T(new S(new T(new S(new T(new S(new T(new S(new T(new S(

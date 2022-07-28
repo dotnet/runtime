@@ -1,5 +1,6 @@
 <Project>
-  <Target Name="SetupCoverageFilter">
+  <Target Name="SetupCoverageFilter"
+          DependsOnTargets="ResolveReferences">
     <!--
       We need to filter the data to only the assembly being tested. Otherwise we will gather tons of data about other assemblies.
       If the code being tested is part of the runtime itself, it requires special treatment.
@@ -18,6 +19,9 @@
       <CoverageInclude Include="System.Private.CoreLib" Condition="'$(TestRuntime)' == 'true'" />
       <CoverageInclude Include="@(AssembliesBeingTested)" />
       <CoverageInclude Include="$(CoverageAssemblies)" Condition="'$(CoverageAssemblies)' != ''" />
+      <CoverageInclude Include="$(AssemblyName)" Condition="'$(CoverageIncludeTests)' == 'true'" />
+      <!-- Include analyzer assemblies which are referenced via the P2P protocol. -->
+      <CoverageInclude Include="@(ReferencePath->WithMetadataValue('OutputItemType', 'Analyzer')->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->Metadata('Filename'))" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -46,6 +50,7 @@
       <RunScriptCommand>"$(DotNetTool)" coverlet "$(TargetFileName)" --target "$(RunScriptHost)" --targetargs "$(RunScriptCommand.Replace('&quot;$(RunScriptHost)&quot;', ''))" --format "opencover" --output "$(CoverageOutputPath)" --verbosity "normal" --use-source-link</RunScriptCommand>
       <RunScriptCommand Condition="'@(CoverageExcludeByFile)' != ''">$(RunScriptCommand) --exclude-by-file @(CoverageExcludeByFile -> '"%(Identity)"', ' --exclude-by-file ')</RunScriptCommand>
       <RunScriptCommand Condition="'@(CoverageIncludeDirectory)' != ''">$(RunScriptCommand) --include-directory @(CoverageIncludeDirectory -> '"$(RunScriptHostDir)%(Identity)"', ' --include-directory ')</RunScriptCommand>
+      <RunScriptCommand Condition="'$(CoverageIncludeTests)' == 'true'">$(RunScriptCommand) --include-test-assembly</RunScriptCommand>
       <RunScriptCommand>$(RunScriptCommand) --include @(CoverageInclude -> '"[%(Identity)]*"', ' --include ')</RunScriptCommand>
       <CoverageReportCommandLine>"$(DotNetTool)" reportgenerator "-reports:$(CoverageReportInputPath)" "-targetdir:$(CoverageReportDir.TrimEnd('\/'))" "-reporttypes:Html" "-verbosity:Info"</CoverageReportCommandLine>
     </PropertyGroup>

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Linq;
+using System.Runtime.Versioning;
 
 namespace System.Numerics.Tests
 {
@@ -91,103 +91,98 @@ namespace System.Numerics.Tests
             return value;
         }
 
-        public static T Abs<T>(T value) where T : struct
+        public static T Abs<T>(T value) where T : INumber<T>
         {
-            Type[] unsignedTypes = new[] { typeof(byte), typeof(ushort), typeof(uint), typeof(ulong) };
-            if (unsignedTypes.Contains(typeof(T)))
-            {
-                return value;
-            }
-
-            dynamic dyn = (dynamic)value;
-            var abs = Math.Abs(dyn);
-            T ret = (T)abs;
-            return ret;
+            return T.Abs(value);
         }
 
-        public static T Sqrt<T>(T value) where T : struct
+        public static T Sqrt<T>(T value) where T : struct, INumber<T>
         {
-            return unchecked((T)(dynamic)(Math.Sqrt((dynamic)value)));
+            double dValue = CreateChecked<T, double>(value);
+            double dSqrt = Math.Sqrt(dValue);
+            return T.CreateTruncating<double>(dSqrt);
         }
 
-        public static T Multiply<T>(T left, T right) where T : struct
+        private static TResult CreateChecked<TOther, TResult>(TOther value)
+            where TOther : INumber<TOther>
+            where TResult : INumber<TResult>
+            => TResult.CreateChecked<TOther>(value);
+
+        public static T Multiply<T>(T left, T right) where T : INumber<T>
         {
-            return unchecked((T)((dynamic)left * right));
+            return left * right;
         }
 
-        public static T Divide<T>(T left, T right) where T : struct
+        public static T Divide<T>(T left, T right) where T : INumber<T>
         {
-            return (T)((dynamic)left / right);
+            return left / right;
         }
 
-        public static T Add<T>(T left, T right) where T : struct
+        public static T Add<T>(T left, T right) where T : INumber<T>
         {
-            return unchecked((T)((dynamic)left + right));
+            return left + right;
         }
 
-        public static T Subtract<T>(T left, T right) where T : struct
+        public static T Subtract<T>(T left, T right) where T : INumber<T>
         {
-            return unchecked((T)((dynamic)left - right));
+            return left - right;
         }
 
-        public static T Xor<T>(T left, T right) where T : struct
+        public static T Xor<T>(T left, T right) where T : IBitwiseOperators<T, T, T>
         {
-            return (T)((dynamic)left ^ right);
+            return left ^ right;
         }
 
-        public static T AndNot<T>(T left, T right) where T : struct
+        public static T AndNot<T>(T left, T right) where T : IBitwiseOperators<T, T, T>
         {
-            return (T)((dynamic)left & ~(dynamic)right);
+            return left & ~ right;
         }
 
-        public static T OnesComplement<T>(T left) where T : struct
+        public static T OnesComplement<T>(T left) where T : IBitwiseOperators<T, T, T>
         {
-            return unchecked((T)(~(dynamic)left));
+            return ~left;
         }
+
         public static float Clamp(float value, float min, float max)
         {
             return value > max ? max : value < min ? min : value;
         }
 
-        public static T Zero<T>() where T : struct
+        public static T Zero<T>() where T : struct, INumber<T>
         {
-            return (T)(dynamic)0;
+            return T.Zero;
         }
 
-        public static T One<T>() where T : struct
+        public static T One<T>() where T : struct, INumber<T>
         {
-            return (T)(dynamic)1;
+            return T.One;
         }
 
-        public static bool GreaterThan<T>(T left, T right) where T : struct
+        public static bool GreaterThan<T>(T left, T right) where T : INumber<T>
         {
-            var result = (dynamic)left > right;
-            return (bool)result;
+            return left > right;
         }
 
-        public static bool GreaterThanOrEqual<T>(T left, T right) where T : struct
+        public static bool GreaterThanOrEqual<T>(T left, T right) where T : INumber<T>
         {
-            var result = (dynamic)left >= right;
-            return (bool)result;
+            return left >= right;
         }
 
-        public static bool LessThan<T>(T left, T right) where T : struct
+        public static bool LessThan<T>(T left, T right) where T : INumber<T>
         {
-            var result = (dynamic)left < right;
-            return (bool)result;
+            return left < right;
         }
 
-        public static bool LessThanOrEqual<T>(T left, T right) where T : struct
+        public static bool LessThanOrEqual<T>(T left, T right) where T : INumber<T>
         {
-            var result = (dynamic)left <= right;
-            return (bool)result;
+            return left <= right;
         }
 
-        public static bool AnyEqual<T>(T[] left, T[] right) where T : struct
+        public static bool AnyEqual<T>(T[] left, T[] right) where T : INumber<T>
         {
             for (int g = 0; g < left.Length; g++)
             {
-                if (((IEquatable<T>)left[g]).Equals(right[g]))
+                if(left[g] == right[g])
                 {
                     return true;
                 }
@@ -195,11 +190,11 @@ namespace System.Numerics.Tests
             return false;
         }
 
-        public static bool AllEqual<T>(T[] left, T[] right) where T : struct
+        public static bool AllEqual<T>(T[] left, T[] right) where T : INumber<T>
         {
             for (int g = 0; g < left.Length; g++)
             {
-                if (!((IEquatable<T>)left[g]).Equals(right[g]))
+                if (left[g] != right[g])
                 {
                     return false;
                 }

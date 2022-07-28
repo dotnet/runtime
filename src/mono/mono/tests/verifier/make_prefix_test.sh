@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -34,12 +34,12 @@ $SED  -e "s/TYPE/${TEST_TYPE}/g" -e "s/OPCODE/${TEST_OP}/g"  -e "s/BEFORE_OP/${T
 {
     .field public int32 valid
 
-	.method public hidebysig  specialname  rtspecialname instance default void .ctor (int32&)  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void .ctor (int32&)  cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
-		ret 
+		ret
 	}
 
 	.method public virtual void VirtTest (ClassA& arg)
@@ -103,7 +103,7 @@ $SED  -e "s/TYPE/${TEST_TYPE}/g" -e "s/OPCODE/${TEST_OP}/g"  -e "s/BEFORE_OP/${T
 	leave END
 END:
 	ldc.i4.0
-	ret 
+	ret
 }
 
 //EOF

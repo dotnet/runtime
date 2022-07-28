@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Globalization;
 using System.Text;
 
 namespace System.Net.Http
@@ -141,20 +140,6 @@ namespace System.Net.Http
                     continue;
                 }
 
-                if (c == '\r')
-                {
-                    // If we have a #13 char, it must be followed by #10 and then at least one SP or HT.
-                    if ((current + 2 < input.Length) && (input[current + 1] == '\n'))
-                    {
-                        char spaceOrTab = input[current + 2];
-                        if ((spaceOrTab == ' ') || (spaceOrTab == '\t'))
-                        {
-                            current += 3;
-                            continue;
-                        }
-                    }
-                }
-
                 return current - startIndex;
             }
 
@@ -162,42 +147,9 @@ namespace System.Net.Http
             return input.Length - startIndex;
         }
 
-        internal static bool ContainsInvalidNewLine(string value)
+        internal static bool ContainsNewLine(string value, int startIndex = 0)
         {
-            return ContainsInvalidNewLine(value, 0);
-        }
-
-        internal static bool ContainsInvalidNewLine(string value, int startIndex)
-        {
-            // Search for newlines followed by non-whitespace: This is not allowed in any header (be it a known or
-            // custom header). E.g. "value\r\nbadformat: header" is invalid. However "value\r\n goodformat: header"
-            // is valid: newlines followed by whitespace are allowed in header values.
-            int current = startIndex;
-            while (current < value.Length)
-            {
-                if (value[current] == '\r')
-                {
-                    int char10Index = current + 1;
-                    if ((char10Index < value.Length) && (value[char10Index] == '\n'))
-                    {
-                        current = char10Index + 1;
-
-                        if (current == value.Length)
-                        {
-                            return true; // We have a string terminating with \r\n. This is invalid.
-                        }
-
-                        char c = value[current];
-                        if ((c != ' ') && (c != '\t'))
-                        {
-                            return true;
-                        }
-                    }
-                }
-                current++;
-            }
-
-            return false;
+            return value.AsSpan(startIndex).IndexOfAny('\r', '\n') != -1;
         }
 
         internal static int GetNumberLength(string input, int startIndex, bool allowDecimal)
@@ -225,7 +177,7 @@ namespace System.Net.Http
             while (current < input.Length)
             {
                 c = input[current];
-                if ((c >= '0') && (c <= '9'))
+                if (char.IsAsciiDigit(c))
                 {
                     current++;
                 }
@@ -244,12 +196,11 @@ namespace System.Net.Http
             return current - startIndex;
         }
 
-        internal static int GetHostLength(string input, int startIndex, bool allowToken, out string? host)
+        internal static int GetHostLength(string input, int startIndex, bool allowToken)
         {
             Debug.Assert(input != null);
             Debug.Assert(startIndex >= 0);
 
-            host = null;
             if (startIndex >= input.Length)
             {
                 return 0;
@@ -284,13 +235,11 @@ namespace System.Net.Http
                 return 0;
             }
 
-            string result = input.Substring(startIndex, length);
-            if ((!allowToken || !isToken) && !IsValidHostName(result))
+            if ((!allowToken || !isToken) && !IsValidHostName(input.AsSpan(startIndex, length)))
             {
                 return 0;
             }
 
-            host = result;
             return length;
         }
 
@@ -331,7 +280,7 @@ namespace System.Net.Http
         }
 
         // TEXT = <any OCTET except CTLs, but including LWS>
-        // LWS = [CRLF] 1*( SP | HT )
+        // LWS = SP | HT
         // CTL = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
         //
         // Since we don't really care about the content of a quoted string or comment, we're more tolerant and
@@ -359,19 +308,26 @@ namespace System.Net.Http
             {
                 // Only check whether we have a quoted char, if we have at least 3 characters left to read (i.e.
                 // quoted char + closing char). Otherwise the closing char may be considered part of the quoted char.
-                int quotedPairLength = 0;
+                int quotedPairLength;
                 if ((current + 2 < input.Length) &&
                     (GetQuotedPairLength(input, current, out quotedPairLength) == HttpParseResult.Parsed))
                 {
                     // We ignore invalid quoted-pairs. Invalid quoted-pairs may mean that it looked like a quoted pair,
                     // but we actually have a quoted-string: e.g. "\\u00FC" ('\' followed by a char >127 - quoted-pair only
                     // allows ASCII chars after '\'; qdtext allows both '\' and >127 chars).
-                    current = current + quotedPairLength;
+                    current += quotedPairLength;
                     continue;
                 }
 
+                char c = input[current];
+
+                if (c == '\r' || c == '\n')
+                {
+                    return HttpParseResult.InvalidFormat;
+                }
+
                 // If we support nested expressions and we find an open-char, then parse the nested expressions.
-                if (supportsNesting && (input[current] == openChar))
+                if (supportsNesting && (c == openChar))
                 {
                     // Check if we exceeded the number of nested calls.
                     if (nestedCount > MaxNestedCount)
@@ -379,7 +335,7 @@ namespace System.Net.Http
                         return HttpParseResult.InvalidFormat;
                     }
 
-                    int nestedLength = 0;
+                    int nestedLength;
                     HttpParseResult nestedResult = GetExpressionLength(input, current, openChar, closeChar,
                         supportsNesting, nestedCount + 1, out nestedLength);
 
@@ -420,10 +376,10 @@ namespace System.Net.Http
             return HttpParseResult.InvalidFormat;
         }
 
-        private static bool IsValidHostName(string host)
+        private static bool IsValidHostName(ReadOnlySpan<char> host)
         {
             // Also add user info (u@) to make sure 'host' doesn't include user info.
-            return Uri.TryCreate("http://u@" + host + "/", UriKind.Absolute, out Uri? hostUri);
+            return Uri.TryCreate($"http://u@{host}/", UriKind.Absolute, out _);
         }
     }
 }

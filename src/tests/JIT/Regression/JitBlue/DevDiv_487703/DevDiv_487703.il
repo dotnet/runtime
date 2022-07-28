@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly ILGEN_MODULE {}
+.assembly 'DevDiv_487703' {}
+.assembly extern xunit.core {}
 
 .class ILGEN_CLASS
 {
@@ -74,6 +75,9 @@ IL_00a1:
 
     .method public static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
 
         .try

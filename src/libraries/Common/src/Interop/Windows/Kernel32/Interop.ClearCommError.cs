@@ -9,14 +9,16 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern bool ClearCommError(
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool ClearCommError(
             SafeFileHandle hFile,
             ref int lpErrors,
             ref COMSTAT lpStat);
 
-        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern bool ClearCommError(
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool ClearCommError(
             SafeFileHandle hFile,
             ref int lpErrors,
             IntPtr lpStat);

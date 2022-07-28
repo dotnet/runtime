@@ -16,6 +16,7 @@ namespace System.Linq.Tests
         /// preserve the corresponding Enumerable method when trimming.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50712", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void QueryableMethodsContainCorrectDynamicDependency()
         {
             IEnumerable<MethodInfo> dependentMethods =
@@ -61,7 +62,7 @@ namespace System.Linq.Tests
                     .Where(m => m.GetParameters().Length > 0);
 
             // If you are adding a new method to this class, ensure the method meets these requirements
-            Assert.Equal(131, methods.Count());
+            Assert.Equal(135, methods.Count());
             foreach (MethodInfo method in methods)
             {
                 ParameterInfo[] parameters = method.GetParameters();

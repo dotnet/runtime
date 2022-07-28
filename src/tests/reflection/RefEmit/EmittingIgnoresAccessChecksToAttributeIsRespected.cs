@@ -8,7 +8,7 @@ using System.Reflection.Emit;
 
 class BaseClass1 { }
 
-class Test
+class Test_EmittingIgnoresAccessChecksToAttributeIsRespected
 {
 
     public static int Main()
@@ -123,7 +123,7 @@ class Test
         attributeTypeBuilder.SetCustomAttribute(customAttributeBuilder);
 
         // Make the TypeInfo real so the constructor can be used.
-        return attributeTypeBuilder.CreateTypeInfo()!.DeclaredConstructors.Single();
+        return attributeTypeBuilder.CreateTypeInfo().DeclaredConstructors.Single();
     }
 }
 

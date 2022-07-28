@@ -10,7 +10,7 @@ using System.IO;
 internal static partial class Interop
 {
     /// <summary>Provides access to some cgroup (v1 and v2) features</summary>
-    internal static partial class cgroups
+    internal static partial class @cgroups
     {
         // For cgroup v1, see https://www.kernel.org/doc/Documentation/cgroup-v1/
         // For cgroup v2, see https://www.kernel.org/doc/Documentation/cgroup-v2.txt

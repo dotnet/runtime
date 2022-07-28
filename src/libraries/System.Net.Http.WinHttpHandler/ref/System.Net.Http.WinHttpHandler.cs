@@ -44,11 +44,8 @@ namespace System.Net.Http
         public System.Func<System.Net.Http.HttpRequestMessage, System.Security.Cryptography.X509Certificates.X509Certificate2, System.Security.Cryptography.X509Certificates.X509Chain, System.Net.Security.SslPolicyErrors, bool>? ServerCertificateValidationCallback { get { throw null; } set { } }
         public System.Net.ICredentials? ServerCredentials { get { throw null; } set { } }
         public System.Security.Authentication.SslProtocols SslProtocols { get { throw null; } set { } }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows10.0.19041")]
         public bool TcpKeepAliveEnabled { get { throw null; } set { } }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows10.0.19041")]
         public System.TimeSpan TcpKeepAliveTime { get { throw null; } set { } }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows10.0.19041")]
         public System.TimeSpan TcpKeepAliveInterval { get { throw null; } set { } }
         public System.Net.Http.WindowsProxyUsePolicy WindowsProxyUsePolicy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }

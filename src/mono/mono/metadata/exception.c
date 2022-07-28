@@ -101,7 +101,7 @@ mono_exception_from_name (MonoImage *image, const char *name_space,
  * \returns the initialized exception instance.
  */
 MonoException *
-mono_exception_from_name_domain (MonoDomain *domain, MonoImage *image, 
+mono_exception_from_name_domain (MonoDomain *domain, MonoImage *image,
 				 const char* name_space, const char *name)
 {
 	HANDLE_FUNCTION_ENTER ();
@@ -148,14 +148,14 @@ create_exception_two_strings (MonoClass *klass, MonoStringHandle a1, MonoStringH
 	int const count = 1 + !MONO_HANDLE_IS_NULL (a2);
 	gpointer iter;
 	MonoMethod *m;
-	
+
 	MonoObjectHandle o = mono_object_new_handle (klass, error);
 	mono_error_assert_ok (error);
 
 	iter = NULL;
 	while ((m = mono_class_get_methods (klass, &iter))) {
 		MonoMethodSignature *sig;
-		
+
 		if (strcmp (".ctor", mono_method_get_name (m)))
 			continue;
 		sig = mono_method_signature_internal (m);
@@ -862,7 +862,7 @@ MonoException *
 mono_get_exception_bad_image_format (const char *msg)
 {
 	return mono_exception_from_name_msg (mono_get_corlib (), "System", "BadImageFormatException", msg);
-}	
+}
 
 /**
  * mono_get_exception_bad_image_format2:
@@ -896,7 +896,7 @@ mono_get_exception_bad_image_format2 (const char *msg, MonoString *fname_raw)
 MonoException *
 mono_get_exception_stack_overflow (void)
 {
-	return mono_exception_from_name (mono_get_corlib (), "System", "StackOverflowException");	
+	return mono_exception_from_name (mono_get_corlib (), "System", "StackOverflowException");
 }
 
 /**
@@ -1079,7 +1079,7 @@ append_frame_and_continue (MonoMethod *method, gpointer ip, size_t native_offset
 	if (data->prefix)
 		g_string_append (data->text, data->prefix);
 	if (method) {
-		char *msg = mono_debug_print_stack_frame (method, native_offset, NULL);
+		char *msg = mono_debug_print_stack_frame (method, (uint32_t)native_offset, NULL);
 		g_string_append_printf (data->text, "%s\n", msg);
 		g_free (msg);
 	} else {
@@ -1160,24 +1160,6 @@ mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc)
 #endif
 }
 
-MonoStringHandle
-ves_icall_Mono_Runtime_GetNativeStackTrace (MonoExceptionHandle exc, MonoError *error)
-{
-	char *trace;
-	MonoStringHandle res;
-	error_init (error);
-
-	if (MONO_HANDLE_IS_NULL (exc)) {
-		mono_error_set_argument_null (error, "exception", "");
-		return NULL_HANDLE_STRING;
-	}
-
-	trace = mono_exception_handle_get_native_backtrace (exc);
-	res = mono_string_new_handle (trace, error);
-	g_free (trace);
-	return res;
-}
-
 /**
  * mono_error_raise_exception_deprecated:
  * \param target_error the exception to raise
@@ -1240,7 +1222,7 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 		MonoObject *other = NULL;
 		MonoString *str = mono_object_try_to_string (exc, &other, inner_error);
 		char *msg = NULL;
-		
+
 		if (str && is_ok (inner_error)) {
 			msg = mono_string_to_utf8_checked_internal (str, inner_error);
 			if (!is_ok (inner_error)) {
@@ -1346,7 +1328,6 @@ mono_error_set_field_missing (MonoError *error, MonoClass *klass, const char *fi
 void
 mono_error_set_method_missing (MonoError *error, MonoClass *klass, const char *method_name, MonoMethodSignature *sig, const char *reason, ...)
 {
-	int i;
 	char *result;
 	GString *res;
 
@@ -1379,7 +1360,7 @@ mono_error_set_method_missing (MonoError *error, MonoClass *klass, const char *m
 	if (sig) {
 		if (sig->generic_param_count) {
 			g_string_append_c (res, '<');
-			for (i = 0; i < sig->generic_param_count; ++i) {
+			for (guint i = 0; i < sig->generic_param_count; ++i) {
 				if (i > 0)
 					g_string_append (res, ",");
 				g_string_append_printf (res, "!%d", i);
@@ -1388,7 +1369,7 @@ mono_error_set_method_missing (MonoError *error, MonoClass *klass, const char *m
 		}
 
 		g_string_append_c (res, '(');
-		for (i = 0; i < sig->param_count; ++i) {
+		for (guint16 i = 0; i < sig->param_count; ++i) {
 			if (i > 0)
 				g_string_append_c (res, ',');
 			mono_type_get_desc (res, sig->params [i], TRUE);

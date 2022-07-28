@@ -26,6 +26,7 @@
 #include <mono/metadata/debug-mono-ppdb.h>
 #include <mono/metadata/exception-internals.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/metadata-update.h>
 #include <string.h>
 
 #if NO_UNALIGNED_ACCESS
@@ -123,7 +124,7 @@ static void
 free_debug_handle (MonoDebugHandle *handle)
 {
 	if (handle->ppdb)
-		mono_ppdb_close (handle);
+		mono_ppdb_close (handle->ppdb);
 	if (handle->symfile)
 		mono_debug_close_mono_symbol_file (handle->symfile);
 	/* decrease the refcount added with mono_image_addref () */
@@ -490,7 +491,7 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		}
 	}
 
-	size = ptr - oldptr;
+	size = GPTRDIFF_TO_UINT32 (ptr - oldptr);
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugMethodAddress);
 
@@ -837,6 +838,21 @@ mono_debug_lookup_source_location_by_il (MonoMethod *method, guint32 il_offset, 
 MonoDebugSourceLocation *
 mono_debug_method_lookup_location (MonoDebugMethodInfo *minfo, int il_offset)
 {
+	MonoImage* img = m_class_get_image (minfo->method->klass);
+	if (img->has_updates) {
+		guint32 idx = mono_metadata_token_index (minfo->method->token);
+		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
+		if (mdie != NULL) {
+			MonoDebugSourceLocation * ret = mono_ppdb_lookup_location_enc (mdie->ppdb_file, mdie->idx, il_offset);
+			if (ret)
+				return ret;
+		} else {
+			gboolean added_method = idx >= table_info_get_rows (&img->tables[MONO_TABLE_METHOD]);
+			if (added_method)
+				return NULL;
+		}
+	}
+
 	MonoDebugSourceLocation *location;
 
 	mono_debugger_lock ();
@@ -855,10 +871,21 @@ mono_debug_method_lookup_location (MonoDebugMethodInfo *minfo, int il_offset)
  * The result should be freed using mono_debug_free_locals ().
  */
 MonoDebugLocalsInfo*
-mono_debug_lookup_locals (MonoMethod *method, mono_bool ignore_pdb)
+mono_debug_lookup_locals (MonoMethod *method)
 {
 	MonoDebugMethodInfo *minfo;
 	MonoDebugLocalsInfo *res;
+
+	MonoImage* img = m_class_get_image (method->klass);
+	if (img->has_updates) {
+		int idx = mono_metadata_token_index (method->token);
+		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
+		if (mdie != NULL) {
+			res = mono_ppdb_lookup_locals_enc (mdie->ppdb_file->image, mdie->idx);
+			if (res != NULL)
+				return res;
+		}
+	}
 
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
 		return NULL;
@@ -870,18 +897,16 @@ mono_debug_lookup_locals (MonoMethod *method, mono_bool ignore_pdb)
 		return NULL;
 	}
 
-	if (ignore_pdb)
-		res = mono_debug_symfile_lookup_locals (minfo);
-	else {
-		if (minfo->handle->ppdb) {
-			res = mono_ppdb_lookup_locals (minfo);
-		} else {
-			if (!minfo->handle->symfile || !mono_debug_symfile_is_loaded (minfo->handle->symfile))
-				res = NULL;
-			else
-				res = mono_debug_symfile_lookup_locals (minfo);
-		}
+
+	if (minfo->handle->ppdb) {
+		res = mono_ppdb_lookup_locals (minfo);
+	} else {
+		if (!minfo->handle->symfile || !mono_debug_symfile_is_loaded (minfo->handle->symfile))
+			res = NULL;
+		else
+			res = mono_debug_symfile_lookup_locals (minfo);
 	}
+
 	mono_debugger_unlock ();
 
 	return res;
@@ -1087,6 +1112,19 @@ open_symfile_from_bundle (MonoImage *image)
 	return NULL;
 }
 
+const mono_byte *
+mono_get_symfile_bytes_from_bundle (const char *assembly_name, int *size)
+{
+	BundledSymfile *bsymfile;
+	for (bsymfile = bundled_symfiles; bsymfile; bsymfile = bsymfile->next) {
+		if (strcmp (bsymfile->aname, assembly_name))
+			continue;
+		*size = bsymfile->size;
+		return bsymfile->raw_contents;
+	}
+	return NULL;
+}
+
 void
 mono_debugger_lock (void)
 {
@@ -1115,6 +1153,34 @@ mono_debug_enabled (void)
 void
 mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
 {
+	MonoImage* img = m_class_get_image (minfo->method->klass);
+	if (img->has_updates) {
+		guint32 idx = mono_metadata_token_index (minfo->method->token);
+		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
+		if (mdie != NULL) {
+			if (mono_ppdb_get_seq_points_enc (minfo, mdie->ppdb_file, mdie->idx, source_file, source_file_list, source_files, seq_points, n_seq_points))
+				return;
+		}
+		/*
+		 * dotnet watch sometimes sends us updated with PPDB deltas, but the baseline
+		 * project has debug info (and we use it for seq points?).  In tht case, just say
+		 * the added method has no sequence points.  N.B. intentionally, comparing idx to
+		 * the baseline tables.  For methods that already existed, use their old seq points.
+		 */
+		if (idx >= table_info_get_rows (&img->tables[MONO_TABLE_METHOD])) {
+			if (source_file)
+				*source_file = NULL;
+			if (source_file_list)
+				*source_file_list = NULL;
+			if (source_files)
+				*source_files = NULL;
+			if (seq_points)
+				*seq_points = NULL;
+			if (n_seq_points)
+				*n_seq_points = 0;
+			return;
+		}
+	}
 	if (minfo->handle->ppdb)
 		mono_ppdb_get_seq_points (minfo, source_file, source_file_list, source_files, seq_points, n_seq_points);
 	else

@@ -43,9 +43,9 @@ namespace System.IO.Pipelines.Tests
         {
             var messages = new List<byte[]>()
             {
-                Encoding.UTF8.GetBytes("Hello World1"),
-                Encoding.UTF8.GetBytes("Hello World2"),
-                Encoding.UTF8.GetBytes("Hello World3"),
+                "Hello World1"u8.ToArray(),
+                "Hello World2"u8.ToArray(),
+                "Hello World3"u8.ToArray(),
             };
 
             var stream = new WriteCheckMemoryStream();
@@ -67,9 +67,9 @@ namespace System.IO.Pipelines.Tests
         {
             var messages = new List<byte[]>()
             {
-                Encoding.UTF8.GetBytes("Hello World1"),
-                Encoding.UTF8.GetBytes("Hello World2"),
-                Encoding.UTF8.GetBytes("Hello World3"),
+                "Hello World1"u8.ToArray(),
+                "Hello World2"u8.ToArray(),
+                "Hello World3"u8.ToArray(),
             };
 
             var targetPipe = new Pipe(s_testOptions);
@@ -199,7 +199,7 @@ namespace System.IO.Pipelines.Tests
             // This should make the write call pause
             var targetPipe = new Pipe(new PipeOptions(pauseWriterThreshold: 1, resumeWriterThreshold: 1));
             var cts = new CancellationTokenSource();
-            await Pipe.Writer.WriteAsync(Encoding.ASCII.GetBytes("Gello World"));
+            await Pipe.Writer.WriteAsync("Gello World"u8.ToArray());
             Task task = PipeReader.CopyToAsync(targetPipe.Writer, cts.Token);
 
             cts.Cancel();
@@ -212,7 +212,7 @@ namespace System.IO.Pipelines.Tests
         {
             // This should make the write call pause
             var targetPipe = new Pipe(new PipeOptions(pauseWriterThreshold: 1, resumeWriterThreshold: 1));
-            await Pipe.Writer.WriteAsync(Encoding.ASCII.GetBytes("Gello World"));
+            await Pipe.Writer.WriteAsync("Gello World"u8.ToArray());
             Task task = PipeReader.CopyToAsync(targetPipe.Writer);
 
             targetPipe.Writer.CancelPendingFlush();
@@ -285,6 +285,42 @@ namespace System.IO.Pipelines.Tests
             Assert.NotNull(startPosition.GetObject());
             Assert.True(startPosition.Equals(wrappedPipeReader.LastConsumed));
             Assert.True(startPosition.Equals(wrappedPipeReader.LastExamined));
+        }
+
+        [Fact]
+        public async Task CopyToAsyncStreamCopiesRemainderAfterReadingSome()
+        {
+            byte[] buffer = "Hello World"u8.ToArray();
+            await Pipe.Writer.WriteAsync(buffer);
+            Pipe.Writer.Complete();
+
+            var result = await PipeReader.ReadAsync();
+            Assert.Equal(result.Buffer.ToArray(), buffer);
+            // Consume Hello
+            PipeReader.AdvanceTo(result.Buffer.GetPosition(5));
+
+            var ms = new MemoryStream();
+            await PipeReader.CopyToAsync(ms);
+
+            Assert.Equal(buffer.AsMemory(5).ToArray(), ms.ToArray());
+        }
+
+        [Fact]
+        public async Task CopyToAsyncPipeWriterCopiesRemainderAfterReadingSome()
+        {
+            byte[] buffer = "Hello World"u8.ToArray();
+            await Pipe.Writer.WriteAsync(buffer);
+            Pipe.Writer.Complete();
+
+            var result = await PipeReader.ReadAsync();
+            Assert.Equal(result.Buffer.ToArray(), buffer);
+            // Consume Hello
+            PipeReader.AdvanceTo(result.Buffer.GetPosition(5));
+
+            var ms = new MemoryStream();
+            await PipeReader.CopyToAsync(PipeWriter.Create(ms));
+
+            Assert.Equal(buffer.AsMemory(5).ToArray(), ms.ToArray());
         }
     }
 }

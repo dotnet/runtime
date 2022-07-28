@@ -2,16 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // this test is also regression test for VSW 395780. The difference is that
 // .override directive in this case is in the class scope, whereas in testExplicitOverride
 // .override directive is in method scope.
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 2.0.41122.00
-//  Copyright (C) Microsoft Corporation. All rights reserved.
-
-
-
-// Metadata version: v2.0.41122
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
@@ -23,7 +18,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module testExplicitOverride2.exe
 // MVID: {8B3E6954-BAFA-445B-A5E1-CECA62B7DCE6}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -78,11 +72,14 @@
 
 } // end of class C
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_testExplicitOverride2
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       105 (0x69)
     .maxstack  2

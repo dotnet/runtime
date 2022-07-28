@@ -375,7 +375,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
 // pMTClass : specifies the type of instance to be returned
 // NOTE:**  As per COM Rules, the IUnknown passed in shouldn't be AddRef'ed
 //+----------------------------------------------------------------------------
-void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pMTClass, MethodTable *pItfMT, DWORD dwFlags)
+void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pMTClass, DWORD dwFlags)
 {
     CONTRACTL
     {
@@ -386,7 +386,6 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
         PRECONDITION(CheckPointer(*ppUnk, NULL_OK));
         PRECONDITION(CheckPointer(pMTClass, NULL_OK));
         PRECONDITION(IsProtectedByGCFrame(pObjOut));
-        PRECONDITION(pItfMT == NULL || pItfMT->IsInterface());
     }
     CONTRACTL_END;
 
@@ -457,7 +456,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
             COMInterfaceMarshaler marshaler;
 
             marshaler.Init(pOuter, pComClassMT, pThread, flags);
-            *pObjOut = marshaler.FindOrCreateObjectRef(pUnk, pItfMT);
+            *pObjOut = marshaler.FindOrCreateObjectRef(pUnk);
         }
     }
 

@@ -108,4 +108,4 @@ FAIL:
 	ret
 }
 }
-.assembly and_u4.exe{}
+.assembly and_u4{}

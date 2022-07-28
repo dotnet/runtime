@@ -1559,7 +1559,7 @@ namespace System.Xml.Tests
             public void CData_12(XmlWriterUtils utils)
             {
                 // WriteCData with empty string when the write buffer looks like
-                // <r>aaaaaaa....   (currently lenght is 2048 * 3 - len("<![CDATA[")
+                // <r>aaaaaaa....   (currently length is 2048 * 3 - len("<![CDATA[")
                 int buflen = 2048 * 3;
                 string xml1 = "<r>";
                 string xml3 = "<![CDATA[";
@@ -5091,7 +5091,7 @@ namespace System.Xml.Tests
                     Assert.True(utils.CompareReader("<Root a=\"Test Case\" b=\"Test\" />"));
                 }
 
-                // WriteRaw with entites and entitized characters
+                // WriteRaw with entities and entitized characters
                 [Theory]
                 [XmlWriterInlineData]
                 public void writeRaw_2(XmlWriterUtils utils)
@@ -6352,12 +6352,12 @@ namespace System.Xml.Tests
                 [XmlWriterInlineData]
                 public void var_1(XmlWriterUtils utils)
                 {
-                    using (XmlWriter writer = utils.CreateWriter())
-                    {
-                        writer.WriteStartElement("Root");
-                        writer.WriteStartElement("Nesting");
-                        writer.WriteStartElement("SomeDeep");
-                    }
+                    XmlWriter writer = utils.CreateWriter();
+                    writer.WriteStartElement("Root");
+                    writer.WriteStartElement("Nesting");
+                    writer.WriteStartElement("SomeDeep");
+                    writer.Close();
+
                     Assert.True(utils.CompareReader("<Root><Nesting><SomeDeep /></Nesting></Root>"));
                 }
 

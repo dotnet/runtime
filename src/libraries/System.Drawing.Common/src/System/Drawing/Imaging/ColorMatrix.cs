@@ -1,7 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 
 namespace System.Drawing.Imaging
 {
@@ -391,5 +396,18 @@ namespace System.Drawing.Imaging
                 SetMatrix(tempMatrix);
             }
         }
+
+        internal ref float GetPinnableReference() => ref _matrix00;
+
+#if NET7_0_OR_GREATER
+        [CustomMarshaller(typeof(ColorMatrix), MarshalMode.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
+        internal static unsafe class PinningMarshaller
+        {
+            public static ref float GetPinnableReference(ColorMatrix managed) => ref (managed is null ? ref Unsafe.NullRef<float>() : ref managed.GetPinnableReference());
+
+            // All usages in our currently supported scenarios will always go through GetPinnableReference
+            public static float* ConvertToUnmanaged(ColorMatrix managed) => throw new UnreachableException();
+        }
+#endif
     }
 }

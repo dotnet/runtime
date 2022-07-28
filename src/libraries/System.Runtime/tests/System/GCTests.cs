@@ -69,7 +69,7 @@ namespace System.Tests
 
         [Theory]
         [InlineData(GCCollectionMode.Default - 1)]
-        [InlineData(GCCollectionMode.Optimized + 1)]
+        [InlineData(GCCollectionMode.Aggressive + 1)]
         public static void Collection_InvalidCollectionMode_ThrowsArgumentOutOfRangeException(GCCollectionMode mode)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", null, () => GC.Collect(2, mode));
@@ -449,9 +449,8 @@ namespace System.Tests
         /// <summary>
         /// NoGC regions will be automatically exited if more than the requested budget
         /// is allocated while still in the region. In order to avoid this, the budget is set
-        /// to be higher than what the test should be allocating. When running on CoreCLR/DesktopCLR,
-        /// these tests generally do not allocate because they are implemented as fcalls into the runtime
-        /// itself, but the CoreRT runtime is written in mostly managed code and tends to allocate more.
+        /// to be higher than what the test should be allocating to compensate for allocations
+        /// made internally by the runtime.
         ///
         /// This budget should be high enough to avoid exiting no-gc regions when doing normal unit
         /// tests, regardless of the runtime.
@@ -637,8 +636,7 @@ namespace System.Tests
             RemoteExecutor.Invoke(() =>
             {
                 // The budget for this test is 4mb, because the act of throwing an exception with a message
-                // contained in a resource file has to potential to allocate a lot on CoreRT. In particular, when compiling
-                // in multi-file mode, this will trigger a resource lookup in System.Private.CoreLib.
+                // contained in a System.Private.CoreLib resource file has to potential to allocate a lot.
                 //
                 // In addition to this, the Assert.Throws xunit combinator tends to also allocate a lot.
                 Assert.True(GC.TryStartNoGCRegion(4000 * 1024, true));
@@ -802,6 +800,7 @@ namespace System.Tests
 
         private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64935", TestPlatforms.FreeBSD)]
         [ActiveIssue("https://github.com/mono/mono/issues/15236", TestRuntimes.Mono)]
         [ConditionalFact(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/29434")]
         public static void GetGCMemoryInfo()
@@ -813,11 +812,13 @@ namespace System.Tests
 
                 GCMemoryInfo memoryInfo1 = GC.GetGCMemoryInfo();
 
-                Assert.InRange(memoryInfo1.HighMemoryLoadThresholdBytes, 1, long.MaxValue);
-                Assert.InRange(memoryInfo1.MemoryLoadBytes, 1, long.MaxValue);
-                Assert.InRange(memoryInfo1.TotalAvailableMemoryBytes, 1, long.MaxValue);
-                Assert.InRange(memoryInfo1.HeapSizeBytes, 1, long.MaxValue);
-                Assert.InRange(memoryInfo1.FragmentedBytes, 0, long.MaxValue);
+                long maxVirtualSpaceSize = (IntPtr.Size == 4) ? uint.MaxValue : long.MaxValue;
+
+                Assert.InRange(memoryInfo1.HighMemoryLoadThresholdBytes, 1, maxVirtualSpaceSize);
+                Assert.InRange(memoryInfo1.MemoryLoadBytes, 1, maxVirtualSpaceSize);
+                Assert.InRange(memoryInfo1.TotalAvailableMemoryBytes, 1, maxVirtualSpaceSize);
+                Assert.InRange(memoryInfo1.HeapSizeBytes, 1, maxVirtualSpaceSize);
+                Assert.InRange(memoryInfo1.FragmentedBytes, 0, maxVirtualSpaceSize);
 
                 GCHandle[] gch = new GCHandle[64 * 1024];
                 for (int i = 0; i < gch.Length * 2; ++i)
@@ -849,10 +850,10 @@ namespace System.Tests
                     Assert.Equal(memoryInfo2.TotalAvailableMemoryBytes, memoryInfo1.TotalAvailableMemoryBytes);
 
                     scenario = nameof(memoryInfo2.HeapSizeBytes);
-                    Assert.InRange(memoryInfo2.HeapSizeBytes, memoryInfo1.HeapSizeBytes + 1, long.MaxValue);
+                    Assert.InRange(memoryInfo2.HeapSizeBytes, memoryInfo1.HeapSizeBytes + 1, maxVirtualSpaceSize);
 
                     scenario = nameof(memoryInfo2.FragmentedBytes);
-                    Assert.InRange(memoryInfo2.FragmentedBytes, memoryInfo1.FragmentedBytes + 1, long.MaxValue);
+                    Assert.InRange(memoryInfo2.FragmentedBytes, memoryInfo1.FragmentedBytes + 1, maxVirtualSpaceSize);
 
                     scenario = null;
                 }

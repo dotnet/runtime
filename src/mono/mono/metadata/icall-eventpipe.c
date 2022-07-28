@@ -209,10 +209,18 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (
 	return mono_component_event_pipe()->get_session_info (session_id, (EventPipeSessionInfo *)session_info) ? TRUE : FALSE;
 }
 
-intptr_t
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t session_id)
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_SignalSession (uint64_t session_id)
 {
-	return (intptr_t) mono_component_event_pipe()->get_wait_handle ((EventPipeSessionID)session_id);
+	return mono_component_event_pipe()->signal_session ((EventPipeSessionID)session_id) ? TRUE : FALSE;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WaitForSessionSignal (
+	uint64_t session_id,
+	int32_t timeout)
+{
+	return mono_component_event_pipe()->wait_for_session_signal ((EventPipeSessionID)session_id, (uint32_t)timeout) ? TRUE : FALSE;
 }
 
 void
@@ -237,7 +245,8 @@ typedef enum {
 	EP_RT_COUNTERS_GC_LARGE_OBJECT_SIZE_BYTES,
 	EP_RT_COUNTERS_GC_LAST_PERCENT_TIME_IN_GC,
 	EP_RT_COUNTERS_JIT_IL_BYTES_JITTED,
-	EP_RT_COUNTERS_JIT_METOHODS_JITTED
+	EP_RT_COUNTERS_JIT_METHODS_JITTED,
+	EP_RT_COUNTERS_JIT_TICKS_IN_JIT
 } EventPipeRuntimeCounters;
 
 static
@@ -265,24 +274,26 @@ get_il_bytes_jitted (void)
 	gint64 methods_compiled = 0;
 	gint64 cil_code_size_bytes = 0;
 	gint64 native_code_size_bytes = 0;
+	gint64 jit_time = 0;
 
 	if (mono_get_runtime_callbacks ()->get_jit_stats)
-		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes);
+		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes, &jit_time);
 	return cil_code_size_bytes;
 }
 
 static
 inline
-gint32
+gint64
 get_methods_jitted (void)
 {
 	gint64 methods_compiled = 0;
 	gint64 cil_code_size_bytes = 0;
 	gint64 native_code_size_bytes = 0;
+	gint64 jit_time = 0;
 
 	if (mono_get_runtime_callbacks ()->get_jit_stats)
-		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes);
-	return (gint32)methods_compiled;
+		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes, &jit_time);
+	return methods_compiled;
 }
 
 static
@@ -294,6 +305,21 @@ get_exception_count (void)
 	if (mono_get_runtime_callbacks ()->get_exception_stats)
 		mono_get_runtime_callbacks ()->get_exception_stats (&excepion_count);
 	return excepion_count;
+}
+
+static
+inline
+gint64
+get_ticks_in_jit (void)
+{
+	gint64 methods_compiled = 0;
+	gint64 cil_code_size_bytes = 0;
+	gint64 native_code_size_bytes = 0;
+	gint64 jit_time = 0;
+
+	if (mono_get_runtime_callbacks ()->get_jit_stats)
+		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes, &jit_time);
+	return jit_time;
 }
 
 guint64 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetRuntimeCounterValue (gint32 id)
@@ -314,8 +340,10 @@ guint64 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetRuntimeCounter
 		return (guint64)gc_last_percent_time_in_gc ();
 	case EP_RT_COUNTERS_JIT_IL_BYTES_JITTED :
 		return (guint64)get_il_bytes_jitted ();
-	case EP_RT_COUNTERS_JIT_METOHODS_JITTED :
+	case EP_RT_COUNTERS_JIT_METHODS_JITTED :
 		return (guint64)get_methods_jitted ();
+	case EP_RT_COUNTERS_JIT_TICKS_IN_JIT :
+		return (gint64)get_ticks_in_jit ();
 	default:
 		return 0;
 	}
@@ -354,6 +382,22 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorke
 	mono_component_event_pipe ()->write_event_threadpool_worker_thread_wait (
 		active_thread_count,
 		retired_worker_thread_count,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_min_max_threads (
+		min_worker_threads,
+		max_worker_threads,
+		min_io_completion_threads,
+		max_io_completion_threads,
 		clr_instance_id);
 }
 
@@ -442,6 +486,18 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorki
 {
 	mono_component_event_pipe ()->write_event_threadpool_working_thread_count (
 		count,
+		clr_instance_id);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_io_pack (
+		native_overlapped,
+		overlapped,
 		clr_instance_id);
 }
 
@@ -545,13 +601,24 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (
 	return FALSE;
 }
 
-intptr_t
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t session_id)
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_SignalSession (uint64_t session_id)
 {
 	ERROR_DECL (error);
-	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.GetWaitHandle");
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.SignalSession");
 	mono_error_set_pending_exception (error);
-	return 0;
+	return FALSE;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WaitForSessionSignal (
+	uint64_t session_id,
+	int32_t timeout)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.WaitForSessionSignal");
+	mono_error_set_pending_exception (error);
+	return FALSE;
 }
 
 void
@@ -606,6 +673,19 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorke
 {
 	ERROR_DECL (error);
 	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadWait");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolMinMaxThreads");
 	mono_error_set_pending_exception (error);
 }
 
@@ -680,6 +760,17 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorki
 {
 	ERROR_DECL (error);
 	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkingThreadCount");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolIOPack");
 	mono_error_set_pending_exception (error);
 }
 

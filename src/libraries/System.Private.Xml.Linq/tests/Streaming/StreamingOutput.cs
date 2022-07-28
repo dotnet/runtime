@@ -47,7 +47,7 @@ namespace XDocumentTests.Streaming
         {
             get
             {
-                return _diff ?? (_diff = new XmlDiff());
+                return _diff ??= new XmlDiff();
             }
         }
 
@@ -60,7 +60,7 @@ namespace XDocumentTests.Streaming
         [Fact]
         public void XNameAsEmptyStringConstructor()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => new XStreamingElement(string.Empty));
+            AssertExtensions.Throws<ArgumentException>("expandedName", () => new XStreamingElement(string.Empty));
             Assert.Throws<XmlException>(() => new XStreamingElement(" "));
         }
 

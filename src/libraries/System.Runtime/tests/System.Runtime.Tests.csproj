@@ -1,39 +1,40 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
-    <Nullable>disable</Nullable>
+    <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
+    <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
   </PropertyGroup>
+
+  <!-- 
+    Add special trait for running local timezone validation tests on certain devices e.g. in CI to make sure the local timezone is correct and not UTC. Disable these tests otherwise.
+  -->
+  <PropertyGroup>
+    <WithoutCategories Condition="'$(EnableAdditionalTimezoneChecks)' != 'true'">$(WithoutCategories);AdditionalTimezoneChecks</WithoutCategories>
+  </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\EnumTypes.cs"
-             Link="Common\System\EnumTypes.cs" />
-    <Compile Include="$(CommonTestPath)System\MockType.cs"
-             Link="Common\System\MockType.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs"
-             Link="Common\System\Collections\CollectionAsserts.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\ICollection.Generic.Tests.cs"
-             Link="Common\System\Collections\ICollection.Generic.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Tests.cs"
-             Link="Common\System\Collections\IEnumerable.Generic.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IList.Generic.Tests.cs"
-             Link="Common\System\Collections\IList.Generic.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs"
-             Link="Common\System\Collections\TestBase.Generic.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs"
-             Link="Common\System\Collections\TestBase.NonGeneric.cs" />
-    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs"
-             Link="Common\System\StringTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs"
-             Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs"
-             Link="Common\System\Collections\IList.NonGeneric.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs"
-             Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs" />
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs"
-             Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs" />
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\EnumTypes.cs" Link="Common\System\EnumTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\MockType.cs" Link="Common\System\MockType.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs" Link="Common\System\Collections\CollectionAsserts.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.Generic.Tests.cs" Link="Common\System\Collections\ICollection.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Tests.cs" Link="Common\System\Collections\IEnumerable.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IList.Generic.Tests.cs" Link="Common\System\Collections\IList.Generic.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs" Link="Common\System\Collections\TestBase.Generic.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs" Link="Common\System\Collections\TestBase.NonGeneric.cs" />
+    <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs" Link="Common\System\StringTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs" Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs" Link="Common\System\Collections\IList.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\ICollection.NonGeneric.Tests.cs" Link="Common\System\Collections\ICollection.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.NonGeneric.Tests.cs" Link="Common\System\Collections\IEnumerable.NonGeneric.Tests.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
@@ -65,7 +66,7 @@
     <Compile Include="System\DBNullTests.cs" />
     <Compile Include="System\DecimalTests.cs" />
     <Compile Include="System\DelegateTests.cs" />
-    <Compile Include="System\Diagnostics\CodeAnalysis\DynamicDependencyAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\StringSyntaxAttributeTests.cs" />
     <Compile Include="System\DivideByZeroExceptionTests.cs" />
     <Compile Include="System\DoubleTests.cs" />
     <Compile Include="System\DuplicateWaitObjectExceptionTests.cs" />
@@ -81,7 +82,6 @@
     <Compile Include="System\FormattableStringTests.cs" />
     <Compile Include="System\FormatExceptionTests.cs" />
     <Compile Include="System\GCTests.cs" />
-    <Compile Include="System\GenericMathTests.cs" />
     <Compile Include="System\GuidTests.cs" />
     <Compile Include="System\HalfTests.cs" />
     <Compile Include="System\HandleTests.cs" />
@@ -89,9 +89,9 @@
     <Compile Include="System\IndexOutOfRangeExceptionTests.cs" />
     <Compile Include="System\IndexTests.cs" />
     <Compile Include="System\Int16Tests.cs" />
-    <Compile Include="System\Int32GenericMathTests.cs" />
     <Compile Include="System\Int32Tests.cs" />
     <Compile Include="System\Int64Tests.cs" />
+    <Compile Include="System\Int128Tests.cs" />
     <Compile Include="System\IntPtrTests.cs" />
     <Compile Include="System\InvalidCastExceptionTests.cs" />
     <Compile Include="System\InvalidOperationExceptionTests.cs" />
@@ -121,6 +121,8 @@
     <Compile Include="System\PseudoCustomAttributeTests.cs" />
     <Compile Include="System\RangeTests.cs" />
     <Compile Include="System\RankExceptionTests.cs" />
+    <Compile Include="System\Reflection\NullabilityInfoContextTests.cs" />
+    <Compile Include="System\Reflection\RuntimeTypeMemberCacheTests.cs" />
     <Compile Include="System\SByteTests.cs" />
     <Compile Include="System\SingleTests.cs" />
     <Compile Include="System\StackOverflowExceptionTests.cs" />
@@ -144,6 +146,7 @@
     <Compile Include="System\UInt16Tests.cs" />
     <Compile Include="System\UInt32Tests.cs" />
     <Compile Include="System\UInt64Tests.cs" />
+    <Compile Include="System\UInt128Tests.cs" />
     <Compile Include="System\UIntPtrTests.cs" />
     <Compile Include="System\UnitySerializationHolderTests.cs" />
     <Compile Include="System\Uri.CreateStringTests.cs" />
@@ -152,8 +155,9 @@
     <Compile Include="System\ValueTypeTests.cs" />
     <Compile Include="System\VersionTests.cs" />
     <Compile Include="System\WeakReferenceTests.cs" />
-    <Compile Include="System\AppContext\AppContext.Switch.cs" />
-    <Compile Include="System\AppContext\AppContext.Switch.Validation.cs" />
+    <Compile Include="System\AppContext\AppContextTests.cs" />
+    <Compile Include="System\AppContext\AppContextTests.Switch.cs" />
+    <Compile Include="System\AppContext\AppContextTests.Switch.Validation.cs" />
     <Compile Include="System\Collections\Generic\KeyNotFoundExceptionTests.cs" />
     <Compile Include="System\Collections\Generic\KeyValuePairTests.cs" />
     <Compile Include="System\Collections\ObjectModel\CollectionTests.cs" />
@@ -162,8 +166,13 @@
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.cs" />
     <Compile Include="System\ComponentModel\EditorBrowsableAttributeTests.cs" />
     <Compile Include="System\Diagnostics\ConditionalAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\ConstantExpectedAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\DynamicDependencyAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttributeTests.cs" />
     <Compile Include="System\Diagnostics\StackTraceHiddenAttributeTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundExceptionTests.cs" />
@@ -217,7 +226,9 @@
     <Compile Include="System\Reflection\TypeDelegatorTests.cs" />
     <Compile Include="System\Reflection\TypeTests.Get.CornerCases.cs" />
     <Compile Include="System\Reflection\TypeTests.GetMember.cs" />
+    <Compile Include="System\Runtime\ControlledExecutionTests.cs" />
     <Compile Include="System\Runtime\DependentHandleTests.cs" />
+    <Compile Include="System\Runtime\JitInfoTests.cs" />
     <Compile Include="System\Runtime\MemoryFailPointTests.cs" />
     <Compile Include="System\Runtime\NgenServicingAttributesTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\AttributesTests.cs" />
@@ -236,17 +247,40 @@
     <Compile Include="System\Security\SecurityAttributeTests.cs" />
     <Compile Include="System\Security\SecurityExceptionTests.cs" />
     <Compile Include="System\Text\StringBuilderTests.cs" />
+    <Compile Include="System\Text\StringBuilderInterpolationTests.cs" />
     <Compile Include="System\Threading\PeriodicTimerTests.cs" />
     <Compile Include="System\Threading\WaitHandleTests.cs" />
     <Compile Include="System\Type\TypePropertyTests.cs" />
     <Compile Include="System\Type\TypeTests.cs" />
     <Compile Include="System\Type\TypeTests.Get.cs" />
-    <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs"
-             Link="Common\System\RandomDataGenerator.cs" />
+    <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs" Link="Common\System\RandomDataGenerator.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\ExitCodeTests.Unix.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
+    <Compile Include="System\ByteTests.GenericMath.cs" />
+    <Compile Include="System\CharTests.GenericMath.cs" />
+    <Compile Include="System\DecimalTests.GenericMath.cs" />
+    <Compile Include="System\DoubleTests.GenericMath.cs" />
+    <Compile Include="System\HalfTests.GenericMath.cs" />
+    <Compile Include="System\Int16Tests.GenericMath.cs" />
+    <Compile Include="System\Int32Tests.GenericMath.cs" />
+    <Compile Include="System\Int64Tests.GenericMath.cs" />
+    <Compile Include="System\Int128Tests.GenericMath.cs" />
+    <Compile Include="System\IntPtrTests.GenericMath.cs" />
+    <Compile Include="System\SByteTests.GenericMath.cs" />
+    <Compile Include="System\SingleTests.GenericMath.cs" />
+    <Compile Include="System\UInt16Tests.GenericMath.cs" />
+    <Compile Include="System\UInt32Tests.GenericMath.cs" />
+    <Compile Include="System\UInt64Tests.GenericMath.cs" />
+    <Compile Include="System\UInt128Tests.GenericMath.cs" />
+    <Compile Include="System\UIntPtrTests.GenericMath.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="System\Reflection\SignatureTypes.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallerArgumentExpressionAttributeTests.cs" />
@@ -262,31 +296,32 @@
     <Compile Include="System\Text\Unicode\Utf8Tests.cs" />
     <Compile Include="System\Text\Unicode\Utf8UtilityTests.ValidateBytes.cs" />
     <Compile Include="System\ArgIteratorTests.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs"
-             Link="System\RealFormatterTestsBase.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs" Link="System\RealFormatterTestsBase.cs" />
     <Compile Include="System\RealFormatterTests.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs"
-             Link="System\RealParserTestsBase.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs" Link="System\RealParserTestsBase.cs" />
     <Compile Include="System\RealParserTests.cs" />
 
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs"
-             Link="Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs" Link="Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" />
     <EmbeddedResource Include="System\Reflection\EmbeddedImage.png">
       <LogicalName>System.Reflection.Tests.EmbeddedImage.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="System\Reflection\EmbeddedTextFile.txt">
       <LogicalName>System.Reflection.Tests.EmbeddedTextFile.txt</LogicalName>
     </EmbeddedResource>
-    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
-             Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
   </ItemGroup>
+
   <ItemGroup>
+    <AnalyzerReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" />
+
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
-    <PackageReference Include="System.Runtime.Numerics.TestData" Version="$(SystemRuntimeNumericsTestDataVersion)" GeneratePathProperty="true"/>
+    <PackageReference Include="System.Runtime.Numerics.TestData" Version="$(SystemRuntimeNumericsTestDataVersion)" GeneratePathProperty="true" />
+
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />

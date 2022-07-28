@@ -14,13 +14,13 @@
     .ver 4:0:0:0
 }
 
-.assembly UnalignedDouble1
+.assembly 'UseUnalignedDouble'
 {
     .hash algorithm 0x00008004
     .ver 4:0:30319:16507
 }
+.assembly extern xunit.core {}
 
-.module UnalignedDouble1.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -127,6 +127,9 @@
 
     .method private hidebysig static int32  Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         // Code size       6 (0x6)
         .maxstack  8

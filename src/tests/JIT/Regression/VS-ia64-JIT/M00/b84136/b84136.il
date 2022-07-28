@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly conv.exe{}
+.assembly conv{}
 .class public conv {
 .method public static float32 r4(float32) {
 .maxstack	2

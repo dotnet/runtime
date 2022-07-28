@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <NoWarn>$(NoWarn),CA2007</NoWarn>
+    <Nullable>enable</Nullable>
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MonoProjectRoot)wasm\debugger\BrowserDebugHost\BrowserDebugHost.csproj" />
+
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.runtimeconfig.json" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugProxy.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Microsoft.CodeAnalysis.CSharp.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Microsoft.CodeAnalysis.dll" />
+    <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\Newtonsoft.Json.dll" />
+
+    <PackageFile Include="@(_browserDebugHostFiles)" TargetPath="tools\$(NetCoreAppCurrent)\" />
+  </ItemGroup>
+
+  <Target Name="GetFilesToPackage" />
+</Project>

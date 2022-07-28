@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -146,6 +146,9 @@ namespace System
             if (!uri.IsAbsoluteUri)
                 throw new InvalidOperationException(SR.net_uri_NotAbsolute);
 
+            if (uri.DisablePathAndQueryCanonicalization && (components & (UriComponents.Path | UriComponents.Query)) != 0)
+                throw new InvalidOperationException(SR.net_uri_GetComponentsCalledWhenCanonicalizationDisabled);
+
             return uri.GetComponentsHelper(components, format);
         }
 
@@ -162,11 +165,8 @@ namespace System
         //
         public static void Register(UriParser uriParser, string schemeName, int defaultPort)
         {
-            if (uriParser == null)
-                throw new ArgumentNullException(nameof(uriParser));
-
-            if (schemeName == null)
-                throw new ArgumentNullException(nameof(schemeName));
+            ArgumentNullException.ThrowIfNull(uriParser);
+            ArgumentNullException.ThrowIfNull(schemeName);
 
             if (schemeName.Length == 1)
                 throw new ArgumentOutOfRangeException(nameof(schemeName));
@@ -174,7 +174,7 @@ namespace System
             if (!Uri.CheckSchemeName(schemeName))
                 throw new ArgumentOutOfRangeException(nameof(schemeName));
 
-            if ((defaultPort >= 0xFFFF || defaultPort < 0) && defaultPort != -1)
+            if ((defaultPort > 0xFFFF || defaultPort < 0) && defaultPort != -1)
                 throw new ArgumentOutOfRangeException(nameof(defaultPort));
 
             schemeName = schemeName.ToLowerInvariant();
@@ -186,8 +186,7 @@ namespace System
         //
         public static bool IsKnownScheme(string schemeName)
         {
-            if (schemeName == null)
-                throw new ArgumentNullException(nameof(schemeName));
+            ArgumentNullException.ThrowIfNull(schemeName);
 
             if (!Uri.CheckSchemeName(schemeName))
                 throw new ArgumentOutOfRangeException(nameof(schemeName));

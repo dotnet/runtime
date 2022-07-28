@@ -4,12 +4,11 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
+include_directories(${CLR_SRC_NATIVE_DIR})
 
 # needed when zLib compression is used
-include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/AnyOS/zlib)
-if(NOT CLR_CMAKE_TARGET_WIN32)
-    include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/Unix/Common)
-endif()
+include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
+include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
@@ -36,12 +35,7 @@ if(FEATURE_JIT_PITCHING)
 endif(FEATURE_JIT_PITCHING)
 
 if(FEATURE_PERFTRACING)
-    set(SHARED_EVENTPIPE_DIR ${CLR_SRC_NATIVE_DIR}/eventpipe)
     set(CORECLR_EVENTPIPE_SHIM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eventing/eventpipe)
-endif(FEATURE_PERFTRACING)
-
-if(FEATURE_PERFTRACING)
-    include_directories(${SHARED_EVENTPIPE_DIR})
     include_directories(${CORECLR_EVENTPIPE_SHIM_DIR})
 endif(FEATURE_PERFTRACING)
 
@@ -49,7 +43,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
     array.cpp
     assembly.cpp
-    assemblyloadcontext.cpp
+    assemblybinder.cpp
     binder.cpp
     bundle.cpp
     castcache.cpp
@@ -69,7 +63,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     debuginfostore.cpp
     decodemd.cpp
     disassembler.cpp
-    domainfile.cpp
+    domainassembly.cpp
     dynamicmethod.cpp
     ecall.cpp
     eedbginterfaceimpl.cpp
@@ -106,13 +100,14 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     nativeimage.cpp
     object.cpp
     onstackreplacement.cpp
-    pefile.cpp
+    peassembly.cpp
     peimage.cpp
     perfmap.cpp
     perfinfo.cpp
     pgo.cpp
     precode.cpp
     prestub.cpp
+    readytorunstandalonemethodmetadata.cpp
     rejit.cpp
     sigformat.cpp
     siginfo.cpp
@@ -136,7 +131,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     versionresilienthashcode.cpp
     virtualcallstub.cpp
     win32threadpool.cpp
-    yieldprocessornormalized.cpp
     zapsig.cpp
 )
 
@@ -148,7 +142,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     appdomain.inl
     array.h
     assembly.hpp
-    assemblyloadcontext.h
+    assemblybinder.h
     binder.h
     castcache.h
     callcounting.h
@@ -168,8 +162,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     debuginfostore.h
     decodemd.h
     disassembler.h
-    domainfile.h
-    domainfile.inl
+    domainassembly.h
     dynamicmethod.h
     ecall.h
     eedbginterfaceimpl.h
@@ -208,8 +201,8 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     object.h
     object.inl
     onstackreplacement.h
-    pefile.h
-    pefile.inl
+    peassembly.h
+    peassembly.inl
     peimage.h
     peimage.inl
     peimagelayout.h
@@ -296,7 +289,6 @@ set(GC_HEADERS_DAC
 set(VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     appdomainnative.cpp
-    assemblyname.cpp
     assemblynative.cpp
     assemblyspec.cpp
     baseassemblyspec.cpp
@@ -318,7 +310,6 @@ set(VM_SOURCES_WKS
     comutilnative.cpp
     comwaithandle.cpp
     coreassemblyspec.cpp
-    corebindresult.cpp
     corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     customattribute.cpp
     custommarshalerinfo.cpp
@@ -328,7 +319,6 @@ set(VM_SOURCES_WKS
     dynamicinterfacecastable.cpp
     eeconfig.cpp
     eecontract.cpp
-    eemessagebox.cpp
     eepolicy.cpp
     eetoprofinterfaceimpl.cpp
     eventpipeinternal.cpp
@@ -345,7 +335,6 @@ set(VM_SOURCES_WKS
     genanalysis.cpp
     genmeth.cpp
     hosting.cpp
-    ibclogger.cpp
     ilmarshalers.cpp
     interopconverter.cpp
     interoputil.cpp
@@ -367,17 +356,16 @@ set(VM_SOURCES_WKS
     pendingload.cpp
     pinvokeoverride.cpp
     profdetach.cpp
-    profilermetadataemitvalidator.cpp
     profilingenumerators.cpp
     profilinghelper.cpp
     proftoeeinterfaceimpl.cpp
     qcall.cpp
+    qcallentrypoints.cpp
     reflectclasswriter.cpp
     reflectioninvocation.cpp
     runtimehandles.cpp
     safehandle.cpp
     simplerwlock.cpp
-    sourceline.cpp
     stackingallocator.cpp
     stringliteralmap.cpp
     stubcache.cpp
@@ -390,6 +378,7 @@ set(VM_SOURCES_WKS
     threadsuspend.cpp
     typeparse.cpp
     weakreferencenative.cpp
+    yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
 )
 
@@ -399,10 +388,7 @@ list(REMOVE_ITEM VM_SOURCES_WKS codeman.cpp)
 set(VM_HEADERS_WKS
     ${VM_HEADERS_DAC_AND_WKS_COMMON}
     ../inc/jithelpers.h
-    coreclr/corebindresult.h
-    coreclr/corebindresult.inl
     appdomainnative.hpp
-    assemblyname.hpp
     assemblynative.hpp
     assemblyspec.hpp
     assemblyspecbase.h
@@ -434,7 +420,6 @@ set(VM_HEADERS_WKS
     dllimportcallback.h
     eeconfig.h
     eecontract.h
-    eemessagebox.h
     eepolicy.h
     eeprofinterfaces.h
     eeprofinterfaces.inl
@@ -452,7 +437,6 @@ set(VM_HEADERS_WKS
     gcenv.ee.h
     gcenv.os.h
     gchelpers.h
-    ibclogger.h
     ilmarshalers.h
     interopconverter.h
     interoputil.h
@@ -474,7 +458,6 @@ set(VM_HEADERS_WKS
     olevariant.h
     pendingload.h
     profdetach.h
-    profilermetadataemitvalidator.h
     profilingenumerators.h
     profilinghelper.h
     proftoeeinterfaceimpl.h
@@ -484,7 +467,6 @@ set(VM_HEADERS_WKS
     reflectioninvocation.h
     runtimehandles.h
     simplerwlock.hpp
-    sourceline.h
     stackingallocator.h
     stringliteralmap.h
     stubcache.h
@@ -564,23 +546,22 @@ list(APPEND VM_SOURCES_WKS
 list(APPEND VM_HEADERS_WKS
     interoplibinterface.h
 )
-if(FEATURE_COMWRAPPERS OR FEATURE_OBJCMARSHAL)
-    if (FEATURE_COMWRAPPERS)
-        list(APPEND VM_SOURCES_WKS
-            interoplibinterface.cpp
-            rcwrefcache.cpp
-        )
-        list(APPEND VM_HEADERS_WKS
-            rcwrefcache.h
-        )
-    endif (FEATURE_COMWRAPPERS)
 
-    if (FEATURE_OBJCMARSHAL)
-        list(APPEND VM_SOURCES_WKS
-            interoplibinterface_objc.cpp
-        )
-    endif (FEATURE_OBJCMARSHAL)
-endif(FEATURE_COMWRAPPERS OR FEATURE_OBJCMARSHAL)
+if(FEATURE_COMWRAPPERS)
+    list(APPEND VM_SOURCES_WKS
+        interoplibinterface_comwrappers.cpp
+        rcwrefcache.cpp
+    )
+    list(APPEND VM_HEADERS_WKS
+        rcwrefcache.h
+    )
+endif(FEATURE_COMWRAPPERS)
+
+if(FEATURE_OBJCMARSHAL)
+    list(APPEND VM_SOURCES_WKS
+        interoplibinterface_objc.cpp
+    )
+endif(FEATURE_OBJCMARSHAL)
 
 if(CLR_CMAKE_TARGET_WIN32)
 
@@ -630,7 +611,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.cpp
         dispparammarshaler.cpp
         mngstdinterfaces.cpp
-        notifyexternals.cpp
         olecontexthelpers.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
@@ -647,7 +627,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.h
         dispparammarshaler.h
         mngstdinterfaces.h
-        notifyexternals.h
         olecontexthelpers.h
         runtimecallablewrapper.h
         stdinterfaces.h
@@ -683,6 +662,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
         ${ARCH_SOURCES_DIR}/ThePreStubAMD64.asm
+        ${ARCH_SOURCES_DIR}/thunktemplates.asm
         ${ARCH_SOURCES_DIR}/Context.asm
         ${ARCH_SOURCES_DIR}/ExternalMethodFixupThunk.asm
         ${ARCH_SOURCES_DIR}/UMThunkStub.asm
@@ -699,6 +679,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
         ${ARCH_SOURCES_DIR}/gmsasm.asm
         ${ARCH_SOURCES_DIR}/jithelp.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
+        ${ARCH_SOURCES_DIR}/thunktemplates.asm
     )
 
     set(VM_HEADERS_WKS_ARCH_ASM
@@ -711,6 +692,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
         ${ARCH_SOURCES_DIR}/ehhelpers.asm
         ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
+        ${ARCH_SOURCES_DIR}/thunktemplates.asm
     )
 
     set(VM_HEADERS_WKS_ARCH_ASM
@@ -722,6 +704,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
         ${ARCH_SOURCES_DIR}/CrtHelpers.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
+        ${ARCH_SOURCES_DIR}/thunktemplates.asm
     )
 
     set(VM_HEADERS_WKS_ARCH_ASM
@@ -744,6 +727,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/jithelpers_slow.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/theprestubamd64.S
+            ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${ARCH_SOURCES_DIR}/unixasmhelpers.S
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/virtualcallstubamd64.S
@@ -756,7 +740,8 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/gmsasm.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/umthunkstub.S
-        )
+            ${ARCH_SOURCES_DIR}/thunktemplates.S
+            )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/asmhelpers.S
@@ -764,6 +749,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/ehhelpers.S
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
+            ${ARCH_SOURCES_DIR}/thunktemplates.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         set(VM_SOURCES_WKS_ARCH_ASM
@@ -771,6 +757,15 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/calldescrworkerarm64.S
             ${ARCH_SOURCES_DIR}/crthelpers.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
+            ${ARCH_SOURCES_DIR}/thunktemplates.S
+        )
+    elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
+        set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/asmhelpers.S
+            ${ARCH_SOURCES_DIR}/calldescrworkerloongarch64.S
+            ${ARCH_SOURCES_DIR}/crthelpers.S
+            ${ARCH_SOURCES_DIR}/pinvokestubs.S
+            ${ARCH_SOURCES_DIR}/thunktemplates.S
         )
     endif()
 
@@ -835,7 +830,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
         ${ARCH_SOURCES_DIR}/exceparm.cpp
         ${ARCH_SOURCES_DIR}/stubs.cpp
-        ${ARCH_SOURCES_DIR}/armsinglestepper.cpp
     )
 
     set(VM_HEADERS_DAC_AND_WKS_ARCH
@@ -846,6 +840,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
 
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
+        ${ARCH_SOURCES_DIR}/armsinglestepper.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )
@@ -857,7 +852,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
         ${ARCH_SOURCES_DIR}/stubs.cpp
         exceptionhandling.cpp
-        gcinfodecoder.cpp
     )
 
     set(VM_HEADERS_DAC_AND_WKS_ARCH
@@ -867,13 +861,29 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
 
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
+        gcinfodecoder.cpp
     )
 
     if(CLR_CMAKE_HOST_UNIX)
-        list(APPEND VM_SOURCES_DAC_AND_WKS_ARCH
+        list(APPEND VM_SOURCES_WKS_ARCH
             ${ARCH_SOURCES_DIR}/arm64singlestepper.cpp
         )
     endif(CLR_CMAKE_HOST_UNIX)
+elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
+    set(VM_SOURCES_DAC_AND_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/stubs.cpp
+        exceptionhandling.cpp
+    )
+
+    set(VM_HEADERS_DAC_AND_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/virtualcallstubcpu.hpp
+        exceptionhandling.h
+    )
+
+    set(VM_SOURCES_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/profiler.cpp
+        gcinfodecoder.cpp
+    )
 endif()
 
 if(CLR_CMAKE_HOST_UNIX)
@@ -948,9 +958,11 @@ list(APPEND VM_SOURCES_DAC
 # gcdecode.cpp is included by both JIT and VM. to avoid duplicate definitions we need to
 # treat it in a special way when statically linking with both VM and JIT
 if(CLR_CMAKE_TARGET_ARCH_I386)
-    list(APPEND VM_SOURCES_DAC
-        gcdecode.cpp
-    )
+    if(CLR_CMAKE_TARGET_WIN32)
+        list(APPEND VM_SOURCES_DAC
+            gcdecode.cpp
+        )
+    endif()
     list(APPEND VM_SOURCES_WKS_SPECIAL
         gcdecode.cpp
     )

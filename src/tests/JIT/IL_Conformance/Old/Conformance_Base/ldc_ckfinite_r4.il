@@ -404,5 +404,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_ckfinite_r4.exe{}
+.assembly ldc_ckfinite_r4{}
 

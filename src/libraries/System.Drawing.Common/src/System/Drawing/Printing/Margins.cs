@@ -175,7 +175,7 @@ namespace System.Drawing.Printing
             }
         }
 
-        private void CheckMargin(int margin, string name)
+        private static void CheckMargin(int margin, string name)
         {
             if (margin < 0)
             {
@@ -235,14 +235,6 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Provides some interesting information for the Margins in String form.
         /// </summary>
-        public override string ToString()
-        {
-            return "[Margins"
-                + " Left=" + Left.ToString(CultureInfo.InvariantCulture)
-                + " Right=" + Right.ToString(CultureInfo.InvariantCulture)
-                + " Top=" + Top.ToString(CultureInfo.InvariantCulture)
-                + " Bottom=" + Bottom.ToString(CultureInfo.InvariantCulture)
-                + "]";
-        }
+        public override string ToString() => $"[Margins Left={Left} Right={Right} Top={Top} Bottom={Bottom}]";
     }
 }

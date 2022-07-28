@@ -11,13 +11,24 @@ namespace System.IO.Strategies
         /// <summary>Caches whether Serialization Guard has been disabled for file writes</summary>
         private static int s_cachedSerializationSwitch;
 
-        internal static bool UseNet5CompatStrategy { get; } = AppContextConfigHelper.GetBooleanConfig("System.IO.UseNet5CompatFileStream", "DOTNET_SYSTEM_IO_USENET5COMPATFILESTREAM");
+        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        {
+            FileStreamStrategy strategy =
+                EnableBufferingIfNeeded(ChooseStrategyCore(handle, access, isAsync), bufferSize);
 
-        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
-            => WrapIfDerivedType(fileStream, ChooseStrategyCore(handle, access, share, bufferSize, isAsync));
+            return WrapIfDerivedType(fileStream, strategy);
+        }
 
-        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
-            => WrapIfDerivedType(fileStream, ChooseStrategyCore(path, mode, access, share, bufferSize, options, preallocationSize));
+        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode)
+        {
+            FileStreamStrategy strategy =
+                EnableBufferingIfNeeded(ChooseStrategyCore(path, mode, access, share, options, preallocationSize, unixCreateMode), bufferSize);
+
+            return WrapIfDerivedType(fileStream, strategy);
+        }
+
+        private static FileStreamStrategy EnableBufferingIfNeeded(FileStreamStrategy strategy, int bufferSize)
+            => bufferSize > 1 ? new BufferedFileStreamStrategy(strategy, bufferSize) : strategy;
 
         private static FileStreamStrategy WrapIfDerivedType(FileStream fileStream, FileStreamStrategy strategy)
             => fileStream.GetType() == typeof(FileStream)
@@ -40,21 +51,9 @@ namespace System.IO.Strategies
             e is NotSupportedException ||
             (e is ArgumentException && !(e is ArgumentNullException));
 
-        internal static bool ShouldPreallocate(long preallocationSize, FileAccess access, FileMode mode)
-            => preallocationSize > 0
-               && (access & FileAccess.Write) != 0
-               && mode != FileMode.Open && mode != FileMode.Append;
-
         internal static void ValidateArguments(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
-            if (path == null)
-            {
-                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
-            }
-            else if (path.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             // don't include inheritable in our bounds check for share
             FileShare tempshare = share & ~FileShare.Inheritable;
@@ -107,7 +106,29 @@ namespace System.IO.Strategies
                 throw new ArgumentException(SR.Argument_InvalidAppendMode, nameof(access));
             }
 
+            if (preallocationSize > 0)
+            {
+                ValidateArgumentsForPreallocation(mode, access);
+            }
+
             SerializationGuard(access);
+        }
+
+        internal static void ValidateArgumentsForPreallocation(FileMode mode, FileAccess access)
+        {
+            // The user will be writing into the preallocated space.
+            if ((access & FileAccess.Write) == 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidPreallocateAccess, nameof(access));
+            }
+
+            // Only allow preallocation for newly created/overwritten files.
+            // When we fail to preallocate, we'll remove the file.
+            if (mode != FileMode.Create &&
+                mode != FileMode.CreateNew)
+            {
+                throw new ArgumentException(SR.Argument_InvalidPreallocateMode, nameof(mode));
+            }
         }
 
         internal static void SerializationGuard(FileAccess access)

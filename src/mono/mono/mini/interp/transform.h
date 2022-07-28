@@ -99,7 +99,16 @@ struct _InterpBasicBlock {
 	gint16 out_count;
 	InterpBasicBlock **out_bb;
 
+	/* The real native offset of this bblock, computed when emitting the instructions in the code stream */
 	int native_offset;
+	/*
+	 * Estimated native offset computed before the final code stream is generated. These offsets are used
+	 * to determine whether we will use a long or short branch when branching to this bblock. Native offset
+	 * estimates must respect the following condition: |bb1->n_o_e - bb2->n_o_e| >= |bb1->n_o - bb2->n_o|.
+	 * The real native offset between two instructions is always smaller or equal to the estimate, allowing
+	 * us to safely insert short branches based on the estimated offset.
+	 */
+	int native_offset_estimate;
 
 	/*
 	 * The state of the stack when entering this basic block. By default, the stack height is
@@ -117,6 +126,11 @@ struct _InterpBasicBlock {
 	// This block has special semantics and it shouldn't be optimized away
 	int eh_block : 1;
 	int dead: 1;
+	// If patchpoint is set we will store mapping information between native offset and bblock index within
+	// InterpMethod. In the unoptimized method we will map from native offset to the bb_index while in the
+	// optimized method we will map the bb_index to the corresponding native offset.
+	int patchpoint_data: 1;
+	int emit_patchpoint: 1;
 };
 
 typedef enum {
@@ -186,11 +200,13 @@ typedef struct
 	int max_data_items;
 	void **data_items;
 	GHashTable *data_hash;
+	GSList *imethod_items;
 #ifdef ENABLE_EXPERIMENT_TIERED
 	GHashTable *patchsite_hash;
 #endif
 	int *clause_indexes;
 	int *clause_vars;
+	gboolean gen_seq_points;
 	gboolean gen_sdb_seq_points;
 	GPtrArray *seq_points;
 	InterpBasicBlock **offset_to_bb;
@@ -206,10 +222,16 @@ typedef struct
 	MonoProfilerCoverageInfo *coverage_info;
 	GList *dont_inline;
 	int inline_depth;
+	int patchpoint_data_n;
+	int *patchpoint_data;
 	int has_localloc : 1;
+	// If method compilation fails due to certain limits being exceeded, we disable inlining
+	// and retry compilation.
+	int disable_inlining : 1;
 	// If the current method (inlined_method) has the aggressive inlining attribute, we no longer
 	// bail out of inlining when having to generate certain opcodes (like call, throw).
 	int aggressive_inlining : 1;
+	int optimized : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0

@@ -15,15 +15,12 @@ internal static partial class Interop
 
         internal const int NID_undef = 0;
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ObjSn2Nid", CharSet = CharSet.Ansi)]
-        internal static extern int ObjSn2Nid(string sn);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ObjTxt2Nid", CharSet = CharSet.Ansi)]
-        private static extern int ObjTxt2Nid(string oid);
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ObjTxt2Nid", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int ObjTxt2Nid(string oid);
 
         internal static int ResolveRequiredNid(string oid)
         {
-            return s_nidLookup.GetOrAdd(oid, s => LookupNid(s));
+            return s_nidLookup.GetOrAdd(oid, LookupNid);
         }
 
         private static int LookupNid(string oid)

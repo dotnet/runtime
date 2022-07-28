@@ -1,0 +1,365 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NoWarn>$(NoWarn),CS1574</NoWarn>
+    <Nullable>disable</Nullable>
+    <DefineConstants>TYPE_LOADER_IMPLEMENTATION;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(TYPE_LOADER_TRACE)' != ''">TYPE_LOADER_TRACE;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(GVM_RESOLUTION_TRACE)' != ''">GVM_RESOLUTION_TRACE;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(CCCONVERTER_TRACE)' != ''">CCCONVERTER_TRACE;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(GENERICS_FORCE_USG)' != ''">GENERICS_FORCE_USG;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+  </ItemGroup>
+  <PropertyGroup>
+    <NativeFormatCommonPath>$(CompilerCommonPath)\Internal\NativeFormat</NativeFormatCommonPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Primitives.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatWriter.Primitives.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Metadata.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
+    <Compile Include="$(AotCommonPath)\Internal\Runtime\MethodTable.cs">
+      <Link>MethodTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MethodTable.Constants.cs">
+      <Link>MethodTable.Constants.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MappingTableFlags.cs">
+      <Link>MappingTableFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\EETypeBuilderHelpers.cs">
+      <Link>EETypeBuilderHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\RuntimeConstants.cs">
+      <Link>RuntimeConstants.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\Internal\Runtime\TransitionBlock.cs">
+      <Link>TransitionBlock.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
+      <Link>LowLevelList.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MetadataBlob.cs">
+      <Link>MetadataBlob.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>ArrayBuilder.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
+      <Link>LowLevelDictionary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\SR.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Runtime\CompilerServices\IntrinsicAttribute.cs">
+      <Link>IntrinsicAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\ArrayType.Canon.cs">
+      <Link>Internal\TypeSystem\ArrayType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\ByRefType.Canon.cs">
+      <Link>Internal\TypeSystem\ByRefType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\CanonTypes.cs">
+      <Link>Internal\TypeSystem\CanonTypes.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\DefType.Canon.cs">
+      <Link>Internal\TypeSystem\DefType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\FunctionPointerType.Canon.cs">
+      <Link>Internal\TypeSystem\FunctionPointerType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\GenericParameterDesc.Canon.cs">
+      <Link>Internal\TypeSystem\GenericParameterDesc.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\InstantiatedMethod.Canon.cs">
+      <Link>Internal\TypeSystem\InstantiatedMethod.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\InstantiatedType.Canon.cs">
+      <Link>Internal\TypeSystem\InstantiatedType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\MetadataType.Canon.cs">
+      <Link>Internal\TypeSystem\MetadataType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\MethodDesc.Canon.cs">
+      <Link>Internal\TypeSystem\MethodDesc.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\MethodForInstantiatedType.Canon.cs">
+      <Link>Internal\TypeSystem\MethodForInstantiatedType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\ParameterizedType.Canon.cs">
+      <Link>Internal\TypeSystem\ParameterizedType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\PointerType.Canon.cs">
+      <Link>Internal\TypeSystem\PointerType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\SignatureVariable.Canon.cs">
+      <Link>Internal\TypeSystem\SignatureVariable.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\StandardCanonicalizationAlgorithm.cs">
+      <Link>Internal\TypeSystem\StandardCanonicalizationAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\TypeDesc.Canon.cs">
+      <Link>Internal\TypeSystem\TypeDesc.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\TypeSystemContext.Canon.cs">
+      <Link>Internal\TypeSystem\TypeSystemContext.Canon.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\AlignmentHelper.cs">
+      <Link>Internal\TypeSystem\AlignmentHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\ArrayOfTRuntimeInterfacesAlgorithm.cs">
+      <Link>Internal\TypeSystem\ArrayOfTRuntimeInterfacesAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\ArrayType.cs">
+      <Link>Internal\TypeSystem\ArrayType.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\BaseTypeRuntimeInterfacesAlgorithm.cs">
+      <Link>Internal\TypeSystem\BaseTypeRuntimeInterfacesAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\ByRefType.cs">
+      <Link>Internal\TypeSystem\ByRefType.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\CastingHelper.cs">
+      <Link>Internal\TypeSystem\CastingHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\ConstructedTypeRewritingHelpers.cs">
+      <Link>Internal\TypeSystem\ConstructedTypeRewritingHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\DefType.cs">
+      <Link>Internal\TypeSystem\DefType.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\DefType.FieldLayout.cs">
+      <Link>Internal\TypeSystem\DefType.FieldLayout.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\FieldDesc.cs">
+      <Link>Internal\TypeSystem\FieldDesc.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\FieldDesc.FieldLayout.cs">
+      <Link>Internal\TypeSystem\FieldDesc.FieldLayout.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\FieldForInstantiatedType.cs">
+      <Link>Internal\TypeSystem\FieldForInstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\FieldLayoutAlgorithm.cs">
+      <Link>Internal\TypeSystem\FieldLayoutAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\FunctionPointerType.cs">
+      <Link>Internal\TypeSystem\FunctionPointerType.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\GenericParameterDesc.cs">
+      <Link>Internal\TypeSystem\GenericParameterDesc.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\IAssemblyDesc.cs">
+      <Link>Internal\TypeSystem\IAssemblyDesc.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\IModuleResolver.cs">
+      <Link>Internal\TypeSystem\IModuleResolver.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\InstantiatedMethod.cs">
+      <Link>Internal\TypeSystem\InstantiatedMethod.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\InstantiatedType.cs">
+      <Link>Internal\TypeSystem\InstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\InstantiatedType.Interfaces.cs">
+      <Link>Internal\TypeSystem\InstantiatedType.Interfaces.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\InstantiatedType.MethodImpls.cs">
+      <Link>Internal\TypeSystem\InstantiatedType.MethodImpls.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Instantiation.cs">
+      <Link>Internal\TypeSystem\Instantiation.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\LayoutInt.cs">
+      <Link>Internal\TypeSystem\LayoutInt.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\ExplicitLayoutValidator.cs">
+      <Link>Internal\TypeSystem\Common\ExplicitLayoutValidator.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\MetadataType.cs">
+      <Link>Internal\TypeSystem\MetadataType.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\MetadataType.Interfaces.cs">
+      <Link>Internal\TypeSystem\MetadataType.Interfaces.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\MetadataType.MethodImpls.cs">
+      <Link>Internal\TypeSystem\MetadataType.MethodImpls.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\MethodDesc.cs">
+      <Link>Internal\TypeSystem\MethodDesc.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\MethodForInstantiatedType.cs">
+      <Link>Internal\TypeSystem\MethodForInstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\ModuleDesc.cs">
+      <Link>Internal\TypeSystem\ModuleDesc.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\NotFoundBehavior.cs">
+      <Link>TypeSystem\Common\NotFoundBehavior.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\ResolutionFailure.cs">
+      <Link>TypeSystem\Common\ResolutionFailure.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\ParameterizedType.cs">
+      <Link>Internal\TypeSystem\ParameterizedType.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\PointerType.cs">
+      <Link>Internal\TypeSystem\PointerType.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\RuntimeInterfacesAlgorithm.cs">
+      <Link>Internal\TypeSystem\RuntimeInterfacesAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\SignatureVariable.cs">
+      <Link>Internal\TypeSystem\SignatureVariable.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TargetArchitecture.cs">
+      <Link>Internal\TypeSystem\TargetArchitecture.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TargetDetails.cs">
+      <Link>Internal\TypeSystem\TargetDetails.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\ThreadSafeFlags.cs">
+      <Link>Internal\TypeSystem\ThreadSafeFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeDesc.cs">
+      <Link>Internal\TypeSystem\TypeDesc.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeDesc.Interfaces.cs">
+      <Link>Internal\TypeSystem\TypeDesc.Interfaces.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeFlags.cs">
+      <Link>Internal\TypeSystem\TypeFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeSystemContext.cs">
+      <Link>Internal\TypeSystem\TypeSystemContext.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeSystemEntity.cs">
+      <Link>Internal\TypeSystem\TypeSystemEntity.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\ThrowHelper.Common.cs">
+      <Link>Internal\TypeSystem\ThrowHelper.Common.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeSystemHelpers.cs">
+      <Link>Internal\TypeSystem\TypeSystemHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs">
+      <Link>UniversalCanonLayoutAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtableOfPointers.cs">
+      <Link>LockFreeReaderHashtableOfPointers.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.cs">
+      <Link>Internal\TypeSystem\Utilities\ExceptionTypeNameFormatter.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\TypeNameFormatter.cs">
+      <Link>TypeNameFormatter.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\VirtualMethodAlgorithm.cs">
+      <Link>Internal\TypeSystem\VirtualMethodAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\WellKnownType.cs">
+      <Link>Internal\TypeSystem\WellKnownType.cs</Link>
+    </Compile>
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\CanonicallyEquivalentEntryLocator.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\MethodTable.Runtime.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\EETypeCreator.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\Empty.cs" />
+    <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.cs" />
+    <Compile Include="$(CompilerCommonPath)\Internal\Metadata\NativeFormat\MetadataTypeHashingAlgorithms.cs" />
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeHashingAlgorithms.cs" />
+    <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\ExternalReferencesTable.NativeFormatModuleInfo.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\GenericDictionary.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\GenericDictionaryCell.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\LockFreeObjectInterner.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\LowLevelStringConverter.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\MetadataNameExtensions.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderHelpers.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\ModuleList.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutFieldAlgorithm.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutFieldDesc.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutInfoLoadContext.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutInterfacesAlgorithm.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\NoMetadataFieldLayoutAlgorithm.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\NoMetadataRuntimeInterfacesAlgorithm.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\OptionalFields.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\PermanentAllocatedMemoryBlobs.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\SerializedDebugData.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TemplateLocator.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeBuilder.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeBuilderState.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.ConstructedGenericMethodsLookup.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.ConstructedGenericsRegistration.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.ConstructedGenericTypesLookup.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.FieldAccess.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.GVMResolution.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.LdTokenResultLookup.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.Metadata.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.MetadataSignatureParsing.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.MethodAddress.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.NamedTypeLookup.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.SignatureParsing.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.StaticsLookup.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderLogger.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderTypeSystemContext.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeSystemContextFactory.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeSystemExtensions.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\WellKnownTypeExtensions.cs" />
+    <Compile Include="Internal\TypeSystem\ArrayMethod.Runtime.cs" />
+    <Compile Include="Internal\TypeSystem\CanonTypes.Runtime.cs" />
+    <Compile Include="Internal\TypeSystem\DefType.Runtime.cs" />
+    <Compile Include="Internal\TypeSystem\ExceptionTypeNameFormatter.Runtime.cs" />
+    <Compile Include="Internal\TypeSystem\InstantiatedMethod.Runtime.cs" />
+    <Compile Include="Internal\TypeSystem\MethodDesc.Runtime.cs" />
+    <Compile Include="Internal\TypeSystem\MethodForInstantiatedType.Runtime.cs" />
+    <Compile Include="Internal\TypeSystem\NoMetadataMethodDesc.cs" />
+    <Compile Include="Internal\TypeSystem\RuntimeMethodDesc.Canon.cs" />
+    <Compile Include="Internal\TypeSystem\RuntimeMethodDesc.cs" />
+    <Compile Include="Internal\TypeSystem\RuntimeNoMetadataType.cs" />
+    <Compile Include="Internal\TypeSystem\ThrowHelper.cs" />
+    <Compile Include="Internal\TypeSystem\TypeDesc.Runtime.cs" />
+    <Compile Include="Internal\TypeSystem\TypeSystemContext.Runtime.cs" />
+    <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs">
+      <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Interop\MetadataType.Interop.cs">
+      <Link>Internal\TypeSystem\Interop\MetadataType.Interop.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Interop\InstantiatedType.Interop.cs">
+      <Link>Internal\TypeSystem\Interop\InstantiatedType.Interop.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\CanonTypes.Interop.cs">
+      <Link>Internal\TypeSystem\Canon\CanonTypes.Interop.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Interop\MarshalAsDescriptor.cs">
+      <Link>Internal\TypeSystem\Interop\MarshalAsDescriptor.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeDesc.ToString.cs">
+      <Link>Internal\TypeSystem\TypeDesc.ToString.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\FieldDesc.ToString.cs">
+      <Link>Internal\TypeSystem\FieldDesc.ToString.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\DebugNameFormatter.cs">
+      <Link>Utilities\DebugNameFormatter.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\GenericParameterDesc.Dummy.Diagnostic.cs">
+      <Link>Internal\TypeSystem\Common\GenericParameterDesc.Dummy.Diagnostic.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\MethodDesc.Dummy.Diagnostic.cs">
+      <Link>Internal\TypeSystem\Common\MethodDesc.Dummy.Diagnostic.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\DefType.Dummy.Diagnostic.cs">
+      <Link>Internal\TypeSystem\Common\DefType.Dummy.Diagnostic.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

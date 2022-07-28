@@ -91,7 +91,9 @@ namespace System.Net.WebSockets.Tests
         [Fact]
         public static void RegisterPrefixes_Unsupported()
         {
+#pragma warning disable 0618 // Obsolete API
             Assert.Throws<PlatformNotSupportedException>(() => WebSocket.RegisterPrefixes());
+#pragma warning restore 0618
         }
 
         [Fact]

@@ -14,7 +14,7 @@
 
 using System;
 
-class Test{
+class Test_L_1_5_3{
 	public static int Main(){
 		int mi_RetCode;
 		mi_RetCode = B.Test();

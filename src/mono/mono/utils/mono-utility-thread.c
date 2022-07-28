@@ -22,7 +22,7 @@ typedef struct {
 	MonoSemType *response_sem;
 
 	// Variably-sized, size is thread->payload_size
-	gpointer payload [MONO_ZERO_LEN_ARRAY]; 
+	gpointer payload [MONO_ZERO_LEN_ARRAY];
 } UtilityThreadQueueEntry;
 
 static void
@@ -38,7 +38,7 @@ utility_thread_handle_inbox (MonoUtilityThread *thread, gboolean at_shutdown)
 	UtilityThreadQueueEntry *entry = (UtilityThreadQueueEntry *) mono_lock_free_queue_dequeue (&thread->work_queue);
 	if (!entry)
 		return FALSE;
-	
+
 	thread->callbacks.command (thread->state_ptr, &entry->payload, at_shutdown);
 	if (entry->response_sem) {
 		*entry->finished = TRUE;
@@ -90,7 +90,7 @@ mono_utility_thread_launch (size_t payload_size, MonoUtilityThreadCallbacks *cal
 	thread->callbacks = *callbacks;
 
 	mono_lock_free_queue_init (&thread->work_queue);
-	mono_lock_free_allocator_init_size_class (&thread->message_size_class, entry_size, thread->message_block_size);
+	mono_lock_free_allocator_init_size_class (&thread->message_size_class, (unsigned int)entry_size, (unsigned int)thread->message_block_size);
 	mono_lock_free_allocator_init_allocator (&thread->message_allocator, &thread->message_size_class, accountType);
 	mono_os_sem_init (&thread->work_queue_sem, 0);
 	mono_atomic_store_i32 (&thread->run_thread, 1);

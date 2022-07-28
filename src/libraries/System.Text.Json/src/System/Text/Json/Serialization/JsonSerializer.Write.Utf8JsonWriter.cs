@@ -10,8 +10,9 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Write one JSON value (including objects or arrays) to the provided writer.
+        /// Writes one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <param name="writer">The writer to write.</param>
         /// <param name="value">The value to convert and write.</param>
         /// <param name="options">Options to control the behavior.</param>
@@ -23,16 +24,24 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static void Serialize<TValue>(
             Utf8JsonWriter writer,
             TValue value,
             JsonSerializerOptions? options = null)
         {
-            Serialize(writer, value, GetRuntimeType(value), options);
+            if (writer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
+            }
+
+            Type runtimeType = GetRuntimeType(value);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            WriteUsingSerializer(writer, value, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Write one JSON value (including objects or arrays) to the provided writer.
+        /// Writes one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
         /// <param name="writer"></param>
         /// <param name="value">The value to convert and write.</param>
@@ -49,22 +58,27 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static void Serialize(
             Utf8JsonWriter writer,
             object? value,
             Type inputType,
             JsonSerializerOptions? options = null)
         {
-            Serialize<object?>(
-                writer,
-                value,
-                GetRuntimeTypeAndValidateInputType(value, inputType),
-                options);
+            if (writer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
+            }
+
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            WriteUsingSerializer(writer, value, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Write one JSON value (including objects or arrays) to the provided writer.
+        /// Writes one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <param name="writer">The writer to write.</param>
         /// <param name="value">The value to convert and write.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
@@ -77,21 +91,20 @@ namespace System.Text.Json
         /// </exception>
         public static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (writer == null)
+            if (writer is null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
-            WriteUsingMetadata(writer, value, jsonTypeInfo);
+            WriteUsingGeneratedSerializer(writer, value, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Write one JSON value (including objects or arrays) to the provided writer.
+        /// Writes one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
         /// <param name="writer"></param>
         /// <param name="value">The value to convert and write.</param>
@@ -113,30 +126,17 @@ namespace System.Text.Json
         /// </exception>
         public static void Serialize(Utf8JsonWriter writer, object? value, Type inputType, JsonSerializerContext context)
         {
-            if (writer == null)
+            if (writer is null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
-
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            WriteUsingMetadata(writer, value, GetTypeInfo(context, runtimeType));
-        }
-
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static void Serialize<TValue>(Utf8JsonWriter writer, in TValue value, Type runtimeType, JsonSerializerOptions? options)
-        {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
-
-            JsonTypeInfo typeInfo = GetTypeInfo(runtimeType, options);
-            WriteUsingMetadata(writer, value, typeInfo);
+            WriteUsingGeneratedSerializer(writer, value, GetTypeInfo(context, runtimeType));
         }
     }
 }

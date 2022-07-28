@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
+namespace Test_doublearr_InnerProd
+{
 public class doublemm
 {
     public static Random rand;
@@ -114,7 +117,8 @@ public class doublemm
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = false;
 
@@ -239,4 +243,5 @@ public class doublemm
             return 1;
         }
     }
+}
 }

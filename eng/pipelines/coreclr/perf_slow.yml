@@ -3,20 +3,17 @@ trigger:
   branches:
     include:
     - main
-    - release/*
   paths:
     include:
     - '*'
     - src/libraries/System.Private.CoreLib/*
     exclude:
+    - '**.md'
+    - .devcontainer/*
     - .github/*
     - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
     - LICENSE.TXT
     - PATENTS.TXT
-    - README.md
-    - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
 variables:
@@ -40,6 +37,7 @@ jobs:
       jobTemplate: /eng/pipelines/mono/templates/build-job.yml
       runtimeFlavor: mono
       buildConfig: release
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       platforms:
       - Linux_arm64
 
@@ -48,6 +46,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
       buildConfig: release
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       platforms:
       - Linux_arm64
       jobParameters:
@@ -59,6 +58,7 @@ jobs:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
       buildConfig: release
       runtimeFlavor: mono
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       platforms:
       - Linux_arm64
       jobParameters:
@@ -70,6 +70,7 @@ jobs:
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfa64'
+        timeoutInMinutes: 500 
 
   # build mono on wasm
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -77,6 +78,7 @@ jobs:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
       runtimeFlavor: mono
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       platforms:
       - Browser_wasm
       jobParameters:
@@ -99,6 +101,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
       buildConfig: release
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       platforms:
       - Linux_arm64
       - windows_arm64
@@ -110,6 +113,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       runtimeFlavor: mono
       platforms:
       - Browser_wasm
@@ -130,11 +134,13 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       runtimeFlavor: mono
+      runtimeVariant: 'llvmaot'
       platforms:
       - Linux_arm64
       jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
         nameSuffix: AOT
         isOfficialBuild: false
         extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
@@ -155,6 +161,7 @@ jobs:
       runtimeFlavor: aot
       platforms:
       - Linux_arm64
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -164,6 +171,7 @@ jobs:
         runKind: micro_mono
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
+        timeoutInMinutes: 500 
 
 # run coreclr Linux arm64 microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -173,6 +181,7 @@ jobs:
       runtimeFlavor: coreclr
       platforms:
       - Linux_arm64
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -180,6 +189,25 @@ jobs:
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfa64'
+        timeoutInMinutes: 500 
+
+# run coreclr Linux arm64 ampere microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - Linux_arm64
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfampere'
+        timeoutInMinutes: 500 
 
 # run coreclr Windows arm64 microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -195,5 +223,53 @@ jobs:
         projectFile: microbenchmarks.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perfsurf'
+        logicalmachine: 'perfsurf' 
 
+# run coreclr Windows arm64 ampere microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - windows_arm64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perfampere' 
+
+# Uncomment once we fix https://github.com/dotnet/performance/issues/1950
+# # run coreclr linux crossgen perf job
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+#     buildConfig: release
+#     runtimeFlavor: coreclr
+#     platforms:
+#     - Linux_arm64
+#     jobParameters:
+#       testGroup: perf
+#       liveLibrariesBuildConfig: Release
+#       projectFile: crossgen_perf.proj
+#       runKind: crossgen_scenarios
+#       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+#       logicalmachine: 'perfa64'
+
+# # run coreclr windows crossgen perf job
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+#     buildConfig: release
+#     runtimeFlavor: coreclr
+#     platforms:
+#     - windows_arm64
+#     jobParameters:
+#       testGroup: perf
+#       liveLibrariesBuildConfig: Release
+#       projectFile: crossgen_perf.proj
+#       runKind: crossgen_scenarios
+#       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+#       logicalmachine: 'perfsurf'

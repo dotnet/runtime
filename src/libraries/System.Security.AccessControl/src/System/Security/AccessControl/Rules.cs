@@ -37,10 +37,7 @@ namespace System.Security.AccessControl
             InheritanceFlags inheritanceFlags,
             PropagationFlags propagationFlags)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
+            ArgumentNullException.ThrowIfNull(identity);
 
             if (accessMask == 0)
             {

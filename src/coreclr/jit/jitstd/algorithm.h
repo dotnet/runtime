@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-
 #pragma once
+
+#include <minipal/utils.h>
 
 namespace jitstd
 {
@@ -102,9 +102,9 @@ void quick_sort(RandomAccessIterator first, RandomAccessIterator last, Less less
             //
             // It's not possible for newFirst to go past the end of the sort range:
             //   - If newFirst reaches the pivot before newLast then the pivot is
-            //	   swapped to the right and we'll stop again when we reach it.
+            //     swapped to the right and we'll stop again when we reach it.
             //   - If newLast reaches the pivot before newFirst then the pivot is
-            //	   swapped to the left and the value at newFirst will take its place
+            //     swapped to the left and the value at newFirst will take its place
             //     to the right so less(newFirst, pivot) will again be false when the
             //     old pivot's position is reached.
             do
@@ -148,7 +148,7 @@ void quick_sort(RandomAccessIterator first, RandomAccessIterator last, Less less
         RandomAccessIterator rightFirst = newLast + 1;
         RandomAccessIterator rightLast = last;
 
-        assert(depth < _countof(firstStack));
+        assert(depth < ARRAY_SIZE(firstStack));
 
         // Ideally, the 2 partitions should have the same size, that would guarantee
         // log2(n) stack space. If that's not the case then push the larger partition

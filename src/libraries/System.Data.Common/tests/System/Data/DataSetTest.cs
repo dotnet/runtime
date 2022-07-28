@@ -28,6 +28,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.ComponentModel;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -36,6 +37,7 @@ using System.Data.SqlTypes;
 using System.Globalization;
 using System.Text;
 using System.Diagnostics;
+using System.Runtime.Serialization.Formatters.Binary;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using System.Tests;
@@ -1577,6 +1579,46 @@ namespace System.Data.Tests
             DataSet data2 = new DataSet();
             data2.ReadXml(new StringReader(
                 writer.GetStringBuilder().ToString()));
+        }
+
+        [Fact]
+        public void SerializationFormat_Binary_does_not_work_by_default()
+        {
+            DataSet ds = new DataSet();
+#pragma warning disable SYSLIB0038
+            Assert.Throws<InvalidEnumArgumentException>(() => ds.RemotingFormat = SerializationFormat.Binary);
+#pragma warning restore SYSLIB0038
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SerializationFormat_Binary_works_with_appconfig_switch()
+        {
+            RemoteExecutor.Invoke(RunTest).Dispose();
+
+            static void RunTest()
+            {
+                AppContext.SetSwitch("Switch.System.Data.AllowUnsafeSerializationFormatBinary", true);
+
+                DataSet ds = new DataSet();
+                DataTable dt = new DataTable("MyTable");
+                DataColumn dc = new DataColumn("dc", typeof(int));
+                dt.Columns.Add(dc);
+                ds.Tables.Add(dt);
+#pragma warning disable SYSLIB0038
+                ds.RemotingFormat = SerializationFormat.Binary;
+#pragma warning restore SYSLIB0038
+
+                DataSet dsDeserialized;
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    BinaryFormatter bf = new BinaryFormatter();
+                    bf.Serialize(ms, ds);
+                    ms.Seek(0, SeekOrigin.Begin);
+                    dsDeserialized = (DataSet)bf.Deserialize(ms);
+                }
+
+                Assert.Equal(dc.DataType, dsDeserialized.Tables[0].Columns[0].DataType);
+            }
         }
 
         #region DataSet.CreateDataReader Tests and DataSet.Load Tests

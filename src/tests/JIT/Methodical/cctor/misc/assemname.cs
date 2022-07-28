@@ -4,12 +4,14 @@
 // static field
 
 using System;
+using Xunit;
 
 namespace Precise
 {
-    internal class Driver
+    public class Driver_assemname
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

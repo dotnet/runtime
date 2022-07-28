@@ -10,15 +10,10 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class WasmBuildAppTest : BuildTestBase
+    public class WasmBuildAppTest : WasmBuildAppBase
     {
         public WasmBuildAppTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : base(output, buildContext)
         {}
-
-        public static IEnumerable<object?[]> MainMethodTestData(bool aot, RunHost host)
-            => ConfigWithAOTData(aot)
-                .WithRunHosts(host)
-                .UnwrapItemsAsArrays();
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
@@ -60,28 +55,6 @@ namespace Wasm.Build.Tests
                     }
                 }", buildArgs, host, id);
 
-        [Theory]
-        [BuildAndRun(aot: true, host: RunHost.None, parameters: new object[]
-                        { "", "error :.*emscripten.*required for AOT" })]
-        [BuildAndRun(aot: true, host: RunHost.None, parameters: new object[]
-                        { "/non-existant/foo", "error.*\\(EMSDK_PATH\\)=/non-existant/foo.*required for AOT" })]
-        public void AOT_ErrorWhenMissingEMSDK(BuildArgs buildArgs, string emsdkPath, string errorPattern, string id)
-        {
-            string projectName = $"missing_emsdk";
-            buildArgs = buildArgs with {
-                            ProjectName = projectName,
-                            ExtraBuildArgs = $"/p:EMSDK_PATH={emsdkPath}"
-            };
-            buildArgs = ExpandBuildArgs(buildArgs);
-
-            (_, string buildOutput) = BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                        id: id,
-                        expectSuccess: false);
-
-            Assert.Matches(errorPattern, buildOutput);
-        }
-
         private static string s_bug49588_ProgramCS = @"
             using System;
             public class TestClass {
@@ -107,13 +80,92 @@ namespace Wasm.Build.Tests
                         extraProperties: "<WasmBuildNative>true</WasmBuildNative>",
                         dotnetWasmFromRuntimePack: false);
 
-        void TestMain(string projectName,
-                      string programText,
-                      BuildArgs buildArgs,
-                      RunHost host,
-                      string id,
-                      string extraProperties = "",
-                      bool? dotnetWasmFromRuntimePack = null)
+        [Theory]
+        [BuildAndRun]
+        public void PropertiesFromRuntimeConfigJson(BuildArgs buildArgs, RunHost host, string id)
+        {
+            buildArgs = buildArgs with { ProjectName = $"runtime_config_{buildArgs.Config}_{buildArgs.AOT}" };
+            buildArgs = ExpandBuildArgs(buildArgs);
+
+            string programText = @"
+                using System;
+                using System.Runtime.CompilerServices;
+
+                var config = AppContext.GetData(""test_runtimeconfig_json"");
+                Console.WriteLine ($""test_runtimeconfig_json: {(string)config}"");
+                return 42;
+            ";
+
+            string runtimeConfigTemplateJson = @"
+            {
+                ""configProperties"": {
+                  ""abc"": ""4"",
+                  ""test_runtimeconfig_json"": ""25""
+                }
+            }";
+
+            BuildProject(buildArgs,
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () =>
+                                {
+                                    File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+                                    File.WriteAllText(Path.Combine(_projectDir!, "runtimeconfig.template.json"), runtimeConfigTemplateJson);
+                                },
+                                DotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release")));
+
+            RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
+                                test: output => Assert.Contains("test_runtimeconfig_json: 25", output), host: host, id: id);
+        }
+
+        [Theory]
+        [BuildAndRun]
+        public void PropertiesFromCsproj(BuildArgs buildArgs, RunHost host, string id)
+        {
+            buildArgs = buildArgs with { ProjectName = $"runtime_config_csproj_{buildArgs.Config}_{buildArgs.AOT}" };
+            buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<ThreadPoolMaxThreads>20</ThreadPoolMaxThreads>");
+
+            string programText = @"
+                using System;
+                using System.Runtime.CompilerServices;
+
+                var config = AppContext.GetData(""System.Threading.ThreadPool.MaxThreads"");
+                Console.WriteLine ($""System.Threading.ThreadPool.MaxThreads: {(string)config}"");
+                return 42;
+            ";
+
+            BuildProject(buildArgs,
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () =>
+                                {
+                                    File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+                                },
+                                DotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release")));
+
+            RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
+                                test: output => Assert.Contains("System.Threading.ThreadPool.MaxThreads: 20", output), host: host, id: id);
+        }
+    }
+
+    public class WasmBuildAppBase : BuildTestBase
+    {
+        public static IEnumerable<object?[]> MainMethodTestData(bool aot, RunHost host)
+            => ConfigWithAOTData(aot)
+                .WithRunHosts(host)
+                .UnwrapItemsAsArrays();
+
+        public WasmBuildAppBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : base(output, buildContext)
+        {
+        }
+
+        protected void TestMain(string projectName,
+              string programText,
+              BuildArgs buildArgs,
+              RunHost host,
+              string id,
+              string extraProperties = "",
+              bool? dotnetWasmFromRuntimePack = null)
         {
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
@@ -122,13 +174,13 @@ namespace Wasm.Build.Tests
                 dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
             BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                        id: id,
-                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack);
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                                DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
 
             RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
                                 test: output => Assert.Contains("Hello, World!", output), host: host, id: id);
         }
     }
-
- }
+}

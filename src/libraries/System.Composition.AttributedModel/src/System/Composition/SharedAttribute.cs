@@ -34,7 +34,7 @@ namespace System.Composition
         }
 
         /// <summary>
-        /// he boundary outside of which this part is inaccessible.
+        /// The boundary outside of which this part is inaccessible.
         /// </summary>
         public string SharingBoundary => (string)base.Value;
     }

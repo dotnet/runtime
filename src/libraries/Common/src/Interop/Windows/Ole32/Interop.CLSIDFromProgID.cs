@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Ole32
     {
-        [DllImport(Interop.Libraries.Ole32, CharSet = CharSet.Unicode)]
-        internal static extern int CLSIDFromProgID(string lpszProgID, out Guid lpclsid);
+        [LibraryImport(Interop.Libraries.Ole32, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial int CLSIDFromProgID(string lpszProgID, out Guid lpclsid);
     }
 }

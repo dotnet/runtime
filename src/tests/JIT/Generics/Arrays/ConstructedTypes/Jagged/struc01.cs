@@ -36,7 +36,7 @@ public struct Gen<T>
 
 }
 
-public class Test
+public class Test_struc01
 {
     public static int counter = 0;
     public static bool result = true;

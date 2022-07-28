@@ -17,10 +17,12 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using System.Diagnostics;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
-[module:Debuggable(true,false)]
+[module: Debuggable(true, false)]
 namespace System.Tests
 {
     public class AttributeIsDefinedTests
@@ -42,6 +44,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/linker/issues/2078", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot) /* Stripping ComVisible because descriptors tell us so */)]
         public void IsDefined_PropertyInfo()
         {
             PropertyInfo pi = typeof(TestBase).GetProperty("PropBase3");
@@ -217,6 +220,107 @@ namespace System.Tests
         {
             Assert.True(typeof(ExampleWithAttribute).GetCustomAttributes(typeof(INameable), inherit: false)[0] is NameableAttribute);
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [SkipOnMono("Mono does not support getting DynamicMethod attributes via Attribute.GetCustomAttributes()")]
+        public static void GetCustomAttributes_DynamicMethod()
+        {
+            var dynamicMethod = new DynamicMethod("test", typeof(void), Type.EmptyTypes);
+
+            Attribute[] attributes = Attribute.GetCustomAttributes(dynamicMethod, typeof(NameableAttribute));
+            Assert.Empty(attributes);
+            Assert.IsType<NameableAttribute[]>(attributes);
+
+            attributes = Attribute.GetCustomAttributes(dynamicMethod);
+            Assert.Equal(1, attributes.Length);
+            Assert.IsType<MethodImplAttribute>(attributes[0]);
+
+            attributes = Attribute.GetCustomAttributes(dynamicMethod, typeof(MethodImplAttribute));
+            Assert.Equal(1, attributes.Length);
+            Assert.IsType<MethodImplAttribute[]>(attributes);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForType()
+        {
+            GenericAttributesTestHelper<string>(t => Attribute.GetCustomAttributes(typeof(HasGenericAttribute), t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForField()
+        {
+            FieldInfo field = typeof(HasGenericAttribute).GetField(nameof(HasGenericAttribute.Field), BindingFlags.NonPublic | BindingFlags.Instance);
+            GenericAttributesTestHelper<TimeSpan>(t => Attribute.GetCustomAttributes(field, t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForConstructor()
+        {
+            ConstructorInfo method = typeof(HasGenericAttribute).GetConstructor(Type.EmptyTypes);
+            GenericAttributesTestHelper<Guid>(t => Attribute.GetCustomAttributes(method, t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForMethod()
+        {
+            MethodInfo method = typeof(HasGenericAttribute).GetMethod(nameof(HasGenericAttribute.Method));
+            GenericAttributesTestHelper<long>(t => Attribute.GetCustomAttributes(method, t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForParameter()
+        {
+            ParameterInfo parameter = typeof(HasGenericAttribute).GetMethod(nameof(HasGenericAttribute.Method)).GetParameters()[0];
+            GenericAttributesTestHelper<ulong>(t => Attribute.GetCustomAttributes(parameter, t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForProperty()
+        {
+            PropertyInfo property = typeof(HasGenericAttribute).GetProperty(nameof(HasGenericAttribute.Property));
+            GenericAttributesTestHelper<List<object>>(t => Attribute.GetCustomAttributes(property, t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
+        public static void GetCustomAttributesWorksWithOpenAndClosedGenericTypesForEvent()
+        {
+            EventInfo @event = typeof(HasGenericAttribute).GetEvent(nameof(HasGenericAttribute.Event));
+            GenericAttributesTestHelper<DateTime?>(t => Attribute.GetCustomAttributes(@event, t));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
+        public static void GetCustomAttributesOnOpenGenericTypeRetrievesDerivedAttributes()
+        {
+            Attribute[] attributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<>));
+            Assert.Equal(3, attributes.Length);
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(DerivesFromGenericAttribute)));
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(GenericAttribute<bool>)));
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(GenericAttribute<string>)));
+
+            attributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<bool>));
+            Assert.Equal(2, attributes.Length);
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(DerivesFromGenericAttribute)));
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(GenericAttribute<bool>)));
+        }
+
+        private static void GenericAttributesTestHelper<TGenericParameter>(Func<Type, Attribute[]> getCustomAttributes)
+        {
+            Attribute[] openGenericAttributes = getCustomAttributes(typeof(GenericAttribute<>));
+            Assert.True(openGenericAttributes.Length >= 1);
+            Assert.Equal(1, openGenericAttributes.OfType<GenericAttribute<TGenericParameter>>().Count());
+
+            Attribute[] closedGenericAttributes = getCustomAttributes(typeof(GenericAttribute<TGenericParameter>));
+            Assert.Equal(1, closedGenericAttributes.Length);
+            Assert.Equal(typeof(GenericAttribute<TGenericParameter>[]), closedGenericAttributes.GetType());
+        }
     }
 
     public static class GetCustomAttribute
@@ -225,7 +329,7 @@ namespace System.Tests
         [Fact]
         public static void customAttributeCount()
         {
-            List<CustomAttributeData> customAttributes =  typeof(GetCustomAttribute).Module.CustomAttributes.ToList();
+            List<CustomAttributeData> customAttributes = typeof(GetCustomAttribute).Module.CustomAttributes.ToList();
             // [System.Security.UnverifiableCodeAttribute()]
             // [TestAttributes.FooAttribute()]
             // [TestAttributes.ComplicatedAttribute((Int32)1, Stuff = 2)]
@@ -659,7 +763,7 @@ namespace System.Tests
     }
     public class BaseClass
     {
-        public virtual void TestMethod([ArgumentUsage("for test")]string[] strArray, params string[] strList)
+        public virtual void TestMethod([ArgumentUsage("for test")] string[] strArray, params string[] strList)
         {
         }
     }
@@ -815,7 +919,7 @@ namespace System.Tests
         string Name { get; }
     }
 
-    [AttributeUsage (AttributeTargets.All, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
     public class NameableAttribute : Attribute, INameable
     {
         string INameable.Name => "Nameable";
@@ -823,4 +927,38 @@ namespace System.Tests
 
     [Nameable]
     public class ExampleWithAttribute { }
+
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
+    public class GenericAttribute<T> : Attribute
+    {
+    }
+
+    public class DerivesFromGenericAttribute : GenericAttribute<bool>
+    {
+    }
+
+    [DerivesFromGeneric]
+    [GenericAttribute<string>]
+    [GenericAttribute<bool>]
+    public class HasGenericAttribute
+    {
+        [GenericAttribute<TimeSpan>]
+        internal bool Field;
+
+        [GenericAttribute<Guid>]
+        public HasGenericAttribute() { }
+
+        [GenericAttribute<long>]
+        public void Method([GenericAttribute<ulong>] int parameter)
+        {
+            this.Field = true;
+            this.Event += () => { };
+        }
+
+        [GenericAttribute<List<object>>]
+        public int Property { get; set; }
+
+        [GenericAttribute<DateTime?>]
+        public event Action Event;
+    }
 }

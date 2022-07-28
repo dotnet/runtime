@@ -134,7 +134,7 @@ namespace System.Linq.Expressions.Compiler
                     EmitBlockExpression(node, flags);
                     break;
                 case ExpressionType.DebugInfo:
-                    EmitDebugInfoExpression(node);
+                    // nop
                     break;
                 case ExpressionType.Dynamic:
                     EmitDynamicExpression(node);

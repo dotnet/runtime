@@ -64,6 +64,7 @@ namespace SampleMetadata
     public class GenericClassWithClassConstraint<T> where T : class { }
     public class GenericClassWithStructConstraint<T> where T : struct { }
     public class GenericClassWithNewConstraint<T> where T : new() { }
+    public class GenericClassWithEnumConstraint<T> where T : Enum { }
     public class GenericClassWithTypeConstraints<T> where T : CConstrained1, IConstrained1, IConstrained2<T> { }
     public class GenericClassWithInterfaceConstraints<T> where T : IConstrained1, IConstrained2<T> { }
     public class GenericClassWithQuirkyConstraints1<T, U> where T : U where U : CConstrained1, IConstrained1 { }
@@ -198,6 +199,8 @@ namespace SampleMetadata
         public void Foo4(short s = -34) { }
         public void Foo5(decimal d = 1234m) { }
         public void Foo6([DateTimeConstant(ticks: 8736726782)] DateTime dt) { }
+        public void Foo7(string s1 = "foo", string s2 = "", string s3 = null) { }
+        public void Foo8(Action a = null) { }
     }
 
     public class ParametersWithPseudoCustomtAttributes
@@ -418,6 +421,9 @@ namespace SampleMetadata
 
         [MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = "Blah", MarshalCookie = "YumYum")]
         public int F20;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 65)]
+        public int F21;
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -547,5 +553,10 @@ namespace SampleMetadata
     public class ClassWithDefaultMember1<T> where T : ClassWithDefaultMember1<T>
     {
         public int Yes;
+    }
+
+    public class PublicClass
+    {
+        internal class InternalNestedClass { }
     }
 }

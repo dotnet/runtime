@@ -1,19 +1,11 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; ==++==
-;
-
-;
-; ==--==
-
 include AsmMacros.inc
 include asmconstants.inc
 
 Thread__GetAbortContext equ ?GetAbortContext@Thread@@QEAAPEAU_CONTEXT@@XZ
 
-extern FixContextHandler:proc
-extern LinkFrameAndThrow:proc
 extern GetCurrentSavedRedirectContext:proc
 extern Thread__GetAbortContext:proc
 extern HijackHandler:proc
@@ -27,7 +19,7 @@ extern FixRedirectContextHandler:proc
 ; WARNING!!  restoring the context prior to any stackwalk.  This means that
 ; WARNING!!  we need to ensure that no GC can occur while the stack is
 ; WARNING!!  unwalkable.  This further means that we cannot allow any exception
-; WARNING!!  to occure when the stack is unwalkable
+; WARNING!!  to occur when the stack is unwalkable
 ;
 
 
@@ -212,25 +204,36 @@ NESTED_END RedirectForThrowControl2, _TEXT
 GenerateRedirectedStubWithFrame RedirectForThrowControl, HijackHandler, RedirectForThrowControl2
 
 
-NAKED_THROW_HELPER_FRAME_SIZE = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES + 8
+ifdef FEATURE_SPECIAL_USER_MODE_APC
 
-NESTED_ENTRY NakedThrowHelper2, _TEXT
+extern ?ApcActivationCallback@Thread@@CAX_K@Z:proc
 
-        ; On entry
-        ; rcx -> FaultingExceptionFrame
+; extern "C" void NTAPI ApcActivationCallbackStub(ULONG_PTR Parameter);
+NESTED_ENTRY ApcActivationCallbackStub, _TEXT, FixRedirectContextHandler
 
-        alloc_stack     NAKED_THROW_HELPER_FRAME_SIZE
+        push_nonvol_reg rbp
+        alloc_stack     30h ; padding for alignment, CONTEXT *, callee scratch area
+        set_frame       rbp, 0
+    .errnz REDIRECTSTUB_ESTABLISHER_OFFSET_RBP, REDIRECTSTUB_ESTABLISHER_OFFSET_RBP has changed - update asm stubs
         END_PROLOGUE
 
-        call            LinkFrameAndThrow
+        ; Save the pointer to the interrupted context on the stack for the stack walker
+        mov             rax, [rcx + OFFSETOF__APC_CALLBACK_DATA__ContextRecord]
+        mov             [rbp + 20h], rax
+    .errnz REDIRECTSTUB_RBP_OFFSET_CONTEXT - 20h, REDIRECTSTUB_RBP_OFFSET_CONTEXT has changed - update asm stubs
 
-        ; LinkFrameAndThrow doesn't return.
-        int             3
+        call            ?ApcActivationCallback@Thread@@CAX_K@Z
 
-NESTED_END NakedThrowHelper2, _TEXT
+        add             rsp, 30h
+        pop             rbp
+        ret
 
-GenerateRedirectedStubWithFrame NakedThrowHelper, FixContextHandler, NakedThrowHelper2
+        ; Put a label here to tell the debugger where the end of this function is.
+    PATCH_LABEL ApcActivationCallbackStubEnd
+
+NESTED_END ApcActivationCallbackStub, _TEXT
+
+endif ; FEATURE_SPECIAL_USER_MODE_APC
 
 
         end
-

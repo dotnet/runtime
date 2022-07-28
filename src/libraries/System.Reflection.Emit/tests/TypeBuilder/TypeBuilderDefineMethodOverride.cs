@@ -18,7 +18,7 @@ namespace System.Reflection.Emit.Tests
 
     public class MethodBuilderDefineMethodOverride
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineMethodOverride_InterfaceMethod()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -28,16 +28,16 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
-            MethodInfo decleration = typeof(DefineMethodOverrideInterface).GetMethod("M");
-            type.DefineMethodOverride(method, decleration);
+            MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod("M");
+            type.DefineMethodOverride(method, declaration);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
 
             MethodInfo createdMethod = typeof(DefineMethodOverrideInterface).GetMethod("M");
             Assert.Equal(2, createdMethod.Invoke(Activator.CreateInstance(createdType), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineMethodOverride_InterfaceMethodWithConflictingName()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -48,10 +48,10 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
-            MethodInfo decleration = typeof(DefineMethodOverrideInterface).GetMethod("M");
-            type.DefineMethodOverride(method, decleration);
+            MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod("M");
+            type.DefineMethodOverride(method, declaration);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo createdMethod = typeof(DefineMethodOverrideInterface).GetMethod("M");
 
             ConstructorInfo createdTypeCtor = createdType.GetConstructor(new Type[0]);
@@ -60,7 +60,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(1, createdMethod.Invoke(Activator.CreateInstance(typeof(DefineMethodOverrideClass)), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineMethodOverride_GenericInterface_Succeeds()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -74,11 +74,11 @@ namespace System.Reflection.Emit.Tests
             MethodInfo interfaceMethod = typeof(GenericInterface<string>).GetMethod(nameof(GenericInterface<string>.Method));
             type.DefineMethodOverride(method, interfaceMethod);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             Assert.Equal("Hello World", interfaceMethod.Invoke(Activator.CreateInstance(createdType), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineMethodOverride_CalledTwiceWithSameBodies_Works()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -88,11 +88,11 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
-            MethodInfo decleration = typeof(DefineMethodOverrideInterface).GetMethod("M");
-            type.DefineMethodOverride(method, decleration);
-            type.DefineMethodOverride(method, decleration);
+            MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod("M");
+            type.DefineMethodOverride(method, declaration);
+            type.DefineMethodOverride(method, declaration);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
 
             MethodInfo createdMethod = typeof(DefineMethodOverrideInterface).GetMethod("M");
             Assert.Equal(2, createdMethod.Invoke(Activator.CreateInstance(createdType), null));
@@ -119,9 +119,9 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             MethodInfo body = typeof(DefineMethodOverrideInterface).GetMethod("M");
-            MethodInfo decleration = typeof(DefineMethodOverrideClass).GetMethod("M");
+            MethodInfo declaration = typeof(DefineMethodOverrideClass).GetMethod("M");
 
-            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineMethodOverride(body, decleration));
+            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineMethodOverride(body, declaration));
         }
 
         [Fact]
@@ -143,7 +143,7 @@ namespace System.Reflection.Emit.Tests
             method.GetILGenerator().Emit(OpCodes.Ret);
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo body = createdType.GetMethod(method.Name);
             MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod(method.Name);
 
@@ -160,8 +160,8 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
-            MethodInfo decleration = typeof(DefineMethodOverrideInterface).GetMethod(method.Name);
-            type.DefineMethodOverride(method, decleration);
+            MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod(method.Name);
+            type.DefineMethodOverride(method, declaration);
 
             Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
         }
@@ -227,9 +227,9 @@ namespace System.Reflection.Emit.Tests
             ilGenerator2.Emit(OpCodes.Ret);
 
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
-            MethodInfo decleration = typeof(DefineMethodOverrideInterface).GetMethod("M");
-            type.DefineMethodOverride(method1, decleration);
-            type.DefineMethodOverride(method2, decleration);
+            MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod("M");
+            type.DefineMethodOverride(method1, declaration);
+            type.DefineMethodOverride(method2, declaration);
 
             Assert.Throws<TypeLoadException>(() => type.CreateTypeInfo());
         }
@@ -269,7 +269,6 @@ namespace System.Reflection.Emit.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49904", TestRuntimes.Mono)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Static virtual interface methods not supported on .NET Framework")]
         public void DefineMethodOverride_StaticVirtualInterfaceMethod()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
@@ -296,7 +295,6 @@ namespace System.Reflection.Emit.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49904", TestRuntimes.Mono)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Static virtual interface methods not supported on .NET Framework")]
         public void DefineMethodOverride_StaticVirtualInterfaceMethod_VerifyWithInterfaceMap()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);

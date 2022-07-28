@@ -22,8 +22,9 @@
 #include "shash.h"
 
 #include "../heaps/export.h"
-#include "../hotdata/export.h"
 #include "../tables/export.h"
+
+#include<minipal/utils.h>
 
 struct HENUMInternal;
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
@@ -200,7 +201,6 @@ typedef CMetaDataHashBase CLookUpHash;
 
 class MDTOKENMAP;
 class MDInternalRW;
-class CorProfileData;
 class UTSemReadWrite;
 
 template <class MiniMd> class CLiteWeightStgdb;
@@ -236,7 +236,7 @@ public:
     HRESULT InitOnRO(CMiniMd *pMd, int bReadOnly);
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
     __checkReturn
-    HRESULT InitOnCustomDataSource(IMDCustomDataSource* pDataSouce);
+    HRESULT InitOnCustomDataSource(IMDCustomDataSource* pDataSource);
 #endif
     __checkReturn
     HRESULT ConvertToRW();
@@ -246,14 +246,13 @@ public:
         CorSaveSize               fSave,
         UINT32                   *pcbSize,
         DWORD                    *pbCompressed,
-        MetaDataReorderingOptions reorderingOptions = NoReordering,
-        CorProfileData           *pProfileData = NULL);
+        MetaDataReorderingOptions reorderingOptions = NoReordering);
     int IsPoolEmpty(int iPool);
     __checkReturn
     HRESULT GetPoolSaveSize(int iPool, UINT32 *pcbSize);
 
     __checkReturn
-    HRESULT SaveTablesToStream(IStream *pIStream, MetaDataReorderingOptions reorderingOptions, CorProfileData *pProfileData);
+    HRESULT SaveTablesToStream(IStream *pIStream, MetaDataReorderingOptions reorderingOptions);
     __checkReturn
     HRESULT SavePoolToStream(int iPool, IStream *pIStream);
     __checkReturn
@@ -557,10 +556,6 @@ public:
 
     bool IsMemberDefHashPresent() { return m_pMemberDefHash != NULL; }
 
-    // Function to reorganize the string pool based on IBC profile data (if available) and static analysis.
-    // Throws on error.
-    VOID OrganizeStringPool(CorProfileData *pProfileData);
-
     // Result of hash search
     enum HashSearchResult
     {
@@ -769,11 +764,7 @@ public:
 
     // look up hash table for tokenless tables.
     // They are constant, FieldMarshal, MethodSemantics, ClassLayout, FieldLayout, ImplMap, FieldRVA, NestedClass, and MethodImpl
-    CLookUpHash * m_pLookUpHashs[TBL_COUNT];
-
-#if !defined(DACCESS_COMPILE)
-    MapSHash<UINT32, UINT32> m_StringPoolOffsetHash;
-#endif
+    CLookUpHash * m_pLookUpHashes[TBL_COUNT];
 
     //*************************************************************************
     // Hash for named items.
@@ -959,7 +950,7 @@ public:
     HRESULT GetGenericParamsForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtTypeOrMethodDef, lengthof(mdtTypeOrMethodDef)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtTypeOrMethodDef, ARRAY_SIZE(mdtTypeOrMethodDef)),
             m_pVS[TBL_GenericParam], pRidStart, pRidEnd);
     }
 
@@ -974,7 +965,7 @@ public:
     HRESULT GetMethodSpecsForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtMethodDefOrRef, lengthof(mdtMethodDefOrRef)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtMethodDefOrRef, ARRAY_SIZE(mdtMethodDefOrRef)),
             m_pVS[TBL_MethodSpec], pRidStart, pRidEnd);
     }
 
@@ -982,7 +973,7 @@ public:
     HRESULT GetDeclSecurityForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasDeclSecurity, lengthof(mdtHasDeclSecurity)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasDeclSecurity, ARRAY_SIZE(mdtHasDeclSecurity)),
             m_pVS[TBL_DeclSecurity],
             pRidStart,
             pRidEnd);
@@ -992,7 +983,7 @@ public:
     HRESULT GetCustomAttributeForToken(mdToken tk, RID *pRidStart, RID *pRidEnd = 0)
     {
         return LookUpTableByCol(
-            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasCustomAttribute, lengthof(mdtHasCustomAttribute)),
+            encodeToken(RidFromToken(tk), TypeFromToken(tk), mdtHasCustomAttribute, ARRAY_SIZE(mdtHasCustomAttribute)),
             m_pVS[TBL_CustomAttribute],
             pRidStart,
             pRidEnd);
@@ -1019,7 +1010,7 @@ public:
     FORCEINLINE int IsPreSaveDone() { return m_bPreSaveDone; }
 
 protected:
-    __checkReturn HRESULT PreSave(MetaDataReorderingOptions reorderingOptions=NoReordering, CorProfileData *pProfileData=NULL);
+    __checkReturn HRESULT PreSave(MetaDataReorderingOptions reorderingOptions=NoReordering);
     __checkReturn HRESULT PostSave();
 
     __checkReturn HRESULT PreSaveFull();
@@ -1032,45 +1023,22 @@ protected:
     __checkReturn HRESULT SaveENCPoolToStream(int iPool, IStream *pIStream);
 
     __checkReturn
-    HRESULT GetHotMetadataTokensSearchAware(
-        CorProfileData *pProfileData,
-        ULONG ixTbl,
-        ULONG *pResultCount,
-        mdToken *tokenBuffer,
-        ULONG maxCount);
-
-    __checkReturn
     HRESULT GetFullSaveSize(
         CorSaveSize               fSave,
         UINT32                   *pcbSize,
         DWORD                    *pbCompressed,
-        MetaDataReorderingOptions reorderingOptions = NoReordering,
-        CorProfileData           *pProfileData = NULL);
+        MetaDataReorderingOptions reorderingOptions = NoReordering);
     __checkReturn
     HRESULT GetENCSaveSize(UINT32 *pcbSize);
     __checkReturn
     HRESULT GetHotPoolsSaveSize(
         UINT32                   *pcbSize,
-        MetaDataReorderingOptions reorderingOptions,
-        CorProfileData           *pProfileData);
+        MetaDataReorderingOptions reorderingOptions);
 
     __checkReturn
-    HRESULT SaveFullTablesToStream(IStream *pIStream, MetaDataReorderingOptions reorderingOptions=NoReordering, CorProfileData *pProfileData = NULL );
+    HRESULT SaveFullTablesToStream(IStream *pIStream, MetaDataReorderingOptions reorderingOptions=NoReordering);
     __checkReturn
     HRESULT SaveENCTablesToStream(IStream *pIStream);
-    __checkReturn
-    HRESULT SaveHotPoolsToStream(
-        IStream                  *pStream,
-        MetaDataReorderingOptions reorderingOptions,
-        CorProfileData           *pProfileData,
-        UINT32                   *pnPoolDirSize,
-        UINT32                   *pnSavedPoolsSize);
-    __checkReturn
-    HRESULT SaveHotPoolToStream(
-        IStream                 *pStream,
-        CorProfileData          *pProfileData,
-        MetaData::HotHeapWriter *pHotHeapWriter,
-        UINT32                  *pnSavedSize);
 
     // TO ELIMINATE:
     __checkReturn
@@ -1167,7 +1135,7 @@ protected:
     //*************************************************************************
     // Overridables -- must be provided in derived classes.
     __checkReturn
-    FORCEINLINE HRESULT Impl_GetString(UINT32 nIndex, __out LPCSTR *pszString)
+    FORCEINLINE HRESULT Impl_GetString(UINT32 nIndex, _Out_ LPCSTR *pszString)
     { return m_StringHeap.GetString(nIndex, pszString); }
     __checkReturn
     HRESULT Impl_GetStringW(ULONG ix, __inout_ecount (cchBuffer) LPWSTR szOut, ULONG cchBuffer, ULONG *pcchBuffer);
@@ -1186,14 +1154,14 @@ protected:
     }
 
     __checkReturn
-    FORCEINLINE HRESULT Impl_GetBlob(ULONG nIndex, __out MetaData::DataBlob *pData)
+    FORCEINLINE HRESULT Impl_GetBlob(ULONG nIndex, _Out_ MetaData::DataBlob *pData)
     { return m_BlobHeap.GetBlob(nIndex, pData); }
 
     __checkReturn
     FORCEINLINE HRESULT Impl_GetRow(
                         UINT32 nTableIndex,
                         UINT32 nRowIndex,
-        __deref_out_opt BYTE **ppRecord)
+        _Outptr_opt_ BYTE **ppRecord)
     {
         _ASSERTE(nTableIndex < TBL_COUNT);
         return m_Tables[nTableIndex].GetRecord(nRowIndex, ppRecord);
@@ -1360,31 +1328,6 @@ public:
 
 private:
     BOOL m_fMinimalDelta;
-
-    //
-    // String heap reorganization
-    //
-
-    // Check to see if it is safe to reorder the string pool.
-    BOOL IsSafeToReorderStringPool();
-    // Function to mark hot strings in the marks array based on the token information in profile data.
-    VOID MarkHotStrings(CorProfileData *pProfileData, BYTE * pMarks, ULONG poolSize);
-    // Function to mark hot strings referenced by hot tables based on token information in profile data.
-    VOID MarkStringsInHotTables(CorProfileData *pProfileData, BYTE * pMarks, ULONG poolSize);
-    // Function to mark strings referenced by the different metadata tables.
-    VOID MarkStringsInTables(BYTE * pMarks, ULONG poolSize);
-    // Function to mark duplicate strings in the mark array.
-    // Throws on error.
-    VOID MarkDuplicateStrings(BYTE * pMarks, ULONG poolSize);
-    // Function to update the tables with the modified string offsets.
-    VOID FixStringsInTables();
-    // Function to fill the given string pool with strings from the existing string pool using the mark array.
-    // Throws on error.
-    VOID CreateReorderedStringPool(
-        MetaData::StringHeapRW *pStringHeap,
-        BYTE                   *pMarks,
-        ULONG                   cbHeapSize,
-        CorProfileData         *pProfileData);
 
 public:
     BOOL IsMinimalDelta()

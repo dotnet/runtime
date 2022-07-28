@@ -38,7 +38,7 @@ namespace System.CodeDom
 
         public void AddRange(CodeNamespaceImport[] value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }

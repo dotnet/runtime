@@ -62,8 +62,8 @@ namespace System.Linq
             Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
         IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
-            if (expression == null)
-                throw Error.ArgumentNull(nameof(expression));
+            ArgumentNullException.ThrowIfNull(expression);
+
             Type? iqType = TypeHelper.FindGenericType(typeof(IQueryable<>), expression.Type);
             if (iqType == null)
                 throw Error.ArgumentNotValid(nameof(expression));
@@ -74,8 +74,8 @@ namespace System.Linq
             Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
         IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression)
         {
-            if (expression == null)
-                throw Error.ArgumentNull(nameof(expression));
+            ArgumentNullException.ThrowIfNull(expression);
+
             if (!typeof(IQueryable<TElement>).IsAssignableFrom(expression.Type))
             {
                 throw Error.ArgumentNotValid(nameof(expression));
@@ -87,8 +87,8 @@ namespace System.Linq
             Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
         object? IQueryProvider.Execute(Expression expression)
         {
-            if (expression == null)
-                throw Error.ArgumentNull(nameof(expression));
+            ArgumentNullException.ThrowIfNull(expression);
+
             return EnumerableExecutor.Create(expression).ExecuteBoxed();
         }
 
@@ -96,8 +96,8 @@ namespace System.Linq
             Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
         TElement IQueryProvider.Execute<TElement>(Expression expression)
         {
-            if (expression == null)
-                throw Error.ArgumentNull(nameof(expression));
+            ArgumentNullException.ThrowIfNull(expression);
+
             if (!typeof(TElement).IsAssignableFrom(expression.Type))
                 throw Error.ArgumentNotValid(nameof(expression));
             return new EnumerableExecutor<TElement>(expression).Execute();

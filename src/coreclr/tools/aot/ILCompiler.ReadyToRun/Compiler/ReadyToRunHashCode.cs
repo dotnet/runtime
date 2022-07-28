@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Numerics;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -29,14 +30,14 @@ namespace ILCompiler
             int hash1 = 0x6DA3B944;
             int hash2 = 0;
 
-            // DIFFERENT FROM CORERT: We hash UTF-8 bytes here, while CoreRT hashes UTF-16 characters.
+            // DIFFERENT FROM NATIVEAOT: We hash UTF-8 bytes here, while NativeAOT hashes UTF-16 characters.
             byte[] src = Encoding.UTF8.GetBytes(name);
             for (int i = 0; i < src.Length; i += 2)
             {
-                hash1 = unchecked(hash1 + RotateLeft(hash1, 5)) ^ src[i];
+                hash1 = unchecked(hash1 + RotateLeft(hash1, 5)) ^ (int)unchecked((sbyte)src[i]);
                 if (i + 1 < src.Length)
                 {
-                    hash2 = unchecked(hash2 + RotateLeft(hash2, 5)) ^ src[i + 1];
+                    hash2 = unchecked(hash2 + RotateLeft(hash2, 5)) ^ (int)unchecked((sbyte)src[i + 1]);
                 }
                 else
                 {
@@ -53,7 +54,7 @@ namespace ILCompiler
         /// <summary>
         /// Calculate hash code for a namespace - name combination.
         /// CoreCLR 2-parameter <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/typehashingalgorithms.h#L42">ComputeNameHashCode</a>
-        /// DIFFERENT FROM CORERT: CoreRT hashes the full name as one string ("namespace.name"),
+        /// DIFFERENT FROM NATIVEAOT: NativeAOT hashes the full name as one string ("namespace.name"),
         /// as the full name is already available. In CoreCLR we normally only have separate
         /// strings for namespace and name, thus we hash them separately.
         /// </summary>
@@ -139,8 +140,8 @@ namespace ILCompiler
         /// <param name="rank">Array rank</param>
         private static int ArrayTypeHashCode(int elementTypeHashcode, int rank)
         {
-            // DIFFERENT FROM CORERT: This is much simplified compared to CoreRT, to avoid converting rank to string.
-            // For single-dimensinal array, the result is identical to CoreRT.
+            // DIFFERENT FROM NATIVEAOT: This is much simplified compared to NativeAOT, to avoid converting rank to string.
+            // For single-dimensinal array, the result is identical to NativeAOT.
             int hashCode = unchecked((int)0xd5313556 + rank);
             if (rank == 1)
             {
@@ -193,7 +194,7 @@ namespace ILCompiler
             int methodNameHashCode = NameHashCode(method.Name);
 
             // Todo: Add signature to hash.
-            if (method.HasInstantiation)
+            if (method.HasInstantiation && !method.IsGenericMethodDefinition)
             {
                 hashCode ^= GenericInstanceHashCode(methodNameHashCode, method.Instantiation);
             }
@@ -219,7 +220,7 @@ namespace ILCompiler
         /// <param name="bitCount">Number of bits</param>
         private static int RotateLeft(int value, int bitCount)
         {
-            return unchecked((int)(((uint)value << bitCount) | ((uint)value >> (32 - bitCount))));
+            return (int)BitOperations.RotateLeft((uint)value, bitCount);
         }
 
         private static uint XXHash32_MixEmptyState()
@@ -231,7 +232,7 @@ namespace ILCompiler
 
         private static uint XXHash32_QueueRound(uint hash, uint queuedValue)
         {
-            return ((uint)RotateLeft((int)(hash + queuedValue * 3266489917U/*Prime3*/), 17)) * 668265263U/*Prime4*/;
+            return (BitOperations.RotateLeft((hash + queuedValue * 3266489917U/*Prime3*/), 17)) * 668265263U/*Prime4*/;
         }
 
         private static uint XXHash32_MixFinal(uint hash)

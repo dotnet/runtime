@@ -1,16 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 4.5.30319.0
-
-
-
-// Metadata version: v4.0.30319
 .assembly extern System.Runtime
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 4:2:1:0
 }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
@@ -28,7 +24,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module non_virtual_calls_to_instance_methods.dll
 // MVID: {6E650FE8-EE99-4C1A-8206-71823E127FC2}
 .imagebase 0x0000000140000000
 .file alignment 0x00000200
@@ -111,6 +106,9 @@
   .method private hidebysig static int32 
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       56 (0x38)
     .maxstack  1

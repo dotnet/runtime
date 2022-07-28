@@ -18,7 +18,12 @@ namespace System.ServiceModel.Syndication
 
         protected ServiceDocumentFormatter(ServiceDocument documentToWrite)
         {
-            _document = documentToWrite ?? throw new ArgumentNullException(nameof(documentToWrite));
+            if (documentToWrite is null)
+            {
+                throw new ArgumentNullException(nameof(documentToWrite));
+            }
+
+            _document = documentToWrite;
         }
 
         public ServiceDocument Document => _document;
@@ -55,7 +60,7 @@ namespace System.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, ServiceDocument document)
         {
-            if (document == null)
+            if (document is null)
             {
                 throw new ArgumentNullException(nameof(document));
             }
@@ -66,7 +71,7 @@ namespace System.ServiceModel.Syndication
 
         protected static SyndicationCategory CreateCategory(InlineCategoriesDocument inlineCategories)
         {
-            if (inlineCategories == null)
+            if (inlineCategories is null)
             {
                 throw new ArgumentNullException(nameof(inlineCategories));
             }
@@ -76,7 +81,7 @@ namespace System.ServiceModel.Syndication
 
         protected static ResourceCollectionInfo CreateCollection(Workspace workspace)
         {
-            if (workspace == null)
+            if (workspace is null)
             {
                 throw new ArgumentNullException(nameof(workspace));
             }
@@ -96,7 +101,7 @@ namespace System.ServiceModel.Syndication
 
         protected static Workspace CreateWorkspace(ServiceDocument document)
         {
-            if (document == null)
+            if (document is null)
             {
                 throw new ArgumentNullException(nameof(document));
             }
@@ -106,7 +111,7 @@ namespace System.ServiceModel.Syndication
 
         protected static void LoadElementExtensions(XmlReader reader, CategoriesDocument categories, int maxExtensionSize)
         {
-            if (categories == null)
+            if (categories is null)
             {
                 throw new ArgumentNullException(nameof(categories));
             }
@@ -116,7 +121,7 @@ namespace System.ServiceModel.Syndication
 
         protected static void LoadElementExtensions(XmlReader reader, ResourceCollectionInfo collection, int maxExtensionSize)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 throw new ArgumentNullException(nameof(collection));
             }
@@ -126,7 +131,7 @@ namespace System.ServiceModel.Syndication
 
         protected static void LoadElementExtensions(XmlReader reader, Workspace workspace, int maxExtensionSize)
         {
-            if (workspace == null)
+            if (workspace is null)
             {
                 throw new ArgumentNullException(nameof(workspace));
             }
@@ -136,7 +141,7 @@ namespace System.ServiceModel.Syndication
 
         protected static void LoadElementExtensions(XmlReader reader, ServiceDocument document, int maxExtensionSize)
         {
-            if (document == null)
+            if (document is null)
             {
                 throw new ArgumentNullException(nameof(document));
             }
@@ -146,7 +151,7 @@ namespace System.ServiceModel.Syndication
 
         protected static bool TryParseAttribute(string name, string ns, string value, ServiceDocument document, string version)
         {
-            if (document == null)
+            if (document is null)
             {
                 throw new ArgumentNullException(nameof(document));
             }
@@ -156,7 +161,7 @@ namespace System.ServiceModel.Syndication
 
         protected static bool TryParseAttribute(string name, string ns, string value, ResourceCollectionInfo collection, string version)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 throw new ArgumentNullException(nameof(collection));
             }
@@ -166,7 +171,7 @@ namespace System.ServiceModel.Syndication
 
         protected static bool TryParseAttribute(string name, string ns, string value, CategoriesDocument categories, string version)
         {
-            if (categories == null)
+            if (categories is null)
             {
                 throw new ArgumentNullException(nameof(categories));
             }
@@ -176,7 +181,7 @@ namespace System.ServiceModel.Syndication
 
         protected static bool TryParseAttribute(string name, string ns, string value, Workspace workspace, string version)
         {
-            if (workspace == null)
+            if (workspace is null)
             {
                 throw new ArgumentNullException(nameof(workspace));
             }
@@ -186,7 +191,7 @@ namespace System.ServiceModel.Syndication
 
         protected static bool TryParseElement(XmlReader reader, ResourceCollectionInfo collection, string version)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 throw new ArgumentNullException(nameof(collection));
             }
@@ -196,7 +201,7 @@ namespace System.ServiceModel.Syndication
 
         protected static bool TryParseElement(XmlReader reader, ServiceDocument document, string version)
         {
-            if (document == null)
+            if (document is null)
             {
                 throw new ArgumentNullException(nameof(document));
             }
@@ -206,7 +211,7 @@ namespace System.ServiceModel.Syndication
 
         protected static bool TryParseElement(XmlReader reader, Workspace workspace, string version)
         {
-            if (workspace == null)
+            if (workspace is null)
             {
                 throw new ArgumentNullException(nameof(workspace));
             }
@@ -216,7 +221,7 @@ namespace System.ServiceModel.Syndication
 
         protected static bool TryParseElement(XmlReader reader, CategoriesDocument categories, string version)
         {
-            if (categories == null)
+            if (categories is null)
             {
                 throw new ArgumentNullException(nameof(categories));
             }
@@ -226,7 +231,7 @@ namespace System.ServiceModel.Syndication
 
         protected static void WriteAttributeExtensions(XmlWriter writer, ServiceDocument document, string version)
         {
-            if (document == null)
+            if (document is null)
             {
                 throw new ArgumentNullException(nameof(document));
             }
@@ -236,7 +241,7 @@ namespace System.ServiceModel.Syndication
 
         protected static void WriteAttributeExtensions(XmlWriter writer, Workspace workspace, string version)
         {
-            if (workspace == null)
+            if (workspace is null)
             {
                 throw new ArgumentNullException(nameof(workspace));
             }
@@ -246,7 +251,7 @@ namespace System.ServiceModel.Syndication
 
         protected static void WriteAttributeExtensions(XmlWriter writer, ResourceCollectionInfo collection, string version)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 throw new ArgumentNullException(nameof(collection));
             }
@@ -256,7 +261,7 @@ namespace System.ServiceModel.Syndication
 
         protected static void WriteAttributeExtensions(XmlWriter writer, CategoriesDocument categories, string version)
         {
-            if (categories == null)
+            if (categories is null)
             {
                 throw new ArgumentNullException(nameof(categories));
             }
@@ -266,7 +271,7 @@ namespace System.ServiceModel.Syndication
 
         protected static void WriteElementExtensions(XmlWriter writer, ServiceDocument document, string version)
         {
-            if (document == null)
+            if (document is null)
             {
                 throw new ArgumentNullException(nameof(document));
             }
@@ -276,7 +281,7 @@ namespace System.ServiceModel.Syndication
 
         protected static void WriteElementExtensions(XmlWriter writer, Workspace workspace, string version)
         {
-            if (workspace == null)
+            if (workspace is null)
             {
                 throw new ArgumentNullException(nameof(workspace));
             }
@@ -286,7 +291,7 @@ namespace System.ServiceModel.Syndication
 
         protected static void WriteElementExtensions(XmlWriter writer, ResourceCollectionInfo collection, string version)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 throw new ArgumentNullException(nameof(collection));
             }
@@ -296,7 +301,7 @@ namespace System.ServiceModel.Syndication
 
         protected static void WriteElementExtensions(XmlWriter writer, CategoriesDocument categories, string version)
         {
-            if (categories == null)
+            if (categories is null)
             {
                 throw new ArgumentNullException(nameof(categories));
             }

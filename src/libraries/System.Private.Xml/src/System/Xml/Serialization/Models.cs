@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Reflection;
+using System.Collections;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Reflection;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
-
     // These classes define the abstract serialization model, e.g. the rules for WHAT is serialized.
     // The answer of HOW the values are serialized is answered by a particular reflection importer
     // by looking for a particular set of custom attributes specific to the serialization format
@@ -206,11 +206,8 @@ namespace System.Xml.Serialization
                 return;
             if (typeDesc.IsUnsupported)
             {
-                if (typeDesc.Exception == null)
-                {
-                    typeDesc.Exception = new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, typeDesc.FullName));
-                }
-                throw new InvalidOperationException(SR.Format(SR.XmlSerializerUnsupportedMember, member.DeclaringType!.FullName + "." + member.Name, type.FullName), typeDesc.Exception);
+                typeDesc.Exception ??= new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, typeDesc.FullName));
+                throw new InvalidOperationException(SR.Format(SR.XmlSerializerUnsupportedMember, $"{member.DeclaringType!.FullName}.{member.Name}", type.FullName), typeDesc.Exception);
             }
             CheckSupportedMember(typeDesc.BaseTypeDesc, member, type);
             CheckSupportedMember(typeDesc.ArrayElementTypeDesc, member, type);
@@ -300,10 +297,10 @@ namespace System.Xml.Serialization
             _fieldType = fieldType;
             _fieldTypeDesc = fieldTypeDesc;
             _memberInfo = memberInfo;
-            _checkShouldPersistMethodInfo = memberInfo.DeclaringType!.GetMethod("ShouldSerialize" + memberInfo.Name, Type.EmptyTypes);
+            _checkShouldPersistMethodInfo = memberInfo.DeclaringType!.GetMethod($"ShouldSerialize{memberInfo.Name}", Type.EmptyTypes);
             _checkShouldPersist = _checkShouldPersistMethodInfo != null;
 
-            FieldInfo? specifiedField = memberInfo.DeclaringType.GetField(memberInfo.Name + "Specified");
+            FieldInfo? specifiedField = memberInfo.DeclaringType.GetField($"{memberInfo.Name}Specified");
             if (specifiedField != null)
             {
                 if (specifiedField.FieldType != typeof(bool))
@@ -315,7 +312,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                PropertyInfo? specifiedProperty = memberInfo.DeclaringType.GetProperty(memberInfo.Name + "Specified");
+                PropertyInfo? specifiedProperty = memberInfo.DeclaringType.GetProperty($"{memberInfo.Name}Specified");
                 if (specifiedProperty != null)
                 {
                     if (StructModel.CheckPropertyRead(specifiedProperty))
@@ -444,7 +441,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private ConstantModel? GetConstantModel(FieldInfo fieldInfo)
+        private static ConstantModel? GetConstantModel(FieldInfo fieldInfo)
         {
             if (fieldInfo.IsSpecialName) return null;
             return new ConstantModel(fieldInfo, ((IConvertible)fieldInfo.GetValue(null)!).ToInt64(null));

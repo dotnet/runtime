@@ -50,7 +50,7 @@ public class Gen<T> : IGen<T>
     }
 }
 
-public class Test
+public class Test_Class02
 {
     public static int counter = 0;
     public static bool result = true;

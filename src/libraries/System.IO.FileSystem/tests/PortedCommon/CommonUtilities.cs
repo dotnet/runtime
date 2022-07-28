@@ -288,7 +288,7 @@ public class ManageFileSystem : IDisposable
                 for (int k = 0; k < numOfDirPerDir; k++)
                 {
                     string dirName = GetNonExistingDir(dir, DirPrefixName);
-                    Debug.Assert(!Directory.Exists(dirName), string.Format("ERR_93472g! Directory exists: {0}", dirName));
+                    Debug.Assert(!Directory.Exists(dirName), $"ERR_93472g! Directory exists: {dirName}");
                     tempDirsForOneLevel.Add(dirName, new List<string>());
                     _listOfAllDirs.Add(dirName);
                     Directory.CreateDirectory(dirName);

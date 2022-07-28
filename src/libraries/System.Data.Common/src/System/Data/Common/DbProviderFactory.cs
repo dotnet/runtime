@@ -13,6 +13,8 @@ namespace System.Data.Common
 
         protected DbProviderFactory() { }
 
+        public virtual bool CanCreateBatch => false;
+
         public virtual bool CanCreateDataSourceEnumerator => false;
 
         public virtual bool CanCreateDataAdapter
@@ -47,6 +49,10 @@ namespace System.Data.Common
             }
         }
 
+        public virtual DbBatch CreateBatch() => throw new NotSupportedException();
+
+        public virtual DbBatchCommand CreateBatchCommand() => throw new NotSupportedException();
+
         public virtual DbCommand? CreateCommand() => null;
 
         public virtual DbCommandBuilder? CreateCommandBuilder() => null;
@@ -60,5 +66,8 @@ namespace System.Data.Common
         public virtual DbParameter? CreateParameter() => null;
 
         public virtual DbDataSourceEnumerator? CreateDataSourceEnumerator() => null;
+
+        public virtual DbDataSource CreateDataSource(string connectionString)
+            => new DefaultDataSource(this, connectionString);
     }
 }

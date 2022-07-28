@@ -38,7 +38,7 @@ namespace System.Drawing.Drawing2D
 #endif
                     Gdip.GdipDeletePathIter(new HandleRef(this, nativeIter));
 #if DEBUG
-                    Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(status == Gdip.Ok, $"GDI+ returned an error status: {status.ToString(CultureInfo.InvariantCulture)}");
 #endif
                 }
                 catch (Exception ex)

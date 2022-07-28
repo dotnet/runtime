@@ -10,7 +10,7 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Convert the provided value into a <see cref="byte"/> array.
+        /// Converts the provided value into a <see cref="byte"/> array.
         /// </summary>
         /// <returns>A UTF-8 representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -20,15 +20,18 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static byte[] SerializeToUtf8Bytes<TValue>(
             TValue value,
             JsonSerializerOptions? options = null)
         {
-            return WriteCoreBytes(value, GetRuntimeType(value), options);
+            Type runtimeType = GetRuntimeType(value);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            return WriteBytesUsingSerializer(value, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="byte"/> array.
+        /// Converts the provided value into a <see cref="byte"/> array.
         /// </summary>
         /// <returns>A UTF-8 representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -45,19 +48,19 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static byte[] SerializeToUtf8Bytes(
             object? value,
             Type inputType,
             JsonSerializerOptions? options = null)
         {
-            return WriteCoreBytes(
-                value!,
-                GetRuntimeTypeAndValidateInputType(value, inputType),
-                options);
+            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
+            return WriteBytesUsingSerializer(value, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="byte"/> array.
+        /// Converts the provided value into a <see cref="byte"/> array.
         /// </summary>
         /// <returns>A UTF-8 representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -71,16 +74,16 @@ namespace System.Text.Json
         /// </exception>
         public static byte[] SerializeToUtf8Bytes<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return WriteCoreBytes(value, jsonTypeInfo);
+            return WriteBytesUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="byte"/> array.
+        /// Converts the provided value into a <see cref="byte"/> array.
         /// </summary>
         /// <returns>A UTF-8 representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -102,35 +105,40 @@ namespace System.Text.Json
         /// </exception>
         public static byte[] SerializeToUtf8Bytes(object? value, Type inputType, JsonSerializerContext context)
         {
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            return WriteCoreBytes(value!, GetTypeInfo(context, runtimeType));
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, runtimeType);
+            return WriteBytesUsingGeneratedSerializer(value!, jsonTypeInfo);
         }
 
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static byte[] WriteCoreBytes<TValue>(in TValue value, Type runtimeType, JsonSerializerOptions? options)
-        {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(runtimeType, options);
-            return WriteCoreBytes(value, jsonTypeInfo);
-        }
-
-        private static byte[] WriteCoreBytes<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
+        private static byte[] WriteBytesUsingGeneratedSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
 
-            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
+            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
+            using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
             {
-                using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
-                {
-                    WriteUsingMetadata(writer, value, jsonTypeInfo);
-                }
-
-                return output.WrittenMemory.ToArray();
+                WriteUsingGeneratedSerializer(writer, value, jsonTypeInfo);
             }
+
+            return output.WrittenMemory.ToArray();
+        }
+
+        private static byte[] WriteBytesUsingSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
+        {
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+
+            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
+            using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
+            {
+                WriteUsingSerializer(writer, value, jsonTypeInfo);
+            }
+
+            return output.WrittenMemory.ToArray();
         }
     }
 }

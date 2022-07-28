@@ -5,7 +5,7 @@
 
 using System;
 
-public class Test
+public class Test_Collect1
 {
     public static int Main()
     {

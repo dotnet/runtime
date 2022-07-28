@@ -7,7 +7,7 @@
     <ArchiveName>dotnet-runtime-internal-composite</ArchiveName>
     <OverridePackageId>$(SharedFrameworkName).Composite</OverridePackageId>
     <OverridePackageId Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).Composite.PGO</OverridePackageId>
-    <GenerateSymbolsArchive>true</GenerateSymbolsArchive>
+    <CreateSymbolsArchive Condition="'$(PgoInstrument)' == ''">true</CreateSymbolsArchive>
     <SymbolsArchiveName>dotnet-runtime-composite-symbols</SymbolsArchiveName>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <ForcePublishReadyToRunComposite>true</ForcePublishReadyToRunComposite>
@@ -32,6 +32,9 @@
 
   <ItemGroup>
     <PublishReadyToRunCrossgen2ExtraArgsList Include="--compositekeyfile:$(AssemblyOriginatorKeyFile)"/>
+    <!-- Compile with avx2 on x64 -->
+    <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(TargetArchitecture)' == 'x64'" Include="--inputbubble" />
+    <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(TargetArchitecture)' == 'x64'" Include="--instruction-set:avx2" />
   </ItemGroup>
 
   <Import Project="ReadyToRun.targets" />

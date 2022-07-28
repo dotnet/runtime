@@ -13,7 +13,7 @@
   .ver 4:0:0:0
 }
 
-.assembly Finally.exe{}
+.assembly Finally{}
 
 
 .class		Finally {

@@ -5,26 +5,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-
-#if MS_IO_REDIST
-using Microsoft.IO.Enumeration;
-
-namespace Microsoft.IO
-#else
 using System.IO.Enumeration;
+using System.Runtime.Versioning;
 
 namespace System.IO
-#endif
 {
     public static partial class Directory
     {
         public static DirectoryInfo? GetParent(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             string fullPath = Path.GetFullPath(path);
 
@@ -36,10 +26,7 @@ namespace System.IO
 
         public static DirectoryInfo CreateDirectory(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             string fullPath = Path.GetFullPath(path);
 
@@ -47,6 +34,23 @@ namespace System.IO
 
             return new DirectoryInfo(path, fullPath, isNormalized: true);
         }
+
+        /// <summary>
+        /// Creates all directories and subdirectories in the specified path with the specified permissions unless they already exist.
+        /// </summary>
+        /// <param name="path">The directory to create.</param>
+        /// <param name="unixCreateMode">Unix file mode used to create directories.</param>
+        /// <returns>An object that represents the directory at the specified path. This object is returned regardless of whether a directory at the specified path already exists.</returns>
+        /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is a zero-length string, or contains one or more invalid characters. You can query for invalid characters by using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method.</exception>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentException">The caller attempts to use an invalid file mode.</exception>
+        /// <exception cref="T:System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="T:System.IO.PathTooLongException">The specified path exceeds the system-defined maximum length.</exception>
+        /// <exception cref="T:System.IO.IOException"><paramref name="path" /> is a file.</exception>
+        /// <exception cref="T:System.IO.DirectoryNotFoundException">A component of the <paramref name="path" /> is not a directory.</exception>
+        [UnsupportedOSPlatform("windows")]
+        public static DirectoryInfo CreateDirectory(string path, UnixFileMode unixCreateMode)
+            => CreateDirectoryCore(path, unixCreateMode);
 
         // Tests if the given path refers to an existing DirectoryInfo on disk.
         public static bool Exists([NotNullWhen(true)] string? path)
@@ -171,10 +175,8 @@ namespace System.IO
             SearchTarget searchTarget,
             EnumerationOptions options)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (searchPattern == null)
-                throw new ArgumentNullException(nameof(searchPattern));
+            ArgumentNullException.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(searchPattern);
 
             FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
 
@@ -222,8 +224,7 @@ namespace System.IO
 
         public static string GetDirectoryRoot(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            ArgumentNullException.ThrowIfNull(path);
 
             string fullPath = Path.GetFullPath(path);
             string root = Path.GetPathRoot(fullPath)!;
@@ -235,68 +236,17 @@ namespace System.IO
 
         public static void SetCurrentDirectory(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             Environment.CurrentDirectory = Path.GetFullPath(path);
         }
 
         public static void Move(string sourceDirName, string destDirName)
         {
-            if (sourceDirName == null)
-                throw new ArgumentNullException(nameof(sourceDirName));
-            if (sourceDirName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(sourceDirName));
+            ArgumentException.ThrowIfNullOrEmpty(sourceDirName);
+            ArgumentException.ThrowIfNullOrEmpty(destDirName);
 
-            if (destDirName == null)
-                throw new ArgumentNullException(nameof(destDirName));
-            if (destDirName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
-
-            string fullsourceDirName = Path.GetFullPath(sourceDirName);
-            string sourcePath = PathInternal.EnsureTrailingSeparator(fullsourceDirName);
-
-            string fulldestDirName = Path.GetFullPath(destDirName);
-            string destPath = PathInternal.EnsureTrailingSeparator(fulldestDirName);
-
-            ReadOnlySpan<char> sourceDirNameFromFullPath = Path.GetFileName(fullsourceDirName.AsSpan());
-            ReadOnlySpan<char> destDirNameFromFullPath = Path.GetFileName(fulldestDirName.AsSpan());
-
-            StringComparison fileSystemSensitivity = PathInternal.StringComparison;
-            bool directoriesAreCaseVariants =
-                !sourceDirNameFromFullPath.SequenceEqual(destDirNameFromFullPath) &&
-                sourceDirNameFromFullPath.Equals(destDirNameFromFullPath, StringComparison.OrdinalIgnoreCase);
-            bool sameDirectoryDifferentCase =
-                directoriesAreCaseVariants &&
-                destDirNameFromFullPath.Equals(sourceDirNameFromFullPath, fileSystemSensitivity);
-
-            // If the destination directories are the exact same name
-            if (!sameDirectoryDifferentCase && string.Equals(sourcePath, destPath, fileSystemSensitivity))
-                throw new IOException(SR.IO_SourceDestMustBeDifferent);
-
-            ReadOnlySpan<char> sourceRoot = Path.GetPathRoot(sourcePath.AsSpan());
-            ReadOnlySpan<char> destinationRoot = Path.GetPathRoot(destPath.AsSpan());
-
-            // Compare paths for the same, skip this step if we already know the paths are identical.
-            if (!sourceRoot.Equals(destinationRoot, StringComparison.OrdinalIgnoreCase))
-                throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
-
-            // Windows will throw if the source file/directory doesn't exist, we preemptively check
-            // to make sure our cross platform behavior matches .NET Framework behavior.
-            if (!FileSystem.DirectoryExists(fullsourceDirName) && !FileSystem.FileExists(fullsourceDirName))
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, fullsourceDirName));
-
-            if (!sameDirectoryDifferentCase // This check is to allowing renaming of directories
-                && FileSystem.DirectoryExists(fulldestDirName))
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, fulldestDirName));
-
-            // If the directories aren't the same and the OS says the directory exists already, fail.
-            if (!sameDirectoryDifferentCase && Directory.Exists(fulldestDirName))
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, fulldestDirName));
-
-            FileSystem.MoveDirectory(fullsourceDirName, fulldestDirName);
+            FileSystem.MoveDirectory(Path.GetFullPath(sourceDirName), Path.GetFullPath(destDirName));
         }
 
         public static void Delete(string path)
@@ -314,6 +264,48 @@ namespace System.IO
         public static string[] GetLogicalDrives()
         {
             return FileSystem.GetLogicalDrives();
+        }
+
+        /// <summary>
+        /// Creates a directory symbolic link identified by <paramref name="path"/> that points to <paramref name="pathToTarget"/>.
+        /// </summary>
+        /// <param name="path">The absolute path where the symbolic link should be created.</param>
+        /// <param name="pathToTarget">The target directory of the symbolic link.</param>
+        /// <returns>A <see cref="DirectoryInfo"/> instance that wraps the newly created directory symbolic link.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="pathToTarget"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> or <paramref name="pathToTarget"/> is empty.
+        /// -or-
+        /// <paramref name="path"/> is not an absolute path.
+        /// -or-
+        /// <paramref name="path"/> or <paramref name="pathToTarget"/> contains invalid path characters.</exception>
+        /// <exception cref="IOException">A file or directory already exists in the location of <paramref name="path"/>.
+        /// -or-
+        /// An I/O error occurred.</exception>
+        public static FileSystemInfo CreateSymbolicLink(string path, string pathToTarget)
+        {
+            string fullPath = Path.GetFullPath(path);
+            FileSystem.VerifyValidPath(pathToTarget, nameof(pathToTarget));
+
+            FileSystem.CreateSymbolicLink(path, pathToTarget, isDirectory: true);
+            return new DirectoryInfo(originalPath: path, fullPath: fullPath, isNormalized: true);
+        }
+
+        /// <summary>
+        /// Gets the target of the specified directory link.
+        /// </summary>
+        /// <param name="linkPath">The path of the directory link.</param>
+        /// <param name="returnFinalTarget"><see langword="true"/> to follow links to the final target; <see langword="false"/> to return the immediate next link.</param>
+        /// <returns>A <see cref="DirectoryInfo"/> instance if <paramref name="linkPath"/> exists, independently if the target exists or not. <see langword="null"/> if <paramref name="linkPath"/> is not a link.</returns>
+        /// <exception cref="IOException">The directory on <paramref name="linkPath"/> does not exist.
+        /// -or-
+        /// The link's file system entry type is inconsistent with that of its target.
+        /// -or-
+        /// Too many levels of symbolic links.</exception>
+        /// <remarks>When <paramref name="returnFinalTarget"/> is <see langword="true"/>, the maximum number of symbolic links that are followed are 40 on Unix and 63 on Windows.</remarks>
+        public static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget)
+        {
+            FileSystem.VerifyValidPath(linkPath, nameof(linkPath));
+            return FileSystem.ResolveLinkTarget(linkPath, returnFinalTarget, isDirectory: true);
         }
     }
 }

@@ -3,8 +3,11 @@
 
 
 using System;
+using Xunit;
 
 
+namespace Test_sizeof64
+{
 // sizeof converted to I8 and used with arithmetic operations
 
 namespace JitTest
@@ -28,9 +31,10 @@ namespace JitTest
         public SimpleStruct ss2;
     }
 
-    internal struct Test
+    public struct Test
     {
-        private static unsafe int Main()
+        [Fact]
+        public static unsafe int TestEntryPoint()
         {
             long l = (sbyte)sizeof(RefComplexStruct);
             l += sizeof(RefComplexStruct) + new RefComplexStruct().ss1.m_sbyte;
@@ -42,4 +46,5 @@ namespace JitTest
             return (int)(l + 36L);
         }
     }
+}
 }

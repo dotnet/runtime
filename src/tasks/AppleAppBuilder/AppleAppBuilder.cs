@@ -15,7 +15,7 @@ public class AppleAppBuilderTask : Task
     private string targetOS = TargetNames.iOS;
 
     /// <summary>
-    /// The Apple OS we are targeting (iOS or tvOS)
+    /// The Apple OS we are targeting (ios, tvos, iossimulator, tvossimulator)
     /// </summary>
     [Required]
     public string TargetOS
@@ -27,7 +27,7 @@ public class AppleAppBuilderTask : Task
 
         set
         {
-            targetOS = value.ToLower();
+            targetOS = value.ToLowerInvariant();
         }
     }
 
@@ -50,9 +50,11 @@ public class AppleAppBuilderTask : Task
     public string MonoRuntimeHeaders { get; set; } = ""!;
 
     /// <summary>
-    /// This library will be used as an entry-point (e.g. TestRunner.dll)
+    /// This library will be used as an entry point (e.g. TestRunner.dll). Can
+    /// be empty. If empty, the entry point of the app must be specified in an
+    /// environment variable named "MONO_APPLE_APP_ENTRY_POINT_LIB_NAME" when
+    /// running the resulting app.
     /// </summary>
-    [Required]
     public string MainLibraryFileName { get; set; } = ""!;
 
     /// <summary>
@@ -62,7 +64,7 @@ public class AppleAppBuilderTask : Task
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
-    /// Target arch, can be "arm64" (device) or "x64" (simulator) at the moment
+    /// Target arch, can be "arm64", "arm" or "x64" at the moment
     /// </summary>
     [Required]
     public string Arch { get; set; } = ""!;
@@ -103,6 +105,11 @@ public class AppleAppBuilderTask : Task
     /// Generate xcode project
     /// </summary>
     public bool GenerateXcodeProject { get; set; }
+
+    /// <summary>
+    /// Generate CMake project
+    /// </summary>
+    public bool GenerateCMakeProject { get; set; }
 
     /// <summary>
     /// Files to be ignored in AppDir
@@ -151,17 +158,24 @@ public class AppleAppBuilderTask : Task
     /// </summary>
     public bool EnableRuntimeLogging { get; set; }
 
+    /// <summary>
+    /// Enables App Sandbox for Mac Catalyst apps
+    /// </summary>
+    public bool EnableAppSandbox { get; set; }
+
     public override bool Execute()
     {
-        Utils.Logger = Log;
         bool isDevice = (TargetOS == TargetNames.iOS || TargetOS == TargetNames.tvOS);
 
-        if (!File.Exists(Path.Combine(AppDir, MainLibraryFileName)))
+        if (!string.IsNullOrEmpty(MainLibraryFileName))
         {
-            throw new ArgumentException($"MainLibraryFileName='{MainLibraryFileName}' was not found in AppDir='{AppDir}'");
+            if (!File.Exists(Path.Combine(AppDir, MainLibraryFileName)))
+            {
+                throw new ArgumentException($"MainLibraryFileName='{MainLibraryFileName}' was not found in AppDir='{AppDir}'");
+            }
         }
 
-        if (ProjectName.Contains(" "))
+        if (ProjectName.Contains(' '))
         {
             throw new ArgumentException($"ProjectName='{ProjectName}' should not contain spaces");
         }
@@ -182,16 +196,24 @@ public class AppleAppBuilderTask : Task
         }
         Directory.CreateDirectory(binDir);
 
-        var assemblerFiles = new List<string>();
-        var assemblerFilesToLink = new List<string>();
+        List<string> assemblerFiles = new List<string>();
+        List<string> assemblerDataFiles = new List<string>();
+        List<string> assemblerFilesToLink = new List<string>();
         foreach (ITaskItem file in Assemblies)
         {
             // use AOT files if available
-            var obj = file.GetMetadata("AssemblerFile");
-            var llvmObj = file.GetMetadata("LlvmObjectFile");
+            string obj = file.GetMetadata("AssemblerFile");
+            string llvmObj = file.GetMetadata("LlvmObjectFile");
+            string dataFile = file.GetMetadata("AotDataFile");
+
             if (!string.IsNullOrEmpty(obj))
             {
                 assemblerFiles.Add(obj);
+            }
+
+            if (!string.IsNullOrEmpty(dataFile))
+            {
+                assemblerDataFiles.Add(dataFile);
             }
 
             if (!string.IsNullOrEmpty(llvmObj))
@@ -203,11 +225,6 @@ public class AppleAppBuilderTask : Task
         if (((!ForceInterpreter && (isDevice || ForceAOT)) && !assemblerFiles.Any()))
         {
             throw new InvalidOperationException("Need list of AOT files for device builds.");
-        }
-
-        if (TargetOS != TargetNames.MacCatalyst && ForceInterpreter && ForceAOT)
-        {
-            throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
         }
 
         if (!string.IsNullOrEmpty(DiagnosticPorts))
@@ -225,27 +242,35 @@ public class AppleAppBuilderTask : Task
                 throw new ArgumentException("Using DiagnosticPorts require diagnostics_tracing runtime component.");
         }
 
+        if (EnableAppSandbox && (string.IsNullOrEmpty(DevTeamProvisioning) || DevTeamProvisioning == "-"))
+        {
+            throw new ArgumentException("DevTeamProvisioning must be set to a valid value when App Sandbox is enabled, using '-' is not supported.");
+        }
+
+        var generator = new Xcode(Log, TargetOS, Arch);
+
         if (GenerateXcodeProject)
         {
-            Xcode generator = new Xcode(TargetOS, Arch);
-            generator.EnableRuntimeLogging = EnableRuntimeLogging;
-            generator.DiagnosticPorts = DiagnosticPorts;
-
-            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerFilesToLink,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, RuntimeComponents, NativeMainSource);
+            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink,
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource);
 
             if (BuildAppBundle)
             {
                 if (isDevice && string.IsNullOrEmpty(DevTeamProvisioning))
                 {
                     // DevTeamProvisioning shouldn't be empty for arm64 builds
-                    Utils.LogInfo("DevTeamProvisioning is not set, BuildAppBundle step is skipped.");
+                    Log.LogMessage(MessageImportance.High, "DevTeamProvisioning is not set, BuildAppBundle step is skipped.");
                 }
                 else
                 {
-                    AppBundlePath = generator.BuildAppBundle(XcodeProjectPath, Arch, Optimized, DevTeamProvisioning);
+                    AppBundlePath = generator.BuildAppBundle(XcodeProjectPath, Optimized, DevTeamProvisioning);
                 }
             }
+        }
+        else if (GenerateCMakeProject)
+        {
+             generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink,
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource);
         }
 
         return true;

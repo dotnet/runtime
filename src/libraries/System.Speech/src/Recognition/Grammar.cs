@@ -66,12 +66,12 @@ namespace System.Speech.Recognition
             : this(srgsDocument, ruleName, null, parameters)
         {
         }
-        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public Grammar(SrgsDocument srgsDocument, string ruleName, Uri baseUri)
             : this(srgsDocument, ruleName, baseUri, null)
         {
         }
-        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public Grammar(SrgsDocument srgsDocument, string ruleName, Uri baseUri, object[] parameters)
         {
             Helpers.ThrowIfNull(srgsDocument, nameof(srgsDocument));
@@ -93,12 +93,12 @@ namespace System.Speech.Recognition
             : this(stream, ruleName, null, parameters)
         {
         }
-        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public Grammar(Stream stream, string ruleName, Uri baseUri)
             : this(stream, ruleName, baseUri, null)
         {
         }
-        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public Grammar(Stream stream, string ruleName, Uri baseUri, object[] parameters)
         {
             Helpers.ThrowIfNull(stream, nameof(stream));
@@ -257,15 +257,7 @@ namespace System.Speech.Recognition
         public string Name
         {
             get { return _grammarName; }
-            set
-            {
-#pragma warning disable 6507
-#pragma warning disable 6526
-                if (value == null) { value = string.Empty; }
-                _grammarName = value;
-#pragma warning restore 6507
-#pragma warning restore 6526
-            }
+            set { _grammarName = value ?? string.Empty; }
         }
         public string RuleName
         {
@@ -474,11 +466,7 @@ namespace System.Speech.Recognition
         {
             Debug.Assert(eventArgs.Result.Grammar == this);
 
-            EventHandler<SpeechRecognizedEventArgs> recognitionHandler = SpeechRecognized;
-            if (recognitionHandler != null)
-            {
-                recognitionHandler(this, eventArgs);
-            }
+            SpeechRecognized?.Invoke(this, eventArgs);
         }
 
         // Helper method used to indicate if this grammar has a dictation Uri or not.
@@ -565,10 +553,7 @@ namespace System.Speech.Recognition
         /// </summary>
         internal void AddRuleRef(Grammar ruleRef, uint grammarId)
         {
-            if (_ruleRefs == null)
-            {
-                _ruleRefs = new Collection<Grammar>();
-            }
+            _ruleRefs ??= new Collection<Grammar>();
             _ruleRefs.Add(ruleRef);
             _sapiGrammarId = grammarId;
         }

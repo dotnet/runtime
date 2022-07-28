@@ -100,7 +100,7 @@ PTR_Bucket HashMap::Buckets()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     _ASSERTE (!g_fEEStarted || !m_fAsyncMode || GetThreadNULLOk() == NULL || GetThread()->PreemptiveGCDisabled() || IsGCThread());
 #endif
     return m_rgBuckets + 1;
@@ -441,13 +441,13 @@ void HashMap::ProfileLookup(UPTR ntry, UPTR retValue)
 #ifndef DACCESS_COMPILE
     #ifdef HASHTABLE_PROFILE
         if (ntry < HASHTABLE_LOOKUP_PROBES_DATA - 2)
-            FastInterlockIncrement(&m_rgLookupProbes[ntry]);
+            InterlockedIncrement(&m_rgLookupProbes[ntry]);
         else
-            FastInterlockIncrement(&m_rgLookupProbes[HASHTABLE_LOOKUP_PROBES_DATA - 2]);
+            InterlockedIncrement(&m_rgLookupProbes[HASHTABLE_LOOKUP_PROBES_DATA - 2]);
 
         if (retValue == NULL)
         {   // failure probes
-            FastInterlockIncrement(&m_rgLookupProbes[HASHTABLE_LOOKUP_PROBES_DATA - 1]);
+            InterlockedIncrement(&m_rgLookupProbes[HASHTABLE_LOOKUP_PROBES_DATA - 1]);
             // the following code is usually executed
             // only for special case of lookup done before insert
             // check hash.h SyncHash::InsertValue
@@ -871,10 +871,8 @@ void HashMap::Rehash()
     // BROKEN: This is called for the RCWCache on the GC thread
     GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode);
 
-#ifndef CROSSGEN_COMPILE
     _ASSERTE (!g_fEEStarted || !m_fAsyncMode || GetThreadNULLOk() == NULL || GetThread()->PreemptiveGCDisabled());
     _ASSERTE (OwnLock());
-#endif
 
     UPTR newPrimeIndex = NewSize();
 

@@ -49,6 +49,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(expectedSerialHex, serialHex);
                 serialHex = c.SerialNumber;
                 Assert.Equal(expectedSerialHex, serialHex);
+
+                Assert.Equal(expectedSerialHex, c.SerialNumberBytes.ByteArrayToHex());
             }
         }
 

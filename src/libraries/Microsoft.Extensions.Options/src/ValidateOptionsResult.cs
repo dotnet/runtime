@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.Options
 {
@@ -34,17 +35,19 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// True if validation failed.
         /// </summary>
+        [MemberNotNullWhen(true, nameof(Failures))]
+        [MemberNotNullWhen(true, nameof(FailureMessage))]
         public bool Failed { get; protected set; }
 
         /// <summary>
         /// Used to describe why validation failed.
         /// </summary>
-        public string FailureMessage { get; protected set; }
+        public string? FailureMessage { get; protected set; }
 
         /// <summary>
         /// Full list of failures (can be multiple).
         /// </summary>
-        public IEnumerable<string> Failures { get; protected set; }
+        public IEnumerable<string>? Failures { get; protected set; }
 
         /// <summary>
         /// Returns a failure result.

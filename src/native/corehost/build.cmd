@@ -11,11 +11,9 @@ set __engNativeDir=%__sourceDir%\..\..\..\eng\native
 set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=x64
-set __appContainer=""
 set CMAKE_BUILD_TYPE=Debug
-set "__LinkArgs= "
-set "__LinkLibraries= "
 set __PortableBuild=0
+set __ConfigureOnly=0
 set __IncrementalNativeBuild=0
 set __Ninja=1
 
@@ -40,9 +38,9 @@ if /i [%1] == [fxrver]      (set __HostFxrVersion=%2&&shift&&shift&goto Arg_Loop
 if /i [%1] == [policyver]   (set __HostPolicyVersion=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [commit]      (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
 
+if /i [%1] == [configureonly] ( set __ConfigureOnly=1&&shift&goto Arg_Loop)
 if /i [%1] == [incremental-native-build] ( set __IncrementalNativeBuild=1&&shift&goto Arg_Loop)
 if /i [%1] == [rootDir]     ( set __rootDir=%2&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [coreclrartifacts]  (set __CoreClrArtifacts=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [msbuild] (set __Ninja=0)
 if /i [%1] == [runtimeflavor]  (set __RuntimeFlavor=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [runtimeconfiguration]  (set __RuntimeConfiguration=%2&&shift&&shift&goto Arg_Loop)
@@ -63,7 +61,7 @@ set __binDir=%__rootDir%\artifacts\bin
 set __objDir=%__rootDir%\artifacts\obj
 
 :: Setup to cmake the native components
-echo Commencing build of corehost
+echo Configuring corehost native components
 echo.
 
 if %__CMakeBinDir% == "" (
@@ -109,7 +107,12 @@ call "%__engNativeDir%\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" 
 if NOT [%errorlevel%] == [0] goto :Failure
 popd
 
+if [%__ConfigureOnly%] == [1] goto :Exit
+
 :BuildNativeProj
+
+echo Commencing build of corehost native components
+
 :: Build the project created by Cmake
 set __generatorArgs=
 if [%__Ninja%] == [1] (
@@ -125,26 +128,9 @@ IF ERRORLEVEL 1 (
     goto :Failure
 )
 
-if "%__RuntimeFlavor%" NEQ "Mono" (
-    echo Copying "%__CoreClrArtifacts%\corehost\singlefilehost.exe"  "%__CMakeBinDir%/corehost/"
-    copy /B /Y "%__CoreClrArtifacts%\corehost\singlefilehost.exe"  "%__CMakeBinDir%/corehost/"
-
-    echo Copying "%__CoreClrArtifacts%\corehost\PDB\singlefilehost.pdb"  "%__CMakeBinDir%/corehost/PDB/"
-    copy /B /Y "%__CoreClrArtifacts%\corehost\PDB\singlefilehost.pdb"  "%__CMakeBinDir%/corehost/PDB/"
-
-    echo Embedding "%__CoreClrArtifacts%\mscordaccore.dll" into "%__CMakeBinDir%\corehost\singlefilehost.exe"
-    if not exist "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe" (
-        "%__CoreClrArtifacts%\dactabletools\InjectResource.exe"     /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER
-    ) else (
-        "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe" /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER
-    )
-
-    IF ERRORLEVEL 1 (
-        goto :Failure
-    )
-)
-
 echo Done building Native components
+
+:Exit
 exit /B 0
 
 :Failure

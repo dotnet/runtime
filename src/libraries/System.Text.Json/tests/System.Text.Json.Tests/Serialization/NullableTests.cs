@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Tests
                 dictOfDictWithNull: new Dictionary<string, Dictionary<string, float?>> { { "key", dictWithFloatNull } },
                 42.0f);
 
-            DateTime now = DateTime.Now;
+            DateTime now = DateTimeTestHelpers.FixedDateTimeValue;
             Dictionary<string, DateTime?> dictWithDateTimeValue = new Dictionary<string, DateTime?> { { "key", now } };
             Dictionary<string, DateTime?> dictWithDateTimeNull = new Dictionary<string, DateTime?> { { "key", null } };
             TestDictionaryWithNullableValue<Dictionary<string, DateTime?>, Dictionary<string, Dictionary<string, DateTime?>>, DateTime?>(
@@ -41,23 +41,27 @@ namespace System.Text.Json.Serialization.Tests
                 dictOfDictWithNull: new MyDictionaryWrapper<MyDictionaryWrapper<float?>> { { "key", dictWrapperWithFloatNull } },
                 42.0f);
 
-            MyIDictionaryWrapper<float?> idictWrapperWithFloatValue = new MyIDictionaryWrapper<float?>() { { "key", 42.0f } };
-            MyIDictionaryWrapper<float?> idictWrapperWithFloatNull = new MyIDictionaryWrapper<float?>() { { "key", null } };
-            TestDictionaryWithNullableValue<MyIDictionaryWrapper<float?>, MyIDictionaryWrapper<MyIDictionaryWrapper<float?>>, float?>(
-                idictWrapperWithFloatValue,
-                idictWrapperWithFloatNull,
-                dictOfDictWithValue: new MyIDictionaryWrapper<MyIDictionaryWrapper<float?>> { { "key", idictWrapperWithFloatValue } },
-                dictOfDictWithNull: new MyIDictionaryWrapper<MyIDictionaryWrapper<float?>> { { "key", idictWrapperWithFloatNull } },
-                42.0f);
+            // https://github.com/dotnet/runtime/issues/66220
+            if (!PlatformDetection.IsAppleMobile)
+            {
+                MyIDictionaryWrapper<float?> idictWrapperWithFloatValue = new MyIDictionaryWrapper<float?>() { { "key", 42.0f } };
+                MyIDictionaryWrapper<float?> idictWrapperWithFloatNull = new MyIDictionaryWrapper<float?>() { { "key", null } };
+                TestDictionaryWithNullableValue<MyIDictionaryWrapper<float?>, MyIDictionaryWrapper<MyIDictionaryWrapper<float?>>, float?>(
+                    idictWrapperWithFloatValue,
+                    idictWrapperWithFloatNull,
+                    dictOfDictWithValue: new MyIDictionaryWrapper<MyIDictionaryWrapper<float?>> { { "key", idictWrapperWithFloatValue } },
+                    dictOfDictWithNull: new MyIDictionaryWrapper<MyIDictionaryWrapper<float?>> { { "key", idictWrapperWithFloatNull } },
+                    42.0f);
 
-            IDictionary<string, DateTime?> idictWithDateTimeValue = new Dictionary<string, DateTime?> { { "key", now } };
-            IDictionary<string, DateTime?> idictWithDateTimeNull = new Dictionary<string, DateTime?> { { "key", null } };
-            TestDictionaryWithNullableValue<IDictionary<string, DateTime?>, IDictionary<string, IDictionary<string, DateTime?>>, DateTime?>(
-                idictWithDateTimeValue,
-                idictWithDateTimeNull,
-                dictOfDictWithValue: new Dictionary<string, IDictionary<string, DateTime?>> { { "key", idictWithDateTimeValue } },
-                dictOfDictWithNull: new Dictionary<string, IDictionary<string, DateTime?>> { { "key", idictWithDateTimeNull } },
-                now);
+                IDictionary<string, DateTime?> idictWithDateTimeValue = new Dictionary<string, DateTime?> { { "key", now } };
+                IDictionary<string, DateTime?> idictWithDateTimeNull = new Dictionary<string, DateTime?> { { "key", null } };
+                TestDictionaryWithNullableValue<IDictionary<string, DateTime?>, IDictionary<string, IDictionary<string, DateTime?>>, DateTime?>(
+                    idictWithDateTimeValue,
+                    idictWithDateTimeNull,
+                    dictOfDictWithValue: new Dictionary<string, IDictionary<string, DateTime?>> { { "key", idictWithDateTimeValue } },
+                    dictOfDictWithNull: new Dictionary<string, IDictionary<string, DateTime?>> { { "key", idictWithDateTimeNull } },
+                    now);
+            }
 
             ImmutableDictionary<string, DateTime?> immutableDictWithDateTimeValue = ImmutableDictionary.CreateRange(new Dictionary<string, DateTime?> { { "key", now } });
             ImmutableDictionary<string, DateTime?> immutableDictWithDateTimeNull = ImmutableDictionary.CreateRange(new Dictionary<string, DateTime?> { { "key", null } });
@@ -205,7 +209,7 @@ namespace System.Text.Json.Serialization.Tests
                 enumerableOfEnumerableWithNull: new List<IEnumerable<float?>> { ieWithFloatNull },
                 42.0f);
 
-            DateTime now = DateTime.Now;
+            DateTime now = DateTimeTestHelpers.FixedDateTimeValue;
             IEnumerable<DateTime?> ieWithDateTimeValue = new List<DateTime?> { now };
             IEnumerable<DateTime?> ieWithDateTimeNull = new List<DateTime?> { null };
             TestEnumerableWithNullableValue<IEnumerable<DateTime?>, IEnumerable<IEnumerable<DateTime?>>, DateTime?>(
@@ -434,6 +438,35 @@ namespace System.Text.Json.Serialization.Tests
             public string FirstName { get; set; }
             public int? Age { get; set; }
             public DateTime? Birthday { get; set; }
+        }
+
+        [Fact]
+        public static void RecursiveNullableStruct_Roundtrip()
+        {
+            var value = new RecursiveNullableStruct
+            {
+                Next = new RecursiveNullableStruct?[]
+                {
+                    new()
+                    {
+                        Next = new RecursiveNullableStruct?[]
+                        {
+                            null
+                        }
+                    }
+                }
+            };
+
+            string json = JsonSerializer.Serialize(value);
+            Assert.Equal("""{"Next":[{"Next":[null]}]}""", json);
+            value = JsonSerializer.Deserialize<RecursiveNullableStruct>(json);
+            string roundtripJson = JsonSerializer.Serialize(value);
+            Assert.Equal(roundtripJson, json);
+        }
+
+        public struct RecursiveNullableStruct
+        {
+            public RecursiveNullableStruct?[] Next { get; set; } 
         }
     }
 }

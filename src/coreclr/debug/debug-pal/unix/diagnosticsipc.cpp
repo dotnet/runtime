@@ -64,7 +64,7 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
     if (mode == ConnectionMode::CONNECT)
         return new IpcStream::DiagnosticsIpc(-1, &serverAddress, ConnectionMode::CONNECT);
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
     mode_t prev_mask = umask(~(S_IRUSR | S_IWUSR)); // This will set the default permission bit to 600
 #endif // __APPLE__
 
@@ -73,14 +73,14 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
     {
         if (callback != nullptr)
             callback(strerror(errno), errno);
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
         umask(prev_mask);
 #endif // __APPLE__
         _ASSERTE(!"Failed to create diagnostics IPC socket.");
         return nullptr;
     }
 
-#ifndef __APPLE__
+#if !(defined(__APPLE__) || defined(__FreeBSD__))
     if (fchmod(serverSocket, S_IRUSR | S_IWUSR) == -1)
     {
         if (callback != nullptr)
@@ -100,14 +100,14 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
         const int fSuccessClose = ::close(serverSocket);
         _ASSERTE(fSuccessClose != -1);
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
         umask(prev_mask);
 #endif // __APPLE__
 
         return nullptr;
     }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
     umask(prev_mask);
 #endif // __APPLE__
 
@@ -180,7 +180,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Connect(ErrorCallback callback)
         return nullptr;
     }
 
-    // We don't expect this to block since this is a Unix Domain Socket.  `connect` may block until the 
+    // We don't expect this to block since this is a Unix Domain Socket.  `connect` may block until the
     // TCP handshake is complete for TCP/IP sockets, but UDS don't use TCP.  `connect` will return even if
     // the server hasn't called `accept`.
     if (::connect(clientSocket, (struct sockaddr *)_pServerAddress, sizeof(*_pServerAddress)) < 0)
@@ -270,7 +270,7 @@ int32_t IpcStream::DiagnosticsIpc::Poll(IpcPollHandle *rgIpcPollHandles, uint32_
             {
                 rgIpcPollHandles[i].revents = (uint8_t)PollEvents::UNKNOWN;
                 if (callback != nullptr)
-                    callback("unkown poll response", (uint32_t)pollfds[i].revents);
+                    callback("unknown poll response", (uint32_t)pollfds[i].revents);
             }
         }
     }
@@ -297,8 +297,8 @@ void IpcStream::DiagnosticsIpc::Close(bool isShutdown, ErrorCallback callback)
 
         // N.B. - it is safe to unlink the unix domain socket file while the server
         // is still alive:
-        // "The usual UNIX close-behind semantics apply; the socket can be unlinked 
-        // at any time and will be finally removed from the file system when the last 
+        // "The usual UNIX close-behind semantics apply; the socket can be unlinked
+        // at any time and will be finally removed from the file system when the last
         // reference to it is closed." - unix(7) man page
         Unlink(callback);
     }

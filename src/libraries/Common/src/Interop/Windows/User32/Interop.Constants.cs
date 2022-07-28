@@ -198,6 +198,7 @@ internal static partial class Interop
 
         public const int WAIT_TIMEOUT = 0x00000102;
 
+        public const int WM_DESTROY = 0x0002;
         public const int WM_CLOSE = 0x0010;
         public const int WM_QUERYENDSESSION = 0x0011;
         public const int WM_QUIT = 0x0012;

@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_accum_cs
 {
-    internal struct CI
+    public struct CI
     {
         private int _m_v;
 
@@ -16,7 +17,8 @@ namespace JitTest
             return c1._m_v + c2._m_v + c3._m_v + c4._m_v + c5._m_v;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             CI c = new CI();
             return 100 + test(c, c, c, 0, c, c);

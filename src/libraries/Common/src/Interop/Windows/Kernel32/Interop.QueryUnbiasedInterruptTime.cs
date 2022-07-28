@@ -7,7 +7,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32)]
-        internal static extern bool QueryUnbiasedInterruptTime(out ulong UnbiasedTime);
+        [LibraryImport(Libraries.Kernel32)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool QueryUnbiasedInterruptTime(out ulong UnbiasedTime);
     }
 }

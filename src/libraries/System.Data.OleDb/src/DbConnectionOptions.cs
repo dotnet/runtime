@@ -71,7 +71,6 @@ namespace System.Data.Common
 
         private static readonly Regex ConnectionStringRegex = new Regex(ConnectionStringPattern, RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         private static readonly Regex ConnectionStringRegexOdbc = new Regex(ConnectionStringPatternOdbc, RegexOptions.ExplicitCapture | RegexOptions.Compiled);
-        private static readonly Regex ConnectionStringValidValueRegex = new Regex("^[^\u0000]*$", RegexOptions.Compiled); // value not allowed to contain embedded null
 #endif
         private static readonly Regex ConnectionStringValidKeyRegex = new Regex("^(?![;\\s])[^\\p{Cc}]+(?<!\\s)$", RegexOptions.Compiled); // key not allowed to start with semi-colon or space or contain non-visible characters or end with space
 
@@ -129,7 +128,7 @@ namespace System.Data.Common
         {
             UseOdbcRules = useOdbcRules;
             _parsetable = new Hashtable();
-            _usersConnectionString = ((null != connectionString) ? connectionString : "");
+            _usersConnectionString = connectionString ?? "";
 
             // first pass on parsing, initial syntax check
             if (0 < _usersConnectionString.Length)
@@ -152,7 +151,7 @@ namespace System.Data.Common
             {
                 ReplacePasswordPwd(out connectionString, false);
             }
-            return ((null != connectionString) ? connectionString : "");
+            return connectionString ?? "";
         }
 
         internal bool HasPersistablePassword
@@ -308,8 +307,7 @@ namespace System.Data.Common
 
         public string? ConvertValueToString(string keyName, string? defaultValue)
         {
-            string? value = (string?)_parsetable[keyName];
-            return ((null != value) ? value : defaultValue);
+            return (string?)_parsetable[keyName] ?? defaultValue;
         }
 
         private static bool CompareInsensitiveInvariant(string strvalue, string strconst)
@@ -391,7 +389,7 @@ namespace System.Data.Common
 
         internal string? ExpandDataDirectories(ref string? filename, ref int position)
         {
-            string? value = null;
+            string? value;
             StringBuilder builder = new StringBuilder(_usersConnectionString.Length);
             string? datadir = null;
 
@@ -409,7 +407,7 @@ namespace System.Data.Common
                 //    continue;
                 //}
 
-                // There is a set of keywords we explictly do NOT want to expand |DataDirectory| on
+                // There is a set of keywords we explicitly do NOT want to expand |DataDirectory| on
                 if (UseOdbcRules)
                 {
                     switch (current.Name)
@@ -752,10 +750,6 @@ namespace System.Data.Common
         {
             if (null != keyvalue)
             {
-#if DEBUG
-                bool compValue = ConnectionStringValidValueRegex.IsMatch(keyvalue);
-                Debug.Assert((-1 == keyvalue.IndexOf('\u0000')) == compValue, "IsValueValid mismatch with regex");
-#endif
                 return (-1 == keyvalue.IndexOf('\u0000'));
             }
             return true;
@@ -844,8 +838,8 @@ namespace System.Data.Common
                     string keyname = (string)entry.Key;
                     string? value1 = (string?)entry.Value;
                     string? value2 = (string?)parsetable[keyname];
-                    Debug.Assert(parsetable.Contains(keyname), "ParseInternal code vs. regex mismatch keyname <" + keyname + ">");
-                    Debug.Assert(value1 == value2, "ParseInternal code vs. regex mismatch keyvalue <" + value1 + "> <" + value2 + ">");
+                    Debug.Assert(parsetable.Contains(keyname), $"ParseInternal code vs. regex mismatch keyname <{keyname}>");
+                    Debug.Assert(value1 == value2, $"ParseInternal code vs. regex mismatch keyvalue <{value1}> <{value2}>");
                 }
 
             }
@@ -871,11 +865,11 @@ namespace System.Data.Common
                             }
                         }
                     }
-                    Debug.Assert(isEquivalent, "ParseInternal code vs regex message mismatch: <" + msg1 + "> <" + msg2 + ">");
+                    Debug.Assert(isEquivalent, $"ParseInternal code vs regex message mismatch: <{msg1}> <{msg2}>");
                 }
                 else
                 {
-                    Debug.Assert(false, "ParseInternal code vs regex throw mismatch " + f.Message);
+                    Debug.Assert(false, $"ParseInternal code vs regex throw mismatch {f.Message}");
                 }
                 e = null;
             }

@@ -8,7 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, ExactSpelling = true)]
-        internal static extern unsafe bool VirtualFree(void* lpAddress, UIntPtr dwSize, int dwFreeType);
+        [LibraryImport(Libraries.Kernel32)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool VirtualFree(void* lpAddress, UIntPtr dwSize, int dwFreeType);
     }
 }

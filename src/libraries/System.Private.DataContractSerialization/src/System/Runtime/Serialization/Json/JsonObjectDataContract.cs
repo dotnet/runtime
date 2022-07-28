@@ -44,15 +44,12 @@ namespace System.Runtime.Serialization.Json
                     break;
                 case JsonGlobals.arrayString:
                     // Read as object array
-                    return DataContractJsonSerializerImpl.ReadJsonValue(DataContract.GetDataContract(Globals.TypeOfObjectArray), jsonReader, context);
+                    return DataContractJsonSerializer.ReadJsonValue(DataContract.GetDataContract(Globals.TypeOfObjectArray), jsonReader, context);
                 default:
                     throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonUnexpectedAttributeValue, contentMode));
             }
 
-            if (context != null)
-            {
-                context.AddNewObject(obj);
-            }
+            context?.AddNewObject(obj);
             return obj;
         }
 
@@ -69,7 +66,7 @@ namespace System.Runtime.Serialization.Json
                 throw new XmlException(SR.Format(SR.XmlInvalidConversion, value, Globals.TypeOfInt));
             }
 
-            if (value.IndexOfAny(JsonGlobals.FloatingPointCharacters) == -1)
+            if (value.AsSpan().IndexOfAny('.', 'e', 'E') < 0)
             {
                 int intValue;
                 if (int.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out intValue))
@@ -110,8 +107,7 @@ namespace System.Runtime.Serialization.Json
 
         private static object ParseJsonNumber(string value)
         {
-            TypeCode unusedTypeCode;
-            return ParseJsonNumber(value, out unusedTypeCode);
+            return ParseJsonNumber(value, out _);
         }
     }
 }

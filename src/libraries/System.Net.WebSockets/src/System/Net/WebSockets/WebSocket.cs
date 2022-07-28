@@ -140,10 +140,7 @@ namespace System.Net.WebSockets
         /// <returns>The created <see cref="WebSocket"/>.</returns>
         public static WebSocket CreateFromStream(Stream stream, bool isServer, string? subProtocol, TimeSpan keepAliveInterval)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 
             if (!stream.CanRead || !stream.CanWrite)
             {
@@ -170,11 +167,8 @@ namespace System.Net.WebSockets
         /// <param name="options">The options with which the websocket must be created.</param>
         public static WebSocket CreateFromStream(Stream stream, WebSocketCreationOptions options)
         {
-            if (stream is null)
-                throw new ArgumentNullException(nameof(stream));
-
-            if (options is null)
-                throw new ArgumentNullException(nameof(options));
+            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(options);
 
             if (!stream.CanRead || !stream.CanWrite)
                 throw new ArgumentException(!stream.CanRead ? SR.NotReadableStream : SR.NotWriteableStream, nameof(stream));
@@ -187,6 +181,7 @@ namespace System.Net.WebSockets
         public static bool IsApplicationTargeting45() => true;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.")]
         public static void RegisterPrefixes()
         {
             // The current WebRequest implementation in the libraries does not support upgrading
@@ -199,10 +194,7 @@ namespace System.Net.WebSockets
             string? subProtocol, int receiveBufferSize, int sendBufferSize,
             TimeSpan keepAliveInterval, bool useZeroMaskingKey, ArraySegment<byte> internalBuffer)
         {
-            if (innerStream == null)
-            {
-                throw new ArgumentNullException(nameof(innerStream));
-            }
+            ArgumentNullException.ThrowIfNull(innerStream);
 
             if (!innerStream.CanRead || !innerStream.CanWrite)
             {

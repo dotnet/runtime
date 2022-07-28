@@ -110,6 +110,8 @@ public:
         , m_CallsiteIsInLoop(false)
         , m_IsNoReturn(false)
         , m_IsNoReturnKnown(false)
+        , m_ConstArgFeedsIsKnownConst(false)
+        , m_ArgFeedsIsKnownConst(false)
     {
         // empty
     }
@@ -178,6 +180,8 @@ protected:
     bool                    m_CallsiteIsInLoop : 1;
     bool                    m_IsNoReturn : 1;
     bool                    m_IsNoReturnKnown : 1;
+    bool                    m_ConstArgFeedsIsKnownConst : 1;
+    bool                    m_ArgFeedsIsKnownConst : 1;
 };
 
 // ExtendedDefaultPolicy is a slightly more aggressive variant of
@@ -185,7 +189,7 @@ protected:
 class ExtendedDefaultPolicy : public DefaultPolicy
 {
 public:
-    ExtendedDefaultPolicy::ExtendedDefaultPolicy(Compiler* compiler, bool isPrejitRoot)
+    ExtendedDefaultPolicy(Compiler* compiler, bool isPrejitRoot)
         : DefaultPolicy(compiler, isPrejitRoot)
         , m_ProfileFrequency(0.0)
         , m_BinaryExprWithCns(0)
@@ -204,6 +208,8 @@ public:
         , m_FoldableExpr(0)
         , m_FoldableExprUn(0)
         , m_FoldableBranch(0)
+        , m_FoldableSwitch(0)
+        , m_Switch(0)
         , m_DivByCns(0)
         , m_ReturnsStructByValue(false)
         , m_IsFromValueClass(false)
@@ -252,6 +258,8 @@ protected:
     unsigned m_FoldableExpr;
     unsigned m_FoldableExprUn;
     unsigned m_FoldableBranch;
+    unsigned m_FoldableSwitch;
+    unsigned m_Switch;
     unsigned m_DivByCns;
     bool     m_ReturnsStructByValue : 1;
     bool     m_IsFromValueClass : 1;
@@ -512,7 +520,7 @@ public:
         m_InlineContext = context;
     }
 
-    void NoteOffset(IL_OFFSETX offset) override
+    void NoteOffset(IL_OFFSET offset) override
     {
         m_Offset = offset;
     }
@@ -538,7 +546,7 @@ private:
     static FILE*         s_ReplayFile;
     static CritSecObject s_XmlReaderLock;
     InlineContext*       m_InlineContext;
-    IL_OFFSETX           m_Offset;
+    IL_OFFSET            m_Offset;
     bool                 m_WasForceInline;
 };
 

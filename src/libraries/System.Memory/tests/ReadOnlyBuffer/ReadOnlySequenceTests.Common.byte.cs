@@ -44,7 +44,7 @@ namespace System.Memory.Tests
             // [padding..hello]  ->  [  world   ]
             const int blockSize = 4096;
 
-            byte[] items = Encoding.ASCII.GetBytes("Hello World");
+            byte[] items = "Hello World"u8.ToArray();
             byte[] firstItems = Enumerable.Repeat((byte)'a', blockSize - 5).Concat(items.Take(5)).ToArray();
             byte[] secondItems = items.Skip(5).Concat(Enumerable.Repeat((byte)'a', blockSize - (items.Length - 5))).ToArray();
 

@@ -13,18 +13,9 @@ namespace System.Xml.Xsl.Qil
     /// </remarks>
     internal sealed class QilFactory
     {
-        private readonly QilTypeChecker _typeCheck;
-
         public QilFactory()
         {
-            _typeCheck = new QilTypeChecker();
         }
-
-        public QilTypeChecker TypeChecker
-        {
-            get { return _typeCheck; }
-        }
-
 
         //-----------------------------------------------
         // Convenience methods
@@ -33,7 +24,7 @@ namespace System.Xml.Xsl.Qil
         public QilExpression QilExpression(QilNode root, QilFactory factory)
         {
             QilExpression n = new QilExpression(QilNodeType.QilExpression, root, factory);
-            n.XmlType = _typeCheck.CheckQilExpression(n);
+            n.XmlType = QilTypeChecker.CheckQilExpression(n);
             TraceNode(n);
             return n;
         }
@@ -107,7 +98,7 @@ namespace System.Xml.Xsl.Qil
         public QilList FunctionList()
         {
             QilList n = new QilList(QilNodeType.FunctionList);
-            n.XmlType = _typeCheck.CheckFunctionList(n);
+            n.XmlType = QilTypeChecker.CheckFunctionList(n);
             TraceNode(n);
             return n;
         }
@@ -115,7 +106,7 @@ namespace System.Xml.Xsl.Qil
         public QilList GlobalVariableList()
         {
             QilList n = new QilList(QilNodeType.GlobalVariableList);
-            n.XmlType = _typeCheck.CheckGlobalVariableList(n);
+            n.XmlType = QilTypeChecker.CheckGlobalVariableList(n);
             TraceNode(n);
             return n;
         }
@@ -123,7 +114,7 @@ namespace System.Xml.Xsl.Qil
         public QilList GlobalParameterList()
         {
             QilList n = new QilList(QilNodeType.GlobalParameterList);
-            n.XmlType = _typeCheck.CheckGlobalParameterList(n);
+            n.XmlType = QilTypeChecker.CheckGlobalParameterList(n);
             TraceNode(n);
             return n;
         }
@@ -131,7 +122,7 @@ namespace System.Xml.Xsl.Qil
         public QilList ActualParameterList()
         {
             QilList n = new QilList(QilNodeType.ActualParameterList);
-            n.XmlType = _typeCheck.CheckActualParameterList(n);
+            n.XmlType = QilTypeChecker.CheckActualParameterList(n);
             TraceNode(n);
             return n;
         }
@@ -139,7 +130,7 @@ namespace System.Xml.Xsl.Qil
         public QilList FormalParameterList()
         {
             QilList n = new QilList(QilNodeType.FormalParameterList);
-            n.XmlType = _typeCheck.CheckFormalParameterList(n);
+            n.XmlType = QilTypeChecker.CheckFormalParameterList(n);
             TraceNode(n);
             return n;
         }
@@ -147,7 +138,7 @@ namespace System.Xml.Xsl.Qil
         public QilList SortKeyList()
         {
             QilList n = new QilList(QilNodeType.SortKeyList);
-            n.XmlType = _typeCheck.CheckSortKeyList(n);
+            n.XmlType = QilTypeChecker.CheckSortKeyList(n);
             TraceNode(n);
             return n;
         }
@@ -155,7 +146,7 @@ namespace System.Xml.Xsl.Qil
         public QilList BranchList()
         {
             QilList n = new QilList(QilNodeType.BranchList);
-            n.XmlType = _typeCheck.CheckBranchList(n);
+            n.XmlType = QilTypeChecker.CheckBranchList(n);
             TraceNode(n);
             return n;
         }
@@ -163,7 +154,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary OptimizeBarrier(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.OptimizeBarrier, child);
-            n.XmlType = _typeCheck.CheckOptimizeBarrier(n);
+            n.XmlType = QilTypeChecker.CheckOptimizeBarrier(n);
             TraceNode(n);
             return n;
         }
@@ -171,7 +162,7 @@ namespace System.Xml.Xsl.Qil
         public QilNode Unknown(XmlQueryType xmlType)
         {
             QilNode n = new QilNode(QilNodeType.Unknown, xmlType);
-            n.XmlType = _typeCheck.CheckUnknown(n);
+            n.XmlType = QilTypeChecker.CheckUnknown(n);
             TraceNode(n);
             return n;
         }
@@ -185,7 +176,7 @@ namespace System.Xml.Xsl.Qil
         public QilDataSource DataSource(QilNode name, QilNode baseUri)
         {
             QilDataSource n = new QilDataSource(QilNodeType.DataSource, name, baseUri);
-            n.XmlType = _typeCheck.CheckDataSource(n);
+            n.XmlType = QilTypeChecker.CheckDataSource(n);
             TraceNode(n);
             return n;
         }
@@ -193,7 +184,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary Nop(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.Nop, child);
-            n.XmlType = _typeCheck.CheckNop(n);
+            n.XmlType = QilTypeChecker.CheckNop(n);
             TraceNode(n);
             return n;
         }
@@ -201,7 +192,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary Error(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.Error, child);
-            n.XmlType = _typeCheck.CheckError(n);
+            n.XmlType = QilTypeChecker.CheckError(n);
             TraceNode(n);
             return n;
         }
@@ -209,7 +200,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary Warning(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.Warning, child);
-            n.XmlType = _typeCheck.CheckWarning(n);
+            n.XmlType = QilTypeChecker.CheckWarning(n);
             TraceNode(n);
             return n;
         }
@@ -223,7 +214,7 @@ namespace System.Xml.Xsl.Qil
         public QilIterator For(QilNode binding)
         {
             QilIterator n = new QilIterator(QilNodeType.For, binding);
-            n.XmlType = _typeCheck.CheckFor(n);
+            n.XmlType = QilTypeChecker.CheckFor(n);
             TraceNode(n);
             return n;
         }
@@ -231,7 +222,7 @@ namespace System.Xml.Xsl.Qil
         public QilIterator Let(QilNode binding)
         {
             QilIterator n = new QilIterator(QilNodeType.Let, binding);
-            n.XmlType = _typeCheck.CheckLet(n);
+            n.XmlType = QilTypeChecker.CheckLet(n);
             TraceNode(n);
             return n;
         }
@@ -239,7 +230,7 @@ namespace System.Xml.Xsl.Qil
         public QilParameter Parameter(QilNode? defaultValue, QilNode? name, XmlQueryType xmlType)
         {
             QilParameter n = new QilParameter(QilNodeType.Parameter, defaultValue, name, xmlType);
-            n.XmlType = _typeCheck.CheckParameter(n);
+            n.XmlType = QilTypeChecker.CheckParameter(n);
             TraceNode(n);
             return n;
         }
@@ -247,7 +238,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary PositionOf(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.PositionOf, child);
-            n.XmlType = _typeCheck.CheckPositionOf(n);
+            n.XmlType = QilTypeChecker.CheckPositionOf(n);
             TraceNode(n);
             return n;
         }
@@ -261,7 +252,7 @@ namespace System.Xml.Xsl.Qil
         public QilNode True()
         {
             QilNode n = new QilNode(QilNodeType.True);
-            n.XmlType = _typeCheck.CheckTrue(n);
+            n.XmlType = QilTypeChecker.CheckTrue(n);
             TraceNode(n);
             return n;
         }
@@ -269,7 +260,7 @@ namespace System.Xml.Xsl.Qil
         public QilNode False()
         {
             QilNode n = new QilNode(QilNodeType.False);
-            n.XmlType = _typeCheck.CheckFalse(n);
+            n.XmlType = QilTypeChecker.CheckFalse(n);
             TraceNode(n);
             return n;
         }
@@ -277,7 +268,7 @@ namespace System.Xml.Xsl.Qil
         public QilLiteral LiteralString(string? value)
         {
             QilLiteral n = new QilLiteral(QilNodeType.LiteralString, value);
-            n.XmlType = _typeCheck.CheckLiteralString(n);
+            n.XmlType = QilTypeChecker.CheckLiteralString(n);
             TraceNode(n);
             return n;
         }
@@ -285,7 +276,7 @@ namespace System.Xml.Xsl.Qil
         public QilLiteral LiteralInt32(int value)
         {
             QilLiteral n = new QilLiteral(QilNodeType.LiteralInt32, value);
-            n.XmlType = _typeCheck.CheckLiteralInt32(n);
+            n.XmlType = QilTypeChecker.CheckLiteralInt32(n);
             TraceNode(n);
             return n;
         }
@@ -293,7 +284,7 @@ namespace System.Xml.Xsl.Qil
         public QilLiteral LiteralInt64(long value)
         {
             QilLiteral n = new QilLiteral(QilNodeType.LiteralInt64, value);
-            n.XmlType = _typeCheck.CheckLiteralInt64(n);
+            n.XmlType = QilTypeChecker.CheckLiteralInt64(n);
             TraceNode(n);
             return n;
         }
@@ -301,7 +292,7 @@ namespace System.Xml.Xsl.Qil
         public QilLiteral LiteralDouble(double value)
         {
             QilLiteral n = new QilLiteral(QilNodeType.LiteralDouble, value);
-            n.XmlType = _typeCheck.CheckLiteralDouble(n);
+            n.XmlType = QilTypeChecker.CheckLiteralDouble(n);
             TraceNode(n);
             return n;
         }
@@ -309,7 +300,7 @@ namespace System.Xml.Xsl.Qil
         public QilLiteral LiteralDecimal(decimal value)
         {
             QilLiteral n = new QilLiteral(QilNodeType.LiteralDecimal, value);
-            n.XmlType = _typeCheck.CheckLiteralDecimal(n);
+            n.XmlType = QilTypeChecker.CheckLiteralDecimal(n);
             TraceNode(n);
             return n;
         }
@@ -317,7 +308,7 @@ namespace System.Xml.Xsl.Qil
         public QilName LiteralQName(string localName, string namespaceUri, string prefix)
         {
             QilName n = new QilName(QilNodeType.LiteralQName, localName, namespaceUri, prefix);
-            n.XmlType = _typeCheck.CheckLiteralQName(n);
+            n.XmlType = QilTypeChecker.CheckLiteralQName(n);
             TraceNode(n);
             return n;
         }
@@ -325,7 +316,7 @@ namespace System.Xml.Xsl.Qil
         public QilLiteral LiteralType(XmlQueryType value)
         {
             QilLiteral n = new QilLiteral(QilNodeType.LiteralType, value);
-            n.XmlType = _typeCheck.CheckLiteralType(n);
+            n.XmlType = QilTypeChecker.CheckLiteralType(n);
             TraceNode(n);
             return n;
         }
@@ -333,7 +324,7 @@ namespace System.Xml.Xsl.Qil
         public QilLiteral LiteralObject(object value)
         {
             QilLiteral n = new QilLiteral(QilNodeType.LiteralObject, value);
-            n.XmlType = _typeCheck.CheckLiteralObject(n);
+            n.XmlType = QilTypeChecker.CheckLiteralObject(n);
             TraceNode(n);
             return n;
         }
@@ -347,7 +338,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary And(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.And, left, right);
-            n.XmlType = _typeCheck.CheckAnd(n);
+            n.XmlType = QilTypeChecker.CheckAnd(n);
             TraceNode(n);
             return n;
         }
@@ -355,7 +346,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Or(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Or, left, right);
-            n.XmlType = _typeCheck.CheckOr(n);
+            n.XmlType = QilTypeChecker.CheckOr(n);
             TraceNode(n);
             return n;
         }
@@ -363,7 +354,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary Not(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.Not, child);
-            n.XmlType = _typeCheck.CheckNot(n);
+            n.XmlType = QilTypeChecker.CheckNot(n);
             TraceNode(n);
             return n;
         }
@@ -377,7 +368,7 @@ namespace System.Xml.Xsl.Qil
         public QilTernary Conditional(QilNode left, QilNode center, QilNode right)
         {
             QilTernary n = new QilTernary(QilNodeType.Conditional, left, center, right);
-            n.XmlType = _typeCheck.CheckConditional(n);
+            n.XmlType = QilTypeChecker.CheckConditional(n);
             TraceNode(n);
             return n;
         }
@@ -385,7 +376,7 @@ namespace System.Xml.Xsl.Qil
         public QilChoice Choice(QilNode expression, QilNode branches)
         {
             QilChoice n = new QilChoice(QilNodeType.Choice, expression, branches);
-            n.XmlType = _typeCheck.CheckChoice(n);
+            n.XmlType = QilTypeChecker.CheckChoice(n);
             TraceNode(n);
             return n;
         }
@@ -399,7 +390,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary Length(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.Length, child);
-            n.XmlType = _typeCheck.CheckLength(n);
+            n.XmlType = QilTypeChecker.CheckLength(n);
             TraceNode(n);
             return n;
         }
@@ -407,7 +398,7 @@ namespace System.Xml.Xsl.Qil
         public QilList Sequence()
         {
             QilList n = new QilList(QilNodeType.Sequence);
-            n.XmlType = _typeCheck.CheckSequence(n);
+            n.XmlType = QilTypeChecker.CheckSequence(n);
             TraceNode(n);
             return n;
         }
@@ -415,7 +406,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Union(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Union, left, right);
-            n.XmlType = _typeCheck.CheckUnion(n);
+            n.XmlType = QilTypeChecker.CheckUnion(n);
             TraceNode(n);
             return n;
         }
@@ -423,7 +414,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Intersection(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Intersection, left, right);
-            n.XmlType = _typeCheck.CheckIntersection(n);
+            n.XmlType = QilTypeChecker.CheckIntersection(n);
             TraceNode(n);
             return n;
         }
@@ -431,7 +422,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Difference(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Difference, left, right);
-            n.XmlType = _typeCheck.CheckDifference(n);
+            n.XmlType = QilTypeChecker.CheckDifference(n);
             TraceNode(n);
             return n;
         }
@@ -439,7 +430,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary Sum(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.Sum, child);
-            n.XmlType = _typeCheck.CheckSum(n);
+            n.XmlType = QilTypeChecker.CheckSum(n);
             TraceNode(n);
             return n;
         }
@@ -453,7 +444,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary Negate(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.Negate, child);
-            n.XmlType = _typeCheck.CheckNegate(n);
+            n.XmlType = QilTypeChecker.CheckNegate(n);
             TraceNode(n);
             return n;
         }
@@ -461,7 +452,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Add(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Add, left, right);
-            n.XmlType = _typeCheck.CheckAdd(n);
+            n.XmlType = QilTypeChecker.CheckAdd(n);
             TraceNode(n);
             return n;
         }
@@ -469,7 +460,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Subtract(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Subtract, left, right);
-            n.XmlType = _typeCheck.CheckSubtract(n);
+            n.XmlType = QilTypeChecker.CheckSubtract(n);
             TraceNode(n);
             return n;
         }
@@ -477,7 +468,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Multiply(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Multiply, left, right);
-            n.XmlType = _typeCheck.CheckMultiply(n);
+            n.XmlType = QilTypeChecker.CheckMultiply(n);
             TraceNode(n);
             return n;
         }
@@ -485,7 +476,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Divide(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Divide, left, right);
-            n.XmlType = _typeCheck.CheckDivide(n);
+            n.XmlType = QilTypeChecker.CheckDivide(n);
             TraceNode(n);
             return n;
         }
@@ -493,7 +484,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Modulo(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Modulo, left, right);
-            n.XmlType = _typeCheck.CheckModulo(n);
+            n.XmlType = QilTypeChecker.CheckModulo(n);
             TraceNode(n);
             return n;
         }
@@ -507,7 +498,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary StrLength(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.StrLength, child);
-            n.XmlType = _typeCheck.CheckStrLength(n);
+            n.XmlType = QilTypeChecker.CheckStrLength(n);
             TraceNode(n);
             return n;
         }
@@ -515,7 +506,7 @@ namespace System.Xml.Xsl.Qil
         public QilStrConcat StrConcat(QilNode delimiter, QilNode values)
         {
             QilStrConcat n = new QilStrConcat(QilNodeType.StrConcat, delimiter, values);
-            n.XmlType = _typeCheck.CheckStrConcat(n);
+            n.XmlType = QilTypeChecker.CheckStrConcat(n);
             TraceNode(n);
             return n;
         }
@@ -523,7 +514,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary StrParseQName(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.StrParseQName, left, right);
-            n.XmlType = _typeCheck.CheckStrParseQName(n);
+            n.XmlType = QilTypeChecker.CheckStrParseQName(n);
             TraceNode(n);
             return n;
         }
@@ -537,7 +528,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Ne(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Ne, left, right);
-            n.XmlType = _typeCheck.CheckNe(n);
+            n.XmlType = QilTypeChecker.CheckNe(n);
             TraceNode(n);
             return n;
         }
@@ -545,7 +536,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Eq(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Eq, left, right);
-            n.XmlType = _typeCheck.CheckEq(n);
+            n.XmlType = QilTypeChecker.CheckEq(n);
             TraceNode(n);
             return n;
         }
@@ -553,7 +544,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Gt(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Gt, left, right);
-            n.XmlType = _typeCheck.CheckGt(n);
+            n.XmlType = QilTypeChecker.CheckGt(n);
             TraceNode(n);
             return n;
         }
@@ -561,7 +552,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Ge(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Ge, left, right);
-            n.XmlType = _typeCheck.CheckGe(n);
+            n.XmlType = QilTypeChecker.CheckGe(n);
             TraceNode(n);
             return n;
         }
@@ -569,7 +560,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Lt(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Lt, left, right);
-            n.XmlType = _typeCheck.CheckLt(n);
+            n.XmlType = QilTypeChecker.CheckLt(n);
             TraceNode(n);
             return n;
         }
@@ -577,7 +568,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Le(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Le, left, right);
-            n.XmlType = _typeCheck.CheckLe(n);
+            n.XmlType = QilTypeChecker.CheckLe(n);
             TraceNode(n);
             return n;
         }
@@ -591,7 +582,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Is(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Is, left, right);
-            n.XmlType = _typeCheck.CheckIs(n);
+            n.XmlType = QilTypeChecker.CheckIs(n);
             TraceNode(n);
             return n;
         }
@@ -599,7 +590,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Before(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Before, left, right);
-            n.XmlType = _typeCheck.CheckBefore(n);
+            n.XmlType = QilTypeChecker.CheckBefore(n);
             TraceNode(n);
             return n;
         }
@@ -613,7 +604,7 @@ namespace System.Xml.Xsl.Qil
         public QilLoop Loop(QilNode variable, QilNode body)
         {
             QilLoop n = new QilLoop(QilNodeType.Loop, variable, body);
-            n.XmlType = _typeCheck.CheckLoop(n);
+            n.XmlType = QilTypeChecker.CheckLoop(n);
             TraceNode(n);
             return n;
         }
@@ -621,7 +612,7 @@ namespace System.Xml.Xsl.Qil
         public QilLoop Filter(QilNode variable, QilNode body)
         {
             QilLoop n = new QilLoop(QilNodeType.Filter, variable, body);
-            n.XmlType = _typeCheck.CheckFilter(n);
+            n.XmlType = QilTypeChecker.CheckFilter(n);
             TraceNode(n);
             return n;
         }
@@ -635,7 +626,7 @@ namespace System.Xml.Xsl.Qil
         public QilLoop Sort(QilNode variable, QilNode body)
         {
             QilLoop n = new QilLoop(QilNodeType.Sort, variable, body);
-            n.XmlType = _typeCheck.CheckSort(n);
+            n.XmlType = QilTypeChecker.CheckSort(n);
             TraceNode(n);
             return n;
         }
@@ -643,7 +634,7 @@ namespace System.Xml.Xsl.Qil
         public QilSortKey SortKey(QilNode key, QilNode collation)
         {
             QilSortKey n = new QilSortKey(QilNodeType.SortKey, key, collation);
-            n.XmlType = _typeCheck.CheckSortKey(n);
+            n.XmlType = QilTypeChecker.CheckSortKey(n);
             TraceNode(n);
             return n;
         }
@@ -651,7 +642,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary DocOrderDistinct(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.DocOrderDistinct, child);
-            n.XmlType = _typeCheck.CheckDocOrderDistinct(n);
+            n.XmlType = QilTypeChecker.CheckDocOrderDistinct(n);
             TraceNode(n);
             return n;
         }
@@ -665,7 +656,7 @@ namespace System.Xml.Xsl.Qil
         public QilFunction Function(QilNode arguments, QilNode definition, QilNode sideEffects, XmlQueryType xmlType)
         {
             QilFunction n = new QilFunction(QilNodeType.Function, arguments, definition, sideEffects, xmlType);
-            n.XmlType = _typeCheck.CheckFunction(n);
+            n.XmlType = QilTypeChecker.CheckFunction(n);
             TraceNode(n);
             return n;
         }
@@ -673,7 +664,7 @@ namespace System.Xml.Xsl.Qil
         public QilInvoke Invoke(QilNode function, QilNode arguments)
         {
             QilInvoke n = new QilInvoke(QilNodeType.Invoke, function, arguments);
-            n.XmlType = _typeCheck.CheckInvoke(n);
+            n.XmlType = QilTypeChecker.CheckInvoke(n);
             TraceNode(n);
             return n;
         }
@@ -687,7 +678,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary Content(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.Content, child);
-            n.XmlType = _typeCheck.CheckContent(n);
+            n.XmlType = QilTypeChecker.CheckContent(n);
             TraceNode(n);
             return n;
         }
@@ -695,7 +686,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Attribute(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Attribute, left, right);
-            n.XmlType = _typeCheck.CheckAttribute(n);
+            n.XmlType = QilTypeChecker.CheckAttribute(n);
             TraceNode(n);
             return n;
         }
@@ -703,7 +694,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary Parent(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.Parent, child);
-            n.XmlType = _typeCheck.CheckParent(n);
+            n.XmlType = QilTypeChecker.CheckParent(n);
             TraceNode(n);
             return n;
         }
@@ -711,7 +702,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary Root(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.Root, child);
-            n.XmlType = _typeCheck.CheckRoot(n);
+            n.XmlType = QilTypeChecker.CheckRoot(n);
             TraceNode(n);
             return n;
         }
@@ -719,7 +710,7 @@ namespace System.Xml.Xsl.Qil
         public QilNode XmlContext()
         {
             QilNode n = new QilNode(QilNodeType.XmlContext);
-            n.XmlType = _typeCheck.CheckXmlContext(n);
+            n.XmlType = QilTypeChecker.CheckXmlContext(n);
             TraceNode(n);
             return n;
         }
@@ -727,7 +718,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary Descendant(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.Descendant, child);
-            n.XmlType = _typeCheck.CheckDescendant(n);
+            n.XmlType = QilTypeChecker.CheckDescendant(n);
             TraceNode(n);
             return n;
         }
@@ -735,7 +726,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary DescendantOrSelf(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.DescendantOrSelf, child);
-            n.XmlType = _typeCheck.CheckDescendantOrSelf(n);
+            n.XmlType = QilTypeChecker.CheckDescendantOrSelf(n);
             TraceNode(n);
             return n;
         }
@@ -743,7 +734,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary Ancestor(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.Ancestor, child);
-            n.XmlType = _typeCheck.CheckAncestor(n);
+            n.XmlType = QilTypeChecker.CheckAncestor(n);
             TraceNode(n);
             return n;
         }
@@ -751,7 +742,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary AncestorOrSelf(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.AncestorOrSelf, child);
-            n.XmlType = _typeCheck.CheckAncestorOrSelf(n);
+            n.XmlType = QilTypeChecker.CheckAncestorOrSelf(n);
             TraceNode(n);
             return n;
         }
@@ -759,7 +750,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary Preceding(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.Preceding, child);
-            n.XmlType = _typeCheck.CheckPreceding(n);
+            n.XmlType = QilTypeChecker.CheckPreceding(n);
             TraceNode(n);
             return n;
         }
@@ -767,7 +758,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary FollowingSibling(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.FollowingSibling, child);
-            n.XmlType = _typeCheck.CheckFollowingSibling(n);
+            n.XmlType = QilTypeChecker.CheckFollowingSibling(n);
             TraceNode(n);
             return n;
         }
@@ -775,7 +766,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary PrecedingSibling(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.PrecedingSibling, child);
-            n.XmlType = _typeCheck.CheckPrecedingSibling(n);
+            n.XmlType = QilTypeChecker.CheckPrecedingSibling(n);
             TraceNode(n);
             return n;
         }
@@ -783,7 +774,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary NodeRange(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.NodeRange, left, right);
-            n.XmlType = _typeCheck.CheckNodeRange(n);
+            n.XmlType = QilTypeChecker.CheckNodeRange(n);
             TraceNode(n);
             return n;
         }
@@ -791,7 +782,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary Deref(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.Deref, left, right);
-            n.XmlType = _typeCheck.CheckDeref(n);
+            n.XmlType = QilTypeChecker.CheckDeref(n);
             TraceNode(n);
             return n;
         }
@@ -805,7 +796,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary ElementCtor(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.ElementCtor, left, right);
-            n.XmlType = _typeCheck.CheckElementCtor(n);
+            n.XmlType = QilTypeChecker.CheckElementCtor(n);
             TraceNode(n);
             return n;
         }
@@ -813,7 +804,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary AttributeCtor(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.AttributeCtor, left, right);
-            n.XmlType = _typeCheck.CheckAttributeCtor(n);
+            n.XmlType = QilTypeChecker.CheckAttributeCtor(n);
             TraceNode(n);
             return n;
         }
@@ -821,7 +812,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary CommentCtor(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.CommentCtor, child);
-            n.XmlType = _typeCheck.CheckCommentCtor(n);
+            n.XmlType = QilTypeChecker.CheckCommentCtor(n);
             TraceNode(n);
             return n;
         }
@@ -829,7 +820,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary PICtor(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.PICtor, left, right);
-            n.XmlType = _typeCheck.CheckPICtor(n);
+            n.XmlType = QilTypeChecker.CheckPICtor(n);
             TraceNode(n);
             return n;
         }
@@ -837,7 +828,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary TextCtor(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.TextCtor, child);
-            n.XmlType = _typeCheck.CheckTextCtor(n);
+            n.XmlType = QilTypeChecker.CheckTextCtor(n);
             TraceNode(n);
             return n;
         }
@@ -845,7 +836,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary RawTextCtor(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.RawTextCtor, child);
-            n.XmlType = _typeCheck.CheckRawTextCtor(n);
+            n.XmlType = QilTypeChecker.CheckRawTextCtor(n);
             TraceNode(n);
             return n;
         }
@@ -853,7 +844,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary DocumentCtor(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.DocumentCtor, child);
-            n.XmlType = _typeCheck.CheckDocumentCtor(n);
+            n.XmlType = QilTypeChecker.CheckDocumentCtor(n);
             TraceNode(n);
             return n;
         }
@@ -861,7 +852,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary NamespaceDecl(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.NamespaceDecl, left, right);
-            n.XmlType = _typeCheck.CheckNamespaceDecl(n);
+            n.XmlType = QilTypeChecker.CheckNamespaceDecl(n);
             TraceNode(n);
             return n;
         }
@@ -869,7 +860,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary RtfCtor(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.RtfCtor, left, right);
-            n.XmlType = _typeCheck.CheckRtfCtor(n);
+            n.XmlType = QilTypeChecker.CheckRtfCtor(n);
             TraceNode(n);
             return n;
         }
@@ -883,7 +874,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary NameOf(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.NameOf, child);
-            n.XmlType = _typeCheck.CheckNameOf(n);
+            n.XmlType = QilTypeChecker.CheckNameOf(n);
             TraceNode(n);
             return n;
         }
@@ -891,7 +882,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary LocalNameOf(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.LocalNameOf, child);
-            n.XmlType = _typeCheck.CheckLocalNameOf(n);
+            n.XmlType = QilTypeChecker.CheckLocalNameOf(n);
             TraceNode(n);
             return n;
         }
@@ -899,7 +890,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary NamespaceUriOf(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.NamespaceUriOf, child);
-            n.XmlType = _typeCheck.CheckNamespaceUriOf(n);
+            n.XmlType = QilTypeChecker.CheckNamespaceUriOf(n);
             TraceNode(n);
             return n;
         }
@@ -907,7 +898,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary PrefixOf(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.PrefixOf, child);
-            n.XmlType = _typeCheck.CheckPrefixOf(n);
+            n.XmlType = QilTypeChecker.CheckPrefixOf(n);
             TraceNode(n);
             return n;
         }
@@ -921,7 +912,7 @@ namespace System.Xml.Xsl.Qil
         public QilTargetType TypeAssert(QilNode source, QilNode targetType)
         {
             QilTargetType n = new QilTargetType(QilNodeType.TypeAssert, source, targetType);
-            n.XmlType = _typeCheck.CheckTypeAssert(n);
+            n.XmlType = QilTypeChecker.CheckTypeAssert(n);
             TraceNode(n);
             return n;
         }
@@ -929,7 +920,7 @@ namespace System.Xml.Xsl.Qil
         public QilTargetType IsType(QilNode source, QilNode targetType)
         {
             QilTargetType n = new QilTargetType(QilNodeType.IsType, source, targetType);
-            n.XmlType = _typeCheck.CheckIsType(n);
+            n.XmlType = QilTypeChecker.CheckIsType(n);
             TraceNode(n);
             return n;
         }
@@ -937,7 +928,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary IsEmpty(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.IsEmpty, child);
-            n.XmlType = _typeCheck.CheckIsEmpty(n);
+            n.XmlType = QilTypeChecker.CheckIsEmpty(n);
             TraceNode(n);
             return n;
         }
@@ -951,7 +942,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary XPathNodeValue(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.XPathNodeValue, child);
-            n.XmlType = _typeCheck.CheckXPathNodeValue(n);
+            n.XmlType = QilTypeChecker.CheckXPathNodeValue(n);
             TraceNode(n);
             return n;
         }
@@ -959,7 +950,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary XPathFollowing(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.XPathFollowing, child);
-            n.XmlType = _typeCheck.CheckXPathFollowing(n);
+            n.XmlType = QilTypeChecker.CheckXPathFollowing(n);
             TraceNode(n);
             return n;
         }
@@ -967,7 +958,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary XPathPreceding(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.XPathPreceding, child);
-            n.XmlType = _typeCheck.CheckXPathPreceding(n);
+            n.XmlType = QilTypeChecker.CheckXPathPreceding(n);
             TraceNode(n);
             return n;
         }
@@ -975,7 +966,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary XPathNamespace(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.XPathNamespace, child);
-            n.XmlType = _typeCheck.CheckXPathNamespace(n);
+            n.XmlType = QilTypeChecker.CheckXPathNamespace(n);
             TraceNode(n);
             return n;
         }
@@ -989,7 +980,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary XsltGenerateId(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.XsltGenerateId, child);
-            n.XmlType = _typeCheck.CheckXsltGenerateId(n);
+            n.XmlType = QilTypeChecker.CheckXsltGenerateId(n);
             TraceNode(n);
             return n;
         }
@@ -997,7 +988,7 @@ namespace System.Xml.Xsl.Qil
         public QilInvokeLateBound XsltInvokeLateBound(QilNode name, QilNode arguments)
         {
             QilInvokeLateBound n = new QilInvokeLateBound(QilNodeType.XsltInvokeLateBound, name, arguments);
-            n.XmlType = _typeCheck.CheckXsltInvokeLateBound(n);
+            n.XmlType = QilTypeChecker.CheckXsltInvokeLateBound(n);
             TraceNode(n);
             return n;
         }
@@ -1005,7 +996,7 @@ namespace System.Xml.Xsl.Qil
         public QilInvokeEarlyBound XsltInvokeEarlyBound(QilNode name, QilNode clrMethod, QilNode arguments, XmlQueryType xmlType)
         {
             QilInvokeEarlyBound n = new QilInvokeEarlyBound(QilNodeType.XsltInvokeEarlyBound, name, clrMethod, arguments, xmlType);
-            n.XmlType = _typeCheck.CheckXsltInvokeEarlyBound(n);
+            n.XmlType = QilTypeChecker.CheckXsltInvokeEarlyBound(n);
             TraceNode(n);
             return n;
         }
@@ -1013,7 +1004,7 @@ namespace System.Xml.Xsl.Qil
         public QilBinary XsltCopy(QilNode left, QilNode right)
         {
             QilBinary n = new QilBinary(QilNodeType.XsltCopy, left, right);
-            n.XmlType = _typeCheck.CheckXsltCopy(n);
+            n.XmlType = QilTypeChecker.CheckXsltCopy(n);
             TraceNode(n);
             return n;
         }
@@ -1021,7 +1012,7 @@ namespace System.Xml.Xsl.Qil
         public QilUnary XsltCopyOf(QilNode child)
         {
             QilUnary n = new QilUnary(QilNodeType.XsltCopyOf, child);
-            n.XmlType = _typeCheck.CheckXsltCopyOf(n);
+            n.XmlType = QilTypeChecker.CheckXsltCopyOf(n);
             TraceNode(n);
             return n;
         }
@@ -1029,7 +1020,7 @@ namespace System.Xml.Xsl.Qil
         public QilTargetType XsltConvert(QilNode source, QilNode targetType)
         {
             QilTargetType n = new QilTargetType(QilNodeType.XsltConvert, source, targetType);
-            n.XmlType = _typeCheck.CheckXsltConvert(n);
+            n.XmlType = QilTypeChecker.CheckXsltConvert(n);
             TraceNode(n);
             return n;
         }
@@ -1038,12 +1029,16 @@ namespace System.Xml.Xsl.Qil
         #endregion
         #region Diagnostic Support
         [System.Diagnostics.Conditional("QIL_TRACE_NODE_CREATION")]
+
+#pragma warning disable CA1822
         public void TraceNode(QilNode n)
         {
 #if QIL_TRACE_NODE_CREATION
             this.diag.AddNode(n);
 #endif
         }
+#pragma warning restore CA1822
+
         #endregion
     }
 }

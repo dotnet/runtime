@@ -105,7 +105,7 @@ handle_enum:
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_ARRAY:    
+	case MONO_TYPE_ARRAY:
 		return calli? OP_CALL_REG: virt? OP_CALL_MEMBASE: OP_CALL;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
@@ -139,7 +139,7 @@ handle_enum:
 }
 
 MonoCallInst *
-mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig, 
+mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 					 MonoInst **args, gboolean calli, gboolean virtual_, gboolean tailcall,
 					 gboolean rgctx, gboolean unbox_trampoline, MonoMethod *target)
 {
@@ -193,7 +193,7 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 		MonoInst *temp = mono_compile_create_var (cfg, sig_ret, OP_LOCAL);
 		MonoInst *loada;
 
-		temp->backend.is_pinvoke = sig->pinvoke;
+		temp->backend.is_pinvoke = sig->pinvoke && !sig->marshalling_disabled;
 
 		/*
 		 * We use a new opcode OP_OUTARG_VTRETADDR instead of LDADDR for emitting the
@@ -218,8 +218,8 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 	if (COMPILE_SOFT_FLOAT (cfg)) {
-		/* 
-		 * If the call has a float argument, we would need to do an r8->r4 conversion using 
+		/*
+		 * If the call has a float argument, we would need to do an r8->r4 conversion using
 		 * an icall, but that cannot be done during the call sequence since it would clobber
 		 * the call registers + the stack. So we do it before emitting the call.
 		 */
@@ -233,7 +233,7 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 				t = mono_get_int_type ();
 			t = mono_type_get_underlying_type (t);
 
-			if (!t->byref && t->type == MONO_TYPE_R4) {
+			if (!m_type_is_byref (t) && t->type == MONO_TYPE_R4) {
 				MonoInst *iargs [1];
 				MonoInst *conv;
 
@@ -260,7 +260,7 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 
 	cfg->param_area = MAX (cfg->param_area, call->stack_usage);
 	cfg->flags |= MONO_CFG_HAS_CALLS;
-	
+
 	return call;
 }
 
@@ -289,7 +289,7 @@ set_rgctx_arg (MonoCompile *cfg, MonoCallInst *call, int rgctx_reg, MonoInst *rg
 #ifdef ENABLE_LLVM
 	call->rgctx_arg_reg = rgctx_reg;
 #endif
-}	
+}
 
 /* Either METHOD or IMT_ARG needs to be set */
 static void
@@ -451,7 +451,6 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 							MonoInst **args, MonoInst *this_ins, MonoInst *imt_arg, MonoInst *rgctx_arg)
 {
 	gboolean virtual_ = this_ins != NULL;
-	int context_used;
 	MonoCallInst *call;
 	int rgctx_reg = 0;
 	gboolean need_unbox_trampoline;
@@ -473,7 +472,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		sig = ctor_sig;
 	}
 
-	context_used = mini_method_check_context_used (cfg, method);
+	mini_method_check_context_used (cfg, method);
 
 	if (cfg->llvm_only && virtual_ && (method->flags & METHOD_ATTRIBUTE_VIRTUAL))
 		return mini_emit_llvmonly_virtual_call (cfg, method, sig, 0, args);
@@ -525,7 +524,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 			FIXME: a dummy use is not the best way to do it as the local register allocator
 			will put it on a caller save register and spill it around the call.
-			Ideally, we would either put it on a callee save register or only do the store part.  
+			Ideally, we would either put it on a callee save register or only do the store part.
 			 */
 			EMIT_NEW_DUMMY_USE (cfg, dummy_use, args [0]);
 
@@ -534,7 +533,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 
 		if ((!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
 			 (MONO_METHOD_IS_FINAL (method)))) {
-			/* 
+			/*
 			 * the method is not virtual, we just need to ensure this is not null
 			 * and then we can call the method directly.
 			 */
@@ -562,7 +561,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			/* This call might need to enter the interpreter so make it indirect */
 			return mini_emit_llvmonly_calli (cfg, sig, args, ftndesc);
 		} else if (!virtual_) {
-			call->inst.opcode = callvirt_to_call (call->inst.opcode);
+			call->inst.opcode = GINT_TO_OPCODE (callvirt_to_call (call->inst.opcode));
 		} else {
 			vtable_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
@@ -636,13 +635,13 @@ mono_emit_jit_icall_id (MonoCompile *cfg, MonoJitICallId jit_icall_id, MonoInst 
  *   Emit a call to the runtime function described by PATCH_TYPE and DATA.
  */
 MonoInst*
-mini_emit_abs_call (MonoCompile *cfg, MonoJumpInfoType patch_type, gconstpointer data, 
+mini_emit_abs_call (MonoCompile *cfg, MonoJumpInfoType patch_type, gconstpointer data,
 					MonoMethodSignature *sig, MonoInst **args)
 {
 	MonoJumpInfo *ji = mono_patch_info_new (cfg->mempool, 0, patch_type, data);
 	MonoInst *ins;
 
-	/* 
+	/*
 	 * We pass ji as the call address, the PATCH_INFO_ABS resolving code will
 	 * handle it.
 	 * FIXME: Is the abs_patches hashtable avoidable?
@@ -662,7 +661,7 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 	static MonoMethodSignature *helper_sig_llvmonly_imt_trampoline = NULL;
 	MonoInst *icall_args [16];
 	MonoInst *call_target, *ins, *vtable_ins;
-	int arg_reg, this_reg, vtable_reg;
+	int this_reg, vtable_reg;
 	gboolean is_iface = mono_class_is_interface (cmethod->klass);
 	gboolean is_gsharedvt = cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig);
 	gboolean variant_iface = FALSE;
@@ -703,7 +702,22 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		helper_sig_llvmonly_imt_trampoline = tmp;
 	}
 
-	if (!fsig->generic_param_count && !is_iface && !is_gsharedvt) {
+	if (!cfg->gsharedvt && (m_class_get_parent (cmethod->klass) == mono_defaults.multicastdelegate_class) && !strcmp (cmethod->name, "Invoke")) {
+		/* Delegate invokes */
+		MONO_EMIT_NULL_CHECK (cfg, this_reg, FALSE);
+
+		/* Make a call to delegate->invoke_impl */
+		int invoke_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, invoke_reg, this_reg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl));
+
+		int addr_reg = alloc_preg (cfg);
+		int arg_reg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, invoke_reg, 0);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, invoke_reg, TARGET_SIZEOF_VOID_P);
+		return mini_emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
+	}
+
+	if (!is_gsharedvt && !fsig->generic_param_count && !is_iface) {
 		/*
 		 * The simplest case, a normal virtual call.
 		 */
@@ -740,11 +754,10 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		/* Load the address + arg from the vtable slot */
 		EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, slot_reg, 0);
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, slot_reg, TARGET_SIZEOF_VOID_P);
-
 		return mini_emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
 	}
 
-	if (!fsig->generic_param_count && is_iface && !variant_iface && !is_gsharedvt && !special_array_interface) {
+	if (!is_gsharedvt && !fsig->generic_param_count && is_iface && !variant_iface && !special_array_interface) {
 		/*
 		 * A simple interface call
 		 *
@@ -779,11 +792,10 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		icall_args [1] = mini_emit_get_rgctx_method (cfg, context_used,
 												cmethod, MONO_RGCTX_INFO_METHOD);
 		ftndesc_ins = mini_emit_calli (cfg, helper_sig_llvmonly_imt_trampoline, icall_args, thunk_addr_ins, NULL, NULL);
-
 		return mini_emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
 	}
 
-	if ((fsig->generic_param_count || variant_iface || special_array_interface) && !is_gsharedvt) {
+	if (!is_gsharedvt && (fsig->generic_param_count || variant_iface || special_array_interface)) {
 		/*
 		 * This is similar to the interface case, the vtable slot points to an imt thunk which is
 		 * dynamically extended as more instantiations are discovered.
@@ -850,6 +862,18 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		return mini_emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
 	}
 
+	if (is_gsharedvt && !(is_iface || fsig->generic_param_count || variant_iface || special_array_interface)) {
+		MonoInst *ftndesc_ins;
+
+		/* Normal virtual call using a gsharedvt calling conv */
+		icall_args [0] = sp [0];
+		EMIT_NEW_ICONST (cfg, icall_args [1], slot);
+
+		ftndesc_ins = mono_emit_jit_icall (cfg, mini_llvmonly_resolve_vcall_gsharedvt_fast, icall_args);
+
+		return mini_emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
+	}
+
 	/*
 	 * Non-optimized cases
 	 */
@@ -859,7 +883,7 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 	icall_args [2] = mini_emit_get_rgctx_method (cfg, context_used,
 												 cmethod, MONO_RGCTX_INFO_METHOD);
 
-	arg_reg = alloc_preg (cfg);
+	int arg_reg = alloc_preg (cfg);
 	MONO_EMIT_NEW_PCONST (cfg, arg_reg, NULL);
 	EMIT_NEW_VARLOADA_VREG (cfg, icall_args [3], arg_reg, mono_get_int_type ());
 
@@ -888,7 +912,7 @@ sig_to_rgctx_sig (MonoMethodSignature *sig)
 	res->param_count = sig->param_count + 1;
 	for (i = 0; i < sig->param_count; ++i)
 		res->params [i] = sig->params [i];
-	res->params [sig->param_count] = m_class_get_this_arg (mono_defaults.int_class);
+	res->params [sig->param_count] = mono_class_get_byref_type (mono_defaults.int_class);
 	return res;
 }
 

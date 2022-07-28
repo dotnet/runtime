@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -24,30 +25,26 @@ namespace System.Text.RegularExpressions
         private static readonly bool s_includePatternInName = Environment.GetEnvironmentVariable(IncludePatternInNamesEnvVar) == "1";
 
         /// <summary>Parameter types for the generated Go and FindFirstChar methods.</summary>
-        private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner) };
+        private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner), typeof(ReadOnlySpan<char>) };
 
         /// <summary>Id number to use for the next compiled regex.</summary>
         private static int s_regexCount;
 
-        public RegexLWCGCompiler() : base(persistsAssembly: false)
-        {
-        }
-
         /// <summary>The top-level driver. Initializes everything then calls the Generate* methods.</summary>
-        public RegexRunnerFactory FactoryInstanceFromCode(string pattern, RegexCode code, RegexOptions options, bool hasTimeout)
+        [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
+        public RegexRunnerFactory? FactoryInstanceFromCode(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout)
         {
-            _code = code;
-            _codes = code.Codes;
-            _strings = code.Strings;
-            _leadingCharClasses = code.LeadingCharClasses;
-            _boyerMoorePrefix = code.BoyerMoorePrefix;
-            _leadingAnchor = code.LeadingAnchor;
-            _trackcount = code.TrackCount;
+            if (!regexTree.Root.SupportsCompilation(out _))
+            {
+                return null;
+            }
+
+            _regexTree = regexTree;
             _options = options;
             _hasTimeout = hasTimeout;
 
             // Pick a unique number for the methods we generate.
-            object regexNum = (uint)Interlocked.Increment(ref s_regexCount); // object to box once instead of twice below
+            uint regexNum = (uint)Interlocked.Increment(ref s_regexCount);
 
             // Get a description of the regex to use in the name.  This is helpful when profiling, and is opt-in.
             string description = string.Empty;
@@ -57,17 +54,21 @@ namespace System.Text.RegularExpressions
                 description = string.Concat("_", pattern.Length > DescriptionLimit ? pattern.AsSpan(0, DescriptionLimit) : pattern);
             }
 
-            DynamicMethod goMethod = DefineDynamicMethod($"Regex{regexNum}_Go{description}", null, typeof(CompiledRegexRunner));
-            GenerateGo();
+            DynamicMethod tryfindNextPossibleStartPositionMethod = DefineDynamicMethod($"Regex{regexNum}_TryFindNextPossibleStartingPosition{description}", typeof(bool), typeof(CompiledRegexRunner), s_paramTypes);
+            EmitTryFindNextPossibleStartingPosition();
 
-            DynamicMethod findFirstCharMethod = DefineDynamicMethod($"Regex{regexNum}_FindFirstChar{description}", typeof(bool), typeof(CompiledRegexRunner));
-            GenerateFindFirstChar();
+            DynamicMethod tryMatchAtCurrentPositionMethod = DefineDynamicMethod($"Regex{regexNum}_TryMatchAtCurrentPosition{description}", typeof(bool), typeof(CompiledRegexRunner), s_paramTypes);
+            EmitTryMatchAtCurrentPosition();
 
-            return new CompiledRegexRunnerFactory(goMethod, findFirstCharMethod, _trackcount);
+            DynamicMethod scanMethod = DefineDynamicMethod($"Regex{regexNum}_Scan{description}", null, typeof(CompiledRegexRunner), new[] { typeof(RegexRunner), typeof(ReadOnlySpan<char>) });
+            EmitScan(options, tryfindNextPossibleStartPositionMethod, tryMatchAtCurrentPositionMethod);
+
+            return new CompiledRegexRunnerFactory(scanMethod, regexTree.Culture);
         }
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>
-        private DynamicMethod DefineDynamicMethod(string methname, Type? returntype, Type hostType)
+        [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
+        private DynamicMethod DefineDynamicMethod(string methname, Type? returntype, Type hostType, Type[] paramTypes)
         {
             // We're claiming that these are static methods, but really they are instance methods.
             // By giving them a parameter which represents "this", we're tricking them into
@@ -76,7 +77,7 @@ namespace System.Text.RegularExpressions
             const MethodAttributes Attribs = MethodAttributes.Public | MethodAttributes.Static;
             const CallingConventions Conventions = CallingConventions.Standard;
 
-            var dm = new DynamicMethod(methname, Attribs, Conventions, returntype, s_paramTypes, hostType, skipVisibility: false);
+            var dm = new DynamicMethod(methname, Attribs, Conventions, returntype, paramTypes, hostType, skipVisibility: false);
             _ilg = dm.GetILGenerator();
             return dm;
         }

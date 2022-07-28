@@ -42,16 +42,17 @@ namespace System.Globalization
         /// </summary>
         private unsafe bool InitCultureDataCore()
         {
-            if (!ShouldUseUserOverrideNlsData)
+            char* pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH];
+            if (!GlobalizationMode.UseNls)
             {
-                return InitIcuCultureDataCore();
+                return InitIcuCultureDataCore() &&
+                       GetLocaleInfoEx(_sRealName, Interop.Kernel32.LOCALE_SNAME, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH) != 0; // Ensure the culture name is supported by Windows.
             }
 
             Debug.Assert(!GlobalizationMode.Invariant);
 
             int result;
             string realNameBuffer = _sRealName;
-            char* pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH];
 
             result = GetLocaleInfoEx(realNameBuffer, Interop.Kernel32.LOCALE_SNAME, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH);
 
@@ -120,7 +121,7 @@ namespace System.Globalization
                 // We need the IETF name (sname)
                 // If we aren't an alt sort locale then this is the same as the windows name.
                 // If we are an alt sort locale then this is the same as the part before the _ in the windows name
-                // This is for like de-DE_phoneb and es-ES_tradnl that hsouldn't have the _ part
+                // This is for like de-DE_phoneb and es-ES_tradnl that shouldn't have the _ part
 
                 result = GetLocaleInfoEx(realNameBuffer, Interop.Kernel32.LOCALE_ILANGUAGE | Interop.Kernel32.LOCALE_RETURN_NUMBER, pBuffer, sizeof(int) / sizeof(char));
                 if (result == 0)
@@ -184,6 +185,13 @@ namespace System.Globalization
         private static unsafe string? LCIDToLocaleName(int culture)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+
+            // LOCALE_CUSTOM_UNSPECIFIED ia an unspecified custom locale, used to identify all supplemental locales.
+            // Supplemental locales cannot be distinguished from one another by their locale identifiers, but can be distinguished by their locale names.
+            if (culture == CultureInfo.LOCALE_CUSTOM_UNSPECIFIED)
+            {
+                return null;
+            }
 
             char* pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1]; // +1 for the null termination
             int length = Interop.Kernel32.LCIDToLocaleName(culture, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);

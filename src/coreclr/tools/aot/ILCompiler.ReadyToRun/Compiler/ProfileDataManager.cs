@@ -29,12 +29,15 @@ namespace ILCompiler
                                   IEnumerable<ModuleDesc> possibleReferenceModules,
                                   IEnumerable<ModuleDesc> inputModules,
                                   IEnumerable<ModuleDesc> versionBubbleModules,
+                                  IEnumerable<ModuleDesc> crossModuleInlineModules,
                                   ModuleDesc nonLocalGenericsHome,
                                   IReadOnlyList<string> mibcFiles,
+                                  MIbcProfileParser.MibcGroupParseRules parseRule,
                                   CallChainProfile callChainProfile,
                                   CompilerTypeSystemContext context,
                                   ReadyToRunCompilationModuleGroupBase compilationGroup,
-                                  bool embedPgoDataInR2RImage)
+                                  bool embedPgoDataInR2RImage,
+                                  Func<MethodDesc, bool> canBeIncludedInCurrentCompilation)
         {
             EmbedPgoDataInR2RImage = embedPgoDataInR2RImage;
             _ibcParser = new IBCProfileParser(logger, possibleReferenceModules);
@@ -45,18 +48,28 @@ namespace ILCompiler
             {
                 // Parse MIbc Data
 
-                string onlyParseItemsDefinedInAssembly = nonLocalGenericsHome == null ? inputModules.First().Assembly.GetName().Name : null;
+                string onlyParseItemsDefinedInAssembly = null;
+                if (nonLocalGenericsHome == null && !compilationGroup.IsCompositeBuildMode)
+                {
+                    onlyParseItemsDefinedInAssembly = inputModules.First().Assembly.GetName().Name;
+                }
                 HashSet<string> versionBubbleModuleStrings = new HashSet<string>();
                 foreach (ModuleDesc versionBubbleModule in versionBubble)
                 {
                     versionBubbleModuleStrings.Add(versionBubbleModule.Assembly.GetName().Name);
                 }
 
+                HashSet<string> crossModuleStrings = new HashSet<string>();
+                foreach (ModuleDesc crossModule in crossModuleInlineModules)
+                {
+                    crossModuleStrings.Add(crossModule.Assembly.GetName().Name);
+                }
+
                 foreach (string file in mibcFiles)
                 {
                     using (PEReader peReader = MIbcProfileParser.OpenMibcAsPEReader(file))
                     {
-                        _inputData.Add(MIbcProfileParser.ParseMIbcFile(context, peReader, versionBubbleModuleStrings, onlyParseItemsDefinedInAssembly));
+                        _inputData.Add(MIbcProfileParser.ParseMIbcFile(context, peReader, versionBubbleModuleStrings, onlyParseItemsDefinedInAssembly, crossModuleInlineModules: crossModuleStrings, parseRule: parseRule));
                     }
                 }
             }
@@ -84,8 +97,8 @@ namespace ILCompiler
                     !profileData.Value.Flags.HasFlag(MethodProfilingDataFlags.ExcludeColdMethodCode))
                 {
                     // Check for methods which are defined within the version bubble, and only rely on other modules within the bubble
-                    if (!_compilationGroup.VersionsWithMethodBody(profileData.Key))
-                        continue; // Method not contained within version bubble
+                    if (!_compilationGroup.VersionsWithMethodBody(profileData.Key) && !_compilationGroup.CrossModuleCompileable(profileData.Key))
+                        continue; // Method not contained within version bubble and not cross module compileable
 
                     if (_compilationGroup.ContainsType(profileData.Key.OwningType) &&
                         (profileData.Key.OwningType is MetadataType declaringType))

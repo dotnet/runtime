@@ -34,9 +34,9 @@ namespace System.Net.Mail
         //
         internal static bool TryReadReverseQuoted(string data, int index, bool permitUnicode, out int outIndex, bool throwExceptionIfFail)
         {
-            Debug.Assert(0 <= index && index < data.Length, "Index out of range: " + index + ", " + data.Length);
+            Debug.Assert(0 <= index && index < data.Length, $"Index out of range: {index}, {data.Length}");
             // Check for the first bounding quote
-            Debug.Assert(data[index] == MailBnfHelper.Quote, "Initial char at index " + index + " was not a quote.");
+            Debug.Assert(data[index] == MailBnfHelper.Quote, $"Initial char at index {index} was not a quote.");
 
             // Skip the bounding quote
             index--;
@@ -125,7 +125,7 @@ namespace System.Net.Mail
         //
         internal static bool TryReadReverseUnQuoted(string data, int index, bool permitUnicode, bool expectCommaDelimiter, out int outIndex, bool throwExceptionIfFail)
         {
-            Debug.Assert(0 <= index && index < data.Length, "Index out of range: " + index + ", " + data.Length);
+            Debug.Assert(0 <= index && index < data.Length, $"Index out of range: {index}, {data.Length}");
 
             do
             {

@@ -6,7 +6,7 @@
 
 // The major version of the GC/EE interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define GC_INTERFACE_MAJOR_VERSION 4
+#define GC_INTERFACE_MAJOR_VERSION 5
 
 // The minor version of the GC/EE interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
@@ -108,6 +108,22 @@ struct WriteBarrierParameters
     // The new write watch table, if we are using our own write watch
     // implementation. Used for WriteBarrierOp::SwitchToWriteWatch only.
     uint8_t* write_watch_table;
+};
+
+struct EtwGCSettingsInfo
+{
+    size_t heap_hard_limit;
+    size_t loh_threshold;
+    size_t physical_memory_from_config;
+    size_t gen0_min_budget_from_config;
+    size_t gen0_max_budget_from_config;
+    uint32_t high_mem_percent_from_config;
+    bool concurrent_gc_p;
+    bool use_large_pages_p;
+    bool use_frozen_segments_p;
+    // If this is false, it means the hardlimit was set implicitly by the container.
+    bool hard_limit_config_p;
+    bool no_affinitize_p;
 };
 
 // Opaque type for tracking object pointers
@@ -259,7 +275,8 @@ enum collection_mode
     collection_non_blocking = 0x00000001,
     collection_blocking = 0x00000002,
     collection_optimized = 0x00000004,
-    collection_compacting = 0x00000008
+    collection_compacting = 0x00000008,
+    collection_aggressive = 0x00000010
 #ifdef STRESS_HEAP
     , collection_gcstress = 0x80000000
 #endif // STRESS_HEAP
@@ -519,6 +536,16 @@ public:
     virtual void TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2) = 0;
 };
 
+// Enum representing the type to be passed to GC.CoreCLR.cs used to deduce the type of configuration.
+enum class GCConfigurationType
+{
+    Int64,
+    StringUtf8,
+    Boolean 
+};
+
+using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
+
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {
 public:
@@ -596,7 +623,7 @@ public:
     // Gets memory related information the last GC observed. Depending on the last arg, this could
     // be any last GC that got recorded, or of the kind specified by this arg. All info below is
     // what was observed by that last GC.
-    // 
+    //
     // highMemLoadThreshold - physical memory load (in percentage) when GC will start to
     //   react aggressively to reclaim memory.
     // totalPhysicalMem - the total amount of phyiscal memory available on the machine and the memory
@@ -605,7 +632,7 @@ public:
     // lastRecordedHeapSizeBytes - total managed heap size.
     // lastRecordedFragmentation - total fragmentation in the managed heap.
     // totalCommittedBytes - total committed bytes by the managed heap.
-    // promotedBytes - promoted bytes. 
+    // promotedBytes - promoted bytes.
     // pinnedObjectCount - # of pinned objects observed.
     // finalizationPendingCount - # of objects ready for finalization.
     // index - the index of the GC.
@@ -725,8 +752,8 @@ public:
     // Returns whether or not a GC is in progress.
     virtual bool IsGCInProgressHelper(bool bConsiderGCStart = false) = 0;
 
-    // Returns the number of GCs that have occured. Mainly used for
-    // sanity checks asserting that a GC has not occured.
+    // Returns the number of GCs that have occurred. Mainly used for
+    // sanity checks asserting that a GC has not occurred.
     virtual unsigned GetGcCount() = 0;
 
     // Gets whether or not the home heap of this alloc context matches the heap
@@ -769,11 +796,11 @@ public:
     ============================================================================
     */
 
-    // Get the timestamp corresponding to the last GC that occured for the
+    // Get the timestamp corresponding to the last GC that occurred for the
     // given generation.
     virtual size_t GetLastGCStartTime(int generation) = 0;
 
-    // Gets the duration of the last GC that occured for the given generation.
+    // Gets the duration of the last GC that occurred for the given generation.
     virtual size_t GetLastGCDuration(int generation) = 0;
 
     // Gets a timestamp for the current moment in time.
@@ -864,6 +891,9 @@ public:
     // Traces all GC segments and fires ETW events with information on them.
     virtual void DiagTraceGCSegments() = 0;
 
+    // Get GC settings for tracing purposes. These are settings not obvious from a trace.
+    virtual void DiagGetGCSettings(EtwGCSettingsInfo* settings) = 0;
+
     /*
     ===========================================================================
     GC Stress routines. Used only when running under GC Stress.
@@ -902,8 +932,20 @@ public:
     // Enables or disables the given keyword or level on the private event provider.
     virtual void ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level) = 0;
 
+    // Get the segment/region associated with an address together with its generation for the profiler.
+    virtual unsigned int GetGenerationWithRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved) = 0;
+
     IGCHeap() {}
-    virtual ~IGCHeap() {}
+
+    // The virtual destructors for the IGCHeap class hierarchy is intentionally omitted.
+    // This is to ensure we have a stable virtual function table for this interface for
+    // version resilience purposes.
+
+    // Get the total paused duration.
+    virtual int64_t GetTotalPauseDuration() = 0;
+
+    // Gets all the names and values of the GC configurations.
+    virtual void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc) = 0;
 };
 
 #ifdef WRITE_BARRIER_CHECK

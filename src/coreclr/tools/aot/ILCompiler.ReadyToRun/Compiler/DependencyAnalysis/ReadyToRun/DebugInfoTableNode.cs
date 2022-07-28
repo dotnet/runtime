@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 using Internal.JitInterface;
@@ -149,10 +150,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return writer.ToArray();
         }
 
-        public static byte[] CreateVarBlobForMethod(NativeVarInfo[] varInfos)
+        public static byte[] CreateVarBlobForMethod(NativeVarInfo[] varInfos, TargetDetails target)
         {
             if (varInfos == null || varInfos.Length == 0)
                 return null;
+
+            bool isX86 = target.Architecture == TargetArchitecture.X86;
 
             NibbleWriter writer = new NibbleWriter();
             writer.WriteUInt((uint)varInfos.Length);
@@ -177,7 +180,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     case VarLocType.VLT_STK:
                     case VarLocType.VLT_STK_BYREF:
                         writer.WriteUInt((uint)nativeVarInfo.varLoc.B);
-                        writer.WriteInt(nativeVarInfo.varLoc.C);
+                        WriteEncodedStackOffset(writer, nativeVarInfo.varLoc.C, assume4ByteAligned : isX86);
                         break;
                     case VarLocType.VLT_REG_REG:
                         writer.WriteUInt((uint)nativeVarInfo.varLoc.B);
@@ -186,16 +189,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     case VarLocType.VLT_REG_STK:
                         writer.WriteUInt((uint)nativeVarInfo.varLoc.B);
                         writer.WriteUInt((uint)nativeVarInfo.varLoc.C);
-                        writer.WriteInt(nativeVarInfo.varLoc.D);
+                        WriteEncodedStackOffset(writer, nativeVarInfo.varLoc.D, assume4ByteAligned : isX86);
                         break;
                     case VarLocType.VLT_STK_REG:
-                        writer.WriteInt(nativeVarInfo.varLoc.B);
+                        WriteEncodedStackOffset(writer, nativeVarInfo.varLoc.B, assume4ByteAligned : isX86);
                         writer.WriteUInt((uint)nativeVarInfo.varLoc.C);
                         writer.WriteUInt((uint)nativeVarInfo.varLoc.D);
                         break;
                     case VarLocType.VLT_STK2:
                         writer.WriteUInt((uint)nativeVarInfo.varLoc.B);
-                        writer.WriteInt(nativeVarInfo.varLoc.C);
+                        WriteEncodedStackOffset(writer, nativeVarInfo.varLoc.C, assume4ByteAligned : isX86);
                         break;
                     case VarLocType.VLT_FPSTK:
                         writer.WriteUInt((uint)nativeVarInfo.varLoc.B);
@@ -205,6 +208,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         break;
                     default:
                         throw new BadImageFormatException("Unexpected var loc type");
+                }
+
+                static void WriteEncodedStackOffset(NibbleWriter _writer, int offset, bool assume4ByteAligned)
+                {
+                    if (assume4ByteAligned)
+                    {
+                        Debug.Assert(offset % 4 == 0);
+                        _writer.WriteInt(offset / 4);
+                    }
+                    else
+                    {
+                        _writer.WriteInt(offset);
+                    }
                 }
             }
 

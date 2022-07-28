@@ -59,6 +59,9 @@ namespace BigIntTools
                 return; // Internal frame types are not reflectable on AoT platforms. Skip the test.
 
             FieldInfo field = internalCalculator.GetDeclaredField(name);
+            if (field is null || field.IsLiteral)
+                return; // in Release config the field may be const
+
             int lastValue = (int)field.GetValue(null);
             field.SetValue(null, value);
             try

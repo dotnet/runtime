@@ -26,13 +26,11 @@ void Compiler::gsGSChecksInitCookie()
     lvaGSSecurityCookie = lvaGrabTempWithImplicitUse(false DEBUGARG("GSSecurityCookie"));
 
     // Prevent cookie init/check from being optimized
-    lvaSetVarAddrExposed(lvaGSSecurityCookie);
+    lvaSetVarAddrExposed(lvaGSSecurityCookie DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
     lvaTable[lvaGSSecurityCookie].lvType = type;
 
     info.compCompHnd->getGSCookie(&gsGlobalSecurityCookieVal, &gsGlobalSecurityCookieAddr);
 }
-
-const unsigned NO_SHADOW_COPY = UINT_MAX;
 
 /*****************************************************************************
  * gsCopyShadowParams
@@ -55,15 +53,25 @@ void Compiler::gsCopyShadowParams()
     }
 
     // Allocate array for shadow param info
+    //
     gsShadowVarInfo = new (this, CMK_Unknown) ShadowParamVarInfo[lvaCount]();
 
     // Find groups of variables assigned to each other, and also
     // tracks variables which are dereferenced and marks them as ptrs.
     // Look for assignments to *p, and ptrs passed to functions
+    //
     if (gsFindVulnerableParams())
     {
         // Replace vulnerable params by shadow copies.
+        //
         gsParamsToShadows();
+    }
+    else
+    {
+        // There are no vulnerable params.
+        // Clear out the info to avoid looking at stale data.
+        //
+        gsShadowVarInfo = nullptr;
     }
 }
 
@@ -122,6 +130,8 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
         case GT_ARR_ELEM:
         case GT_ARR_INDEX:
         case GT_ARR_OFFSET:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_FIELD:
 
             newState.isUnderIndir = true;
@@ -191,20 +201,25 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
             newState.isUnderIndir = false;
             newState.isAssignSrc  = false;
             {
-                if (tree->AsCall()->gtCallThisArg != nullptr)
+                CallArg* thisArg = tree->AsCall()->gtArgs.GetThisArg();
+                if (thisArg != nullptr)
                 {
+                    // TODO-ARGS: This is a quirk for previous behavior where
+                    // we set this to true for the 'this' arg. The flag can
+                    // then remain set after the recursive call, depending on
+                    // what the child node is, e.g. GT_ARGPLACE did not clear
+                    // the flag, so when processing the second arg we would
+                    // also have isUnderIndir = true.
                     newState.isUnderIndir = true;
-                    comp->fgWalkTreePre(&tree->AsCall()->gtCallThisArg->NodeRef(), gsMarkPtrsAndAssignGroups,
-                                        (void*)&newState);
                 }
 
-                for (GenTreeCall::Use& use : tree->AsCall()->Args())
+                for (CallArg& arg : tree->AsCall()->gtArgs.EarlyArgs())
                 {
-                    comp->fgWalkTreePre(&use.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&arg.EarlyNodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
-                for (GenTreeCall::Use& use : tree->AsCall()->LateArgs())
+                for (CallArg& arg : tree->AsCall()->gtArgs.LateArgs())
                 {
-                    comp->fgWalkTreePre(&use.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&arg.LateNodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
 
                 if (tree->AsCall()->gtCallType == CT_INDIRECT)
@@ -289,7 +304,7 @@ bool Compiler::gsFindVulnerableParams()
 
     for (UINT lclNum = 0; lclNum < lvaCount; lclNum++)
     {
-        LclVarDsc*          varDsc     = &lvaTable[lclNum];
+        LclVarDsc*          varDsc     = lvaGetDesc(lclNum);
         ShadowParamVarInfo* shadowInfo = &gsShadowVarInfo[lclNum];
 
         // If there was an indirection or if unsafe buffer, then we'd call it vulnerable.
@@ -361,14 +376,14 @@ bool Compiler::gsFindVulnerableParams()
 void Compiler::gsParamsToShadows()
 {
     // Cache old count since we'll add new variables, and
-    // gsShadowVarInfo will not grow to accomodate the new ones.
+    // gsShadowVarInfo will not grow to accommodate the new ones.
     UINT lvaOldCount = lvaCount;
 
     // Create shadow copy for each param candidate
     for (UINT lclNum = 0; lclNum < lvaOldCount; lclNum++)
     {
-        LclVarDsc* varDsc                  = &lvaTable[lclNum];
-        gsShadowVarInfo[lclNum].shadowCopy = NO_SHADOW_COPY;
+        LclVarDsc* varDsc                  = lvaGetDesc(lclNum);
+        gsShadowVarInfo[lclNum].shadowCopy = BAD_VAR_NUM;
 
         // Only care about params whose values are on the stack
         if (!ShadowParamVarInfo::mayNeedShadowCopy(varDsc))
@@ -383,8 +398,8 @@ void Compiler::gsParamsToShadows()
 
         int shadowVarNum = lvaGrabTemp(false DEBUGARG("shadowVar"));
         // reload varDsc as lvaGrabTemp may realloc the lvaTable[]
-        varDsc                  = &lvaTable[lclNum];
-        LclVarDsc* shadowVarDsc = &lvaTable[shadowVarNum];
+        varDsc                  = lvaGetDesc(lclNum);
+        LclVarDsc* shadowVarDsc = lvaGetDesc(shadowVarNum);
 
         // Copy some info
 
@@ -402,15 +417,12 @@ void Compiler::gsParamsToShadows()
 #endif
         shadowVarDsc->lvRegStruct = varDsc->lvRegStruct;
 
-        shadowVarDsc->lvAddrExposed     = varDsc->lvAddrExposed;
+        shadowVarDsc->SetAddressExposed(varDsc->IsAddressExposed() DEBUGARG(varDsc->GetAddrExposedReason()));
         shadowVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
 #ifdef DEBUG
-        shadowVarDsc->lvVMNeedsStackAddr = varDsc->lvVMNeedsStackAddr;
-        shadowVarDsc->lvLiveInOutOfHndlr = varDsc->lvLiveInOutOfHndlr;
-        shadowVarDsc->lvLclFieldExpr     = varDsc->lvLclFieldExpr;
-        shadowVarDsc->lvLiveAcrossUCall  = varDsc->lvLiveAcrossUCall;
+        shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
 #endif
-        shadowVarDsc->lvVerTypeInfo = varDsc->lvVerTypeInfo;
+
         if (varTypeIsStruct(type))
         {
             // We don't need unsafe value cls check here since we are copying the params and this flag
@@ -455,7 +467,7 @@ void Compiler::gsParamsToShadows()
             unsigned int lclNum       = tree->AsLclVarCommon()->GetLclNum();
             unsigned int shadowLclNum = m_compiler->gsShadowVarInfo[lclNum].shadowCopy;
 
-            if (shadowLclNum != NO_SHADOW_COPY)
+            if (shadowLclNum != BAD_VAR_NUM)
             {
                 LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
                 assert(ShadowParamVarInfo::mayNeedShadowCopy(varDsc));
@@ -492,15 +504,15 @@ void Compiler::gsParamsToShadows()
     // Now insert code to copy the params to their shadow copy.
     for (UINT lclNum = 0; lclNum < lvaOldCount; lclNum++)
     {
-        const LclVarDsc* varDsc = &lvaTable[lclNum];
+        const LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
         const unsigned shadowVarNum = gsShadowVarInfo[lclNum].shadowCopy;
-        if (shadowVarNum == NO_SHADOW_COPY)
+        if (shadowVarNum == BAD_VAR_NUM)
         {
             continue;
         }
 
-        const LclVarDsc* shadowVarDsc = &lvaTable[shadowVarNum];
+        const LclVarDsc* shadowVarDsc = lvaGetDesc(shadowVarNum);
         var_types        type         = shadowVarDsc->TypeGet();
 
         GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
@@ -544,15 +556,15 @@ void Compiler::gsParamsToShadows()
 
             for (UINT lclNum = 0; lclNum < info.compArgsCount; lclNum++)
             {
-                const LclVarDsc* varDsc = &lvaTable[lclNum];
+                const LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
                 const unsigned shadowVarNum = gsShadowVarInfo[lclNum].shadowCopy;
-                if (shadowVarNum == NO_SHADOW_COPY)
+                if (shadowVarNum == BAD_VAR_NUM)
                 {
                     continue;
                 }
 
-                const LclVarDsc* shadowVarDsc = &lvaTable[shadowVarNum];
+                const LclVarDsc* shadowVarDsc = lvaGetDesc(shadowVarNum);
 
                 GenTree* src = gtNewLclvNode(shadowVarNum, shadowVarDsc->TypeGet());
                 GenTree* dst = gtNewLclvNode(lclNum, varDsc->TypeGet());

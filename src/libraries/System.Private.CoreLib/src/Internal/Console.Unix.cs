@@ -16,5 +16,17 @@ namespace Internal
                 Interop.Sys.Log(pBytes, bytes.Length);
             }
         }
+
+        public static partial class Error
+        {
+            public static unsafe void Write(string s)
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(s);
+                fixed (byte* pBytes = bytes)
+                {
+                    Interop.Sys.LogError(pBytes, bytes.Length);
+                }
+            }
+        }
     }
 }

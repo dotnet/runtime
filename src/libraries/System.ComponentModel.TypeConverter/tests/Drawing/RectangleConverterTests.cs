@@ -205,7 +205,7 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(rect.Size, propsColl["Size"].GetValue(rect));
             Assert.Equal(rect.IsEmpty, propsColl["IsEmpty"].GetValue(rect));
 
-            // Pick an attibute that cannot be applied to properties to make sure everything gets filtered
+            // Pick an attribute that cannot be applied to properties to make sure everything gets filtered
             propsColl = Converter.GetProperties(null, new Rectangle(10, 10, 20, 30), new Attribute[] { new System.Reflection.AssemblyCopyrightAttribute("")});
             Assert.Equal(0, propsColl.Count);
         }

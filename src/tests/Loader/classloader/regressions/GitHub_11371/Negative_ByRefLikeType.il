@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 .assembly extern System.Runtime { }
 .assembly Negative_ByRefLikeType { }
 
@@ -26,7 +27,7 @@
   .field private valuetype MyByRefLikeType f
 }
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_Negative_ByRefLikeType
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static void ByRefLikeBoxing() cil managed
@@ -85,6 +86,9 @@
 
   .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  1
 
@@ -92,7 +96,7 @@
     call void [System.Console]System.Console::WriteLine(string)
     .try
     {
-        call void Test::ByRefLikeBoxing()
+        call void Test_Negative_ByRefLikeType::ByRefLikeBoxing()
         leave TestFailed
     }
     catch [System.Runtime]System.InvalidProgramException
@@ -106,7 +110,7 @@ ByRefLikeBoxing_Done:
     call void [System.Console]System.Console::WriteLine(string)
     .try
     {
-        call void Test::ByRefLikeStaticField()
+        call void Test_Negative_ByRefLikeType::ByRefLikeStaticField()
         leave TestFailed
     }
     catch [System.Runtime]System.TypeLoadException
@@ -120,7 +124,7 @@ ByRefLikeStaticField_Done:
     call void [System.Console]System.Console::WriteLine(string)
     .try
     {
-        call void Test::ByRefLikeFieldInNonValueType()
+        call void Test_Negative_ByRefLikeType::ByRefLikeFieldInNonValueType()
         leave TestFailed
     }
     catch [System.Runtime]System.TypeLoadException
@@ -134,7 +138,7 @@ ByRefLikeFieldInNonValueType_Done:
     call void [System.Console]System.Console::WriteLine(string)
     .try
     {
-        call void Test::ByRefLikeFieldInNonByRefLikeType()
+        call void Test_Negative_ByRefLikeType::ByRefLikeFieldInNonByRefLikeType()
         leave TestFailed
     }
     catch [System.Runtime]System.TypeLoadException
@@ -148,7 +152,7 @@ ByRefLikeFieldInNonByRefLikeType_Done:
     call void [System.Console]System.Console::WriteLine(string)
     .try
     {
-        call void Test::ByRefLikeArray()
+        call void Test_Negative_ByRefLikeType::ByRefLikeArray()
         leave TestFailed
     }
     catch [System.Runtime]System.TypeLoadException
@@ -162,7 +166,7 @@ ByRefLikeArray_Done:
     call void [System.Console]System.Console::WriteLine(string)
     .try
     {
-        call void Test::ByRefLikeGenericInstantiation()
+        call void Test_Negative_ByRefLikeType::ByRefLikeGenericInstantiation()
         leave TestFailed
     }
     catch [System.Runtime]System.TypeLoadException

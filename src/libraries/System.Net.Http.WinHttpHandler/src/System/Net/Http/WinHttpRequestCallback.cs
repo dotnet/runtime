@@ -40,7 +40,7 @@ namespace System.Net.Http
                 return;
             }
 
-            WinHttpRequestState state = WinHttpRequestState.FromIntPtr(context);
+            WinHttpRequestState? state = WinHttpRequestState.FromIntPtr(context);
             Debug.Assert(state != null, "WinHttpCallback must have a non-null state object");
 
             RequestCallback(handle, state, internetStatus, statusInformation, statusInformationLength);
@@ -84,8 +84,7 @@ namespace System.Net.Http
                         return;
 
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_REDIRECT:
-                        string redirectUriString = Marshal.PtrToStringUni(statusInformation);
-                        var redirectUri = new Uri(redirectUriString);
+                        var redirectUri = new Uri(Marshal.PtrToStringUni(statusInformation)!);
                         OnRequestRedirect(state, redirectUri);
                         return;
 
@@ -110,18 +109,16 @@ namespace System.Net.Http
             catch (Exception ex)
             {
                 state.SavedException = ex;
-                if (state.RequestHandle != null)
-                {
-                    // Since we got a fatal error processing the request callback,
-                    // we need to close the WinHttp request handle in order to
-                    // abort the currently executing WinHttp async operation.
-                    //
-                    // We must always call Dispose() against the SafeWinHttpHandle
-                    // wrapper and never close directly the raw WinHttp handle.
-                    // The SafeWinHttpHandle wrapper is thread-safe and guarantees
-                    // calling the underlying WinHttpCloseHandle() function only once.
-                    state.RequestHandle.Dispose();
-                }
+
+                // Since we got a fatal error processing the request callback,
+                // we need to close the WinHttp request handle in order to
+                // abort the currently executing WinHttp async operation.
+                //
+                // We must always call Dispose() against the SafeWinHttpHandle
+                // wrapper and never close directly the raw WinHttp handle.
+                // The SafeWinHttpHandle wrapper is thread-safe and guarantees
+                // calling the underlying WinHttpCloseHandle() function only once.
+                state.RequestHandle?.Dispose();
             }
         }
 
@@ -192,6 +189,8 @@ namespace System.Net.Http
         private static void OnRequestRedirect(WinHttpRequestState state, Uri redirectUri)
         {
             Debug.Assert(state != null, "OnRequestRedirect: state is null");
+            Debug.Assert(state.Handler != null, "OnRequestRedirect: state.Handler is null");
+            Debug.Assert(state.RequestMessage != null, "OnRequestRedirect: state.RequestMessage is null");
             Debug.Assert(redirectUri != null, "OnRequestRedirect: redirectUri is null");
 
             // If we're manually handling cookies, we need to reset them based on the new URI.
@@ -234,6 +233,8 @@ namespace System.Net.Http
         {
             Debug.Assert(state != null, "OnRequestSendingRequest: state is null");
             Debug.Assert(state.RequestHandle != null, "OnRequestSendingRequest: state.RequestHandle is null");
+            Debug.Assert(state.RequestMessage != null, "OnRequestSendingRequest: state.RequestMessage is null");
+            Debug.Assert(state.RequestMessage.RequestUri != null, "OnRequestSendingRequest: state.RequestMessage.RequestUri is null");
 
             if (state.RequestMessage.RequestUri.Scheme != UriScheme.Https)
             {
@@ -271,16 +272,16 @@ namespace System.Net.Http
                     throw WinHttpException.CreateExceptionUsingError(lastError, "WINHTTP_CALLBACK_STATUS_SENDING_REQUEST/WinHttpQueryOption");
                 }
 
-                // Get any additional certificates sent from the remote server during the TLS/SSL handshake.
-                X509Certificate2Collection remoteCertificateStore =
-                    UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(certHandle);
+                    // Get any additional certificates sent from the remote server during the TLS/SSL handshake.
+                    X509Certificate2Collection remoteCertificateStore = new X509Certificate2Collection();
+                    UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(certHandle, remoteCertificateStore);
 
                 // Create a managed wrapper around the certificate handle. Since this results in duplicating
                 // the handle, we will close the original handle after creating the wrapper.
                 var serverCertificate = new X509Certificate2(certHandle);
                 Interop.Crypt32.CertFreeCertificateContext(certHandle);
 
-                X509Chain chain = null;
+                X509Chain? chain = null;
                 SslPolicyErrors sslPolicyErrors;
                 bool result = false;
 
@@ -307,11 +308,7 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    if (chain != null)
-                    {
-                        chain.Dispose();
-                    }
-
+                    chain?.Dispose();
                     serverCertificate.Dispose();
                 }
 
@@ -391,6 +388,7 @@ namespace System.Net.Http
                     break;
 
                 case Interop.WinHttp.API_WRITE_DATA:
+                    Debug.Assert(state.TcsInternalWriteDataToRequestStream != null);
                     if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, "API_WRITE_DATA - ERROR_WINHTTP_OPERATION_CANCELLED");
@@ -414,7 +412,8 @@ namespace System.Net.Http
         private static void ResetAuthRequestHeaders(WinHttpRequestState state)
         {
             const string AuthHeaderNameWithColon = "Authorization:";
-            SafeWinHttpHandle requestHandle = state.RequestHandle;
+            SafeWinHttpHandle? requestHandle = state.RequestHandle;
+            Debug.Assert(requestHandle != null);
 
             // Clear auth headers.
             if (!Interop.WinHttp.WinHttpAddRequestHeaders(

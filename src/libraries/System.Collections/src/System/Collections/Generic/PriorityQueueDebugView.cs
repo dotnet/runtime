@@ -12,7 +12,9 @@ namespace System.Collections.Generic
 
         public PriorityQueueDebugView(PriorityQueue<TElement, TPriority> queue)
         {
-            _queue = queue ?? throw new ArgumentNullException(nameof(queue));
+            ArgumentNullException.ThrowIfNull(queue);
+
+            _queue = queue;
             _sort = true;
         }
 

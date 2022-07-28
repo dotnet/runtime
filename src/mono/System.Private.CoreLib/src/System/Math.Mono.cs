@@ -8,12 +8,6 @@ namespace System
     public partial class Math
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern double Abs(double value);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern float Abs(float value);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Acos(double d);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -81,9 +75,6 @@ namespace System
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double FusedMultiplyAdd(double x, double y, double z);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int ILogB(double x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Log2(double x);

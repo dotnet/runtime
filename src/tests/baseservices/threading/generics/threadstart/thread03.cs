@@ -8,31 +8,31 @@ class Gen
 	public void Target<U>()
 	{		
 			//dummy line to avoid warnings
-			Test.Eval(typeof(U)!=null);
-			Interlocked.Increment(ref Test.Xcounter);
+			Test_thread03.Eval(typeof(U)!=null);
+			Interlocked.Increment(ref Test_thread03.Xcounter);
 	}
 	public static void ThreadPoolTest<U>()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread03.nThreads];
 		Gen obj = new Gen();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread03.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(obj.Target<U>));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread03.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread03.Eval(Test_thread03.Xcounter==Test_thread03.nThreads);
+		Test_thread03.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread03
 {
 	public static int nThreads =50;
 	public static int counter = 0;

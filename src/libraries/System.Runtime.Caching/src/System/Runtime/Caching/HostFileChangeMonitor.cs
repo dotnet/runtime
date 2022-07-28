@@ -38,7 +38,7 @@ namespace System.Runtime.Caching
                     DateTimeOffset lastWrite;
                     long fileSize;
                     s_fcn.StartMonitoring(path, new OnChangedCallback(OnChanged), out _fcnState, out lastWrite, out fileSize);
-                    uniqueId = path + lastWrite.UtcDateTime.Ticks.ToString("X", CultureInfo.InvariantCulture) + fileSize.ToString("X", CultureInfo.InvariantCulture);
+                    uniqueId = $"{path}{lastWrite.UtcDateTime.Ticks:X}{fileSize:X}";
                     _lastModified = lastWrite;
                 }
                 else
@@ -97,8 +97,8 @@ namespace System.Runtime.Caching
                 }
                 if (fcn == null)
                 {
-#if NET5_0_OR_GREATER
-                    if (OperatingSystem.IsBrowser())
+#if NETCOREAPP
+                    if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
                     {
                         throw new PlatformNotSupportedException();
                     }
@@ -157,10 +157,11 @@ namespace System.Runtime.Caching
 
         public HostFileChangeMonitor(IList<string> filePaths)
         {
-            if (filePaths == null)
+            if (filePaths is null)
             {
                 throw new ArgumentNullException(nameof(filePaths));
             }
+
             if (filePaths.Count == 0)
             {
                 throw new ArgumentException(RH.Format(SR.Empty_collection, nameof(filePaths)));

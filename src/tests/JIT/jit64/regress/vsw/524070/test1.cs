@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-public class Test
+public class Test_test1
 {
     public int func(int type)
     {
@@ -225,7 +225,7 @@ public class Test
 
     public static int Main()
     {
-        Test test = new Test();
+        Test_test1 test = new Test_test1();
         if (test.func(-1) == -1)
         {
             System.Console.WriteLine("PASS");

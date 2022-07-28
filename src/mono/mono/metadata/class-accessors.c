@@ -25,7 +25,11 @@ typedef enum {
 	PROP_FIELD_DEF_VALUES = 7, /* MonoFieldDefaultValue* */
 	PROP_DECLSEC_FLAGS = 8, /* guint32 */
 	PROP_WEAK_BITMAP = 9,
-	PROP_DIM_CONFLICTS = 10 /* GSList of MonoMethod* */
+	PROP_DIM_CONFLICTS = 10, /* GSList of MonoMethod* */
+	PROP_FIELD_DEF_VALUES_2BYTESWIZZLE = 11, /* MonoFieldDefaultValue* with default values swizzled at 2 byte boundaries*/
+	PROP_FIELD_DEF_VALUES_4BYTESWIZZLE = 12, /* MonoFieldDefaultValue* with default values swizzled at 4 byte boundaries*/
+	PROP_FIELD_DEF_VALUES_8BYTESWIZZLE = 13, /* MonoFieldDefaultValue* with default values swizzled at 8 byte boundaries*/
+	PROP_METADATA_UPDATE_INFO = 14, /* MonoClassMetadataUpdateInfo* */
 }  InfrequentDataKind;
 
 /* Accessors based on class kind*/
@@ -64,7 +68,9 @@ mono_class_try_get_generic_class (MonoClass *klass)
 guint32
 mono_class_get_flags (MonoClass *klass)
 {
-	switch (m_class_get_class_kind (klass)) {
+	g_assert (klass);
+	guint32 kind = m_class_get_class_kind (klass);
+	switch (kind) {
 	case MONO_CLASS_DEF:
 	case MONO_CLASS_GTD:
 		return m_classdef_get_flags ((MonoClassDef*)klass);
@@ -382,10 +388,37 @@ mono_class_get_field_def_values (MonoClass *klass)
 	return (MonoFieldDefaultValue*)get_pointer_property (klass, PROP_FIELD_DEF_VALUES);
 }
 
+MonoFieldDefaultValue*
+mono_class_get_field_def_values_with_swizzle (MonoClass *klass, int swizzle)
+{
+	InfrequentDataKind dataKind = PROP_FIELD_DEF_VALUES;
+	if (swizzle == 2)
+		dataKind = PROP_FIELD_DEF_VALUES_2BYTESWIZZLE;
+	else if (swizzle == 4)
+		dataKind = PROP_FIELD_DEF_VALUES_4BYTESWIZZLE;
+	else if (swizzle == 8)
+		dataKind = PROP_FIELD_DEF_VALUES_8BYTESWIZZLE;
+	return (MonoFieldDefaultValue*)get_pointer_property (klass, dataKind);
+}
+
+
 void
 mono_class_set_field_def_values (MonoClass *klass, MonoFieldDefaultValue *values)
 {
 	set_pointer_property (klass, PROP_FIELD_DEF_VALUES, values);
+}
+
+void
+mono_class_set_field_def_values_with_swizzle (MonoClass *klass, MonoFieldDefaultValue *values, int swizzle)
+{
+	InfrequentDataKind dataKind = PROP_FIELD_DEF_VALUES;
+	if (swizzle == 2)
+		dataKind = PROP_FIELD_DEF_VALUES_2BYTESWIZZLE;
+	else if (swizzle == 4)
+		dataKind = PROP_FIELD_DEF_VALUES_4BYTESWIZZLE;
+	else if (swizzle == 8)
+		dataKind = PROP_FIELD_DEF_VALUES_8BYTESWIZZLE;
+	set_pointer_property (klass, dataKind, values);
 }
 
 guint32
@@ -412,6 +445,12 @@ mono_class_set_is_com_object (MonoClass *klass)
 	klass->is_com_object = 1;
 	mono_loader_unlock ();
 #endif
+}
+
+void
+mono_class_set_is_simd_type (MonoClass *klass, gboolean is_simd)
+{
+	klass->simd_type = is_simd;
 }
 
 MonoType*
@@ -459,6 +498,24 @@ mono_class_has_dim_conflicts (MonoClass *klass)
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 
 		return gklass->has_dim_conflicts;
+	}
+
+	return FALSE;
+}
+
+gboolean
+mono_class_is_method_ambiguous (MonoClass *klass, MonoMethod *method)
+{
+	GSList *l = mono_class_get_dim_conflicts (klass);
+	MonoMethod *decl = method;
+
+	if (decl->is_inflated)
+		decl = ((MonoMethodInflated*)decl)->declaring;
+
+	while (l) {
+		if (decl == l->data)
+			return TRUE;
+		l = l->next;
 	}
 
 	return FALSE;
@@ -558,6 +615,68 @@ mono_class_publish_gc_descriptor (MonoClass *klass, MonoGCDescriptor gc_descr)
 	mono_loader_unlock ();
 	return ret;
 }
+
+MonoClassMetadataUpdateInfo*
+mono_class_get_metadata_update_info (MonoClass *klass)
+{
+	switch (m_class_get_class_kind (klass)) {
+	case MONO_CLASS_GTD:
+		return NULL;
+	case MONO_CLASS_DEF:
+		return (MonoClassMetadataUpdateInfo *)get_pointer_property (klass, PROP_METADATA_UPDATE_INFO);
+	case MONO_CLASS_GINST:
+	case MONO_CLASS_GPARAM:
+	case MONO_CLASS_ARRAY:
+	case MONO_CLASS_POINTER:
+	case MONO_CLASS_GC_FILLER:
+		return NULL;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+/*
+ * LOCKING: assumes the loader lock is held
+ */
+void
+mono_class_set_metadata_update_info (MonoClass *klass, MonoClassMetadataUpdateInfo *value)
+{
+	switch (m_class_get_class_kind (klass)) {
+	case MONO_CLASS_GTD:
+		g_assertf (0, "%s: EnC metadata update info on generic types is not supported", __func__);
+		break;
+	case MONO_CLASS_DEF:
+		set_pointer_property (klass, PROP_METADATA_UPDATE_INFO, value);
+		return;
+	case MONO_CLASS_GINST:
+	case MONO_CLASS_GPARAM:
+	case MONO_CLASS_POINTER:
+	case MONO_CLASS_GC_FILLER:
+		g_assert_not_reached ();
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+gboolean
+mono_class_has_metadata_update_info (MonoClass *klass)
+{
+	switch (m_class_get_class_kind (klass)) {
+	case MONO_CLASS_GTD:
+		return FALSE;
+	case MONO_CLASS_DEF:
+		return get_pointer_property (klass, PROP_METADATA_UPDATE_INFO) != NULL;
+	case MONO_CLASS_GINST:
+	case MONO_CLASS_GPARAM:
+	case MONO_CLASS_POINTER:
+	case MONO_CLASS_GC_FILLER:
+		return FALSE;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 
 #ifdef MONO_CLASS_DEF_PRIVATE
 #define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) rettype funcname (argtype *klass) { return optref klass-> fieldname ; }

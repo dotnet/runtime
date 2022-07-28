@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly ldnull.exe{}
+.assembly 'ldnull'{}
 
 .class public _ldnull {
 

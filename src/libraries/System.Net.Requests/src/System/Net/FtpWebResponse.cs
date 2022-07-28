@@ -47,7 +47,7 @@ namespace System.Net
 
         public override Stream GetResponseStream()
         {
-            Stream? responseStream = null;
+            Stream? responseStream;
 
             if (_responseStream != null)
             {
@@ -101,10 +101,7 @@ namespace System.Net
                 {
                     lock (this)
                     {
-                        if (_ftpRequestHeaders == null)
-                        {
-                            _ftpRequestHeaders = new WebHeaderCollection();
-                        }
+                        _ftpRequestHeaders ??= new WebHeaderCollection();
                     }
                 }
                 return _ftpRequestHeaders;

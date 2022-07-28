@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly a {}
-.module a.exe
+.assembly 'DevDiv_487699' {}
+.assembly extern xunit.core {}
 
 // This test originally triggered an error, that we do not reload shift index, if it was spilled to rcx.
 
@@ -107,6 +107,9 @@
     
       .method private static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         .maxstack  10
                 

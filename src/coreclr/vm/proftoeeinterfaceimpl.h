@@ -58,7 +58,21 @@ private:
     ArgIterator  m_argIterator;
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
     UINT64       m_bufferPos;
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
+
+#if defined(UNIX_AMD64_ABI)
+    // On certain architectures we can pass args in non-sequential registers,
+    // this function will copy the struct so it is laid out as it would be in memory
+    // so it can be passed to the profiler
+    LPVOID CopyStructFromRegisters();
+#endif
+
+#if defined(TARGET_ARM64)
+    // On Arm64 the fields an HFA or an HVA argument will need to be copied
+    // to a temporary buffer in memory, so they are laid out contiguously in memory.
+    LPVOID CopyStructFromFPRegs(int idxFPReg, int cntFPRegs, int hfaFieldSize);
+#endif
+
+#endif // UNIX_AMD64_ABI || TARGET_ARM64
 
 public:
     ProfileArgIterator(MetaSig * pMetaSig, void* platformSpecificHandle);
@@ -73,13 +87,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_argIterator.NumFixedArgs();
     }
-
-#if defined(UNIX_AMD64_ABI)
-    // On certain architectures we can pass args in non-sequential registers,
-    // this function will copy the struct so it is laid out as it would be in memory
-    // so it can be passed to the profiler
-    LPVOID CopyStructFromRegisters();
-#endif // defined(UNIX_AMD64_ABI)
 
     //
     // After initialization, this method is called repeatedly until it
@@ -143,7 +150,7 @@ typedef struct _PROFILER_STACK_WALK_DATA PROFILER_STACK_WALK_DATA;
 // from the profiler implementation.  The profiler will call back on the v-table
 // to get at EE internals as required.
 
-class ProfToEEInterfaceImpl : public ICorProfilerInfo12
+class ProfToEEInterfaceImpl : public ICorProfilerInfo13
 {
 private:
     ProfilerInfo *m_pProfilerInfo;
@@ -206,7 +213,7 @@ public:
         LPCBYTE *    ppBaseLoadAddress,
         ULONG        cchName,
         ULONG *      pcchName,
-        __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[],
+        _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[],
         AssemblyID * pAssemblyId);
 
     COM_METHOD GetModuleMetaData(
@@ -267,14 +274,14 @@ public:
         AppDomainID appDomainId,
         ULONG       cchName,
         ULONG *     pcchName,
-        __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[],
+        _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[],
         ProcessID * pProcessId);
 
     COM_METHOD GetAssemblyInfo(
         AssemblyID    assemblyId,
         ULONG         cchName,
         ULONG *       pcchName,
-        __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[],
+        _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[],
         AppDomainID * pAppDomainId,
         ModuleID    * pModuleId);
 
@@ -465,7 +472,7 @@ public:
                                      USHORT *               pQFEVersion,         // out
                                      ULONG                  cchVersionString,    // in
                                      ULONG  *               pcchVersionString,   // out
-                                     __out_ecount_part_opt(cchVersionString, *pcchVersionString) WCHAR szVersionString[]);  // out
+                                     _Out_writes_to_opt_(cchVersionString, *pcchVersionString) WCHAR szVersionString[]);  // out
 
     COM_METHOD GetThreadStaticAddress2(ClassID classId,             // in
                                        mdFieldDef fieldToken,       // in
@@ -483,7 +490,7 @@ public:
         LPCBYTE *    ppBaseLoadAddress,
         ULONG        cchName,
         ULONG *      pcchName,
-        __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[],
+        _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[],
         AssemblyID * pAssemblyId,
         DWORD *      pdwModuleFlags);
 
@@ -645,7 +652,7 @@ public:
         const WCHAR *szName,
         ULONG       cchValue,
         ULONG       *pcchValue,
-        __out_ecount_part_opt(cchValue, *pcchValue) WCHAR szValue[]);
+        _Out_writes_to_opt_(cchValue, *pcchValue) WCHAR szValue[]);
 
     COM_METHOD SetEnvironmentVariable(
         const WCHAR *szName,
@@ -700,6 +707,21 @@ public:
 
     // end ICorProfilerInfo12
 
+    // begin ICorProfilerInfo13
+    COM_METHOD CreateHandle(
+        ObjectID object,
+        COR_PRF_HANDLE_TYPE type,
+        ObjectHandleID* pHandle);
+
+    COM_METHOD DestroyHandle(
+        ObjectHandleID handle);
+
+    COM_METHOD GetObjectIDFromHandle(
+        ObjectHandleID handle,
+        ObjectID* pObject);
+
+    // end ICorProfilerInfo13
+
 protected:
 
     // Internal Helper Functions
@@ -729,8 +751,8 @@ protected:
 
     HRESULT GetArrayObjectInfoHelper(Object * pObj,
                                      ULONG32 cDimensionSizes,
-                                     __out_ecount(cDimensionSizes) ULONG32 pDimensionSizes[],
-                                     __out_ecount(cDimensionSizes) int pDimensionLowerBounds[],
+                                     _Out_writes_(cDimensionSizes) ULONG32 pDimensionSizes[],
+                                     _Out_writes_(cDimensionSizes) int pDimensionLowerBounds[],
                                      BYTE ** ppData);
 
     DWORD GetModuleFlags(Module * pModule);

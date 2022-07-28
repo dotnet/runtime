@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57506", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsMariner))]
     public static class ChainTests
     {
         private static bool TrustsMicrosoftDotComRoot
@@ -245,6 +246,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void SystemTrustCertificateWithCustomRootTrust(bool addCertificateToCustomRootTrust)
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+            using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
             using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
             using (var chainHolder = new ChainHolder())
             {
@@ -252,6 +254,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.VerificationTime = microsoftDotCom.NotBefore.AddSeconds(1);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
 
                 if (addCertificateToCustomRootTrust)
                 {
@@ -269,16 +272,29 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     Assert.False(chain.Build(microsoftDotCom));
 
-                    // Linux and Windows do not search the default system root stores when CustomRootTrust is enabled
-                    if (PlatformDetection.UsesAppleCrypto)
+                    // Historically, Windows has not searched system stores when CustomRootTrust is enabled.
+                    // That seems to have recently (as of 2021-07-09) changed.
+
+                    Assert.InRange(chain.ChainElements.Count, 2, 3);
+
+                    if (chain.ChainElements.Count < 3)
                     {
-                        Assert.Equal(3, chain.ChainElements.Count);
-                        Assert.Equal(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
+                        Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
                     }
                     else
                     {
+                        Assert.Equal(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
+                    }
+
+                    // Check some known conditions.
+
+                    if (PlatformDetection.UsesAppleCrypto)
+                    {
+                        Assert.Equal(3, chain.ChainElements.Count);
+                    }
+                    else if (OperatingSystem.IsLinux())
+                    {
                         Assert.Equal(2, chain.ChainElements.Count);
-                        Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
                     }
                 }
             }
@@ -726,7 +742,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         StringBuilder builder = new StringBuilder();
                         foreach (var status in chainValidator.ChainStatus)
                         {
-                            builder.AppendFormat("{0} {1}{2}", status.Status, status.StatusInformation, Environment.NewLine);
+                            builder.AppendLine($"{status.Status} {status.StatusInformation}");
                         }
 
                         Assert.True(chainBuildResult,
@@ -988,11 +1004,17 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
                         // Clear UntrustedRoot, if it happened.
                         allFlags &= ~X509ChainStatusFlags.UntrustedRoot;
 
-                        Assert.Equal(
-                            X509ChainStatusFlags.NotSignatureValid,
-                            allFlags);
-
-                        Assert.Equal(3, chain.ChainElements.Count);
+                        // The chain result can either be PartialChain or NotSignatureValid.
+                        // If the flags are PartialChain, then move on.
+                        // If the flags are not PartialChain, we make sure the result is
+                        // NotSignatureValid.
+                        // In the case of PartialChain, we don't care how many certificates
+                        // are in the chain.
+                        if (allFlags != X509ChainStatusFlags.PartialChain)
+                        {
+                            Assert.Equal(X509ChainStatusFlags.NotSignatureValid, allFlags);
+                            Assert.Equal(3, chain.ChainElements.Count);
+                        }
 
                         Assert.False(valid, $"Chain is valid on execution {iter}");
                     }

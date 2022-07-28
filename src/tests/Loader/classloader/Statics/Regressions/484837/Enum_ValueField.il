@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // This is regression test for VSW 484837
 // In this case, value__ is the last field as seen below (C# always generates value__ as the very first field.). 
 // Because of a bug in the code, Module::ParseMetadataForStaticsIsTypeDefEnum() just looked at the very first // field and took it to be value. 
@@ -28,6 +29,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 
     .entrypoint
     .locals init (valuetype MyEnum V_0)

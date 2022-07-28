@@ -6,7 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 static unsafe class CopyCtor
 {

@@ -171,10 +171,7 @@ namespace System.Xml
 
         public override Task WriteWhitespaceAsync(string? ws)
         {
-            if (ws == null)
-            {
-                ws = string.Empty;
-            }
+            ws ??= string.Empty;
 
             // "checkNames" is intentional here; if false, the whitespace is checked in XmlWellformedWriter
             if (_checkNames)
@@ -219,10 +216,8 @@ namespace System.Xml
 
         public override Task WriteCharsAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index));

@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
@@ -67,6 +68,7 @@ namespace System.Data.Common
         [EditorBrowsable(EditorBrowsableState.Never)]
         public abstract IEnumerator GetEnumerator();
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public abstract Type GetFieldType(int ordinal);
 
         public abstract string GetName(int ordinal);
@@ -182,6 +184,7 @@ namespace System.Data.Common
         public abstract long GetInt64(int ordinal);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public virtual Type GetProviderSpecificFieldType(int ordinal)
         {
             // NOTE: This is virtual because not all providers may choose to support

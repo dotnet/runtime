@@ -4,7 +4,7 @@
 using System;
 using System.Reflection;
 using System.Text;
-using TestLibrary;
+using Xunit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -115,8 +115,8 @@ unsafe class ThisCallTest
 
         ThisCallNative.SizeF result = callback(instance, 1234);
 
-        Assert.AreEqual(instance->width, result.width);
-        Assert.AreEqual(instance->height, result.height);
+        Assert.Equal(instance->width, result.width);
+        Assert.Equal(instance->height, result.height);
     }
 
     private static void Test4ByteHFA(ThisCallNative.C* instance)
@@ -125,7 +125,7 @@ unsafe class ThisCallTest
 
         ThisCallNative.Width result = callback(instance);
 
-        Assert.AreEqual(instance->width, result.width);
+        Assert.Equal(instance->width, result.width);
     }
 
     private static void Test4ByteNonHFA(ThisCallNative.C* instance)
@@ -134,7 +134,7 @@ unsafe class ThisCallTest
 
         ThisCallNative.IntWrapper result = callback(instance);
 
-        Assert.AreEqual((int)instance->height, result.i);
+        Assert.Equal((int)instance->height, result.i);
     }
 
     private static void TestEnum(ThisCallNative.C* instance)
@@ -143,7 +143,7 @@ unsafe class ThisCallTest
 
         ThisCallNative.E result = callback(instance);
 
-        Assert.AreEqual(instance->dummy, result);
+        Assert.Equal(instance->dummy, result);
     }
 
     private static void TestCLong(ThisCallNative.C* instance)
@@ -152,7 +152,7 @@ unsafe class ThisCallTest
 
         CLong result = callback(instance);
 
-        Assert.AreEqual((nint)instance->width, result.Value);
+        Assert.Equal((nint)instance->width, result.Value);
     }
 
     private static void Test8ByteHFAReverse()
@@ -160,8 +160,8 @@ unsafe class ThisCallTest
         ThisCallNative.C c = CreateCWithManagedVTable(2.0f, 3.0f);
         ThisCallNative.SizeF result = ThisCallNative.GetSizeFromManaged(&c);
 
-        Assert.AreEqual(c.width, result.width);
-        Assert.AreEqual(c.height, result.height);
+        Assert.Equal(c.width, result.width);
+        Assert.Equal(c.height, result.height);
     }
 
     private static void Test4ByteHFAReverse()
@@ -169,7 +169,7 @@ unsafe class ThisCallTest
         ThisCallNative.C c = CreateCWithManagedVTable(2.0f, 3.0f);
         ThisCallNative.Width result = ThisCallNative.GetWidthFromManaged(&c);
 
-        Assert.AreEqual(c.width, result.width);
+        Assert.Equal(c.width, result.width);
     }
 
     private static void Test4ByteNonHFAReverse()
@@ -177,7 +177,7 @@ unsafe class ThisCallTest
         ThisCallNative.C c = CreateCWithManagedVTable(2.0f, 3.0f);
         ThisCallNative.IntWrapper result = ThisCallNative.GetHeightAsIntFromManaged(&c);
 
-        Assert.AreEqual((int)c.height, result.i);
+        Assert.Equal((int)c.height, result.i);
     }
 
     private static void TestEnumReverse()
@@ -185,7 +185,7 @@ unsafe class ThisCallTest
         ThisCallNative.C c = CreateCWithManagedVTable(2.0f, 3.0f);
         ThisCallNative.E result = ThisCallNative.GetEFromManaged(&c);
 
-        Assert.AreEqual(c.dummy, result);
+        Assert.Equal(c.dummy, result);
     }
 
     private static void TestCLongReverse()
@@ -193,7 +193,7 @@ unsafe class ThisCallTest
         ThisCallNative.C c = CreateCWithManagedVTable(2.0f, 3.0f);
         CLong result = ThisCallNative.GetWidthAsLongFromManaged(&c);
 
-        Assert.AreEqual((nint)c.width, result.Value);
+        Assert.Equal((nint)c.width, result.Value);
     }
 
     private static void Test8ByteHFAUnmanagedCallersOnly()
@@ -201,8 +201,8 @@ unsafe class ThisCallTest
         ThisCallNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
         ThisCallNative.SizeF result = ThisCallNative.GetSizeFromManaged(&c);
 
-        Assert.AreEqual(c.width, result.width);
-        Assert.AreEqual(c.height, result.height);
+        Assert.Equal(c.width, result.width);
+        Assert.Equal(c.height, result.height);
     }
 
     private static void Test4ByteHFAUnmanagedCallersOnly()
@@ -210,7 +210,7 @@ unsafe class ThisCallTest
         ThisCallNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
         ThisCallNative.Width result = ThisCallNative.GetWidthFromManaged(&c);
 
-        Assert.AreEqual(c.width, result.width);
+        Assert.Equal(c.width, result.width);
     }
 
     private static void Test4ByteNonHFAUnmanagedCallersOnly()
@@ -218,7 +218,7 @@ unsafe class ThisCallTest
         ThisCallNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
         ThisCallNative.IntWrapper result = ThisCallNative.GetHeightAsIntFromManaged(&c);
 
-        Assert.AreEqual((int)c.height, result.i);
+        Assert.Equal((int)c.height, result.i);
     }
 
     private static void TestEnumUnmanagedCallersOnly()
@@ -226,7 +226,7 @@ unsafe class ThisCallTest
         ThisCallNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
         ThisCallNative.E result = ThisCallNative.GetEFromManaged(&c);
 
-        Assert.AreEqual(c.dummy, result);
+        Assert.Equal(c.dummy, result);
     }
 
     private static void TestCLongUnmanagedCallersOnly()
@@ -234,7 +234,7 @@ unsafe class ThisCallTest
         ThisCallNative.C c = CreateCWithUnmanagedCallersOnlyVTable(2.0f, 3.0f);
         CLong result = ThisCallNative.GetWidthAsLongFromManaged(&c);
 
-        Assert.AreEqual((nint)c.width, result.Value);
+        Assert.Equal((nint)c.width, result.Value);
     }
 
     private static ThisCallNative.C CreateCWithManagedVTable(float width, float height)

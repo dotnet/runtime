@@ -5,6 +5,7 @@ using System.IO;
 using System.Globalization;
 using System.Net.Security;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace System.Net
 {
@@ -20,7 +21,8 @@ namespace System.Net
         public FrameHeader ReadHeader => _curReadHeader;
         public FrameHeader WriteHeader => _writeHeader;
 
-        public async ValueTask<byte[]?> ReadMessageAsync<TAdapter>(TAdapter adapter) where TAdapter : IReadWriteAdapter
+        public async ValueTask<byte[]?> ReadMessageAsync<TAdapter>(Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             if (_eof)
             {
@@ -29,24 +31,17 @@ namespace System.Net
 
             byte[] buffer = _readHeaderBuffer;
 
-            int bytesRead;
-            int offset = 0;
-            while (offset < buffer.Length)
+            int bytesRead = await TAdapter.ReadAtLeastAsync(
+                stream, buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+            if (bytesRead < buffer.Length)
             {
-                bytesRead = await adapter.ReadAsync(buffer.AsMemory(offset)).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
-                    if (offset == 0)
-                    {
-                        // m_Eof, return null
-                        _eof = true;
-                        return null;
-                    }
-
-                    throw new IOException(SR.Format(SR.net_io_readfailure, SR.net_io_connectionclosed));
+                    // m_Eof, return null
+                    _eof = true;
+                    return null;
                 }
-
-                offset += bytesRead;
+                throw new IOException(SR.Format(SR.net_io_readfailure, SR.net_io_connectionclosed));
             }
 
             _curReadHeader.CopyFrom(buffer, 0);
@@ -59,34 +54,28 @@ namespace System.Net
 
             buffer = new byte[_curReadHeader.PayloadSize];
 
-            offset = 0;
-            while (offset < buffer.Length)
+            if (buffer.Length > 0)
             {
-                bytesRead = await adapter.ReadAsync(buffer.AsMemory(offset)).ConfigureAwait(false);
-                if (bytesRead == 0)
+                bytesRead = await TAdapter.ReadAtLeastAsync(
+                    stream, buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                if (bytesRead < buffer.Length)
                 {
                     throw new IOException(SR.Format(SR.net_io_readfailure, SR.net_io_connectionclosed));
                 }
-
-                offset += bytesRead;
             }
             return buffer;
         }
 
-        public async Task WriteMessageAsync<TAdapter>(TAdapter adapter, byte[] message) where TAdapter : IReadWriteAdapter
+        public async Task WriteMessageAsync<TAdapter>(Stream stream, byte[] message, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
-            if (message == null)
-            {
-                throw new ArgumentNullException(nameof(message));
-            }
-
             _writeHeader.PayloadSize = message.Length;
             _writeHeader.CopyTo(_writeHeaderBuffer, 0);
 
-            await adapter.WriteAsync(_writeHeaderBuffer, 0, _writeHeaderBuffer.Length).ConfigureAwait(false);
+            await TAdapter.WriteAsync(stream, _writeHeaderBuffer, cancellationToken).ConfigureAwait(false);
             if (message.Length != 0)
             {
-                await adapter.WriteAsync(message, 0, message.Length).ConfigureAwait(false);
+                await TAdapter.WriteAsync(stream, message, cancellationToken).ConfigureAwait(false);
             }
         }
     }

@@ -19,8 +19,8 @@ internal static partial class Interop
             NI_DGRAM = 0x10, /* Service is a datagram service */
         }
 
-        [DllImport(Interop.Libraries.Ws2_32, CharSet = CharSet.Unicode, BestFitMapping = false, ThrowOnUnmappableChar = true, SetLastError = true)]
-        internal static extern unsafe SocketError GetNameInfoW(
+        [LibraryImport(Interop.Libraries.Ws2_32,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial SocketError GetNameInfoW(
             byte* pSockaddr,
             int SockaddrLength,
             char* pNodeBuffer,

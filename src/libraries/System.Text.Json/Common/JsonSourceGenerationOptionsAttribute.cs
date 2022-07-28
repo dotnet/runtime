@@ -5,7 +5,7 @@ namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// Instructs the System.Text.Json source generator to assume the specified
-    /// options will be used at run-time via <see cref="JsonSerializerOptions"/>.
+    /// options will be used at run time via <see cref="JsonSerializerOptions"/>.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
 #if BUILDING_SOURCE_GENERATOR
@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization
 #else
     public
 #endif
-    class JsonSourceGenerationOptionsAttribute : JsonAttribute
+    sealed class JsonSourceGenerationOptionsAttribute : JsonAttribute
     {
         /// <summary>
         /// Specifies the default ignore condition.
@@ -29,11 +29,6 @@ namespace System.Text.Json.Serialization
         /// Specifies whether to ignore read-only properties.
         /// </summary>
         public bool IgnoreReadOnlyProperties { get; set; }
-
-        /// <summary>
-        /// Specifies whether to ignore custom converters provided at run-time.
-        /// </summary>
-        public bool IgnoreRuntimeCustomConverters { get; set; }
 
         /// <summary>
         /// Specifies whether to include fields for serialization and deserialization.

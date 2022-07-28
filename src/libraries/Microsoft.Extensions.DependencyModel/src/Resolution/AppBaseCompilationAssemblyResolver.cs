@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace Microsoft.Extensions.DependencyModel.Resolution
@@ -31,13 +32,19 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal AppBaseCompilationAssemblyResolver(IFileSystem fileSystem, string basePath, DependencyContextPaths dependencyContextPaths)
         {
+            ThrowHelper.ThrowIfNull(fileSystem);
+            ThrowHelper.ThrowIfNull(basePath);
+            ThrowHelper.ThrowIfNull(dependencyContextPaths);
+
             _fileSystem = fileSystem;
             _basePath = basePath;
             _dependencyContextPaths = dependencyContextPaths;
         }
 
-        public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string> assemblies)
+        public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string>? assemblies)
         {
+            ThrowHelper.ThrowIfNull(library);
+
             bool isProject = string.Equals(library.Type, "project", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(library.Type, "msbuildproject", StringComparison.OrdinalIgnoreCase);
 
@@ -71,10 +78,12 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
             }
 
             // Only packages can come from shared runtime
-            string sharedPath = _dependencyContextPaths.SharedRuntime;
+            string? sharedPath = _dependencyContextPaths.SharedRuntime;
             if (isPublished && isPackage && !string.IsNullOrEmpty(sharedPath))
             {
-                string sharedDirectory = Path.GetDirectoryName(sharedPath);
+                string? sharedDirectory = Path.GetDirectoryName(sharedPath);
+                Debug.Assert(sharedDirectory != null);
+
                 string sharedRefs = Path.Combine(sharedDirectory, RefsDirectoryName);
                 if (_fileSystem.Directory.Exists(sharedRefs))
                 {

@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Diagnostics;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace SIMD
 {
@@ -204,49 +200,6 @@ namespace SIMD
                         UsesADT(i) ? "ADT " : "Raw ",
                         IsMulti(i) ? "Multi  " : "Single ",
                         min, max, avg, stdDev);
-                }
-            }
-        }
-
-        public static void XBench(int iters, int which)
-        {
-            float XC = -1.248f;
-            float YC = -.0362f;
-            float Range = .001f;
-            float xmin = XC - Range;
-            float xmax = XC + Range;
-            float ymin = YC - Range;
-            float ymax = YC + Range;
-            float step = Range / 100f;
-
-            Algorithms.FractalRenderer.Render renderer = GetRenderer(DoNothing, which);
-
-            for (int count = 0; count < iters; count++)
-            {
-                renderer(xmin, xmax, ymin, ymax, step);
-            }
-        }
-
-        [Benchmark]
-        public static void VectorFloatSinglethreadRawNoInt()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    XBench(10, 8);
-                }
-            }
-        }
-
-        [Benchmark]
-        public static void VectorFloatSinglethreadADTNoInt()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    XBench(10, 9);
                 }
             }
         }

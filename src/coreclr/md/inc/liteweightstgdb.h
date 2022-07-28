@@ -56,9 +56,6 @@ public:
         ULONG cbData,
         LPCVOID pbData);
 
-    __checkReturn
-    HRESULT InitHotPools(DataBuffer hotMetaData);
-
     void Uninit();
 
 protected:
@@ -132,14 +129,12 @@ public:
     HRESULT GetSaveSize(
         CorSaveSize               fSize,
         UINT32                   *pcbSaveSize,
-        MetaDataReorderingOptions reorderingOptions = NoReordering,
-        CorProfileData           *pProfileData = NULL); // optional IBC profile data for working set optimization
+        MetaDataReorderingOptions reorderingOptions = NoReordering);
 
     __checkReturn
     HRESULT SaveToStream(
         IStream                  *pIStream,                 // Stream to which to write
-        MetaDataReorderingOptions reorderingOptions = NoReordering,
-        CorProfileData           *pProfileData = NULL);     // optional IBC profile data for working set optimization
+        MetaDataReorderingOptions reorderingOptions = NoReordering);
 
     __checkReturn
     HRESULT Save(
@@ -216,8 +211,7 @@ protected:
     HRESULT GetTablesSaveSize(
         CorSaveSize               fSave,
         UINT32                   *pcbSaveSize,
-        MetaDataReorderingOptions reorderingOptions,
-        CorProfileData           *pProfileData = NULL); // Add pool data to this value.
+        MetaDataReorderingOptions reorderingOptions);
 
     __checkReturn
     HRESULT AddStreamToList(
@@ -227,8 +221,7 @@ protected:
     __checkReturn
     HRESULT SaveToStorage(
         TiggerStorage            *pStorage,
-        MetaDataReorderingOptions reorderingOptions = NoReordering,
-        CorProfileData            *pProfileData = NULL);
+        MetaDataReorderingOptions reorderingOptions = NoReordering);
 
     __checkReturn
     HRESULT SavePool(LPCWSTR szName, TiggerStorage *pStorage, int iPool);

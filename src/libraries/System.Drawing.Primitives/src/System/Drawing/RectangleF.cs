@@ -326,8 +326,6 @@ namespace System.Drawing
         /// Converts the <see cref='System.Drawing.RectangleF.Location'/> and <see cref='System.Drawing.RectangleF.Size'/>
         /// of this <see cref='System.Drawing.RectangleF'/> to a human-readable string.
         /// </summary>
-        public override readonly string ToString() =>
-            "{X=" + X.ToString() + ",Y=" + Y.ToString() +
-            ",Width=" + Width.ToString() + ",Height=" + Height.ToString() + "}";
+        public override readonly string ToString() => $"{{X={X},Y={Y},Width={Width},Height={Height}}}";
     }
 }

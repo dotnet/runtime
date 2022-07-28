@@ -79,8 +79,10 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);

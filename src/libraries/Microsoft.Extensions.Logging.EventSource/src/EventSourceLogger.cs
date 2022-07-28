@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         private readonly LoggingEventSource _eventSource;
         private readonly int _factoryID;
 
-        public EventSourceLogger(string categoryName, int factoryID, LoggingEventSource eventSource, EventSourceLogger next)
+        public EventSourceLogger(string categoryName, int factoryID, LoggingEventSource eventSource, EventSourceLogger? next)
         {
             CategoryName = categoryName;
 
@@ -43,20 +43,20 @@ namespace Microsoft.Extensions.Logging.EventSource
         public LogLevel Level { get; set; }
 
         // Loggers created by a single provider form a linked list
-        public EventSourceLogger Next { get; }
+        public EventSourceLogger? Next { get; }
 
         public bool IsEnabled(LogLevel logLevel)
         {
             return logLevel != LogLevel.None && logLevel >= Level;
         }
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             if (!IsEnabled(logLevel))
             {
                 return;
             }
-            string message = null;
+            string? message = null;
 
             // See if they want the formatted message
             if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.FormattedMessage))
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.Message))
             {
                 ExceptionInfo exceptionInfo = GetExceptionInfo(exception);
-                IReadOnlyList<KeyValuePair<string, string>> arguments = GetProperties(state);
+                IReadOnlyList<KeyValuePair<string, string?>> arguments = GetProperties(state);
 
                 _eventSource.Message(
                     logLevel,
@@ -94,16 +94,16 @@ namespace Microsoft.Extensions.Logging.EventSource
                 if (exception != null)
                 {
                     ExceptionInfo exceptionInfo = GetExceptionInfo(exception);
-                    KeyValuePair<string, string>[] exceptionInfoData = new[]
+                    KeyValuePair<string, string?>[] exceptionInfoData = new[]
                     {
-                        new KeyValuePair<string, string>("TypeName", exceptionInfo.TypeName),
-                        new KeyValuePair<string, string>("Message", exceptionInfo.Message),
-                        new KeyValuePair<string, string>("HResult", exceptionInfo.HResult.ToString()),
-                        new KeyValuePair<string, string>("VerboseMessage", exceptionInfo.VerboseMessage),
+                        new KeyValuePair<string, string?>("TypeName", exceptionInfo.TypeName),
+                        new KeyValuePair<string, string?>("Message", exceptionInfo.Message),
+                        new KeyValuePair<string, string?>("HResult", exceptionInfo.HResult.ToString()),
+                        new KeyValuePair<string, string?>("VerboseMessage", exceptionInfo.VerboseMessage),
                     };
                     exceptionJson = ToJson(exceptionInfoData);
                 }
-                IReadOnlyList<KeyValuePair<string, string>> arguments = GetProperties(state);
+                IReadOnlyList<KeyValuePair<string, string?>> arguments = GetProperties(state);
                 message ??= formatter(state, exception);
                 _eventSource.MessageJson(
                     logLevel,
@@ -117,7 +117,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             }
         }
 
-        public IDisposable BeginScope<TState>(TState state)
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull
         {
             if (!IsEnabled(LogLevel.Critical))
             {
@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             // If JsonMessage is on, use JSON format
             if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.JsonMessage))
             {
-                IReadOnlyList<KeyValuePair<string, string>> arguments = GetProperties(state);
+                IReadOnlyList<KeyValuePair<string, string?>> arguments = GetProperties(state);
                 _eventSource.ActivityJsonStart(id, _factoryID, CategoryName, ToJson(arguments));
                 return new ActivityScope(_eventSource, CategoryName, id, _factoryID, true);
             }
@@ -137,7 +137,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.Message) ||
                 _eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.FormattedMessage))
             {
-                IReadOnlyList<KeyValuePair<string, string>> arguments = GetProperties(state);
+                IReadOnlyList<KeyValuePair<string, string?>> arguments = GetProperties(state);
                 _eventSource.ActivityStart(id, _factoryID, CategoryName, arguments);
                 return new ActivityScope(_eventSource, CategoryName, id, _factoryID, false);
             }
@@ -185,7 +185,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// <param name="exception">The exception to get information for.</param>
         /// <returns>ExceptionInfo object represending a .NET Exception</returns>
         /// <remarks>ETW does not support a concept of a null value. So we use an un-initialized object if there is no exception in the event data.</remarks>
-        private ExceptionInfo GetExceptionInfo(Exception exception)
+        private static ExceptionInfo GetExceptionInfo(Exception? exception)
         {
             return exception != null ? new ExceptionInfo(exception) : ExceptionInfo.Empty;
         }
@@ -193,29 +193,29 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// <summary>
         /// Converts an ILogger state object into a set of key-value pairs (That can be send to a EventSource)
         /// </summary>
-        private IReadOnlyList<KeyValuePair<string, string>> GetProperties(object state)
+        private static IReadOnlyList<KeyValuePair<string, string?>> GetProperties(object? state)
         {
-            if (state is IReadOnlyList<KeyValuePair<string, object>> keyValuePairs)
+            if (state is IReadOnlyList<KeyValuePair<string, object?>> keyValuePairs)
             {
-                var arguments = new KeyValuePair<string, string>[keyValuePairs.Count];
+                var arguments = new KeyValuePair<string, string?>[keyValuePairs.Count];
                 for (int i = 0; i < keyValuePairs.Count; i++)
                 {
-                    KeyValuePair<string, object> keyValuePair = keyValuePairs[i];
-                    arguments[i] = new KeyValuePair<string, string>(keyValuePair.Key, keyValuePair.Value?.ToString());
+                    KeyValuePair<string, object?> keyValuePair = keyValuePairs[i];
+                    arguments[i] = new KeyValuePair<string, string?>(keyValuePair.Key, keyValuePair.Value?.ToString());
                 }
                 return arguments;
             }
 
-            return Array.Empty<KeyValuePair<string, string>>();
+            return Array.Empty<KeyValuePair<string, string?>>();
         }
 
-        private string ToJson(IReadOnlyList<KeyValuePair<string, string>> keyValues)
+        private static string ToJson(IReadOnlyList<KeyValuePair<string, string?>> keyValues)
         {
             using var stream = new MemoryStream();
             using var writer = new Utf8JsonWriter(stream);
 
             writer.WriteStartObject();
-            foreach (KeyValuePair<string, string> keyValue in keyValues)
+            foreach (KeyValuePair<string, string?> keyValue in keyValues)
             {
                 writer.WriteString(keyValue.Key, keyValue.Value);
             }
@@ -228,7 +228,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                 buffer = new ArraySegment<byte>(stream.ToArray());
             }
 
-            return Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
+            return Encoding.UTF8.GetString(buffer.Array!, buffer.Offset, buffer.Count);
         }
     }
 }

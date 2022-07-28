@@ -134,13 +134,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static void VerifyPrivateKey(RSA rsa)
         {
-            byte[] hash = new byte[20];
-            byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-            Assert.Equal(TestData.PfxSha1Empty_ExpectedSig, sig);
+            byte[] hash = new byte[SHA256.HashSizeInBytes];
+            byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            Assert.Equal(TestData.PfxSha256Empty_ExpectedSig, sig);
         }
 
         [Theory]
         [MemberData(nameof(StorageFlags))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public static void ExportWithPrivateKey(X509KeyStorageFlags keyStorageFlags)
         {
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable | keyStorageFlags))

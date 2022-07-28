@@ -33,7 +33,7 @@ extern "C" DLL_EXPORT VectorU128 STDMETHODCALLTYPE GetVectorU128(uint32_t e00, u
     return *reinterpret_cast<VectorU128*>(value);
 }
 
-extern "C" DLL_EXPORT VectorU256 STDMETHODCALLTYPE GetVectorU256(uint32_t e00, uint32_t e01, uint32_t e02, uint32_t e03, uint32_t e04, uint32_t e05, uint32_t e06, uint32_t e07)
+extern "C" DLL_EXPORT VectorU256 STDMETHODCALLTYPE ENABLE_AVX GetVectorU256(uint32_t e00, uint32_t e01, uint32_t e02, uint32_t e03, uint32_t e04, uint32_t e05, uint32_t e06, uint32_t e07)
 {
     uint32_t value[8] = { e00, e01, e02, e03, e04, e05, e06, e07 };
     return *reinterpret_cast<VectorU256*>(value);
@@ -44,7 +44,7 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVectorU128Out(uint32_t e00, uint
     *pValue = GetVectorU128(e00, e01, e02, e03);
 }
 
-extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVectorU256Out(uint32_t e00, uint32_t e01, uint32_t e02, uint32_t e03, uint32_t e04, uint32_t e05, uint32_t e06, uint32_t e07, VectorU256* pValue)
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE ENABLE_AVX GetVectorU256Out(uint32_t e00, uint32_t e01, uint32_t e02, uint32_t e03, uint32_t e04, uint32_t e05, uint32_t e06, uint32_t e07, VectorU256* pValue)
 {
     *pValue = GetVectorU256(e00, e01, e02, e03, e04, e05, e06, e07);
 }
@@ -55,7 +55,7 @@ extern "C" DLL_EXPORT const VectorU128* STDMETHODCALLTYPE GetVectorU128Ptr(uint3
     return &VectorU128Value;
 }
 
-extern "C" DLL_EXPORT const VectorU256* STDMETHODCALLTYPE GetVectorU256Ptr(uint32_t e00, uint32_t e01, uint32_t e02, uint32_t e03, uint32_t e04, uint32_t e05, uint32_t e06, uint32_t e07)
+extern "C" DLL_EXPORT const VectorU256* STDMETHODCALLTYPE ENABLE_AVX GetVectorU256Ptr(uint32_t e00, uint32_t e01, uint32_t e02, uint32_t e03, uint32_t e04, uint32_t e05, uint32_t e06, uint32_t e07)
 {
     GetVectorU256Out(e00, e01, e02, e03, e04, e05, e06, e07, &VectorU256Value);
     return &VectorU256Value;
@@ -66,7 +66,7 @@ extern "C" DLL_EXPORT VectorU128 STDMETHODCALLTYPE AddVectorU128(VectorU128 lhs,
     throw "P/Invoke for Vector<char> should be unsupported.";
 }
 
-extern "C" DLL_EXPORT VectorU256 STDMETHODCALLTYPE AddVectorU256(VectorU256 lhs, VectorU256 rhs)
+extern "C" DLL_EXPORT VectorU256 STDMETHODCALLTYPE ENABLE_AVX AddVectorU256(VectorU256 lhs, VectorU256 rhs)
 {
     throw "P/Invoke for Vector<char> should be unsupported.";
 }
@@ -76,7 +76,7 @@ extern "C" DLL_EXPORT VectorU128 STDMETHODCALLTYPE AddVectorU128s(const VectorU1
     throw "P/Invoke for Vector<char> should be unsupported.";
 }
 
-extern "C" DLL_EXPORT VectorU256 STDMETHODCALLTYPE AddVectorU256s(const VectorU256* pValues, uint32_t count)
+extern "C" DLL_EXPORT VectorU256 STDMETHODCALLTYPE ENABLE_AVX AddVectorU256s(const VectorU256* pValues, uint32_t count)
 {
     throw "P/Invoke for Vector<char> should be unsupported.";
 }

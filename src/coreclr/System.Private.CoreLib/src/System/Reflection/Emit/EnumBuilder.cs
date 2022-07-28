@@ -39,14 +39,14 @@ namespace System.Reflection.Emit
         }
 
         [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
-        public TypeInfo? CreateTypeInfo()
+        public TypeInfo CreateTypeInfo()
         {
             return m_typeBuilder.CreateTypeInfo();
         }
 
         // CreateType cause EnumBuilder to be baked.
         [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
-        public Type? CreateType()
+        public Type CreateType()
         {
             return m_typeBuilder.CreateType();
         }
@@ -323,11 +323,13 @@ namespace System.Reflection.Emit
             return SymbolType.FormCompoundType("&", this, 0)!;
         }
 
+        [RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             return SymbolType.FormCompoundType("[]", this, 0)!;
         }
 
+        [RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
             string s = GetRankString(rank);

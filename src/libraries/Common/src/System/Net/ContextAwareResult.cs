@@ -68,7 +68,7 @@ namespace System.Net
 
     // This class will ensure that the correct context is restored on the thread before invoking
     // a user callback.
-    internal partial class ContextAwareResult : LazyAsyncResult
+    internal sealed partial class ContextAwareResult : LazyAsyncResult
     {
         [Flags]
         private enum StateFlags : byte
@@ -287,10 +287,7 @@ namespace System.Net
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "starting capture");
 
-                if (cachedContext == null)
-                {
-                    cachedContext = ExecutionContext.Capture();
-                }
+                cachedContext ??= ExecutionContext.Capture();
 
                 if (cachedContext != null)
                 {
@@ -370,6 +367,6 @@ namespace System.Net
             base.Complete(IntPtr.Zero);
         }
 
-        internal virtual EndPoint? RemoteEndPoint => null;
+        internal static EndPoint? RemoteEndPoint => null;
     }
 }

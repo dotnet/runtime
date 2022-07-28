@@ -1,11 +1,6 @@
 <Project>
   <!--
-    This file is imported by the test projects from the artifacts dir or the src/tests dir. It
+    This file is imported by the test projects from the artifacts dir or the src/installer/tests dir. It
     provides basic info needed for restore and build with the vanilla SDK.
-  -->
-
-  <!--
-    We are using to best emulate the live version. This should be removed once we start using the live bits.
-    https://github.com/dotnet/runtime/issues/45972  
   -->
 </Project>

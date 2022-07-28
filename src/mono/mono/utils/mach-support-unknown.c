@@ -64,5 +64,10 @@ mono_mach_arch_set_thread_states (thread_port_t thread, thread_state_t state, ma
 {
        g_assert_not_reached ();
 }
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mach_support_unknown);
 
 #endif

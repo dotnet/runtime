@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -28,10 +29,16 @@ namespace ILCompiler.DependencyAnalysisFramework
         // with the name of the event (method name) as well as the names and types of all the parameters. 
         [Event(1, Keywords = Keywords.Graph, Level = EventLevel.Informational)]
         public void Graph(int id, string name) { WriteEvent(1, id, name); }
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+           Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(2, Keywords = Keywords.Graph, Level = EventLevel.Informational)]
         public void Node(int id, int index, string name) { WriteEvent(2, id, index, name); }
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+           Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(3, Keywords = Keywords.Graph, Level = EventLevel.Informational)]
         public void Edge(int id, int dependentIndex, int dependencyIndex, string reason) { WriteEvent(3, id, dependentIndex, dependencyIndex, reason); }
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+           Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(4, Keywords = Keywords.Graph, Level = EventLevel.Informational)]
         public void ConditionalEdge(int id, int dependentIndex1, int dependentIndex2, int dependencyIndex, string reason) { WriteEvent(4, id, dependentIndex1, dependentIndex2, dependencyIndex, reason); }
 

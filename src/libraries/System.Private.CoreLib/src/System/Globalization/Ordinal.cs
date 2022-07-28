@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Text.Unicode;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Globalization
@@ -19,15 +18,13 @@ namespace System.Globalization
             ref char charA = ref strA;
             ref char charB = ref strB;
 
-            // in InvariantMode we support all range and not only the ascii characters.
-            char maxChar = (GlobalizationMode.Invariant ? (char)0xFFFF : (char)0x7F);
+            char maxChar = (char)0x7F;
 
             while (length != 0 && charA <= maxChar && charB <= maxChar)
             {
                 // Ordinal equals or lowercase equals if the result ends up in the a-z range
                 if (charA == charB ||
-                    ((charA | 0x20) == (charB | 0x20) &&
-                        (uint)((charA | 0x20) - 'a') <= (uint)('z' - 'a')))
+                    ((charA | 0x20) == (charB | 0x20) && char.IsAsciiLetter(charA)))
                 {
                     length--;
                     charA = ref Unsafe.Add(ref charA, 1);
@@ -39,11 +36,11 @@ namespace System.Globalization
                     int currentB = charB;
 
                     // Uppercase both chars if needed
-                    if ((uint)(charA - 'a') <= 'z' - 'a')
+                    if (char.IsAsciiLetterLower(charA))
                     {
                         currentA -= 0x20;
                     }
-                    if ((uint)(charB - 'a') <= 'z' - 'a')
+                    if (char.IsAsciiLetterLower(charB))
                     {
                         currentB -= 0x20;
                     }
@@ -53,7 +50,7 @@ namespace System.Globalization
                 }
             }
 
-            if (length == 0 || GlobalizationMode.Invariant)
+            if (length == 0)
             {
                 return lengthA - lengthB;
             }
@@ -67,7 +64,7 @@ namespace System.Globalization
         {
             if (GlobalizationMode.Invariant)
             {
-                return CompareIgnoreCaseInvariantMode(ref strA, lengthA, ref strB, lengthB);
+                return InvariantModeCasing.CompareStringIgnoreCase(ref strA, lengthA, ref strB, lengthB);
             }
 
             if (GlobalizationMode.UseNls)
@@ -167,9 +164,7 @@ namespace System.Globalization
                     return false; // not exact match, and first input isn't in [A-Za-z]
                 }
 
-                // The ternary operator below seems redundant but helps RyuJIT generate more optimal code.
-                // See https://github.com/dotnet/runtime/issues/4207.
-                return (valueA == (valueB | 0x20u)) ? true : false;
+                return valueA == (valueB | 0x20u);
             }
 
             Debug.Assert(length == 0);
@@ -179,41 +174,6 @@ namespace System.Globalization
             // The non-ASCII case is factored out into its own helper method so that the JIT
             // doesn't need to emit a complex prolog for its caller (this method).
             return CompareStringIgnoreCase(ref Unsafe.AddByteOffset(ref charA, byteOffset), length, ref Unsafe.AddByteOffset(ref charB, byteOffset), length) == 0;
-        }
-
-        internal static int CompareIgnoreCaseInvariantMode(ref char strA, int lengthA, ref char strB, int lengthB)
-        {
-            Debug.Assert(GlobalizationMode.Invariant);
-            int length = Math.Min(lengthA, lengthB);
-
-            ref char charA = ref strA;
-            ref char charB = ref strB;
-
-            while (length != 0)
-            {
-                if (charA == charB)
-                {
-                    length--;
-                    charA = ref Unsafe.Add(ref charA, 1);
-                    charB = ref Unsafe.Add(ref charB, 1);
-                    continue;
-                }
-
-                char aUpper = OrdinalCasing.ToUpperInvariantMode(charA);
-                char bUpper = OrdinalCasing.ToUpperInvariantMode(charB);
-
-                if (aUpper == bUpper)
-                {
-                    length--;
-                    charA = ref Unsafe.Add(ref charA, 1);
-                    charB = ref Unsafe.Add(ref charB, 1);
-                    continue;
-                }
-
-                return aUpper - bUpper;
-            }
-
-            return lengthA - lengthB;
         }
 
         internal static unsafe int IndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
@@ -235,7 +195,7 @@ namespace System.Globalization
 
                 if ((uint)startIndex > (uint)source.Length)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 }
                 else
                 {
@@ -266,7 +226,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                return CompareInfo.InvariantIndexOf(source, value, ignoreCase: true, fromBeginning: true);
+                return InvariantModeCasing.IndexOfIgnoreCase(source, value);
             }
 
             if (GlobalizationMode.UseNls)
@@ -274,7 +234,72 @@ namespace System.Globalization
                 return CompareInfo.NlsIndexOfOrdinalCore(source, value, ignoreCase: true, fromBeginning: true);
             }
 
-            return OrdinalCasing.IndexOf(source, value);
+            // If value starts with an ASCII char, we can use a vectorized path
+            ref char valueRef = ref MemoryMarshal.GetReference(value);
+            char valueChar = valueRef;
+
+            if (!char.IsAscii(valueChar))
+            {
+                // Fallback to a more non-ASCII friendly version
+                return OrdinalCasing.IndexOf(source, value);
+            }
+
+            // Hoist some expressions from the loop
+            int valueTailLength = value.Length - 1;
+            int searchSpaceLength = source.Length - valueTailLength;
+            ref char searchSpace = ref MemoryMarshal.GetReference(source);
+            char valueCharU = default;
+            char valueCharL = default;
+            nint offset = 0;
+            bool isLetter = false;
+
+            if (char.IsAsciiLetter(valueChar))
+            {
+                valueCharU = (char)(valueChar & ~0x20);
+                valueCharL = (char)(valueChar | 0x20);
+                isLetter = true;
+            }
+
+            do
+            {
+                // Do a quick search for the first element of "value".
+                int relativeIndex = isLetter ?
+                    SpanHelpers.IndexOfAny(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength) :
+                    SpanHelpers.IndexOf(ref Unsafe.Add(ref searchSpace, offset), valueChar, searchSpaceLength);
+                if (relativeIndex < 0)
+                {
+                    break;
+                }
+
+                searchSpaceLength -= relativeIndex;
+                if (searchSpaceLength <= 0)
+                {
+                    break;
+                }
+                offset += relativeIndex;
+
+                // Found the first element of "value". See if the tail matches.
+                if (valueTailLength == 0 || // for single-char values we already matched first chars
+                    EqualsIgnoreCase(
+                        ref Unsafe.Add(ref searchSpace, (nuint)(offset + 1)),
+                        ref Unsafe.Add(ref valueRef, 1), valueTailLength))
+                {
+                    return (int)offset;  // The tail matched. Return a successful find.
+                }
+
+                searchSpaceLength--;
+                offset++;
+            }
+            while (searchSpaceLength > 0);
+
+            return -1;
+        }
+
+        internal static int LastIndexOf(string source, string value, int startIndex, int count)
+        {
+            int result = source.AsSpan(startIndex, count).LastIndexOf(value);
+            if (result >= 0) { result += startIndex; } // if match found, adjust 'result' by the actual start position
+            return result;
         }
 
         internal static unsafe int LastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
@@ -301,7 +326,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                return CompareInfo.InvariantLastIndexOf(source, value, startIndex, count, ignoreCase);
+                return ignoreCase ? InvariantModeCasing.LastIndexOfIgnoreCase(source.AsSpan().Slice(startIndex, count), value) : LastIndexOf(source, value, startIndex, count);
             }
 
             if (GlobalizationMode.UseNls)
@@ -311,25 +336,7 @@ namespace System.Globalization
 
             if (!ignoreCase)
             {
-                // startIndex is the index into source where we start search backwards from.
-                // leftStartIndex is the index into source of the start of the string that is
-                // count characters away from startIndex.
-                int leftStartIndex = startIndex - count + 1;
-
-                for (int i = startIndex - value.Length + 1; i >= leftStartIndex; i--)
-                {
-                    int valueIndex, sourceIndex;
-
-                    for (valueIndex = 0, sourceIndex = i;
-                        valueIndex < value.Length && source[sourceIndex] == value[valueIndex];
-                        valueIndex++, sourceIndex++) ;
-
-                    if (valueIndex == value.Length) {
-                        return i;
-                    }
-                }
-
-                return -1;
+                LastIndexOf(source, value, startIndex, count);
             }
 
             if (!source.TryGetSpan(startIndex, count, out ReadOnlySpan<char> sourceSpan))
@@ -339,7 +346,7 @@ namespace System.Globalization
 
                 if ((uint)startIndex > (uint)source.Length)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 }
                 else
                 {
@@ -374,7 +381,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                return CompareInfo.InvariantIndexOf(source, value, ignoreCase: true, fromBeginning: false);
+                return InvariantModeCasing.LastIndexOfIgnoreCase(source, value);
             }
 
             if (GlobalizationMode.UseNls)
@@ -396,7 +403,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                OrdinalCasing.ToUpperInvariantMode(source, destination);
+                InvariantModeCasing.ToUpper(source, destination);
                 return source.Length;
             }
 

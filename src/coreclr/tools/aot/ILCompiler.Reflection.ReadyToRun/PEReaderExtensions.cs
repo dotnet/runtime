@@ -124,5 +124,16 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             return PEExportTable.Parse(reader);
         }
+
+        /// <summary>
+        /// Check whether the file is a ReadyToRun image and returns the RVA of its ReadyToRun header if positive.
+        /// </summary>
+        /// <param name="reader">PEReader representing the executable to check for the presence of ReadyToRun header</param>
+        /// <param name="rva">RVA of the ReadyToRun header if available, 0 when not</param>
+        /// <returns>true when the PEReader represents a ReadyToRun image, false otherwise</returns>
+        public static bool TryGetReadyToRunHeader(this PEReader reader, out int rva)
+        {
+            return reader.GetExportTable().TryGetValue("RTR_HEADER", out rva);
+        }
     }
 }

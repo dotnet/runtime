@@ -11,7 +11,13 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref WriteStack state)
         {
-            if (IsValueType)
+            if (
+#if NETCOREAPP
+                // Short-circuit the check against "is not null"; treated as a constant by recent versions of the JIT.
+                typeof(T).IsValueType)
+#else
+                IsValueType)
+#endif
             {
                 // Value types can never have a null except for Nullable<T>.
                 if (value == null && Nullable.GetUnderlyingType(TypeToConvert) == null)
@@ -42,12 +48,17 @@ namespace System.Text.Json.Serialization
             }
             catch (InvalidOperationException ex) when (ex.Source == ThrowHelper.ExceptionSourceValueToRethrowAsJsonException)
             {
-                ThrowHelper.ReThrowWithPath(state, ex);
+                ThrowHelper.ReThrowWithPath(ref state, ex);
                 throw;
             }
-            catch (JsonException ex)
+            catch (JsonException ex) when (ex.Path == null)
             {
-                ThrowHelper.AddJsonExceptionInformation(state, ex);
+                // JsonExceptions where the Path property is already set
+                // typically originate from nested calls to JsonSerializer;
+                // treat these cases as any other exception type and do not
+                // overwrite any exception information.
+
+                ThrowHelper.AddJsonExceptionInformation(ref state, ex);
                 throw;
             }
             catch (NotSupportedException ex)
@@ -59,7 +70,7 @@ namespace System.Text.Json.Serialization
                     throw;
                 }
 
-                ThrowHelper.ThrowNotSupportedException(state, ex);
+                ThrowHelper.ThrowNotSupportedException(ref state, ex);
                 return default;
             }
         }

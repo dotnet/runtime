@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Options
         /// Constructor.
         /// </summary>
         /// <param name="action">The action to register.</param>
-        public ConfigureOptions(Action<TOptions> action)
+        public ConfigureOptions(Action<TOptions>? action)
         {
             Action = action;
         }
@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The configuration action.
         /// </summary>
-        public Action<TOptions> Action { get; }
+        public Action<TOptions>? Action { get; }
 
         /// <summary>
         /// Invokes the registered configure <see cref="Action"/>.
@@ -31,10 +31,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="options">The options instance to configure.</param>
         public virtual void Configure(TOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ThrowHelper.ThrowIfNull(options);
 
             Action?.Invoke(options);
         }

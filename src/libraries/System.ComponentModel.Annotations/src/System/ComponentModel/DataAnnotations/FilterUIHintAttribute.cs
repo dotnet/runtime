@@ -10,7 +10,7 @@ namespace System.ComponentModel.DataAnnotations
     /// An attribute used to specify the filtering behavior for a column.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
-    [Obsolete("This attribute is no longer in use and will be ignored if applied.")]
+    [Obsolete("FilterUIHintAttribute has been deprecated and is not supported.")]
     public sealed class FilterUIHintAttribute : Attribute
     {
         private readonly UIHintAttribute.UIHintImplementation _implementation;

@@ -29,9 +29,12 @@ public class GitHub_19256
         sum += arg0.F0;
         System.Console.WriteLine(arg0.F0);
         arg0.F0 = 1234; // this is printed in next invocation
-        System.GC.KeepAlive(arg0); // ensure that assignment isn't removed
+        Use(arg0); // ensure that assignment isn't removed
         return ref s_one;
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Use(S2 arg) { }
 }
 
 

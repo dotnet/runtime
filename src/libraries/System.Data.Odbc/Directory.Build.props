@@ -1,18 +1,7 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <StrongNameKeyId>Open</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
-    <PackageDescription>Provides a collection of classes used to access an ODBC data source in the managed space
-
-Commonly Used Types:
-System.Data.Odbc.OdbcCommand
-System.Data.Odbc.OdbcConnection
-System.Data.Odbc.OdbcDataReader
-System.Data.Odbc.OdbcDataAdapter
-System.Data.Odbc.OdbcParameter
-System.Data.Odbc.OdbcParameterCollection
-System.Data.Odbc.OdbcTransaction</PackageDescription>
   </PropertyGroup>
 </Project>

@@ -53,7 +53,7 @@ public:
 
     // Overridden from ClrDataAccess. Gets an internal metadata importer for the file.
     virtual IMDInternalImport* GetMDImport(
-        const PEFile* pPEFile,
+        const PEAssembly* pPEAssembly,
         const ReflectionModule * pReflectionModule,
         bool fThrowEx);
 
@@ -96,7 +96,7 @@ public:
         IStringHolder * pStrName);
 
     // Get the values of the JIT Optimization and EnC flags.
-    void GetCompilerFlags (VMPTR_DomainFile vmDomainFile,
+    void GetCompilerFlags (VMPTR_DomainAssembly vmDomainAssembly,
                            BOOL * pfAllowJITOpts,
                            BOOL * pfEnableEnC);
 
@@ -104,7 +104,7 @@ public:
     bool CanSetEnCBits(Module * pModule);
 
     // Set the values of the JIT optimization and EnC flags.
-    HRESULT SetCompilerFlags(VMPTR_DomainFile vmDomainFile,
+    HRESULT SetCompilerFlags(VMPTR_DomainAssembly vmDomainAssembly,
                              BOOL             fAllowJitOpts,
                              BOOL             fEnableEnC);
 
@@ -133,7 +133,7 @@ public:
 
     bool IsValidObject(CORDB_ADDRESS obj);
 
-    bool GetAppDomainForObject(CORDB_ADDRESS obj, OUT VMPTR_AppDomain * pApp, OUT VMPTR_Module *pModule, OUT VMPTR_DomainFile *mod);
+    bool GetAppDomainForObject(CORDB_ADDRESS obj, OUT VMPTR_AppDomain * pApp, OUT VMPTR_Module *pModule, OUT VMPTR_DomainAssembly *mod);
 
 
 
@@ -149,7 +149,7 @@ public:
     HRESULT GetTypeLayout(COR_TYPEID id, COR_TYPE_LAYOUT *pLayout);
     HRESULT GetArrayLayout(COR_TYPEID id, COR_ARRAY_LAYOUT *pLayout);
     void GetGCHeapInformation(COR_HEAPINFO * pHeapInfo);
-    HRESULT GetPEFileMDInternalRW(VMPTR_PEFile vmPEFile, OUT TADDR* pAddrMDInternalRW);
+    HRESULT GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW);
     HRESULT GetReJitInfo(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ReJitInfo* pReJitInfo);
     HRESULT GetActiveRejitILCodeVersionNode(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
     HRESULT GetReJitInfo(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_ReJitInfo* pReJitInfo);
@@ -218,7 +218,7 @@ public:
     // a module and a token. The info will come from a MethodDesc, if
     // one exists or from metadata.
     //
-    void GetILCodeAndSig(VMPTR_DomainFile vmDomainFile,
+    void GetILCodeAndSig(VMPTR_DomainAssembly vmDomainAssembly,
                          mdToken          functionToken,
                          TargetBuffer *   pCodeInfo,
                          mdToken *        pLocalSigToken);
@@ -229,7 +229,7 @@ public:
     //    whether it's an instantiated generic
     //    its EnC version number
     //    hot and cold region information.
-    void GetNativeCodeInfo(VMPTR_DomainFile         vmDomainFile,
+    void GetNativeCodeInfo(VMPTR_DomainAssembly         vmDomainAssembly,
                            mdToken                  functionToken,
                            NativeCodeFunctionData * pCodeInfo);
 
@@ -260,7 +260,7 @@ public:
                        ClassInfo *      pData);
 
     // get field information and object size for an instantiated generic type
-    void GetInstantiationFieldInfo (VMPTR_DomainFile             vmDomainFile,
+    void GetInstantiationFieldInfo (VMPTR_DomainAssembly             vmDomainAssembly,
                                     VMPTR_TypeHandle             vmThExact,
                                     VMPTR_TypeHandle             vmThApprox,
                                     DacDbiArrayList<FieldData> * pFieldList,
@@ -336,7 +336,7 @@ public:
                        CorElementType     simpleType,
                        mdTypeDef *        pMetadataToken,
                        VMPTR_Module     * pVmModule,
-                       VMPTR_DomainFile * pVmDomainFile);
+                       VMPTR_DomainAssembly * pVmDomainAssembly);
 
     BOOL IsExceptionObject(VMPTR_Object vmObject);
 
@@ -352,7 +352,7 @@ public:
     HRESULT GetDelegateFunctionData(
         DelegateType delegateType,
         VMPTR_Object delegateObject,
-        OUT VMPTR_DomainFile *ppFunctionDomainFile,
+        OUT VMPTR_DomainAssembly *ppFunctionDomainAssembly,
         OUT mdMethodDef *pMethodDef);
 
     HRESULT GetDelegateTargetObject(
@@ -414,7 +414,7 @@ private:
     // Returns:
     //   S_OK on success.
     //   If it's a jitted method, error codes equivalent to GetMethodDescPtrFromIp
-    //   E_INVALIDARG if a non-jitted metod can't be located in the stubs.
+    //   E_INVALIDARG if a non-jitted method can't be located in the stubs.
     HRESULT GetMethodDescPtrFromIpEx(
         TADDR funcIp,
         OUT VMPTR_MethodDesc *ppMD);
@@ -730,10 +730,10 @@ public:
     // Gets properties for a module
     void GetModuleData(VMPTR_Module vmModule, ModuleInfo * pData);
 
-    // Gets properties for a domainfile
-    void GetDomainFileData(VMPTR_DomainFile vmDomainFile, DomainFileInfo * pData);
+    // Gets properties for a domain assembly
+    void GetDomainAssemblyData(VMPTR_DomainAssembly vmDomainAssembly, DomainAssemblyInfo * pData);
 
-    void GetModuleForDomainFile(VMPTR_DomainFile vmDomainFile, OUT VMPTR_Module * pModule);
+    void GetModuleForDomainAssembly(VMPTR_DomainAssembly vmDomainAssembly, OUT VMPTR_Module * pModule);
 
     // Yields true if the address is a CLR stub.
     BOOL IsTransitionStub(CORDB_ADDRESS address);
@@ -829,8 +829,8 @@ public:
     // Return the current appdomain the specified thread is in.
     VMPTR_AppDomain GetCurrentAppDomain(VMPTR_Thread vmThread);
 
-    // Given an assembly ref token and metadata scope (via the DomainFile), resolve the assembly.
-    VMPTR_DomainAssembly ResolveAssembly(VMPTR_DomainFile vmScope, mdToken tkAssemblyRef);
+    // Given an assembly ref token and metadata scope (via the DomainAssembly), resolve the assembly.
+    VMPTR_DomainAssembly ResolveAssembly(VMPTR_DomainAssembly vmScope, mdToken tkAssemblyRef);
 
 
     // Hijack the thread
@@ -952,15 +952,15 @@ protected:
     IMetaDataLookup * m_pMetaDataLookup;
 
 
-    // Metadata lookups is just a property on the PEFile in the normal builds,
+    // Metadata lookups is just a property on the PEAssembly in the normal builds,
     // and so VM code tends to access the same metadata importer many times in a row.
     // Cache the most-recently used to avoid excessive redundant lookups.
 
-    // PEFile of Cached Importer. Invalidated between Flush calls. If this is Non-null,
+    // PEAssembly of Cached Importer. Invalidated between Flush calls. If this is Non-null,
     // then the importer is m_pCachedImporter, and we can avoid using IMetaDataLookup
-    VMPTR_PEFile m_pCachedPEFile;
+    VMPTR_PEAssembly m_pCachedPEAssembly;
 
-    // Value of cached importer, corresponds with m_pCachedPEFile.
+    // Value of cached importer, corresponds with m_pCachedPEAssembly.
     IMDInternalImport  * m_pCachedImporter;
 
     // Value of cached hijack function list, corresponds to g_pDebugger->m_rgHijackFunction
@@ -1023,7 +1023,7 @@ protected:
     // if the specified module is a WinRT module then isWinRT will equal TRUE
     HRESULT IsWinRTModule(VMPTR_Module vmModule, BOOL& isWinRT);
 
-    // Determines the app domain id for the object refered to by a given VMPTR_OBJECTHANDLE
+    // Determines the app domain id for the object referred to by a given VMPTR_OBJECTHANDLE
     ULONG GetAppDomainIdFromVmObjectHandle(VMPTR_OBJECTHANDLE vmHandle);
 
 private:
@@ -1104,13 +1104,13 @@ private:
 public:
     // APIs for picking up the info needed for a debugger to look up an ngen image or IL image
     // from it's search path.
-    bool GetMetaDataFileInfoFromPEFile(VMPTR_PEFile vmPEFile,
+    bool GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly,
                                        DWORD &dwTimeStamp,
                                        DWORD &dwSize,
                                        bool  &isNGEN,
                                        IStringHolder* pStrFilename);
 
-    bool GetILImageInfoFromNgenPEFile(VMPTR_PEFile vmPEFile,
+    bool GetILImageInfoFromNgenPEFile(VMPTR_PEAssembly vmPEAssembly,
                                       DWORD &dwTimeStamp,
                                       DWORD &dwSize,
                                       IStringHolder* pStrFilename);

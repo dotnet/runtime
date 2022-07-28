@@ -60,5 +60,32 @@ namespace System.Tests
             Assert.Contains(message, exception.Message);
             Assert.Contains(argumentName, exception.Message);
         }
+
+        [Fact]
+        public static void ThrowIfNullOrEmpty_ThrowsForInvalidInput()
+        {
+            AssertExtensions.Throws<ArgumentNullException>(null, () => ArgumentException.ThrowIfNullOrEmpty(null, null));
+            AssertExtensions.Throws<ArgumentNullException>("something", () => ArgumentException.ThrowIfNullOrEmpty(null, "something"));
+
+            AssertExtensions.Throws<ArgumentException>(null, () => ArgumentException.ThrowIfNullOrEmpty("", null));
+            AssertExtensions.Throws<ArgumentException>("something", () => ArgumentException.ThrowIfNullOrEmpty("", "something"));
+
+            ArgumentException.ThrowIfNullOrEmpty(" ");
+            ArgumentException.ThrowIfNullOrEmpty(" ", "something");
+            ArgumentException.ThrowIfNullOrEmpty("abc", "something");
+        }
+
+        [Fact]
+        public static void ThrowIfNullOrEmpty_UsesArgumentExpression_ParameterNameMatches()
+        {
+            string someString = null;
+            AssertExtensions.Throws<ArgumentNullException>(nameof(someString), () => ArgumentException.ThrowIfNullOrEmpty(someString));
+
+            someString = "";
+            AssertExtensions.Throws<ArgumentException>(nameof(someString), () => ArgumentException.ThrowIfNullOrEmpty(someString));
+
+            someString = "abc";
+            ArgumentException.ThrowIfNullOrEmpty(someString);
+        }
     }
 }

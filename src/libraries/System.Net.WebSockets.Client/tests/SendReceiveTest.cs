@@ -158,6 +158,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        // This will also pass when no exception is thrown. Current implementation doesn't throw.
         public async Task SendAsync_MultipleOutstandingSendOperations_Throws(Uri server)
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
@@ -217,7 +218,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53957", TestPlatforms.Browser)]
+        // This will also pass when no exception is thrown. Current implementation doesn't throw.
         public async Task ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server)
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
@@ -256,12 +257,12 @@ namespace System.Net.WebSockets.Client.Tests
                                 "ReceiveAsync"),
                             ex.Message);
 
-                        Assert.Equal(WebSocketState.Aborted, cws.State);
+                        Assert.True(WebSocketState.Aborted == cws.State, cws.State+" state when InvalidOperationException");
                     }
                     else if (ex is WebSocketException)
                     {
                         // Multiple cases.
-                        Assert.Equal(WebSocketState.Aborted, cws.State);
+                        Assert.True(WebSocketState.Aborted == cws.State, cws.State + " state when WebSocketException");
 
                         WebSocketError errCode = (ex as WebSocketException).WebSocketErrorCode;
                         Assert.True(
@@ -270,7 +271,7 @@ namespace System.Net.WebSockets.Client.Tests
                     }
                     else if (ex is OperationCanceledException)
                     {
-                        Assert.Equal(WebSocketState.Aborted, cws.State);
+                        Assert.True(WebSocketState.Aborted == cws.State, cws.State + " state when OperationCanceledException");
                     }
                     else
                     {
@@ -321,7 +322,6 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53957", TestPlatforms.Browser)]
         public async Task SendReceive_VaryingLengthBuffers_Success(Uri server)
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
@@ -366,7 +366,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
-                var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
+                CancellationTokenSource ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 byte[] receiveBuffer = new byte[10];
                 byte[] sendBuffer = new byte[10];
@@ -382,7 +382,7 @@ namespace System.Net.WebSockets.Client.Tests
                     await Task.WhenAll(receive, send);
                     Assert.Equal(1, receive.Result.Count);
                 }
-                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SendReceive_VaryingLengthBuffers_Success", ctsDefault.Token);
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SendReceive_Concurrent_Success", ctsDefault.Token);
 
                 Array.Reverse(receiveBuffer);
                 Assert.Equal<byte>(sendBuffer, receiveBuffer);

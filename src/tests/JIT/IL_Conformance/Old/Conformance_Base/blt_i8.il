@@ -305,4 +305,4 @@ FAIL:
 	ret
 }
 }
-.assembly blt_i8.exe{}
+.assembly blt_i8{}

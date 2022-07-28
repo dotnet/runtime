@@ -288,7 +288,6 @@ namespace System.IO.Compression.Tests
                 FileInfo fileWithBadDate = new FileInfo(GetTestFilePath());
                 fileWithBadDate.Create().Dispose();
                 fileWithBadDate.LastWriteTimeUtc = new DateTime(1970, 1, 1, 1, 1, 1);
-
                 string archivePath = GetTestFilePath();
                 using (FileStream output = File.Open(archivePath, FileMode.Create))
                 using (ZipArchive archive = new ZipArchive(output, ZipArchiveMode.Create))
@@ -342,19 +341,6 @@ namespace System.IO.Compression.Tests
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
-        /// when an attempt is made to extract them.
-        /// </summary>
-        [Theory]
-        [InlineData("NullCharFileName_FromWindows")]
-        [InlineData("NullCharFileName_FromUnix")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific invalid file path
-        public void Unix_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
-        {
-            Assert.Throws<ArgumentException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
         }
 
         [Fact]
@@ -415,24 +401,6 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        /// <summary>
-        /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
-        /// when an attempt is made to extract them.
-        /// </summary>
-        [Theory]
-        [InlineData("WindowsInvalid_FromUnix", null)]
-        [InlineData("WindowsInvalid_FromWindows", null)]
-        [InlineData("NullCharFileName_FromWindows", "path")]
-        [InlineData("NullCharFileName_FromUnix", "path")]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows-specific invalid file path
-        public void Windows_ZipWithInvalidFileNames_ThrowsException(string zipName, string paramName)
-        {
-            if (paramName == null)
-                Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
-            else
-                AssertExtensions.Throws<ArgumentException>(paramName, null, () => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
-        }
-
         private static async Task UpdateArchive(ZipArchive archive, string installFile, string entryName)
         {
             string fileName = installFile;
@@ -447,6 +415,29 @@ namespace System.IO.Compression.Tests
                 {
                     es.SetLength(0);
                     stream.CopyTo(es);
+                }
+            }
+        }
+
+        [Fact]
+        public void CreateSetsExternalAttributesCorrectly()
+        {
+            string folderName = zfolder("normal");
+            string filepath = GetTestFilePath();
+            ZipFile.CreateFromDirectory(folderName, filepath);
+
+            using (ZipArchive archive = ZipFile.Open(filepath, ZipArchiveMode.Read))
+            {
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    if (OperatingSystem.IsWindows())
+                    {
+                        Assert.Equal(0, entry.ExternalAttributes);
+                    }
+                    else
+                    {
+                        Assert.NotEqual(0, entry.ExternalAttributes);
+                    }
                 }
             }
         }

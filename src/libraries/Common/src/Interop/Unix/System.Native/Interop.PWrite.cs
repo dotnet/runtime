@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_PWrite", SetLastError = true)]
-        internal static extern unsafe int PWrite(SafeHandle fd, byte* buffer, int bufferSize, long fileOffset);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_PWrite", SetLastError = true)]
+        internal static unsafe partial int PWrite(SafeHandle fd, byte* buffer, int bufferSize, long fileOffset);
     }
 }

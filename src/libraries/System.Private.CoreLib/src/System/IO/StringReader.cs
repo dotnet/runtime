@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,7 +12,6 @@ namespace System.IO
     {
         private string? _s;
         private int _pos;
-        private int _length;
 
         public StringReader(string s)
         {
@@ -21,7 +21,6 @@ namespace System.IO
             }
 
             _s = s;
-            _length = s.Length;
         }
 
         public override void Close()
@@ -33,7 +32,6 @@ namespace System.IO
         {
             _s = null;
             _pos = 0;
-            _length = 0;
             base.Dispose(disposing);
         }
 
@@ -44,16 +42,19 @@ namespace System.IO
         //
         public override int Peek()
         {
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
-            }
-            if (_pos == _length)
-            {
-                return -1;
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
-            return _s[_pos];
+            int pos = _pos;
+            if ((uint)pos < (uint)s.Length)
+            {
+                return s[pos];
+            }
+
+            return -1;
         }
 
         // Reads the next character from the underlying string. The returned value
@@ -61,16 +62,20 @@ namespace System.IO
         //
         public override int Read()
         {
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
-            }
-            if (_pos == _length)
-            {
-                return -1;
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
-            return _s[_pos++];
+            int pos = _pos;
+            if ((uint)pos < (uint)s.Length)
+            {
+                _pos++;
+                return s[pos];
+            }
+
+            return -1;
         }
 
         // Reads a block of characters. This method will read up to count
@@ -80,10 +85,8 @@ namespace System.IO
         //
         public override int Read(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -98,10 +101,10 @@ namespace System.IO
             }
             if (_s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
-            int n = _length - _pos;
+            int n = _s.Length - _pos;
             if (n > 0)
             {
                 if (n > count)
@@ -124,12 +127,13 @@ namespace System.IO
                 return base.Read(buffer);
             }
 
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
-            int n = _length - _pos;
+            int n = s.Length - _pos;
             if (n > 0)
             {
                 if (n > buffer.Length)
@@ -137,7 +141,7 @@ namespace System.IO
                     n = buffer.Length;
                 }
 
-                _s.AsSpan(_pos, n).CopyTo(buffer);
+                s.AsSpan(_pos, n).CopyTo(buffer);
                 _pos += n;
             }
 
@@ -148,22 +152,20 @@ namespace System.IO
 
         public override string ReadToEnd()
         {
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
-            string s;
-            if (_pos == 0)
+            int pos = _pos;
+            _pos = s.Length;
+
+            if (pos != 0)
             {
-                s = _s;
-            }
-            else
-            {
-                s = _s.Substring(_pos, _length - _pos);
+                s = s.Substring(pos);
             }
 
-            _pos = _length;
             return s;
         }
 
@@ -175,38 +177,43 @@ namespace System.IO
         //
         public override string? ReadLine()
         {
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowObjectDisposedException_ReaderClosed();
             }
 
-            int i = _pos;
-            while (i < _length)
+            int pos = _pos;
+            if ((uint)pos >= (uint)s.Length)
             {
-                char ch = _s[i];
-                if (ch == '\r' || ch == '\n')
+                return null;
+            }
+
+            ReadOnlySpan<char> remaining = s.AsSpan(pos);
+            int foundLineLength = remaining.IndexOfAny('\r', '\n');
+            if (foundLineLength >= 0)
+            {
+                string result = s.Substring(pos, foundLineLength);
+
+                char ch = remaining[foundLineLength];
+                pos += foundLineLength + 1;
+                if (ch == '\r')
                 {
-                    string result = _s.Substring(_pos, i - _pos);
-                    _pos = i + 1;
-                    if (ch == '\r' && _pos < _length && _s[_pos] == '\n')
+                    if ((uint)pos < (uint)s.Length && s[pos] == '\n')
                     {
-                        _pos++;
+                        pos++;
                     }
-
-                    return result;
                 }
+                _pos = pos;
 
-                i++;
-            }
-
-            if (i > _pos)
-            {
-                string result = _s.Substring(_pos, i - _pos);
-                _pos = i;
                 return result;
             }
-
-            return null;
+            else
+            {
+                string result = s.Substring(pos);
+                _pos = s.Length;
+                return result;
+            }
         }
 
         #region Task based Async APIs
@@ -215,17 +222,78 @@ namespace System.IO
             return Task.FromResult(ReadLine());
         }
 
+        /// <summary>
+        /// Reads a line of characters asynchronously from the current string and returns the data as a string.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A value task that represents the asynchronous read operation. The value of the <c>TResult</c>
+        /// parameter contains the next line from the string reader, or is <see langword="null" /> if all of the characters have been read.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The string reader has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
+        /// <example>
+        /// The following example shows how to read one line at a time from a string asynchronously.
+        /// <code lang="C#">
+        /// using System.Text;
+        ///
+        /// StringBuilder stringToRead = new();
+        /// stringToRead.AppendLine("Characters in 1st line to read");
+        /// stringToRead.AppendLine("and 2nd line");
+        /// stringToRead.AppendLine("and the end");
+        ///
+        /// string readText;
+        /// using CancellationTokenSource tokenSource = new (TimeSpan.FromSeconds(1));
+        /// using StringReader reader = new (stringToRead.ToString());
+        /// while ((readText = await reader.ReadLineAsync(tokenSource.Token)) is not null)
+        /// {
+        ///     Console.WriteLine(readText);
+        /// }
+        /// </code>
+        /// </example>
+        public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested
+                ? ValueTask.FromCanceled<string?>(cancellationToken)
+                : new ValueTask<string?>(ReadLine());
+
         public override Task<string> ReadToEndAsync()
         {
             return Task.FromResult(ReadToEnd());
         }
 
+        /// <summary>
+        /// Reads all characters from the current position to the end of the string asynchronously and returns them as a single string.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous read operation. The value of the <c>TResult</c> parameter contains
+        /// a string with the characters from the current position to the end of the string.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The number of characters is larger than <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The string reader has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
+        /// <example>
+        /// The following example shows how to read an entire string asynchronously.
+        /// <code lang="C#">
+        /// using System.Text;
+        ///
+        /// StringBuilder stringToRead = new();
+        /// stringToRead.AppendLine("Characters in 1st line to read");
+        /// stringToRead.AppendLine("and 2nd line");
+        /// stringToRead.AppendLine("and the end");
+        ///
+        /// using CancellationTokenSource tokenSource = new (TimeSpan.FromSeconds(1));
+        /// using StringReader reader = new (stringToRead.ToString());
+        /// var readText = await reader.ReadToEndAsync(tokenSource.Token);
+        /// Console.WriteLine(readText);
+        /// </code>
+        /// </example>
+        public override Task<string> ReadToEndAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled<string>(cancellationToken)
+                : Task.FromResult(ReadToEnd());
+
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0 || count < 0)
             {
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -244,10 +312,8 @@ namespace System.IO
 
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0 || count < 0)
             {
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -264,5 +330,11 @@ namespace System.IO
             cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) :
             new ValueTask<int>(Read(buffer.Span));
         #endregion
+
+        [DoesNotReturn]
+        private static void ThrowObjectDisposedException_ReaderClosed()
+        {
+            throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+        }
     }
 }

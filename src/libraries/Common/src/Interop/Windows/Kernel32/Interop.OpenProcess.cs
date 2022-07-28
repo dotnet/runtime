@@ -8,7 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern SafeProcessHandle OpenProcess(int access, bool inherit, int processId);
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        internal static partial SafeProcessHandle OpenProcess(
+            int access, [MarshalAs(UnmanagedType.Bool)] bool inherit, int processId);
     }
 }

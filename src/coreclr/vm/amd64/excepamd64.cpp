@@ -6,8 +6,6 @@
  */
 //
 
-//
-
 #include "common.h"
 
 #include "frames.h"
@@ -26,8 +24,6 @@
 
 #include "exceptionhandling.h"
 #include "virtualcallstub.h"
-
-
 
 #if !defined(DACCESS_COMPILE)
 
@@ -199,7 +195,7 @@ RtlVirtualUnwind_Worker (
     // that the debugger is attched when we get here.
     _ASSERTE(CORDebuggerAttached());
 
-    LOG((LF_CORDB, LL_EVERYTHING, "RVU_CBSW: in RtlVitualUnwind_ClrDbgSafeWorker, ControlPc=0x%p\n", ControlPc));
+    LOG((LF_CORDB, LL_EVERYTHING, "RVU_CBSW: in RtlVirtualUnwind_ClrDbgSafeWorker, ControlPc=0x%p\n", ControlPc));
 
     BOOL     InEpilogue = FALSE;
     BOOL     HasManagedBreakpoint = FALSE;
@@ -367,7 +363,7 @@ RtlVirtualUnwind_Worker (
         // This is a jmp outside of the function, probably a tail call
         // to an import function.
         InEpilogue = TRUE;
-        NextByte += 2;
+        NextByte += 6;
     }
     else if (((TempOpcode & 0xf8) == AMD64_SIZE64_PREFIX)
             && (NextByte[1] == AMD64_JMP_IND_OP)
@@ -382,7 +378,27 @@ RtlVirtualUnwind_Worker (
         // Such an opcode is an unambiguous epilogue indication.
         //
         InEpilogue = TRUE;
+        // Account for displacement/SIB byte
+        int mod = NextByte[2] >> 6;
+        int rm = NextByte[2] & 0b111;
         NextByte += 3;
+        if (mod != 0b11)
+        {
+            // Has addressing mode
+            if (rm == 0b100)
+            {
+                NextByte++; // SIB byte
+            }
+
+            if (mod == 0b01)
+            {
+                NextByte++; // disp8
+            }
+            else if (mod == 0b10 || (mod == 0b00 && rm == 0b101))
+            {
+                NextByte += 4; // disp32
+            }
+        }
     }
 
     if (InEpilogue && HasUnmanagedBreakpoint)
@@ -416,7 +432,7 @@ RtlVirtualUnwind_Worker (
         // It is of note that we are significantly pruning the funtion here in making the fake
         // code buffer, all that we are making room for is 1 byte for the prologue, 1 byte for
         // function code and what is left of the epilogue to be executed. This is _very_ closely
-        // tied to the implmentation of RtlVirtualUnwind and the knowledge that by passing the
+        // tied to the implementation of RtlVirtualUnwind and the knowledge that by passing the
         // the test above and having InEpilogue==TRUE then the code path which will be followed
         // through RtlVirtualUnwind is known.
         //
@@ -500,7 +516,7 @@ RtlVirtualUnwind_Worker (
 
         // The buffer cleaning implementation here just runs through the buffer byte by byte trying
         // to get a real opcode from the patch table for any 0xCC that it finds. There is the
-        // possiblity that the epilogue will contain a 0xCC in an immediate value for which a
+        // possibility that the epilogue will contain a 0xCC in an immediate value for which a
         // patch won't be found and this will report a false positive for HasUnmanagedBreakpoint.
         BYTE* pCleanCodePc = pCodeBuffer + FAKE_PROLOG_SIZE + FAKE_FUNCTION_CODE_SIZE;
         BYTE* pRealCodePc = (BYTE*)ControlPc;
@@ -603,14 +619,13 @@ AdjustContextForVirtualStub(
             _ASSERTE(!"AV in ResolveStub at unknown instruction");
             return FALSE;
         }
-        SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + sizeof(void*))); // rollback push rdx
     }
     else
     {
         return FALSE;
     }
 
-    PCODE callsite = *dac_cast<PTR_PCODE>(GetSP(pContext)); 
+    PCODE callsite = *dac_cast<PTR_PCODE>(GetSP(pContext));
     if (pExceptionRecord != NULL)
     {
         pExceptionRecord->ExceptionAddress = (PVOID)callsite;
@@ -618,8 +633,15 @@ AdjustContextForVirtualStub(
     SetIP(pContext, callsite);
     SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + sizeof(void*))); // Move SP to where it was at the call site
 
+#if defined(TARGET_WINDOWS)
+    DWORD64 ssp = GetSSP(pContext);
+    if (ssp != 0)
+    {
+        SetSSP(pContext, ssp + sizeof(void*));
+    }
+#endif // TARGET_WINDOWS
+
     return TRUE;
 }
 
 #endif
-

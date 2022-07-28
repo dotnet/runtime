@@ -207,10 +207,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private ExportCardinalityCheckResult TryGetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition, out IEnumerable<Export>? exports)
         {
-            if (definition == null)
-            {
-                throw new ArgumentNullException(nameof(definition));
-            }
+            ArgumentNullException.ThrowIfNull(definition);
 
             exports = GetExportsCore(definition, atomicComposition);
 
@@ -227,10 +224,7 @@ namespace System.ComponentModel.Composition.Hosting
                 exports = null;
             }
 
-            if (exports == null)
-            {
-                exports = Array.Empty<Export>();
-            }
+            exports ??= Array.Empty<Export>();
 
             return checkResult;
         }

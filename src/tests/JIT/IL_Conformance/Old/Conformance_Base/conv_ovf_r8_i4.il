@@ -232,4 +232,4 @@ END:
 }
 
 
-.assembly conv_ovf_r8_i4.exe{}
+.assembly conv_ovf_r8_i4{}

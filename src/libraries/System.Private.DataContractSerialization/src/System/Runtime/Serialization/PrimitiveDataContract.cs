@@ -86,17 +86,8 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal MethodInfo XmlFormatReaderMethod
-        {
-            get
-            {
-                if (_helper.XmlFormatReaderMethod == null)
-                {
-                    _helper.XmlFormatReaderMethod = typeof(XmlReaderDelegator).GetMethod(ReadMethodName, Globals.ScanAllMembers)!;
-                }
-                return _helper.XmlFormatReaderMethod;
-            }
-        }
+        internal MethodInfo XmlFormatReaderMethod =>
+            _helper.XmlFormatReaderMethod ??= typeof(XmlReaderDelegator).GetMethod(ReadMethodName, Globals.ScanAllMembers)!;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
@@ -104,13 +95,13 @@ namespace System.Runtime.Serialization
             xmlWriter.WriteAnyType(obj);
         }
 
-        protected object HandleReadValue(object obj, XmlObjectSerializerReadContext context)
+        protected static object HandleReadValue(object obj, XmlObjectSerializerReadContext context)
         {
             context.AddNewObject(obj);
             return obj;
         }
 
-        protected bool TryReadNullAtTopLevel(XmlReaderDelegator reader)
+        protected static bool TryReadNullAtTopLevel(XmlReaderDelegator reader)
         {
             Attributes attributes = new Attributes();
             attributes.Read(reader);
@@ -345,7 +336,12 @@ namespace System.Runtime.Serialization
     {
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This warns because the call to Base has the type annotated with DynamicallyAccessedMembers so it warns" +
-            "when looking into the methods of NullPrimitiveDataContract. Because this just represents null, we suppress.")]
+            "when looking into the methods of NullPrimitiveDataContract which are annotated with RequiresUnreferencedCodeAttribute. " +
+            "Because this just represents null, we suppress.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:ReflectionToDynamicallyAccessedMembers",
+            Justification = "This warns because the call to Base has the type annotated with DynamicallyAccessedMembers so it warns" +
+            "when looking into the methods of NullPrimitiveDataContract which are annotated with DynamicallyAccessedMembersAttribute. " +
+            "Because this just represents null, we suppress.")]
         public NullPrimitiveDataContract() : base(typeof(NullPrimitiveDataContract), DictionaryGlobals.EmptyString, DictionaryGlobals.EmptyString)
         {
 
@@ -620,6 +616,10 @@ namespace System.Runtime.Serialization
 
     internal sealed class DateTimeDataContract : PrimitiveDataContract
     {
+        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
+            Justification = "DAM on the first parameter of the PrimitiveDataContract constructor references methods of DateTime, " +
+                            "which has a compiler-generated local function LowGranularityNonCachedFallback that calls PInvokes " +
+                            "which are considered potentially dangerous. Data contract serialization will not access this local function.")]
         public DateTimeDataContract() : base(typeof(DateTime), DictionaryGlobals.DateTimeLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
@@ -842,7 +842,7 @@ namespace System.Runtime.Serialization
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             object obj;
-            if (reader.IsEmptyElement)
+            if (XmlReaderDelegator.IsEmptyElement)
             {
                 reader.Skip();
                 obj = new object();

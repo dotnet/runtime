@@ -7,7 +7,8 @@
   .ver 4:0:0:0
 }
 
-.assembly Test1 {}
+.assembly 'bug2' {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 .class FullProof {
 .method static int32 Test() {
@@ -516,6 +517,9 @@ IL_500:   ret			//
 
 .method public static int32  Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack 3
    .try

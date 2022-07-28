@@ -22,7 +22,7 @@ namespace System.Runtime.Caching
          * highlights how our behavior might be slightly different from windows in these
          * cases since this was a monitor that cared about actual physical memory.
          */
-#if NETCOREAPP3_1_OR_GREATER
+#if NETCOREAPP
         private int lastGCCount;
 
         protected override int GetCurrentPressure()

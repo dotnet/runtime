@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
@@ -34,7 +34,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.TraceSource\src\Microsoft.Extensions.Logging.TraceSource.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.DiagnosticSource\src\System.Diagnostics.DiagnosticSource.csproj" />
   </ItemGroup>
 

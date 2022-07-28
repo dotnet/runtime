@@ -29,7 +29,7 @@
 
 #else
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
 
 typedef ArrayDPTR(const uint8_t) PTR_CBYTE;
 
@@ -66,7 +66,7 @@ struct GCInfoToken
     }
 };
 
-#else // FEATURE_REDHAWK
+#else // FEATURE_NATIVEAOT
 
 // Stuff from cgencpu.h:
 
@@ -85,6 +85,8 @@ inline TADDR GetSP(T_CONTEXT* context)
     return (TADDR)context->Sp;
 #elif defined(TARGET_ARM64)
     return (TADDR)context->Sp;
+#elif defined(TARGET_LOONGARCH64)
+    return (TADDR)context->Sp;
 #else
     _ASSERTE(!"nyi for platform");
 #endif
@@ -97,6 +99,8 @@ inline PCODE GetIP(T_CONTEXT* context)
 #elif defined(TARGET_ARM)
     return (PCODE)context->Pc;
 #elif defined(TARGET_ARM64)
+    return (PCODE)context->Pc;
+#elif defined(TARGET_LOONGARCH64)
     return (PCODE)context->Pc;
 #else
     _ASSERTE(!"nyi for platform");
@@ -161,7 +165,7 @@ typedef void (*GCEnumCallback)(
 
 #include "regdisp.h"
 
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
 #ifndef _strike_h
 
@@ -212,9 +216,9 @@ enum GcInfoDecoderFlags
     DECODE_EDIT_AND_CONTINUE     = 0x800,
     DECODE_REVERSE_PINVOKE_VAR   = 0x1000,
     DECODE_RETURN_KIND           = 0x2000,
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     DECODE_HAS_TAILCALLS         = 0x4000,
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 };
 
 enum GcInfoHeaderFlags
@@ -231,10 +235,10 @@ enum GcInfoHeaderFlags
     GC_INFO_HAS_STACK_BASE_REGISTER     = 0x40,
 #ifdef TARGET_AMD64
     GC_INFO_WANTS_REPORT_ONLY_LEAF      = 0x80,
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     GC_INFO_HAS_TAILCALLS               = 0x80,
 #endif // TARGET_AMD64
-    GC_INFO_HAS_EDIT_AND_CONTINUE_PRESERVED_SLOTS = 0x100,
+    GC_INFO_HAS_EDIT_AND_CONTINUE_INFO = 0x100,
     GC_INFO_REVERSE_PINVOKE_FRAME = 0x200,
 
     GC_INFO_FLAGS_BIT_SIZE_VERSION_1    = 9,
@@ -536,13 +540,16 @@ public:
     bool    HasMethodTableGenericsInstContext();
     bool    GetIsVarArg();
     bool    WantsReportOnlyLeaf();
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool    HasTailCalls();
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
     ReturnKind GetReturnKind();
     UINT32  GetCodeLength();
     UINT32  GetStackBaseRegister();
     UINT32  GetSizeOfEditAndContinuePreservedArea();
+#ifdef TARGET_ARM64
+    UINT32  GetSizeOfEditAndContinueFixedStackFrame();
+#endif
     size_t  GetNumBytesRead();
 
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
@@ -561,7 +568,7 @@ private:
     bool    m_GenericSecretParamIsMT;
 #ifdef TARGET_AMD64
     bool    m_WantsReportOnlyLeaf;
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool    m_HasTailCalls;
 #endif // TARGET_AMD64
     INT32   m_SecurityObjectStackSlot;
@@ -574,6 +581,9 @@ private:
     UINT32  m_CodeLength;
     UINT32  m_StackBaseRegister;
     UINT32  m_SizeOfEditAndContinuePreservedArea;
+#ifdef TARGET_ARM64
+    UINT32  m_SizeOfEditAndContinueFixedStackFrame;
+#endif
     ReturnKind m_ReturnKind;
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     UINT32  m_NumSafePoints;

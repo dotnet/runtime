@@ -20,7 +20,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module test3.exe
+.assembly extern xunit.core {}
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -34,6 +34,9 @@
   .field public static int32 size_to_test
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  4
     .locals init (bool V_0,

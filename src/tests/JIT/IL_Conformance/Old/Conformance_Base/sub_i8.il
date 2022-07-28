@@ -323,4 +323,4 @@ FAIL:
 	ret
 }
 }
-.assembly sub_i8.exe{}
+.assembly sub_i8{}

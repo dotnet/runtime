@@ -8,11 +8,10 @@ using System.Reflection.Emit;
 using System.Security;
 using System.Xml.Xsl.Runtime;
 using System.Runtime.Versioning;
+using DebuggingModes = System.Diagnostics.DebuggableAttribute.DebuggingModes;
 
 namespace System.Xml.Xsl.IlGen
 {
-    using DebuggingModes = DebuggableAttribute.DebuggingModes;
-
     internal enum XmlILMethodAttributes
     {
         None = 0,
@@ -29,7 +28,7 @@ namespace System.Xml.Xsl.IlGen
         private Hashtable _methods;
         private readonly bool _useLRE, _emitSymbols;
 
-        private const string RuntimeName = "{" + XmlReservedNs.NsXslDebug + "}" + "runtime";
+        private const string RuntimeName = $"{{{XmlReservedNs.NsXslDebug}}}runtime";
 
         private static ModuleBuilder CreateLREModule()
         {
@@ -127,7 +126,7 @@ namespace System.Xml.Xsl.IlGen
             {
                 // Add unique id to end of name in order to make it unique within this module
                 uniqueId++;
-                name = nameOrig + " (" + uniqueId + ")";
+                name = $"{nameOrig} ({uniqueId})";
             }
 
             if (!isRaw)
@@ -240,7 +239,7 @@ namespace System.Xml.Xsl.IlGen
 
             if (!_useLRE)
             {
-                typBaked = _typeBldr!.CreateTypeInfo()!.AsType();
+                typBaked = _typeBldr!.CreateType();
 
                 // Replace all MethodInfos in this.methods
                 methodsBaked = new Hashtable(_methods.Count);
@@ -275,7 +274,7 @@ namespace System.Xml.Xsl.IlGen
 
             System.Threading.Interlocked.Increment(ref s_assemblyId);
             name = new AssemblyName();
-            name.Name = "System.Xml.Xsl.CompiledQuery." + s_assemblyId;
+            name.Name = $"System.Xml.Xsl.CompiledQuery.{s_assemblyId}";
 
             return name;
         }

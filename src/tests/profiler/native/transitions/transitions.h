@@ -5,13 +5,15 @@
 
 #include "../profiler.h"
 
+#define NO_TRANSITION ((COR_PRF_TRANSITION_REASON)-1)
+
 class Transitions : public Profiler
 {
 public:
-    Transitions();
+    Transitions() = default;
     virtual ~Transitions() = default;
 
-    virtual GUID GetClsid();
+    static GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
     virtual HRESULT STDMETHODCALLTYPE UnmanagedToManagedTransition(FunctionID functionID, COR_PRF_TRANSITION_REASON reason);
@@ -19,8 +21,22 @@ public:
 
 private:
     std::atomic<int> _failures;
-    std::atomic<bool> _sawEnter;
-    std::atomic<bool> _sawLeave;
 
-    bool FunctionIsTargetFunction(FunctionID functionID);
+    struct TransitionInstance
+    {
+        TransitionInstance()
+            : UnmanagedToManaged{ NO_TRANSITION }
+            , ManagedToUnmanaged{ NO_TRANSITION }
+        { }
+
+        COR_PRF_TRANSITION_REASON UnmanagedToManaged;
+        COR_PRF_TRANSITION_REASON ManagedToUnmanaged;
+    };
+
+    TransitionInstance _pinvoke;
+    TransitionInstance _reversePinvoke;
+    String expectedPinvokeName;
+    String expectedReversePInvokeName;
+
+    bool FunctionIsTargetFunction(FunctionID functionID, TransitionInstance** inst);
 };

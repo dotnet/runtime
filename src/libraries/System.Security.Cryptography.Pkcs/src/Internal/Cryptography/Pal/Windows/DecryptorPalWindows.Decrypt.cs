@@ -16,7 +16,7 @@ namespace Internal.Cryptography.Pal.Windows
 {
     internal sealed partial class DecryptorPalWindows : DecryptorPal
     {
-        public unsafe sealed override ContentInfo? TryDecrypt(
+        public sealed override unsafe ContentInfo? TryDecrypt(
             RecipientInfo recipientInfo,
             X509Certificate2? cert,
             AsymmetricAlgorithm? privateKey,
@@ -162,21 +162,34 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        private Exception? TryDecryptTrans(KeyTransRecipientInfo recipientInfo, SafeProvOrNCryptKeyHandle hKey, CryptKeySpec keySpec)
+        private unsafe Exception? TryDecryptTrans(KeyTransRecipientInfo recipientInfo, SafeProvOrNCryptKeyHandle hKey, CryptKeySpec keySpec)
         {
             KeyTransRecipientInfoPalWindows pal = (KeyTransRecipientInfoPalWindows)(recipientInfo.Pal);
 
-            CMSG_CTRL_DECRYPT_PARA decryptPara;
-            decryptPara.cbSize = Marshal.SizeOf<CMSG_CTRL_DECRYPT_PARA>();
-            decryptPara.hKey = hKey;
-            decryptPara.dwKeySpec = keySpec;
-            decryptPara.dwRecipientIndex = pal.Index;
+            bool keyAddRefd = false;
 
-            bool success = Interop.Crypt32.CryptMsgControl(_hCryptMsg, 0, MsgControlType.CMSG_CTRL_DECRYPT, ref decryptPara);
-            if (!success)
-                return Marshal.GetHRForLastWin32Error().ToCryptographicException();
+            try
+            {
+                CMSG_CTRL_DECRYPT_PARA decryptPara;
+                decryptPara.cbSize = sizeof(CMSG_CTRL_DECRYPT_PARA);
+                hKey.DangerousAddRef(ref keyAddRefd);
+                decryptPara.hKey = hKey.DangerousGetHandle();
+                decryptPara.dwKeySpec = keySpec;
+                decryptPara.dwRecipientIndex = pal.Index;
 
-            return null;
+                bool success = Interop.Crypt32.CryptMsgControl(_hCryptMsg, 0, MsgControlType.CMSG_CTRL_DECRYPT, ref decryptPara);
+                if (!success)
+                    return Marshal.GetHRForLastWin32Error().ToCryptographicException();
+
+                return null;
+            }
+            finally
+            {
+                if (keyAddRefd)
+                {
+                    hKey.DangerousRelease();
+                }
+            }
         }
 
         private Exception? TryDecryptAgree(KeyAgreeRecipientInfo keyAgreeRecipientInfo, SafeProvOrNCryptKeyHandle hKey, CryptKeySpec keySpec, X509Certificate2Collection originatorCerts, X509Certificate2Collection extraStore)
@@ -187,46 +200,58 @@ namespace Internal.Cryptography.Pal.Windows
                 return pal.WithCmsgCmsRecipientInfo<Exception?>(
                     delegate (CMSG_KEY_AGREE_RECIPIENT_INFO* pKeyAgreeRecipientInfo)
                     {
-                        CMSG_CTRL_KEY_AGREE_DECRYPT_PARA decryptPara = default(CMSG_CTRL_KEY_AGREE_DECRYPT_PARA);
-                        decryptPara.cbSize = Marshal.SizeOf<CMSG_CTRL_KEY_AGREE_DECRYPT_PARA>();
-                        decryptPara.hProv = hKey;
-                        decryptPara.dwKeySpec = keySpec;
-                        decryptPara.pKeyAgree = pKeyAgreeRecipientInfo;
-                        decryptPara.dwRecipientIndex = pal.Index;
-                        decryptPara.dwRecipientEncryptedKeyIndex = pal.SubIndex;
-                        CMsgKeyAgreeOriginatorChoice originatorChoice = pKeyAgreeRecipientInfo->dwOriginatorChoice;
-                        switch (originatorChoice)
+                        bool keyAddRefd = false;
+                        try
                         {
-                            case CMsgKeyAgreeOriginatorChoice.CMSG_KEY_AGREE_ORIGINATOR_CERT:
-                                {
-                                    X509Certificate2Collection candidateCerts = new X509Certificate2Collection();
-                                    candidateCerts.AddRange(PkcsHelpers.GetStoreCertificates(StoreName.AddressBook, StoreLocation.CurrentUser, openExistingOnly: true));
-                                    candidateCerts.AddRange(PkcsHelpers.GetStoreCertificates(StoreName.AddressBook, StoreLocation.LocalMachine, openExistingOnly: true));
-                                    candidateCerts.AddRange(originatorCerts);
-                                    candidateCerts.AddRange(extraStore);
-                                    SubjectIdentifier originatorId = pKeyAgreeRecipientInfo->OriginatorCertId.ToSubjectIdentifier();
-                                    X509Certificate2? originatorCert = candidateCerts.TryFindMatchingCertificate(originatorId);
-                                    if (originatorCert == null)
-                                        return ErrorCode.CRYPT_E_NOT_FOUND.ToCryptographicException();
-                                    using (SafeCertContextHandle hCertContext = originatorCert.CreateCertContextHandle())
+                            CMSG_CTRL_KEY_AGREE_DECRYPT_PARA decryptPara = default(CMSG_CTRL_KEY_AGREE_DECRYPT_PARA);
+                            decryptPara.cbSize = sizeof(CMSG_CTRL_KEY_AGREE_DECRYPT_PARA);
+                            hKey.DangerousAddRef(ref keyAddRefd);
+                            decryptPara.hProv = hKey.DangerousGetHandle();
+                            decryptPara.dwKeySpec = keySpec;
+                            decryptPara.pKeyAgree = pKeyAgreeRecipientInfo;
+                            decryptPara.dwRecipientIndex = pal.Index;
+                            decryptPara.dwRecipientEncryptedKeyIndex = pal.SubIndex;
+                            CMsgKeyAgreeOriginatorChoice originatorChoice = pKeyAgreeRecipientInfo->dwOriginatorChoice;
+                            switch (originatorChoice)
+                            {
+                                case CMsgKeyAgreeOriginatorChoice.CMSG_KEY_AGREE_ORIGINATOR_CERT:
                                     {
-                                        CERT_CONTEXT* pOriginatorCertContext = hCertContext.DangerousGetCertContext();
-                                        decryptPara.OriginatorPublicKey = pOriginatorCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey;
+                                        X509Certificate2Collection candidateCerts = new X509Certificate2Collection();
+                                        candidateCerts.AddRange(PkcsHelpers.GetStoreCertificates(StoreName.AddressBook, StoreLocation.CurrentUser, openExistingOnly: true));
+                                        candidateCerts.AddRange(PkcsHelpers.GetStoreCertificates(StoreName.AddressBook, StoreLocation.LocalMachine, openExistingOnly: true));
+                                        candidateCerts.AddRange(originatorCerts);
+                                        candidateCerts.AddRange(extraStore);
+                                        SubjectIdentifier originatorId = pKeyAgreeRecipientInfo->OriginatorCertId.ToSubjectIdentifier();
+                                        X509Certificate2? originatorCert = candidateCerts.TryFindMatchingCertificate(originatorId);
+                                        if (originatorCert == null)
+                                            return ErrorCode.CRYPT_E_NOT_FOUND.ToCryptographicException();
+                                        using (SafeCertContextHandle hCertContext = originatorCert.CreateCertContextHandle())
+                                        {
+                                            CERT_CONTEXT* pOriginatorCertContext = hCertContext.DangerousGetCertContext();
+                                            decryptPara.OriginatorPublicKey = pOriginatorCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey;
 
-                                        // Do not factor this call out of the switch statement as leaving this "using" block will free up
-                                        // native memory that decryptPara points to.
+                                            // Do not factor this call out of the switch statement as leaving this "using" block will free up
+                                            // native memory that decryptPara points to.
+                                            return TryExecuteDecryptAgree(ref decryptPara);
+                                        }
+                                    }
+
+                                case CMsgKeyAgreeOriginatorChoice.CMSG_KEY_AGREE_ORIGINATOR_PUBLIC_KEY:
+                                    {
+                                        decryptPara.OriginatorPublicKey = pKeyAgreeRecipientInfo->OriginatorPublicKeyInfo.PublicKey;
                                         return TryExecuteDecryptAgree(ref decryptPara);
                                     }
-                                }
 
-                            case CMsgKeyAgreeOriginatorChoice.CMSG_KEY_AGREE_ORIGINATOR_PUBLIC_KEY:
-                                {
-                                    decryptPara.OriginatorPublicKey = pKeyAgreeRecipientInfo->OriginatorPublicKeyInfo.PublicKey;
-                                    return TryExecuteDecryptAgree(ref decryptPara);
-                                }
-
-                            default:
-                                return new CryptographicException(SR.Format(SR.Cryptography_Cms_Invalid_Originator_Identifier_Choice, originatorChoice));
+                                default:
+                                    return new CryptographicException(SR.Format(SR.Cryptography_Cms_Invalid_Originator_Identifier_Choice, originatorChoice));
+                            }
+                        }
+                        finally
+                        {
+                            if (keyAddRefd)
+                            {
+                                hKey.DangerousRelease();
+                            }
                         }
                     });
             }

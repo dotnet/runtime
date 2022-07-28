@@ -56,7 +56,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        public void IsSyncronizedGetsFalse()
+        public void IsSynchronizedGetsFalse()
         {
             XmlDocument doc = CreateDocumentWithElement();
             XmlElement element = doc.DocumentElement;

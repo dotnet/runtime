@@ -8,7 +8,7 @@
 
 //TEST ASSEMBLY:
 .assembly Generated170 { .hash algorithm 0x00008004 }
-.module Generated170.exe
+.assembly extern xunit.core {}
 
 .class public BaseClass0 
 {
@@ -53,7 +53,7 @@
 	.method public hidebysig virtual instance int32 GetHashCode() cil managed { ldc.i4.0 ret }
 	.method public hidebysig virtual instance string ToString() cil managed { ldstr "" ret }
 }
-.class private auto ansi beforefieldinit Framework {
+.class public auto ansi beforefieldinit Generated170 {
 	.method static void M.BaseClass0<(BaseClass0)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
@@ -381,12 +381,15 @@
 	}
 	.method public hidebysig static int32  Main() cil managed
 	{
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  10
-		call void Framework::MethodCallingTest()
-		call void Framework::ConstrainedCallsTest()
-		call void Framework::StructConstrainedInterfaceCallsTest()
-		call void Framework::CalliTest()
+		call void Generated170::MethodCallingTest()
+		call void Generated170::ConstrainedCallsTest()
+		call void Generated170::StructConstrainedInterfaceCallsTest()
+		call void Generated170::CalliTest()
 		ldc.i4 100
 		ret
 	}

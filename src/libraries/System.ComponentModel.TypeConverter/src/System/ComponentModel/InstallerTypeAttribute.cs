@@ -12,22 +12,19 @@ namespace System.ComponentModel
     public class InstallerTypeAttribute : Attribute
     {
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        private readonly string _typeName;
+        private readonly string? _typeName;
 
         /// <summary>
         /// Initializes a new instance of the System.Windows.Forms.ComponentModel.InstallerTypeAttribute class.
         /// </summary>
         public InstallerTypeAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type installerType)
         {
-            if (installerType == null)
-            {
-                throw new ArgumentNullException(nameof(installerType));
-            }
+            ArgumentNullException.ThrowIfNull(installerType);
 
             _typeName = installerType.AssemblyQualifiedName;
         }
 
-        public InstallerTypeAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName)
+        public InstallerTypeAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string? typeName)
         {
             _typeName = typeName;
         }
@@ -36,9 +33,9 @@ namespace System.ComponentModel
         /// Gets the type of installer associated with this attribute.
         /// </summary>
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-        public virtual Type InstallerType => Type.GetType(_typeName);
+        public virtual Type? InstallerType => Type.GetType(_typeName!);
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == this)
             {

@@ -102,7 +102,7 @@ HRESULT CordbMDA::QueryInterface(REFIID riid, void **ppInterface)
 //
 // Returns: S_OK on success.
 //-----------------------------------------------------------------------------
-HRESULT CopyOutString(LPCWSTR pInputString, ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+HRESULT CopyOutString(LPCWSTR pInputString, ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     _ASSERTE(pInputString != NULL);
     ULONG32 len = (ULONG32) wcslen(pInputString) + 1;
@@ -144,7 +144,7 @@ HRESULT CopyOutString(LPCWSTR pInputString, ULONG32 cchName, ULONG32 * pcchName,
 // the type from that based off the schema.
 // See CopyOutString for parameter details.
 //-----------------------------------------------------------------------------
-HRESULT CordbMDA::GetName(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+HRESULT CordbMDA::GetName(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)
@@ -159,7 +159,7 @@ HRESULT CordbMDA::GetName(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part
 // Get a string description of the MDA. This may be empty (0-length).
 // See CopyOutString for parameter details.
 //-----------------------------------------------------------------------------
-HRESULT CordbMDA::GetDescription(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+HRESULT CordbMDA::GetDescription(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)
@@ -176,7 +176,7 @@ HRESULT CordbMDA::GetDescription(ULONG32 cchName, ULONG32 * pcchName, __out_ecou
 // See the MDA documentation for the schema for this XML stream.
 // See CopyOutString for parameter details.
 //-----------------------------------------------------------------------------
-HRESULT CordbMDA::GetXML(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+HRESULT CordbMDA::GetXML(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)

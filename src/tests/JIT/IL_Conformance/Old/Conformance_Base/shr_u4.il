@@ -134,4 +134,4 @@ FAIL:
 .try TRY_START to TRY_END catch [mscorlib]System.Exception handler HANDLER to END_HANDLER
 }
 }
-.assembly shr_u4.exe{}
+.assembly shr_u4{}

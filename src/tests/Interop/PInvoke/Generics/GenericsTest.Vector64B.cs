@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -45,27 +45,27 @@ unsafe partial class GenericsTest
         Vector64<bool> value2;
         GenericsNative.GetVector64BOut(true, false, true, false, true, false, true, false, &value2);
         Vector64<byte> tValue2 = *(Vector64<byte>*)&value2;
-        Assert.AreEqual(tValue2.GetElement(0), 1);
-        Assert.AreEqual(tValue2.GetElement(1), 0);
-        Assert.AreEqual(tValue2.GetElement(2), 1);
-        Assert.AreEqual(tValue2.GetElement(3), 0);
-        Assert.AreEqual(tValue2.GetElement(4), 1);
-        Assert.AreEqual(tValue2.GetElement(5), 0);
-        Assert.AreEqual(tValue2.GetElement(6), 1);
-        Assert.AreEqual(tValue2.GetElement(7), 0);
+        Assert.Equal(tValue2.GetElement(0), 1);
+        Assert.Equal(tValue2.GetElement(1), 0);
+        Assert.Equal(tValue2.GetElement(2), 1);
+        Assert.Equal(tValue2.GetElement(3), 0);
+        Assert.Equal(tValue2.GetElement(4), 1);
+        Assert.Equal(tValue2.GetElement(5), 0);
+        Assert.Equal(tValue2.GetElement(6), 1);
+        Assert.Equal(tValue2.GetElement(7), 0);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64BOut(true, false, true, false, true, false, true, false, out Vector64<bool> value3));
 
         Vector64<bool>* value4 = GenericsNative.GetVector64BPtr(true, false, true, false, true, false, true, false);
         Vector64<byte>* tValue4 = (Vector64<byte>*)value4;
-        Assert.AreEqual(tValue4->GetElement(0), 1);
-        Assert.AreEqual(tValue4->GetElement(1), 0);
-        Assert.AreEqual(tValue4->GetElement(2), 1);
-        Assert.AreEqual(tValue4->GetElement(3), 0);
-        Assert.AreEqual(tValue4->GetElement(4), 1);
-        Assert.AreEqual(tValue4->GetElement(5), 0);
-        Assert.AreEqual(tValue4->GetElement(6), 1);
-        Assert.AreEqual(tValue4->GetElement(7), 0);
+        Assert.Equal(tValue4->GetElement(0), 1);
+        Assert.Equal(tValue4->GetElement(1), 0);
+        Assert.Equal(tValue4->GetElement(2), 1);
+        Assert.Equal(tValue4->GetElement(3), 0);
+        Assert.Equal(tValue4->GetElement(4), 1);
+        Assert.Equal(tValue4->GetElement(5), 0);
+        Assert.Equal(tValue4->GetElement(6), 1);
+        Assert.Equal(tValue4->GetElement(7), 0);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64BRef(true, false, true, false, true, false, true, false));
 

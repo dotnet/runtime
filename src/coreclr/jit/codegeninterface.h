@@ -96,10 +96,8 @@ public:
                                    bool*     revPtr,
                                    GenTree** rv1Ptr,
                                    GenTree** rv2Ptr,
-#if SCALED_ADDR_MODES
                                    unsigned* mulPtr,
-#endif // SCALED_ADDR_MODES
-                                   ssize_t* cnsPtr) = 0;
+                                   ssize_t*  cnsPtr) = 0;
 
     GCInfo gcInfo;
 
@@ -114,7 +112,7 @@ protected:
 private:
 #if defined(TARGET_XARCH)
     static const insFlags instInfo[INS_count];
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     static const BYTE instInfo[INS_count];
 #else
 #error Unsupported target architecture
@@ -150,8 +148,8 @@ protected:
 
 public:
     bool genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf);
-    bool genUseOptimizedWriteBarriers(GenTree* tgt, GenTree* assignVal);
-    CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GenTree* tgt, GCInfo::WriteBarrierForm wbf);
+    bool genUseOptimizedWriteBarriers(GenTreeStoreInd* store);
+    CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GCInfo::WriteBarrierForm wbf);
 
     // The following property indicates whether the current method sets up
     // an explicit stack frame or not.
@@ -298,8 +296,6 @@ public:
     unsigned InferStructOpSizeAlign(GenTree* op, unsigned* alignmentWB);
     unsigned InferOpSizeAlign(GenTree* op, unsigned* alignmentWB);
 
-    void genMarkTreeInReg(GenTree* tree, regNumber reg);
-
     // Methods to abstract target information
 
     bool validImmForInstr(instruction ins, target_ssize_t val, insFlags flags = INS_FLAGS_DONT_CARE);
@@ -312,7 +308,6 @@ public:
     instruction ins_Load(var_types srcType, bool aligned = false);
     instruction ins_Store(var_types dstType, bool aligned = false);
     instruction ins_StoreFromSrc(regNumber srcReg, var_types dstType, bool aligned = false);
-    static instruction ins_FloatLoad(var_types type = TYP_DOUBLE);
 
     // Methods for spilling - used by RegSet
     void spillReg(var_types type, TempDsc* tmp, regNumber reg);
@@ -363,7 +358,7 @@ public:
         m_cgInterruptible = value;
     }
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 
     bool GetHasTailCalls()
     {
@@ -377,9 +372,9 @@ public:
 
 private:
     bool m_cgInterruptible;
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     bool m_cgHasTailCalls;
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
     //  The following will be set to true if we've determined that we need to
     //  generate a full-blown pointer register map for the current method.

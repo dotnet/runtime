@@ -189,7 +189,7 @@ namespace System.Drawing
         /// <summary>
         /// Creates a human-readable string that represents this <see cref='System.Drawing.Size'/>.
         /// </summary>
-        public override readonly string ToString() => "{Width=" + width.ToString() + ", Height=" + height.ToString() + "}";
+        public override readonly string ToString() => $"{{Width={width}, Height={height}}}";
 
         /// <summary>
         /// Multiplies <see cref="Size"/> by an <see cref="int"/> producing <see cref="Size"/>.

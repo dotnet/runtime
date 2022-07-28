@@ -24,7 +24,7 @@ namespace System.Tests
             for (int i = 0; i < values.Length; i++)
             {
                 values[i] = (byte)i;
-                sb.Append(i.ToString("X2"));
+                sb.Append($"{i:X2}");
             }
 
             Assert.Equal(sb.ToString(), Convert.ToHexString(values));

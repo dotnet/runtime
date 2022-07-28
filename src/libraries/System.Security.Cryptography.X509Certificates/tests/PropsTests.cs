@@ -35,15 +35,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void TestSerialBytes()
         {
             byte[] expectedSerialBytes = "b00000000100dd9f3bd08b0aaf11b000000033".HexToByteArray();
-            string expectedSerialString = "33000000B011AF0A8BD03B9FDD0001000000B0";
+            const string ExpectedSerialString = "33000000B011AF0A8BD03B9FDD0001000000B0";
 
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
                 byte[] serial = c.GetSerialNumber();
                 Assert.Equal(expectedSerialBytes, serial);
 
-                Assert.Equal(expectedSerialString, c.SerialNumber);
+                Assert.Equal(ExpectedSerialString, c.SerialNumber);
+                Assert.Equal(ExpectedSerialString, c.SerialNumberBytes.ByteArrayToHex());
+
+                ReadOnlyMemory<byte> serial1 = c.SerialNumberBytes;
+                ReadOnlyMemory<byte> serial2 = c.SerialNumberBytes;
+                Assert.True(serial1.Span == serial2.Span, "Two calls to SerialNumberBytes return the same buffer");
             }
+        }
+
+        [Fact]
+        public static void SerialNumberBytes_LifetimeIndependentOfCert()
+        {
+            const string ExpectedSerialString = "33000000B011AF0A8BD03B9FDD0001000000B0";
+
+            ReadOnlyMemory<byte> serial;
+
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                serial = cert.SerialNumberBytes;
+            }
+
+            Assert.Equal(ExpectedSerialString, serial.ByteArrayToHex());
         }
 
         [Theory]
@@ -386,6 +406,20 @@ Wry5FNNo
                 Assert.Equal("Microsoft Corporation", s);
                 s = c.GetNameInfo(X509NameType.DnsName, true);
                 Assert.Equal("Microsoft Code Signing PCA", s);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void GetNameInfo_HandlesUtf8Encoding(bool issuer)
+        {
+            using (X509Certificate2 c = new X509Certificate2(TestData.CertificateWithUtf8))
+            {
+                // Russian word for "potato" in Cyrillic, kartoshka.
+                string expected = "\u043A\u0430\u0440\u0442\u043E\u0448\u043A\u0430";
+                string cn = c.GetNameInfo(X509NameType.SimpleName, issuer);
+                Assert.Equal(expected, cn);
             }
         }
 

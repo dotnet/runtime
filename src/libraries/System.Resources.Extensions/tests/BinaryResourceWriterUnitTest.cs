@@ -69,36 +69,36 @@ namespace System.Resources.Extensions.Tests
             {
                 writer.AddResource("duplicate", "value");
 
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", "value"));
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", new object()));
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", new byte[0]));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", "value"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", new object()));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", new byte[0]));
 
                 using (var stream = new MemoryStream())
                 {
-                    Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", stream));
-                    Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", stream, true));
-                    Assert.Throws<ArgumentException>(null, () => writer.AddActivatorResource("duplicate", stream, "System.DayOfWeek", false));
+                    AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", stream));
+                    AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", stream, true));
+                    AssertExtensions.Throws<ArgumentException>(null, () => writer.AddActivatorResource("duplicate", stream, "System.DayOfWeek", false));
                 }
 
-                Assert.Throws<ArgumentException>(null, () => writer.AddBinaryFormattedResource("duplicate", new byte[1], "System.DayOfWeek"));
-                Assert.Throws<ArgumentException>(null, () => writer.AddTypeConverterResource("duplicate", new byte[1], "System.DayOfWeek"));
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", "Monday", "System.DayOfWeek"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddBinaryFormattedResource("duplicate", new byte[1], "System.DayOfWeek"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddTypeConverterResource("duplicate", new byte[1], "System.DayOfWeek"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", "Monday", "System.DayOfWeek"));
 
 
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("Duplicate", "value"));
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("dUplicate", new object()));
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("duPlicate", new byte[0]));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("Duplicate", "value"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("dUplicate", new object()));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duPlicate", new byte[0]));
 
                 using (var stream = new MemoryStream())
                 {
-                    Assert.Throws<ArgumentException>(null, () => writer.AddResource("dupLicate", stream));
-                    Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplIcate", stream, true));
-                    Assert.Throws<ArgumentException>(null, () => writer.AddActivatorResource("dupliCate", stream, "System.DayOfWeek", false));
+                    AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("dupLicate", stream));
+                    AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplIcate", stream, true));
+                    AssertExtensions.Throws<ArgumentException>(null, () => writer.AddActivatorResource("dupliCate", stream, "System.DayOfWeek", false));
                 }
 
-                Assert.Throws<ArgumentException>(null, () => writer.AddBinaryFormattedResource("duplicAte", new byte[1], "System.DayOfWeek"));
-                Assert.Throws<ArgumentException>(null, () => writer.AddTypeConverterResource("duplicaTe", new byte[1], "System.DayOfWeek"));
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicatE", "Monday", "System.DayOfWeek"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddBinaryFormattedResource("duplicAte", new byte[1], "System.DayOfWeek"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddTypeConverterResource("duplicaTe", new byte[1], "System.DayOfWeek"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicatE", "Monday", "System.DayOfWeek"));
             }
         }
 

@@ -1,0 +1,100 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>ILCompiler</RootNamespace>
+    <AssemblyName>ILCompiler.RyuJit</AssemblyName>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Platforms>x64;x86</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+
+    <!-- We're binplacing these into an existing publish layout so that F5 build in VS updates
+         the same bits tests expect to see in artifacts/ilc. That way we never need to wonder which
+         binaries are up to date and which are stale. -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <Configurations>Debug;Release;Checked</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
+    <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\ILCompiler.Compiler\ILCompiler.Compiler.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\RyuJitNodeFactory.cs" />
+    <Compile Include="Compiler\ProfileDataManager.cs" />
+    <Compile Include="Compiler\RyuJitCompilation.cs" />
+    <Compile Include="Compiler\RyuJitCompilationBuilder.cs" />
+    <Compile Include="JitInterface\CorInfoImpl.RyuJit.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Common\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\ArrayBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Internal\Runtime\MethodTable.Constants.cs">
+      <Link>Common\MethodTable.Constants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Internal\Runtime\CorConstants.cs">
+      <Link>Common\CorConstants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\System\FormattingHelpers.cs">
+      <Link>Common\FormattingHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\ILCompiler.Compiler\Compiler\JitHelper.cs">
+      <Link>Compiler\JitHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
+      <Link>IL\HelperExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs">
+      <Link>IL\ILReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\TypeSystemThrowingILEmitter.cs">
+      <Link>IL\Stubs\TypeSystemThrowingILEmitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\JitConfigProvider.cs">
+      <Link>JitInterface\JitConfigProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\TypeString.cs">
+      <Link>JitInterface\TypeString.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\CorInfoBase.cs">
+      <Link>JitInterface\CorInfoBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\CorInfoImpl.cs">
+      <Link>JitInterface\CorInfoImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\MemoryHelper.cs">
+      <Link>JitInterface\MemoryHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\UnboxingMethodDesc.cs">
+      <Link>JitInterface\UnboxingMethodDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\UnboxingMethodDescFactory.cs">
+      <Link>JitInterface\UnboxingMethodDescFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\SystemVStructClassificator.cs">
+      <Link>JitInterface\SystemVStructClassificator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\LoongArch64PassStructInRegister.cs">
+      <Link>JitInterface\LoongArch64PassStructInRegister.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs">
+      <Link>Pgo\TypeSystemEntityOrUnknown.cs</Link>
+    </Compile>
+
+    <Compile Include="..\ILCompiler.ReadyToRun\IBC\IBCDataModel.cs" Link="Pgo\IBCDataModel.cs" />
+    <Compile Include="..\ILCompiler.ReadyToRun\IBC\IBCProfileData.cs" Link="Pgo\IBCProfileData.cs" />
+    <Compile Include="..\ILCompiler.ReadyToRun\IBC\ReaderExtensions.cs" Link="Pgo\ReaderExtensions.cs" />
+    <Compile Include="..\ILCompiler.ReadyToRun\IBC\MIbcProfileParser.cs" Link="Pgo\MIbcProfileParser.cs" />
+
+    <Compile Include="..\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="Pgo\ProfileData.cs" />
+
+  </ItemGroup>
+</Project>

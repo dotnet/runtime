@@ -36,11 +36,15 @@ namespace System.Globalization.Tests
 
             // Turkish
             yield return new object[] { s_turkishCompare, "interesting", "I", CompareOptions.None, false, 0 };
-            yield return new object[] { s_turkishCompare, "interesting", "I", CompareOptions.IgnoreCase, false, 0 };
+            // Android has its own ICU, which doesn't work well with tr
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
+            {
+                yield return new object[] { s_turkishCompare, "interesting", "I", CompareOptions.IgnoreCase, false, 0 };
+                yield return new object[] { s_turkishCompare, "interesting", "\u0130", CompareOptions.IgnoreCase, true, 1 };
+            }
             yield return new object[] { s_turkishCompare, "interesting", "\u0130", CompareOptions.None, false, 0 };
-            yield return new object[] { s_turkishCompare, "interesting", "\u0130", CompareOptions.IgnoreCase, true, 1 };
-            yield return new object[] { s_invariantCompare, "interesting", "I", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "interesting", "I", CompareOptions.IgnoreCase, true, 1 };
+            yield return new object[] { s_invariantCompare, "interesting", "I", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "interesting", "\u0130", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "interesting", "\u0130", CompareOptions.IgnoreCase, false, 0 };
 
@@ -112,7 +116,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IsPrefix_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void IsPrefix(CompareInfo compareInfo, string source, string value, CompareOptions options, bool expected, int expectedMatchLength)
         {
             if (options == CompareOptions.None)
@@ -177,6 +180,15 @@ namespace System.Globalization.Tests
         public void IsPrefix_WithEmptyPrefix_DoesNotValidateOptions()
         {
             IsPrefix(s_invariantCompare, "Hello", "", (CompareOptions)(-1), true, 0);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        public void IsPrefixWithAsciiAndIgnoredCharacters()
+        {
+            Assert.StartsWith("A", "A\0");
+            Assert.StartsWith("A\0", "A");
+            Assert.StartsWith("a", "A\0", StringComparison.CurrentCultureIgnoreCase);
+            Assert.StartsWith("a\0", "A", StringComparison.CurrentCultureIgnoreCase);
         }
     }
 }

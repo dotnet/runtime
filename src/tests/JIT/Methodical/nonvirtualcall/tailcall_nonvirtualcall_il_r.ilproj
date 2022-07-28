@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="tailcall.il" />
+  </ItemGroup>
+</Project>

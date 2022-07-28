@@ -109,7 +109,6 @@ namespace System.Xml.Schema
         private readonly XmlNamespaceManager _namespaceManager;
         //private Hashtable schemas;    //contains collection of schemas before they get added to the XmlSchemaSet xsc
         //private bool bRefine = false; //indicates if we are going to infer or refine schema when InferSchema is called
-        private readonly ArrayList _schemaList;
         private InferenceOption _occurrence = InferenceOption.Restricted;
         private InferenceOption _typeInference = InferenceOption.Restricted;
 
@@ -160,7 +159,6 @@ namespace System.Xml.Schema
             _nametable = new NameTable();
             _namespaceManager = new XmlNamespaceManager(_nametable);
             _namespaceManager.AddNamespace("xs", XmlSchema.Namespace);
-            _schemaList = new ArrayList();
         }
 
         public XmlSchemaSet InferSchema(XmlReader instanceDocument)
@@ -170,19 +168,14 @@ namespace System.Xml.Schema
 
         public XmlSchemaSet InferSchema(XmlReader instanceDocument, XmlSchemaSet schemas)
         {
-            if (schemas == null)
-            {
-                schemas = new XmlSchemaSet(_nametable);
-            }
+            schemas ??= new XmlSchemaSet(_nametable);
             return InferSchema1(instanceDocument, schemas);
         }
 
         internal XmlSchemaSet InferSchema1(XmlReader instanceDocument, XmlSchemaSet schemas)
         {
-            if (instanceDocument == null)
-            {
-                throw new ArgumentNullException(nameof(instanceDocument));
-            }
+            ArgumentNullException.ThrowIfNull(instanceDocument);
+
             _rootSchema = null;
             _xtr = instanceDocument;
             schemas.Compile();
@@ -215,7 +208,7 @@ namespace System.Xml.Schema
                 if (_rootSchema == null)
                 {
                     //rootSchema = CreateXmlSchema(xtr.NamespaceURI);
-                    xse = AddElement(_xtr.LocalName, _xtr.Prefix, _xtr.NamespaceURI, null, null, -1);
+                    AddElement(_xtr.LocalName, _xtr.Prefix, _xtr.NamespaceURI, null, null, -1);
                 }
                 else
                 {
@@ -276,9 +269,9 @@ namespace System.Xml.Schema
                 throw new XmlSchemaInferenceException(SR.SchInf_schema, 0, 0);
             }
 
-            XmlSchemaAttribute? xsa = null;
+            XmlSchemaAttribute? xsa;
             int AttributeType = -1;
-            XmlSchemaAttribute? returnedAttribute = null;    //this value will change to attributeReference if childURI!= parentURI
+            XmlSchemaAttribute? returnedAttribute;    //this value will change to attributeReference if childURI!= parentURI
             XmlSchema? xs = null;
             bool add = true;
 
@@ -302,7 +295,7 @@ namespace System.Xml.Schema
             }
             if (childURI == XmlReservedNs.NsXml)
             {
-                XmlSchemaAttribute? attributeReference = null;
+                XmlSchemaAttribute? attributeReference;
                 //see if the reference exists
                 attributeReference = FindAttributeRef(searchCollectionPrimary, localName, childURI);
                 if (attributeReference == null && searchCollectionSecondary != null)
@@ -362,7 +355,7 @@ namespace System.Xml.Schema
 
                 if (childURI!.Length != 0) //BUGBUG It need not be an attribute reference if there is a namespace, it can be attribute with attributeFormDefault = qualified
                 {
-                    XmlSchemaAttribute? attributeReference = null;
+                    XmlSchemaAttribute? attributeReference;
                     //see if the reference exists
                     attributeReference = FindAttributeRef(searchCollectionPrimary, localName, childURI);
                     if (attributeReference == null & searchCollectionSecondary != null)
@@ -503,9 +496,9 @@ namespace System.Xml.Schema
                 throw new XmlSchemaInferenceException(SR.SchInf_schema, 0, 0);
             }
 
-            XmlSchemaElement? xse = null;
-            XmlSchemaElement? returnedElement = xse; //this value will change to elementReference if childURI!= parentURI
-            XmlSchema? xs = null;
+            XmlSchemaElement? xse;
+            XmlSchemaElement? returnedElement; //this value will change to elementReference if childURI!= parentURI
+            XmlSchema? xs;
             bool bCreatingNewType = true;
             if (childURI == string.Empty)
             {
@@ -592,7 +585,7 @@ namespace System.Xml.Schema
                     }
                     if (positionWithinCollection == -1)
                     {
-                        positionWithinCollection = addLocation.Add(xse);
+                        addLocation.Add(xse);
                     }
                     else
                     {
@@ -609,7 +602,7 @@ namespace System.Xml.Schema
                     }
                     if (positionWithinCollection == -1)
                     {
-                        positionWithinCollection = addLocation.Add(elementReference);
+                        addLocation.Add(elementReference);
                     }
                     else
                     {
@@ -906,7 +899,7 @@ namespace System.Xml.Schema
                         table.Add(qname, null);
                     }
                     if (ct == null)
-                    { //untill now the element was empty or SimpleType - it now becomes complex type
+                    {   // until now the element was empty or SimpleType - it now becomes complex type
                         ct = new XmlSchemaComplexType();
                         xse.SchemaType = ct;
                         if (!xse.SchemaTypeName.IsEmpty) //BUGBUG, This assumption is wrong
@@ -984,7 +977,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private XmlSchemaSimpleContentExtension CheckSimpleContentExtension(XmlSchemaComplexType ct)
+        private static XmlSchemaSimpleContentExtension CheckSimpleContentExtension(XmlSchemaComplexType ct)
         {
             XmlSchemaSimpleContent? sc = ct.ContentModel as XmlSchemaSimpleContent;
             if (sc == null)
@@ -1015,15 +1008,10 @@ namespace System.Xml.Schema
                 }
                 else if (elem.SchemaTypeName != XmlQualifiedName.Empty)
                 {
-                    effectiveSchemaType = _schemaSet!.GlobalTypes[elem.SchemaTypeName] as XmlSchemaType;
-                    if (effectiveSchemaType == null)
-                    {
-                        effectiveSchemaType = XmlSchemaType.GetBuiltInSimpleType(elem.SchemaTypeName);
-                    }
-                    if (effectiveSchemaType == null)
-                    {
-                        effectiveSchemaType = XmlSchemaType.GetBuiltInComplexType(elem.SchemaTypeName);
-                    }
+                    effectiveSchemaType =
+                        _schemaSet!.GlobalTypes[elem.SchemaTypeName] as XmlSchemaType ??
+                        (XmlSchemaType?)XmlSchemaType.GetBuiltInSimpleType(elem.SchemaTypeName) ??
+                        (XmlSchemaType?)XmlSchemaType.GetBuiltInComplexType(elem.SchemaTypeName);
                 }
             }
             return effectiveSchemaType;
@@ -1163,7 +1151,7 @@ namespace System.Xml.Schema
                     }
 
                     //element not found in the sequence order, if it is found out of order change Sequence of elements to Sequence of Choices otherwise insert into sequence as optional
-                    XmlSchemaElement? subElement = null;
+                    XmlSchemaElement? subElement;
                     XmlSchemaElement? actualElement = null;
                     //BUGBUG - is this logic correct - if there is a sequence of elements should they be int he parent's namespace.
 
@@ -1246,7 +1234,7 @@ namespace System.Xml.Schema
                         xse.SchemaType = ct;
                     }
 
-                    XmlSchemaAttribute? xsa = null;
+                    XmlSchemaAttribute? xsa;
                     //The earlier assumption of checking just schemaTypeName !Empty is not correct for schemas that are not generated by us, schemaTypeName can point to any complex type as well
                     //Check that it is a simple type by checking typeCode
                     //Switch to complex type simple content extension
@@ -1291,7 +1279,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void MoveAttributes(XmlSchemaSimpleContentExtension scExtension, XmlSchemaComplexType ct)
+        private static void MoveAttributes(XmlSchemaSimpleContentExtension scExtension, XmlSchemaComplexType ct)
         {
             //copy all attributes from the simple content to the complex type
             //This is ok since when we move from complex type to simple content extension we copy from AttributeUses property
@@ -1301,7 +1289,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void MoveAttributes(XmlSchemaComplexType ct, XmlSchemaSimpleContentExtension simpleContentExtension, bool bCreatingNewType)
+        private static void MoveAttributes(XmlSchemaComplexType ct, XmlSchemaSimpleContentExtension simpleContentExtension, bool bCreatingNewType)
         {
             //copy all attributes from the complex type to the simple content
 
@@ -1323,7 +1311,7 @@ namespace System.Xml.Schema
             ct.Attributes.Clear(); //Clear from pre-compiled property, post compiled will be cleared on Re-process and Compile()
         }
 
-        internal XmlSchemaAttribute? FindAttribute(ICollection attributes, string attrName)
+        internal static XmlSchemaAttribute? FindAttribute(ICollection attributes, string attrName)
         {
             foreach (XmlSchemaObject? xsa in attributes)
             {
@@ -1342,7 +1330,7 @@ namespace System.Xml.Schema
         internal XmlSchemaElement? FindGlobalElement(string? namespaceURI, string localName, out XmlSchema? parentSchema)
         {
             ICollection col = _schemaSet!.Schemas(namespaceURI);
-            XmlSchemaElement? xse = null;
+            XmlSchemaElement? xse;
             parentSchema = null;
             foreach (XmlSchema? schema in col)
             {
@@ -1357,7 +1345,7 @@ namespace System.Xml.Schema
         }
 
 
-        internal XmlSchemaElement? FindElement(XmlSchemaObjectCollection elements, string elementName)
+        internal static XmlSchemaElement? FindElement(XmlSchemaObjectCollection elements, string elementName)
         {
             for (int i = 0; i < elements.Count; ++i)
             {
@@ -1374,7 +1362,7 @@ namespace System.Xml.Schema
             return null;
         }
 
-        internal XmlSchemaAttribute? FindAttributeRef(ICollection attributes, string attributeName, string nsURI)
+        internal static XmlSchemaAttribute? FindAttributeRef(ICollection attributes, string attributeName, string nsURI)
         {
             foreach (XmlSchemaObject? xsa in attributes)
             {
@@ -1391,7 +1379,7 @@ namespace System.Xml.Schema
             return null;
         }
 
-        internal XmlSchemaElement? FindElementRef(XmlSchemaObjectCollection elements, string elementName, string nsURI)
+        internal static XmlSchemaElement? FindElementRef(XmlSchemaObjectCollection elements, string elementName, string nsURI)
         {
             for (int i = 0; i < elements.Count; ++i)
             {
@@ -1408,7 +1396,7 @@ namespace System.Xml.Schema
             return null;
         }
 
-        internal void MakeExistingAttributesOptional(XmlSchemaComplexType ct, XmlSchemaObjectCollection? attributesInInstance)
+        internal static void MakeExistingAttributesOptional(XmlSchemaComplexType ct, XmlSchemaObjectCollection? attributesInInstance)
         {
             if (ct == null)
             {
@@ -1425,7 +1413,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void SwitchUseToOptional(XmlSchemaObjectCollection attributes, XmlSchemaObjectCollection? attributesInInstance)
+        private static void SwitchUseToOptional(XmlSchemaObjectCollection attributes, XmlSchemaObjectCollection? attributesInInstance)
         {
             for (int i = 0; i < attributes.Count; ++i)
             {
@@ -1782,7 +1770,7 @@ namespace System.Xml.Schema
                 //else
                 case 'I':       //try to match "INF"
                 INF:
-                    if (s.Substring(i) == "INF")
+                    if (s.AsSpan(i).SequenceEqual("INF"))
                         return TF_float | TF_double | TF_string;
                     else return TF_string;
                 case '.':       //try to match ".9999"  decimal/float/double
@@ -1802,7 +1790,7 @@ namespace System.Xml.Schema
                         case 'E':
                             goto EXPONENT;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto DEC_PART;
                             else
                                 return TF_string;
@@ -1815,7 +1803,7 @@ namespace System.Xml.Schema
                         case 'E':
                             goto EXPONENT;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto DEC_PART;
                             else
                                 return TF_string;
@@ -1828,20 +1816,20 @@ namespace System.Xml.Schema
                         case '-':
                             goto E1;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto EXP_PART;
                             else
                                 return TF_string;
                     }
                 E1:
                     i++; if (i == s.Length) return TF_string; //".9999e+" was matched
-                    if (s[i] >= '0' && s[i] <= '9')
+                    if (char.IsAsciiDigit(s[i]))
                         goto EXP_PART;
                     else
                         return TF_string;   //".999e+X was matched
                     EXP_PART:
                     i++; if (i == s.Length) return TF_float | TF_double | TF_string;  //".9999e+99" was matched
-                    if (s[i] >= '0' && s[i] <= '9') //".9999e+9
+                    if (char.IsAsciiDigit(s[i])) //".9999e+9
                         goto EXP_PART;
                     else
                         return TF_string;   //".9999e+999X" was matched
@@ -1857,7 +1845,7 @@ namespace System.Xml.Schema
                         case 'P':
                             goto DURATION;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9') //-9
+                            if (char.IsAsciiDigit(s[i])) //-9
                                 goto NUMBER;
                             else return TF_string;
                     }
@@ -1871,7 +1859,7 @@ namespace System.Xml.Schema
                         case 'P':
                             goto DURATION;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9') //"+9
+                            if (char.IsAsciiDigit(s[i])) //"+9
                                 goto NUMBER;
                             else return TF_string;
                     }
@@ -1883,7 +1871,7 @@ namespace System.Xml.Schema
                         case 'T':
                             goto D7;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9') //"P9"
+                            if (char.IsAsciiDigit(s[i])) //"P9"
                                 goto D1;
                             else return TF_string;
                     }
@@ -1898,7 +1886,7 @@ namespace System.Xml.Schema
                         case 'D':
                             goto D6;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto D1;
                             else
                                 return TF_string;
@@ -1915,7 +1903,7 @@ namespace System.Xml.Schema
                         case 'T':
                             goto D7;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto D3;
                             else
                                 return TF_string;
@@ -1929,7 +1917,7 @@ namespace System.Xml.Schema
                         case 'D':
                             goto D6;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto D3;
                             else
                                 return TF_string;
@@ -1946,7 +1934,7 @@ namespace System.Xml.Schema
                         case 'T':
                             goto D7;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto D5;
                             else
                                 return TF_string;
@@ -1958,7 +1946,7 @@ namespace System.Xml.Schema
                         case 'D':
                             goto D6;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto D5;
                             else
                                 return TF_string;
@@ -1979,7 +1967,7 @@ namespace System.Xml.Schema
                     }
                 D7:
                     i++; if (i == s.Length) return TF_string; //"P999Y999M9999DT" was matched
-                    if (s[i] >= '0' && s[i] <= '9')
+                    if (char.IsAsciiDigit(s[i]))
                         goto D8;
                     else
                         return TF_string;
@@ -1996,7 +1984,7 @@ namespace System.Xml.Schema
                         case 'S':
                             goto D15;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto D8;
                             else
                                 return TF_string;
@@ -2008,7 +1996,7 @@ namespace System.Xml.Schema
                         bNeedsRangeCheck = true;
                         return TF_duration | TF_string; //"___T999H" was matched
                     }
-                    if (s[i] >= '0' && s[i] <= '9')
+                    if (char.IsAsciiDigit(s[i]))
                         goto D10;
                     else
                         return TF_string;
@@ -2023,7 +2011,7 @@ namespace System.Xml.Schema
                         case 'S':
                             goto D15;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto D10;
                             else
                                 return TF_string;
@@ -2035,7 +2023,7 @@ namespace System.Xml.Schema
                         bNeedsRangeCheck = true;
                         return TF_duration | TF_string; //"___T999H999M" was matched
                     }
-                    if (s[i] >= '0' && s[i] <= '9')
+                    if (char.IsAsciiDigit(s[i]))
                         goto D12;
                     else
                         return TF_string;
@@ -2048,7 +2036,7 @@ namespace System.Xml.Schema
                         case 'S':
                             goto D15;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto D12;
                             else
                                 return TF_string;
@@ -2060,7 +2048,7 @@ namespace System.Xml.Schema
                         bNeedsRangeCheck = true;
                         return TF_duration | TF_string; //"___T999H999M999." was matched
                     }
-                    if (s[i] >= '0' && s[i] <= '9')
+                    if (char.IsAsciiDigit(s[i]))
                         goto D14;
                     else
                         return TF_string;
@@ -2071,7 +2059,7 @@ namespace System.Xml.Schema
                         case 'S':
                             goto D15;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto D14;
                             else
                                 return TF_string;
@@ -2120,7 +2108,7 @@ namespace System.Xml.Schema
                             bNeedsRangeCheck = true;
                             return TF_float | TF_double | TF_string;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto N2;
                             else
                                 return TF_string;
@@ -2148,7 +2136,7 @@ namespace System.Xml.Schema
                             bNeedsRangeCheck = true;
                             return TF_float | TF_double | TF_string;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto N3;
                             else
                                 return TF_string;
@@ -2174,7 +2162,7 @@ namespace System.Xml.Schema
                             bNeedsRangeCheck = true;
                             return TF_float | TF_double | TF_string;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto N4;
                             else
                                 return TF_string;
@@ -2203,17 +2191,17 @@ namespace System.Xml.Schema
                             bNeedsRangeCheck = true;
                             return TF_float | TF_double | TF_string;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto N4;
                             else
                                 return TF_string;
                     }
                 DATE:
                     i++; if (i == s.Length) return TF_string; //"9999-"
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++; if (i == s.Length) return TF_string; //"9999-9"
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++;
                     if (i == s.Length)
@@ -2237,10 +2225,10 @@ namespace System.Xml.Schema
                     }
                 DAY:
                     i++; if (i == s.Length) return TF_string; //"9999-99-"
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++; if (i == s.Length) return TF_string; //"9999-99-9"
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++; if (i == s.Length) return DateTime(s, bDate, bTime); //"9999-99-99"
                     switch (s[i])
@@ -2278,20 +2266,20 @@ namespace System.Xml.Schema
                         return TF_string;
                     ZONE_SHIFT:
                     i++; if (i == s.Length) return TF_string;
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++; if (i == s.Length) return TF_string;
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++; if (i == s.Length) return TF_string;
                     if (s[i] != ':')
                         return TF_string;
                     ZONE_SHIFT_MINUTE:
                     i++; if (i == s.Length) return TF_string;
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++; if (i == s.Length) return TF_string;
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++;
                     if (i == s.Length)
@@ -2309,29 +2297,29 @@ namespace System.Xml.Schema
                     else return TF_string;
                     TIME:
                     i++; if (i == s.Length) return TF_string;
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++; if (i == s.Length) return TF_string;
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++; if (i == s.Length) return TF_string;
                     if (s[i] != ':')
                         return TF_string;
                     MINUTE:
                     i++; if (i == s.Length) return TF_string;
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++; if (i == s.Length) return TF_string;
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++; if (i == s.Length) return TF_string;
                     if (s[i] != ':')
                         return TF_string;
                     i++; if (i == s.Length) return TF_string;
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++; if (i == s.Length) return TF_string;
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     i++; if (i == s.Length) return DateTime(s, bDate, bTime);
                     switch (s[i])
@@ -2349,7 +2337,7 @@ namespace System.Xml.Schema
                     }
                 SECOND_FRACTION:
                     i++; if (i == s.Length) return TF_string;
-                    if (s[i] < '0' || s[i] > '9')
+                    if (!char.IsAsciiDigit(s[i]))
                         return TF_string;
                     FRACT_DIGITS:
                     i++; if (i == s.Length) return DateTime(s, bDate, bTime);
@@ -2362,7 +2350,7 @@ namespace System.Xml.Schema
                         case '-':
                             goto ZONE_SHIFT;
                         default:
-                            if (s[i] >= '0' && s[i] <= '9')
+                            if (char.IsAsciiDigit(s[i]))
                                 goto FRACT_DIGITS;
                             else
                                 return TF_string;

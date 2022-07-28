@@ -74,15 +74,14 @@ namespace System.IO.Tests
         }
     }
 
-    public class FileInfo_Open_options_as : FileStream_ctor_options_as
+    public class FileInfo_Open_options : FileStream_ctor_options
     {
         protected override FileStream CreateFileStream(string path, FileMode mode)
         {
             return new FileInfo(path).Open(
                 new FileStreamOptions {
                     Mode = mode,
-                    Access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite,
-                    PreallocationSize = PreallocationSize
+                    Access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite
                 });
         }
 
@@ -91,8 +90,7 @@ namespace System.IO.Tests
             return new FileInfo(path).Open(
                 new FileStreamOptions {
                     Mode = mode,
-                    Access = access,
-                    PreallocationSize = PreallocationSize
+                    Access = access
                 });
         }
 
@@ -104,10 +102,34 @@ namespace System.IO.Tests
                     Access = access,
                     Share = share,
                     Options = options,
-                    BufferSize = bufferSize,
-                    PreallocationSize = PreallocationSize
+                    BufferSize = bufferSize
                 });
         }
+
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
+        {
+            return new FileInfo(path).Open(
+                new FileStreamOptions {
+                    Mode = mode,
+                    Access = access,
+                    Share = share,
+                    Options = options,
+                    BufferSize = bufferSize,
+                    PreallocationSize = preallocationSize
+                });
+        }
+
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize, UnixFileMode unixFileMode)
+            => new FileInfo(path).Open(
+                    new FileStreamOptions {
+                        Mode = mode,
+                        Access = access,
+                        Share = share,
+                        BufferSize = bufferSize,
+                        Options = options,
+                        PreallocationSize = preallocationSize,
+                        UnixCreateMode = unixFileMode
+                    });
     }
 
     public class FileInfo_OpenSpecial : FileStream_ctor_str_fm_fa_fs

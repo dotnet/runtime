@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
 {
-    public class OptionsBuidlerConfigurationExtensionsTests
+    public class OptionsBuilderConfigurationExtensionsTests
     {
         [Fact]
         public static void BindConfiguration_ThrowsForNullBuilder()
@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
         {
             const string configSectionName = "Test";
             const string messageValue = "This is a test";
-            var configEntries = new Dictionary<string, string>
+            var configEntries = new Dictionary<string, string?>
             {
                 [ConfigurationPath.Combine(configSectionName, nameof(FakeOptions.Message))] = messageValue
             };
@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
         public static void BindConfiguration_UsesConfigurationRootIfSectionNameIsEmptyString()
         {
             const string messageValue = "This is a test";
-            var configEntries = new Dictionary<string, string>
+            var configEntries = new Dictionary<string, string?>
             {
                 [nameof(FakeOptions.Message)] = messageValue
             };
@@ -114,7 +114,7 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
 
             FakeConfigurationSource configSource = new()
             {
-                InitialData = new Dictionary<string, string>
+                InitialData = new Dictionary<string, string?>
                 {
                     [nameof(FakeOptions.Message)] = messageValue1,
                 }
@@ -151,7 +151,7 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
 
             FakeConfigurationSource configSource = new()
             {
-                InitialData = new Dictionary<string, string>
+                InitialData = new Dictionary<string, string?>
                 {
                     [messageConfigKey] = messageValue1
                 }

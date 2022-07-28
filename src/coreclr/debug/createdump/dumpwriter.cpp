@@ -23,10 +23,10 @@ DumpWriter::~DumpWriter()
 bool
 DumpWriter::OpenDump(const char* dumpFileName)
 {
-    m_fd = open(dumpFileName, O_WRONLY|O_CREAT|O_TRUNC, 0664);
+    m_fd = open(dumpFileName, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR | S_IRUSR);
     if (m_fd == -1)
     {
-        fprintf(stderr, "Could not open output %s: %d %s\n", dumpFileName, errno, strerror(errno));
+        printf_error("Could not create output file '%s': %s (%d)\n", dumpFileName, strerror(errno), errno);
         return false;
     }
     return true;
@@ -34,7 +34,7 @@ DumpWriter::OpenDump(const char* dumpFileName)
 
 // Write all of the given buffer, handling short writes and EINTR. Return true iff successful.
 bool
-DumpWriter::WriteData(const void* buffer, size_t length)
+DumpWriter::WriteData(int fd, const void* buffer, size_t length)
 {
     const uint8_t* data = (const uint8_t*)buffer;
 
@@ -42,11 +42,11 @@ DumpWriter::WriteData(const void* buffer, size_t length)
     while (done < length) {
         ssize_t written;
         do {
-            written = write(m_fd, data + done, length - done);
+            written = write(fd, data + done, length - done);
         } while (written == -1 && errno == EINTR);
 
         if (written < 1) {
-            fprintf(stderr, "WriteData FAILED %d %s\n", errno, strerror(errno));
+            printf_error("Error writing data to dump file: %s (%d)\n", strerror(errno), errno);
             return false;
         }
         done += written;

@@ -39,7 +39,7 @@ while [[ $# > 0 ]]; do
   shift
 done
 
-if [ "$RUNTIME_PATH" == "" ]; then
+if [[ -z "$RUNTIME_PATH" ]]; then
   echo "error: -r|--runtime-path argument is required."
   usage
   exit -1
@@ -127,15 +127,21 @@ function copy_core_file_to_temp_location {
 }
 
 # ========================= BEGIN Core File Setup ============================
-if [ "$(uname -s)" == "Darwin" ]; then
+if [[ "$(uname -s)" == "Darwin" ]]; then
   # On OS X, we will enable core dump generation only if there are no core
   # files already in /cores/ at this point. This is being done to prevent
   # inadvertently flooding the CI machines with dumps.
   if [[ ! -d "/cores" || ! "$(ls -A /cores)" ]]; then
-    ulimit -c unlimited
+    # Disabling core dumps on macOS. System dumps are large (even for very small
+    # programs) and not configurable. As a result, if a single PR build causes a
+    # lot of tests to crash, we can take out the entire queue.
+    # See discussions in:
+    #   https://github.com/dotnet/core-eng/issues/15333
+    #   https://github.com/dotnet/core-eng/issues/15597
+    ulimit -c 0
   fi
 
-elif [ "$(uname -s)" == "Linux" ]; then
+elif [[ "$(uname -s)" == "Linux" ]]; then
   # On Linux, we'll enable core file generation unconditionally, and if a dump
   # is generated, we will print some useful information from it and delete the
   # dump immediately.
@@ -163,7 +169,7 @@ test_exitcode=$?
 popd
 echo ----- end $(date) ----- exit code $test_exitcode ----------------------------------------------------------
 
-if [ "${exitcode_list[$test_exitcode]}" != "" ]; then
+if [[ -n "${exitcode_list[$test_exitcode]}" ]]; then
   echo exit code $test_exitcode means ${exitcode_list[$test_exitcode]}
 fi
 # ========================= END Test Execution ===============================
@@ -200,11 +206,11 @@ if [[ "$(uname -s)" == "Linux" && $test_exitcode -ne 0 ]]; then
   # or "core.<PID>" by default. We read /proc/sys/kernel/core_uses_pid to
   # determine which it is.
   core_name_uses_pid=0
-  if [ -e /proc/sys/kernel/core_uses_pid ] && [ "1" == $(cat /proc/sys/kernel/core_uses_pid) ]; then
+  if [[ -e /proc/sys/kernel/core_uses_pid && "1" == $(cat /proc/sys/kernel/core_uses_pid) ]]; then
     core_name_uses_pid=1
   fi
 
-  if [ $core_name_uses_pid == "1" ]; then
+  if [[ "$core_name_uses_pid" == "1" ]]; then
     # We don't know what the PID of the process was, so let's look at all core
     # files whose name matches core.NUMBER
     echo Looking for files matching core.* ...
@@ -224,7 +230,7 @@ popd >/dev/null
 # ======================== END Core File Inspection ==========================
 # The helix work item should not exit with non-zero if tests ran and produced results
 # The special console runner for runtime returns 1 when tests fail
-if [ "$test_exitcode" == "1" ]; then
+if [[ "$test_exitcode" == "1" ]]; then
   if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
     exit 0
   fi

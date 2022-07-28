@@ -16,6 +16,7 @@
 #include <set>
 #include <functional>
 #include <memory>
+#include <minipal/utils.h>
 
 // Class used to perform specific actions.
 class platform_specific_actions;
@@ -46,8 +47,10 @@ namespace pal
 }
 
 #ifdef TARGET_WINDOWS
+#define CDECL __cdecl
 #include <Windows.h>
 
+#define DLL_EXPORT __declspec(dllexport)
 #define MAIN __cdecl wmain
 #define W(str) L ## str
 
@@ -63,10 +66,10 @@ namespace pal
     const char_t nativelib_ext[] = W(".dll");
     const char_t coreclr_lib[] = W("coreclr");
 
-    int strcmp(const char_t* str1, const char_t* str2) { return wcscmp(str1, str2); }
-    size_t strlen(const char_t* str) { return wcslen(str); }
-    char_t* strdup(const char_t* str) { return ::_wcsdup(str); }
-    int fprintf(FILE* fd, const char_t* const fmt, ...)
+    inline int strcmp(const char_t* str1, const char_t* str2) { return wcscmp(str1, str2); }
+    inline size_t strlen(const char_t* str) { return wcslen(str); }
+    inline char_t* strdup(const char_t* str) { return ::_wcsdup(str); }
+    inline int fprintf(FILE* fd, const char_t* const fmt, ...)
     {
         va_list args;
         va_start(args, fmt);
@@ -74,8 +77,8 @@ namespace pal
         va_end(args);
         return ret;
     }
-    bool is_cli_option(const char_t option_maybe) { return option_maybe == W('-') || option_maybe == W('/'); }
-    string_t getenv(const char_t* var)
+    inline bool is_cli_option(const char_t option_maybe) { return option_maybe == W('-') || option_maybe == W('/'); }
+    inline string_t getenv(const char_t* var)
     {
         DWORD needed = ::GetEnvironmentVariableW(var, nullptr, 0);
         if (needed == 0)
@@ -87,15 +90,37 @@ namespace pal
         assert(wrote < needed);
         return { buffer.get() };
     }
-    string_t get_exe_path()
+    inline string_utf8_t getenvA(const char* var)
+    {
+        DWORD needed = ::GetEnvironmentVariableA(var, nullptr, 0);
+        if (needed == 0)
+            return {};
+
+        malloc_ptr<char> buffer{ (char*)::malloc(needed * sizeof(char)) };
+        assert(buffer != nullptr);
+        DWORD wrote = ::GetEnvironmentVariableA(var, buffer.get(), needed);
+        assert(wrote < needed);
+        return { buffer.get() };
+    }
+    inline void setenv(const char_t* var, string_t value)
+    {
+        BOOL success = ::SetEnvironmentVariableW(var, value.c_str());
+        assert(success);
+    }
+    inline void setenvA(const char* var, string_utf8_t value)
+    {
+        BOOL success = ::SetEnvironmentVariableA(var, value.c_str());
+        assert(success);
+    }
+    inline string_t get_exe_path()
     {
         char_t file_name[1024];
-        DWORD count = ::GetModuleFileNameW(nullptr, file_name, ARRAYSIZE(file_name));
+        DWORD count = ::GetModuleFileNameW(nullptr, file_name, ARRAY_SIZE(file_name));
         assert(::GetLastError() != ERROR_INSUFFICIENT_BUFFER);
 
         return { file_name };
     }
-    string_t get_absolute_path(const char_t* path)
+    inline string_t get_absolute_path(const char_t* path)
     {
         DWORD needed = ::GetFullPathNameW(path, 0, nullptr, nullptr);
         malloc_ptr<char_t> buffer{ (char_t*)::malloc(needed * sizeof(char_t)) };
@@ -106,17 +131,17 @@ namespace pal
         return { buffer.get() };
     }
 
-    uint32_t get_process_id()
+    inline uint32_t get_process_id()
     {
         return (uint32_t)::GetCurrentProcessId();
     }
 
-    debugger_state_t is_debugger_attached()
+    inline debugger_state_t is_debugger_attached()
     {
         return (::IsDebuggerPresent() == TRUE) ? debugger_state_t::attached : debugger_state_t::not_attached;
     }
 
-    bool does_file_exist(const string_t& file_path)
+    inline bool does_file_exist(const string_t& file_path)
     {
         return INVALID_FILE_ATTRIBUTES != ::GetFileAttributesW(file_path.c_str());
     }
@@ -124,7 +149,7 @@ namespace pal
     // Forward declaration
     void ensure_trailing_delimiter(pal::string_t& dir);
 
-    string_t build_file_list(
+    inline string_t build_file_list(
         const string_t& dir,
         const char_t* ext,
         std::function<bool(const char_t*)> should_add)
@@ -163,40 +188,26 @@ namespace pal
         return file_list.str();
     }
 
-    void* get_module_symbol(mod_t m, const char* sym)
+    inline void* get_module_symbol(mod_t m, const char* sym)
     {
         assert(m != nullptr && sym != nullptr);
         return ::GetProcAddress((HMODULE)m, sym);
     }
 
-    string_utf8_t convert_to_utf8(const char_t* str)
+    inline string_utf8_t convert_to_utf8(const char_t* str)
     {
-        // Compute the needed buffer
-        int bytes_req = ::WideCharToMultiByte(
-            CP_UTF8, 0, // Conversion args
-            str, -1,    // Input string
-            nullptr, 0, // Null to request side
-            nullptr, nullptr);
+        int bytes_req = ::WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
 
         malloc_ptr<char> buffer{ (char*)::malloc(bytes_req) };
         assert(buffer != nullptr);
 
-        int written = ::WideCharToMultiByte(
-            CP_UTF8, 0, // Conversion args
-            str, -1,    // Input string
-            buffer.get(), bytes_req,  // Output buffer
-            nullptr, nullptr);
+        int written = ::WideCharToMultiByte(CP_UTF8, 0, str, -1, buffer.get(), bytes_req, nullptr, nullptr);
         assert(bytes_req == written);
 
         return { buffer.get() };
     }
 
-    string_utf8_t convert_to_utf8(string_t&& str)
-    {
-        return convert_to_utf8(str.c_str());
-    }
-
-    bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
+    inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
     {
         const char_t* hostpolicyName = W("hostpolicy.dll");
         pal::mod_t hMod = (pal::mod_t)::GetModuleHandleW(hostpolicyName);
@@ -213,7 +224,7 @@ namespace pal
         return hMod != nullptr;
     }
 
-    bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
+    inline bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
     {
         pal::string_t coreclr_path = core_root;
         pal::ensure_trailing_delimiter(coreclr_path);
@@ -305,18 +316,26 @@ public:
 
 // CMake generated
 #include <config.h>
-#include <getexepath.h>
+#include <minipal/getexepath.h>
 
+#if __GNUC__ >= 4
+#define DLL_EXPORT __attribute__ ((visibility ("default")))
+#else
+#define DLL_EXPORT
+#endif
+#define CDECL
 #define MAIN main
 #define W(str) str
-#define FAILED(result) (result < 0)
-
+#define S_OK 0
+#define FAILED(result) (result < S_OK)
 #if !HAVE_DIRENT_D_TYPE
 #define DT_UNKNOWN 0
 #define DT_DIR 4
 #define DT_REG 8
 #define DT_LNK 10
 #endif
+
+typedef int HRESULT;
 
 namespace pal
 {
@@ -335,10 +354,10 @@ namespace pal
 #endif
     const char_t coreclr_lib[] = W("libcoreclr");
 
-    int strcmp(const char_t* str1, const char_t* str2) { return ::strcmp(str1, str2); }
-    size_t strlen(const char_t* str) { return ::strlen(str); }
-    char_t* strdup(const char_t* str) { return ::strdup(str); }
-    int fprintf(FILE* fd, const char_t* const fmt, ...)
+    inline int strcmp(const char_t* str1, const char_t* str2) { return ::strcmp(str1, str2); }
+    inline size_t strlen(const char_t* str) { return ::strlen(str); }
+    inline char_t* strdup(const char_t* str) { return ::strdup(str); }
+    inline int fprintf(FILE* fd, const char_t* const fmt, ...)
     {
         va_list args;
         va_start(args, fmt);
@@ -346,18 +365,31 @@ namespace pal
         va_end(args);
         return ret;
     }
-    bool is_cli_option(const char_t option_maybe) { return option_maybe == W('-'); }
-    string_t getenv(const char_t* var)
+    inline bool is_cli_option(const char_t option_maybe) { return option_maybe == W('-'); }
+    inline string_t getenv(const char_t* var)
     {
         const char_t* val = ::getenv(var);
         if (val == nullptr)
             return {};
         return { val };
     }
+    inline string_utf8_t getenvA(const char* var)
+    {
+        return getenv(var);
+    }
+    inline void setenv(const char_t* var, string_t value)
+    {
+        int error = ::setenv(var, value.c_str(), /* overwrite */ 1);
+        assert(error == 0);
+    }
+    inline void setenvA(const char* var, string_utf8_t value)
+    {
+        setenv(var, value.c_str());
+    }
 
-    string_t get_exe_path() { return { getexepath() }; }
+    inline string_t get_exe_path() { return minipal_getexepath(); }
 
-    string_t get_absolute_path(const string_t& path)
+    inline string_t get_absolute_path(const string_t& path)
     {
         string_t abs_path = path;
 
@@ -372,12 +404,12 @@ namespace pal
         return abs_path;
     }
 
-    uint32_t get_process_id()
+    inline uint32_t get_process_id()
     {
         return (uint32_t)getpid();
     }
 
-    debugger_state_t is_debugger_attached()
+    inline debugger_state_t is_debugger_attached()
     {
 #if defined(__APPLE__)
         // Taken from https://developer.apple.com/library/archive/qa/qa1361/_index.html
@@ -452,13 +484,19 @@ namespace pal
 #endif // !__APPLE__
     }
 
-    bool does_file_exist(const char_t* file_path)
+    inline bool does_file_exist(const char_t* file_path)
     {
         // Check if the specified path exists
         struct stat sb;
         if (stat(file_path, &sb) == -1)
         {
             perror(W("Path not found"));
+            return false;
+        }
+
+        // Ignore directories
+        if (S_ISDIR(sb.st_mode))
+        {
             return false;
         }
 
@@ -478,7 +516,7 @@ namespace pal
     bool string_ends_with(const string_t& str, size_t suffix_len, const char_t* suffix);
     void ensure_trailing_delimiter(pal::string_t& dir);
 
-    string_t build_file_list(
+    inline string_t build_file_list(
         const string_t& directory,
         const char_t* ext,
         std::function<bool(const char_t*)> should_add)
@@ -539,23 +577,18 @@ namespace pal
         return file_list.str();
     }
 
-    void* get_module_symbol(mod_t m, const char* sym)
+    inline void* get_module_symbol(mod_t m, const char* sym)
     {
         assert(m != nullptr && sym != nullptr);
         return dlsym(m, sym);
     }
 
-    string_utf8_t convert_to_utf8(const char_t* str)
+    inline string_utf8_t convert_to_utf8(const char_t* str)
     {
         return { str };
     }
 
-    string_utf8_t convert_to_utf8(string_t&& str)
-    {
-        return std::move(str);
-    }
-
-    bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
+    inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
     {
         if (!string_ends_with(mock_hostpolicy_value, pal::nativelib_ext))
             mock_hostpolicy_value.append(pal::nativelib_ext);
@@ -567,13 +600,13 @@ namespace pal
         return hMod != nullptr;
     }
 
-    bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
+    inline bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
     {
         pal::string_t coreclr_path = core_root;
         pal::ensure_trailing_delimiter(coreclr_path);
         coreclr_path.append(pal::coreclr_lib);
         coreclr_path.append(pal::nativelib_ext);
-        
+
         hMod = (pal::mod_t)dlopen(coreclr_path.c_str(), RTLD_NOW | RTLD_LOCAL);
         if (hMod == nullptr)
         {
@@ -616,7 +649,7 @@ public:
 
 namespace pal
 {
-    void split_path_to_dir_filename(const pal::string_t& path, pal::string_t& dir, pal::string_t& filename)
+    inline void split_path_to_dir_filename(const pal::string_t& path, pal::string_t& dir, pal::string_t& filename)
     {
         size_t pos = path.find_last_of(dir_delim);
         if (pos == pal::string_t::npos)
@@ -630,7 +663,7 @@ namespace pal
         filename = path.substr(pos + 1);
     }
 
-    bool string_ends_with(const string_t& str, size_t suffix_len, const char_t* suffix)
+    inline bool string_ends_with(const string_t& str, size_t suffix_len, const char_t* suffix)
     {
         assert(suffix != nullptr);
 
@@ -648,7 +681,7 @@ namespace pal
         return string_ends_with(str, LEN - 1, suffix);
     }
 
-    void ensure_trailing_delimiter(pal::string_t& dir)
+    inline void ensure_trailing_delimiter(pal::string_t& dir)
     {
         if (dir.empty())
         {
@@ -660,7 +693,7 @@ namespace pal
         }
     }
 
-    const char** convert_argv_to_utf8(int argc, const char_t** argv, std::vector<string_utf8_t>& lifetime)
+    inline const char** convert_argv_to_utf8(int argc, const char_t** argv, std::vector<string_utf8_t>& lifetime)
     {
         malloc_ptr<const char*> ret{ (const char**)::malloc(sizeof(char*) * argc) };
         assert(ret != nullptr);

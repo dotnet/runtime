@@ -1,14 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ==++==
-//
-
-//
-
-//
-// ==--==
-
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
@@ -159,6 +151,17 @@ public:
         friend class list<T, Allocator>;
         Node* m_pNode;
     };
+
+#ifdef DEBUG
+    void init(const Allocator& a)
+    {
+        m_pHead = nullptr;
+        m_pTail = nullptr;
+        m_nSize = 0;
+        m_allocator = a;
+        m_nodeAllocator = a;
+    }
+#endif
 
     explicit list(const Allocator&);
     list(size_type n, const T& value, const Allocator&);

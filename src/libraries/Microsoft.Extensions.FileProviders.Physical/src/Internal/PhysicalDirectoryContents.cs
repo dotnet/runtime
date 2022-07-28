@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using Microsoft.Extensions.FileProviders.Physical;
@@ -15,7 +16,7 @@ namespace Microsoft.Extensions.FileProviders.Internal
     /// </summary>
     public class PhysicalDirectoryContents : IDirectoryContents
     {
-        private IEnumerable<IFileInfo> _entries;
+        private IEnumerable<IFileInfo>? _entries;
         private readonly string _directory;
         private readonly ExclusionFilters _filters;
 
@@ -34,7 +35,9 @@ namespace Microsoft.Extensions.FileProviders.Internal
         /// <param name="filters">Specifies which files or directories are excluded from enumeration.</param>
         public PhysicalDirectoryContents(string directory, ExclusionFilters filters)
         {
-            _directory = directory ?? throw new ArgumentNullException(nameof(directory));
+            ThrowHelper.ThrowIfNull(directory);
+
+            _directory = directory;
             _filters = filters;
         }
 
@@ -54,6 +57,7 @@ namespace Microsoft.Extensions.FileProviders.Internal
             return _entries.GetEnumerator();
         }
 
+        [MemberNotNull(nameof(_entries))]
         private void EnsureInitialized()
         {
             try

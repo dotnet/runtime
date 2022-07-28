@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,9 +22,9 @@ namespace Wasm.Build.Tests
         public static IEnumerable<object?[]> SatelliteAssemblyTestData(bool aot, bool relinking, RunHost host)
             => ConfigWithAOTData(aot)
                     .Multiply(
-                        new object?[] { relinking, "es-ES", "got: hola" },
-                        new object?[] { relinking, null,    "got: hello" },
-                        new object?[] { relinking, "ja-JP", "got: \u3053\u3093\u306B\u3061\u306F" })
+                        new object?[] { relinking, "es-ES" },
+                        new object?[] { relinking, null },
+                        new object?[] { relinking, "ja-JP" })
                     .WithRunHosts(host)
                     .UnwrapItemsAsArrays();
 
@@ -34,30 +35,39 @@ namespace Wasm.Build.Tests
         public void ResourcesFromMainAssembly(BuildArgs buildArgs,
                                               bool nativeRelink,
                                               string? argCulture,
-                                              string expectedOutput,
                                               RunHost host,
                                               string id)
         {
             string projectName = $"sat_asm_from_main_asm";
-            bool dotnetWasmFromRuntimePack = !nativeRelink && !buildArgs.AOT;
+            // Release+publish defaults to native relinking
+            bool dotnetWasmFromRuntimePack = !nativeRelink && !buildArgs.AOT && buildArgs.Config != "Release";
+
+            string extraProperties = (nativeRelink ? $"<WasmBuildNative>true</WasmBuildNative>" : string.Empty)
+                                        // make ASSERTIONS=1 so that we test with it
+                                        + $"<EmccCompileOptimizationFlag>-O0 -sASSERTIONS=1</EmccCompileOptimizationFlag>"
+                                        + $"<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>";
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
                                         projectTemplate: s_resourcesProjectTemplate,
-                                        extraProperties: $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>",
-                                        extraItems: $"<EmbeddedResource Include=\"..\\resx\\*\" />");
+                                        extraProperties: extraProperties);
 
             BuildProject(buildArgs,
-                        initProject: () => CreateProgramForCultureTest($"{projectName}.words", "TestClass"),
-                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                        id: id);
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () =>
+                                {
+                                    Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "resx"), Path.Combine(_projectDir!, "resx"));
+                                    CreateProgramForCultureTest(_projectDir!, $"{projectName}.resx.words", "TestClass");
+                                },
+                                DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
 
-            string output = RunAndTestWasmApp(
-                                buildArgs, expectedExitCode: 42,
-                                args: argCulture,
-                                host: host, id: id);
-
-            Assert.Contains(expectedOutput, output);
+            RunAndTestWasmApp(
+                            buildArgs, expectedExitCode: 42,
+                            args: argCulture,
+                            host: host, id: id,
+                            // check that downloading assets doesn't have timing race conditions
+                            extraXHarnessMonoArgs: host is RunHost.Chrome ? "--fetch-random-delay=200" : string.Empty);
         }
 
         [Theory]
@@ -67,30 +77,51 @@ namespace Wasm.Build.Tests
         public void ResourcesFromProjectReference(BuildArgs buildArgs,
                                                   bool nativeRelink,
                                                   string? argCulture,
-                                                  string expectedOutput,
                                                   RunHost host,
                                                   string id)
         {
-            string projectName = $"sat_asm_proj_ref";
+            string projectName = $"SatelliteAssemblyFromProjectRef";
             bool dotnetWasmFromRuntimePack = !nativeRelink && !buildArgs.AOT;
+
+            string extraProperties = $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>"
+                                        // make ASSERTIONS=1 so that we test with it
+                                        + $"<EmccCompileOptimizationFlag>-O0 -sASSERTIONS=1</EmccCompileOptimizationFlag>"
+                                        + $"<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>";
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
                                         projectTemplate: s_resourcesProjectTemplate,
-                                        extraProperties: $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>",
+                                        extraProperties: extraProperties,
                                         extraItems: $"<ProjectReference Include=\"..\\LibraryWithResources\\LibraryWithResources.csproj\" />");
 
             BuildProject(buildArgs,
-                        initProject: () => CreateProgramForCultureTest("LibraryWithResources.words", "LibraryWithResources.Class1"),
-                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                        id: id);
+                            id: id,
+                            new BuildProjectOptions(
+                                DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
+                                InitProject: () =>
+                                {
+                                    string rootDir = _projectDir!;
+                                    _projectDir = Path.Combine(rootDir, projectName);
 
-            string output = RunAndTestWasmApp(buildArgs,
-                                              expectedExitCode: 42,
-                                              args: argCulture,
-                                              host: host, id: id);
+                                    Directory.CreateDirectory(_projectDir);
+                                    Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, projectName), rootDir);
 
-            Assert.Contains(expectedOutput, output);
+                                    // D.B.* used for wasm projects should be moved next to the wasm project, so it doesn't
+                                    // affect the non-wasm library project
+                                    File.Move(Path.Combine(rootDir, "Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
+                                    File.Move(Path.Combine(rootDir, "Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
+
+                                    CreateProgramForCultureTest(_projectDir, "LibraryWithResources.resx.words", "LibraryWithResources.Class1");
+
+                                    // The root D.B* should be empty
+                                    File.WriteAllText(Path.Combine(rootDir, "Directory.Build.props"), "<Project />");
+                                    File.WriteAllText(Path.Combine(rootDir, "Directory.Build.targets"), "<Project />");
+                                }));
+
+            RunAndTestWasmApp(buildArgs,
+                              expectedExitCode: 42,
+                              args: argCulture,
+                              host: host, id: id);
         }
 
 #pragma warning disable xUnit1026
@@ -105,13 +136,13 @@ namespace Wasm.Build.Tests
                                         extraProperties: $@"
                                             <EmccCompileOptimizationFlag>-O0</EmccCompileOptimizationFlag>
                                             <EmccLinkOptimizationFlag>-O0</EmccLinkOptimizationFlag>",
-                                        extraItems: $"<EmbeddedResource Include=\"..\\resx\\*\" />");
+                                        extraItems: $"<EmbeddedResource Include=\"{BuildEnvironment.RelativeTestAssetsPath}resx\\*\" />");
 
-            System.Console.WriteLine ($"--- aot: {buildArgs.AOT}");
             BuildProject(buildArgs,
-                        initProject: () => CreateProgramForCultureTest($"{projectName}.words", "TestClass"),
-                        dotnetWasmFromRuntimePack: false,
-                        id: id);
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => CreateProgramForCultureTest(_projectDir!, $"{projectName}.words", "TestClass"),
+                                DotnetWasmFromRuntimePack: false));
 
             var bitCodeFileNames = Directory.GetFileSystemEntries(Path.Combine(_projectDir!, "obj"), "*.dll.bc", SearchOption.AllDirectories)
                                     .Select(path => Path.GetFileName(path))
@@ -124,8 +155,8 @@ namespace Wasm.Build.Tests
         }
 #pragma warning restore xUnit1026
 
-        private void CreateProgramForCultureTest(string resourceName, string typeName)
-            => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"),
+        private void CreateProgramForCultureTest(string dir, string resourceName, string typeName)
+            => File.WriteAllText(Path.Combine(dir, "Program.cs"),
                                 s_cultureResourceTestProgram
                                     .Replace("##RESOURCE_NAME##", resourceName)
                                     .Replace("##TYPE_NAME##", typeName));
@@ -133,10 +164,10 @@ namespace Wasm.Build.Tests
         private const string s_resourcesProjectTemplate =
             @$"<Project Sdk=""Microsoft.NET.Sdk"">
               <PropertyGroup>
-                <TargetFramework>{s_targetFramework}</TargetFramework>
+                <TargetFramework>{DefaultTargetFramework}</TargetFramework>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-                <WasmMainJSPath>runtime-test.js</WasmMainJSPath>
+                <WasmMainJSPath>test-main.js</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>
               <ItemGroup>
@@ -158,12 +189,23 @@ namespace ResourcesTest
     {
         public static int Main(string[] args)
         {
+            string expected;
             if (args.Length == 1)
             {
                 string cultureToTest = args[0];
                 var newCulture = new CultureInfo(cultureToTest);
                 Thread.CurrentThread.CurrentCulture = newCulture;
                 Thread.CurrentThread.CurrentUICulture = newCulture;
+
+                if (cultureToTest == ""es-ES"")
+                    expected = ""hola"";
+                else if (cultureToTest == ""ja-JP"")
+                    expected = ""\u3053\u3093\u306B\u3061\u306F"";
+                else
+                    throw new Exception(""Cannot determine the expected output for {cultureToTest}"");
+
+            } else {
+                expected = ""hello"";
             }
 
             var currentCultureName = Thread.CurrentThread.CurrentCulture.Name;
@@ -171,7 +213,7 @@ namespace ResourcesTest
             var rm = new ResourceManager(""##RESOURCE_NAME##"", typeof(##TYPE_NAME##).Assembly);
             Console.WriteLine($""For '{currentCultureName}' got: {rm.GetString(""hello"")}"");
 
-            return 42;
+            return rm.GetString(""hello"") == expected ? 42 : -1;
         }
     }
 }";

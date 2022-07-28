@@ -1,11 +1,6 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-;; ==++==
-;;
-
-;;
-;; ==--==
 #include "ksarm.h"
 
 #include "asmconstants.h"
@@ -49,12 +44,6 @@
 
     ;; Import to support cross-moodule external method invocation in ngen images
     IMPORT ExternalMethodFixupWorker
-
-#ifdef FEATURE_PREJIT
-    ;; Imports to support virtual import fixup for ngen images
-    IMPORT VirtualMethodFixupWorker
-    IMPORT StubDispatchFixupWorker
-#endif
 
 #ifdef FEATURE_READYTORUN
     IMPORT DynamicHelperWorker
@@ -314,29 +303,6 @@ ThePreStubPatchLabel
         ; If we got back from NDirectImportWorker, the MD has been successfully
         ; linked. Proceed to execute the original DLL call.
         EPILOG_BRANCH_REG r12
-
-        NESTED_END
-
-; ------------------------------------------------------------------
-; The call in fixup precode initally points to this function.
-; The pupose of this function is to load the MethodDesc and forward the call the prestub.
-        NESTED_ENTRY PrecodeFixupThunk
-
-        ; r12 = FixupPrecode *
-
-        PROLOG_PUSH     {r0-r1}
-
-        ; Inline computation done by FixupPrecode::GetMethodDesc()
-        ldrb    r0, [r12, #3]           ; m_PrecodeChunkIndex
-        ldrb    r1, [r12, #2]           ; m_MethodDescChunkIndex
-
-        add     r12,r12,r0,lsl #3
-        add     r0,r12,r0,lsl #2
-        ldr     r0, [r0,#8]
-        add     r12,r0,r1,lsl #2
-
-        EPILOG_POP      {r0-r1}
-        EPILOG_BRANCH ThePreStub
 
         NESTED_END
 
@@ -1034,135 +1000,6 @@ stackProbe_loop
     EPILOG_RETURN
     NESTED_END
 
-#ifdef FEATURE_PREJIT
-;------------------------------------------------
-; VirtualMethodFixupStub
-;
-; In NGEN images, virtual slots inherited from cross-module dependencies
-; point to a jump thunk that calls into the following function that will
-; call into a VM helper. The VM helper is responsible for patching up
-; thunk, upon executing the precode, so that all subsequent calls go directly
-; to the actual method body.
-;
-; This is done lazily for performance reasons.
-;
-; On entry:
-;
-; R0 = "this" pointer
-; R12 = Address of thunk + 4
-
-    NESTED_ENTRY VirtualMethodFixupStub
-
-    ; Save arguments and return address
-    PROLOG_PUSH {r0-r3, lr}
-
-    ; Align stack
-    PROLOG_STACK_ALLOC  SIZEOF__FloatArgumentRegisters + 4
-    vstm                sp, {d0-d7}
-
-
-    CHECK_STACK_ALIGNMENT
-
-    ; R12 contains an address that is 4 bytes ahead of
-    ; where the thunk starts. Refer to ZapImportVirtualThunk::Save
-    ; for details on this.
-    ;
-    ; Move the correct thunk start address in R1
-    sub r1, r12, #4
-
-    ; Call the helper in the VM to perform the actual fixup
-    ; and tell us where to tail call. R0 already contains
-    ; the this pointer.
-    bl VirtualMethodFixupWorker
-
-    ; On return, R0 contains the target to tailcall to
-    mov         r12, r0
-
-    ; pop the stack and restore original register state
-    vldm               sp, {d0-d7}
-    EPILOG_STACK_FREE  SIZEOF__FloatArgumentRegisters + 4
-    EPILOG_POP {r0-r3, lr}
-
-    PATCH_LABEL VirtualMethodFixupPatchLabel
-
-    ; and tailcall to the actual method
-    EPILOG_BRANCH_REG r12
-
-    NESTED_END
-#endif // FEATURE_PREJIT
-
-;------------------------------------------------
-; ExternalMethodFixupStub
-;
-; In NGEN images, calls to cross-module external methods initially
-; point to a jump thunk that calls into the following function that will
-; call into a VM helper. The VM helper is responsible for patching up the
-; thunk, upon executing the precode, so that all subsequent calls go directly
-; to the actual method body.
-;
-; This is done lazily for performance reasons.
-;
-; On entry:
-;
-; R12 = Address of thunk + 4
-
-    NESTED_ENTRY ExternalMethodFixupStub
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    add         r0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
-
-    ; Adjust (read comment above for details) and pass the address of the thunk
-    sub         r1, r12, #4                     ; pThunk
-
-    mov         r2, #0  ; sectionIndex
-    mov         r3, #0  ; pModule
-    bl          ExternalMethodFixupWorker
-
-    ; mov the address we patched to in R12 so that we can tail call to it
-    mov         r12, r0
-
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
-    EPILOG_BRANCH_REG   r12
-
-    NESTED_END
-
-#ifdef FEATURE_PREJIT
-;------------------------------------------------
-; StubDispatchFixupStub
-;
-; In NGEN images, calls to interface methods initially
-; point to a jump thunk that calls into the following function that will
-; call into a VM helper. The VM helper is responsible for patching up the
-; thunk with actual stub dispatch stub.
-;
-; On entry:
-;
-; R4 = Address of indirection cell
-
-    NESTED_ENTRY StubDispatchFixupStub
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    ; address of StubDispatchFrame
-    add         r0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
-    mov         r1, r4  ; siteAddrForRegisterIndirect
-    mov         r2, #0  ; sectionIndex
-    mov         r3, #0  ; pModule
-
-    bl          StubDispatchFixupWorker
-
-    ; mov the address we patched to in R12 so that we can tail call to it
-    mov         r12, r0
-
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL StubDispatchFixupPatchLabel
-    EPILOG_BRANCH_REG   r12
-
-    NESTED_END
-#endif // FEATURE_PREJIT
-
 ;------------------------------------------------
 ; JIT_RareDisableHelper
 ;
@@ -1724,6 +1561,18 @@ tempReg     SETS "$tmpReg"
 
     END_WRITE_BARRIERS
 
+    IMPORT JIT_WriteBarrier_Loc
+
+; ------------------------------------------------------------------
+; __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
+    LEAF_ENTRY  JIT_WriteBarrier_Callable
+
+    ; Branch to the write barrier
+    ldr     r2, =JIT_WriteBarrier_Loc ; or R3? See targetarm.h
+    ldr     pc, [r2]
+
+    LEAF_END
+
 #ifdef FEATURE_READYTORUN
 
     NESTED_ENTRY DelayLoad_MethodCall_FakeProlog
@@ -1762,8 +1611,8 @@ DelayLoad_MethodCall
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
-    ; Share the patch label
-    EPILOG_BRANCH ExternalMethodFixupPatchLabel
+    PATCH_LABEL ExternalMethodFixupPatchLabel
+    EPILOG_BRANCH_REG   r12
 
     NESTED_END
 

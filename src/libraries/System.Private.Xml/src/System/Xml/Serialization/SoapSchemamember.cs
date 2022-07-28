@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Xml;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Xml;
-
     public class SoapSchemaMember
     {
         private string? _memberName;
@@ -21,7 +21,7 @@ namespace System.Xml.Serialization
         [AllowNull]
         public string MemberName
         {
-            get { return _memberName == null ? string.Empty : _memberName; }
+            get { return _memberName ?? string.Empty; }
             set { _memberName = value; }
         }
     }

@@ -602,5 +602,27 @@ namespace System.Reflection.Tests
                 Assert.Equal(expected, bt);
             }
         }
+
+        [Fact]
+        public static void ResourceDoesNotExist_GetManifestResourceInfo_ReturnsNull()
+        {
+            using (MetadataLoadContext lc = new MetadataLoadContext(new SimpleAssemblyResolver()))
+            {
+                Assembly a = lc.LoadFromByteArray(TestData.s_AssemblyWithEmbeddedResourcesImage);
+                ManifestResourceInfo? r = a.GetManifestResourceInfo("ResourceThatDoesNotExist");
+                Assert.Null(r);
+            }
+        }
+
+        [Fact]
+        public static void ResourceDoesNotExist_GetManifestResourceStream_ReturnsNull()
+        {
+            using (MetadataLoadContext lc = new MetadataLoadContext(new SimpleAssemblyResolver()))
+            {
+                Assembly a = lc.LoadFromByteArray(TestData.s_AssemblyWithEmbeddedResourcesImage);
+                Stream? r = a.GetManifestResourceStream("ResourceThatDoesNotExist");
+                Assert.Null(r);
+            }
+        }
     }
 }

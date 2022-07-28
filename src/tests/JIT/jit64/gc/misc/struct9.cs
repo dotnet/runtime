@@ -9,7 +9,7 @@ struct S
     public String str;
 }
 
-class Test
+class Test_struct9
 {
     public static void c(ref S s1, ref int i)
     {

@@ -3,7 +3,7 @@
     <RunAnalyzers>false</RunAnalyzers>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsTestProject>true</IsTestProject>
+    <IsTestProject Condition="'$(IsTestProject)' == ''">true</IsTestProject>
     <IsFunctionalTest>true</IsFunctionalTest>
   </PropertyGroup>
 
@@ -21,7 +21,7 @@
     <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' != 'true'"></InvariantGlobalization>
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
-    <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">true</UseNativeHttpHandler>
+    <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
   </PropertyGroup>
 
   <!-- Modeled after Microsoft.NET.Sdk.BlazorWebAssembly.Current.targets https://github.com/dotnet/sdk/blob/main/src/BlazorWasmSdk/Targets/Microsoft.NET.Sdk.BlazorWebAssembly.Current.targets -->
@@ -31,7 +31,7 @@
   </PropertyGroup>
 
   <!-- Modeled after Xamarin.Shared.Sdk.targets https://github.com/xamarin/xamarin-macios/blob/main/dotnet/targets/Xamarin.Shared.Sdk.targets -->
-  <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'MacCatalyst'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
     <CustomResourceTypesSupport Condition="'$(CustomResourceTypesSupport)' == ''">false</CustomResourceTypesSupport>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == ''">false</DebuggerSupport>
@@ -39,7 +39,7 @@
     <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>
     <InvariantGlobalization Condition="'$(TargetOS)' == 'MacCatalyst' and '$(InvariantGlobalization)' == ''">true</InvariantGlobalization>
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
-    <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">true</UseNativeHttpHandler>
+    <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
   </PropertyGroup>
 
   <Import Project="..\..\libraries\Directory.Build.props" />

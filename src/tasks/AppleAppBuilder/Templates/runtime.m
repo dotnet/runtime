@@ -5,9 +5,12 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-logger.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/class.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/object.h>
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 #include <TargetConditionals.h>
@@ -19,14 +22,12 @@
 
 static char *bundle_path;
 
-// no-op for iOS and tvOS.
-// watchOS is not supported yet.
-#define MONO_ENTER_GC_UNSAFE
-#define MONO_EXIT_GC_UNSAFE
-
 #define APPLE_RUNTIME_IDENTIFIER "//%APPLE_RUNTIME_IDENTIFIER%"
 
 #define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
+
+// XHarness is looking for this tag in app's output to determine the exit code
+#define EXIT_CODE_TAG "DOTNET.APP_EXIT_CODE"
 
 const char *
 get_bundle_path (void)
@@ -86,25 +87,13 @@ free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
     munmap (handle, size);
 }
 
-static MonoAssembly*
-load_assembly (const char *name, const char *culture)
+static const char *assembly_load_prefix = NULL;
+
+static MonoAssembly *
+load_assembly_aux (const char *filename, const char *culture, const char *bundle)
 {
-    const char *bundle = get_bundle_path ();
-    char filename [1024];
     char path [1024];
     int res;
-
-    os_log_info (OS_LOG_DEFAULT, "assembly_preload_hook: %{public}s %{public}s %{public}s\n", name, culture, bundle);
-
-    int len = strlen (name);
-    int has_extension = len > 3 && name [len - 4] == '.' && (!strcmp ("exe", name + (len - 3)) || !strcmp ("dll", name + (len - 3)));
-
-    // add extensions if required.
-    strlcpy (filename, name, sizeof (filename));
-    if (!has_extension) {
-        strlcat (filename, ".dll", sizeof (filename));
-    }
-
     if (culture && strcmp (culture, ""))
         res = snprintf (path, sizeof (path) - 1, "%s/%s/%s", bundle, culture, filename);
     else
@@ -118,6 +107,33 @@ load_assembly (const char *name, const char *culture)
         return assembly;
     }
     return NULL;
+}
+
+static MonoAssembly *
+load_assembly (const char *name, const char *culture)
+{
+    const char *bundle = get_bundle_path ();
+    char filename [1024];
+
+    os_log_info (OS_LOG_DEFAULT, "assembly_preload_hook: %{public}s %{public}s %{public}s\n", name, culture, bundle);
+
+    int len = strlen (name);
+    int has_extension = len > 3 && name [len - 4] == '.' && (!strcmp ("exe", name + (len - 3)) || !strcmp ("dll", name + (len - 3)));
+
+    // add extensions if required.
+    strlcpy (filename, name, sizeof (filename));
+    if (!has_extension) {
+        strlcat (filename, ".dll", sizeof (filename));
+    }
+
+    if (assembly_load_prefix [0] != '\0') {
+        char prefix_bundle [1024];
+        int res = snprintf (prefix_bundle, sizeof (prefix_bundle) - 1, "%s/%s", bundle, assembly_load_prefix);
+        assert (res > 0);
+        MonoAssembly *ret = load_assembly_aux (filename, culture, prefix_bundle);
+        if (ret) return ret;
+    }
+    return load_assembly_aux (filename, culture, bundle);
 }
 
 static MonoAssembly*
@@ -187,7 +203,7 @@ unhandled_exception_handler (MonoObject *exc, void *user_data)
     free (type_name);
 
     os_log_info (OS_LOG_DEFAULT, "%@", msg);
-    os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", 1);
+    os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", 1);
     exit (1);
 }
 
@@ -196,7 +212,7 @@ log_callback (const char *log_domain, const char *log_level, const char *message
 {
     os_log_info (OS_LOG_DEFAULT, "(%{public}s %{public}s) %{public}s", log_domain, log_level, message);
     if (fatal) {
-        os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", 1);
+        os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", 1);
         exit (1);
     }
 }
@@ -260,7 +276,7 @@ mono_ios_runtime_init (void)
 
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
     const char *appctx_keys [] = {
-        "RUNTIME_IDENTIFIER", 
+        "RUNTIME_IDENTIFIER",
         "APP_CONTEXT_BASE_DIRECTORY",
 #if !defined(INVARIANT_GLOBALIZATION)
         "ICU_DAT_FILE_PATH"
@@ -291,6 +307,19 @@ mono_ios_runtime_init (void)
         free (file_path);
     }
 
+    const char* executable = "%EntryPointLibName%";
+    if (executable [0] == '\0') {
+        executable = getenv ("MONO_APPLE_APP_ENTRY_POINT_LIB_NAME");
+    }
+    if (executable == NULL) {
+        executable = "";
+    }
+
+    assembly_load_prefix = getenv ("MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX");
+    if (assembly_load_prefix == NULL) {
+        assembly_load_prefix = "";
+    }
+
     monovm_initialize (sizeof (appctx_keys) / sizeof (appctx_keys [0]), appctx_keys, appctx_values);
 
 #if (FORCE_INTERPRETER && !FORCE_AOT)
@@ -302,11 +331,13 @@ mono_ios_runtime_init (void)
     // register modules
     register_aot_modules ();
 
-#if (FORCE_INTERPRETER && TARGET_OS_MACCATALYST)
+#if (FORCE_INTERPRETER && FORCE_AOT)
     os_log_info (OS_LOG_DEFAULT, "AOT INTERP Enabled");
     mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP);
 #else
     mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
+    // it's for PlatformDetection.IsMonoAOT on iOS/tvOS
+    setenv ("MONO_AOT_MODE", "aot", TRUE);
 #endif
 
 #endif
@@ -329,19 +360,16 @@ mono_ios_runtime_init (void)
 
 #if !FORCE_INTERPRETER && (!TARGET_OS_SIMULATOR || FORCE_AOT)
     // device runtimes are configured to use lazy gc thread creation
-    MONO_ENTER_GC_UNSAFE;
     mono_gc_init_finalizer_thread ();
-    MONO_EXIT_GC_UNSAFE;
 #endif
 
-    const char* executable = "%EntryPointLibName%";
     MonoAssembly *assembly = load_assembly (executable, NULL);
     assert (assembly);
     os_log_info (OS_LOG_DEFAULT, "Executable: %{public}s", executable);
 
     res = mono_jit_exec (mono_domain_get (), assembly, argi, managed_argv);
     // Print this so apps parsing logs can detect when we exited
-    os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", res);
+    os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", res);
 
     mono_jit_cleanup (domain);
 

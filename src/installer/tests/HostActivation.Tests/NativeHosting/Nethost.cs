@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using HostActivation.Tests;
 using Microsoft.DotNet.Cli.Build.Framework;
 using System;
 using System.IO;
@@ -88,6 +89,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61131", TestPlatforms.OSX)]
         [InlineData(true, false, true, false)]
         [InlineData(true, false, true, true)]
         [InlineData(true, false, false, false)]
@@ -129,7 +131,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
             }
 
-            result.Should().HaveStdErrContaining("Using global installation location");
+            result.Should().HaveUsedGlobalInstallLocation(installLocation);
+            if (useRegisteredLocation)
+                result.Should().HaveUsedRegisteredInstallLocation(installLocation);
 
             if (isValid)
             {
@@ -179,6 +183,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61131", TestPlatforms.OSX)]
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         [InlineData("{0}", false, true)]
         [InlineData("{0}\n", false, true)]
@@ -210,18 +215,27 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 CommandResult result = Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
                     .EnableTracingAndCaptureOutputs()
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass 
+                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         sharedState.InvalidInstallRoot)
                     .DotNetRoot(null)
                     .Execute();
 
-                result.Should().HaveStdErrContaining($"Looking for install_location file in '{registeredInstallLocationOverride.PathValueOverride}'.");
+                if (shouldUseArchSpecificInstallLocation)
+                {
+                    result.Should().HaveLookedForArchitectureSpecificInstallLocation(
+                        registeredInstallLocationOverride.PathValueOverride,
+                        sharedState.RepoDirectories.BuildArchitecture);
+                }
+                else
+                {
+                    result.Should().HaveLookedForDefaultInstallLocation(registeredInstallLocationOverride.PathValueOverride);
+                }
 
                 if (shouldPass)
                 {
                     result.Should().Pass()
-                        .And.HaveStdErrContaining($"Using install location '{installLocation}'.")
+                        .And.HaveUsedRegisteredInstallLocation(installLocation)
                         .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
                 }
                 else
@@ -235,35 +249,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
-        public void GetHostFxrPath_GlobalInstallation_HasMoreThanOneDefaultInstallationPath()
-        {
-            string installLocation = Path.Combine(sharedState.ValidInstallRoot, "dotnet");
-            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(sharedState.NethostPath))
-            {
-                registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] {
-                    (string.Empty, installLocation), (string.Empty, installLocation)
-                });
-
-                CommandResult result = Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
-                    .EnableTracingAndCaptureOutputs()
-                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass 
-                        Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
-                        sharedState.InvalidInstallRoot)
-                    .DotNetRoot(null)
-                    .Execute();
-
-                result.Should().Pass()
-                    .And.HaveStdErrContaining($"Looking for install_location file in '{registeredInstallLocationOverride.PathValueOverride}'.")
-                    .And.HaveStdErrContaining($"Found install location path '{installLocation}'.")
-                    .And.HaveStdErrContaining($"Only the first line in '{registeredInstallLocationOverride.PathValueOverride}' may not have an architecture prefix.")
-                    .And.HaveStdErrContaining($"Using install location '{installLocation}'.")
-                    .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
-            }
-        }
-
-        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61131", TestPlatforms.OSX)]
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void GetHostFxrPath_GlobalInstallation_HasNoDefaultInstallationPath()
         {
@@ -278,21 +264,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 CommandResult result = Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
                     .EnableTracingAndCaptureOutputs()
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass 
+                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         sharedState.InvalidInstallRoot)
                     .DotNetRoot(null)
                     .Execute();
 
                 result.Should().Pass()
-                    .And.HaveStdErrContaining($"Looking for install_location file in '{registeredInstallLocationOverride.PathValueOverride}'.")
-                    .And.HaveStdErrContaining($"Found architecture-specific install location path: '{installLocation}' ('{sharedState.RepoDirectories.BuildArchitecture.ToLower()}').")
-                    .And.HaveStdErrContaining($"Using install location '{installLocation}'.")
+                    .And.HaveLookedForArchitectureSpecificInstallLocation(
+                        registeredInstallLocationOverride.PathValueOverride,
+                        sharedState.RepoDirectories.BuildArchitecture)
+                    .And.HaveUsedRegisteredInstallLocation(installLocation)
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/61131", TestPlatforms.OSX)]
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void GetHostFxrPath_GlobalInstallation_ArchitectureSpecificPathIsPickedOverDefaultPath()
         {
@@ -307,17 +295,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 CommandResult result = Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
                     .EnableTracingAndCaptureOutputs()
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass 
+                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         sharedState.InvalidInstallRoot)
                     .DotNetRoot(null)
                     .Execute();
 
                 result.Should().Pass()
-                    .And.HaveStdErrContaining($"Looking for install_location file in '{registeredInstallLocationOverride.PathValueOverride}'.")
-                    .And.HaveStdErrContaining($"Found install location path '{installLocation}/a/b/c'.")
-                    .And.HaveStdErrContaining($"Found architecture-specific install location path: '{installLocation}' ('{sharedState.RepoDirectories.BuildArchitecture.ToLower()}').")
-                    .And.HaveStdErrContaining($"Using install location '{installLocation}'.")
+                    .And.HaveLookedForArchitectureSpecificInstallLocation(
+                        registeredInstallLocationOverride.PathValueOverride,
+                        sharedState.RepoDirectories.BuildArchitecture)
+                    .And.HaveUsedRegisteredInstallLocation(installLocation)
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
         }
@@ -337,16 +325,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [Fact]
         public void TracingNotBufferedByDefault()
         {
+            string traceFilePath;
             CommandResult result = Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} false nullptr x")
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("COREHOST_TRACEFILE", "Tracing.out")
+                .EnableHostTracingToFile(out traceFilePath)
                 .MultilevelLookup(true)
                 .DotNetRoot(null)
                 .Execute();
 
             result.Should().Fail()
-                .And.FileExists("Tracing.out")
-                .And.FileContains("Tracing.out", "Tracing enabled");
+                .And.FileExists(traceFilePath)
+                .And.FileContains(traceFilePath, "Tracing enabled");
+
+            FileUtils.DeleteFileIfPossible(traceFilePath);
         }
 
         [Fact]

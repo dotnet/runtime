@@ -93,7 +93,7 @@ class GenString : IGen<string>
 
 }
 
-public class Test
+public class Test_interface_class02
 {
     public static int Main()
     {

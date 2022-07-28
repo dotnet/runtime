@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
@@ -110,10 +109,7 @@ namespace System.Xml
 
         internal void Write(char[] array, int offset, int count)
         {
-            if (null == array)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (0 > offset)
             {
@@ -250,9 +246,9 @@ namespace System.Xml
             _textWriter.Write(';');
         }
 
-        internal void Write(string text)
+        internal void Write(ReadOnlySpan<char> text)
         {
-            if (text == null)
+            if (text.IsEmpty)
             {
                 return;
             }
@@ -301,13 +297,13 @@ namespace System.Xml
                 break;
             }
 
-            char[] helperBuffer = new char[256];
             while (true)
             {
                 if (startPos < i)
                 {
-                    WriteStringFragment(text, startPos, i - startPos, helperBuffer);
+                    _textWriter.Write(text.Slice(startPos, i - startPos));
                 }
+
                 if (i == len)
                 {
                     break;
@@ -450,10 +446,7 @@ namespace System.Xml
 
         internal void WriteRaw(char[] array, int offset, int count)
         {
-            if (null == array)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (0 > count)
             {
@@ -516,27 +509,6 @@ namespace System.Xml
         //
         // Private implementation methods
         //
-        // This is a helper method to workaround the fact that TextWriter does not have a Write method
-        // for fragment of a string such as Write( string, offset, count).
-        // The string fragment will be written out by copying into a small helper buffer and then
-        // calling textWriter to write out the buffer.
-        private void WriteStringFragment(string str, int offset, int count, char[] helperBuffer)
-        {
-            int bufferSize = helperBuffer.Length;
-            while (count > 0)
-            {
-                int copyCount = count;
-                if (copyCount > bufferSize)
-                {
-                    copyCount = bufferSize;
-                }
-
-                str.CopyTo(offset, helperBuffer, 0, copyCount);
-                _textWriter.Write(helperBuffer, 0, copyCount);
-                offset += copyCount;
-                count -= copyCount;
-            }
-        }
 
         private void WriteCharEntityImpl(char ch)
         {

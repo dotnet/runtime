@@ -19,22 +19,25 @@
            
   
 }
-.assembly 'test'
+.assembly 'huge_i4'
 {
 
 
   
   
 }
-.module 'test.exe'
-.namespace JitTest
+.assembly extern xunit.core {}
+.namespace JitTest_huge_i4_huge_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  70
       .locals (int32[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,] matrix,
@@ -462,4 +465,4 @@
     
   } // end of class 'Test'
   
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_huge_i4_huge_il'

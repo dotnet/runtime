@@ -517,8 +517,7 @@ namespace System.Diagnostics.Contracts
         {
             if (fromInclusive > toExclusive)
                 throw new ArgumentException(SR.Argument_ToExclusiveLessThanFromExclusive);
-            if (predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
+            ArgumentNullException.ThrowIfNull(predicate);
 
             for (int i = fromInclusive; i < toExclusive; i++)
                 if (!predicate(i)) return false;
@@ -538,10 +537,8 @@ namespace System.Diagnostics.Contracts
         [Pure]
         public static bool ForAll<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
-            if (predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
+            ArgumentNullException.ThrowIfNull(collection);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             foreach (T t in collection)
                 if (!predicate(t)) return false;
@@ -567,8 +564,7 @@ namespace System.Diagnostics.Contracts
         {
             if (fromInclusive > toExclusive)
                 throw new ArgumentException(SR.Argument_ToExclusiveLessThanFromExclusive);
-            if (predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
+            ArgumentNullException.ThrowIfNull(predicate);
 
             for (int i = fromInclusive; i < toExclusive; i++)
                 if (predicate(i)) return true;
@@ -587,10 +583,8 @@ namespace System.Diagnostics.Contracts
         [Pure]
         public static bool Exists<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
-            if (predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
+            ArgumentNullException.ThrowIfNull(collection);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             foreach (T t in collection)
                 if (predicate(t)) return true;
@@ -619,6 +613,9 @@ namespace System.Diagnostics.Contracts
         /// This method is used internally to trigger a failure indicating to the "programmer" that they are using the interface incorrectly.
         /// It is NEVER used to indicate failure of actual contracts at runtime.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "StackFrame.GetMethod is only used to help diagnosing incorrect use of contracts. " +
+                "It handles missing or incomplete metadata.")]
         private static void AssertMustUseRewriter(ContractFailureKind kind, string contractKind)
         {
             // For better diagnostics, report which assembly is at fault.  Walk up stack and

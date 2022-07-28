@@ -24,8 +24,7 @@ namespace System.Net.Mail
 
         internal override void WriteHeaders(NameValueCollection headers, bool allowUnicode)
         {
-            if (headers == null)
-                throw new ArgumentNullException(nameof(headers));
+            ArgumentNullException.ThrowIfNull(headers);
 
             foreach (string key in headers)
             {
@@ -40,7 +39,7 @@ namespace System.Net.Mail
         /// </summary>
         internal override void Close()
         {
-            _bufferBuilder.Append(s_crlf);
+            _bufferBuilder.Append("\r\n"u8);
             Flush(null);
             _stream.Close();
         }

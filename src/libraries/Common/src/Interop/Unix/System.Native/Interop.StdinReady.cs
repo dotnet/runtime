@@ -7,7 +7,8 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_StdinReady")]
-        internal static extern bool StdinReady();
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_StdinReady")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool StdinReady();
     }
 }

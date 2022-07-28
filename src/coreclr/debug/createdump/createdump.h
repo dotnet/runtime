@@ -6,16 +6,13 @@
 #define ___in       _SAL1_Source_(__in, (), _In_)
 #define ___out      _SAL1_Source_(__out, (), _Out_)
 
-#ifndef _countof
-#define _countof(x) (sizeof(x)/sizeof(x[0]))
-#endif
-
-extern void trace_printf(const char* format, ...);
-extern void trace_verbose_printf(const char* format, ...);
 extern bool g_diagnostics;
 extern bool g_diagnosticsVerbose;
 
 #ifdef HOST_UNIX
+extern bool g_checkForSingleFile;
+extern void trace_printf(const char* format, ...);
+extern void trace_verbose_printf(const char* format, ...);
 #define TRACE(args...) trace_printf(args)
 #define TRACE_VERBOSE(args...) trace_verbose_printf(args)
 #else
@@ -23,6 +20,11 @@ extern bool g_diagnosticsVerbose;
 #define TRACE_VERBOSE(args, ...)
 #endif
 
+#ifdef HOST_64BIT
+#define PRIA "016"
+#else
+#define PRIA "08"
+#endif
 
 #ifdef HOST_UNIX
 #include "config.h"
@@ -66,6 +68,8 @@ typedef int T_CONTEXT;
 #endif
 #include <dirent.h>
 #include <fcntl.h>
+#include <dlfcn.h>
+#include <cxxabi.h>
 #ifdef __APPLE__
 #include <ELF.h>
 #else
@@ -87,17 +91,27 @@ typedef int T_CONTEXT;
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
 #endif
+#include "moduleinfo.h"
 #include "datatarget.h"
+#include "stackframe.h"
 #include "threadinfo.h"
 #include "memoryregion.h"
 #include "crashinfo.h"
+#include "crashreportwriter.h"
 #include "dumpwriter.h"
+#include "runtimeinfo.h"
 #endif
 
 #ifndef MAX_LONGPATH
 #define MAX_LONGPATH   1024
 #endif
 
-bool FormatDumpName(std::string& name, const char* pattern, const char* exename, int pid);
-bool CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType);
+extern bool FormatDumpName(std::string& name, const char* pattern, const char* exename, int pid);
+extern bool CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType, bool crashReport, int crashThread, int signal);
 
+extern std::string GetLastErrorString();
+extern void printf_status(const char* format, ...);
+extern void printf_error(const char* format, ...);
+
+// Keep in sync with the definitions in dbgutil.cpp and daccess.h
+#define DACCESS_TABLE_SYMBOL "g_dacTable"

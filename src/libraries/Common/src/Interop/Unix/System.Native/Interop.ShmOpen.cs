@@ -8,10 +8,10 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ShmOpen", SetLastError = true)]
-        internal static extern SafeFileHandle ShmOpen(string name, OpenFlags flags, int mode);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ShmOpen", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        internal static partial SafeFileHandle ShmOpen(string name, OpenFlags flags, int mode);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ShmUnlink", SetLastError = true)]
-        internal static extern int ShmUnlink(string name);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ShmUnlink", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        internal static partial int ShmUnlink(string name);
     }
 }

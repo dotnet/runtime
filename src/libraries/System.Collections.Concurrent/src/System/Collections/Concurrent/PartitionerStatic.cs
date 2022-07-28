@@ -87,10 +87,8 @@ namespace System.Collections.Concurrent
         /// </returns>
         public static OrderablePartitioner<TSource> Create<TSource>(IList<TSource> list, bool loadBalance)
         {
-            if (list == null)
-            {
-                throw new ArgumentNullException(nameof(list));
-            }
+            ArgumentNullException.ThrowIfNull(list);
+
             if (loadBalance)
             {
                 return (new DynamicPartitionerForIList<TSource>(list));
@@ -115,13 +113,11 @@ namespace System.Collections.Concurrent
         /// </returns>
         public static OrderablePartitioner<TSource> Create<TSource>(TSource[] array, bool loadBalance)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             // This implementation uses 'ldelem' instructions for element retrieval, rather than using a
             // method call.
 
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
             if (loadBalance)
             {
                 return (new DynamicPartitionerForArray<TSource>(array));
@@ -168,10 +164,7 @@ namespace System.Collections.Concurrent
         /// </remarks>
         public static OrderablePartitioner<TSource> Create<TSource>(IEnumerable<TSource> source, EnumerablePartitionerOptions partitionerOptions)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             if ((partitionerOptions & (~EnumerablePartitionerOptions.NoBuffering)) != 0)
                 throw new ArgumentOutOfRangeException(nameof(partitionerOptions));
@@ -185,7 +178,7 @@ namespace System.Collections.Concurrent
         /// <returns>A partitioner.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is
         /// less than or equal to the <paramref name="fromInclusive"/> argument.</exception>
-        /// <remarks>if ProccessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1)</remarks>
+        /// <remarks>if ProcessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1)</remarks>
         public static OrderablePartitioner<Tuple<long, long>> Create(long fromInclusive, long toExclusive)
         {
             if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
@@ -238,7 +231,7 @@ namespace System.Collections.Concurrent
         /// <returns>A partitioner.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is
         /// less than or equal to the <paramref name="fromInclusive"/> argument.</exception>
-        /// <remarks>if ProccessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1),
+        /// <remarks>if ProcessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1),
         /// and the same issue could occur with rangeSize == -1 when fromInclusive = int.MinValue and toExclusive = int.MaxValue.</remarks>
         public static OrderablePartitioner<Tuple<int, int>> Create(int fromInclusive, int toExclusive)
         {
@@ -707,9 +700,9 @@ namespace System.Collections.Concurrent
                 internal bool GrabChunk_Single(KeyValuePair<long, TSource>[] destArray, int requestedChunkSize, ref int actualNumElementsGrabbed)
                 {
                     Debug.Assert(_useSingleChunking, "Expected _useSingleChecking to be true");
-                    Debug.Assert(requestedChunkSize == 1, "Got requested chunk size of " + requestedChunkSize + " when single-chunking was on");
-                    Debug.Assert(actualNumElementsGrabbed == 0, "Expected actualNumElementsGrabbed == 0, instead it is " + actualNumElementsGrabbed);
-                    Debug.Assert(destArray.Length == 1, "Expected destArray to be of length 1, instead its length is " + destArray.Length);
+                    Debug.Assert(requestedChunkSize == 1, $"Got requested chunk size of {requestedChunkSize} when single-chunking was on");
+                    Debug.Assert(actualNumElementsGrabbed == 0, $"Expected actualNumElementsGrabbed == 0, instead it is {actualNumElementsGrabbed}");
+                    Debug.Assert(destArray.Length == 1, $"Expected destArray to be of length 1, instead its length is {destArray.Length}");
 
                     lock (_sharedLock)
                     {
@@ -933,10 +926,7 @@ namespace System.Collections.Concurrent
                     }
 
                     // defer allocation to avoid false sharing
-                    if (_localList == null)
-                    {
-                        _localList = new KeyValuePair<long, TSource>[_maxChunkSize];
-                    }
+                    _localList ??= new KeyValuePair<long, TSource>[_maxChunkSize];
 
                     // make the actual call to the enumerable that grabs a chunk
                     return _enumerable.GrabChunk(_localList, requestedChunkSize, ref _currentChunkSize!.Value);

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Net.NetworkInformation
 {
     internal sealed class BsdIcmpV4Statistics : IcmpV4Statistics
@@ -28,10 +30,10 @@ namespace System.Net.NetworkInformation
         private readonly long _timestampRequestsReceived;
         private readonly long _timestampRequestsSent;
 
-        public BsdIcmpV4Statistics()
+        public unsafe BsdIcmpV4Statistics()
         {
             Interop.Sys.Icmpv4GlobalStatistics statistics;
-            if (Interop.Sys.GetIcmpv4GlobalStatistics(out statistics) != 0)
+            if (Interop.Sys.GetIcmpv4GlobalStatistics(&statistics) != 0)
             {
                 throw new NetworkInformationException(SR.net_PInvokeError);
             }
@@ -80,12 +82,28 @@ namespace System.Net.NetworkInformation
 
         public override long EchoRequestsSent { get { return _echoRequestsSent; } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long ErrorsReceived { get { throw new PlatformNotSupportedException(); } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long ErrorsSent { get { throw new PlatformNotSupportedException(); } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long MessagesReceived { get { throw new PlatformNotSupportedException(); } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long MessagesSent { get { throw new PlatformNotSupportedException(); } }
 
         public override long ParameterProblemsReceived { get { return _parameterProblemsReceived; } }

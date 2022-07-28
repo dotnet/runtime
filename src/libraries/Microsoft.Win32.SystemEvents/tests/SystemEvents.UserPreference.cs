@@ -188,7 +188,7 @@ namespace Microsoft.Win32.SystemEventsTests
             {
                 changedArgs.Add(e);
                 changingDuringChanged = changingArgs;
-                // signal test to continue after two events were recieved
+                // signal test to continue after two events were received
                 if (changedArgs.Count > 1)
                 {
                     changed.Set();

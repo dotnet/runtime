@@ -23,10 +23,10 @@ namespace
     ObjCMarshalNative::EnteredFinalizationCallback g_TrackedObjectEnteredFinalizationCallback;
 }
 
-BOOL QCALLTYPE ObjCMarshalNative::TryInitializeReferenceTracker(
-    _In_ BeginEndCallback beginEndCallback,
-    _In_ IsReferencedCallback isReferencedCallback,
-    _In_ EnteredFinalizationCallback trackedObjectEnteredFinalization)
+extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
+    _In_ ObjCMarshalNative::BeginEndCallback beginEndCallback,
+    _In_ ObjCMarshalNative::IsReferencedCallback isReferencedCallback,
+    _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization)
 {
     QCALL_CONTRACT;
     _ASSERTE(beginEndCallback != NULL
@@ -38,11 +38,11 @@ BOOL QCALLTYPE ObjCMarshalNative::TryInitializeReferenceTracker(
     BEGIN_QCALL;
 
     // Switch to Cooperative mode since we are setting callbacks that
-    // will be used during a GC and we want to ensure a GC isn't occuring
+    // will be used during a GC and we want to ensure a GC isn't occurring
     // while they are being set.
     {
         GCX_COOP();
-        if (FastInterlockCompareExchange((LONG*)&g_ReferenceTrackerInitialized, TRUE, FALSE) == FALSE)
+        if (InterlockedCompareExchange((LONG*)&g_ReferenceTrackerInitialized, TRUE, FALSE) == FALSE)
         {
             g_BeginEndCallback = beginEndCallback;
             g_IsReferencedCallback = isReferencedCallback;
@@ -57,7 +57,7 @@ BOOL QCALLTYPE ObjCMarshalNative::TryInitializeReferenceTracker(
     return success;
 }
 
-void* QCALLTYPE ObjCMarshalNative::CreateReferenceTrackingHandle(
+extern "C" void* QCALLTYPE ObjCMarshal_CreateReferenceTrackingHandle(
         _In_ QCall::ObjectHandleOnStack obj,
         _Out_ int* memInSizeT,
         _Outptr_ void** mem)
@@ -131,7 +131,7 @@ namespace
     {
         // Is the function in libobjc and named appropriately.
         return ((strcmp(libraryName, ObjectiveCLibrary) == 0)
-                && (strncmp(entrypointName, OBJC_MSGSEND, _countof(OBJC_MSGSEND) -1) == 0));
+                && (strncmp(entrypointName, OBJC_MSGSEND, STRING_LENGTH(OBJC_MSGSEND)) == 0));
     }
 
     const void* STDMETHODCALLTYPE MessageSendPInvokeOverride(_In_z_ const char* libraryName, _In_z_ const char* entrypointName)
@@ -139,7 +139,7 @@ namespace
         if (!IsObjectiveCMessageSendFunction(libraryName, entrypointName))
             return nullptr;
 
-        for (int i = 0; i < _countof(MsgSendEntryPoints); ++i)
+        for (int i = 0; i < ARRAY_SIZE(MsgSendEntryPoints); ++i)
         {
             void* funcMaybe = s_msgSendOverrides[i];
             if (funcMaybe != nullptr
@@ -153,8 +153,8 @@ namespace
     }
 }
 
-BOOL QCALLTYPE ObjCMarshalNative::TrySetGlobalMessageSendCallback(
-    _In_ MessageSendFunction msgSendFunction,
+extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
+    _In_ ObjCMarshalNative::MessageSendFunction msgSendFunction,
     _In_ void* fptr)
 {
     QCALL_CONTRACT;
@@ -163,11 +163,11 @@ BOOL QCALLTYPE ObjCMarshalNative::TrySetGlobalMessageSendCallback(
 
     BEGIN_QCALL;
 
-    _ASSERTE(msgSendFunction >= 0 && msgSendFunction < _countof(s_msgSendOverrides));
-    success = FastInterlockCompareExchangePointer(&s_msgSendOverrides[msgSendFunction], fptr, NULL) == NULL;
+    _ASSERTE(msgSendFunction >= 0 && msgSendFunction < ARRAY_SIZE(s_msgSendOverrides));
+    success = InterlockedCompareExchangeT(&s_msgSendOverrides[msgSendFunction], fptr, NULL) == NULL;
 
     // Set P/Invoke override callback if we haven't already
-    if (success && FALSE == FastInterlockCompareExchange((LONG*)&s_msgSendOverridden, TRUE, FALSE))
+    if (success && FALSE == InterlockedCompareExchange((LONG*)&s_msgSendOverridden, TRUE, FALSE))
         PInvokeOverride::SetPInvokeOverride(&MessageSendPInvokeOverride, PInvokeOverride::Source::ObjectiveCInterop);
 
     END_QCALL;

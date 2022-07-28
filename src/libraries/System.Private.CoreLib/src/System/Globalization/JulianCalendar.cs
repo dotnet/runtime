@@ -123,7 +123,7 @@ namespace System.Globalization
         /// </summary>
         internal static int GetDatePart(long ticks, int part)
         {
-            // Gregorian 1/1/0001 is Julian 1/3/0001. Remember DateTime(0) is refered to Gregorian 1/1/0001.
+            // Gregorian 1/1/0001 is Julian 1/3/0001. Remember DateTime(0) is referred to Gregorian 1/1/0001.
             // The following line convert Gregorian ticks to Julian ticks.
             long julianTicks = ticks + TicksPerDay * 2;
             // n = number of days since 1/1/0001
@@ -234,10 +234,7 @@ namespace System.Globalization
             return GetDatePart(time.Ticks, DatePartDay);
         }
 
-        public override DayOfWeek GetDayOfWeek(DateTime time)
-        {
-            return (DayOfWeek)((int)(time.Ticks / TicksPerDay + 1) % 7);
-        }
+        public override DayOfWeek GetDayOfWeek(DateTime time) => time.DayOfWeek;
 
         public override int GetDayOfYear(DateTime time)
         {
