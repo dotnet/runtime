@@ -45,23 +45,17 @@ namespace System.Text.Json.Reflection
 
         public static bool HasRequiredMemberAttribute(this ICustomAttributeProvider memberInfo)
         {
-#if NET7_0_OR_GREATER
-            return memberInfo.IsDefined(typeof(RequiredMemberAttribute), inherit: true);
-#else
+            // For compiler related attributes we should only look at full type name rather than trying to do something different for version when attribute was introduced.
+            // I.e. library is targetting netstandard2.0 with polyfilled attributes and is being consumed by app targetting net7.0.
             return memberInfo.HasCustomAttributeWithName("System.Runtime.CompilerServices.RequiredMemberAttribute", inherit: true);
-#endif
         }
 
         public static bool HasSetsRequiredMembersAttribute(this ICustomAttributeProvider memberInfo)
         {
-#if NET7_0_OR_GREATER
-            return memberInfo.IsDefined(typeof(SetsRequiredMembersAttribute), inherit: true);
-#else
+            // See comment for HasRequiredMemberAttribute for why we need to always only look at full name
             return memberInfo.HasCustomAttributeWithName("System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute", inherit: true);
-#endif
         }
 
-#if !NET7_0_OR_GREATER
         private static bool HasCustomAttributeWithName(this ICustomAttributeProvider memberInfo, string fullName, bool inherit)
         {
             foreach (object attribute in memberInfo.GetCustomAttributes(inherit))
@@ -74,7 +68,6 @@ namespace System.Text.Json.Reflection
 
             return false;
         }
-#endif
 
         public static TAttribute? GetUniqueCustomAttribute<TAttribute>(this MemberInfo memberInfo, bool inherit)
             where TAttribute : Attribute
