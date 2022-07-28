@@ -14,7 +14,7 @@ namespace System.Runtime.CompilerServices
 
         public static bool IsDynamicCodeCompiled
         {
-#if TARGET_BROWSER || TARGET_IOS || TARGET_TVOS
+#if TARGET_BROWSER || TARGET_IOS || TARGET_TVOS || TARGET_MACCATALYST
             get => false;
 #else
             [Intrinsic]  // the JIT/AOT compiler will change this flag to false for FullAOT scenarios, otherwise true
