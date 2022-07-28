@@ -2573,6 +2573,7 @@ namespace System.Tests
             // 0x3E, 0x2C, 0x30, 0x2F, 0x30, 0x2C, 0x4A, 0x33, 0x36, 0x35, 0x2F, 0x32, 0x35, 0x0A
         };
 
+        // https://github.com/dotnet/runtime/issues/73031 is the tracking issue to investigate the test failure on Android.
         private static bool CanRunNJulianRuleTest => PlatformDetection.IsNotAndroid && RemoteExecutor.IsSupported;
 
         [ConditionalTheory(nameof(CanRunNJulianRuleTest))]
