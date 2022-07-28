@@ -13,8 +13,8 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <_SampleProject>Wasm.Console.V8.ES6.Sample.csproj</_SampleProject>
-    <_SampleAssembly>Wasm.Console.V8.ES6.Sample.dll</_SampleAssembly>
+    <_SampleProject>Wasm.Console.V8.Sample.csproj</_SampleProject>
+    <_SampleAssembly>Wasm.Console.V8.Sample.dll</_SampleAssembly>
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithV8" />

@@ -3661,7 +3661,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
         // The recursive non-virtual calls to Jit intrinsics are must-expand by convention.
-        mustExpand = mustExpand || (gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL));
+        mustExpand = gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL);
 
         ni = lookupNamedIntrinsic(method);
 
@@ -4947,6 +4947,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig)
 {
+    // NextCallRetAddr requires a CALL, so return nullptr.
+    if (info.compHasNextCallRetAddr)
+    {
+        return nullptr;
+    }
+
     assert(sig->sigInst.classInstCount == 0);
 
     switch (intrinsic)
@@ -22801,7 +22807,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         // resolve call above for class-based GDV.
         if ((likelyMethodAttribs & CORINFO_FLG_STATIC) != 0)
         {
-            assert(call->IsDelegateInvoke());
+            assert((fgPgoSource != ICorJitInfo::PgoSource::Dynamic) || call->IsDelegateInvoke());
             JITDUMP("Cannot currently handle devirtualizing static delegate calls, sorry\n");
             return;
         }

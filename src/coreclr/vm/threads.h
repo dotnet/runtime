@@ -2496,7 +2496,7 @@ private:
 
 public:
     void MarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType);
-    void UnmarkThreadForAbort();
+    void UnmarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType = EEPolicy::TA_Rude);
 
     static ULONGLONG GetNextSelfAbortEndTime()
     {

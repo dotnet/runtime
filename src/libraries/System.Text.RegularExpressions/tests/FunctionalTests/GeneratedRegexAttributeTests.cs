@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class RegexGeneratorAttributeTests
+    public class GeneratedRegexAttributeTests
     {
         [Theory]
         [InlineData(null, RegexOptions.None, Timeout.Infinite)]
@@ -14,25 +14,25 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a.*b", RegexOptions.Compiled | RegexOptions.CultureInvariant, 1)]
         public void Ctor_Roundtrips(string pattern, RegexOptions options, int matchTimeoutMilliseconds)
         {
-            RegexGeneratorAttribute a;
+            GeneratedRegexAttribute a;
 
             if (matchTimeoutMilliseconds == -1)
             {
                 if (options == RegexOptions.None)
                 {
-                    a = new RegexGeneratorAttribute(pattern);
+                    a = new GeneratedRegexAttribute(pattern);
                     Assert.Equal(pattern, a.Pattern);
                     Assert.Equal(RegexOptions.None, a.Options);
                     Assert.Equal(Timeout.Infinite, a.MatchTimeoutMilliseconds);
                 }
 
-                a = new RegexGeneratorAttribute(pattern, options);
+                a = new GeneratedRegexAttribute(pattern, options);
                 Assert.Equal(pattern, a.Pattern);
                 Assert.Equal(options, a.Options);
                 Assert.Equal(Timeout.Infinite, a.MatchTimeoutMilliseconds);
             }
 
-            a = new RegexGeneratorAttribute(pattern, options, matchTimeoutMilliseconds);
+            a = new GeneratedRegexAttribute(pattern, options, matchTimeoutMilliseconds);
             Assert.Equal(pattern, a.Pattern);
             Assert.Equal(options, a.Options);
             Assert.Equal(matchTimeoutMilliseconds, a.MatchTimeoutMilliseconds);

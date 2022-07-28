@@ -18,7 +18,6 @@
   <PropertyGroup>
     <ICULibDir Condition="'$(MonoWasmThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
     <ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
-    <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">true</WasmEnableES6>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
@@ -128,9 +127,6 @@
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=4" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=2" /> <!-- hard error if worker pool is exhausted -->
-      <!--
-      <_EmccLinkFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' == 'true'" />
-      -->
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
@@ -218,7 +214,7 @@
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
-      <CMakeConfigurationLinkFlags Condition="'$(WasmEnableES6)' != 'false'">$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
 
@@ -263,13 +259,6 @@
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime/cjs/dotnet.cjs.pre.js;
-                       runtime/cjs/dotnet.cjs.lib.js;
-                       runtime/cjs/dotnet.cjs.post.js;
-                       runtime/cjs/dotnet.cjs.extpost.js;"
-          DestinationFolder="$(NativeBinDir)src/cjs"
-          SkipUnchangedFiles="true" />
-
     <Copy SourceFiles="runtime/es6/dotnet.es6.pre.js;
                        runtime/es6/dotnet.es6.lib.js;
                        runtime/es6/dotnet.es6.post.js;"
@@ -296,7 +285,6 @@
                              $(_EmccCompileRspPath);
                              $(_EmccLinkRspPath);
                              $(NativeBinDir)src\emcc-props.json" />
-      <WasmSrcFilesCjs Include="$(NativeBinDir)src\cjs\*.js;" />
       <WasmSrcFilesEs6 Include="$(NativeBinDir)src\es6\*.js;" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>
@@ -325,10 +313,6 @@
 
     <Copy SourceFiles="@(WasmSrcFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src"
-          SkipUnchangedFiles="true" />
-
-    <Copy SourceFiles="@(WasmSrcFilesCjs)"
-          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src\cjs"
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(WasmSrcFilesEs6)"

@@ -67,7 +67,7 @@ function initializeImportsAndExports(
     }
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
-        module.disableDotnet6Compatibility = imports.isESM;
+        module.disableDotnet6Compatibility = true;
     }
     // here we expose objects global namespace for tests and backward compatibility
     if (imports.isGlobal || !module.disableDotnet6Compatibility) {
