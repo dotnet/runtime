@@ -178,6 +178,81 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
     genTreeOps const oper = genTreeOps(funcApp.m_func);
 
+    // Dominating pred has the form R(x, y)
+    // See if tree pred has the form R*(x, y) or R'(y,x).
+    //
+    VNFuncApp treeApp;
+    if (vnStore->GetVNFunc(rii->treeNormVN, &treeApp))
+    {
+        genTreeOps const treeOper = genTreeOps(treeApp.m_func);
+
+        if (((treeApp.m_args[0] == funcApp.m_args[0]) && (treeApp.m_args[1] == funcApp.m_args[1])) ||
+            ((treeApp.m_args[0] == funcApp.m_args[1]) && (treeApp.m_args[1] == funcApp.m_args[0])))
+        {
+            const bool swapped = (treeApp.m_args[0] == funcApp.m_args[1]);
+
+            switch (oper)
+            {
+                default:
+                    break;
+
+                case GT_EQ:
+                    rii->canInfer =
+                        (treeOper == GT_GE) || (treeOper == GT_LE) || (treeOper == GT_GT) || (treeOper == GT_LT);
+                    rii->reverseSense      = swapped ^ ((treeOper == GT_GT) || (treeOper == GT_LT));
+                    rii->canInferFromTrue  = true;
+                    rii->canInferFromFalse = false;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
+                    return;
+
+                case GT_NE:
+                    rii->canInfer =
+                        (treeOper == GT_GE) || (treeOper == GT_LE) || (treeOper == GT_GT) || (treeOper == GT_LT);
+                    rii->reverseSense      = swapped ^ ((treeOper == GT_GE) || (treeOper == GT_LE));
+                    rii->canInferFromTrue  = false;
+                    rii->canInferFromFalse = true;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
+                    return;
+
+                case GT_LE:
+                    rii->canInfer =
+                        (treeOper == GT_NE) || (treeOper == GT_EQ) || (treeOper == GT_GE) || (treeOper == GT_LT);
+                    rii->reverseSense      = swapped ^ ((treeOper == GT_NE) || (treeOper == GT_GE));
+                    rii->canInferFromFalse = true;
+                    rii->canInferFromTrue  = false;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
+                    return;
+
+                case GT_GT:
+                    rii->canInfer =
+                        (treeOper == GT_NE) || (treeOper == GT_EQ) || (treeOper == GT_GE) || (treeOper == GT_LT);
+                    rii->reverseSense      = swapped ^ ((treeOper == GT_EQ) || (treeOper == GT_LT));
+                    rii->canInferFromFalse = false;
+                    rii->canInferFromTrue  = true;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
+                    return;
+
+                case GT_GE:
+                    rii->canInfer =
+                        (treeOper == GT_NE) || (treeOper == GT_EQ) || (treeOper == GT_GT) || (treeOper == GT_LE);
+                    rii->reverseSense      = swapped ^ ((treeOper == GT_NE) || (treeOper == GT_LE));
+                    rii->canInferFromFalse = true;
+                    rii->canInferFromTrue  = false;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
+                    return;
+
+                case GT_LT:
+                    rii->canInfer =
+                        (treeOper == GT_NE) || (treeOper == GT_EQ) || (treeOper == GT_GT) || (treeOper == GT_LE);
+                    rii->reverseSense      = swapped ^ ((treeOper == GT_EQ) || (treeOper == GT_GT));
+                    rii->canInferFromFalse = false;
+                    rii->canInferFromTrue  = true;
+                    rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
+                    return;
+            }
+        }
+    }
+
     // Look for {EQ,NE}({AND,OR,NOT}, 0)
     //
     if (!GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
@@ -185,8 +260,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
         return;
     }
 
-    const ValueNum constantVN = funcApp.m_args[1];
-    if (constantVN != vnStore->VNZeroForType(TYP_INT))
+    if (funcApp.m_args[1] != vnStore->VNZeroForType(TYP_INT))
     {
         return;
     }
@@ -309,10 +383,13 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     //
     if (vnStore->IsVNConstant(treeNormVN))
     {
-
         relopValue = (treeNormVN == vnStore->VNZeroForType(TYP_INT)) ? 0 : 1;
         JITDUMP("Relop [%06u] " FMT_BB " has known value %s\n ", dspTreeID(tree), block->bbNum,
                 relopValue == 0 ? "false" : "true");
+    }
+    else
+    {
+        JITDUMP("Relop [%06u] " FMT_BB " value unknown, trying inference\n", dspTreeID(tree), block->bbNum);
     }
 
     bool trySpeculativeDom = false;
@@ -370,11 +447,26 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         return false;
                     }
 
+                    // Was this an inference from an unrelated relop (GE => GT, say)?
+                    //
+                    const bool domIsUnrelatedRelop = (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Unrelated);
+
                     // The compare in "tree" is redundant.
                     // Is there a unique path from the dominating compare?
                     //
-                    JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has relop with %s liberal VN\n", domBlock->bbNum,
-                            block->bbNum, ValueNumStore::VNRelationString(rii.vnRelation));
+                    if (domIsUnrelatedRelop)
+                    {
+                        // Unrelated inference should be one-sided
+                        //
+                        assert(rii.canInferFromTrue ^ rii.canInferFromFalse);
+                        JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has same VN operands but different relop\n",
+                                domBlock->bbNum, block->bbNum);
+                    }
+                    else
+                    {
+                        JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has relop with %s liberal VN\n", domBlock->bbNum,
+                                block->bbNum, ValueNumStore::VNRelationString(rii.vnRelation));
+                    }
                     DISPTREE(domCmpTree);
                     JITDUMP(" Redundant compare; current relop:\n");
                     DISPTREE(tree);
@@ -415,7 +507,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     {
                         // Taken jump in dominator reaches, fall through doesn't; relop must be true/false.
                         //
-                        const bool relopIsTrue = rii.reverseSense ^ domIsSameRelop;
+                        const bool relopIsTrue = rii.reverseSense ^ (domIsSameRelop | domIsUnrelatedRelop);
                         JITDUMP("Jump successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
                                 domBlock->bbJumpDest->bbNum, domBlock->bbNum, dspTreeID(tree),
                                 relopIsTrue ? "true" : "false");
@@ -426,7 +518,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     {
                         // Fall through from dominator reaches, taken jump doesn't; relop must be false/true.
                         //
-                        const bool relopIsFalse = rii.reverseSense ^ domIsSameRelop;
+                        const bool relopIsFalse = rii.reverseSense ^ (domIsSameRelop | domIsUnrelatedRelop);
                         JITDUMP("Fall through successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
                                 domBlock->bbNext->bbNum, domBlock->bbNum, dspTreeID(tree),
                                 relopIsFalse ? "false" : "true");
