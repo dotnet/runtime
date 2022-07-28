@@ -6450,11 +6450,13 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
 #ifdef DEBUG
 
-#define ASSERTION_ZERO(name) \
-    name ## Count = 0;  \
-    name ## Iter = 0;  \
+#define ASSERTION_ZERO(name)    \
+    name##Count = 0;            \
+    name##Iter = 0;             \
+    missed##name##Iter  = 0;    \
+    missed##name##Count = 0;                                                                                  \
+    name##CallCount     = 0;
     
-
     ASSERTION_ZERO(addAssertion)
     ASSERTION_ZERO(subRange)
     ASSERTION_ZERO(subType)
@@ -6463,8 +6465,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     ASSERTION_ZERO(propLclVar)
     ASSERTION_ZERO(propEqualOrNot)
     ASSERTION_ZERO(propEqualZero)
-    ASSERTION_ZERO(propNonNull)
     ASSERTION_ZERO(propBndChk)
+    ASSERTION_ZERO(impliedByCopy)
+    ASSERTION_ZERO(impliedByConst)
+    ASSERTION_ZERO(impliedByType)
 
     compCurBB = nullptr;
     lvaTable  = nullptr;
@@ -8607,9 +8611,14 @@ void JitTimer::PrintCsvHeader()
 
 #ifdef DEBUG
 #define ASSERTION_TITLE(name) \
-    fprintf(s_csvFile, "\"" ## name ## "Count\",");    \
-    fprintf(s_csvFile, "\"" ## name ## "Iter\",");   \
-    fprintf(s_csvFile, "\"" ## name ## "Ratio\",");
+    fprintf(s_csvFile, "\"" ## name ## "Match\",");     \
+    fprintf(s_csvFile, "\"" ## name ## "Iter\",");      \
+    fprintf(s_csvFile, "\"" ## name ## "Ratio\",");     \
+    fprintf(s_csvFile, "\"" ## name ## "MissedCount\",");     \
+    fprintf(s_csvFile, "\"" ## name ## "MissedIter\",");     \
+    fprintf(s_csvFile, "\"" ## name ## "MissedRatio\",");     \
+    fprintf(s_csvFile, "\"" ## name ## "CallCount\",");
+
 
 ASSERTION_TITLE("AddAssertion")
 ASSERTION_TITLE("SubType")
@@ -8619,12 +8628,11 @@ ASSERTION_TITLE("NoNull")
 ASSERTION_TITLE("PropLclVar")
 ASSERTION_TITLE("PropEqualOrNot")
 ASSERTION_TITLE("PropEqualZero")
-ASSERTION_TITLE("PropNonNull")
 ASSERTION_TITLE("PropBndChk")
 
 #endif
 
-            fprintf(s_csvFile, "\n,");
+            fprintf(s_csvFile, "\n");
 
 
 
@@ -8714,14 +8722,11 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     assert(comp->##name##Iter >= comp->##name##Count);  \
     fprintf(s_csvFile, "%u,", comp->##name##Count); \
     fprintf(s_csvFile, "%u,", comp->##name##Iter);  \
-    if (comp->##name##Count == 0)                   \
-    {                                               \
-        fprintf(s_csvFile, "0,");                    \
-    }                                               \
-    else                                            \
-    {                                               \
-        fprintf(s_csvFile, "%d,", (comp->##name##Iter / comp->##name##Count));                    \
-    }
+    fprintf(s_csvFile, "%d,", (comp->##name##Count == 0) ? 0 : (comp->##name##Iter / comp->##name##Count));                    \
+    fprintf(s_csvFile, "%u,", comp->missed##name##Count);  \
+    fprintf(s_csvFile, "%u,", comp->missed##name##Iter);                                                               \
+    fprintf(s_csvFile, "%d,", (comp->missed##name##Count == 0) ? 0 : (comp->missed##name##Iter / comp->missed##name##Count));                    \
+    fprintf(s_csvFile, "%u,", comp->##name##CallCount);
 
 ASSERTION_STATS(addAssertion)
 ASSERTION_STATS(subRange)
@@ -8731,11 +8736,9 @@ ASSERTION_STATS(noNull)
 ASSERTION_STATS(propLclVar)
 ASSERTION_STATS(propEqualOrNot)
 ASSERTION_STATS(propEqualZero)
-ASSERTION_STATS(propNonNull)
 ASSERTION_STATS(propBndChk)
-
 #endif
-    fprintf(s_csvFile, "\n,");
+    fprintf(s_csvFile, "\n");
     fflush(s_csvFile);
 }
 

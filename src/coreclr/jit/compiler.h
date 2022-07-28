@@ -7289,21 +7289,25 @@ protected:
     AssertionIndex optMaxAssertionCount;
 
 #ifdef DEBUG
-#define ASSERTION_VAR(name)  \
-    unsigned name##Iter = 0; \
-    unsigned name##Count = 0;
+#define ASSERTION_VAR(name)             \
+    unsigned name##Iter = 0;            \
+    unsigned name##Count = 0;           \
+    unsigned missed##name##Iter  = 0;   \
+    unsigned missed##name##Count = 0;   \
+    unsigned name##CallCount = 0;
 
-ASSERTION_VAR(addAssertion);
-ASSERTION_VAR(subRange);
-ASSERTION_VAR(subType);
-ASSERTION_VAR(equalOrNotEqua);
-ASSERTION_VAR(noNull);
-
-ASSERTION_VAR(propLclVar);
-ASSERTION_VAR(propEqualOrNot);
-ASSERTION_VAR(propEqualZero);
-ASSERTION_VAR(propNonNull);
-ASSERTION_VAR(propBndChk);
+ASSERTION_VAR(addAssertion)
+ASSERTION_VAR(subRange)
+ASSERTION_VAR(subType)
+ASSERTION_VAR(equalOrNotEqua)
+ASSERTION_VAR(noNull)
+ASSERTION_VAR(propLclVar)
+ASSERTION_VAR(propEqualOrNot)
+ASSERTION_VAR(propEqualZero)
+ASSERTION_VAR(propBndChk)
+ASSERTION_VAR(impliedByCopy)
+ASSERTION_VAR(impliedByConst)
+ASSERTION_VAR(impliedByType)
 
 #endif
 

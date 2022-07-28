@@ -1966,6 +1966,7 @@ bool Compiler::optAssertionVnInvolvesNan(AssertionDsc* assertion)
  */
 AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
 {
+    addAssertionCallCount++;
     noway_assert(newAssertion->assertionKind != OAK_INVALID);
 
     // Even though the propagation step takes care of NaN, just a check
@@ -1993,6 +1994,12 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
             addAssertionIter += (optAssertionCount - index  + 1);
             break;
         }
+    }
+
+    if (!found)
+    {
+        missedaddAssertionCount++;
+        missedaddAssertionIter += optAssertionCount;
     }
 #endif
 
@@ -2881,6 +2888,8 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
         return NO_ASSERTION_INDEX;
     }
 
+    subRangeCallCount++;
+
     for (AssertionIndex index = 1; index <= optAssertionCount; index++)
     {
         AssertionDsc* curAssertion = optGetAssertion(index);
@@ -2909,6 +2918,9 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
         }
     }
 
+    missedsubRangeCount++;
+    missedsubRangeIter += (optLocalAssertionProp ? optAssertionCount : (BitVecOps::Count(apTraits, assertions)));
+
     return NO_ASSERTION_INDEX;
 }
 
@@ -2927,6 +2939,9 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
     {
         return NO_ASSERTION_INDEX;
     }
+
+    subTypeCallCount++;
+
     for (AssertionIndex index = 1; index <= optAssertionCount; index++)
     {
         if (!optLocalAssertionProp && !BitVecOps::IsMember(apTraits, assertions, index - 1))
@@ -2977,6 +2992,9 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
             return index;
         }
     }
+
+    missedsubTypeCount++;
+    missedsubTypeIter += (optLocalAssertionProp ? optAssertionCount : (BitVecOps::Count(apTraits, assertions)));
     return NO_ASSERTION_INDEX;
 }
 
@@ -3655,6 +3673,8 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
+    propLclVarCallCount++;
+
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     unsigned        iterCount = 0;
@@ -3733,6 +3753,9 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
             }
         }
     }
+
+    missedpropLclVarCount++;
+    missedpropLclVarIter += (optLocalAssertionProp ? optAssertionCount : (BitVecOps::Count(apTraits, assertions)));
 
     return nullptr;
 }
@@ -3815,6 +3838,8 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
         return NO_ASSERTION_INDEX;
     }
 
+    equalOrNotEquaCallCount++;
+
     for (AssertionIndex index = 1; index <= optAssertionCount; ++index)
     {
         AssertionDsc* curAssertion = optGetAssertion(index);
@@ -3842,6 +3867,10 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
             }
         }
     }
+
+    missedequalOrNotEquaCount++;
+    missedequalOrNotEquaIter += (optLocalAssertionProp ? optAssertionCount : (BitVecOps::Count(apTraits, assertions)));
+
     return NO_ASSERTION_INDEX;
 }
 
@@ -3869,6 +3898,9 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
     {
         return NO_ASSERTION_INDEX;
     }
+
+    propEqualOrNotCallCount++;
+
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     unsigned        iterCount = 0;
@@ -3914,6 +3946,10 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
             }
         }
     }
+
+    missedpropEqualOrNotCount++;
+    missedpropEqualOrNotIter += BitVecOps::Count(apTraits, assertions);
+
     return NO_ASSERTION_INDEX;
 }
 
@@ -3929,6 +3965,9 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_T
     {
         return NO_ASSERTION_INDEX;
     }
+
+    propEqualZeroCallCount++;
+
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     unsigned        iterCount = 0;
@@ -3955,6 +3994,10 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_T
             return assertionIndex;
         }
     }
+
+    missedpropEqualZeroCount++;
+    missedpropEqualZeroIter += BitVecOps::Count(apTraits, assertions);
+
     return NO_ASSERTION_INDEX;
 }
 
@@ -4577,6 +4620,7 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
             return NO_ASSERTION_INDEX;
         }
 
+        noNullCallCount++;
         // Look at both the top-level vn, and
         // the vn we get by stripping off any constant adds.
         //
@@ -4634,13 +4678,19 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
             *pVnBased = true;
 #endif
 
-            propNonNullCount++;
-            propNonNullIter += iterCount;
+            noNullCount++;
+            noNullIter += iterCount;
             return assertionIndex;
         }
+
+        
+        missednoNullCount++;
+        missednoNullIter += BitVecOps::Count(apTraits, assertions);
     }
     else
     {
+        noNullCallCount++;
+
         unsigned lclNum = op->AsLclVarCommon()->GetLclNum();
         // Check each assertion to find if we have a variable == or != null assertion.
         for (AssertionIndex index = 1; index <= optAssertionCount; index++)
@@ -4658,7 +4708,11 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
                 return index;
             }
         }
+
+        missednoNullCount++;
+        missednoNullIter += optAssertionCount;
     }
+
     return NO_ASSERTION_INDEX;
 }
 /*****************************************************************************
@@ -4793,6 +4847,8 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
     }
 #endif // FEATURE_ENABLE_NO_RANGE_CHECKS
 
+    propBndChkCallCount++;
+
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     unsigned         iterCount = 0;
@@ -4907,6 +4963,9 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
 
         return nullptr;
     }
+
+    missedpropBndChkCount++;
+    missedpropBndChkIter += BitVecOps::Count(apTraits, assertions);
 
     return nullptr;
 }
