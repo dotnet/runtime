@@ -208,7 +208,18 @@
         Include="$(DownloadDirectory)**\VS.Redist.Common.*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
 
-      <!-- Workloads VS insertion artifacts produced by src/workloads/workloads.csproj -->
+      <!--
+        Workloads VS insertion artifacts produced by src/workloads/workloads.csproj.
+        Manually dedupe the file set for publishing since we have duplicates files in separate
+        feature band folders and Distinct() works on the actual Include value.
+      -->
+      <_WorkloadsVSInsertionFile
+        Include="
+          $(DownloadDirectory)**\*.msi;
+          $(DownloadDirectory)**\*.json" />
+      <__WorkloadsVSInsertionFile Include="%(_WorkloadsVSInsertionFile.Filename)%(Extension)" ActualPath="%(FullPath)" />
+      <___WorkloadsVSInsertionFile Include="@(__WorkloadsVSInsertionFile->Distinct())" />
+      <WorkloadsVSInsertionFile Include="%(___WorkloadsVSInsertionFile.ActualPath)" />
       <WorkloadsVSInsertionFile
         Include="
           $(DownloadDirectory)**\Workloads.VSDrop*.zip" />
