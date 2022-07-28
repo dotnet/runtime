@@ -735,10 +735,7 @@ namespace System.Collections.Immutable
             {
                 if (match(self.array[i]))
                 {
-                    if (removeIndices == null)
-                    {
-                        removeIndices = new List<int>();
-                    }
+                    removeIndices ??= new List<int>();
 
                     removeIndices.Add(i);
                 }
@@ -809,10 +806,7 @@ namespace System.Collections.Immutable
             // 0 and 1 element arrays don't need to be sorted.
             if (count > 1)
             {
-                if (comparer == null)
-                {
-                    comparer = Comparer<T>.Default;
-                }
+                comparer ??= Comparer<T>.Default;
 
                 // Avoid copying the entire array when the array is already sorted.
                 bool outOfOrder = false;

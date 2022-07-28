@@ -6,6 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Buffers;
+using System.Buffers.Text;
+using System.Text;
 
 namespace System
 {
@@ -16,20 +19,11 @@ namespace System
         InsertLineBreaks = 1
     }
 
-    // Returns the type code of this object. An implementation of this method
-    // must not return TypeCode.Empty (which represents a null reference) or
-    // TypeCode.Object (which represents an object that doesn't implement the
-    // IConvertible interface). An implementation of this method should return
-    // TypeCode.DBNull if the value of this object is a database null. For
-    // example, a nullable integer type should return TypeCode.DBNull if the
-    // value of the object is the database null. Otherwise, an implementation
-    // of this method should return the TypeCode that best describes the
-    // internal representation of the object.
-    // The Value class provides conversion and querying methods for values. The
-    // Value class contains static members only, and it is not possible to create
+    // The Convert class provides conversion and querying methods for values. The
+    // Convert class contains static members only, and it is not possible to create
     // instances of the class.
     //
-    // The statically typed conversion methods provided by the Value class are all
+    // The statically typed conversion methods provided by the Convert class are all
     // of the form:
     //
     //    public static XXX ToXXX(YYY value)
@@ -57,7 +51,7 @@ namespace System
     // String      x   x   x   x   x   x   x   x   x   x   x   x   x   x   x
     // ----------------------------------------------------------------------
     //
-    // For dynamic conversions, the Value class provides a set of methods of the
+    // For dynamic conversions, the Convert class provides a set of methods of the
     // form:
     //
     //    public static XXX ToXXX(object value)
@@ -71,25 +65,11 @@ namespace System
     //    }
     //
     // The code first checks if the given value is a null reference (which is the
-    // same as Value.Empty), in which case it returns the default value for type
+    // same as TypeCode.Empty), in which case it returns the default value for type
     // XXX. Otherwise, a cast to IConvertible is performed, and the appropriate ToXXX()
     // method is invoked on the object. An InvalidCastException is thrown if the
     // cast to IConvertible fails, and that exception is simply allowed to propagate out
     // of the conversion method.
-
-    // Constant representing the database null value. This value is used in
-    // database applications to indicate the absence of a known value. Note
-    // that Value.DBNull is NOT the same as a null object reference, which is
-    // represented by Value.Empty.
-    //
-    // The Equals() method of DBNull always returns false, even when the
-    // argument is itself DBNull.
-    //
-    // When passed Value.DBNull, the Value.GetTypeCode() method returns
-    // TypeCode.DBNull.
-    //
-    // When passed Value.DBNull, the Value.ToXXX() methods all throw an
-    // InvalidCastException.
 
     public static partial class Convert
     {
@@ -121,13 +101,9 @@ namespace System
         // Need to special case Enum because typecode will be underlying type, e.g. Int32
         private static readonly Type EnumType = typeof(Enum);
 
-        internal static readonly char[] base64Table = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
-                                                        'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd',
-                                                        'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
-                                                        't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7',
-                                                        '8', '9', '+', '/', '=' };
+        internal const string Base64Table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
-        private const int base64LineBreakPosition = 76;
+        private const int Base64LineBreakPosition = 76;
 
 #if DEBUG
         static Convert()
@@ -143,6 +119,16 @@ namespace System
         }
 #endif
 
+        // Constant representing the database null value. This value is used in
+        // database applications to indicate the absence of a known value. Note
+        // that Convert.DBNull is NOT the same as a null object reference, which is
+        // represented by TypeCode.Empty.
+        //
+        // When passed Convert.DBNull, the Convert.GetTypeCode() method returns
+        // TypeCode.DBNull.
+        //
+        // When passed Convert.DBNull, all the Convert.ToXXX() methods except ToString()
+        // throw an InvalidCastException.
         public static readonly object DBNull = System.DBNull.Value;
 
         // Returns the type code for the given object. If the argument is null,
@@ -180,13 +166,13 @@ namespace System
         // object already has the given type code, in which case the object is
         // simply returned. Otherwise, the appropriate ToXXX() is invoked on the
         // object's implementation of IConvertible.
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public static object? ChangeType(object? value, TypeCode typeCode)
         {
             return ChangeType(value, typeCode, CultureInfo.CurrentCulture);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public static object? ChangeType(object? value, TypeCode typeCode, IFormatProvider? provider)
         {
             if (value == null && (typeCode == TypeCode.Empty || typeCode == TypeCode.String || typeCode == TypeCode.Object))
@@ -280,13 +266,13 @@ namespace System
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, value.GetType().FullName, targetType.FullName));
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public static object? ChangeType(object? value, Type conversionType)
         {
             return ChangeType(value, conversionType, CultureInfo.CurrentCulture);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public static object? ChangeType(object? value, Type conversionType, IFormatProvider? provider)
         {
             ArgumentNullException.ThrowIfNull(conversionType);
@@ -2090,13 +2076,13 @@ namespace System
             return value.ToString(provider);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public static string? ToString(string? value)
         {
             return value;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         public static string? ToString(string? value, IFormatProvider? provider)
         {
             return value;
@@ -2349,7 +2335,30 @@ namespace System
             }
 
             bool insertLineBreaks = (options == Base64FormattingOptions.InsertLineBreaks);
-            string result = string.FastAllocateString(ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks));
+            int outputLength = ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks);
+
+            if (!insertLineBreaks && bytes.Length >= 64)
+            {
+                // For large inputs it's faster to allocate a temp buffer and call UTF8 version
+                // which is then extended to UTF8 via Latin1.GetString (base64 is always ASCI)
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static string ToBase64StringLargeInputs(ReadOnlySpan<byte> data, int outputLen)
+                {
+                    byte[]? rentedBytes = null;
+                    Span<byte> utf8buffer = outputLen <= 256 ? stackalloc byte[256] : (rentedBytes = ArrayPool<byte>.Shared.Rent(outputLen));
+                    OperationStatus status = Base64.EncodeToUtf8(data, utf8buffer, out int _, out int bytesWritten);
+                    Debug.Assert(status == OperationStatus.Done && bytesWritten == outputLen);
+                    string result = Encoding.Latin1.GetString(utf8buffer.Slice(0, outputLen));
+                    if (rentedBytes != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(rentedBytes);
+                    }
+                    return result;
+                }
+                return ToBase64StringLargeInputs(bytes, outputLength);
+            }
+
+            string result = string.FastAllocateString(outputLength);
 
             unsafe
             {
@@ -2460,14 +2469,14 @@ namespace System
             // Convert three bytes at a time to base64 notation.  This will consume 4 chars.
             int i;
 
-            // get a pointer to the base64Table to avoid unnecessary range checking
-            fixed (char* base64 = &base64Table[0])
+            // get a pointer to the Base64Table to avoid unnecessary range checking
+            fixed (char* base64 = Base64Table)
             {
                 for (i = offset; i < calcLength; i += 3)
                 {
                     if (insertLineBreaks)
                     {
-                        if (charcount == base64LineBreakPosition)
+                        if (charcount == Base64LineBreakPosition)
                         {
                             outChars[j++] = '\r';
                             outChars[j++] = '\n';
@@ -2485,7 +2494,7 @@ namespace System
                 // Where we left off before
                 i = calcLength;
 
-                if (insertLineBreaks && (lengthmod3 != 0) && (charcount == base64LineBreakPosition))
+                if (insertLineBreaks && (lengthmod3 != 0) && (charcount == Base64LineBreakPosition))
                 {
                     outChars[j++] = '\r';
                     outChars[j++] = '\n';
@@ -2523,7 +2532,7 @@ namespace System
 
             if (insertLineBreaks)
             {
-                (uint newLines, uint remainder) = Math.DivRem(outlen, base64LineBreakPosition);
+                (uint newLines, uint remainder) = Math.DivRem(outlen, Base64LineBreakPosition);
                 if (remainder == 0)
                 {
                     --newLines;

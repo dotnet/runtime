@@ -255,13 +255,8 @@ namespace System.Drawing.Printing
         /// </summary>
         public PrinterSettings PrinterSettings
         {
-            get { return printerSettings; }
-            set
-            {
-                if (value == null)
-                    value = new PrinterSettings();
-                printerSettings = value;
-            }
+            get => printerSettings;
+            set => printerSettings = value ?? new PrinterSettings();
         }
 
         /// <summary>

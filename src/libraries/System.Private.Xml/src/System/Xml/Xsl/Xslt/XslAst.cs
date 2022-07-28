@@ -117,10 +117,7 @@ namespace System.Xml.Xsl.Xslt
         public void AddContent(XslNode node)
         {
             Debug.Assert(node != null);
-            if (_content == null)
-            {
-                _content = new List<XslNode>();
-            }
+            _content ??= new List<XslNode>();
             _content.Add(node);
         }
 

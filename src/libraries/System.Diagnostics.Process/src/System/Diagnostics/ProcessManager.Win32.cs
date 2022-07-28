@@ -78,7 +78,7 @@ namespace System.Diagnostics
             {
                 processHandle = ProcessManager.OpenProcess(processId, Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION | Interop.Advapi32.ProcessOptions.PROCESS_VM_READ, true);
 
-                bool succeeded = Interop.Kernel32.EnumProcessModules(processHandle, null, 0, out int needed);
+                bool succeeded = Interop.Kernel32.EnumProcessModulesEx(processHandle, null, 0, out int needed, Interop.Kernel32.LIST_MODULES_ALL);
 
                 // The API we need to use to enumerate process modules differs on two factors:
                 //   1) If our process is running in WOW64.
@@ -108,7 +108,7 @@ namespace System.Diagnostics
                         throw new Win32Exception(Interop.Errors.ERROR_PARTIAL_COPY, SR.EnumProcessModuleFailedDueToWow);
                     }
 
-                    EnumProcessModulesUntilSuccess(processHandle, null, 0, out needed);
+                    EnumProcessModulesUntilSuccess(processHandle, null, 0, out needed, Interop.Kernel32.LIST_MODULES_ALL);
                 }
 
                 int modulesCount = needed / IntPtr.Size;
@@ -116,7 +116,7 @@ namespace System.Diagnostics
                 while (true)
                 {
                     int size = needed;
-                    EnumProcessModulesUntilSuccess(processHandle, moduleHandles, size, out needed);
+                    EnumProcessModulesUntilSuccess(processHandle, moduleHandles, size, out needed, Interop.Kernel32.LIST_MODULES_ALL);
                     if (size == needed)
                     {
                         break;
@@ -221,7 +221,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static void EnumProcessModulesUntilSuccess(SafeProcessHandle processHandle, IntPtr[]? modules, int size, out int needed)
+        private static void EnumProcessModulesUntilSuccess(SafeProcessHandle processHandle, IntPtr[]? modules, int size, out int needed, int filterFlag)
         {
             // When called on a running process, EnumProcessModules may fail with ERROR_PARTIAL_COPY
             // if the target process is not yet initialized or if the module list changes during the function call.
@@ -229,7 +229,7 @@ namespace System.Diagnostics
             int i = 0;
             while (true)
             {
-                if (Interop.Kernel32.EnumProcessModules(processHandle, modules, size, out needed))
+                if (Interop.Kernel32.EnumProcessModulesEx(processHandle, modules, size, out needed, filterFlag))
                 {
                     return;
                 }

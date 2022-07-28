@@ -400,7 +400,7 @@ public:
 
 #define CSE_INTO_HANDLERS 0
 #define DUMP_FLOWGRAPHS DEBUG                  // Support for creating Xml Flowgraph reports in *.fgx files
-#define HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION 1 // if 1 we must have all handler entry points in the Hot code section
+#define HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION 0 // if 1 we must have all handler entry points in the Hot code section
 
 /*****************************************************************************/
 

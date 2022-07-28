@@ -115,8 +115,8 @@ struct DispatchHolder;
 Monomorphic and mostly monomorphic call sites eventually point to DispatchStubs.
 A dispatch stub has an expected type (expectedMT), target address (target) and fail address (failure).
 If the calling frame does in fact have the <this> type be of the expected type, then
-control is transfered to the target address, the method implementation.  If not,
-then control is transfered to the fail address, a fail stub (see below) where a polymorphic
+control is transferred to the target address, the method implementation.  If not,
+then control is transferred to the fail address, a fail stub (see below) where a polymorphic
 lookup is done to find the correct address to go to.
 
 implementation note: Order, choice of instructions, and branch directions
@@ -125,7 +125,7 @@ attention needs to be paid to the effects on the BTB and branch prediction, both
 and in the large, i.e. it needs to run well in the face of BTB overflow--using static predictions.
 Note that since this stub is only used for mostly monomorphic callsites (ones that are not, get patched
 to something else), therefore the conditional jump "jne failure" is mostly not taken, and hence it is important
-that the branch prediction staticly predict this, which means it must be a forward jump.  The alternative
+that the branch prediction statically predict this, which means it must be a forward jump.  The alternative
 is to reverse the order of the jumps and make sure that the resulting conditional jump "je implTarget"
 is statically predicted as taken, i.e a backward jump. The current choice was taken since it was easier
 to control the placement of the stubs than control the placement of the jitted code and the stubs. */
@@ -233,7 +233,7 @@ transfers to the resolve piece (see ResolveStub).  The failEntryPoint decrements
 every time it is entered.  The ee at various times will add a large chunk to the counter.
 
 ResolveEntry - does a lookup via in a cache by hashing the actual type of the calling frame s
-<this> and the token identifying the (contract,method) pair desired.  If found, control is transfered
+<this> and the token identifying the (contract,method) pair desired.  If found, control is transferred
 to the method implementation.  If not found in the cache, the token is pushed and the ee is entered via
 the ResolveWorkerStub to do a full lookup and eventual transfer to the correct method implementation.  Since
 there is a different resolve stub for every token, the token can be inlined and the token can be pre-hashed.
@@ -944,7 +944,7 @@ void ResolveHolder::InitializeStatic()
     resolveInit.toResolveStub          = (offsetof(ResolveStub, _resolveEntryPoint) - (offsetof(ResolveStub, toResolveStub) + 1)) & 0xFF;
 };
 
-void  ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX, 
+void  ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
                                 PCODE resolveWorkerTarget, PCODE patcherTarget,
                                 size_t dispatchToken, UINT32 hashedToken,
                                 void * cacheAddr, INT32 * counterAddr

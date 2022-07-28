@@ -60,7 +60,7 @@ unsigned __int64 getTimeStamp() {
 #if defined(HOST_X86) && !defined(HOST_UNIX)
 
 /*********************************************************************************/
-/* Get the frequency cooresponding to 'getTimeStamp'.  For x86, this is the
+/* Get the frequency corresponding to 'getTimeStamp'.  For x86, this is the
    frequency of the RDTSC instruction, which is just the clock rate of the CPU.
    This can vary due to power management, so this is at best a rough approximation.
 */
@@ -108,7 +108,7 @@ unsigned __int64 getTickFrequency()
 
 
 /*********************************************************************************/
-/* Get the frequency cooresponding to 'getTimeStamp'.  For non-x86
+/* Get the frequency corresponding to 'getTimeStamp'.  For non-x86
    architectures, this is just the performance counter frequency.
 */
 unsigned __int64 getTickFrequency()

@@ -1001,7 +1001,7 @@ enum {
 };
 
 enum {
-	/* Cannot be 0 since this is stored in rgctx slots, and 0 means an unitialized rgctx slot */
+	/* Cannot be 0 since this is stored in rgctx slots, and 0 means an uninitialized rgctx slot */
 	MONO_GSHAREDVT_BOX_TYPE_VTYPE = 1,
 	MONO_GSHAREDVT_BOX_TYPE_REF = 2,
 	MONO_GSHAREDVT_BOX_TYPE_NULLABLE = 3
@@ -1482,6 +1482,7 @@ typedef struct {
 	guint            no_inline : 1;
 	guint            gshared : 1;
 	guint            gsharedvt : 1;
+	guint            gsharedvt_min : 1;
 	guint            r4fp : 1;
 	guint            llvm_only : 1;
 	guint            interp : 1;
@@ -2779,7 +2780,7 @@ guint mono_type_to_regmove (MonoCompile *cfg, MonoType *type);
 void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *start, MonoBasicBlock *bb);
 
 void mono_cfg_set_exception (MonoCompile *cfg, MonoExceptionType type);
-void mono_cfg_set_exception_invalid_program (MonoCompile *cfg, char *msg);
+void mono_cfg_set_exception_invalid_program (MonoCompile *cfg, const char *msg);
 
 #define MONO_TIME_TRACK(a, phase) \
 	{ \
@@ -2932,7 +2933,11 @@ static inline gboolean
 mini_safepoints_enabled (void)
 {
 #if defined (TARGET_WASM)
-	return mono_opt_wasm_gc_safepoints;
+	#ifndef DISABLE_THREADS
+		return TRUE;
+	#else
+		return mono_opt_wasm_gc_safepoints;
+	#endif
 #else
 	return TRUE;
 #endif

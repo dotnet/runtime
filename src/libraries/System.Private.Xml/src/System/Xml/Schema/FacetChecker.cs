@@ -171,10 +171,7 @@ namespace System.Xml.Schema
             internal void CompileEnumerationFacet(XmlSchemaFacet facet, IXmlNamespaceResolver nsmgr, XmlNameTable nameTable)
             {
                 CheckProhibitedFlag(facet, RestrictionFlags.Enumeration, SR.Sch_EnumerationFacetProhibited);
-                if (_derivedRestriction.Enumeration == null)
-                {
-                    _derivedRestriction.Enumeration = new ArrayList();
-                }
+                _derivedRestriction.Enumeration ??= new ArrayList();
                 _derivedRestriction.Enumeration.Add(ParseFacetValue(_datatype, facet, SR.Sch_EnumerationFacetInvalid, nsmgr, nameTable));
                 SetFlag(facet, RestrictionFlags.Enumeration);
             }
@@ -357,10 +354,7 @@ namespace System.Xml.Schema
                 //needs to be converted to a RegEx
                 if (_firstPattern == false)
                 {
-                    if (_derivedRestriction.Patterns == null)
-                    {
-                        _derivedRestriction.Patterns = new ArrayList();
-                    }
+                    _derivedRestriction.Patterns ??= new ArrayList();
                     try
                     {
                         _regStr!.Append(')');
@@ -604,10 +598,7 @@ namespace System.Xml.Schema
 
                 if ((_baseFlags & RestrictionFlags.Enumeration) != 0)
                 {
-                    if (_derivedRestriction.Enumeration == null)
-                    {
-                        _derivedRestriction.Enumeration = baseRestriction.Enumeration;
-                    }
+                    _derivedRestriction.Enumeration ??= baseRestriction.Enumeration;
                     SetFlag(RestrictionFlags.Enumeration);
                 }
 
@@ -1351,7 +1342,7 @@ namespace System.Xml.Schema
     internal sealed partial class StringFacetsChecker : FacetsChecker
     { //All types derived from string & anyURI
 
-        [RegexGenerator("^([a-zA-Z]{1,8})(-[a-zA-Z0-9]{1,8})*$", RegexOptions.ExplicitCapture)]
+        [GeneratedRegex("^([a-zA-Z]{1,8})(-[a-zA-Z0-9]{1,8})*$", RegexOptions.ExplicitCapture)]
         private static partial Regex LanguageRegex();
 
         internal override Exception? CheckValueFacets(object value, XmlSchemaDatatype datatype)

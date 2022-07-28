@@ -18,71 +18,17 @@ namespace System.Reflection.Internal
 
         internal static bool Equals(ImmutableArray<byte> x, ImmutableArray<byte> y)
         {
-            if (x == y)
-            {
-                return true;
-            }
-
-            if (x.IsDefault || y.IsDefault || x.Length != y.Length)
-            {
-                return false;
-            }
-
-            for (var i = 0; i < x.Length; i++)
-            {
-                if (x[i] != y[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return x.AsSpan().SequenceEqual(y.AsSpan());
         }
 
         internal static bool Equals(byte[] left, int leftStart, byte[] right, int rightStart, int length)
         {
-            if (left == null || right == null)
-            {
-                return ReferenceEquals(left, right);
-            }
-
-            if (ReferenceEquals(left, right) && leftStart == rightStart)
-            {
-                return true;
-            }
-
-            for (var i = 0; i < length; i++)
-            {
-                if (left[leftStart + i] != right[rightStart + i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return left.AsSpan(leftStart, length).SequenceEqual(right.AsSpan(rightStart, length));
         }
 
         internal static bool Equals(byte[]? left, byte[]? right)
         {
-            if (ReferenceEquals(left, right))
-            {
-                return true;
-            }
-
-            if (left == null || right == null || left.Length != right.Length)
-            {
-                return false;
-            }
-
-            for (var i = 0; i < left.Length; i++)
-            {
-                if (left[i] != right[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return left.AsSpan().SequenceEqual(right.AsSpan());
         }
 
         // Both hash computations below use the FNV-1a algorithm (http://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function).
@@ -96,7 +42,7 @@ namespace System.Reflection.Internal
         internal static int GetHashCode(ImmutableArray<byte> x)
         {
             Debug.Assert(!x.IsDefault);
-            return Hash.GetFNVHashCode(x);
+            return Hash.GetFNVHashCode(x.AsSpan());
         }
 
         bool IEqualityComparer<byte[]>.Equals(byte[]? x, byte[]? y)

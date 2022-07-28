@@ -305,7 +305,7 @@
     <Compile Include="System\Xml\XPath\Internal\PreSiblingQuery.cs" />
     <Compile Include="System\Xml\XPath\Internal\QueryBuilder.cs" />
     <Compile Include="System\Xml\XPath\Internal\UnionExpr.cs" />
-    <Compile Include="System\Xml\XPath\Internal\ResetableIterator.cs" />
+    <Compile Include="System\Xml\XPath\Internal\ResettableIterator.cs" />
     <Compile Include="System\Xml\XPath\Internal\ReversePositionQuery.cs" />
     <Compile Include="System\Xml\XPath\Internal\Root.cs" />
     <Compile Include="System\Xml\XPath\Internal\SortQuery.cs" />

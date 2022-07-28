@@ -90,7 +90,9 @@ GTNODE(STORE_BLK        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) 
 GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,GTK_SPECIAL|GTK_NOVALUE)        // Dynamically sized block store
 GTNODE(NULLCHECK        , GenTreeIndir       ,0,GTK_UNOP|GTK_NOVALUE)           // Null checks the source
 
-GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,GTK_UNOP|GTK_EXOP)
+GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,GTK_UNOP|GTK_EXOP)            // single-dimension (SZ) array length
+GTNODE(MDARR_LENGTH     , GenTreeMDArr       ,0,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array length of a specific dimension
+GTNODE(MDARR_LOWER_BOUND, GenTreeMDArr       ,0,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array lower bound of a specific dimension
 GTNODE(FIELD            , GenTreeField       ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Member-field
 GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // object allocator
 
@@ -143,6 +145,14 @@ GTNODE(GT               , GenTreeOp          ,0,GTK_BINOP)
 // Because of this there is no need to also add GT_TEST_LT/LE/GE/GT opers.
 GTNODE(TEST_EQ          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(TEST_NE          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
+
+GTNODE(SELECT           , GenTreeConditional ,0,GTK_SPECIAL)
+GTNODE(CEQ              , GenTreeConditional ,0,GTK_SPECIAL)
+GTNODE(CNE              , GenTreeConditional ,0,GTK_SPECIAL)
+GTNODE(CLT              , GenTreeConditional ,0,GTK_SPECIAL)
+GTNODE(CLE              , GenTreeConditional ,0,GTK_SPECIAL)
+GTNODE(CGE              , GenTreeConditional ,0,GTK_SPECIAL)
+GTNODE(CGT              , GenTreeConditional ,0,GTK_SPECIAL)
 
 GTNODE(COMMA            , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(QMARK            , GenTreeQmark       ,0,GTK_BINOP|GTK_EXOP|DBK_NOTLIR)

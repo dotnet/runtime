@@ -56,6 +56,11 @@ namespace System.Net.Security
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
             ClientCertificates = sslClientAuthenticationOptions.ClientCertificates;
             CipherSuitesPolicy = sslClientAuthenticationOptions.CipherSuitesPolicy;
+
+            if (sslClientAuthenticationOptions.CertificateChainPolicy != null)
+            {
+                CertificateChainPolicy = sslClientAuthenticationOptions.CertificateChainPolicy.Clone();
+            }
         }
 
         internal void UpdateOptions(ServerOptionsSelectionCallback optionCallback, object? state)
@@ -135,6 +140,11 @@ namespace System.Net.Security
             {
                 ServerCertSelectionDelegate = sslServerAuthenticationOptions.ServerCertificateSelectionCallback;
             }
+
+            if (sslServerAuthenticationOptions.CertificateChainPolicy != null)
+            {
+                CertificateChainPolicy = sslServerAuthenticationOptions.CertificateChainPolicy.Clone();
+            }
         }
 
         private static SslProtocols FilterOutIncompatibleSslProtocols(SslProtocols protocols)
@@ -170,5 +180,6 @@ namespace System.Net.Security
         internal CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
         internal object? UserState { get; set; }
         internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
+        internal X509ChainPolicy? CertificateChainPolicy { get; set; }
     }
 }

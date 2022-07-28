@@ -140,14 +140,12 @@ namespace System.IO
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.stream);
             }
-            if (encoding == null)
-            {
-                encoding = Encoding.UTF8;
-            }
+
             if (!stream.CanRead)
             {
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
             }
+
             if (bufferSize == -1)
             {
                 bufferSize = DefaultBufferSize;
@@ -158,7 +156,7 @@ namespace System.IO
             }
 
             _stream = stream;
-            _encoding = encoding;
+            _encoding = encoding ??= Encoding.UTF8;
             _decoder = encoding.GetDecoder();
             if (bufferSize < MinBufferSize)
             {

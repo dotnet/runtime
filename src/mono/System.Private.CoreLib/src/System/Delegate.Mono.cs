@@ -70,6 +70,7 @@ namespace System
         private DelegateData data;
 
         private bool method_is_virtual;
+        private bool bound;
         #endregion
 
         [RequiresUnreferencedCode("The target method might be removed")]
@@ -430,8 +431,7 @@ namespace System
 
             object? target = _target;
 
-            if (data is null)
-                data = CreateDelegateData();
+            data ??= CreateDelegateData();
 
             // replace all Type.Missing with default values defined on parameters of the delegate if any
             MethodInfo? invoke = GetType().GetMethod("Invoke");

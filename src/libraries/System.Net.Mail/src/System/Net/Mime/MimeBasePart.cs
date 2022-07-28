@@ -162,21 +162,12 @@ namespace System.Net.Mime
             get
             {
                 //persist existing info before returning
-                if (_headers == null)
-                {
-                    _headers = new HeaderCollection();
-                }
+                _headers ??= new HeaderCollection();
 
-                if (_contentType == null)
-                {
-                    _contentType = new ContentType();
-                }
+                _contentType ??= new ContentType();
                 _contentType.PersistIfNeeded(_headers, false);
 
-                if (_contentDisposition != null)
-                {
-                    _contentDisposition.PersistIfNeeded(_headers, false);
-                }
+                _contentDisposition?.PersistIfNeeded(_headers, false);
 
                 return _headers;
             }

@@ -311,61 +311,54 @@ namespace System
             public object?[]? parameters;
             public object[] nullableCopyBackObjects;
             public int curIndex;
-            public object targetMethodOrDelegate;
+            public MethodBase targetMethod;
             public BinderBundle? binderBundle;
             public object?[] customBinderProvidedParameters;
         }
 
-        private static object GetDefaultValue(object targetMethodOrDelegate, RuntimeTypeHandle thType, int argIndex)
+        private static object GetDefaultValue(MethodBase targetMethod, int argIndex)
         {
-            if (targetMethodOrDelegate == null)
+            ParameterInfo parameterInfo = targetMethod.GetParametersNoCopy()[argIndex];
+            if (!parameterInfo.HasDefaultValue)
             {
-                throw new ArgumentException(SR.Arg_VarMissNull);
+                // If the parameter is optional, with no default value and we're asked for its default value,
+                // it means the caller specified Missing.Value as the value for the parameter. In this case the behavior
+                // is defined as passing in the Missing.Value, regardless of the parameter type.
+                // If Missing.Value is convertible to the parameter type, it will just work, otherwise we will fail
+                // due to type mismatch.
+                if (!parameterInfo.IsOptional)
+                    throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
+
+                return Missing.Value;
             }
 
-            bool hasDefaultValue = RuntimeAugments.Callbacks.TryGetDefaultParameterValue(targetMethodOrDelegate, thType, argIndex, out object defaultValue);
-            if (!hasDefaultValue)
-            {
-                throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
-            }
-
-            // Note that we might return null even for value types which cannot have null value here.
-            // This case is handled in the CheckArgument method which is called after this one on the returned parameter value.
-            return defaultValue;
+            return parameterInfo.DefaultValue;
         }
 
         // This is only called if we have to invoke a custom binder to coerce a parameter type. It leverages s_targetMethodOrDelegate to retrieve
         // the unaltered parameter type to pass to the binder.
         private static Type GetExactTypeForCustomBinder(in ArgSetupState argSetupState)
         {
-            Debug.Assert(argSetupState.binderBundle != null && argSetupState.targetMethodOrDelegate is MethodBase);
-            MethodBase method = (MethodBase)argSetupState.targetMethodOrDelegate;
-
             // DynamicInvokeParamHelperCore() increments s_curIndex before calling us - that's why we have to subtract 1.
-            return method.GetParametersNoCopy()[argSetupState.curIndex - 1].ParameterType;
+            return argSetupState.targetMethod.GetParametersNoCopy()[argSetupState.curIndex - 1].ParameterType;
         }
 
         [DebuggerGuidedStepThroughAttribute]
         internal static unsafe object CallDynamicInvokeMethod(
-            object thisPtr,
+            object? thisPtr,
             IntPtr methodToCall,
             IntPtr dynamicInvokeHelperMethod,
             IntPtr dynamicInvokeHelperGenericDictionary,
-            object targetMethodOrDelegate,
+            MethodBase targetMethod,
             object?[]? parameters,
             BinderBundle? binderBundle,
             bool wrapInTargetInvocationException,
             bool methodToCallIsThisCall = true)
         {
-            // This assert is needed because we've double-purposed "targetMethodOrDelegate" (which is actually a MethodBase anytime a custom binder is used)
-            // as a way of obtaining the true parameter type which we need to pass to Binder.ChangeType(). (The type normally passed to DynamicInvokeParamHelperCore
-            // isn't always the exact type (byref stripped off, enums converted to int, etc.)
-            Debug.Assert(!(binderBundle != null && !(targetMethodOrDelegate is MethodBase)), "The only callers that can pass a custom binder are those servicing MethodBase.Invoke() apis.");
-
             ArgSetupState argSetupState = new ArgSetupState
             {
                 binderBundle = binderBundle,
-                targetMethodOrDelegate = targetMethodOrDelegate,
+                targetMethod = targetMethod
             };
 
             {
@@ -525,10 +518,7 @@ namespace System
             {
                 if (paramType == DynamicInvokeParamType.Ref)
                 {
-                    if (nullableCopyBackObjects == null)
-                    {
-                        nullableCopyBackObjects = new object[parameters.Length];
-                    }
+                    nullableCopyBackObjects ??= new object[parameters.Length];
 
                     nullableCopyBackObjects[index] = finalObjectToReturn;
                     parameters[index] = null;
@@ -569,18 +559,28 @@ namespace System
 
             Debug.Assert(argSetupState.parameters != null);
             object? incomingParam = argSetupState.parameters[index];
+            bool nullable = type.ToEETypePtr().IsNullable;
 
             // Handle default parameters
             if ((incomingParam == System.Reflection.Missing.Value) && paramType == DynamicInvokeParamType.In)
             {
-                incomingParam = GetDefaultValue(argSetupState.targetMethodOrDelegate, type, index);
+                incomingParam = GetDefaultValue(argSetupState.targetMethod, index);
+                if (incomingParam != null && nullable)
+                {
+                    // In case if the parameter is nullable Enum type the ParameterInfo.DefaultValue returns a raw value which
+                    // needs to be parsed to the Enum type, for more info: https://github.com/dotnet/runtime/issues/12924
+                    EETypePtr nullableType = type.ToEETypePtr().NullableType;
+                    if (nullableType.IsEnum)
+                    {
+                        incomingParam = Enum.ToObject(Type.GetTypeFromEETypePtr(nullableType), incomingParam);
+                    }
+                }
 
                 // The default value is captured into the parameters array
                 argSetupState.parameters[index] = incomingParam;
             }
 
             RuntimeTypeHandle widenAndCompareType = type;
-            bool nullable = type.ToEETypePtr().IsNullable;
             if (nullable)
             {
                 widenAndCompareType = new RuntimeTypeHandle(type.ToEETypePtr().NullableType);
@@ -646,7 +646,7 @@ namespace System
                     }
                     else
                     {
-                        // If we got here, the original argument object was superceded by invoking the custom binder.
+                        // If we got here, the original argument object was superseded by invoking the custom binder.
 
                         if (paramType == DynamicInvokeParamType.Ref)
                         {
@@ -657,10 +657,7 @@ namespace System
                         {
                             // Since this not a by-ref parameter, we don't want to bash the original user-owned argument array but the rules of DynamicInvokeParamHelperCore() require
                             // that we return non-value types as the "index"th element in an array. Thus, create an on-demand throwaway array just for this purpose.
-                            if (argSetupState.customBinderProvidedParameters == null)
-                            {
-                                argSetupState.customBinderProvidedParameters = new object[argSetupState.parameters.Length];
-                            }
+                            argSetupState.customBinderProvidedParameters ??= new object[argSetupState.parameters.Length];
                             argSetupState.customBinderProvidedParameters[index] = incomingParam;
                             return argSetupState.customBinderProvidedParameters;
                         }

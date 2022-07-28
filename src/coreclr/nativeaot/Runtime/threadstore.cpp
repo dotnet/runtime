@@ -82,7 +82,7 @@ ThreadStore * ThreadStore::Create(RuntimeInstance * pRuntimeInstance)
     if (NULL == pNewThreadStore)
         return NULL;
 
-    if (!pNewThreadStore->m_SuspendCompleteEvent.CreateManualEventNoThrow(true))
+    if (!PalRegisterHijackCallback(Thread::HijackCallback))
         return NULL;
 
     pNewThreadStore->m_pRuntimeInstance = pRuntimeInstance;
@@ -208,7 +208,6 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     {
         GCHeapUtilities::GetGCHeap()->ResetWaitForGCEvent();
     }
-    m_SuspendCompleteEvent.Reset();
 
     // set the global trap for pinvoke leave and return
     RhpTrapThreads |= (uint32_t)TrapThreadsFlags::TrapThreads;
@@ -233,14 +232,6 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
                 keepWaiting = true;
                 pTargetThread->Hijack();
             }
-            else if (pTargetThread->DangerousCrossThreadIsHijacked())
-            {
-                // Once a thread is safely in preemptive mode, we must wait until it is also
-                // unhijacked.  This is done because, otherwise, we might race on into the
-                // stackwalk and find the hijack still on the stack, which will cause the
-                // stackwalking code to crash.
-                keepWaiting = true;
-            }
         }
         END_FOREACH_THREAD
 
@@ -255,13 +246,23 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
                 // too long (we probably don't need a 15ms wait here).  Instead, we'll just burn some
                 // cycles.
     	        // @TODO: need tuning for spin
+                // @TODO: need tuning for this whole loop as well.
+                //        we are likley too aggressive with interruptions which may result in longer pauses.
                 YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, 10000);
             }
         }
 
     } while (keepWaiting);
 
-    m_SuspendCompleteEvent.Set();
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Flush the store buffers on all CPUs, to ensure that all changes made so far are seen
+    // by the GC threads. This only matters on weak memory ordered processors as
+    // the strong memory ordered processors wouldn't have reordered the relevant writes.
+    // This is needed to synchronize threads that were running in preemptive mode thus were
+    // left alone by suspension to flush their writes that they made before they switched to
+    // preemptive mode.
+    PalFlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
 }
 
 void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
@@ -272,6 +273,16 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     }
     END_FOREACH_THREAD
 
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+        // Flush the store buffers on all CPUs, to ensure that they all see changes made
+        // by the GC threads. This only matters on weak memory ordered processors as
+        // the strong memory ordered processors wouldn't have reordered the relevant reads.
+        // This is needed to synchronize threads that were running in preemptive mode while
+        // the runtime was suspended and that will return to cooperative mode after the runtime
+        // is restarted.
+        PalFlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
+
     RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
 
     RhpSuspendingThread = NULL;
@@ -281,13 +292,6 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     }
     UnlockThreadStore();
 } // ResumeAllThreads
-
-void ThreadStore::WaitForSuspendComplete()
-{
-    uint32_t waitResult = m_SuspendCompleteEvent.Wait(INFINITE, false);
-    if (waitResult == WAIT_FAILED)
-        RhFailFast();
-}
 
 #ifndef DACCESS_COMPILE
 

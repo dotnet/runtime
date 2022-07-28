@@ -79,6 +79,10 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_POWERPC64</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
+  </PropertyGroup>
 
   <!-- Configuration specific properties -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">
@@ -250,6 +254,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\MetadataUpdater.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.Mono.cs" />

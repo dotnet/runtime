@@ -555,11 +555,7 @@ namespace System.Transactions
                         // Something must have gone wrong trying to clean up a bad scope
                         // stack previously.
                         // Make a best effort to abort the active transaction.
-                        Transaction? rollbackTransaction = _committableTransaction;
-                        if (rollbackTransaction == null)
-                        {
-                            rollbackTransaction = _dependentTransaction;
-                        }
+                        Transaction? rollbackTransaction = (Transaction?)_committableTransaction ?? _dependentTransaction;
                         Debug.Assert(rollbackTransaction != null);
                         rollbackTransaction.Rollback();
 
@@ -792,11 +788,7 @@ namespace System.Transactions
                         // Note: Rollback is not called on expected current because someone could conceiveably
                         //       dispose expectedCurrent out from under the transaction scope.
                         //
-                        Transaction? rollbackTransaction = _committableTransaction;
-                        if (rollbackTransaction == null)
-                        {
-                            rollbackTransaction = _dependentTransaction;
-                        }
+                        Transaction? rollbackTransaction = (Transaction?)_committableTransaction ?? _dependentTransaction;
                         Debug.Assert(rollbackTransaction != null);
                         rollbackTransaction.Rollback();
                     }
@@ -817,10 +809,7 @@ namespace System.Transactions
             }
             finally
             {
-                if (null != _scopeTimer)
-                {
-                    _scopeTimer.Dispose();
-                }
+                _scopeTimer?.Dispose();
 
                 if (null != _committableTransaction)
                 {
@@ -832,10 +821,7 @@ namespace System.Transactions
                     _expectedCurrent.Dispose();
                 }
 
-                if (null != _dependentTransaction)
-                {
-                    _dependentTransaction.Dispose();
-                }
+                _dependentTransaction?.Dispose();
             }
         }
 
@@ -846,10 +832,7 @@ namespace System.Transactions
             {
                 etwLog.MethodEnter(TraceSourceType.TraceSourceBase, this);
             }
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(TransactionScope));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (_complete)
             {
@@ -1088,10 +1071,7 @@ namespace System.Transactions
 
         private void SaveTLSContextData()
         {
-            if (_savedTLSContextData == null)
-            {
-                _savedTLSContextData = new ContextData(false);
-            }
+            _savedTLSContextData ??= new ContextData(false);
 
             _savedTLSContextData.CurrentScope = ContextData.TLSCurrentData.CurrentScope;
             _savedTLSContextData.CurrentTransaction = ContextData.TLSCurrentData.CurrentTransaction;

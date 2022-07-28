@@ -97,10 +97,7 @@ namespace System.Xml.Schema
 
         internal void AddValue(string value)
         {
-            if (values == null)
-            {
-                values = new List<string>();
-            }
+            values ??= new List<string>();
             values.Add(value);
         }
 

@@ -15,7 +15,7 @@ namespace System.Threading.RateLimiting
         /// An estimated count of available permits.
         /// </summary>
         /// <returns></returns>
-        public abstract int GetAvailablePermits(TResource resourceID);
+        public abstract int GetAvailablePermits(TResource resource);
 
         /// <summary>
         /// Fast synchronous attempt to acquire permits.
@@ -23,27 +23,27 @@ namespace System.Threading.RateLimiting
         /// <remarks>
         /// Set <paramref name="permitCount"/> to 0 to get whether permits are exhausted.
         /// </remarks>
-        /// <param name="resourceID">The resource to limit.</param>
+        /// <param name="resource">The resource to limit.</param>
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <returns>A successful or failed lease.</returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public RateLimitLease Acquire(TResource resourceID, int permitCount = 1)
+        public RateLimitLease Acquire(TResource resource, int permitCount = 1)
         {
             if (permitCount < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(permitCount));
             }
 
-            return AcquireCore(resourceID, permitCount);
+            return AcquireCore(resource, permitCount);
         }
 
         /// <summary>
         /// Method that <see cref="PartitionedRateLimiter{TResource}"/> implementations implement for <see cref="Acquire"/>.
         /// </summary>
-        /// <param name="resourceID">The resource to limit.</param>
+        /// <param name="resource">The resource to limit.</param>
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <returns></returns>
-        protected abstract RateLimitLease AcquireCore(TResource resourceID, int permitCount);
+        protected abstract RateLimitLease AcquireCore(TResource resource, int permitCount);
 
         /// <summary>
         /// Wait until the requested permits are available or permits can no longer be acquired.
@@ -51,12 +51,12 @@ namespace System.Threading.RateLimiting
         /// <remarks>
         /// Set <paramref name="permitCount"/> to 0 to wait until permits are replenished.
         /// </remarks>
-        /// <param name="resourceID">The resource to limit.</param>
+        /// <param name="resource">The resource to limit.</param>
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ValueTask<RateLimitLease> WaitAsync(TResource resourceID, int permitCount = 1, CancellationToken cancellationToken = default)
+        public ValueTask<RateLimitLease> WaitAndAcquireAsync(TResource resource, int permitCount = 1, CancellationToken cancellationToken = default)
         {
             if (permitCount < 0)
             {
@@ -68,17 +68,17 @@ namespace System.Threading.RateLimiting
                 return new ValueTask<RateLimitLease>(Task.FromCanceled<RateLimitLease>(cancellationToken));
             }
 
-            return WaitAsyncCore(resourceID, permitCount, cancellationToken);
+            return WaitAndAcquireAsyncCore(resource, permitCount, cancellationToken);
         }
 
         /// <summary>
-        /// Method that <see cref="PartitionedRateLimiter{TResource}"/> implementations implement for <see cref="WaitAsync"/>.
+        /// Method that <see cref="PartitionedRateLimiter{TResource}"/> implementations implement for <see cref="WaitAndAcquireAsync"/>.
         /// </summary>
-        /// <param name="resourceID">The resource to limit.</param>
+        /// <param name="resource">The resource to limit.</param>
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
-        protected abstract ValueTask<RateLimitLease> WaitAsyncCore(TResource resourceID, int permitCount, CancellationToken cancellationToken);
+        protected abstract ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken);
 
         /// <summary>
         /// Dispose method for implementations to write.
@@ -118,6 +118,24 @@ namespace System.Threading.RateLimiting
 
             // Suppress finalization.
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Translates PartitionedRateLimiter&lt;TOuter&gt; into the current <see cref="PartitionedRateLimiter{TResource}"/>
+        /// using the <paramref name="keyAdapter"/> to translate <typeparamref name="TOuter"/> to <typeparamref name="TResource"/>.
+        /// </summary>
+        /// <typeparam name="TOuter">The type to translate into <typeparamref name="TResource"/>.</typeparam>
+        /// <param name="keyAdapter">The function to be called every time a <typeparamref name="TOuter"/> is passed to
+        /// PartitionedRateLimiter&lt;TOuter&gt;.Acquire(TOuter, int) or PartitionedRateLimiter&lt;TOuter&gt;.WaitAsync(TOuter, int, CancellationToken).</param>
+        /// <remarks><see cref="PartitionedRateLimiter{TResource}.Dispose()"/> or <see cref="PartitionedRateLimiter{TResource}.DisposeAsync()"/> does not dispose the wrapped <see cref="PartitionedRateLimiter{TResource}"/>.</remarks>
+        /// <returns>A new PartitionedRateLimiter&lt;TOuter&gt; that translates <typeparamref name="TOuter"/>
+        /// to <typeparamref name="TResource"/> and calls the inner <see cref="PartitionedRateLimiter{TResource}"/>.</returns>
+        public PartitionedRateLimiter<TOuter> TranslateKey<TOuter>(Func<TOuter, TResource> keyAdapter)
+        {
+            // REVIEW: Do we want to have an option to dispose the inner limiter?
+            // Should the default be to dispose the inner limiter and have an option to not dispose it?
+            // See Stream wrappers like SslStream for prior-art
+            return new TranslatingLimiter<TResource, TOuter>(this, keyAdapter);
         }
     }
 }

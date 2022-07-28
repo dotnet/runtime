@@ -473,13 +473,13 @@ void emitterStats(FILE* fout)
 /*****************************************************************************/
 
 const unsigned short emitTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) sze,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) sze,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const unsigned short emitTypeActSz[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) asze,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) asze,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -4646,6 +4646,14 @@ AGAIN:
         {
             // Reference to JIT data
             assert(jmp->idIsBound());
+
+            // Already the smallest size?
+            if (jmp->idjShort)
+            {
+                assert(jmp->idCodeSize() == ssz);
+                continue;
+            }
+
             UNATIVE_OFFSET srcOffs = jmpIG->igOffs + jmp->idjOffs;
 
             int doff = jmp->idAddr()->iiaGetJitDataOffset();
@@ -4721,8 +4729,10 @@ AGAIN:
                            jmp->idAddr()->iiaBBlabel->bbNum);
                 }
             }
-            assert(tgtIG);
 #endif // DEBUG
+
+            assert(jmp->idAddr()->iiaBBlabel->bbFlags & BBF_HAS_LABEL);
+            assert(tgtIG);
 
             /* Record the bound target */
 
@@ -6469,7 +6479,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 else
                 {
                     /* If emitFullGCinfo==false, then we don't use any
-                       regPtrDsc's and so explictly note the location
+                       regPtrDsc's and so explicitly note the location
                        of "this" in GCEncode.cpp
                      */
                 }
@@ -6608,8 +6618,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #define DEFAULT_CODE_BUFFER_INIT 0xcc
 
 #ifdef DEBUG
-    *instrCount                                          = 0;
-    jitstd::list<PreciseIPMapping>::iterator nextMapping = emitComp->genPreciseIPmappings.begin();
+    *instrCount                                       = 0;
+    jitstd::list<RichIPMapping>::iterator nextMapping = emitComp->genRichIPmappings.begin();
 #endif
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
@@ -6784,7 +6794,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 (id->idCodeSize() > 0))
             {
                 UNATIVE_OFFSET curCodeOffs = emitCurCodeOffs(cp);
-                while (nextMapping != emitComp->genPreciseIPmappings.end())
+                while (nextMapping != emitComp->genRichIPmappings.end())
                 {
                     UNATIVE_OFFSET mappingOffs = nextMapping->nativeLoc.CodeOffset(this);
 
@@ -9790,7 +9800,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             break;
     }
 
-    // compHelperCallKillSet returns a superset of the registers which values are not guranteed to be the same
+    // compHelperCallKillSet returns a superset of the registers which values are not guaranteed to be the same
     // after the call, if a register loses its GC or byref it has to be in the compHelperCallKillSet set as well.
     assert((result & emitComp->compHelperCallKillSet(helper)) == result);
 
@@ -9798,7 +9808,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 }
 
 #if !defined(JIT32_GCENCODER)
-// Start a new instruction group that is not interruptable
+// Start a new instruction group that is not interruptible
 void emitter::emitDisableGC()
 {
     assert(emitNoGCRequestCount < 10); // We really shouldn't have many nested "no gc" requests.
@@ -9827,7 +9837,7 @@ void emitter::emitDisableGC()
     }
 }
 
-// Start a new instruction group that is interruptable
+// Start a new instruction group that is interruptible
 void emitter::emitEnableGC()
 {
     assert(emitNoGCRequestCount > 0);

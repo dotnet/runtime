@@ -965,10 +965,7 @@ namespace System.Xml
             }
 
             // detect & setup encoding
-            if (encoding == null)
-            {
-                encoding = DetectEncoding();
-            }
+            encoding ??= DetectEncoding();
             SetupEncoding(encoding);
 
             // eat preamble
@@ -4908,10 +4905,7 @@ namespace System.Xml
                                 int tmp2 = pos - _ps.charPos;
                                 if (tmp2 > 0)
                                 {
-                                    if (sb != null)
-                                    {
-                                        sb.Append(_ps.chars, _ps.charPos, tmp2);
-                                    }
+                                    sb?.Append(_ps.chars, _ps.charPos, tmp2);
                                     _ps.charPos = pos;
                                     wsCount += tmp2;
                                 }
@@ -4924,10 +4918,7 @@ namespace System.Xml
                 int tmp3 = pos - _ps.charPos;
                 if (tmp3 > 0)
                 {
-                    if (sb != null)
-                    {
-                        sb.Append(_ps.chars, _ps.charPos, tmp3);
-                    }
+                    sb?.Append(_ps.chars, _ps.charPos, tmp3);
                     _ps.charPos = pos;
                     wsCount += tmp3;
                 }

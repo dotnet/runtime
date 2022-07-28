@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
@@ -44,6 +45,7 @@ namespace System.Net.Http
             private StreamCompletionState _requestCompletionState;
             private StreamCompletionState _responseCompletionState;
             private ResponseProtocolState _responseProtocolState;
+            private bool _webSocketEstablished;
 
             // If this is not null, then we have received a reset from the server
             // (i.e. RST_STREAM or general IO error processing the connection)
@@ -106,6 +108,10 @@ namespace System.Net.Http
                 if (_request.Content == null)
                 {
                     _requestCompletionState = StreamCompletionState.Completed;
+                    if (_request.IsWebSocketH2Request())
+                    {
+                        _requestBodyCancellationSource = new CancellationTokenSource();
+                    }
                 }
                 else
                 {
@@ -629,6 +635,11 @@ namespace System.Net.Http
                     }
                     else
                     {
+                        if (statusCode == 200 && _response.RequestMessage!.IsWebSocketH2Request())
+                        {
+                            _webSocketEstablished = true;
+                        }
+
                         _responseProtocolState = ResponseProtocolState.ExpectingHeaders;
 
                         // If we are waiting for a 100-continue response, signal the waiter now.
@@ -1036,6 +1047,10 @@ namespace System.Net.Http
                     MoveTrailersToResponseMessage(_response);
                     responseContent.SetStream(EmptyReadStream.Instance);
                 }
+                else if (_webSocketEstablished)
+                {
+                    responseContent.SetStream(new Http2ReadWriteStream(this));
+                }
                 else
                 {
                     responseContent.SetStream(new Http2ReadStream(this));
@@ -1417,12 +1432,61 @@ namespace System.Net.Http
                 Failed
             }
 
-            private sealed class Http2ReadStream : HttpBaseStream
+            private sealed class Http2ReadStream : Http2ReadWriteStream
+            {
+                public Http2ReadStream(Http2Stream http2Stream) : base(http2Stream)
+                {
+                    base.CloseResponseBodyOnDispose = true;
+                }
+
+                public override bool CanWrite => false;
+
+                public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);
+
+                public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => ValueTask.FromException(new NotSupportedException(SR.net_http_content_readonly_stream));
+            }
+
+            private sealed class Http2WriteStream : Http2ReadWriteStream
+            {
+                public long BytesWritten { get; private set; }
+
+                public long ContentLength { get; }
+
+                public Http2WriteStream(Http2Stream http2Stream, long contentLength) : base(http2Stream)
+                {
+                    Debug.Assert(contentLength >= -1);
+                    ContentLength = contentLength;
+                }
+
+                public override bool CanRead => false;
+
+                public override int Read(Span<byte> buffer) => throw new NotSupportedException(SR.net_http_content_writeonly_stream);
+
+                public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => ValueTask.FromException<int>(new NotSupportedException(SR.net_http_content_writeonly_stream));
+
+                public override void CopyTo(Stream destination, int bufferSize) => throw new NotSupportedException(SR.net_http_content_writeonly_stream);
+
+                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => Task.FromException(new NotSupportedException(SR.net_http_content_writeonly_stream));
+
+                public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+                {
+                    BytesWritten += buffer.Length;
+
+                    if ((ulong)BytesWritten > (ulong)ContentLength) // If ContentLength == -1, this will always be false
+                    {
+                        return ValueTask.FromException(new HttpRequestException(SR.net_http_content_write_larger_than_content_length));
+                    }
+
+                    return base.WriteAsync(buffer, cancellationToken);
+                }
+            }
+
+            public class Http2ReadWriteStream : HttpBaseStream
             {
                 private Http2Stream? _http2Stream;
                 private readonly HttpResponseMessage _responseMessage;
 
-                public Http2ReadStream(Http2Stream http2Stream)
+                public Http2ReadWriteStream(Http2Stream http2Stream)
                 {
                     Debug.Assert(http2Stream != null);
                     Debug.Assert(http2Stream._response != null);
@@ -1430,7 +1494,7 @@ namespace System.Net.Http
                     _responseMessage = _http2Stream._response;
                 }
 
-                ~Http2ReadStream()
+                ~Http2ReadWriteStream()
                 {
                     if (NetEventSource.Log.IsEnabled()) _http2Stream?.Trace("");
                     try
@@ -1442,6 +1506,8 @@ namespace System.Net.Http
                         if (NetEventSource.Log.IsEnabled()) _http2Stream?.Trace($"Error: {e}");
                     }
                 }
+
+                protected bool CloseResponseBodyOnDispose { get; set; }
 
                 protected override void Dispose(bool disposing)
                 {
@@ -1456,18 +1522,21 @@ namespace System.Net.Http
                     // protocol, we have little choice: if someone drops the Http2ReadStream without
                     // disposing of it, we need to a) signal to the server that the stream is being
                     // canceled, and b) clean up the associated state in the Http2Connection.
-
-                    http2Stream.CloseResponseBody();
+                    if (CloseResponseBodyOnDispose)
+                    {
+                        http2Stream.CloseResponseBody();
+                    }
 
                     base.Dispose(disposing);
                 }
 
                 public override bool CanRead => _http2Stream != null;
-                public override bool CanWrite => false;
+                public override bool CanWrite => _http2Stream != null;
 
                 public override int Read(Span<byte> destination)
                 {
-                    Http2Stream http2Stream = _http2Stream ?? throw new ObjectDisposedException(nameof(Http2ReadStream));
+                    Http2Stream? http2Stream = _http2Stream;
+                    ObjectDisposedException.ThrowIf(http2Stream is null, this);
 
                     return http2Stream.ReadData(destination, _responseMessage);
                 }
@@ -1506,53 +1575,8 @@ namespace System.Net.Http
                         http2Stream.CopyToAsync(_responseMessage, destination, bufferSize, cancellationToken);
                 }
 
-                public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);
-
-                public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
-            }
-
-            private sealed class Http2WriteStream : HttpBaseStream
-            {
-                private Http2Stream? _http2Stream;
-
-                public long BytesWritten { get; private set; }
-
-                public long ContentLength { get; private set; }
-
-                public Http2WriteStream(Http2Stream http2Stream, long contentLength)
-                {
-                    Debug.Assert(http2Stream != null);
-                    Debug.Assert(contentLength >= -1);
-                    _http2Stream = http2Stream;
-                    ContentLength = contentLength;
-                }
-
-                protected override void Dispose(bool disposing)
-                {
-                    Http2Stream? http2Stream = Interlocked.Exchange(ref _http2Stream, null);
-                    if (http2Stream == null)
-                    {
-                        return;
-                    }
-
-                    base.Dispose(disposing);
-                }
-
-                public override bool CanRead => false;
-                public override bool CanWrite => _http2Stream != null;
-
-                public override int Read(Span<byte> buffer) => throw new NotSupportedException();
-
-                public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => throw new NotSupportedException();
-
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
-                    BytesWritten += buffer.Length;
-
-                    if ((ulong)BytesWritten > (ulong)ContentLength) // If ContentLength == -1, this will always be false
-                    {
-                        return ValueTask.FromException(new HttpRequestException(SR.net_http_content_write_larger_than_content_length));
-                    }
 
                     Http2Stream? http2Stream = _http2Stream;
 

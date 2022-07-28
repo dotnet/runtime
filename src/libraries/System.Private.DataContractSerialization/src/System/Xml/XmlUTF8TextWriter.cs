@@ -26,10 +26,7 @@ namespace System.Xml
                 stream = new EncodingStreamWrapper(stream, encoding, true);
             }
 
-            if (_writer == null)
-            {
-                _writer = new XmlUTF8NodeWriter();
-            }
+            _writer ??= new XmlUTF8NodeWriter();
             _writer.SetOutput(stream, ownsStream, encoding);
             SetOutput(_writer);
         }
@@ -97,14 +94,7 @@ namespace System.Xml
             _inAttribute = false;
         }
 
-        private byte[] GetCharEntityBuffer()
-        {
-            if (_entityChars == null)
-            {
-                _entityChars = new byte[maxEntityLength];
-            }
-            return _entityChars;
-        }
+        private byte[] GetCharEntityBuffer() => _entityChars ??= new byte[maxEntityLength];
 
         private char[] GetCharBuffer(int charCount)
         {

@@ -995,13 +995,9 @@ void Compiler::eeSetLIinfo(unsigned which, UNATIVE_OFFSET nativeOffset, IPmappin
 
     switch (kind)
     {
-        int source;
-
         case IPmappingDscKind::Normal:
             eeBoundaries[which].ilOffset = loc.GetOffset();
-            source                       = loc.IsStackEmpty() ? ICorDebugInfo::STACK_EMPTY : 0;
-            source |= loc.IsCall() ? ICorDebugInfo::CALL_INSTRUCTION : 0;
-            eeBoundaries[which].source = (ICorDebugInfo::SourceTypes)source;
+            eeBoundaries[which].source   = loc.EncodeSourceTypes();
             break;
         case IPmappingDscKind::Prolog:
             eeBoundaries[which].ilOffset = ICorDebugInfo::PROLOG;

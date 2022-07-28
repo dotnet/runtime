@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-Android</TargetFrameworks>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AlternateViewCollectionTest.cs" />
@@ -11,22 +13,53 @@
     <Compile Include="AttachmentTest.cs" />
     <Compile Include="ContentDispositionTest.cs" />
     <Compile Include="ContentTypeTest.cs" />
-    <Compile Include="SmtpClientCredentialsTest.cs" />
     <Compile Include="HeaderCollectionTest.cs" />
     <Compile Include="LinkedResourceCollectionTest.cs" />
     <Compile Include="LinkedResourceTest.cs" />
-    <Compile Include="LoggingTest.cs" />
     <Compile Include="MailAddressCollectionTest.cs" />
     <Compile Include="MailAddressTest.cs" />
     <Compile Include="MailMessageTest.cs" />
-    <Compile Include="SmtpClientTest.cs" />
     <Compile Include="SmtpExceptionTest.cs" />
-    <Compile Include="LoopbackSmtpServer.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
+    <Compile Include="SmtpClientTest.cs" />
+    <Compile Include="SmtpClientCredentialsTest.cs" />
+    <Compile Include="LoggingTest.cs" />
+    <Compile Include="LoopbackSmtpServer.cs" />
+  </ItemGroup>
+
+  <!-- NTLM/Negotiate authentication fakes -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Net\Security\MD4.cs"
+             Link="Common\System\Net\Security\MD4.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\RC4.cs"
+             Link="Common\System\Net\Security\RC4.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Security\FakeNtlmServer.cs"
+             Link="Common\System\Net\Security\FakeNtlmServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Security\FakeNegotiateServer.cs"
+             Link="Common\System\Net\Security\FakeNegotiateServer.cs" />
+  </ItemGroup>
+
+  <!-- Unix specific files (NT Authentication) -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'Browser'">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Unix.cs"
+             Link="Common\System\Net\Capability.Security.Unix.cs" />
+  </ItemGroup>
+
+  <!-- Windows specific files (NT Authentication) -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Windows.cs"
+             Link="Common\System\Net\Capability.Security.Windows.cs" />
   </ItemGroup>
 </Project>

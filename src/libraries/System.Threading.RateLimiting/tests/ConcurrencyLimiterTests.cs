@@ -11,14 +11,29 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void InvalidOptionsThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ConcurrencyLimiterOptions(-1, QueueProcessingOrder.NewestFirst, 1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, -1));
+            Assert.Throws<ArgumentException>(() => new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = -1,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1
+            }));
+            Assert.Throws<ArgumentException>(() => new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = -1
+            }));
         }
 
         [Fact]
         public override void CanAcquireResource()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1
+            });
             var lease = limiter.Acquire();
 
             Assert.True(lease.IsAcquired);
@@ -32,11 +47,16 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task CanAcquireResourceAsync()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
-            var lease = await limiter.WaitAsync();
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1
+            });
+            var lease = await limiter.WaitAndAcquireAsync();
 
             Assert.True(lease.IsAcquired);
-            var wait = limiter.WaitAsync();
+            var wait = limiter.WaitAndAcquireAsync();
             Assert.False(wait.IsCompleted);
 
             lease.Dispose();
@@ -47,12 +67,17 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task CanAcquireResourceAsync_QueuesAndGrabsOldest()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 2));
-            var lease = await limiter.WaitAsync();
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 2
+            });
+            var lease = await limiter.WaitAndAcquireAsync();
 
             Assert.True(lease.IsAcquired);
-            var wait1 = limiter.WaitAsync();
-            var wait2 = limiter.WaitAsync();
+            var wait1 = limiter.WaitAndAcquireAsync();
+            var wait2 = limiter.WaitAndAcquireAsync();
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
 
@@ -71,12 +96,17 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task CanAcquireResourceAsync_QueuesAndGrabsNewest()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(2, QueueProcessingOrder.NewestFirst, 3));
-            var lease = await limiter.WaitAsync(2);
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 3
+            });
+            var lease = await limiter.WaitAndAcquireAsync(2);
 
             Assert.True(lease.IsAcquired);
-            var wait1 = limiter.WaitAsync(2);
-            var wait2 = limiter.WaitAsync();
+            var wait1 = limiter.WaitAndAcquireAsync(2);
+            var wait2 = limiter.WaitAndAcquireAsync();
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
 
@@ -96,23 +126,33 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task FailsWhenQueuingMoreThanLimit_OldestFirst()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
             using var lease = limiter.Acquire(1);
-            var wait = limiter.WaitAsync(1);
+            var wait = limiter.WaitAndAcquireAsync(1);
 
-            var failedLease = await limiter.WaitAsync(1);
+            var failedLease = await limiter.WaitAndAcquireAsync(1);
             Assert.False(failedLease.IsAcquired);
         }
 
         [Fact]
         public override async Task DropsOldestWhenQueuingMoreThanLimit_NewestFirst()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1
+            });
             var lease = limiter.Acquire(1);
-            var wait = limiter.WaitAsync(1);
+            var wait = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
-            var wait2 = limiter.WaitAsync(1);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
             var lease1 = await wait;
             Assert.False(lease1.IsAcquired);
             Assert.False(wait2.IsCompleted);
@@ -126,16 +166,21 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task DropsMultipleOldestWhenQueuingMoreThanLimit_NewestFirst()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(2, QueueProcessingOrder.NewestFirst, 2));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 2
+            });
             var lease = limiter.Acquire(2);
             Assert.True(lease.IsAcquired);
-            var wait = limiter.WaitAsync(1);
+            var wait = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
-            var wait2 = limiter.WaitAsync(1);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait2.IsCompleted);
 
-            var wait3 = limiter.WaitAsync(2);
+            var wait3 = limiter.WaitAndAcquireAsync(2);
             var lease1 = await wait;
             var lease2 = await wait2;
             Assert.False(lease1.IsAcquired);
@@ -151,15 +196,20 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task DropsRequestedLeaseIfPermitCountGreaterThanQueueLimitAndNoAvailability_NewestFirst()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(2, QueueProcessingOrder.NewestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1
+            });
             var lease = limiter.Acquire(2);
             Assert.True(lease.IsAcquired);
 
             // Fill queue
-            var wait = limiter.WaitAsync(1);
+            var wait = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
-            var lease1 = await limiter.WaitAsync(2);
+            var lease1 = await limiter.WaitAndAcquireAsync(2);
             Assert.False(lease1.IsAcquired);
 
             lease.Dispose();
@@ -170,15 +220,20 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task LargeAcquiresAndQueuesDoNotIntegerOverflow()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(int.MaxValue, QueueProcessingOrder.NewestFirst, int.MaxValue));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = int.MaxValue,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = int.MaxValue
+            });
             var lease = limiter.Acquire(int.MaxValue);
             Assert.True(lease.IsAcquired);
 
             // Fill queue
-            var wait = limiter.WaitAsync(3);
+            var wait = limiter.WaitAndAcquireAsync(3);
             Assert.False(wait.IsCompleted);
 
-            var wait2 = limiter.WaitAsync(int.MaxValue);
+            var wait2 = limiter.WaitAndAcquireAsync(int.MaxValue);
             Assert.False(wait2.IsCompleted);
 
             var lease1 = await wait;
@@ -192,18 +247,23 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task QueueAvailableAfterQueueLimitHitAndResources_BecomeAvailable()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
             var lease = limiter.Acquire(1);
-            var wait = limiter.WaitAsync(1);
+            var wait = limiter.WaitAndAcquireAsync(1);
 
-            var failedLease = await limiter.WaitAsync(1);
+            var failedLease = await limiter.WaitAndAcquireAsync(1);
             Assert.False(failedLease.IsAcquired);
 
             lease.Dispose();
             lease = await wait;
             Assert.True(lease.IsAcquired);
 
-            wait = limiter.WaitAsync(1);
+            wait = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
             lease.Dispose();
@@ -214,7 +274,12 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void ThrowsWhenAcquiringMoreThanLimit()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1
+            });
             var ex = Assert.Throws<ArgumentOutOfRangeException>(() => limiter.Acquire(2));
             Assert.Equal("permitCount", ex.ParamName);
         }
@@ -222,29 +287,49 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task ThrowsWhenWaitingForMoreThanLimit()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
-            var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.WaitAsync(2));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1
+            });
+            var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.WaitAndAcquireAsync(2));
             Assert.Equal("permitCount", ex.ParamName);
         }
 
         [Fact]
         public override void ThrowsWhenAcquiringLessThanZero()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1
+            });
             Assert.Throws<ArgumentOutOfRangeException>(() => limiter.Acquire(-1));
         }
 
         [Fact]
         public override async Task ThrowsWhenWaitingForLessThanZero()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
-            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.WaitAsync(-1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1
+            });
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.WaitAndAcquireAsync(-1));
         }
 
         [Fact]
         public override void AcquireZero_WithAvailability()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1
+            });
 
             using var lease = limiter.Acquire(0);
             Assert.True(lease.IsAcquired);
@@ -253,7 +338,12 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void AcquireZero_WithoutAvailability()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1
+            });
             using var lease = limiter.Acquire(1);
             Assert.True(lease.IsAcquired);
 
@@ -263,22 +353,32 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public override async Task WaitAsyncZero_WithAvailability()
+        public override async Task WaitAndAcquireAsyncZero_WithAvailability()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1
+            });
 
-            using var lease = await limiter.WaitAsync(0);
+            using var lease = await limiter.WaitAndAcquireAsync(0);
             Assert.True(lease.IsAcquired);
         }
 
         [Fact]
-        public override async Task WaitAsyncZero_WithoutAvailabilityWaitsForAvailability()
+        public override async Task WaitAndAcquireAsyncZero_WithoutAvailabilityWaitsForAvailability()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.NewestFirst, 1));
-            var lease = await limiter.WaitAsync(1);
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 1
+            });
+            var lease = await limiter.WaitAndAcquireAsync(1);
             Assert.True(lease.IsAcquired);
 
-            var wait = limiter.WaitAsync(0);
+            var wait = limiter.WaitAndAcquireAsync(0);
             Assert.False(wait.IsCompleted);
 
             lease.Dispose();
@@ -289,12 +389,17 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task CanDequeueMultipleResourcesAtOnce()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(2, QueueProcessingOrder.OldestFirst, 2));
-            using var lease = await limiter.WaitAsync(2);
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 2
+            });
+            using var lease = await limiter.WaitAndAcquireAsync(2);
             Assert.True(lease.IsAcquired);
 
-            var wait1 = limiter.WaitAsync(1);
-            var wait2 = limiter.WaitAsync(1);
+            var wait1 = limiter.WaitAndAcquireAsync(1);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
 
@@ -307,15 +412,20 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public override async Task CanAcquireResourcesWithWaitAsyncWithQueuedItemsIfNewestFirst()
+        public override async Task CanAcquireResourcesWithWaitAndAcquireAsyncWithQueuedItemsIfNewestFirst()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(2, QueueProcessingOrder.NewestFirst, 3));
-            using var lease = await limiter.WaitAsync(1);
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 3
+            });
+            using var lease = await limiter.WaitAndAcquireAsync(1);
             Assert.True(lease.IsAcquired);
 
-            var wait1 = limiter.WaitAsync(2);
+            var wait1 = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait1.IsCompleted);
-            var wait2 = limiter.WaitAsync(1);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
             var lease2 = await wait2;
             Assert.True(lease2.IsAcquired);
 
@@ -329,14 +439,19 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public override async Task CannotAcquireResourcesWithWaitAsyncWithQueuedItemsIfOldestFirst()
+        public override async Task CannotAcquireResourcesWithWaitAndAcquireAsyncWithQueuedItemsIfOldestFirst()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(2, QueueProcessingOrder.OldestFirst, 3));
-            using var lease = await limiter.WaitAsync(1);
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 3
+            });
+            using var lease = await limiter.WaitAndAcquireAsync(1);
             Assert.True(lease.IsAcquired);
 
-            var wait1 = limiter.WaitAsync(2);
-            var wait2 = limiter.WaitAsync(1);
+            var wait1 = limiter.WaitAndAcquireAsync(2);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
 
@@ -354,11 +469,16 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task CanAcquireResourcesWithAcquireWithQueuedItemsIfNewestFirst()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(2, QueueProcessingOrder.NewestFirst, 3));
-            using var lease = await limiter.WaitAsync(1);
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 3
+            });
+            using var lease = await limiter.WaitAndAcquireAsync(1);
             Assert.True(lease.IsAcquired);
 
-            var wait1 = limiter.WaitAsync(2);
+            var wait1 = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait1.IsCompleted);
             var lease2 = limiter.Acquire(1);
             Assert.True(lease2.IsAcquired);
@@ -375,11 +495,16 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task CannotAcquireResourcesWithAcquireWithQueuedItemsIfOldestFirst()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(2, QueueProcessingOrder.OldestFirst, 3));
-            using var lease = await limiter.WaitAsync(1);
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 3
+            });
+            using var lease = await limiter.WaitAndAcquireAsync(1);
             Assert.True(lease.IsAcquired);
 
-            var wait1 = limiter.WaitAsync(2);
+            var wait1 = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait1.IsCompleted);
             var lease2 = limiter.Acquire(1);
             Assert.False(lease2.IsAcquired);
@@ -391,14 +516,19 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public override async Task CanCancelWaitAsyncAfterQueuing()
+        public override async Task CanCancelWaitAndAcquireAsyncAfterQueuing()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
             var lease = limiter.Acquire(1);
             Assert.True(lease.IsAcquired);
 
             var cts = new CancellationTokenSource();
-            var wait = limiter.WaitAsync(1, cts.Token);
+            var wait = limiter.WaitAndAcquireAsync(1, cts.Token);
 
             cts.Cancel();
             var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
@@ -410,16 +540,21 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
-        public override async Task CanCancelWaitAsyncBeforeQueuing()
+        public override async Task CanCancelWaitAndAcquireAsyncBeforeQueuing()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
             var lease = limiter.Acquire(1);
             Assert.True(lease.IsAcquired);
 
             var cts = new CancellationTokenSource();
             cts.Cancel();
 
-            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => limiter.WaitAsync(1, cts.Token).AsTask());
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => limiter.WaitAndAcquireAsync(1, cts.Token).AsTask());
             Assert.Equal(cts.Token, ex.CancellationToken);
 
             lease.Dispose();
@@ -430,18 +565,23 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task CancelUpdatesQueueLimit()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
             var lease = limiter.Acquire(1);
             Assert.True(lease.IsAcquired);
 
             var cts = new CancellationTokenSource();
-            var wait = limiter.WaitAsync(1, cts.Token);
+            var wait = limiter.WaitAndAcquireAsync(1, cts.Token);
 
             cts.Cancel();
             var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
             Assert.Equal(cts.Token, ex.CancellationToken);
 
-            wait = limiter.WaitAsync(1);
+            wait = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
             lease.Dispose();
@@ -452,22 +592,27 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task CanFillQueueWithNewestFirstAfterCancelingQueuedRequestWithAnotherQueuedRequest()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(2, QueueProcessingOrder.NewestFirst, 2));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                QueueLimit = 2
+            });
             var lease = limiter.Acquire(2);
             Assert.True(lease.IsAcquired);
 
             var cts = new CancellationTokenSource();
-            var wait = limiter.WaitAsync(1, cts.Token);
+            var wait = limiter.WaitAndAcquireAsync(1, cts.Token);
 
             // Add another item to queue, will be completed as failed later when we queue another item
-            var wait2 = limiter.WaitAsync(1);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
             cts.Cancel();
             var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
             Assert.Equal(cts.Token, ex.CancellationToken);
 
-            var wait3 = limiter.WaitAsync(2);
+            var wait3 = limiter.WaitAndAcquireAsync(2);
             Assert.False(wait3.IsCompleted);
 
             // will be kicked by wait3 because we're using NewestFirst
@@ -483,12 +628,17 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task CanDisposeAfterCancelingQueuedRequest()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
             var lease = limiter.Acquire(1);
             Assert.True(lease.IsAcquired);
 
             var cts = new CancellationTokenSource();
-            var wait = limiter.WaitAsync(1, cts.Token);
+            var wait = limiter.WaitAndAcquireAsync(1, cts.Token);
 
             cts.Cancel();
             var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
@@ -501,7 +651,12 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void NoMetadataOnAcquiredLease()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
             using var lease = limiter.Acquire(1);
             Assert.False(lease.TryGetMetadata(MetadataName.ReasonPhrase.Name, out _));
         }
@@ -509,7 +664,12 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void MetadataNamesContainsAllMetadata()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
             using var lease = limiter.Acquire(1);
             Assert.Collection(lease.MetadataNames, metadataName => Assert.Equal(metadataName, MetadataName.ReasonPhrase.Name));
         }
@@ -517,12 +677,17 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task DisposeReleasesQueuedAcquires()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 3));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 3
+            });
             using var lease = limiter.Acquire(1);
 
-            var wait1 = limiter.WaitAsync(1);
-            var wait2 = limiter.WaitAsync(1);
-            var wait3 = limiter.WaitAsync(1);
+            var wait1 = limiter.WaitAndAcquireAsync(1);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
+            var wait3 = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
             Assert.False(wait3.IsCompleted);
@@ -540,18 +705,23 @@ namespace System.Threading.RateLimiting.Test
 
             // Throws after disposal
             Assert.Throws<ObjectDisposedException>(() => limiter.Acquire(1));
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => limiter.WaitAsync(1).AsTask());
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => limiter.WaitAndAcquireAsync(1).AsTask());
         }
 
         [Fact]
         public override async Task DisposeAsyncReleasesQueuedAcquires()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 3));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 3
+            });
             using var lease = limiter.Acquire(1);
 
-            var wait1 = limiter.WaitAsync(1);
-            var wait2 = limiter.WaitAsync(1);
-            var wait3 = limiter.WaitAsync(1);
+            var wait1 = limiter.WaitAndAcquireAsync(1);
+            var wait2 = limiter.WaitAndAcquireAsync(1);
+            var wait3 = limiter.WaitAndAcquireAsync(1);
             Assert.False(wait1.IsCompleted);
             Assert.False(wait2.IsCompleted);
             Assert.False(wait3.IsCompleted);
@@ -569,16 +739,21 @@ namespace System.Threading.RateLimiting.Test
 
             // Throws after disposal
             Assert.Throws<ObjectDisposedException>(() => limiter.Acquire(1));
-            await Assert.ThrowsAsync<ObjectDisposedException>(() => limiter.WaitAsync(1).AsTask());
+            await Assert.ThrowsAsync<ObjectDisposedException>(() => limiter.WaitAndAcquireAsync(1).AsTask());
         }
 
         [Fact]
         public async Task ReasonMetadataOnFailedWaitAsync()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(2, QueueProcessingOrder.OldestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
             using var lease = limiter.Acquire(2);
 
-            var failedLease = await limiter.WaitAsync(2);
+            var failedLease = await limiter.WaitAndAcquireAsync(2);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.ReasonPhrase.Name, out var metadata));
             Assert.Equal("Queue limit reached", metadata);
@@ -591,7 +766,12 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void NullIdleDurationWhenActive()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
             using var lease = limiter.Acquire(1);
             Assert.Null(limiter.IdleDuration);
         }
@@ -599,7 +779,12 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override async Task IdleDurationUpdatesWhenIdle()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
             Assert.NotNull(limiter.IdleDuration);
             var previousDuration = limiter.IdleDuration;
             await Task.Delay(15);
@@ -609,7 +794,12 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void IdleDurationUpdatesWhenChangingFromActive()
         {
-            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 1,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1
+            });
             var lease = limiter.Acquire(1);
             lease.Dispose();
             Assert.NotNull(limiter.IdleDuration);

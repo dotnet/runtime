@@ -196,7 +196,7 @@ namespace
             if (!ClrSafeInt<ULONG>::addition(classSizeInMetadata, (ULONG)parentSize, classSize))
                 COMPlusThrowOM();
 
-            // size must be large enough to accomodate layout. If not, we use the layout size instead.
+            // size must be large enough to accommodate layout. If not, we use the layout size instead.
             calcTotalSize = max(classSize, calcTotalSize);
         }
         else
@@ -301,7 +301,8 @@ namespace
 
     BOOL TypeHasGCPointers(CorElementType corElemType, TypeHandle pNestedType)
     {
-        if (CorTypeInfo::IsPrimitiveType(corElemType) || corElemType == ELEMENT_TYPE_PTR || corElemType == ELEMENT_TYPE_FNPTR)
+        if (CorTypeInfo::IsPrimitiveType(corElemType) || corElemType == ELEMENT_TYPE_PTR || corElemType == ELEMENT_TYPE_FNPTR ||
+            corElemType == ELEMENT_TYPE_BYREF)
         {
             return FALSE;
         }

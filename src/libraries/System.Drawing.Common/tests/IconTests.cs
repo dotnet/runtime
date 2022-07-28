@@ -647,7 +647,8 @@ namespace System.Drawing.Tests
             }
             else
             {
-                VerifyPngNotSupported();
+                if (AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool enabled) && enabled)
+                    VerifyPngNotSupported();
             }
         }
 

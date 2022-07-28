@@ -38,8 +38,7 @@ namespace System.Reflection.TypeLoading
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                 return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
 
-            if (binder == null)
-                binder = Loader.GetDefaultBinder();
+            binder ??= Loader.GetDefaultBinder();
 
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
         }
@@ -96,8 +95,7 @@ namespace System.Reflection.TypeLoading
                 if (types.Length == 0 && candidates.Count == 1)
                     return candidates[0];
 
-                if (binder == null)
-                    binder = Loader.GetDefaultBinder();
+                binder ??= Loader.GetDefaultBinder();
                 return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as MethodInfo;
             }
         }
@@ -157,8 +155,7 @@ namespace System.Reflection.TypeLoading
                 if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                     return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
 
-                if (binder == null)
-                    binder = Loader.GetDefaultBinder();
+                binder ??= Loader.GetDefaultBinder();
 
                 return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
             }

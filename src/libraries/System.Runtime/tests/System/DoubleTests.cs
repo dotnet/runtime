@@ -720,9 +720,9 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  3,  double.PositiveInfinity, 0.0)]
         [InlineData( double.PositiveInfinity,  4,  double.PositiveInfinity, 0.0)]
         [InlineData( double.PositiveInfinity,  5,  double.PositiveInfinity, 0.0)]
-        public static void Root(double x, int n, double expectedResult, double allowedVariance)
+        public static void RootN(double x, int n, double expectedResult, double allowedVariance)
         {
-            AssertExtensions.Equal(expectedResult, double.Root(x, n), allowedVariance);
+            AssertExtensions.Equal(expectedResult, double.RootN(x, n), allowedVariance);
         }
 
         public static IEnumerable<object[]> ToString_TestData()
@@ -1453,7 +1453,40 @@ namespace System.Tests
             AssertExtensions.Equal(+expectedResult, double.AsinPi(+value), allowedVariance);
         }
 
-        [Theory]
+        [Theory]                                                      
+        [InlineData( double.NaN,               double.NaN,              double.NaN,           0.0)]
+        [InlineData( 0.0,                     -1.0,                      1.0,                 CrossPlatformMachineEpsilon)] // y: sinpi(0)              x:  cospi(1)            ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 0.0,                     -0.0,                      1.0,                 CrossPlatformMachineEpsilon)] // y: sinpi(0)              x: -cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 0.0,                      0.0,                      0.0,                 0.0)]                         // y: sinpi(0)              x:  cospi(0.5)
+        [InlineData( 0.0,                      1.0,                      0.0,                 0.0)]                         // y: sinpi(0)              x:  cospi(0)
+        [InlineData( 0.84147098480789651,      0.54030230586813972,      0.31830988618379067, CrossPlatformMachineEpsilon)] // y: sinpi(1 / pi)         x:  cospi(1 / pi)
+        [InlineData( 0.97877093770393305,      0.20495719432643395,      0.43429448190325183, CrossPlatformMachineEpsilon)] // y: sinpi(log10(e))       x:  cospi(log10(e))
+        [InlineData( 1.0,                     -0.0,                      0.5,                 CrossPlatformMachineEpsilon)] // y: sinpi(0.5)            x: -cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 1.0,                      0.0,                      0.5,                 CrossPlatformMachineEpsilon)] // y: sinpi(0.5)            x:  cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 0.90929742682568170,     -0.41614683654714239,      0.63661977236758134, CrossPlatformMachineEpsilon)] // y: sinpi(2 / pi)         x:  cospi(2 / pi)
+        [InlineData( 0.82148283122563883,     -0.57023324876887755,      0.69314718055994531, CrossPlatformMachineEpsilon)] // y: sinpi(ln(2))          x:  cospi(ln(2))
+        [InlineData( 0.79569320156748087,     -0.60569986707881343,      0.70710678118654752, CrossPlatformMachineEpsilon)] // y: sinpi(1 / sqrt(2))    x:  cospi(1 / sqrt(2))
+        [InlineData( 0.62426595263969903,     -0.78121189211048819,      0.78539816339744831, CrossPlatformMachineEpsilon)] // y: sinpi(pi / 4)         x:  cospi(pi / 4)
+        [InlineData(-0.39246955856278420,     -0.91976499476851874,     -0.87162083290448743, CrossPlatformMachineEpsilon)] // y: sinpi(2 / sqrt(pi))   x:  cospi(2 / sqrt(pi))
+        [InlineData(-0.96390253284987733,     -0.26625534204141549,     -0.58578643762690495, CrossPlatformMachineEpsilon)] // y: sinpi(sqrt(2))        x:  cospi(sqrt(2))
+        [InlineData(-0.98383852942436249,     -0.17905794598427576,     -0.55730495911103659, CrossPlatformMachineEpsilon)] // y: sinpi(log2(e))        x:  cospi(log2(e))
+        [InlineData(-0.97536797208363139,      0.22058404074969809,     -0.42920367320510338, CrossPlatformMachineEpsilon)] // y: sinpi(pi / 2)         x:  cospi(pi / 2)
+        [InlineData( 0.81376384817462330,      0.58119566361426737,      0.30258509299404568, CrossPlatformMachineEpsilon)] // y: sinpi(ln(10))         x:  cospi(ln(10))
+        [InlineData( 0.77394268526670828,     -0.63325565131482003,      0.71828182845904524, CrossPlatformMachineEpsilon)] // y: sinpi(e)              x:  cospi(e)
+        [InlineData(-0.43030121700009227,     -0.90268536193307107,     -0.85840734641020676, CrossPlatformMachineEpsilon)] // y: sinpi(pi)             x:  cospi(pi)
+        [InlineData( 1.0,                      double.NegativeInfinity,  1.0,                 CrossPlatformMachineEpsilon)] // y: sinpi(0.5)                                    ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( 1.0,                      double.PositiveInfinity,  0.0,                 0.0)]                         // y: sinpi(0.5)
+        [InlineData( double.PositiveInfinity, -1.0,                      0.5,                 CrossPlatformMachineEpsilon)] //                          x:  cospi(1)            ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( double.PositiveInfinity,  1.0,                      0.5,                 CrossPlatformMachineEpsilon)] //                          x:  cospi(0)            ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( double.PositiveInfinity,  double.NegativeInfinity,  0.75,                CrossPlatformMachineEpsilon)] //                                                  ; This should be exact, but has an issue on WASM/Unix
+        [InlineData( double.PositiveInfinity,  double.PositiveInfinity,  0.25,                CrossPlatformMachineEpsilon)] //                                                  ; This should be exact, but has an issue on WASM/Unix
+        public static void Atan2PiTest(double y, double x, double expectedResult, double allowedVariance)
+        {
+            AssertExtensions.Equal(-expectedResult, double.Atan2Pi(-y, +x), allowedVariance);
+            AssertExtensions.Equal(+expectedResult, double.Atan2Pi(+y, +x), allowedVariance);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroidX86))]   // disabled on Android x86, see https://github.com/dotnet/runtime/issues/71252
         [InlineData( double.NaN,               double.NaN,          0.0)]
         [InlineData( 0.0,                      0.0,                 0.0)]
         [InlineData( 1.5574077246549022,       0.31830988618379067, CrossPlatformMachineEpsilon)]

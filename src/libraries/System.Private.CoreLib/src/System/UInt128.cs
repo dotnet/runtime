@@ -22,11 +22,13 @@ namespace System
     {
         internal const int Size = 16;
 
-        // Unix System V ABI actually requires this to be little endian
-        // order and not `upper, lower` on big endian systems.
-
+#if BIGENDIAN
+        private readonly ulong _upper;
+        private readonly ulong _lower;
+#else
         private readonly ulong _lower;
         private readonly ulong _upper;
+#endif
 
         /// <summary>Initializes a new instance of the <see cref="UInt128" /> struct.</summary>
         /// <param name="upper">The upper 64-bits of the 128-bit value.</param>
@@ -285,7 +287,7 @@ namespace System
             }
             else
             {
-                // For values greater than than 2^104 we basically do the same as before but we need to account
+                // For values greater than 2^104 we basically do the same as before but we need to account
                 // for the precision loss that double will have. As such, the lower value effectively drops the
                 // lowest 24 bits and then or's them back to ensure rounding stays correct.
 
@@ -906,6 +908,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static UInt128 IBinaryNumber<UInt128>.AllBitsSet => new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(UInt128 value) => PopCount(value) == 1U;
 
@@ -939,28 +944,28 @@ namespace System
         // IComparisonOperators
         //
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(UInt128 left, UInt128 right)
         {
             return (left._upper < right._upper)
                 || (left._upper == right._upper) && (left._lower < right._lower);
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(UInt128 left, UInt128 right)
         {
             return (left._upper < right._upper)
                 || (left._upper == right._upper) && (left._lower <= right._lower);
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(UInt128 left, UInt128 right)
         {
             return (left._upper > right._upper)
                 || (left._upper == right._upper) && (left._lower > right._lower);
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(UInt128 left, UInt128 right)
         {
             return (left._upper > right._upper)
@@ -1204,10 +1209,10 @@ namespace System
         // IEqualityOperators
         //
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(UInt128 left, UInt128 right) => (left._lower == right._lower) && (left._upper == right._upper);
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(UInt128 left, UInt128 right) => (left._lower != right._lower) || (left._upper != right._upper);
 
         //
@@ -1353,6 +1358,63 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         static UInt128 INumberBase<UInt128>.Abs(UInt128 value) => value;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UInt128 CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            UInt128 result;
+
+            if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (UInt128)(object)value;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UInt128 CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            UInt128 result;
+
+            if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (UInt128)(object)value;
+            }
+            else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UInt128 CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            UInt128 result;
+
+            if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (UInt128)(object)value;
+            }
+            else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
         static bool INumberBase<UInt128>.IsCanonical(UInt128 value) => true;
 
@@ -1418,7 +1480,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<UInt128>.TryConvertFromChecked<TOther>(TOther value, out UInt128 result)
+        static bool INumberBase<UInt128>.TryConvertFromChecked<TOther>(TOther value, out UInt128 result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out UInt128 result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1480,7 +1546,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<UInt128>.TryConvertFromSaturating<TOther>(TOther value, out UInt128 result)
+        static bool INumberBase<UInt128>.TryConvertFromSaturating<TOther>(TOther value, out UInt128 result) => TryConvertFromSaturating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromSaturating<TOther>(TOther value, out UInt128 result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1542,7 +1612,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<UInt128>.TryConvertFromTruncating<TOther>(TOther value, out UInt128 result)
+        static bool INumberBase<UInt128>.TryConvertFromTruncating<TOther>(TOther value, out UInt128 result) => TryConvertFromTruncating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromTruncating<TOther>(TOther value, out UInt128 result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1840,7 +1914,7 @@ namespace System
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
         public static UInt128 operator <<(UInt128 value, int shiftAmount)
         {
             // C# automatically masks the shift amount for UInt64 to be 0x3F. So we
@@ -1873,10 +1947,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
         public static UInt128 operator >>(UInt128 value, int shiftAmount) => value >>> shiftAmount;
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
         public static UInt128 operator >>>(UInt128 value, int shiftAmount)
         {
             // C# automatically masks the shift amount for UInt64 to be 0x3F. So we

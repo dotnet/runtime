@@ -1430,7 +1430,7 @@ protected:
 #define PERFSCORE_LATENCY_62C 62.0f
 #define PERFSCORE_LATENCY_69C 69.0f
 #define PERFSCORE_LATENCY_140C 140.0f
-#define PERFSCORE_LATENCY_400C 400.0f // Intel microcode issue with these instuctions
+#define PERFSCORE_LATENCY_400C 400.0f // Intel microcode issue with these instructions
 
 #define PERFSCORE_LATENCY_BRANCH_DIRECT 1.0f   // cost of an unconditional branch
 #define PERFSCORE_LATENCY_BRANCH_COND 2.0f     // includes cost of a possible misprediction
@@ -2367,6 +2367,11 @@ public:
     void emitSetFrameRangeGCRs(int offsLo, int offsHi);
     void emitSetFrameRangeLcls(int offsLo, int offsHi);
     void emitSetFrameRangeArgs(int offsLo, int offsHi);
+
+    bool emitIsWithinFrameRangeGCRs(int offs)
+    {
+        return (offs >= emitGCrFrameOffsMin) && (offs < emitGCrFrameOffsMax);
+    }
 
     static instruction emitJumpKindToIns(emitJumpKind jumpKind);
     static emitJumpKind emitInsToJumpKind(instruction ins);

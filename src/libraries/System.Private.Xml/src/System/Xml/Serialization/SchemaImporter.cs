@@ -44,15 +44,7 @@ namespace System.Xml.Serialization
             Schemas.SetCache(Context.Cache, Context.ShareTypes);
         }
 
-        internal ImportContext Context
-        {
-            get
-            {
-                if (_context == null)
-                    _context = new ImportContext();
-                return _context;
-            }
-        }
+        internal ImportContext Context => _context ??= new ImportContext();
 
         internal Hashtable ImportedElements
         {
@@ -69,45 +61,13 @@ namespace System.Xml.Serialization
             get { return Context.TypeIdentifiers; }
         }
 
-        internal XmlSchemas Schemas
-        {
-            get
-            {
-                if (_schemas == null)
-                    _schemas = new XmlSchemas();
-                return _schemas;
-            }
-        }
+        internal XmlSchemas Schemas => _schemas ??= new XmlSchemas();
 
-        internal TypeScope Scope
-        {
-            get
-            {
-                if (_scope == null)
-                    _scope = new TypeScope();
-                return _scope;
-            }
-        }
+        internal TypeScope Scope => _scope ??= new TypeScope();
 
-        internal NameTable GroupsInUse
-        {
-            get
-            {
-                if (_groupsInUse == null)
-                    _groupsInUse = new NameTable();
-                return _groupsInUse;
-            }
-        }
+        internal NameTable GroupsInUse => _groupsInUse ??= new NameTable();
 
-        internal NameTable TypesInUse
-        {
-            get
-            {
-                if (_typesInUse == null)
-                    _typesInUse = new NameTable();
-                return _typesInUse;
-            }
-        }
+        internal NameTable TypesInUse => _typesInUse ??= new NameTable();
 
         internal CodeGenerationOptions Options
         {
@@ -160,12 +120,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls CreateRootMapping")]
-        internal StructMapping GetRootMapping()
-        {
-            if (_root == null)
-                _root = CreateRootMapping();
-            return _root;
-        }
+        internal StructMapping GetRootMapping() => _root ??= CreateRootMapping();
 
         [RequiresUnreferencedCode("calls GetRootMapping")]
         internal StructMapping ImportRootMapping()

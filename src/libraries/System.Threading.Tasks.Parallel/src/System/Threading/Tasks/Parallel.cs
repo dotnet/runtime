@@ -3061,10 +3061,7 @@ namespace System.Threading.Tasks
                     d = partitionerSource as IDisposable;
                 }
 
-                if (d != null)
-                {
-                    d.Dispose();
-                }
+                d?.Dispose();
 
                 // ETW event for Parallel For End
                 if (ParallelEtwProvider.Log.IsEnabled())
@@ -3098,8 +3095,7 @@ namespace System.Threading.Tasks
                 Debug.Assert(exObj is Exception);
                 Exception ex = (Exception)exObj;
 
-                if (first == null)
-                    first = ex;
+                first ??= ex;
 
                 // If mismatch found, fail-fast:
                 OperationCanceledException? ocEx = ex as OperationCanceledException;

@@ -178,6 +178,12 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         return nullptr;
     }
 
+    // NextCallRetAddr requires a CALL, so return nullptr.
+    if (info.compHasNextCallRetAddr)
+    {
+        return nullptr;
+    }
+
     CORINFO_CLASS_HANDLE argClass         = NO_CLASS_HANDLE;
     var_types            retType          = JITtype2varType(sig->retType);
     CorInfoType          simdBaseJitType  = CORINFO_TYPE_UNDEF;
@@ -304,6 +310,12 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 
         case 2:
         {
+            if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic))
+            {
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+            }
+
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);
@@ -909,6 +921,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         case 2:
         {
+            if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic))
+            {
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+            }
+
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);

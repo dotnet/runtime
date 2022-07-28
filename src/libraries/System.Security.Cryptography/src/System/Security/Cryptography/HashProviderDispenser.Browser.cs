@@ -5,8 +5,6 @@ namespace System.Security.Cryptography
 {
     internal static partial class HashProviderDispenser
     {
-        internal static readonly bool CanUseSubtleCryptoImpl = Interop.BrowserCrypto.CanUseSubtleCryptoImpl() == 1;
-
         public static HashProvider CreateHashProvider(string hashAlgorithmId)
         {
             switch (hashAlgorithmId)
@@ -15,7 +13,7 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA256:
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
-                    return CanUseSubtleCryptoImpl
+                    return Interop.BrowserCrypto.CanUseSubtleCrypto
                         ? new SHANativeHashProvider(hashAlgorithmId)
                         : new SHAManagedHashProvider(hashAlgorithmId);
             }
@@ -30,7 +28,7 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> source,
                 Span<byte> destination)
             {
-                if (CanUseSubtleCryptoImpl)
+                if (Interop.BrowserCrypto.CanUseSubtleCrypto)
                 {
                     return HMACNativeHashProvider.MacDataOneShot(hashAlgorithmId, key, source, destination);
                 }
@@ -44,7 +42,7 @@ namespace System.Security.Cryptography
 
             public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
-                if (CanUseSubtleCryptoImpl)
+                if (Interop.BrowserCrypto.CanUseSubtleCrypto)
                 {
                     return SHANativeHashProvider.HashOneShot(hashAlgorithmId, source, destination);
                 }
@@ -65,7 +63,7 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA256:
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
-                    return CanUseSubtleCryptoImpl
+                    return Interop.BrowserCrypto.CanUseSubtleCrypto
                         ? new HMACNativeHashProvider(hashAlgorithmId, key)
                         : new HMACManagedHashProvider(hashAlgorithmId, key);
             }

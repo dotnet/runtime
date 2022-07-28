@@ -9,8 +9,10 @@
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Diagnostics.Debug" />
     <DefaultReferenceExclusion Include="System.Runtime.Extensions" />
+    <DefaultReferenceExclusion Include="System.Collections" />
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
   <ItemGroup>

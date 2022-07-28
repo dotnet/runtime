@@ -10,7 +10,7 @@ namespace System.Xml
 {
     /// <summary>
     /// This writer wraps an XmlWriter that was not build using the XmlRawWriter architecture (such as XmlTextWriter or a custom XmlWriter)
-    /// for use in the XslCompilerTransform. Depending on the Xsl stylesheet output settings (which gets transfered to this writer via the
+    /// for use in the XslCompilerTransform. Depending on the Xsl stylesheet output settings (which gets transferred to this writer via the
     /// internal properties of XmlWriterSettings) this writer will inserts additional lexical information into the resulting Xml 1.0 document:
     ///
     ///   1. CData sections

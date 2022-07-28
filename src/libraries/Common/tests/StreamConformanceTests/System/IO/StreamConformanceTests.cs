@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
@@ -529,7 +528,7 @@ namespace System.IO.Tests
             }
         }
 
-        protected async Task ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(Stream stream)
+        protected async Task ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(Stream stream, int cancellationDelay)
         {
             if (!stream.CanRead || !FullyCancelableOperations)
             {
@@ -537,12 +536,14 @@ namespace System.IO.Tests
             }
 
             var cts = new CancellationTokenSource();
+
             Task<int> t = stream.ReadAsync(new byte[1], 0, 1, cts.Token);
-            cts.Cancel();
+
+            cts.CancelAfter(cancellationDelay);
             await AssertCanceledAsync(cts.Token, () => t);
         }
 
-        protected async Task ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(Stream stream)
+        protected async Task ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(Stream stream, int cancellationDelay)
         {
             if (!stream.CanRead || !FullyCancelableOperations)
             {
@@ -550,8 +551,10 @@ namespace System.IO.Tests
             }
 
             var cts = new CancellationTokenSource();
+
             Task<int> t = stream.ReadAsync(new byte[1], cts.Token).AsTask();
-            cts.Cancel();
+
+            cts.CancelAfter(cancellationDelay);
             await AssertCanceledAsync(cts.Token, () => t);
         }
 
@@ -1306,6 +1309,31 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(AllSeekModes))]
+        public virtual async Task Seek_PastEnd_ReadReturns0(SeekMode mode)
+        {
+            if (!CanSeek)
+            {
+                return;
+            }
+
+            const int Length = 512;
+
+            byte[] expected = RandomNumberGenerator.GetBytes(Length);
+            using Stream? stream = await CreateReadOnlyStream(expected);
+            if (stream is null)
+            {
+                return;
+            }
+
+            long pos = stream.Length + 10;
+            Assert.Equal(pos, Seek(mode, stream, pos));
+
+            Assert.Equal(0, stream.Read(new byte[1], 0, 1));
+            Assert.Equal(-1, stream.ReadByte());
+        }
+
+        [Theory]
+        [MemberData(nameof(AllSeekModes))]
         public virtual async Task Seek_ReadWrite_RoundtripsExpectedData(SeekMode mode)
         {
             if (!CanSeek)
@@ -1646,26 +1674,30 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        public virtual async Task ReadAsync_CancelPendingTask_ThrowsCancellationException()
+        public virtual async Task ReadAsync_CancelPendingTask_ThrowsCancellationException(int cancellationDelay)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
 
-            await ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(readable);
+            await ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(readable, cancellationDelay);
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        public virtual async Task ReadAsync_CancelPendingValueTask_ThrowsCancellationException()
+        public virtual async Task ReadAsync_CancelPendingValueTask_ThrowsCancellationException(int cancellationDelay)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
 
-            await ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(readable);
+            await ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(readable, cancellationDelay);
         }
 
         [Fact]
@@ -2700,7 +2732,7 @@ namespace System.IO.Tests
                 return;
             }
 
-            StreamPair streams = await CreateConnectedStreamsAsync();
+            using StreamPair streams = await CreateConnectedStreamsAsync();
 
             foreach (Stream stream in streams)
             {

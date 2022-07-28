@@ -468,7 +468,7 @@ public:
     RefPosition* lastRefPosition;
 
     // Get the position of the next reference which is at or greater than
-    // the current location (relies upon recentRefPosition being udpated
+    // the current location (relies upon recentRefPosition being updated
     // during traversal).
     RefPosition* getNextRefPosition();
     LsraLocation getNextRefLocation();
@@ -693,10 +693,16 @@ public:
                                 regNumberSmall* location,
                                 regNumber       toReg,
                                 regNumber       fromReg,
-                                ResolveType     resolveType);
+                                ResolveType resolveType DEBUG_ARG(BasicBlock* fromBlock)
+                                    DEBUG_ARG(BasicBlock* toBlock));
 #endif
-    void addResolution(
-        BasicBlock* block, GenTree* insertionPoint, Interval* interval, regNumber outReg, regNumber inReg);
+
+    void addResolution(BasicBlock* block,
+                       GenTree*    insertionPoint,
+                       Interval*   interval,
+                       regNumber   outReg,
+                       regNumber inReg DEBUG_ARG(BasicBlock* fromBlock) DEBUG_ARG(BasicBlock* toBlock)
+                           DEBUG_ARG(const char* reason));
 
     void handleOutgoingCriticalEdges(BasicBlock* block);
 

@@ -5,7 +5,7 @@
 //
 
 //
-// Header file for GDB JIT interface implemenation.
+// Header file for GDB JIT interface implementation.
 //
 //*****************************************************************************
 

@@ -703,7 +703,7 @@ Thread* SetupThread()
                 pThread->SetThreadState(Thread::TS_CompletionPortThread);
                 pThread->SetBackground(TRUE);
             }
-            else if (IsTimerSpecialThread() || IsWaitSpecialThread())
+            else if (IsWaitSpecialThread())
             {
                 pThread->SetThreadState(Thread::TS_TPWorkerThread);
                 pThread->SetBackground(TRUE);
@@ -794,7 +794,7 @@ Thread* SetupThread()
     {
         pThread->SetThreadState(Thread::TS_CompletionPortThread);
     }
-    else if (IsTimerSpecialThread() || IsWaitSpecialThread())
+    else if (IsWaitSpecialThread())
     {
         pThread->SetThreadState(Thread::TS_TPWorkerThread);
     }
@@ -2468,7 +2468,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
     {
         // TODO: we would prefer to use a GC Holder here, however it is hard
         //       to get the case where we're deleting this thread correct given
-        //       the current macros. We want to supress the release of the holder
+        //       the current macros. We want to suppress the release of the holder
         //       here which puts us in Preemptive mode, and also the switch to
         //       Cooperative mode below, but since both holders will be named
         //       the same thing (due to the generic nature of the macro) we can
@@ -7183,7 +7183,6 @@ BOOL Thread::HaveExtraWorkForFinalizer()
     LIMITED_METHOD_CONTRACT;
 
     return RequireSyncBlockCleanup()
-        || ThreadpoolMgr::HaveTimerInfosToFlush()
         || Thread::CleanupNeededForFinalizedThread()
         || (m_DetachCount > 0)
         || SystemDomain::System()->RequireAppDomainCleanup()
@@ -7230,9 +7229,6 @@ void Thread::DoExtraWorkForFinalizer()
     {
         Thread::CleanupDetachedThreads();
     }
-
-    // If there were any TimerInfos waiting to be released, they'll get flushed now
-    ThreadpoolMgr::FlushQueueOfTimerInfos();
 
     if (YieldProcessorNormalization::IsMeasurementScheduled())
     {
@@ -7585,7 +7581,7 @@ void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
     ManagedThreadBase_FullTransition(pTarget, args, ManagedThread);
 }
 
-// The IOCompletion, QueueUserWorkItem, AddTimer, RegisterWaitForSingleObject cases in the ThreadPool
+// The IOCompletion, QueueUserWorkItem, RegisterWaitForSingleObject cases in the ThreadPool
 void ManagedThreadBase::ThreadPool(ADCallBackFcnType pTarget, LPVOID args)
 {
     WRAPPER_NO_CONTRACT;
@@ -7648,7 +7644,7 @@ LPVOID Thread::GetStaticFieldAddress(FieldDesc *pFD)
     LPVOID result = (LPVOID)((PTR_BYTE)base + (DWORD)offset);
 
     // For value classes, the handle points at an OBJECTREF
-    // which holds the boxed value class, so derefernce and unbox.
+    // which holds the boxed value class, so dereference and unbox.
     if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
     {
         OBJECTREF obj = ObjectToOBJECTREF(*(Object**) result);
@@ -7706,7 +7702,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
     TADDR result = dac_cast<TADDR>(base) + (DWORD)offset;
 
     // For value classes, the handle points at an OBJECTREF
-    // which holds the boxed value class, so derefernce and unbox.
+    // which holds the boxed value class, so dereference and unbox.
     if (pFD->IsByValue())
     {
         _ASSERTE(result != NULL);

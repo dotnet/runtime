@@ -27,7 +27,7 @@ namespace System.Reflection.Runtime.TypeInfos
     //     that apply only to generic parameters.)
     //
     //   - Inverts the DeclaredMembers/DeclaredX relationship (DeclaredMembers is auto-implemented, others
-    //     are overriden as abstract. This ordering makes more sense when reading from metadata.)
+    //     are overridden as abstract. This ordering makes more sense when reading from metadata.)
     //
     //   - Overrides many "NotImplemented" members in TypeInfo with abstracts so failure to implement
     //     shows up as build error.
@@ -356,7 +356,7 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         //
-        // Left unsealed as there are so many subclasses. Need to be overriden by EcmaFormatRuntimeNamedTypeInfo and RuntimeConstructedGenericTypeInfo
+        // Left unsealed as there are so many subclasses. Need to be overridden by EcmaFormatRuntimeNamedTypeInfo and RuntimeConstructedGenericTypeInfo
         //
         public abstract override int MetadataToken
         {
@@ -416,7 +416,7 @@ namespace System.Reflection.Runtime.TypeInfos
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public sealed override Type MakeArrayType()
         {
-            // Do not implement this as a call to MakeArrayType(1) - they are not interchangable. MakeArrayType() returns a
+            // Do not implement this as a call to MakeArrayType(1) - they are not interchangeable. MakeArrayType() returns a
             // vector type ("SZArray") while MakeArrayType(1) returns a multidim array of rank 1. These are distinct types
             // in the ECMA model and in CLR Reflection.
             return this.GetArrayTypeWithTypeHandle();
@@ -605,8 +605,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal EnumInfo EnumInfo => Cache.EnumInfo;
-
         internal abstract Type InternalDeclaringType { get; }
 
         //
@@ -741,11 +739,7 @@ namespace System.Reflection.Runtime.TypeInfos
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
-                string debugName;
-                debugName = this.ToString();
-                if (debugName == null)
-                    debugName = "";
-                _debugName = debugName;
+                _debugName = ToString() ?? "";
             }
             return;
         }

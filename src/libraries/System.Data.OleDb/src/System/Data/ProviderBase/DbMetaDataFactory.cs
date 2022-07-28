@@ -201,10 +201,7 @@ namespace System.Data.ProviderBase
             }
             finally
             {
-                if (reader != null)
-                {
-                    reader.Dispose();
-                }
+                reader?.Dispose();
             }
 
             return resultTable;
@@ -304,7 +301,7 @@ namespace System.Data.ProviderBase
                             // have an inexact match - ok only if it is the only one
                             if (exactCollectionName != null)
                             {
-                                // can't fail here becasue we may still find an exact match
+                                // can't fail here because we may still find an exact match
                                 haveMultipleInexactMatches = true;
                             }
                             requestedCollectionRow = row;
@@ -328,7 +325,7 @@ namespace System.Data.ProviderBase
 
             if (!haveExactMatch && haveMultipleInexactMatches)
             {
-                throw ADP.AmbigousCollectionName(collectionName);
+                throw ADP.AmbiguousCollectionName(collectionName);
             }
 
             return requestedCollectionRow;

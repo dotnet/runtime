@@ -345,7 +345,11 @@ ds_rt_server_log_pause_message (void)
 
 	const char diagPortsName[] = "DOTNET_DiagnosticPorts";
 	CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
-	LPCSTR ports = diagPorts.AsString();
+	LPCSTR ports = nullptr;
+	if (diagPorts.IsSet())
+	{
+		ports = diagPorts.AsString();
+	}
 
 	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend();
 

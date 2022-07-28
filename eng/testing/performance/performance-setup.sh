@@ -35,6 +35,7 @@ javascript_engine="v8"
 iosmono=false
 iosllvmbuild=""
 maui_version=""
+only_sanity=false
 
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
@@ -156,6 +157,10 @@ while (($# > 0)); do
     --mauiversion)
       maui_version=$2
       shift 2
+      ;;
+    --only-sanity)
+      only_sanity=true
+      shift 1
       ;;
     *)
       echo "Common settings:"
@@ -351,20 +356,33 @@ fi
 
 if [[ "$iosmono" == "true" ]]; then
     if [[ "$iosllvmbuild" == "True" ]]; then
-        # LLVM Mono .app
-        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvm $payload_directory/iosHelloWorld
-        mkdir -p $payload_directory/iosHelloWorldZip/llvmzip && cp -rv $source_directory/iosHelloWorldZip/llvmzip $payload_directory/iosHelloWorldZip
+        if [[ "$kind" != "ios_scenarios_net6" ]]; then
+            # LLVM Mono .app
+            mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvm $payload_directory/iosHelloWorld
+            mkdir -p $payload_directory/iosHelloWorldZip/llvmzip && cp -rv $source_directory/iosHelloWorldZip/llvmzip $payload_directory/iosHelloWorldZip
+        fi
     else
         # NoLLVM Mono .app, Maui iOS IPA, Maui Maccatalyst, Maui iOS Podcast IPA
-        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvm $payload_directory/iosHelloWorld
-        mkdir -p $payload_directory/iosHelloWorldZip/nollvmzip && cp -rv $source_directory/iosHelloWorldZip/nollvmzip $payload_directory/iosHelloWorldZip
+        if [[ "$kind" != "ios_scenarios_net6" ]]; then
+            mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvm $payload_directory/iosHelloWorld
+            mkdir -p $payload_directory/iosHelloWorldZip/nollvmzip && cp -rv $source_directory/iosHelloWorldZip/nollvmzip $payload_directory/iosHelloWorldZip
+        fi
         mkdir -p $payload_directory/MauiMacCatalystDefault && cp -rv $source_directory/MauiMacCatalystDefault/MauiMacCatalystDefault.app $payload_directory/MauiMacCatalystDefault
+        mkdir -p $payload_directory/MauiBlazorMacCatalystDefault && cp -rv $source_directory/MauiBlazorMacCatalystDefault/MauiBlazorMacCatalystDefault.app $payload_directory/MauiBlazorMacCatalystDefault
         cp -v $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.ipa $payload_directory/MauiiOSDefault.ipa
+        cp -v $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.ipa $payload_directory/MauiBlazoriOSDefault.ipa
         cp -v $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.ipa $payload_directory/MauiiOSPodcast.ipa
+
         # Get the .app so we can resign in the xharness item
         cp -v $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.ipa $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.zip
         unzip -d $source_directory/MauiiOSDefaultIPA $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.zip
         mv $source_directory/MauiiOSDefaultIPA/Payload/MauiTesting.app $payload_directory/
+
+        # Get the .app so we can resign in the xharness item for Maui Blazor
+        cp -v $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.ipa $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.zip
+        unzip -d $source_directory/MauiBlazoriOSDefaultIPA $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.zip
+        mv $source_directory/MauiBlazoriOSDefaultIPA/Payload/MauiBlazorTesting.app $payload_directory/
+
         # Get the .app so we can resign in the xharness item for podcast
         cp -v $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.ipa $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.zip
         unzip -d $source_directory/MauiiOSPodcastIPA $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.zip
@@ -400,3 +418,4 @@ Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variab
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
+Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false

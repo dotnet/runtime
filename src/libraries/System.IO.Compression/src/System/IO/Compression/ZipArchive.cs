@@ -204,8 +204,7 @@ namespace System.IO.Compression
             }
             catch
             {
-                if (extraTempStream != null)
-                    extraTempStream.Dispose();
+                extraTempStream?.Dispose();
 
                 throw;
             }
@@ -400,11 +399,6 @@ namespace System.IO.Compression
             if (_mode == ZipArchiveMode.Read)
                 throw new NotSupportedException(SR.CreateInReadMode);
 
-            if (_entriesDictionary.ContainsKey(entryName))
-            {
-                throw new InvalidOperationException(string.Format(SR.EntryNameAlreadyExists, entryName));
-            }
-
             ThrowIfDisposed();
 
 
@@ -460,8 +454,7 @@ namespace System.IO.Compression
 
         internal void ThrowIfDisposed()
         {
-            if (_isDisposed)
-                throw new ObjectDisposedException(GetType().ToString());
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
         private void CloseStreams()

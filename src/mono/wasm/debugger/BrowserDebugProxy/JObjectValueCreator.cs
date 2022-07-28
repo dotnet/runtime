@@ -58,10 +58,10 @@ internal sealed class JObjectValueCreator
         return ret;
     }
 
-    public static JObject CreateFromPrimitiveType(object v)
+    public static JObject CreateFromPrimitiveType(object v, int? stringId = null)
         => v switch
         {
-            string s => Create(s, type: "string", description: s),
+            string s => Create(s, type: "string", description: s, objectId: $"dotnet:object:{stringId}"),
             char c => CreateJObjectForChar(Convert.ToInt32(c)),
             bool b => Create(b, type: "boolean", description: b ? "true" : "false", className: "System.Boolean"),
 
@@ -182,7 +182,7 @@ internal sealed class JObjectValueCreator
                 {
                     var stringId = retDebuggerCmdReader.ReadInt32();
                     string value = await _sdbAgent.GetStringValue(stringId, token);
-                    ret = CreateFromPrimitiveType(value);
+                    ret = CreateFromPrimitiveType(value, stringId);
                     break;
                 }
             case ElementType.SzArray:
