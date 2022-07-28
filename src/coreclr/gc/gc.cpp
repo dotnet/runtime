@@ -30688,7 +30688,7 @@ bool gc_heap::should_sweep_in_plan (heap_segment* region)
             sip_p = true;
         }
 
-        if (new_gen_num < max_generation)
+        if (settings.promotion && (new_gen_num < max_generation))
         {
             int old_card_surv_ratio =
                 (int)(((double)heap_segment_old_card_survived (region) * 100.0) / (double)basic_region_size);
