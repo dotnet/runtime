@@ -7231,6 +7231,11 @@ protected:
     AssertionDsc*  optAssertionTabPrivate;      // table that holds info about value assignments
     AssertionIndex optAssertionCount;           // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
+    bool optCanPropLclVar;
+    bool optCanPropEqual;
+    bool optCanPropNonNull;
+    bool optCanPropBndsChk;
+    bool optCanPropSubRange;
 
 public:
     void optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree);

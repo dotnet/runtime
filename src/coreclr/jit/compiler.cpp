@@ -6400,6 +6400,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     compHasBackwardJump          = false;
     compHasBackwardJumpInHandler = false;
+    optCanPropLclVar = false;
+    optCanPropEqual = false;
+    optCanPropNonNull = false;
+    optCanPropBndsChk = false;
 
 #ifdef DEBUG
     compCurBB = nullptr;
