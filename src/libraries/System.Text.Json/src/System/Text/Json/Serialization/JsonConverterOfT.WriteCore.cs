@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.Text.Json.Serialization.Metadata;
-
 namespace System.Text.Json.Serialization
 {
     public partial class JsonConverter<T>
@@ -47,18 +44,6 @@ namespace System.Text.Json.Serialization
         {
             try
             {
-                Debug.Assert(writer != null);
-
-                if (
-#if NETCOREAPP
-                    !typeof(T).IsValueType &&
-#endif
-                    CanBePolymorphic && value is not null &&
-                    state.ResolveRootLevelPolymorphicConverter(value, options) is JsonConverter polymorphicConverter)
-                {
-                    return polymorphicConverter.WriteCoreAsObject(writer, value, options, ref state);
-                }
-
                 return TryWrite(writer, value, options, ref state);
             }
             catch (InvalidOperationException ex) when (ex.Source == ThrowHelper.ExceptionSourceValueToRethrowAsJsonException)

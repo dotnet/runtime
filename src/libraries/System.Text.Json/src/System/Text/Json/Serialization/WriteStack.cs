@@ -156,33 +156,6 @@ namespace System.Text.Json
             }
         }
 
-        internal JsonConverter? ResolveRootLevelPolymorphicConverter(object value, JsonSerializerOptions options)
-        {
-            Debug.Assert(CurrentDepth == 0);
-
-            JsonConverter? polymorphicConverter = null;
-            if (!IsContinuation)
-            {
-                Type runtimeType = value.GetType();
-                if (runtimeType != Current.JsonTypeInfo.Type)
-                {
-                    JsonTypeInfo polymorphicJsonTypeInfo = options.GetTypeInfoInternal(runtimeType);
-                    Current.JsonTypeInfo = polymorphicJsonTypeInfo;
-                    Current.JsonPropertyInfo = polymorphicJsonTypeInfo.PropertyInfoForTypeInfo;
-                    Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
-                    IsPolymorphicRootValue = true;
-                    polymorphicConverter = polymorphicJsonTypeInfo.Converter;
-                }
-            }
-            else if (IsPolymorphicRootValue)
-            {
-                Debug.Assert(Current.JsonTypeInfo.Type == value.GetType());
-                polymorphicConverter = Current.JsonTypeInfo.Converter;
-            }
-
-            return polymorphicConverter;
-        }
-
         /// <summary>
         /// Gets the nested JsonTypeInfo before resolving any polymorphic converters
         /// </summary>

@@ -321,6 +321,7 @@ namespace System.Text.Json
                     SupportAsync = true,
                 };
 
+                jsonTypeInfo = ResolvePolymorphicTypeInfo(value, jsonTypeInfo, out state.IsPolymorphicRootValue);
                 state.Initialize(jsonTypeInfo);
 
                 bool isFinalBlock;
@@ -399,6 +400,7 @@ namespace System.Text.Json
                     SupportContinuation = true
                 };
 
+                jsonTypeInfo = ResolvePolymorphicTypeInfo(value, jsonTypeInfo, out state.IsPolymorphicRootValue);
                 state.Initialize(jsonTypeInfo);
 
                 bool isFinalBlock;
@@ -407,7 +409,7 @@ namespace System.Text.Json
                 {
                     state.FlushThreshold = (int)(bufferWriter.Capacity * FlushThreshold);
 
-                    isFinalBlock = WriteCore<TValue>(writer, value, jsonTypeInfo, ref state);
+                    isFinalBlock = WriteCore(writer, value, jsonTypeInfo, ref state);
 
                     bufferWriter.WriteToStream(utf8Json);
                     bufferWriter.Clear();

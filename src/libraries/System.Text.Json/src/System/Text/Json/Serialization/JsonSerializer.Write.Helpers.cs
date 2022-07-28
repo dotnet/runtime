@@ -32,8 +32,14 @@ namespace System.Text.Json
             else
             {
                 WriteStack state = default;
-                state.Initialize(jsonTypeInfo);
-                bool success = jsonTypeInfo.EffectiveConverter.WriteCore(writer, value, jsonTypeInfo.Options, ref state);
+                JsonTypeInfo polymorphicTypeInfo = ResolvePolymorphicTypeInfo(value, jsonTypeInfo, out state.IsPolymorphicRootValue);
+                state.Initialize(polymorphicTypeInfo);
+
+                bool success =
+                    state.IsPolymorphicRootValue
+                    ? polymorphicTypeInfo.Converter.WriteCoreAsObject(writer, value, jsonTypeInfo.Options, ref state)
+                    : jsonTypeInfo.EffectiveConverter.WriteCore(writer, value, jsonTypeInfo.Options, ref state);
+
                 Debug.Assert(success);
             }
 
@@ -49,8 +55,10 @@ namespace System.Text.Json
             JsonTypeInfo jsonTypeInfo)
         {
             WriteStack state = default;
-            state.Initialize(jsonTypeInfo);
-            bool success = jsonTypeInfo.Converter.WriteCoreAsObject(writer, value, jsonTypeInfo.Options, ref state);
+            JsonTypeInfo polymorphicTypeInfo = ResolvePolymorphicTypeInfo(value, jsonTypeInfo, out state.IsPolymorphicRootValue);
+            state.Initialize(polymorphicTypeInfo);
+
+            bool success = polymorphicTypeInfo.Converter.WriteCoreAsObject(writer, value, jsonTypeInfo.Options, ref state);
             Debug.Assert(success);
             writer.Flush();
         }
@@ -75,6 +83,28 @@ namespace System.Text.Json
 
             writer.Flush();
             return isFinalBlock;
+        }
+
+        private static JsonTypeInfo ResolvePolymorphicTypeInfo<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo, out bool isPolymorphicType)
+        {
+            if (
+#if NETCOREAPP
+                !typeof(TValue).IsValueType &&
+#endif
+                jsonTypeInfo.Converter.CanBePolymorphic && value is not null)
+            {
+                Debug.Assert(typeof(TValue) == typeof(object));
+
+                Type runtimeType = value.GetType();
+                if (runtimeType != jsonTypeInfo.Type)
+                {
+                    isPolymorphicType = true;
+                    return jsonTypeInfo.Options.GetTypeInfoForPolymorphicRootType(runtimeType);
+                }
+            }
+
+            isPolymorphicType = false;
+            return jsonTypeInfo;
         }
 
         private static void ValidateInputType(object? value, Type inputType)

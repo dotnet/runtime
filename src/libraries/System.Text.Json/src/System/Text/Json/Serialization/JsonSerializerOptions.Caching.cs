@@ -20,8 +20,9 @@ namespace System.Text.Json
         /// </summary>
         private CachingContext? _cachingContext;
 
-        // Simple LRU cache for the public (de)serialize entry points that avoid some lookups in _cachingContext.
+        // Simple LRU caches for the public (de)serialize entry points that avoid some lookups in _cachingContext.
         private volatile JsonTypeInfo? _lastTypeInfo;
+        private volatile JsonTypeInfo? _lastPolymorphicTypeInfo;
 
         /// <summary>
         /// Gets the <see cref="JsonTypeInfo"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
@@ -100,8 +101,19 @@ namespace System.Text.Json
 
             if (jsonTypeInfo?.Type != type)
             {
-                jsonTypeInfo = GetTypeInfoInternal(type);
-                _lastTypeInfo = jsonTypeInfo;
+                _lastTypeInfo = jsonTypeInfo = GetTypeInfoInternal(type);
+            }
+
+            return jsonTypeInfo;
+        }
+
+        internal JsonTypeInfo GetTypeInfoForPolymorphicRootType(Type runtimeType)
+        {
+            JsonTypeInfo? jsonTypeInfo = _lastPolymorphicTypeInfo;
+
+            if (jsonTypeInfo?.Type != runtimeType)
+            {
+                _lastPolymorphicTypeInfo = jsonTypeInfo = GetTypeInfoInternal(runtimeType);
             }
 
             return jsonTypeInfo;
@@ -111,6 +123,7 @@ namespace System.Text.Json
         {
             _cachingContext?.Clear();
             _lastTypeInfo = null;
+            _lastPolymorphicTypeInfo = null;
         }
 
         private CachingContext? GetCachingContext()
