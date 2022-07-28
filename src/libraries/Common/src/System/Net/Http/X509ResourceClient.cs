@@ -98,9 +98,11 @@ namespace System.Net.Http
                     return null;
                 }
 
+                // Workaround until https://github.com/dotnet/runtime/issues/72833 is fixed
                 [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
                    Justification = "The type HttpResponseMessage is a reference type")]
-                static Type GetTaskOfHttpResponseMessageType(Type? httpResponseMessageType) => typeof(Task<>).MakeGenericType(httpResponseMessageType!);
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+                static Type GetTaskOfHttpResponseMessageType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? httpResponseMessageType) => typeof(Task<>).MakeGenericType(httpResponseMessageType!);
 
                 Type taskOfHttpResponseMessageType = GetTaskOfHttpResponseMessageType(httpResponseMessageType);
 
