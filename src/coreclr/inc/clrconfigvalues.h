@@ -151,7 +151,6 @@ CONFIG_STRING_INFO(INTERNAL_BreakOnInteropStubSetup, W("BreakOnInteropStubSetup"
 CONFIG_STRING_INFO(INTERNAL_BreakOnInteropVTableBuild, W("BreakOnInteropVTableBuild"), "Specifies a type name for which an assert should be thrown when building interop v-table.")
 CONFIG_STRING_INFO(INTERNAL_BreakOnMethodName, W("BreakOnMethodName"), "Very useful for debugging method override placement code.")
 CONFIG_DWORD_INFO(INTERNAL_BreakOnNotify, W("BreakOnNotify"), 0, "")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_BreakOnRetailAssert, W("BreakOnRetailAssert"), 0, "Used for debugging \"retail\" asserts (fatal errors)")
 CONFIG_DWORD_INFO(INTERNAL_BreakOnSecondPass, W("BreakOnSecondPass"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_BreakOnSO, W("BreakOnSO"), 0, "")
 CONFIG_STRING_INFO(INTERNAL_BreakOnStructMarshalSetup, W("BreakOnStructMarshalSetup"), "Throws an assert when field marshalers for the given type with layout are about to be created.")

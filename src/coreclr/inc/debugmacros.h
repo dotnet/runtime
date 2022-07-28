@@ -56,32 +56,13 @@ extern char g_szExprWithStack[TRACE_BUFF_SIZE];
 
 #define _ASSERTE_ALL_BUILDS(file, expr) _ASSERTE((expr))
 
-#define FreeBuildDebugBreak() DebugBreak()
-
 #else // !_DEBUG
 
 #define _ASSERTE(expr) ((void)0)
 #define _ASSERTE_MSG(expr, msg) ((void)0)
 #define VERIFY(stmt) (void)(stmt)
 
-void __FreeBuildDebugBreak();
-void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, const char *szExpr);
-
-#define FreeBuildDebugBreak() __FreeBuildDebugBreak()
-
-// At this point, EEPOLICY_HANDLE_FATAL_ERROR may or may not be defined. It will be defined
-// if we are building the VM folder, but outside VM, its not necessarily defined.
-//
-// Thus, if EEPOLICY_HANDLE_FATAL_ERROR is not defined, we will call into __FreeBuildAssertFail,
-// but if it is defined, we will use it.
-//
-// Failing here implies an error in the runtime - hence we use COR_E_EXECUTIONENGINE.
-
-#ifdef EEPOLICY_HANDLE_FATAL_ERROR
 #define _ASSERTE_ALL_BUILDS(file, expr) if (!(expr)) EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-#else // !EEPOLICY_HANDLE_FATAL_ERROR
-#define _ASSERTE_ALL_BUILDS(file, expr) if (!(expr)) __FreeBuildAssertFail(file, __LINE__, #expr);
-#endif // EEPOLICY_HANDLE_FATAL_ERROR
 
 #endif
 
@@ -115,7 +96,6 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 #define _DbgBreak() DebugBreak()
 #endif
 
-extern VOID DebBreak();
 extern VOID DebBreakHr(HRESULT hr);
 
 #ifndef IfFailGoto

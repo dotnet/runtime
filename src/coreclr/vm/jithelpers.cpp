@@ -4790,7 +4790,6 @@ HCIMPL1_RAW(Object*, JIT_CheckObj, Object* obj)
         MethodTable* pMT = obj->GetMethodTable();
         if (!pMT->ValidateWithPossibleAV()) {
             _ASSERTE(!"Bad Method Table");
-            FreeBuildDebugBreak();
         }
     }
     return obj;

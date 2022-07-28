@@ -1200,7 +1200,6 @@ public:
         {
             STRESS_LOG1(LF_ASSERT, LL_ALWAYS, "CordbCommonBase::IsValidObject() failed: %x\n", this);
             _ASSERTE(!"CordbCommonBase::IsValidObject() failed");
-            FreeBuildDebugBreak();
         }
     }
 

@@ -48,36 +48,6 @@ static void GetExecutableFileNameUtf8(SString& value)
 
 #ifdef _DEBUG
 
-
-//*****************************************************************************
-// This struct tracks the asserts we want to ignore in the rest of this
-// run of the application.
-//*****************************************************************************
-struct _DBGIGNOREDATA
-{
-    char        rcFile[_MAX_PATH];
-    int        iLine;
-    bool        bIgnore;
-};
-
-typedef CDynArray<_DBGIGNOREDATA> DBGIGNORE;
-static BYTE grIgnoreMemory[sizeof(DBGIGNORE)];
-inline DBGIGNORE* GetDBGIGNORE()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    static bool fInit; // = false;
-    if (!fInit)
-    {
-        SCAN_IGNORE_THROW; // Doesn't really throw here.
-        new (grIgnoreMemory) CDynArray<_DBGIGNOREDATA>();
-        fInit = true;
-    }
-
-    return (DBGIGNORE*)grIgnoreMemory;
-}
-
 // Continue the app on an assert. Still output the assert, but
 // Don't throw up a GUI. This is useful for testing fatal error
 // paths (like FEEE) where the runtime asserts.
@@ -246,57 +216,6 @@ VOID LogAssert(
 }
 
 //*****************************************************************************
-
-BOOL LaunchJITDebugger()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_DEBUG_ONLY;
-
-    BOOL fSuccess = FALSE;
-#ifndef TARGET_UNIX
-    EX_TRY
-    {
-        SString debugger;
-        GetDebuggerSettingInfo(debugger, NULL);
-
-        SECURITY_ATTRIBUTES sa;
-        sa.nLength = sizeof(sa);
-        sa.lpSecurityDescriptor = NULL;
-        sa.bInheritHandle = TRUE;
-
-        // We can leave this event as it is since it is inherited by a child process.
-        // We will block one scheduler, but the process is asking a user if they want to attach debugger.
-        HandleHolder eventHandle = WszCreateEvent(&sa, TRUE, FALSE, NULL);
-        if (eventHandle == NULL)
-            ThrowOutOfMemory();
-
-        SString cmdLine;
-        cmdLine.Printf(debugger, GetCurrentProcessId(), eventHandle.GetValue());
-
-        STARTUPINFO StartupInfo;
-        memset(&StartupInfo, 0, sizeof(StartupInfo));
-        StartupInfo.cb = sizeof(StartupInfo);
-        StartupInfo.lpDesktop = const_cast<LPWSTR>(W("Winsta0\\Default"));
-
-        PROCESS_INFORMATION ProcessInformation;
-        if (WszCreateProcess(NULL, cmdLine, NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &ProcessInformation))
-        {
-            WaitForSingleObject(eventHandle.GetValue(), INFINITE);
-        }
-
-        fSuccess = TRUE;
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-#endif // !TARGET_UNIX
-    return fSuccess;
-}
-
-
-//*****************************************************************************
 // This function is called in order to ultimately return an out of memory
 // failed hresult.  But this code will check what environment you are running
 // in and give an assert for running in a debug build environment.  Usually
@@ -329,19 +248,6 @@ bool _DbgBreakCheck(
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_DEBUG_ONLY;
-
-    DBGIGNORE* pDBGIFNORE = GetDBGIGNORE();
-    _DBGIGNOREDATA *psData;
-    int i;
-
-    // Check for ignore all.
-    for (i = 0, psData = pDBGIFNORE->Ptr();  i < pDBGIFNORE->Count();  i++, psData++)
-    {
-        if (psData->iLine == iLine && SString::_stricmp(psData->rcFile, szFile) == 0 && psData->bIgnore == true)
-        {
-            return false;
-        }
-    }
 
     CONTRACT_VIOLATION(FaultNotFatal | GCViolation | TakesLockViolation);
 
@@ -471,15 +377,6 @@ unsigned DbgGetEXETimeStamp()
     return cache;
 }
 #endif // TARGET_UNIX
-
-// Called from within the IfFail...() macros.  Set a breakpoint here to break on
-// errors.
-VOID DebBreak()
-{
-  STATIC_CONTRACT_LEAF;
-  static int i = 0;  // add some code here so that we'll be able to set a BP
-  i++;
-}
 
 VOID DebBreakHr(HRESULT hr)
 {
@@ -642,64 +539,3 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
 } // GetStackTraceAtContext
 #endif // !defined(DACCESS_COMPILE)
 #endif // _DEBUG
-
-/****************************************************************************
-   The following two functions are defined to allow Free builds to call
-   DebugBreak or to Assert with a stack trace for unexpected fatal errors.
-   Typically these paths are enabled via a registry key in a Free Build
-*****************************************************************************/
-
-VOID __FreeBuildDebugBreak()
-{
-    WRAPPER_NO_CONTRACT; // If we're calling this, we're well past caring about contract consistency!
-
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnRetailAssert))
-    {
-        DebugBreak();
-    }
-}
-
-void *freForceToMemory;     // dummy pointer that pessimises enregistration
-
-void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, const char *szExpr)
-{
-    WRAPPER_NO_CONTRACT; // If we're calling this, we're well past caring about contract consistency!
-
-    freForceToMemory = &szFile;     //make certain these args are available in the debugger
-    freForceToMemory = &iLine;
-    freForceToMemory = &szExpr;
-
-    __FreeBuildDebugBreak();
-
-    SString buffer;
-    SString modulePath;
-
-    GetExecutableFileNameUtf8(modulePath);
-
-    buffer.Printf("CLR: Assert failure(PID %d [0x%08x], Thread: %d [0x%x]): %s\n"
-                "    File: %s, Line: %d Image:\n%s\n",
-                GetCurrentProcessId(), GetCurrentProcessId(),
-                GetCurrentThreadId(), GetCurrentThreadId(),
-                szExpr, szFile, iLine, modulePath.GetUTF8());
-    OutputDebugStringUtf8(buffer.GetUTF8());
-
-    // Write out the error to the console
-    printf(buffer.GetUTF8());
-
-    // Log to the stress log. Note that we can't include the szExpr b/c that
-    // may not be a string literal (particularly for formatt-able asserts).
-    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s, line:%d\n", szFile, iLine);
-
-    FlushLogging();         // make certain we get the last part of the log
-
-    _flushall();
-
-    ShutdownLogging();
-
-#ifdef HOST_WINDOWS
-    CreateCrashDumpIfEnabled();
-#endif
-    RaiseFailFastException(NULL, NULL, 0);
-
-    UNREACHABLE();
-}
