@@ -93,7 +93,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <param name="optionsFactory">The action used to configure the options.</param>
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
-        public static IServiceCollection Configure<TOptions>(this IServiceCollection services, Func<IServiceProvider, IConfigureOptions<TOptions>> optionsFactory) where TOptions : class
+        internal static IServiceCollection Configure<TOptions>(this IServiceCollection services, Func<IServiceProvider, IConfigureOptions<TOptions>> optionsFactory) where TOptions : class
         {
             ThrowHelper.ThrowIfNull(services);
             ThrowHelper.ThrowIfNull(optionsFactory);
