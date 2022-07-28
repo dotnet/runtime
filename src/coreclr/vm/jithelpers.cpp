@@ -4789,7 +4789,7 @@ HCIMPL1_RAW(Object*, JIT_CheckObj, Object* obj)
     if (obj != 0) {
         MethodTable* pMT = obj->GetMethodTable();
         if (!pMT->ValidateWithPossibleAV()) {
-            _ASSERTE(!"Bad Method Table");
+            _ASSERTE_ALL_BUILDS(!"Bad Method Table");
         }
     }
     return obj;

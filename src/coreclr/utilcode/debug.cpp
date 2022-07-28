@@ -46,6 +46,20 @@ static void GetExecutableFileNameUtf8(SString& value)
     tmp.ConvertToUTF8(value);
 }
 
+static void DECLSPEC_NORETURN FailFastOnAssert()
+{
+    WRAPPER_NO_CONTRACT; // If we're calling this, we're well past caring about contract consistency!
+
+    FlushLogging(); // make certain we get the last part of the log
+    _flushall();
+
+    ShutdownLogging();
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
+    RaiseFailFastException(NULL, NULL, 0);
+}
+
 #ifdef _DEBUG
 
 // Continue the app on an assert. Still output the assert, but
@@ -260,8 +274,6 @@ bool _DbgBreakCheck(
     }
 
     LogAssert(szFile, iLine, szExpr);
-    FlushLogging();         // make certain we get the last part of the log
-    _flushall();
 
     if (ContinueOnAssert())
     {
@@ -273,11 +285,7 @@ bool _DbgBreakCheck(
         return true;       // like a retry
     }
 
-    ShutdownLogging();
-#ifdef HOST_WINDOWS
-    CreateCrashDumpIfEnabled();
-#endif
-    RaiseFailFastException(NULL, NULL, 0);
+    FailFastOnAssert();
     UNREACHABLE();
 }
 
@@ -499,3 +507,29 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
 } // GetStackTraceAtContext
 #endif // !defined(DACCESS_COMPILE)
 #endif // _DEBUG
+
+void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, const char *szExpr)
+{
+    WRAPPER_NO_CONTRACT; // If we're calling this, we're well past caring about contract consistency!
+
+    SString modulePath;
+    GetExecutableFileNameUtf8(modulePath);
+
+    SString buffer;
+    buffer.Printf("CLR: Assert failure(PID %d [0x%08x], Thread: %d [0x%x]): %s\n"
+                "    File: %s, Line: %d Image:\n%s\n",
+                GetCurrentProcessId(), GetCurrentProcessId(),
+                GetCurrentThreadId(), GetCurrentThreadId(),
+                szExpr, szFile, iLine, modulePath.GetUTF8());
+    OutputDebugStringUtf8(buffer.GetUTF8());
+
+    // Write out the error to the console
+    printf(buffer.GetUTF8());
+
+    // Log to the stress log. Note that we can't include the szExpr b/c that
+    // may not be a string literal (particularly for formatt-able asserts).
+    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s, line:%d\n", szFile, iLine);
+
+    FailFastOnAssert();
+    UNREACHABLE();
+}

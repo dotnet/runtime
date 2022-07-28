@@ -2763,11 +2763,7 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
 
                 if  (argOfs >= MAX_PTRARG_OFS)
                 {
-#if defined(DACCESS_COMPILE)
-                     _ASSERTE(!"scanArgRegTableI: args pushed 'too deep'");
-#else
-                     _ASSERTE_ALL_BUILDS("clr/src/VM/eetwain.cpp", !"scanArgRegTableI: args pushed 'too deep'");
-#endif // DACCESS_COMPILE
+                     _ASSERTE_ALL_BUILDS(!"scanArgRegTableI: args pushed 'too deep'");
                 }
                 else
                 {

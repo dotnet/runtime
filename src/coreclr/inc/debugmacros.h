@@ -51,7 +51,7 @@ extern VOID ANALYZER_NORETURN DbgAssertDialog(const char *szFile, int iLine, con
 
 #define VERIFY(stmt) _ASSERTE((stmt))
 
-#define _ASSERTE_ALL_BUILDS(file, expr) _ASSERTE((expr))
+#define _ASSERTE_ALL_BUILDS(expr) _ASSERTE((expr))
 
 #else // !_DEBUG
 
@@ -59,7 +59,19 @@ extern VOID ANALYZER_NORETURN DbgAssertDialog(const char *szFile, int iLine, con
 #define _ASSERTE_MSG(expr, msg) ((void)0)
 #define VERIFY(stmt) (void)(stmt)
 
-#define _ASSERTE_ALL_BUILDS(file, expr) if (!(expr)) EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+// At this point, EEPOLICY_HANDLE_FATAL_ERROR may or may not be defined. It will be defined
+// if we are building the VM folder, but outside VM, its not necessarily defined.
+//
+// Thus, if EEPOLICY_HANDLE_FATAL_ERROR is not defined, we will call into __FreeBuildAssertFail,
+// but if it is defined, we will use it.
+//
+// Failing here implies an error in the runtime - hence we use COR_E_EXECUTIONENGINE.
+#ifdef EEPOLICY_HANDLE_FATAL_ERROR
+#define _ASSERTE_ALL_BUILDS(expr) if (!(expr)) EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+#else // !EEPOLICY_HANDLE_FATAL_ERROR
+void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, const char *szExpr);
+#define _ASSERTE_ALL_BUILDS(expr) if (!(expr)) __FreeBuildAssertFail(__FILE__, __LINE__, #expr);
+#endif // EEPOLICY_HANDLE_FATAL_ERROR
 
 #endif
 
