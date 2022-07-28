@@ -216,18 +216,21 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray missingJsonProperties)
+        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray requiredPropertiesSet)
         {
             StringBuilder listOfMissingPropertiesBuilder = new();
             bool first = true;
 
             Debug.Assert(parent.PropertyCache != null);
 
+            // Soft cut-off length - once message becomes longer than that we won't be adding more elements
+            const int CutOffLength = 50;
+
             for (int propertyIdx = 0; propertyIdx < parent.PropertyCache.List.Count; propertyIdx++)
             {
                 JsonPropertyInfo property = parent.PropertyCache.List[propertyIdx].Value;
 
-                if (!property.IsRequired || !missingJsonProperties[property.RequiredPropertyIndex])
+                if (!property.IsRequired || requiredPropertiesSet[property.RequiredPropertyIndex])
                 {
                     continue;
                 }
@@ -240,6 +243,11 @@ namespace System.Text.Json
 
                 listOfMissingPropertiesBuilder.Append(property.Name);
                 first = false;
+
+                if (listOfMissingPropertiesBuilder.Length >= CutOffLength)
+                {
+                    break;
+                }
             }
 
             throw new JsonException(SR.Format(SR.JsonRequiredPropertiesMissing, parent.Type, listOfMissingPropertiesBuilder.ToString()));

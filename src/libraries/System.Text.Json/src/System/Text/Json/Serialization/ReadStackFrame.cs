@@ -68,8 +68,8 @@ namespace System.Text.Json
         // Whether to use custom number handling.
         public JsonNumberHandling? NumberHandling;
 
-        // Required properties left
-        public BitArray? RequiredPropertiesLeft;
+        // Required properties which have value assigned
+        public BitArray? RequiredPropertiesSet;
 
         public void EndConstructorParameter()
         {
@@ -117,19 +117,19 @@ namespace System.Text.Json
         {
             if (propertyInfo.IsRequired)
             {
-                Debug.Assert(RequiredPropertiesLeft != null);
-                RequiredPropertiesLeft[propertyInfo.RequiredPropertyIndex] = false;
+                Debug.Assert(RequiredPropertiesSet != null);
+                RequiredPropertiesSet[propertyInfo.RequiredPropertyIndex] = true;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void InitializeRequiredPropertiesValidationState(JsonTypeInfo typeInfo)
         {
-            Debug.Assert(RequiredPropertiesLeft == null);
+            Debug.Assert(RequiredPropertiesSet == null);
 
             if (typeInfo.NumberOfRequiredProperties > 0)
             {
-                RequiredPropertiesLeft = new BitArray(typeInfo.NumberOfRequiredProperties, defaultValue: true);
+                RequiredPropertiesSet = new BitArray(typeInfo.NumberOfRequiredProperties, defaultValue: false);
             }
         }
 
@@ -138,11 +138,11 @@ namespace System.Text.Json
         {
             if (typeInfo.NumberOfRequiredProperties > 0)
             {
-                Debug.Assert(RequiredPropertiesLeft != null);
+                Debug.Assert(RequiredPropertiesSet != null);
 
-                if (!RequiredPropertiesLeft.AllBitsEqual(false))
+                if (!RequiredPropertiesSet.AllBitsEqual(true))
                 {
-                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesLeft);
+                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesSet);
                 }
             }
         }
