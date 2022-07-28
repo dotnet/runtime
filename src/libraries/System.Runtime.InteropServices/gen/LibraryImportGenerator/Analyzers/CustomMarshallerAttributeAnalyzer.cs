@@ -561,6 +561,7 @@ namespace Microsoft.Interop.Analyzers
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
             ImmutableArray.Create(
                 MarshallerTypeMustSpecifyManagedTypeRule,
+                MarshallerTypeMustBeStaticClassOrStructRule,
                 UnmanagedTypeMustBeUnmanagedRule,
                 GetPinnableReferenceReturnTypeBlittableRule,
                 TypeMustHaveExplicitCastFromVoidPointerRule,
@@ -801,7 +802,7 @@ namespace Microsoft.Interop.Analyzers
                             if (isLinearCollectionMarshaller)
                             {
                                 // Verify that all of the following methods are present with valid shapes:
-                                // - AllocateContainerForUnmanagedElements
+                                // - AllocateContainerForManagedElements
                                 // - GetUnmanagedValuesSource
                                 // - GetManagedValuesDestination
                                 if (methods.ToManaged is null && methods.ToManagedFinally is null)
@@ -810,7 +811,7 @@ namespace Microsoft.Interop.Analyzers
                                         StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule,
                                         MissingMemberNames.CreateDiagnosticPropertiesForMissingMembersDiagnostic(
                                             mode,
-                                            ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForUnmanagedElements),
+                                            ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElements),
                                         marshallerType.ToDisplayString(),
                                         mode,
                                         managedType.ToDisplayString());
