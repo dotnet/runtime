@@ -116,20 +116,17 @@ const Parser = {
 
         /* Trim trailing nul character(s) that are added by the protocol */
         let trailingNulStart = -1;
-        if (result.length > 0) {
-            for (let i = result.length - 1; i >= 0; i--) {
-                if (result[i] === 0) {
-                    trailingNulStart = i;
-                } else {
-                    break;
-                }
+        for (let i = result.length - 1; i >= 0; i--) {
+            if (result[i] === 0) {
+                trailingNulStart = i;
+            } else {
+                break;
             }
-            if (trailingNulStart >= 0)
-                result.splice(trailingNulStart);
         }
-        const provisionalString = String.fromCharCode.apply(null, result);
+        if (trailingNulStart >= 0)
+            result.splice(trailingNulStart);
 
-        return provisionalString;
+        return String.fromCharCode.apply(null, result);
     }
 };
 
