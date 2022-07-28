@@ -272,6 +272,11 @@ namespace DebuggerTests
             Assert.Equal(expected_loc_str, loc_str);
         }
 
+        internal virtual void CheckLocationLine(JToken location, int line)
+        {
+            Assert.Equal(location["lineNumber"].Value<int>(), line);
+        }
+
         internal void CheckNumber<T>(JToken locals, string name, T value)
         {
             foreach (var l in locals)
