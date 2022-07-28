@@ -361,7 +361,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalFact(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser, "CollectHttpResponseDetails not supported on Browser")]
-        public async Task ConnectAsync_HttpResponseDetailsCollectedOnSuccess_Extentions()
+        public async Task ConnectAsync_HttpResponseDetailsCollectedOnSuccess_Extensions()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {

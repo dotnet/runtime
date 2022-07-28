@@ -784,7 +784,11 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
     {
         CopyOSContext(pThread->m_OSContext, pContextRecord);
         SetIP(pThread->m_OSContext, (PCODE)uResumePC);
+#ifdef TARGET_UNIX
+        uAbortAddr = NULL;
+#else
         uAbortAddr = (UINT_PTR)COMPlusCheckForAbort(uResumePC);
+#endif
     }
 
     if (uAbortAddr)
@@ -5133,7 +5137,7 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 
     BYTE code = SkipPrefixes(&ip, &hasOpSizePrefix);
 
-    // The REX prefix must directly preceed the instruction code
+    // The REX prefix must directly precede the instruction code
     if ((code & 0xF0) == 0x40)
     {
         rex = code;

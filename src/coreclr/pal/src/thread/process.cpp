@@ -983,7 +983,7 @@ CorUnix::InternalCreateProcess(
         pobjFileErr = NULL;
     }
 
-    /* fill PROCESS_INFORMATION strucutre */
+    /* fill PROCESS_INFORMATION structure */
     lpProcessInformation->hProcess = hProcess;
     lpProcessInformation->hThread = hDummyThread;
     lpProcessInformation->dwProcessId = processId;
@@ -3816,7 +3816,7 @@ Abstract:
 
 Parameters:
     IN  lpCommandLine: second parameter from CreateProcessW (an unicode string)
-    IN  lpAppPath: cannonical name of the application to launched
+    IN  lpAppPath: canonical name of the application to launched
     OUT lppArgv: array of arguments to be passed to the new process
 
 Return:
@@ -3874,7 +3874,7 @@ buildArgv(
 
     pChar = lpAsciiCmdLine;
 
-    /* put the cannonical name of the application as the first parameter */
+    /* put the canonical name of the application as the first parameter */
     if ((strcpy_s(lpAsciiCmdLine, iLength, "\"") != SAFECRT_SUCCESS) ||
         (strcat_s(lpAsciiCmdLine, iLength, lpAppPath) != SAFECRT_SUCCESS) ||
         (strcat_s(lpAsciiCmdLine, iLength,  "\"") != SAFECRT_SUCCESS) ||

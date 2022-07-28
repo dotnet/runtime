@@ -1,24 +1,22 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
-    /// Exposes method for resolving Type into JsonTypeInfo for given options.
+    /// Used to resolve the JSON serialization contract for requested types.
     /// </summary>
     public interface IJsonTypeInfoResolver
     {
         /// <summary>
-        /// Resolves Type into JsonTypeInfo which defines serialization and deserialization logic.
+        /// Resolves a <see cref="JsonTypeInfo"/> contract for the requested type and options.
         /// </summary>
         /// <param name="type">Type to be resolved.</param>
-        /// <param name="options">JsonSerializerOptions instance defining resolution parameters.</param>
-        /// <returns>Returns JsonTypeInfo instance or null if the resolver cannot produce metadata for this type.</returns>
+        /// <param name="options">Configuration used when resolving the metadata.</param>
+        /// <returns>
+        /// A <see cref="JsonTypeInfo"/> instance matching the requested type,
+        /// or <see langword="null"/> if no contract could be resolved.
+        /// </returns>
         JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options);
     }
 }

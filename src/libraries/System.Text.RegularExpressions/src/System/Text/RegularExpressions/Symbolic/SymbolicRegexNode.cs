@@ -58,7 +58,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="right">right child</param>
         /// <param name="lower">lower bound of a loop</param>
         /// <param name="upper">upper boubd of a loop</param>
-        /// <param name="set">singelton set</param>
+        /// <param name="set">singleton set</param>
         /// <param name="info">misc flags including laziness</param>
         private SymbolicRegexNode(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNodeKind kind, SymbolicRegexNode<TSet>? left, SymbolicRegexNode<TSet>? right, int lower, int upper, TSet set, SymbolicRegexInfo info)
         {
@@ -1072,9 +1072,8 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             else
             {
-                // If this node is nullable for the given context then prune any branches that are less preferred than
-                // just the empty match. This is done in order to maintain backtracking semantics.
-                SymbolicRegexNode<TSet> node = IsNullableFor(context) ? PruneLowerPriorityThanNullability(builder, context) : this;
+                // To maintain backtracking semantics, prune any branches that are less preferred than just the empty match
+                SymbolicRegexNode<TSet> node = PruneLowerPriorityThanNullability(builder, context);
                 return node.CreateDerivative(builder, elem, context);
             }
         }
@@ -1082,7 +1081,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Prune this node wrt the given context in order to maintain backtracking semantics. Mimics how backtracking chooses a path.</summary>
         private SymbolicRegexNode<TSet> PruneLowerPriorityThanNullability(SymbolicRegexBuilder<TSet> builder, uint context)
         {
-            //caching pruning to avoid otherwise potential quadratic worst case behavior
+            if (!IsNullableFor(context))
+                return this;
+
+            // Cache result to avoid otherwise potential quadratic worst case behavior
             SymbolicRegexNode<TSet>? prunedNode;
             (SymbolicRegexNode<TSet>, uint) key = (this, context);
             if (builder._pruneLowerPriorityThanNullabilityCache.TryGetValue(key, out prunedNode))
@@ -1125,19 +1127,21 @@ namespace System.Text.RegularExpressions.Symbolic
                         CreateConcat(builder, _left.PruneLowerPriorityThanNullability(builder, context), _right.PruneLowerPriorityThanNullability(builder, context));
                     break;
 
-                case SymbolicRegexNodeKind.Loop when _info.IsLazyLoop && _lower == 0:
-                    //lazy nullable loop reduces to (), i.e., the loop body is just forgotten
-                    prunedNode = builder.Epsilon;
+                case SymbolicRegexNodeKind.Loop:
+                    Debug.Assert(_left is not null);
+                    // Lazy nullable loop reduces to (), i.e., the loop body is just forgotten
+                    prunedNode = _info.IsLazyLoop && _lower == 0 ? builder.Epsilon :
+                        CreateLoop(builder, _left.PruneLowerPriorityThanNullability(builder, context), _lower, _upper, _info.IsLazyLoop);
                     break;
 
                 case SymbolicRegexNodeKind.Effect:
-                    //Effects are maintained and the pruning is propagated to the body of the effect
+                    // Effects are maintained and the pruning is propagated to the body of the effect
                     Debug.Assert(_left is not null && _right is not null);
                     prunedNode = CreateEffect(builder, _left.PruneLowerPriorityThanNullability(builder, context), _right);
                     break;
 
                 default:
-                    //In all other remaining cases no pruning takes place
+                    // In all other remaining cases no pruning takes place
                     prunedNode = this;
                     break;
             }

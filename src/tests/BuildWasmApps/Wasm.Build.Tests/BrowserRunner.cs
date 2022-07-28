@@ -75,10 +75,14 @@ internal class BrowserRunner : IAsyncDisposable
         if (!urlAvailable.Task.IsCompleted)
             throw new Exception("Timed out waiting for the app host url");
 
+        var url = new Uri(urlAvailable.Task.Result);
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
         Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions{
             ExecutablePath = s_chromePath.Value,
-            Headless = headless
+            Headless = headless,
+            Args = OperatingSystem.IsWindows()
+                        ? new[] { $"--explicitly-allowed-ports={url.Port}" }
+                        : Array.Empty<string>()
         });
 
         IPage page = await Browser.NewPageAsync();

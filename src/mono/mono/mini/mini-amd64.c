@@ -1622,7 +1622,7 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 
 	if (cfg->method->save_lmf)
 		/* The register is already saved */
-		/* substract 1 for the invisible store in the prolog */
+		/* subtract 1 for the invisible store in the prolog */
 		return (ins->opcode == OP_ARG) ? 0 : 1;
 	else
 		/* push+pop */
@@ -2167,7 +2167,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 
 			if ((t->type == MONO_TYPE_GENERICINST) && !cfg->full_aot && !sig->pinvoke) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
-				if (m_class_is_simd_type (klass)) {
+				if (MONO_CLASS_IS_SIMD (cfg, klass)) {
 					linfo->args [i].storage = LLVMArgVtypeInSIMDReg;
 					break;
 				}

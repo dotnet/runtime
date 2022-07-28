@@ -483,7 +483,7 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
         }
         case LocaleNumber_ReadingLayout:
         {
-            // coresponds to values 0 and 1 in LOCALE_IREADINGLAYOUT (values 2 and 3 not
+            // corresponds to values 0 and 1 in LOCALE_IREADINGLAYOUT (values 2 and 3 not
             // used in coreclr)
             //  0 - Left to right (such as en-US)
             //  1 - Right to left (such as arabic locales)

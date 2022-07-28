@@ -50,6 +50,8 @@
              Link="Common\System\Net\Security\MD4.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\RC4.cs"
              Link="Common\System\Net\Security\RC4.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs"
+             Link="Common\System\Net\Security\TlsAlertMessage.cs" />
     <Compile Include="..\..\src\System\Net\Security\NetEventSource.Security.cs"
              Link="ProductionCode\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslStream.cs"
@@ -76,8 +78,6 @@
              Link="ProductionCode\Common\System\Net\SecurityProtocol.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsAlertType.cs"
              Link="ProductionCode\Common\System\Net\TlsAlertType.cs" />
-    <Compile Include="..\..\src\System\Net\Security\TlsAlertMessage.cs"
-             Link="ProductionCode\Common\System\Net\TlsAlertMessage.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
              Link="ProductionCode\Common\System\Net\TlsFrameHelper.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"

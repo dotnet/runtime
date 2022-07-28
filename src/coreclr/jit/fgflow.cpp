@@ -821,7 +821,7 @@ void Compiler::fgComputePreds()
     {
         if (ehDsc->HasFilter())
         {
-            // The first block of a filter has an artifical extra refcount.
+            // The first block of a filter has an artificial extra refcount.
             ehDsc->ebdFilter->bbRefs++;
         }
 

@@ -24,7 +24,6 @@ namespace System.Runtime.Serialization.Json
         public static readonly UTF8Encoding ValidatingUTF8 = new UTF8Encoding(false, true);
         public const string PositiveInf = "INF";
         public const string NegativeInf = "-INF";
-        public static readonly char[] FloatingPointCharacters = new char[] { '.', 'e', 'E' };
         public const string typeString = "type";
         public const string nullString = "null";
         public const string arrayString = "array";

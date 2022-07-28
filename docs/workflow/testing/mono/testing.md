@@ -26,7 +26,7 @@ For example: `./build.sh mono release -test:JIT/opt/InstructionCombining/DivToMu
 
 Run individual test:
 ```
-bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/OSX.x64.Release/Tests/Core_Root 
+bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/OSX.x64.Release/Tests/Core_Root
 ```
 
 Run all built tests:
@@ -118,7 +118,7 @@ make run
 Note that the default configuration of this sample is LLVM JIT.
 
 ## WebAssembly
-To run the WebAssembly sample, cd to `wasm`.  There are two sub-folders `browser` and `console`. One is set up to run the progam in browser, the other is set up to run the program in console. Enter the desirable sub-folder and execute
+To run the WebAssembly sample, cd to `wasm`.  There are two sub-folders `browser` and `console`. One is set up to run the program in browser, the other is set up to run the program in console. Enter the desirable sub-folder and execute
 
 ```
 make build && make run

@@ -130,6 +130,19 @@ namespace System.Net.Test.Common
             await _connectionStream.WriteAsync(writeBuffer, 0, writeBuffer.Length, cancellationToken).ConfigureAwait(false);
         }
 
+        public async Task WriteFramesAsync(Frame[] frames, CancellationToken cancellationToken = default)
+        {
+            byte[] writeBuffer = new byte[frames.Sum(frame => Frame.FrameHeaderLength + frame.Length)];
+
+            int offset = 0;
+            foreach (Frame frame in frames)
+            {
+                frame.WriteTo(writeBuffer.AsSpan(offset));
+                offset += Frame.FrameHeaderLength + frame.Length;
+            }
+            await _connectionStream.WriteAsync(writeBuffer, 0, writeBuffer.Length, cancellationToken).ConfigureAwait(false);
+        }
+
         // Read until the buffer is full
         // Return false on EOF, throw on partial read
         private async Task<bool> FillBufferAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
@@ -567,7 +580,7 @@ namespace System.Net.Test.Common
                 }
                 else if (frame == null || frame.Type == FrameType.RstStream)
                 {
-                    throw new IOException( frame == null ? "End of stream" : "Got RST");
+                    throw new IOException(frame == null ? "End of stream" : "Got RST");
                 }
 
                 Assert.Equal(FrameType.Data, frame.Type);
@@ -586,7 +599,7 @@ namespace System.Net.Test.Common
 
                         body.CopyTo(newBuffer, 0);
                         dataFrame.Data.Span.CopyTo(newBuffer.AsSpan(body.Length));
-                        body= newBuffer;
+                        body = newBuffer;
                     }
                 }
             }
@@ -947,11 +960,11 @@ namespace System.Net.Test.Common
 
             if (string.IsNullOrEmpty(content))
             {
-                await SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
+                await SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers: headers).ConfigureAwait(false);
             }
             else
             {
-                await SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
+                await SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, headers: headers).ConfigureAwait(false);
                 await SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(content)).ConfigureAwait(false);
             }
 

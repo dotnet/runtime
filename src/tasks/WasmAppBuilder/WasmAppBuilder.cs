@@ -23,8 +23,6 @@ public class WasmAppBuilder : Task
     [Required]
     public string? MainJS { get; set; }
 
-    public string? WasmEnableES6 { get; set; }
-
     [Required]
     public string[] Assemblies { get; set; } = Array.Empty<string>();
 
@@ -209,7 +207,7 @@ public class WasmAppBuilder : Task
         }
 
         string packageJsonPath = Path.Combine(AppDir, "package.json");
-        if (WasmEnableES6 != "false" && !File.Exists(packageJsonPath))
+        if (!File.Exists(packageJsonPath))
         {
             var json = @"{ ""type"":""module"" }";
             File.WriteAllText(packageJsonPath, json);

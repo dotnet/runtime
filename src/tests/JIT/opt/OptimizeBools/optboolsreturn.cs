@@ -389,7 +389,7 @@ public class CBoolTest
             return 101;
         }
 
-        // Skip cases where x or y is greather than 1
+        // Skip cases where x or y is greater than 1
         if (AreOne(3, 1))
         {
             Console.WriteLine("CBoolTest:AreOne(1, 3) failed");

@@ -462,7 +462,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 #elif defined(TARGET_LOONGARCH64)
             if (argDest.IsStructPassedInRegs())
             {
-                argDest.CopyStructToRegisters(pSrc, stackSize);
+                argDest.CopyStructToRegisters(pSrc, stackSize, 0);
             }
             else
 #endif // TARGET_LOONGARCH64

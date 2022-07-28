@@ -708,7 +708,7 @@ mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, 
 
 		token = MONO_TOKEN_METHOD_SPEC | table->next_idx;
 		table->next_idx ++;
-		/*methodspec and memberef tokens are diferent, */
+		/*methodspec and memberef tokens are different, */
 		g_hash_table_insert (assembly->handleref, GUINT_TO_POINTER (GPOINTER_TO_UINT (method) + 1), GUINT_TO_POINTER (token));
 		return token;
 	}
@@ -2708,7 +2708,7 @@ reflection_init_generic_class (MonoReflectionTypeBuilderHandle ref_tb, MonoError
 		goto_if_nok (error, leave);
 		MonoGenericParamFull *param = (MonoGenericParamFull *) param_type->data.generic_param;
 		generic_container->type_params [i] = *param;
-		/*Make sure we are a diferent type instance */
+		/*Make sure we are a different type instance */
 		generic_container->type_params [i].owner = generic_container;
 		generic_container->type_params [i].info.pklass = NULL;
 		generic_container->type_params [i].info.flags = GUINT32_TO_UINT16 (MONO_HANDLE_GETVAL (ref_gparam, attrs));

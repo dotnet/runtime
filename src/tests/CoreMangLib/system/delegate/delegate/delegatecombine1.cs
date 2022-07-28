@@ -4,7 +4,7 @@
 using System;
 using System.Globalization;
 using System.Collections;
-//create for delegate combine(delegate a,delagate b) testing
+//create for delegate combine(delegate a,delegate b) testing
 namespace DelegateTest
 {
     delegate bool booldelegate();
