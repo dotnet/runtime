@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
         public static IServiceCollection Configure<TOptions>(this IServiceCollection services, Action<TOptions, IServiceProvider> configureOptions) where TOptions : class
-            => services.Configure<TOptions>((IServiceProvider sp) => new ConfigureNamedOptions<TOptions>(Options.DefaultName, (o) => configureOptions(o, sp)));
+            => services.Configure<TOptions>((IServiceProvider sp) => new ConfigureNamedOptions<TOptions>(Options.Options.DefaultName, (o) => configureOptions(o, sp)));
 
         /// <summary>
         /// Registers an action used to configure a particular type of options with access to <see cref="IServiceProvider"/>.
