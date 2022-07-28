@@ -453,10 +453,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_Monitor_SpinCount, W("Monitor_SpinCount"), 0x1
 /// Native Binder
 ///
 
-CONFIG_DWORD_INFO(INTERNAL_NgenBind_ZapForbid,             W("NgenBind_ZapForbid"), 0, "Assert if an assembly succeeds in binding to a native image")
-CONFIG_STRING_INFO(INTERNAL_NgenBind_ZapForbidExcludeList, W("NgenBind_ZapForbidExcludeList"), "")
-CONFIG_STRING_INFO(INTERNAL_NgenBind_ZapForbidList,        W("NgenBind_ZapForbidList"), "")
-
 CONFIG_DWORD_INFO(INTERNAL_SymDiffDump, W("SymDiffDump"), 0, "Used to create the map file while binding the assembly. Used by SemanticDiffer")
 
 ///
