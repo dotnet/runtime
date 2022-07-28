@@ -9567,18 +9567,33 @@ calli_end:
 			// TO
 			//   call SomeStruct::Method()
 			guchar* callvirt_ip;
-			if((callvirt_ip = il_read_callvirt(next_ip, end, &gettype_token)) && ip_in_bb(cfg, cfg->cbb, callvirt_ip))
+			guint32 i32166_token;
+			if((callvirt_ip = il_read_callvirt(next_ip, end, &i32166_token)) && ip_in_bb(cfg, cfg->cbb, callvirt_ip)) 
 			{
-				MonoMethod* iface_method = mini_get_method(cfg, method, gettype_token, NULL, generic_context);
-				MonoMethod* struct_method = mono_class_get_virtual_method(klass, iface_method, error);
+				printf("\n*** JITting %s", mono_method_get_full_name(method));
 
-				if(is_ok(error)) {
-					*(sp++) = val;
-					cmethod_override = struct_method;
-					break;
-				} else {
-					// TODO: we may want to be more vocal here, now we merely fall back to unoptimized box+callvirt
-					mono_error_cleanup(error);
+				MonoMethod* iface_method = mini_get_method(cfg, method, i32166_token, NULL, generic_context);
+				MonoMethodSignature* iface_method_sig = mono_method_signature_internal(iface_method);
+
+				if(	(val->flags & MONO_INST_INDIRECT) && // we have the address on stack (not the value itself)
+					iface_method_sig != NULL && // callee signture is healthy
+					iface_method_sig->hasthis && // the callee is a method of what's on stack
+					iface_method_sig->param_count == 0) // the callee has no args (other than this)
+				{
+					MonoMethod* struct_method = mono_class_get_virtual_method(klass, iface_method, error);
+
+					if(is_ok(error)) {
+						*(sp++) = val;
+						cmethod_override = struct_method;
+
+						printf ("\n*** box+callvirt optimization (%s) ===> (%s)", 
+							mono_method_get_full_name(iface_method),
+							mono_method_get_full_name(struct_method));
+
+						break;
+					} else {
+						mono_error_cleanup(error);
+					}
 				}
 			}			
 
