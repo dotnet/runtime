@@ -223,30 +223,14 @@ namespace System.Text.Json
 
             Debug.Assert(parent.PropertyCache != null);
 
-            int propertyIdx = 0;
-
-            for (int requiredPropertyIdx = 0; requiredPropertyIdx < missingJsonProperties.Length; requiredPropertyIdx++)
+            for (int propertyIdx = 0; propertyIdx < parent.PropertyCache.List.Count; propertyIdx++)
             {
-                if (!missingJsonProperties[requiredPropertyIdx])
+                JsonPropertyInfo property = parent.PropertyCache.List[propertyIdx].Value;
+
+                if (!property.IsRequired || !missingJsonProperties[property.RequiredPropertyIndex])
                 {
                     continue;
                 }
-
-                JsonPropertyInfo? missingProperty = null;
-
-                // requiredPropertyIdx indices occur consecutively so we can resume iteration
-                for (; propertyIdx < parent.PropertyCache.List.Count; propertyIdx++)
-                {
-                    JsonPropertyInfo maybeMissingProperty = parent.PropertyCache.List[propertyIdx].Value;
-                    if (maybeMissingProperty.IsRequired && maybeMissingProperty.RequiredPropertyIndex == requiredPropertyIdx)
-                    {
-                        missingProperty = maybeMissingProperty;
-                        break;
-                    }
-                }
-
-                Debug.Assert(propertyIdx != parent.PropertyCache.List.Count);
-                Debug.Assert(missingProperty != null);
 
                 if (!first)
                 {
@@ -254,7 +238,7 @@ namespace System.Text.Json
                     listOfMissingPropertiesBuilder.Append(' ');
                 }
 
-                listOfMissingPropertiesBuilder.Append(missingProperty.Name);
+                listOfMissingPropertiesBuilder.Append(property.Name);
                 first = false;
             }
 

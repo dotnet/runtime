@@ -118,7 +118,7 @@ namespace System.Text.Json
             if (propertyInfo.IsRequired)
             {
                 Debug.Assert(RequiredPropertiesLeft != null);
-                RequiredPropertiesLeft.Set(propertyInfo.RequiredPropertyIndex, false);
+                RequiredPropertiesLeft[propertyInfo.RequiredPropertyIndex] = false;
             }
         }
 
@@ -140,13 +140,9 @@ namespace System.Text.Json
             {
                 Debug.Assert(RequiredPropertiesLeft != null);
 
-                // Optimize this when https://github.com/dotnet/runtime/issues/72999 is fixed
-                for (int i = 0; i < RequiredPropertiesLeft.Count; i++)
+                if (!RequiredPropertiesLeft.AllBitsEqual(false))
                 {
-                    if (RequiredPropertiesLeft[i])
-                    {
-                        ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesLeft);
-                    }
+                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesLeft);
                 }
             }
         }
