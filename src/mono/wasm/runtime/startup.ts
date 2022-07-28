@@ -31,7 +31,6 @@ const loaded_files: { url?: string, file: string }[] = [];
 const loaded_assets: { [id: string]: [VoidPtr, number] } = Object.create(null);
 let instantiated_assets_count = 0;
 let downloded_assets_count = 0;
-const max_parallel_downloads = 100;
 // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
 let parallel_count = 0;
 let config: MonoConfig = undefined as any;
@@ -739,15 +738,15 @@ async function start_asset_download_sources(asset: AssetEntry): Promise<AssetEnt
 let throttling: PromiseAndController<void> | undefined;
 async function start_asset_download_throttle(asset: AssetEntry): Promise<AssetEntry | undefined> {
     // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
+    while (throttling) {
+        await throttling.promise;
+    }
     try {
         ++parallel_count;
-        if (parallel_count == max_parallel_downloads) {
+        if (parallel_count == runtimeHelpers.max_parallel_downloads) {
             if (runtimeHelpers.diagnostic_tracing)
                 console.debug("MONO_WASM: Throttling further parallel downloads");
             throttling = createPromiseController<void>();
-        }
-        while (throttling) {
-            await throttling.promise;
         }
         return await start_asset_download_sources(asset);
     }
@@ -761,7 +760,7 @@ async function start_asset_download_throttle(asset: AssetEntry): Promise<AssetEn
     }
     finally {
         --parallel_count;
-        if (throttling && parallel_count == ((max_parallel_downloads / 2) | 0)) {
+        if (throttling && parallel_count == runtimeHelpers.max_parallel_downloads - 1) {
             if (runtimeHelpers.diagnostic_tracing)
                 console.debug("MONO_WASM: Resuming more parallel downloads");
             const old_throttling = throttling;
@@ -793,6 +792,7 @@ async function start_asset_download(asset: AssetEntry): Promise<AssetEntry | und
 const allDownloadsQueued = createPromiseController<void>();
 async function mono_download_assets(): Promise<void> {
     if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_download_assets");
+    runtimeHelpers.max_parallel_downloads = runtimeHelpers.config.max_parallel_downloads || runtimeHelpers.max_parallel_downloads;
     try {
         const download_promises: Promise<AssetEntry | undefined>[] = [];
         // start fetching and instantiating all assets in parallel
