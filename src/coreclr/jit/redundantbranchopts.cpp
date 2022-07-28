@@ -178,6 +178,13 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
     genTreeOps const oper = genTreeOps(funcApp.m_func);
 
+    // Exclude floating point relops.
+    //
+    if (varTypeIsFloating(vnStore->TypeOfVN(funcApp.m_args[0])))
+    {
+        return;
+    }
+
     // Dominating pred has the form R(x, y)
     // See if tree pred has the form R*(x, y) or R'(y,x).
     //
