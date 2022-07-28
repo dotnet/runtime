@@ -599,15 +599,21 @@ namespace System.Runtime.InteropServices.Tests
             NativeMemory.Free(destination);
         }
 
-        [Fact]
-        public void CopyToOverlappedMemoryTest()
+        [Theory]
+        [InlineData(311, 100, 50)]
+        [InlineData(33, 0, 12)]
+        [InlineData(150, 50, 100)]
+        public void CopyToOverlappedMemoryTest(int size, int offset, int byteCount)
         {
-            byte* source = (byte*)NativeMemory.AllocZeroed(311);
-            Random.Shared.NextBytes(new Span<byte>(source, 50));
+            byte* source = (byte*)NativeMemory.AllocZeroed((nuint)size);
 
-            NativeMemory.Copy(source, source + 100, 50);
+            var expectedBlock = new byte[byteCount];
+            Random.Shared.NextBytes(expectedBlock);
+            expectedBlock.CopyTo(new Span<byte>(source, byteCount));
 
-            Assert.True(new ReadOnlySpan<byte>(source, 50).SequenceEqual(new ReadOnlySpan<byte>(source + 100, 50)));
+            NativeMemory.Copy(source, source + offset, (nuint)byteCount);
+
+            Assert.True(expectedBlock.AsSpan().SequenceEqual(new ReadOnlySpan<byte>(source + offset, byteCount)));
 
             NativeMemory.Free(source);
         }
