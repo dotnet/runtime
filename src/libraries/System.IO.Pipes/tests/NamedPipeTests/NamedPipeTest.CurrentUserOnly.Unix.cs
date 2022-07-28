@@ -38,7 +38,7 @@ namespace System.IO.Pipes.Tests
         public async Task Connection_UnderDifferentUsers_BehavesAsExpected(
             PipeOptions serverPipeOptions, PipeOptions clientPipeOptions, PipeDirection clientPipeDirection)
         {
-            bool isRoot = Environment.UserName == "root";
+            bool isRoot = AdminHelpers.IsProcessElevated();
             if (clientPipeOptions == PipeOptions.CurrentUserOnly && isRoot)
             {
                 throw new SkipTestException("Current user is root, PipeOptions.CurrentUserOnly is unable to use a different user.");
