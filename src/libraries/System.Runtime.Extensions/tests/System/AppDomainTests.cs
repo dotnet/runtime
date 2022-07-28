@@ -259,6 +259,7 @@ namespace System.Tests
             }).Dispose();
         }
 
+        // Executing exe's not supported for full aot - especially on devices
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
         public void ExecuteAssembly()
         {
