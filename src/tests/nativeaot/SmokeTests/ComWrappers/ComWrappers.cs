@@ -83,7 +83,7 @@ namespace ComWrappersTests
                 CaptureComPointer(target);
                 throw new Exception("Cannot work without ComWrappers.RegisterForMarshalling called");
             }
-            catch (InvalidOperationException)
+            catch (NotSupportedException)
             {
             }
         }
