@@ -184,7 +184,15 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (dataExtKey == null)
                         {
-                            jsonPropertyInfo.SetValueAsObject(obj, propValue, ref state);
+                            Debug.Assert(jsonPropertyInfo.Set != null);
+
+                            if (propValue is not null || !jsonPropertyInfo.IgnoreNullTokensOnRead || default(T) is not null)
+                            {
+                                jsonPropertyInfo.Set(obj, propValue);
+
+                                // if this is required property IgnoreNullTokensOnRead will always be false because we don't allow for both to be true
+                                state.Current.MarkRequiredPropertyAsRead(jsonPropertyInfo);
+                            }
                         }
                         else
                         {
@@ -211,7 +219,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             jsonTypeInfo.OnDeserialized?.Invoke(obj);
-            jsonTypeInfo.CheckRequiredProperties(ref state);
+            state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
             // Unbox
             Debug.Assert(obj != null);
@@ -534,7 +542,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(TypeToConvert);
             }
 
-            jsonTypeInfo.InitializeRequiredProperties(ref state);
+            state.Current.InitializeRequiredProperties(jsonTypeInfo);
 
             // Set current JsonPropertyInfo to null to avoid conflicts on push.
             state.Current.JsonPropertyInfo = null;

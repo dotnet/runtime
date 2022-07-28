@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
@@ -214,18 +215,36 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, IEnumerable<JsonPropertyInfo> missingJsonProperties)
+        public static void ThrowInvalidOperationException_JsonPropertyRequiredAndIgnoreNullValues()
         {
-            StringBuilder errorMessageBuilder = new();
-            errorMessageBuilder.AppendLine(SR.Format(SR.JsonRequiredPropertiesMissingHeader, parent.Type));
+            throw new InvalidOperationException(SR.Format(SR.JsonPropertyRequiredAndIgnoreNullValues));
+        }
 
-            foreach (var missingProperty in missingJsonProperties)
+        [DoesNotReturn]
+        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, IEnumerable<int> missingJsonProperties)
+        {
+            StringBuilder listOfMissingPropertiesBuilder = new();
+            bool first = true;
+
+            Debug.Assert(parent.PropertyCache != null);
+
+            foreach (int missingPropertyIndex in missingJsonProperties)
             {
+                JsonPropertyInfo missingProperty = parent.PropertyCache.List[missingPropertyIndex].Value;
                 Debug.Assert(missingProperty.IsRequired);
-                errorMessageBuilder.AppendLine(SR.Format(SR.JsonRequiredPropertiesMissingItem, missingProperty.Name));
+                Debug.Assert(missingProperty.Index == missingPropertyIndex);
+
+                if (!first)
+                {
+                    listOfMissingPropertiesBuilder.Append(CultureInfo.CurrentUICulture.TextInfo.ListSeparator);
+                    listOfMissingPropertiesBuilder.Append(' ');
+                }
+
+                listOfMissingPropertiesBuilder.Append(missingProperty.Name);
+                first = false;
             }
 
-            throw new JsonException(errorMessageBuilder.ToString());
+            throw new JsonException(SR.Format(SR.JsonRequiredPropertiesMissing, parent.Type, listOfMissingPropertiesBuilder.ToString()));
         }
 
         [DoesNotReturn]

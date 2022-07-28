@@ -665,10 +665,10 @@
   <data name="JsonPropertyRequiredAndExtensionData" xml:space="preserve">
     <value>JsonPropertyInfo with name '{0}' for type '{1}' cannot be required and be an extension data property.</value>
   </data>
-  <data name="JsonRequiredPropertiesMissingHeader" xml:space="preserve">
-    <value>Type '{0}' contains required properties which were not set during deserialization:</value>
+  <data name="JsonRequiredPropertiesMissing" xml:space="preserve">
+    <value>Type '{0}' contains required properties which were not set during deserialization: {1}</value>
   </data>
-  <data name="JsonRequiredPropertiesMissingItem" xml:space="preserve">
-    <value>- {0}</value>
+  <data name="JsonPropertyRequiredAndIgnoreNullValues" xml:space="preserve">
+    <value>Required JSON properties cannot be used in conjunction with JsonSerializerOptions.IgnoreNullValues.</value>
   </data>
 </root>

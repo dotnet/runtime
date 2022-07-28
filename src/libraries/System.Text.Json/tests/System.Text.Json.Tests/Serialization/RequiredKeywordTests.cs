@@ -108,16 +108,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = """{"FirstName":null,"MiddleName":"","LastName":null}""";
-            JsonException exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json, options));
-            Assert.Contains("FirstName", exception.Message);
-            Assert.Contains("LastName", exception.Message);
-            Assert.DoesNotContain("MiddleName", exception.Message);
-
-            json = """{"LastName":"bar","FirstName":null}""";
-            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json, options));
-            Assert.Contains("FirstName", exception.Message);
-            Assert.DoesNotContain("LastName", exception.Message);
-            Assert.DoesNotContain("MiddleName", exception.Message);
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json, options));
         }
 
         private class PersonWithRequiredMembers
@@ -191,20 +182,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = """{"FirstName":null,"MiddleName":"","LastName":"bar","Info1":"info1","Info2":"info2"}""";
-            JsonException exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json, options));
-            Assert.Contains("FirstName", exception.Message);
-            Assert.DoesNotContain("LastName", exception.Message);
-            Assert.DoesNotContain("MiddleName", exception.Message);
-            Assert.DoesNotContain("Info1", exception.Message);
-            Assert.DoesNotContain("Info2", exception.Message);
-
-            json = """{"LastName":null,"FirstName":null,"MiddleName":"","Info1":null,"Info2":null}""";
-            exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json, options));
-            Assert.Contains("FirstName", exception.Message);
-            Assert.Contains("LastName", exception.Message);
-            Assert.DoesNotContain("MiddleName", exception.Message);
-            Assert.Contains("Info1", exception.Message);
-            Assert.Contains("Info2", exception.Message);
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtor>(json, options));
         }
 
         private class PersonWithRequiredMembersAndSmallParametrizedCtor
@@ -311,16 +289,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = """{"AProp":"a","BProp":"b","CProp":"c","DProp":"d","EProp":null,"FProp":"f","GProp":"g","HProp":null,"IProp":"i"}""";
-            JsonException exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtor>(json, options));
-            Assert.DoesNotContain("AProp", exception.Message);
-            Assert.DoesNotContain("BProp", exception.Message);
-            Assert.DoesNotContain("CProp", exception.Message);
-            Assert.DoesNotContain("DProp", exception.Message);
-            Assert.Contains("EProp", exception.Message);
-            Assert.DoesNotContain("FProp", exception.Message);
-            Assert.DoesNotContain("GProp", exception.Message);
-            Assert.Contains("HProp", exception.Message);
-            Assert.DoesNotContain("IProp", exception.Message);
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtor>(json, options));
         }
 
         private class PersonWithRequiredMembersAndLargeParametrizedCtor

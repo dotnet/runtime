@@ -303,6 +303,11 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndExtensionData(this);
                 }
+
+                if (IgnoreNullTokensOnRead)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndIgnoreNullValues();
+                }
             }
         }
 
@@ -785,10 +790,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal abstract void SetExtensionDictionaryAsObject(object obj, object? extensionDict);
-
-        internal abstract void SetValueAsObject(object obj, object? value, ref ReadStack state);
-
         internal bool IsIgnored => _ignoreCondition == JsonIgnoreCondition.Always;
 
         /// <summary>
@@ -849,6 +850,27 @@ namespace System.Text.Json.Serialization.Metadata
         /// Default value used for parameterized ctor invocation.
         /// </summary>
         internal abstract object? DefaultValue { get; }
+
+        /// <summary>
+        /// Property index on the list of JsonTypeInfo properties.
+        /// Can be used as a unique identifier for i.e. required properties.
+        /// It is set just before property is configured and does not change afterward.
+        /// </summary>
+        internal int Index
+        {
+            get
+            {
+                Debug.Assert(_isConfigured);
+                return _index;
+            }
+            set
+            {
+                Debug.Assert(!_isConfigured);
+                _index = value;
+            }
+        }
+
+        private int _index;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"PropertyType = {PropertyType}, Name = {Name}, DeclaringType = {DeclaringType}";

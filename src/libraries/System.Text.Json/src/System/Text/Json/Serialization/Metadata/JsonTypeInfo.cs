@@ -25,7 +25,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal delegate T ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>(TArg0 arg0, TArg1 arg1, TArg2 arg2, TArg3 arg3);
 
         private JsonPropertyInfoList? _properties;
-        internal JsonPropertyInfo[]? RequiredProperties { get; private set; }
+
+        /// <summary>
+        /// Indices of required properties.
+        /// </summary>
+        internal int[]? RequiredPropertiesIndices { get; private set; }
 
         private Action<object>? _onSerializing;
         private Action<object>? _onSerialized;
@@ -270,17 +274,16 @@ namespace System.Text.Json.Serialization.Metadata
         // Avoids having to perform an expensive cast to JsonTypeInfo<T> to check if there is a Serialize method.
         internal bool HasSerializeHandler { get; private protected set; }
 
-        // Exception used to throw on deserialization. In some scenarios i.e.:
-        // configure would have thrown while initializing properties for source gen but type had SerializeHandler
+        // Configure would normally have thrown why initializing properties for source gen but type had SerializeHandler
         // so it is allowed to be used for fast-path serialization but it will throw if used for metadata-based serialization
-        internal Exception? DeserializationException { get; private protected set; }
+        internal bool MetadataSerializationNotSupported { get; private protected set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ValidateCanBeUsedForMetadataSerialization()
         {
-            if (DeserializationException != null)
+            if (MetadataSerializationNotSupported)
             {
-                throw DeserializationException;
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
             }
         }
 
@@ -881,6 +884,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             int numberOfRequiredProperties = 0;
+            int propertyIndex = 0;
             foreach (KeyValuePair<string, JsonPropertyInfo> jsonPropertyInfoKv in PropertyCache.List)
             {
                 JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value;
@@ -890,13 +894,14 @@ namespace System.Text.Json.Serialization.Metadata
                     numberOfRequiredProperties++;
                 }
 
+                jsonPropertyInfo.Index = propertyIndex++;
                 jsonPropertyInfo.EnsureChildOf(this);
                 jsonPropertyInfo.EnsureConfigured();
             }
 
             if (numberOfRequiredProperties > 0)
             {
-                JsonPropertyInfo[] requiredProperties = new JsonPropertyInfo[numberOfRequiredProperties];
+                int[] requiredPropertiesIndices = new int[numberOfRequiredProperties];
                 int idx = 0;
                 foreach (KeyValuePair<string, JsonPropertyInfo> jsonPropertyInfoKv in PropertyCache.List)
                 {
@@ -904,11 +909,11 @@ namespace System.Text.Json.Serialization.Metadata
 
                     if (jsonPropertyInfo.IsRequired)
                     {
-                        requiredProperties[idx++] = jsonPropertyInfo;
+                        requiredPropertiesIndices[idx++] = jsonPropertyInfo.Index;
                     }
                 }
 
-                RequiredProperties = requiredProperties;
+                RequiredPropertiesIndices = requiredPropertiesIndices;
             }
         }
 
@@ -1025,30 +1030,6 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonPropertyDictionary<JsonPropertyInfo> CreatePropertyCache(int capacity)
         {
             return new JsonPropertyDictionary<JsonPropertyInfo>(Options.PropertyNameCaseInsensitive, capacity);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void InitializeRequiredProperties(ref ReadStack state)
-        {
-            if (RequiredProperties != null)
-            {
-                Debug.Assert(state.Current.RequiredPropertiesLeft == null);
-                state.Current.RequiredPropertiesLeft = new HashSet<JsonPropertyInfo>(RequiredProperties);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void CheckRequiredProperties(ref ReadStack state)
-        {
-            if (RequiredProperties != null)
-            {
-                Debug.Assert(state.Current.RequiredPropertiesLeft != null);
-
-                if (state.Current.RequiredPropertiesLeft.Count != 0)
-                {
-                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(this, state.Current.RequiredPropertiesLeft);
-                }
-            }
         }
 
         private static JsonParameterInfo CreateConstructorParameter(

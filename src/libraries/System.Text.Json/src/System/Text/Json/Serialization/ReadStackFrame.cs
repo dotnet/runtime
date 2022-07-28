@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -67,7 +68,7 @@ namespace System.Text.Json
         public JsonNumberHandling? NumberHandling;
 
         // Required properties left
-        public HashSet<JsonPropertyInfo>? RequiredPropertiesLeft;
+        public HashSet<int>? RequiredPropertiesLeft;
 
         public void EndConstructorParameter()
         {
@@ -110,12 +111,37 @@ namespace System.Text.Json
             return (JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy & ConverterStrategy.Enumerable) != 0;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MarkRequiredPropertyAsRead(JsonPropertyInfo propertyInfo)
         {
             if (propertyInfo.IsRequired)
             {
                 Debug.Assert(RequiredPropertiesLeft != null);
-                RequiredPropertiesLeft.Remove(propertyInfo);
+                RequiredPropertiesLeft.Remove(propertyInfo.Index);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void InitializeRequiredProperties(JsonTypeInfo typeInfo)
+        {
+            if (typeInfo.RequiredPropertiesIndices != null)
+            {
+                Debug.Assert(RequiredPropertiesLeft == null);
+                RequiredPropertiesLeft = new HashSet<int>(typeInfo.RequiredPropertiesIndices);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ValidateAllRequiredPropertiesAreRead(JsonTypeInfo typeInfo)
+        {
+            if (typeInfo.RequiredPropertiesIndices != null)
+            {
+                Debug.Assert(RequiredPropertiesLeft != null);
+
+                if (RequiredPropertiesLeft.Count != 0)
+                {
+                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesLeft);
+                }
             }
         }
 
