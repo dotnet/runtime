@@ -548,5 +548,4 @@ mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 {
 	g_assert_not_reached ();
 }
-
 #endif /* HOST_WASM && !HOST_WASI */
