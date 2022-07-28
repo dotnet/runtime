@@ -12,7 +12,7 @@ using NUnit.Framework;
 
 namespace Mono.Linker.Tests
 {
-	class TestResolver : ITryResolveMetadata
+	sealed class TestResolver : ITryResolveMetadata
 	{
 		public static TestResolver Instance => new TestResolver ();
 

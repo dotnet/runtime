@@ -83,6 +83,6 @@ namespace Mono.Linker.Tests
 			Assert.IsNull (TypeParser.ParseTypeName (", System"));
 		}
 
-		class GenericType<T1, T2> { }
+		sealed class GenericType<T1, T2> { }
 	}
 }

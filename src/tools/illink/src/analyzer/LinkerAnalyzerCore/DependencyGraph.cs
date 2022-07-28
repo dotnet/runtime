@@ -100,8 +100,8 @@ namespace LinkerAnalyzer.Core
 					vertices.Add (vertex);
 					indexes.Add (vertexName, index);
 					string prefix = vertexName.Substring (0, vertexName.IndexOf (':'));
-					if (counts.ContainsKey (prefix))
-						counts[prefix]++;
+					if (counts.TryGetValue (prefix, out var count))
+						counts[prefix] = count + 1;
 					else
 						counts[prefix] = 1;
 					//Console.WriteLine ("prefix " + prefix + " count " + counts[prefix]);
