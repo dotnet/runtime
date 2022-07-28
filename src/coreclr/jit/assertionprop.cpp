@@ -1979,7 +1979,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     AssertionIndex fastAnswer = NO_ASSERTION_INDEX;
     AssertionIndex slowAnswer = NO_ASSERTION_INDEX;
 #ifdef DEBUG
-    bool           found      = false;
+    bool found = false;
 
     // Check if exists already, so we can skip adding new one. Search backwards.
     for (AssertionIndex index = optAssertionCount; index >= 1; index--)

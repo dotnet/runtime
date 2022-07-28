@@ -7139,8 +7139,7 @@ public:
             }
             else
             {
-                return ((vnBased && (op1.vn == that.op1.vn)) ||
-                        (!vnBased && (op1.lcl.lclNum == that.op1.lcl.lclNum)));
+                return ((vnBased && (op1.vn == that.op1.vn)) || (!vnBased && (op1.lcl.lclNum == that.op1.lcl.lclNum)));
             }
         }
 
