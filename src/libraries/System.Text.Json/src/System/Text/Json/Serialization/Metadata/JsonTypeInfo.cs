@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Indices of required properties.
         /// </summary>
-        internal int[]? RequiredPropertiesIndices { get; private set; }
+        internal int NumberOfRequiredProperties { get; private set; }
 
         private Action<object>? _onSerializing;
         private Action<object>? _onSerialized;
@@ -884,37 +884,20 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             int numberOfRequiredProperties = 0;
-            int propertyIndex = 0;
             foreach (KeyValuePair<string, JsonPropertyInfo> jsonPropertyInfoKv in PropertyCache.List)
             {
                 JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value;
 
                 if (jsonPropertyInfo.IsRequired)
                 {
-                    numberOfRequiredProperties++;
+                    jsonPropertyInfo.RequiredPropertyIndex = numberOfRequiredProperties++;
                 }
 
-                jsonPropertyInfo.Index = propertyIndex++;
                 jsonPropertyInfo.EnsureChildOf(this);
                 jsonPropertyInfo.EnsureConfigured();
             }
 
-            if (numberOfRequiredProperties > 0)
-            {
-                int[] requiredPropertiesIndices = new int[numberOfRequiredProperties];
-                int idx = 0;
-                foreach (KeyValuePair<string, JsonPropertyInfo> jsonPropertyInfoKv in PropertyCache.List)
-                {
-                    JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value;
-
-                    if (jsonPropertyInfo.IsRequired)
-                    {
-                        requiredPropertiesIndices[idx++] = jsonPropertyInfo.Index;
-                    }
-                }
-
-                RequiredPropertiesIndices = requiredPropertiesIndices;
-            }
+            NumberOfRequiredProperties = numberOfRequiredProperties;
         }
 
         internal void InitializeConstructorParameters(JsonParameterInfoValues[] jsonParameters, bool sourceGenMode = false)

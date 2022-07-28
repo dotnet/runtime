@@ -48,7 +48,7 @@ namespace System.Text.Json.Reflection
 #if NET7_0_OR_GREATER
             return memberInfo.IsDefined(typeof(RequiredMemberAttribute), inherit: true);
 #else
-            return memberInfo.HasCustomAttributeWithName("System.Runtime.CompilerServices.RequiredMemberAttribute");
+            return memberInfo.HasCustomAttributeWithName("System.Runtime.CompilerServices.RequiredMemberAttribute", inherit: true);
 #endif
         }
 
@@ -57,16 +57,16 @@ namespace System.Text.Json.Reflection
 #if NET7_0_OR_GREATER
             return memberInfo.IsDefined(typeof(SetsRequiredMembersAttribute), inherit: true);
 #else
-            return memberInfo.HasCustomAttributeWithName("System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute");
+            return memberInfo.HasCustomAttributeWithName("System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute", inherit: true);
 #endif
         }
 
 #if !NET7_0_OR_GREATER
-        private static bool HasCustomAttributeWithName(this ICustomAttributeProvider memberInfo, string name)
+        private static bool HasCustomAttributeWithName(this ICustomAttributeProvider memberInfo, string fullName, bool inherit)
         {
-            foreach (object attribute in memberInfo.GetCustomAttributes(inherit: true))
+            foreach (object attribute in memberInfo.GetCustomAttributes(inherit))
             {
-                if (attribute.GetType().FullName == name)
+                if (attribute.GetType().FullName == fullName)
                 {
                     return true;
                 }

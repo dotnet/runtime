@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -68,7 +69,7 @@ namespace System.Text.Json
         public JsonNumberHandling? NumberHandling;
 
         // Required properties left
-        public HashSet<int>? RequiredPropertiesLeft;
+        public BitArray? RequiredPropertiesLeft;
 
         public void EndConstructorParameter()
         {
@@ -117,7 +118,7 @@ namespace System.Text.Json
             if (propertyInfo.IsRequired)
             {
                 Debug.Assert(RequiredPropertiesLeft != null);
-                RequiredPropertiesLeft.Remove(propertyInfo.Index);
+                RequiredPropertiesLeft.Set(propertyInfo.RequiredPropertyIndex, false);
             }
         }
 
@@ -126,22 +127,26 @@ namespace System.Text.Json
         {
             Debug.Assert(RequiredPropertiesLeft == null);
 
-            if (typeInfo.RequiredPropertiesIndices != null)
+            if (typeInfo.NumberOfRequiredProperties > 0)
             {
-                RequiredPropertiesLeft = new HashSet<int>(typeInfo.RequiredPropertiesIndices);
+                RequiredPropertiesLeft = new BitArray(typeInfo.NumberOfRequiredProperties, defaultValue: true);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ValidateAllRequiredPropertiesAreRead(JsonTypeInfo typeInfo)
         {
-            if (typeInfo.RequiredPropertiesIndices != null)
+            if (typeInfo.NumberOfRequiredProperties > 0)
             {
                 Debug.Assert(RequiredPropertiesLeft != null);
 
-                if (RequiredPropertiesLeft.Count != 0)
+                // Optimize this when https://github.com/dotnet/runtime/issues/72999 is fixed
+                for (int i = 0; i < RequiredPropertiesLeft.Count; i++)
                 {
-                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesLeft);
+                    if (RequiredPropertiesLeft[i])
+                    {
+                        ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesLeft);
+                    }
                 }
             }
         }

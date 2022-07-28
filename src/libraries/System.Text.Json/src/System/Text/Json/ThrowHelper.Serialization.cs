@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -215,18 +216,37 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, IEnumerable<int> missingJsonProperties)
+        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray missingJsonProperties)
         {
             StringBuilder listOfMissingPropertiesBuilder = new();
             bool first = true;
 
             Debug.Assert(parent.PropertyCache != null);
 
-            foreach (int missingPropertyIndex in missingJsonProperties)
+            int propertyIdx = 0;
+
+            for (int requiredPropertyIdx = 0; requiredPropertyIdx < missingJsonProperties.Length; requiredPropertyIdx++)
             {
-                JsonPropertyInfo missingProperty = parent.PropertyCache.List[missingPropertyIndex].Value;
-                Debug.Assert(missingProperty.IsRequired);
-                Debug.Assert(missingProperty.Index == missingPropertyIndex);
+                if (!missingJsonProperties[requiredPropertyIdx])
+                {
+                    continue;
+                }
+
+                JsonPropertyInfo? missingProperty = null;
+
+                // requiredPropertyIdx indices occur consecutively so we can resume iteration
+                for (; propertyIdx < parent.PropertyCache.List.Count; propertyIdx++)
+                {
+                    JsonPropertyInfo maybeMissingProperty = parent.PropertyCache.List[propertyIdx].Value;
+                    if (maybeMissingProperty.IsRequired && maybeMissingProperty.RequiredPropertyIndex == requiredPropertyIdx)
+                    {
+                        missingProperty = maybeMissingProperty;
+                        break;
+                    }
+                }
+
+                Debug.Assert(propertyIdx != parent.PropertyCache.List.Count);
+                Debug.Assert(missingProperty != null);
 
                 if (!first)
                 {

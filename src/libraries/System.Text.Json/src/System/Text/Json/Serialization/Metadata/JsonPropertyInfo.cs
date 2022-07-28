@@ -504,6 +504,14 @@ namespace System.Text.Json.Serialization.Metadata
                 potentialNumberType == JsonTypeInfo.ObjectType;
         }
 
+        private void DetermineIsRequired(MemberInfo memberInfo, bool shouldCheckForRequiredKeyword)
+        {
+            if (shouldCheckForRequiredKeyword && memberInfo.HasRequiredMemberAttribute())
+            {
+                IsRequired = true;
+            }
+        }
+
         internal abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
         internal abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
 
@@ -531,7 +539,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool HasGetter => _untypedGet is not null;
         internal bool HasSetter => _untypedSet is not null;
 
-        internal void InitializeUsingMemberReflection(MemberInfo memberInfo, JsonConverter? customConverter, JsonIgnoreCondition? ignoreCondition)
+        internal void InitializeUsingMemberReflection(MemberInfo memberInfo, JsonConverter? customConverter, JsonIgnoreCondition? ignoreCondition, bool shouldCheckForRequiredKeyword)
         {
             Debug.Assert(AttributeProvider == null);
 
@@ -558,6 +566,7 @@ namespace System.Text.Json.Serialization.Metadata
             CustomConverter = customConverter;
             DeterminePoliciesFromMember(memberInfo);
             DeterminePropertyNameFromMember(memberInfo);
+            DetermineIsRequired(memberInfo, shouldCheckForRequiredKeyword);
 
             if (ignoreCondition != JsonIgnoreCondition.Always)
             {
@@ -849,15 +858,17 @@ namespace System.Text.Json.Serialization.Metadata
         internal abstract object? DefaultValue { get; }
 
         /// <summary>
-        /// Property index on the list of JsonTypeInfo properties.
-        /// Can be used as a unique identifier for i.e. required properties.
+        /// Required property index on the list of JsonTypeInfo properties.
+        /// It is used as a unique identifier for required properties.
         /// It is set just before property is configured and does not change afterward.
+        /// It is not equivalent to index on the properties list
         /// </summary>
-        internal int Index
+        internal int RequiredPropertyIndex
         {
             get
             {
                 Debug.Assert(_isConfigured);
+                Debug.Assert(IsRequired);
                 return _index;
             }
             set

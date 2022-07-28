@@ -28,37 +28,6 @@ namespace System.Text.Json.Serialization.Metadata
             if (PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object)
             {
                 AddPropertiesAndParametersUsingReflection();
-
-                // Compiler adds RequiredMemberAttribute to type if any of the members is marked with 'required' keyword.
-                // SetsRequiredMembersAttribute means that all required members are assigned by constructor and therefore there is no enforcement
-                bool shouldCheckMembersForRequiredMemberAttribute =
-                    typeof(T).HasRequiredMemberAttribute()
-                    && !(converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false);
-
-                if (shouldCheckMembersForRequiredMemberAttribute)
-                {
-                    Debug.Assert(PropertyCache != null);
-                    foreach (KeyValuePair<string, JsonPropertyInfo> kv in PropertyCache.List)
-                    {
-                        JsonPropertyInfo property = kv.Value;
-                        Debug.Assert(property.AttributeProvider != null);
-                        if (property.AttributeProvider.HasRequiredMemberAttribute())
-                        {
-                            property.IsRequired = true;
-                        }
-                    }
-
-                    if (ExtensionDataProperty != null)
-                    {
-                        Debug.Assert(ExtensionDataProperty.AttributeProvider != null);
-                        if (ExtensionDataProperty.AttributeProvider.HasRequiredMemberAttribute())
-                        {
-                            // This will end up in error in Configure
-                            // but we need to give contract resolver a chance to fix this
-                            ExtensionDataProperty.IsRequired = true;
-                        }
-                    }
-                }
             }
 
             Func<object>? createObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));
@@ -88,6 +57,11 @@ namespace System.Text.Json.Serialization.Metadata
 
             Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
             bool propertyOrderSpecified = false;
+            // Compiler adds RequiredMemberAttribute to type if any of the members is marked with 'required' keyword.
+            // SetsRequiredMembersAttribute means that all required members are assigned by constructor and therefore there is no enforcement
+            bool shouldCheckMembersForRequiredMemberAttribute =
+                typeof(T).HasRequiredMemberAttribute()
+                && !(Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false);
 
             // Walk through the inheritance hierarchy, starting from the most derived type upward.
             for (Type? currentType = Type; currentType != null; currentType = currentType.BaseType)
@@ -118,7 +92,8 @@ namespace System.Text.Json.Serialization.Metadata
                             typeToConvert: propertyInfo.PropertyType,
                             memberInfo: propertyInfo,
                             ref propertyOrderSpecified,
-                            ref ignoredMembers);
+                            ref ignoredMembers,
+                            shouldCheckMembersForRequiredMemberAttribute);
                     }
                     else
                     {
@@ -150,7 +125,8 @@ namespace System.Text.Json.Serialization.Metadata
                                 typeToConvert: fieldInfo.FieldType,
                                 memberInfo: fieldInfo,
                                 ref propertyOrderSpecified,
-                                ref ignoredMembers);
+                                ref ignoredMembers,
+                                shouldCheckMembersForRequiredMemberAttribute);
                         }
                     }
                     else
@@ -177,9 +153,10 @@ namespace System.Text.Json.Serialization.Metadata
             Type typeToConvert,
             MemberInfo memberInfo,
             ref bool propertyOrderSpecified,
-            ref Dictionary<string, JsonPropertyInfo>? ignoredMembers)
+            ref Dictionary<string, JsonPropertyInfo>? ignoredMembers,
+            bool shouldCheckForRequiredKeyword)
         {
-            JsonPropertyInfo? jsonPropertyInfo = CreateProperty(typeToConvert, memberInfo, Options);
+            JsonPropertyInfo? jsonPropertyInfo = CreateProperty(typeToConvert, memberInfo, Options, shouldCheckForRequiredKeyword);
             if (jsonPropertyInfo == null)
             {
                 // ignored invalid property
@@ -199,7 +176,8 @@ namespace System.Text.Json.Serialization.Metadata
         private JsonPropertyInfo? CreateProperty(
             Type typeToConvert,
             MemberInfo memberInfo,
-            JsonSerializerOptions options)
+            JsonSerializerOptions options,
+            bool shouldCheckForRequiredKeyword)
         {
             JsonIgnoreCondition? ignoreCondition = memberInfo.GetCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
 
@@ -224,7 +202,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             JsonPropertyInfo jsonPropertyInfo = CreatePropertyUsingReflection(typeToConvert);
-            jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo, customConverter, ignoreCondition);
+            jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo, customConverter, ignoreCondition, shouldCheckForRequiredKeyword);
             return jsonPropertyInfo;
         }
 
