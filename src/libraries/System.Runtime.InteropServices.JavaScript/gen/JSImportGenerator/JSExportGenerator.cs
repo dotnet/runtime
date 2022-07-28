@@ -97,8 +97,7 @@ namespace Microsoft.Interop.JavaScript
             context.RegisterDiagnostics(stubEnvironment.Combine(attributedMethods.Collect()).SelectMany((data, ct) =>
             {
                 if (data.Right.IsEmpty // no attributed methods
-                    || data.Left.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true } // Unsafe code enabled
-                    || data.Left.TargetFramework != TargetFramework.Net) // Non-.NET 5 scenarios use forwarders and don't need unsafe code
+                    || data.Left.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true }) // Unsafe code enabled
                 {
                     return ImmutableArray<Diagnostic>.Empty;
                 }
