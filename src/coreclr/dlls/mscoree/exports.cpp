@@ -20,6 +20,8 @@
 #include "bundle.h"
 #include "pinvokeoverride.h"
 
+#define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
+
 // Holder for const wide strings
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
 
@@ -60,13 +62,13 @@ public:
 static LPCWSTR StringToUnicode(LPCSTR str)
 {
     int length = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
-    _ASSERTE(length != 0);
+    ASSERTE_ALL_BUILDS(length != 0);
 
     LPWSTR result = new (nothrow) WCHAR[length];
-    _ASSERTE(result != NULL);
+    ASSERTE_ALL_BUILDS(result != NULL);
 
     length = MultiByteToWideChar(CP_UTF8, 0, str, -1, result, length);
-    _ASSERTE(length != 0);
+    ASSERTE_ALL_BUILDS(length != 0);
 
     return result;
 }
@@ -79,7 +81,7 @@ static LPCWSTR* StringArrayToUnicode(int argc, LPCSTR* argv)
     if (argc > 0)
     {
         argvW = new (nothrow) LPCWSTR[argc];
-        _ASSERTE(argvW != 0);
+        ASSERTE_ALL_BUILDS(argvW != 0);
 
         for (int i = 0; i < argc; i++)
         {
@@ -123,10 +125,10 @@ static void ConvertConfigPropertiesToUnicode(
     bool* hostPolicyEmbedded)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
-    _ASSERTE(propertyKeysW != nullptr);
+    ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
 
     LPCWSTR* propertyValuesW = new (nothrow) LPCWSTR[propertyCount];
-    _ASSERTE(propertyValuesW != nullptr);
+    ASSERTE_ALL_BUILDS(propertyValuesW != nullptr);
 
     for (int propertyIndex = 0; propertyIndex < propertyCount; ++propertyIndex)
     {
