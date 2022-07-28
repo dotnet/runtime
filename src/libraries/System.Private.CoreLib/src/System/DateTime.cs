@@ -1450,7 +1450,7 @@ namespace System
                 ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
 
                 int year = (int)(100 * y400 + (uint)(u2 >> 32)) + (daySinceMarch1 >= March1BasedDayOfNewYear ? 1 : 0);
-                return daySinceMarch1 >= March1BasedDayOfNewYear                // DatePartDayOfYear case
+                return daySinceMarch1 >= March1BasedDayOfNewYear            // DatePartDayOfYear case
                     ? daySinceMarch1 - March1BasedDayOfNewYear + 1          // rollover December 31
                     : daySinceMarch1 + (366 - March1BasedDayOfNewYear) + (IsLeapYear(year) ? 1 : 0);
             }
