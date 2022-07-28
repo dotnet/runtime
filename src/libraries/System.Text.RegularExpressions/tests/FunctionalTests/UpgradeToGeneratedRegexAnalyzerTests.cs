@@ -14,13 +14,13 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 using VerifyCS = System.Text.RegularExpressions.Tests.CSharpCodeFixVerifier<
-    System.Text.RegularExpressions.Generator.UpgradeToRegexGeneratorAnalyzer,
-    System.Text.RegularExpressions.Generator.UpgradeToRegexGeneratorCodeFixer>;
+    System.Text.RegularExpressions.Generator.UpgradeToGeneratedRegexAnalyzer,
+    System.Text.RegularExpressions.Generator.UpgradeToGeneratedRegexCodeFixer>;
 
 namespace System.Text.RegularExpressions.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/69823", TestRuntimes.Mono)]
-    public class UpgradeToRegexGeneratorAnalyzerTests
+    public class UpgradeToGeneratedRegexAnalyzerTests
     {
         private const string UseRegexSourceGeneratorDiagnosticId = @"SYSLIB1045";
 
@@ -94,7 +94,7 @@ var isMatch = MyRegex().IsMatch("""");
 
 partial class Program
 {
-    [RegexGenerator("""")]
+    [GeneratedRegex("""")]
     private static partial Regex MyRegex();
 }";
             await new VerifyCS.Test
@@ -206,7 +206,7 @@ public partial class Program
         var isMatch = MyRegex().IsMatch("""");
     }
 
-    [RegexGenerator("""")]
+    [GeneratedRegex("""")]
     private static partial Regex MyRegex();
 }" };
 
@@ -232,7 +232,7 @@ public partial class Program
         var isMatch = MyRegex().IsMatch("""");
     }
 
-    [RegexGenerator("""")]
+    [GeneratedRegex("""")]
     private static partial Regex MyRegex();
 }" };
 
@@ -260,7 +260,7 @@ public partial class Program
         var isMatch = MyRegex().IsMatch("""");
     }
 
-    [RegexGenerator("""")]
+    [GeneratedRegex("""")]
     private static partial Regex MyRegex();
 }" };
             }
@@ -372,7 +372,7 @@ public partial class Program
         var isMatch = MyRegex().IsMatch("""");
     }
 
-    [RegexGenerator("""", RegexOptions.None)]
+    [GeneratedRegex("""", RegexOptions.None)]
     private static partial Regex MyRegex();
 }" };
 
@@ -396,7 +396,7 @@ public partial class Program
         var isMatch = MyRegex().IsMatch("""");
     }
 
-    [RegexGenerator("""", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex("""", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex MyRegex();
 }" };
 
@@ -422,7 +422,7 @@ public partial class Program
         var isMatch = MyRegex().IsMatch("""");
     }
 
-    [RegexGenerator("""", RegexOptions.None)]
+    [GeneratedRegex("""", RegexOptions.None)]
     private static partial Regex MyRegex();
 }" };
             }
@@ -531,7 +531,7 @@ public partial class Program
         MyRegex().@@Method@@(""input"");
     }
 
-    [RegexGenerator(""a|b"", RegexOptions.None)]
+    [GeneratedRegex(""a|b"", RegexOptions.None)]
     private static partial Regex MyRegex();
 }";
 
@@ -553,7 +553,7 @@ public partial class Program
         MyRegex().@@Method@@(""input"");
     }
 
-    [RegexGenerator(""a|b"")]
+    [GeneratedRegex(""a|b"")]
     private static partial Regex MyRegex();
 }";
 
@@ -593,7 +593,7 @@ public partial class Program
         MyRegex().Replace(""input"", ""replacement"");
     }
 
-    [RegexGenerator(""a[b|c]*"", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(""a[b|c]*"", RegexOptions.CultureInvariant)]
     private static partial Regex MyRegex();
 }
 " };
@@ -616,7 +616,7 @@ public partial class Program
         MyRegex().Replace(""input"", ""replacement"");
     }
 
-    [RegexGenerator(""a[b|c]*"")]
+    [GeneratedRegex(""a[b|c]*"")]
     private static partial Regex MyRegex();
 }
 " };
@@ -664,7 +664,7 @@ public partial class A
                     Regex regex = MyRegex();
                 }
 
-                [RegexGenerator(""pattern"", RegexOptions.IgnorePatternWhitespace)]
+                [GeneratedRegex(""pattern"", RegexOptions.IgnorePatternWhitespace)]
                 private static partial Regex MyRegex();
             }
         }
@@ -717,9 +717,9 @@ public partial class Program
         Regex regex2 = MyRegex1();
     }
 
-    [RegexGenerator(""a|b"")]
+    [GeneratedRegex(""a|b"")]
     private static partial Regex MyRegex();
-    [RegexGenerator(""c|d"", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(""c|d"", RegexOptions.CultureInvariant)]
     private static partial Regex MyRegex1();
 }
 ";
@@ -753,7 +753,7 @@ partial class Program
         Regex r = MyRegex();
     }
 
-    [RegexGenerator(""a|b"", RegexOptions.None)]
+    [GeneratedRegex(""a|b"", RegexOptions.None)]
     private static partial Regex MyRegex();
 }";
 
@@ -776,7 +776,7 @@ partial class Program
 
 partial class Program
 {
-    [System.Text.RegularExpressions.RegexGenerator("""")]
+    [System.Text.RegularExpressions.GeneratedRegex("""")]
     private static partial System.Text.RegularExpressions.Regex MyRegex();
 }" }
                 },
@@ -800,7 +800,7 @@ static partial class Class
 {
     public static string CollapseWhitespace(this string text) =>
         MyRegex().Replace(text, ""  "");
-    [RegexGenerator("" \\s+"")]
+    [GeneratedRegex("" \\s+"")]
     private static partial Regex MyRegex();
 }";
 
@@ -823,7 +823,7 @@ public partial class C
 {
     void M1(Regex r) => _ = r;
     void M2() => M1(MyRegex());
-    [RegexGenerator("""")]
+    [GeneratedRegex("""")]
     private static partial Regex MyRegex();
 }
 ";
@@ -853,7 +853,7 @@ public partial class A
         Regex regex = MyRegex();
     }
 
-    [RegexGenerator(""pattern"", (RegexOptions)2048)]
+    [GeneratedRegex(""pattern"", (RegexOptions)2048)]
     private static partial Regex MyRegex();
 }
 ";
@@ -885,7 +885,7 @@ public partial class A
         Regex regex = MyRegex();
     }
 
-    [RegexGenerator(""pattern"", (RegexOptions)2048)]
+    [GeneratedRegex(""pattern"", (RegexOptions)2048)]
     private static partial Regex MyRegex();
 }
 ";
@@ -915,7 +915,7 @@ public partial class A
         Regex regex = MyRegex();
     }
 
-    [RegexGenerator(""pattern"", (RegexOptions)(-10000))]
+    [GeneratedRegex(""pattern"", (RegexOptions)(-10000))]
     private static partial Regex MyRegex();
 }
 ";

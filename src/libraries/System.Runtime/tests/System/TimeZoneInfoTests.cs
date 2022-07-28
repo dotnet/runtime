@@ -2327,7 +2327,7 @@ namespace System.Tests
 
         private const string IanaAbbreviationPattern = @"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$";
 
-        [RegexGenerator(IanaAbbreviationPattern)]
+        [GeneratedRegex(IanaAbbreviationPattern)]
         private static partial Regex IanaAbbreviationRegex();
 
         // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml

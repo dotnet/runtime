@@ -102,15 +102,15 @@
         <target state="translated">Der angegebene Regex ist ungültig. "{0}"</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidRegexGeneratorAttributeMessage">
-        <source>The RegexGeneratorAttribute is malformed</source>
-        <target state="translated">Das RegexGeneratorAttribute ist falsch formatiert.</target>
-        <note>{Locked="RegexGeneratorAttribute"}</note>
+      <trans-unit id="InvalidGeneratedRegexAttributeMessage">
+        <source>The GeneratedRegexAttribute is malformed</source>
+        <target state="needs-review-translation">Das GeneratedRegexAttribute ist falsch formatiert.</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
-      <trans-unit id="InvalidRegexGeneratorAttributeTitle">
-        <source>Invalid RegexGenerator usage</source>
-        <target state="translated">Ungültige RegexGenerator-Verwendung</target>
-        <note>{Locked="RegexGenerator"}</note>
+      <trans-unit id="InvalidGeneratedRegexAttributeTitle">
+        <source>Invalid GeneratedRegexAttribute usage</source>
+        <target state="needs-review-translation">Ungültige GeneratedRegexAttribute-Verwendung</target>
+        <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
         <source>Incomplete \\p{X} character escape.</source>
@@ -123,13 +123,13 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
-        <target state="new">The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</target>
+        <source>The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
+        <target state="new">The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
-        <source>RegexGenerator limitation reached.</source>
-        <target state="translated">RegexGenerator-Begrenzung erreicht.</target>
+        <source>Regex generator limitation reached.</source>
+        <target state="needs-review-translation">GeneratedRegexAttribute-Begrenzung erreicht.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -152,9 +152,9 @@
         <target state="translated">Fehlendes Steuerzeichen.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MultipleRegexGeneratorAttributesMessage">
-        <source>Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</source>
-        <target state="translated">Mehrere RegexGeneratorAttributes wurden auf dieselbe Methode angewendet, aber nur eine ist zulässig</target>
+      <trans-unit id="MultipleGeneratedRegexAttributesMessage">
+        <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
+        <target state="needs-review-translation">Mehrere GeneratedRegexAttributes wurden auf dieselbe Methode angewendet, aber nur eine ist zulässig</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
@@ -198,8 +198,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
-        <target state="translated">Die „RegexGenerator“-Methode muss partiell, parameterlos, nicht generisch sein und Regex zurückgeben.</target>
+        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
+        <target state="needs-review-translation">Die „GeneratedRegexAttribute“-Methode muss partiell, parameterlos, nicht generisch sein und Regex zurückgeben.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -258,13 +258,13 @@
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
-        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="translated">Verwenden Sie „RegexGeneratorAttribute“, um die Implementierung regulärer Ausdrücke zur Kompilierzeit zu generieren.</target>
+        <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="needs-review-translation">Verwenden Sie „GeneratedRegexAttribute“, um die Implementierung regulärer Ausdrücke zur Kompilierzeit zu generieren.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
-        <source>Convert to 'RegexGenerator'.</source>
-        <target state="translated">In „RegexGenerator“ konvertieren.</target>
+        <source>Convert to 'GeneratedRegexAttribute'.</source>
+        <target state="needs-review-translation">In „GeneratedRegexAttribute“ konvertieren.</target>
         <note />
       </trans-unit>
     </body>

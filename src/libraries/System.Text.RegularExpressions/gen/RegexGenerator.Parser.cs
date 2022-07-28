@@ -16,7 +16,7 @@ namespace System.Text.RegularExpressions.Generator
     public partial class RegexGenerator
     {
         private const string RegexName = "System.Text.RegularExpressions.Regex";
-        private const string RegexGeneratorAttributeName = "System.Text.RegularExpressions.RegexGeneratorAttribute";
+        private const string GeneratedRegexAttributeName = "System.Text.RegularExpressions.GeneratedRegexAttribute";
 
         // Returns null if nothing to do, Diagnostic if there's an error to report, or RegexType if the type was analyzed successfully.
         private static object? GetSemanticTargetForGeneration(
@@ -27,9 +27,9 @@ namespace System.Text.RegularExpressions.Generator
 
             Compilation compilation = sm.Compilation;
             INamedTypeSymbol? regexSymbol = compilation.GetBestTypeByMetadataName(RegexName);
-            INamedTypeSymbol? regexGeneratorAttributeSymbol = compilation.GetBestTypeByMetadataName(RegexGeneratorAttributeName);
+            INamedTypeSymbol? generatedRegexAttributeSymbol = compilation.GetBestTypeByMetadataName(GeneratedRegexAttributeName);
 
-            if (regexSymbol is null || regexGeneratorAttributeSymbol is null)
+            if (regexSymbol is null || generatedRegexAttributeSymbol is null)
             {
                 // Required types aren't available
                 return null;
@@ -59,25 +59,25 @@ namespace System.Text.RegularExpressions.Generator
             int? matchTimeout = null;
             foreach (AttributeData attributeData in boundAttributes)
             {
-                if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, regexGeneratorAttributeSymbol))
+                if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, generatedRegexAttributeSymbol))
                 {
                     continue;
                 }
 
                 if (attributeData.ConstructorArguments.Any(ca => ca.Kind == TypedConstantKind.Error))
                 {
-                    return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexGeneratorAttribute, methodSyntax.GetLocation());
+                    return Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, methodSyntax.GetLocation());
                 }
 
                 if (pattern is not null)
                 {
-                    return Diagnostic.Create(DiagnosticDescriptors.MultipleRegexGeneratorAttributes, methodSyntax.GetLocation());
+                    return Diagnostic.Create(DiagnosticDescriptors.MultipleGeneratedRegexAttributes, methodSyntax.GetLocation());
                 }
 
                 ImmutableArray<TypedConstant> items = attributeData.ConstructorArguments;
                 if (items.Length == 0 || items.Length > 3)
                 {
-                    return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexGeneratorAttribute, methodSyntax.GetLocation());
+                    return Diagnostic.Create(DiagnosticDescriptors.InvalidGeneratedRegexAttribute, methodSyntax.GetLocation());
                 }
 
                 attributeFound = true;
