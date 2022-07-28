@@ -378,5 +378,148 @@ namespace LibraryImportGenerator.UnitTests
                 fixedSource,
                 VerifyCS.Diagnostic(CallerAllocFromManagedMustHaveBufferSizeRule).WithLocation(0).WithArguments("MarshallerType", "byte"));
         }
+
+        [Fact]
+        public async Task ModeThatUsesManagedToUnmanagedShape_Missing_ConvertToUnmanagedMethod_Marshaller_DifferentDocument_ReportsDiagnostic()
+        {
+            string entryPointTypeSource = """
+                using System.Runtime.InteropServices.Marshalling;
+
+                class ManagedType {}
+                
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|SYSLIB1057:OtherMarshallerType|}))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof({|SYSLIB1057:OtherMarshallerType|}))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof({|SYSLIB1057:OtherMarshallerType|}))]
+                static class MarshallerType
+                {
+                }
+                """;
+
+            string otherMarshallerTypeOriginalSource = """
+                static class OtherMarshallerType
+                {
+                }
+                """;
+
+            string otherMarshallerTypeFixedSource = """
+                static class OtherMarshallerType
+                {
+                    public static nint ConvertToUnmanaged(ManagedType managed)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+                }
+                """;
+
+            var test = new VerifyCS.Test();
+            test.TestState.Sources.Add(entryPointTypeSource);
+            test.TestState.Sources.Add(("OtherMarshaller.cs", otherMarshallerTypeOriginalSource));
+            test.FixedState.Sources.Add(entryPointTypeSource);
+            test.FixedState.Sources.Add(("OtherMarshaller.cs", otherMarshallerTypeFixedSource));
+            test.MarkupOptions = MarkupOptions.UseFirstDescriptor;
+            test.FixedState.MarkupHandling = MarkupMode.IgnoreFixable;
+            await test.RunAsync();
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/roslyn-sdk/issues/1000")]
+        public async Task ModeThatUsesManagedToUnmanagedShape_Missing_ConvertToUnmanagedMethod_Marshaller_DifferentProject_ReportsDiagnostic()
+        {
+            string entryPointTypeSource = """
+                using System.Runtime.InteropServices.Marshalling;
+
+                class ManagedType {}
+
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|SYSLIB1057:OtherMarshallerType|}))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof({|SYSLIB1057:OtherMarshallerType|}))]
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof({|SYSLIB1057:OtherMarshallerType|}))]
+                static class MarshallerType
+                {
+                }
+                """;
+
+            string otherMarshallerTypeOriginalSource = """
+                public static class OtherMarshallerType
+                {
+                }
+                """;
+
+            string otherMarshallerTypeFixedSource = """
+                public static class OtherMarshallerType
+                {
+                    public static nint ConvertToUnmanaged(ManagedType managed)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+                }
+                """;
+
+            var test = new VerifyCS.Test();
+
+            string otherProjectName = "OtherMarshallerProject";
+            ProjectState otherProjectOriginalState = new ProjectState(otherProjectName, LanguageNames.CSharp, "/1/Other", "cs");
+            otherProjectOriginalState.Sources.Add(otherMarshallerTypeOriginalSource);
+            otherProjectOriginalState.AdditionalReferences.AddRange(test.TestState.AdditionalReferences);
+
+            ProjectState otherProjectFixedState = new ProjectState(otherProjectName, LanguageNames.CSharp, "/1/Other", "cs");
+            otherProjectFixedState.Sources.Add(otherMarshallerTypeFixedSource);
+            otherProjectFixedState.AdditionalReferences.AddRange(test.TestState.AdditionalReferences);
+
+            test.TestState.Sources.Add(entryPointTypeSource);
+            test.TestState.AdditionalProjects.Add(otherProjectName, otherProjectOriginalState);
+            test.TestState.AdditionalProjectReferences.Add(otherProjectName);
+
+            test.FixedState.Sources.Add(entryPointTypeSource);
+            test.FixedState.AdditionalProjects.Add(otherProjectName, otherProjectFixedState);
+            test.FixedState.AdditionalProjectReferences.Add(otherProjectName);
+            test.MarkupOptions = MarkupOptions.UseFirstDescriptor;
+            test.FixedState.MarkupHandling = MarkupMode.IgnoreFixable;
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task ModeThatUsesManagedToUnmanagedShape_Missing_ConvertToUnmanagedMethod_TwoManagedTypes_ReportsDiagnostic()
+        {
+            string source = """
+                using System.Runtime.InteropServices.Marshalling;
+
+                class ManagedType {}
+                class ManagedType2 {}
+
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|#0:MarshallerType|}))]
+                [CustomMarshaller(typeof(ManagedType2), MarshalMode.ManagedToUnmanagedIn, typeof({|#1:MarshallerType|}))]
+                static class MarshallerType
+                {
+                }
+                """;
+
+            string fixedSource = """
+                using System.Runtime.InteropServices.Marshalling;
+
+                class ManagedType {}
+                class ManagedType2 {}
+
+                [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType))]
+                [CustomMarshaller(typeof(ManagedType2), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType))]
+                static class MarshallerType
+                {
+                    public static nint ConvertToUnmanaged(ManagedType managed)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+
+                    public static nint ConvertToUnmanaged(ManagedType2 managed)
+                    {
+                        throw new System.NotImplementedException();
+                    }
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(
+                source,
+                fixedSource,
+                VerifyCS.Diagnostic(StatelessValueInRequiresConvertToUnmanagedRule).WithLocation(0).WithArguments("MarshallerType", MarshalMode.ManagedToUnmanagedIn, "ManagedType"),
+                VerifyCS.Diagnostic(StatelessValueInRequiresConvertToUnmanagedRule).WithLocation(1).WithArguments("MarshallerType", MarshalMode.ManagedToUnmanagedIn, "ManagedType2"));
+        }
     }
 }

@@ -1187,18 +1187,19 @@ namespace Microsoft.Interop.Analyzers
                     if (ManualTypeMarshallingHelper.ModeUsesUnmanagedToManagedShape(mode))
                     {
                         // Verify the unmanaged types match unmanaged->managed shape
-                        if (unmanagedType is not null && !SymbolEqualityComparer.Default.Equals(unmanagedType, fromUnmanagedCandidates[0].Parameters[0].Type))
+                        IMethodSymbol fromUnmanagedMethod = fromUnmanagedCandidates[0];
+                        if (unmanagedType is not null && !SymbolEqualityComparer.Default.Equals(unmanagedType, fromUnmanagedMethod.Parameters[0].Type))
                         {
                             // If both shapes are present, verify that the unmanaged types match
-                            diagnosticReporter.CreateAndReportDiagnostic(FirstParameterMustMatchReturnTypeRule, fromUnmanagedCandidates[0].ToDisplayString(), methods.ToUnmanaged.ToDisplayString());
+                            diagnosticReporter.CreateAndReportDiagnostic(FirstParameterMustMatchReturnTypeRule, fromUnmanagedMethod.ToDisplayString(), methods.ToUnmanaged.ToDisplayString());
                         }
                         else
                         {
-                            unmanagedType = fromUnmanagedCandidates[0].Parameters[0].Type;
+                            unmanagedType = fromUnmanagedMethod.Parameters[0].Type;
 
                             if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittable())
                             {
-                                diagnosticReporter.CreateAndReportDiagnostic(UnmanagedTypeMustBeUnmanagedRule, fromUnmanagedCandidates[0].ToDisplayString());
+                                diagnosticReporter.CreateAndReportDiagnostic(UnmanagedTypeMustBeUnmanagedRule, fromUnmanagedMethod.ToDisplayString());
                             }
                         }
                     }
