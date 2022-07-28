@@ -2043,7 +2043,6 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     }
 #endif
 
-    JITDUMP("++ Added map[%d] = %u\n", optAssertionCount, AssertionDscKeyFuncs /*<true>*/ ::GetHashCode(*newAssertion));
     optAssertionTabPrivate[optAssertionCount] = *newAssertion;
     optAssertionCount++;
 
