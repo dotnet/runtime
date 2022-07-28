@@ -100,6 +100,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0043`__ | ECDiffieHellmanPublicKey.ToByteArray() and the associated constructor do not have a consistent and interoperable implementation on all platforms. Use ECDiffieHellmanPublicKey.ExportSubjectPublicKeyInfo() instead. |
 |  __`SYSLIB0044`__ | AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported. |
 |  __`SYSLIB0045`__ | Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead. |
+|  __`SYSLIB0046`__ | ControlledExecution.Run method may corrupt the process and should not be used in production code. |
 
 ## Analyzer Warnings
 
