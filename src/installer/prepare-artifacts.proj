@@ -215,8 +215,8 @@
       -->
       <_WorkloadsVSInsertionFile
         Include="
-          $(DownloadDirectory)**\*.msi;
-          $(DownloadDirectory)**\*.json" />
+          $(DownloadDirectory)*\workloads-vs\**\*.msi;
+          $(DownloadDirectory)*\workloads-vs\**\*.json" />
       <__WorkloadsVSInsertionFile Include="%(_WorkloadsVSInsertionFile.Filename)%(Extension)" ActualPath="%(FullPath)" />
       <___WorkloadsVSInsertionFile Include="@(__WorkloadsVSInsertionFile->Distinct())" />
       <WorkloadsVSInsertionFile Include="%(___WorkloadsVSInsertionFile.ActualPath)" />
