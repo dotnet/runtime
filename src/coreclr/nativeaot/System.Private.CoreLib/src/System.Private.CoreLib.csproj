@@ -621,6 +621,9 @@
     <IsSourceProject>true</IsSourceProject>
     <ApiCompatValidateBaseline>true</ApiCompatValidateBaseline>
   </PropertyGroup>
+  <ItemGroup>
+    <MatchingRefApiCompatBaseline Condition="'$(TargetsWindows)' != 'true'" Include="MatchingRefApiCompatBaseline.Unix.txt" />
+  </ItemGroup>
   <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 </Project>
