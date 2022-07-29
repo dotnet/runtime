@@ -597,7 +597,7 @@ HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 BOOL CLRFreeLibrary(HMODULE hModule);
 
 // Load a string using the resources for the current module.
-STDAPI UtilLoadStringRC(UINT iResouceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int bQuiet=FALSE);
+STDAPI UtilLoadStringRC(UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int bQuiet=FALSE);
 
 // Specify callbacks so that UtilLoadStringRC can find out which language we're in.
 // If no callbacks specified (or both parameters are NULL), we default to the
@@ -792,7 +792,7 @@ public:
     }
 
 private:
-// String resouces packaged as PE files only exist on Windows
+// String resources packaged as PE files only exist on Windows
 #ifdef HOST_WINDOWS
     HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
 #ifndef DACCESS_COMPILE
@@ -828,7 +828,7 @@ private:
     FPGETTHREADUICULTURENAMES m_fpGetThreadUICultureNames;
 };
 
-HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResouceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
+HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
 
 // The HRESULT_FROM_WIN32 macro evaluates its arguments three times.
 // <TODO>TODO: All HRESULT_FROM_WIN32(GetLastError()) should be replaced by calls to
@@ -1676,8 +1676,8 @@ private:
             if (iLeft >= iRight)
                 return;
 
-            // ASSERT that we now have valid indicies.  This is statically provable
-            // since this private function is only called with valid indicies,
+            // ASSERT that we now have valid indices.  This is statically provable
+            // since this private function is only called with valid indices,
             // and iLeft and iRight only converge towards eachother.  However,
             // PreFast can't detect this because it doesn't know about our callers.
             COMPILER_ASSUME(iLeft >= 0 && iLeft < m_iCount);
@@ -2023,7 +2023,7 @@ public:
 //*****************************************************************************
 // Returns the first entry in the first hash bucket and inits the search
 // struct.  Use the FindNextEntry function to continue walking the list.  The
-// return order is not gauranteed.
+// return order is not guaranteed.
 //*****************************************************************************
     BYTE *FindFirstEntry(               // First entry found, or 0.
         HASHFIND    *psSrch)            // Search object.
@@ -2264,7 +2264,7 @@ public:
     // accessors here. So if you're not using these functions, don't start.
     // We can hopefully remove them.
     // Note that we can't just make RCThread a friend of this class (we tried
-    // originally) because the inheritence chain has a private modifier,
+    // originally) because the inheritance chain has a private modifier,
     // so DebuggerPatchTable::m_pcEntries is illegal.
     static SIZE_T helper_GetOffsetOfEntries()
     {
@@ -4216,7 +4216,7 @@ template<class T> void DeleteExecutable(T *p)
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
 
-BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStack);
+BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommittedStack);
 
 #ifdef FEATURE_COMINTEROP
 FORCEINLINE void HolderSysFreeString(BSTR str) { CONTRACT_VIOLATION(ThrowsViolation); SysFreeString(str); }

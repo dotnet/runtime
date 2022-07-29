@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization
     public abstract partial class JsonConverter<T> : JsonConverter
     {
         /// <summary>
-        /// When overidden, constructs a new <see cref="JsonConverter{T}"/> instance.
+        /// When overridden, constructs a new <see cref="JsonConverter{T}"/> instance.
         /// </summary>
         protected internal JsonConverter()
         {
@@ -68,14 +68,6 @@ namespace System.Text.Json.Serialization
         }
 
         internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Value;
-
-        internal sealed override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
-        {
-            return new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options)
-            {
-                DefaultConverterForType = this
-            };
-        }
 
         internal sealed override JsonParameterInfo CreateJsonParameterInfo()
         {

@@ -492,7 +492,7 @@ void Signature::PrettyPrint(const CHAR * pszMethodName,
 
 //---------------------------------------------------------------------------------------
 //
-// Get the raw signature pointer contained in this Siganture.
+// Get the raw signature pointer contained in this Signature.
 //
 // Return Value:
 //    the raw signature pointer
@@ -511,7 +511,7 @@ PCCOR_SIGNATURE Signature::GetRawSig() const
 
 //---------------------------------------------------------------------------------------
 //
-// Get the length of the raw signature contained in this Siganture.
+// Get the length of the raw signature contained in this Signature.
 //
 // Return Value:
 //    the length of the raw signature
@@ -4770,7 +4770,7 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
         // NB: we do not attempt to match constraints equivalent to object (and ValueType when tok1 is notNullable)
         // because they
         // a) are vacuous, and
-        // b) may be implicit (ie. absent) in the overriden variable's declaration
+        // b) may be implicit (ie. absent) in the overridden variable's declaration
         if (!(CompareTypeDefOrRefOrSpec(pModule1, tkConstraintType1, NULL,
                                        CoreLibBinder::GetModule(), g_pObjectClass->GetCl(), NULL, NULL) ||
           (((specialConstraints1 & gpNotNullableValueTypeConstraint) != 0) &&
@@ -4808,7 +4808,7 @@ BOOL MetaSig::CompareMethodConstraints(const Substitution *pSubst1,
                                        mdMethodDef tok1, //implementation
                                        const Substitution *pSubst2,
                                        Module *pModule2,
-                                       mdMethodDef tok2) //declaration w.r.t subsitution
+                                       mdMethodDef tok2) //declaration w.r.t substitution
 {
     CONTRACTL
     {

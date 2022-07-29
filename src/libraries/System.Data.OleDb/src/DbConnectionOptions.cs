@@ -407,7 +407,7 @@ namespace System.Data.Common
                 //    continue;
                 //}
 
-                // There is a set of keywords we explictly do NOT want to expand |DataDirectory| on
+                // There is a set of keywords we explicitly do NOT want to expand |DataDirectory| on
                 if (UseOdbcRules)
                 {
                     switch (current.Name)

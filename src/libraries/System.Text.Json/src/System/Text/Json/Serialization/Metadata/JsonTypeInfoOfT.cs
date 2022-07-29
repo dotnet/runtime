@@ -16,9 +16,25 @@ namespace System.Text.Json.Serialization.Metadata
 
         private Func<T>? _typedCreateObject;
 
+        internal JsonConverter<T> EffectiveConverter { get; }
+
         /// <summary>
-        /// Function for creating object before properties are set. If set to null type is not deserializable.
+        /// Gets or sets a parameterless factory to be used on deserialization.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonTypeInfo"/> instance has been locked for further modification.
+        ///
+        /// -or-
+        ///
+        /// A parameterless factory is not supported for the current metadata <see cref="JsonTypeInfo.Kind"/>.
+        /// </exception>
+        /// <remarks>
+        /// If set to <see langword="null" />, any attempt to deserialize instances of the given type will fail at runtime.
+        ///
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// types with a single default constructor or default constructors annotated with <see cref="JsonConstructorAttribute"/>
+        /// will be mapped to this delegate.
+        /// </remarks>
         public new Func<T>? CreateObject
         {
             get => _typedCreateObject;
@@ -67,7 +83,9 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
             : base(typeof(T), converter, options)
-        { }
+        {
+            EffectiveConverter = converter is JsonConverter<T> jsonConverter ? jsonConverter : converter.CreateCastingConverter<T>();
+        }
 
         /// <summary>
         /// Serializes an instance of <typeparamref name="T"/> using
@@ -85,7 +103,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(!IsConfigured, "We should not mutate configured JsonTypeInfo");
                 _serialize = value;
-                HasSerialize = value != null;
+                CanUseSerializeHandler = value != null;
             }
         }
 
@@ -96,10 +114,27 @@ namespace System.Text.Json.Serialization.Metadata
                 declaringTypeInfo: null,
                 Options)
             {
-                DefaultConverterForType = Converter,
                 JsonTypeInfo = this,
                 IsForTypeInfo = true,
             };
+        }
+
+        private protected override JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
+        {
+            return new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options)
+            {
+                JsonTypeInfo = this
+            };
+        }
+
+        private protected void PopulatePolymorphismMetadata()
+        {
+            JsonPolymorphismOptions? options = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
+            if (options != null)
+            {
+                options.DeclaringTypeInfo = this;
+                _polymorphismOptions = options;
+            }
         }
 
         private protected void MapInterfaceTypesToCallbacks()

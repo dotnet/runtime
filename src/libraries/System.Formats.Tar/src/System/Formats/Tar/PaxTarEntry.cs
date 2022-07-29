@@ -51,7 +51,6 @@ namespace System.Formats.Tar
             : base(entryType, entryName, TarEntryFormat.Pax, isGea: false)
         {
             _header._prefix = string.Empty;
-            _header._extendedAttributes = new Dictionary<string, string>();
 
             Debug.Assert(_header._mTime != default);
             AddNewAccessAndChangeTimestampsIfNotExist(useMTime: true);
@@ -92,7 +91,7 @@ namespace System.Formats.Tar
             ArgumentNullException.ThrowIfNull(extendedAttributes);
 
             _header._prefix = string.Empty;
-            _header._extendedAttributes = new Dictionary<string, string>(extendedAttributes);
+            _header.InitializeExtendedAttributesWithExisting(extendedAttributes);
 
             Debug.Assert(_header._mTime != default);
             AddNewAccessAndChangeTimestampsIfNotExist(useMTime: true);
@@ -111,15 +110,14 @@ namespace System.Formats.Tar
 
             if (other is PaxTarEntry paxOther)
             {
-                _header._extendedAttributes = new Dictionary<string, string>(paxOther.ExtendedAttributes);
+                _header.InitializeExtendedAttributesWithExisting(paxOther.ExtendedAttributes);
             }
             else
             {
-                _header._extendedAttributes = new Dictionary<string, string>();
                 if (other is GnuTarEntry gnuOther)
                 {
-                    _header._extendedAttributes[TarHeader.PaxEaATime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.AccessTime);
-                    _header._extendedAttributes[TarHeader.PaxEaCTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.ChangeTime);
+                    _header.ExtendedAttributes[TarHeader.PaxEaATime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.AccessTime);
+                    _header.ExtendedAttributes[TarHeader.PaxEaCTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.ChangeTime);
                 }
             }
 
@@ -144,14 +142,7 @@ namespace System.Formats.Tar
         /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
         /// </list>
         /// </remarks>
-        public IReadOnlyDictionary<string, string> ExtendedAttributes
-        {
-            get
-            {
-                _header._extendedAttributes ??= new Dictionary<string, string>();
-                return _readOnlyExtendedAttributes ??= _header._extendedAttributes.AsReadOnly();
-            }
-        }
+        public IReadOnlyDictionary<string, string> ExtendedAttributes => _readOnlyExtendedAttributes ??= _header.ExtendedAttributes.AsReadOnly();
 
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => EntryType == TarEntryType.RegularFile;
@@ -162,9 +153,8 @@ namespace System.Formats.Tar
         private void AddNewAccessAndChangeTimestampsIfNotExist(bool useMTime)
         {
             Debug.Assert(!useMTime || (useMTime && _header._mTime != default));
-            Debug.Assert(_header._extendedAttributes != null);
-            bool containsATime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaATime);
-            bool containsCTime = _header._extendedAttributes.ContainsKey(TarHeader.PaxEaCTime);
+            bool containsATime = _header.ExtendedAttributes.ContainsKey(TarHeader.PaxEaATime);
+            bool containsCTime = _header.ExtendedAttributes.ContainsKey(TarHeader.PaxEaCTime);
 
             if (!containsATime || !containsCTime)
             {
@@ -172,12 +162,12 @@ namespace System.Formats.Tar
 
                 if (!containsATime)
                 {
-                    _header._extendedAttributes[TarHeader.PaxEaATime] = secondsFromEpochString;
+                    _header.ExtendedAttributes[TarHeader.PaxEaATime] = secondsFromEpochString;
                 }
 
                 if (!containsCTime)
                 {
-                    _header._extendedAttributes[TarHeader.PaxEaCTime] = secondsFromEpochString;
+                    _header.ExtendedAttributes[TarHeader.PaxEaCTime] = secondsFromEpochString;
                 }
             }
         }

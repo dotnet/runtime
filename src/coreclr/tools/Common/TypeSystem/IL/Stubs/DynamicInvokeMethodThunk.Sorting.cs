@@ -8,7 +8,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs
 {
-    // Functionality related to determinstic ordering of types
+    // Functionality related to deterministic ordering of types
     partial class DynamicInvokeMethodThunk
     {
         protected override int ClassCode => -1980933220;

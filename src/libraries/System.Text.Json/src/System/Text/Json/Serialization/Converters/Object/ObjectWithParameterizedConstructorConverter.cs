@@ -82,7 +82,7 @@ namespace System.Text.Json.Serialization.Converters
                         {
                             Debug.Assert(jsonPropertyInfo == state.Current.JsonTypeInfo.ExtensionDataProperty);
                             state.Current.JsonPropertyNameAsString = dataExtKey;
-                            JsonSerializer.CreateDataExtensionProperty(obj, jsonPropertyInfo, options);
+                            JsonSerializer.CreateExtensionDataProperty(obj, jsonPropertyInfo, options);
                         }
 
                         ReadPropertyValue(obj, ref state, ref tempReader, jsonPropertyInfo, useExtensionProperty);
@@ -184,13 +184,21 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (dataExtKey == null)
                         {
-                            jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, propValue);
+                            Debug.Assert(jsonPropertyInfo.Set != null);
+
+                            if (propValue is not null || !jsonPropertyInfo.IgnoreNullTokensOnRead || default(T) is not null)
+                            {
+                                jsonPropertyInfo.Set(obj, propValue);
+
+                                // if this is required property IgnoreNullTokensOnRead will always be false because we don't allow for both to be true
+                                state.Current.MarkRequiredPropertyAsRead(jsonPropertyInfo);
+                            }
                         }
                         else
                         {
                             Debug.Assert(jsonPropertyInfo == state.Current.JsonTypeInfo.ExtensionDataProperty);
 
-                            JsonSerializer.CreateDataExtensionProperty(obj, jsonPropertyInfo, options);
+                            JsonSerializer.CreateExtensionDataProperty(obj, jsonPropertyInfo, options);
                             object extDictionary = jsonPropertyInfo.GetValueAsObject(obj)!;
 
                             if (extDictionary is IDictionary<string, JsonElement> dict)
@@ -211,6 +219,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             jsonTypeInfo.OnDeserialized?.Invoke(obj);
+            state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
             // Unbox
             Debug.Assert(obj != null);
@@ -272,6 +281,7 @@ namespace System.Text.Json.Serialization.Converters
                         continue;
                     }
 
+                    Debug.Assert(jsonParameterInfo.MatchingProperty != null);
                     ReadAndCacheConstructorArgument(ref state, ref reader, jsonParameterInfo);
 
                     state.Current.EndConstructorParameter();
@@ -287,7 +297,7 @@ namespace System.Text.Json.Serialization.Converters
                         out _,
                         createExtensionProperty: false);
 
-                    if (jsonPropertyInfo.HasSetter)
+                    if (jsonPropertyInfo.CanDeserialize)
                     {
                         ArgumentState argumentState = state.Current.CtorArgumentState!;
 
@@ -452,7 +462,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (state.Current.PropertyState < StackFramePropertyState.ReadValue)
             {
-                if (!jsonPropertyInfo.HasSetter)
+                if (!jsonPropertyInfo.CanDeserialize)
                 {
                     if (!reader.TrySkip())
                     {
@@ -486,7 +496,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            Debug.Assert(jsonPropertyInfo.HasSetter);
+            Debug.Assert(jsonPropertyInfo.CanDeserialize);
 
             // Ensure that the cache has enough capacity to add this property.
 
@@ -525,12 +535,14 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
-            jsonTypeInfo.ValidateCanBeUsedForDeserialization();
+            jsonTypeInfo.ValidateCanBeUsedForMetadataSerialization();
 
             if (jsonTypeInfo.ParameterCount != jsonTypeInfo.ParameterCache!.Count)
             {
                 ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(TypeToConvert);
             }
+
+            state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
 
             // Set current JsonPropertyInfo to null to avoid conflicts on push.
             state.Current.JsonPropertyInfo = null;

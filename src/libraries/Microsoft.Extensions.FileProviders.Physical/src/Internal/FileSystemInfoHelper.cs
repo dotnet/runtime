@@ -59,9 +59,9 @@ namespace Microsoft.Extensions.FileProviders.Physical
                         return targetInfo.LastWriteTimeUtc;
                     }
                 }
-                catch (FileNotFoundException)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
-                    // The file ceased to exist between LinkTarget and ResolveLinkTarget.
+                    // The target or the link ceased to exist between LinkTarget and ResolveLinkTarget.
                 }
 
                 return DateTime.MinValue;

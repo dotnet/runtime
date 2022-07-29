@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
     <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
     <IsTrimmable>false</IsTrimmable>
     <NoWarn>$(NoWarn);CA1847</NoWarn>

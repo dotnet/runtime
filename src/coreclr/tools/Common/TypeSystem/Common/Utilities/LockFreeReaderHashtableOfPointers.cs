@@ -14,7 +14,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// A hash table which is lock free for readers and up to 1 writer at a time.
     /// It must be possible to compute the key's hashcode from a value.
-    /// All values must convertable to/from an IntPtr.
+    /// All values must convertible to/from an IntPtr.
     /// It must be possible to perform an equality check between a key and a value.
     /// It must be possible to perform an equality check between a value and a value.
     /// A LockFreeReaderKeyValueComparer must be provided to perform these operations.
@@ -364,7 +364,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Attemps to add a value to the hashtable, or find a value which is already present in the hashtable.
+        /// Attempts to add a value to the hashtable, or find a value which is already present in the hashtable.
         /// In some cases, this will fail due to contention with other additions and must be retried.
         /// Note that the key is not specified as it is implicit in the value. This function is thread-safe,
         /// but must only take locks around internal operations and GetValueHashCode.

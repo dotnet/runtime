@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed partial class JSFunctionBinding
     {
-        #region intentionaly opaque internal structure
+        #region intentionally opaque internal structure
         internal unsafe JSBindingHeader* Header;
         internal unsafe JSBindingType* Sigs;// points to first arg, not exception, not result
         internal JSObject? JSFunction;
@@ -130,6 +130,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         // JavaScriptExports need to be protected from trimming because they are used from C/JS code which IL linker can't see
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
+        // TODO make this DynamicDependency conditional
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.LegacyExports", "System.Runtime.InteropServices.JavaScript")]
         public static JSFunctionBinding BindJSFunction(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
@@ -174,7 +176,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (isException != 0)
                 throw new JSException((string)exceptionMessage);
 
-            signature.JSFunction = JavaScriptExports.CreateCSOwnedProxy(jsFunctionHandle);
+            signature.JSFunction = JSHostImplementation.CreateCSOwnedProxy(jsFunctionHandle);
 
             return signature;
         }

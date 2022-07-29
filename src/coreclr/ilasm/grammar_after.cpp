@@ -1232,7 +1232,7 @@ Its_An_Id:
             if (Sym(nextchar(curPos))=='.' && Sym(nextchar(nextchar(curPos)))=='.')
             {
                 curPos = nextchar(nextchar(nextchar(curPos)));
-                tok = ELIPSIS;
+                tok = ELLIPSIS;
             }
             else
             {

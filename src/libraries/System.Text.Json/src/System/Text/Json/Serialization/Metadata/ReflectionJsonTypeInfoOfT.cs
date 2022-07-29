@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Reflection;
-using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -17,18 +18,11 @@ namespace System.Text.Json.Serialization.Metadata
     {
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        internal ReflectionJsonTypeInfo(JsonSerializerOptions options)
-            : this(DefaultJsonTypeInfoResolver.GetConverterForType(typeof(T), options), options)
-        {
-        }
-
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal ReflectionJsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
             : base(converter, options)
         {
             NumberHandling = GetNumberHandlingForType(Type);
-            PolymorphismOptions = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
+            PopulatePolymorphismMetadata();
             MapInterfaceTypesToCallbacks();
 
             if (PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object)
@@ -43,16 +37,10 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             CreateObjectForExtensionDataProperty = createObject;
-        }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked as RequiresUnreferencedCode")]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The ctor is marked RequiresDynamicCode.")]
-        internal override void Configure()
-        {
-            base.Configure();
-            Converter.ConfigureJsonTypeInfoUsingReflection(this, Options);
+            // Plug in any converter configuration -- should be run last.
+            converter.ConfigureJsonTypeInfo(this, options);
+            converter.ConfigureJsonTypeInfoUsingReflection(this, options);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
@@ -69,6 +57,11 @@ namespace System.Text.Json.Serialization.Metadata
 
             Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
             bool propertyOrderSpecified = false;
+            // Compiler adds RequiredMemberAttribute to type if any of the members is marked with 'required' keyword.
+            // SetsRequiredMembersAttribute means that all required members are assigned by constructor and therefore there is no enforcement
+            bool shouldCheckMembersForRequiredMemberAttribute =
+                typeof(T).HasRequiredMemberAttribute()
+                && !(Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false);
 
             // Walk through the inheritance hierarchy, starting from the most derived type upward.
             for (Type? currentType = Type; currentType != null; currentType = currentType.BaseType)
@@ -86,7 +79,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                     // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
                     if (propertyInfo.GetIndexParameters().Length > 0 ||
-                        PropertyIsOverridenAndIgnored(propertyName, propertyInfo.PropertyType, propertyInfo.IsVirtual(), ignoredMembers))
+                        PropertyIsOverriddenAndIgnored(propertyName, propertyInfo.PropertyType, propertyInfo.IsVirtual(), ignoredMembers))
                     {
                         continue;
                     }
@@ -99,7 +92,8 @@ namespace System.Text.Json.Serialization.Metadata
                             typeToConvert: propertyInfo.PropertyType,
                             memberInfo: propertyInfo,
                             ref propertyOrderSpecified,
-                            ref ignoredMembers);
+                            ref ignoredMembers,
+                            shouldCheckMembersForRequiredMemberAttribute);
                     }
                     else
                     {
@@ -116,7 +110,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     string fieldName = fieldInfo.Name;
 
-                    if (PropertyIsOverridenAndIgnored(fieldName, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
+                    if (PropertyIsOverriddenAndIgnored(fieldName, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
                     {
                         continue;
                     }
@@ -131,7 +125,8 @@ namespace System.Text.Json.Serialization.Metadata
                                 typeToConvert: fieldInfo.FieldType,
                                 memberInfo: fieldInfo,
                                 ref propertyOrderSpecified,
-                                ref ignoredMembers);
+                                ref ignoredMembers,
+                                shouldCheckMembersForRequiredMemberAttribute);
                         }
                     }
                     else
@@ -158,9 +153,10 @@ namespace System.Text.Json.Serialization.Metadata
             Type typeToConvert,
             MemberInfo memberInfo,
             ref bool propertyOrderSpecified,
-            ref Dictionary<string, JsonPropertyInfo>? ignoredMembers)
+            ref Dictionary<string, JsonPropertyInfo>? ignoredMembers,
+            bool shouldCheckForRequiredKeyword)
         {
-            JsonPropertyInfo? jsonPropertyInfo = AddProperty(typeToConvert, memberInfo, Options);
+            JsonPropertyInfo? jsonPropertyInfo = CreateProperty(typeToConvert, memberInfo, Options, shouldCheckForRequiredKeyword);
             if (jsonPropertyInfo == null)
             {
                 // ignored invalid property
@@ -177,10 +173,11 @@ namespace System.Text.Json.Serialization.Metadata
             Justification = "The ctor is marked as RequiresUnreferencedCode")]
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "The ctor is marked RequiresDynamicCode.")]
-        private JsonPropertyInfo? AddProperty(
+        private JsonPropertyInfo? CreateProperty(
             Type typeToConvert,
             MemberInfo memberInfo,
-            JsonSerializerOptions options)
+            JsonSerializerOptions options,
+            bool shouldCheckForRequiredKeyword)
         {
             JsonIgnoreCondition? ignoreCondition = memberInfo.GetCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
 
@@ -192,24 +189,20 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_CannotSerializeInvalidType(typeToConvert, memberInfo.DeclaringType, memberInfo);
             }
 
+            // Resolve any custom converters on the attribute level.
             JsonConverter? customConverter;
-            JsonConverter converter;
-
             try
             {
-                converter = DefaultJsonTypeInfoResolver.GetConverterForMember(
-                    typeToConvert,
-                    memberInfo,
-                    options,
-                    out customConverter);
+                customConverter = DefaultJsonTypeInfoResolver.GetCustomConverterForMember(typeToConvert, memberInfo, options);
             }
             catch (InvalidOperationException) when (ignoreCondition == JsonIgnoreCondition.Always)
             {
+                // skip property altogether if attribute is invalid and the property is ignored
                 return null;
             }
 
-            JsonPropertyInfo jsonPropertyInfo = CreatePropertyUsingReflection(typeToConvert, converter);
-            jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo, customConverter, ignoreCondition);
+            JsonPropertyInfo jsonPropertyInfo = CreatePropertyUsingReflection(typeToConvert);
+            jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo, customConverter, ignoreCondition, shouldCheckForRequiredKeyword);
             return jsonPropertyInfo;
         }
 
@@ -219,7 +212,7 @@ namespace System.Text.Json.Serialization.Metadata
             return numberHandlingAttribute?.Handling;
         }
 
-        private static bool PropertyIsOverridenAndIgnored(
+        private static bool PropertyIsOverriddenAndIgnored(
             string currentMemberName,
             Type currentMemberType,
             bool currentMemberIsVirtual,
