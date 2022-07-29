@@ -20,7 +20,7 @@ var configurations = new[]
     new ClientOptions
     {
         ServerHost = "localhost",
-        ServerPort = 50052,
+        ServerPort = 3000,
         UseTls = true,
     },
 };
@@ -42,7 +42,6 @@ foreach (var options in configurations)
         OAuthScope: {options.OAuthScope}
         ServiceAccountKeyFile: {options.ServiceAccountKeyFile}
         GrpcWebMode: {options.GrpcWebMode}
-        UseWinHttp: {options.UseWinHttp}
         UseHttp3: {options.UseHttp3}
         ---
         """);

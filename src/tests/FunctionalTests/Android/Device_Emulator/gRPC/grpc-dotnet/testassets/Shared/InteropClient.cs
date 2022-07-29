@@ -41,7 +41,6 @@ namespace Grpc.Shared.TestAssets
         public string? OAuthScope { get; set; }
         public string? ServiceAccountKeyFile { get; set; }
         public string? GrpcWebMode { get; set; }
-        public bool UseWinHttp { get; set; }
         public bool UseHttp3 { get; set; }
     }
 
@@ -97,16 +96,7 @@ namespace Grpc.Shared.TestAssets
                 scheme = "https";
             }
 
-            HttpMessageHandler httpMessageHandler;
-            if (!options.UseWinHttp)
-            {
-                httpMessageHandler = CreateHttpClientHandler();
-            }
-            else
-            {
-                httpMessageHandler = CreateWinHttpHandler();
-            }
-
+            HttpMessageHandler httpMessageHandler = CreateHttpClientHandler();
             if (!string.IsNullOrEmpty(options.GrpcWebMode) && !string.Equals(options.GrpcWebMode, "None", StringComparison.OrdinalIgnoreCase))
             {
                 var mode = (GrpcWebMode)Enum.Parse(typeof(GrpcWebMode), options.GrpcWebMode);
@@ -152,16 +142,6 @@ namespace Grpc.Shared.TestAssets
             }
         }
 #endif
-
-        private static WinHttpHandler CreateWinHttpHandler()
-        {
-#pragma warning disable CA1416 // Validate platform compatibility
-            var handler = new WinHttpHandler();
-            handler.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
-            handler.ServerCertificateValidationCallback = (message, cert, chain, errors) => true;
-            return handler;
-#pragma warning restore CA1416 // Validate platform compatibility
-        }
 
         private HttpClientHandler CreateHttpClientHandler()
         {
