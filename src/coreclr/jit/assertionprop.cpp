@@ -3602,6 +3602,13 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
+    // There are no constant assertions for structs in global propagation.
+    //
+    if (!optLocalAssertionProp && varTypeIsStruct(tree))
+    {
+        return nullptr;
+    }
+
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
