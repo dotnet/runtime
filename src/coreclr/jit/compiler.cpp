@@ -6677,8 +6677,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
         if (compHasBackwardJump && (reason == nullptr) && (JitConfig.TC_OnStackReplacement() > 0))
         {
-            const char* noPatchpointReason = nullptr;
-            bool        canEscapeViaOSR    = compCanHavePatchpoints(&reason);
+            bool canEscapeViaOSR = compCanHavePatchpoints(&reason);
 
 #ifdef DEBUG
             if (canEscapeViaOSR)
@@ -6703,7 +6702,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
             }
             else
             {
-                JITDUMP("\nOSR disabled for this method: %s\n", noPatchpointReason);
+                JITDUMP("\nOSR disabled for this method: %s\n", reason);
                 assert(reason != nullptr);
             }
         }
