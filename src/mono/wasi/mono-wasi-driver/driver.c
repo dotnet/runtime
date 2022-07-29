@@ -324,6 +324,15 @@ static PinvokeImport SystemGlobalizationNativeImports [] = {
 	{NULL, NULL}
 };
 
+int SystemCryptoNativeBrowser_CanUseSubtleCryptoImpl() {
+	return 0;
+}
+
+static PinvokeImport SystemSecurityCryptographyNativeBrowserImports [] = {
+	{"SystemCryptoNativeBrowser_CanUseSubtleCryptoImpl", SystemCryptoNativeBrowser_CanUseSubtleCryptoImpl },
+	{NULL, NULL}
+};
+
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 {
@@ -331,6 +340,9 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 		return SystemNativeImports;
 	if (!strcmp (name, "libSystem.Globalization.Native"))
 		return SystemGlobalizationNativeImports;
+	if (!strcmp (name, "libSystem.Security.Cryptography.Native.Browser"))
+		return SystemSecurityCryptographyNativeBrowserImports;
+
 	//printf("In wasm_dl_load for name %s but treating as NOT FOUND\n", name);
     return 0;
 }
