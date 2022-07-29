@@ -4,7 +4,7 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-#if !HIDE_CONTRACT_TYPES
+#if !BUILDING_CORELIB_REFERENCE
 namespace System.Collections
 {
     public sealed partial class BitArray : System.Collections.ICollection, System.Collections.IEnumerable, System.ICloneable
@@ -408,7 +408,7 @@ namespace System.Collections.Generic
         }
     }
 }
-#endif // !HIDE_CONTRACT_TYPES
+#endif // !BUILDING_CORELIB_REFERENCE
 namespace System.Collections.Generic
 {
     public abstract partial class Comparer<T> : System.Collections.Generic.IComparer<T>, System.Collections.IComparer

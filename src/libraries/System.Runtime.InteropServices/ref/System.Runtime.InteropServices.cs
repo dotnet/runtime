@@ -4,7 +4,7 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-#if !HIDE_CONTRACT_TYPES
+#if !BUILDING_CORELIB_REFERENCE
 namespace System.Runtime.CompilerServices
 {
     [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -333,7 +333,7 @@ namespace System.Security
         public static System.IntPtr SecureStringToGlobalAllocUnicode(System.Security.SecureString s) { throw null; }
     }
 }
-#endif // !HIDE_CONTRACT_TYPES
+#endif // !BUILDING_CORELIB_REFERENCE
 namespace System
 {
     public sealed partial class DataMisalignedException : System.SystemException

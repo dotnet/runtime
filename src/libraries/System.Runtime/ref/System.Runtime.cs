@@ -14849,7 +14849,7 @@ namespace System.Threading.Tasks.Sources
         Canceled = 3,
     }
 }
-#if !HIDE_URI_TYPES
+#if !BUILDING_CORELIB_REFERENCE
 namespace System
 {
     public partial class FileStyleUriParser : System.UriParser
@@ -15109,4 +15109,4 @@ namespace System
         Query = 3,
     }
 }
-#endif // !HIDE_URI_TYPES
+#endif // !BUILDING_CORELIB_REFERENCE

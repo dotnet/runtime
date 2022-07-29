@@ -4,7 +4,7 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-#if !HIDE_CONTRACT_TYPES
+#if !BUILDING_CORELIB_REFERENCE
 namespace System.Diagnostics.SymbolStore
 {
     public partial interface ISymbolBinder
@@ -156,7 +156,7 @@ namespace System.Diagnostics.SymbolStore
         public SymLanguageVendor() { }
     }
 }
-#endif // !HIDE_CONTRACT_TYPES
+#endif // !BUILDING_CORELIB_REFERENCE
 namespace System.Diagnostics
 {
     public partial class StackFrame

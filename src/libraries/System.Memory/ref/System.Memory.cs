@@ -4,7 +4,7 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-#if !HIDE_CONTRACT_TYPES
+#if !BUILDING_CORELIB_REFERENCE
 namespace System
 {
     public readonly partial struct SequencePosition : System.IEquatable<System.SequencePosition>
@@ -187,7 +187,7 @@ namespace System.Text
         public static string GetString(this System.Text.Encoding encoding, in System.Buffers.ReadOnlySequence<byte> bytes) { throw null; }
     }
 }
-#endif // !HIDE_CONTRACT_TYPES
+#endif // !BUILDING_CORELIB_REFERENCE
 namespace System
 {
     public static partial class MemoryExtensions

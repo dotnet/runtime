@@ -7,8 +7,7 @@
     <!-- the System.Runtime project is special, we need to be able to hide the System.Private.Uri types for the generated ref .cs so we can include it in the System.Private.CoreLib ref .cs -->
     <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
     <ProjectForGenAPIDocIdGeneration>$(UriProject)</ProjectForGenAPIDocIdGeneration>
-    <GenAPIConditionalTypeListSymbol>!HIDE_URI_TYPES</GenAPIConditionalTypeListSymbol>
-    <GenAPIConditionalTypeListWrapOtherTypes>false</GenAPIConditionalTypeListWrapOtherTypes>
+    <SymbolForGenAPIConditionalTypeLists>!BUILDING_CORELIB_REFERENCE</SymbolForGenAPIConditionalTypeLists>
     <GenAPIExcludeApiList>$(CoreLibRefDir)System.Private.CoreLib.ExtraApis.txt</GenAPIExcludeApiList>
   </PropertyGroup>
   <ItemGroup>

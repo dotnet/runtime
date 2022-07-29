@@ -4,7 +4,7 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-#if !HIDE_CONTRACT_TYPES
+#if !BUILDING_CORELIB_REFERENCE
 namespace System.Threading
 {
     public partial class Barrier : System.IDisposable
@@ -123,7 +123,7 @@ namespace System.Threading
         public System.Threading.LockCookie UpgradeToWriterLock(System.TimeSpan timeout) { throw null; }
     }
 }
-#endif // !HIDE_CONTRACT_TYPES
+#endif // !BUILDING_CORELIB_REFERENCE
 namespace System.Threading
 {
     public partial class AbandonedMutexException : System.SystemException
