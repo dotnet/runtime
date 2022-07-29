@@ -32,8 +32,7 @@ namespace System.Text.Json.Serialization
         {
             // When we're reading ahead we always have to save the state as we don't know if the next token
             // is an opening object or an array brace.
-            JsonReaderState initialReaderState = reader.CurrentState;
-            long initialReaderBytesConsumed = reader.BytesConsumed;
+            Utf8JsonReader restore = reader;
 
             if (!reader.Read())
             {
@@ -42,20 +41,14 @@ namespace System.Text.Json.Serialization
 
             // Perform the actual read-ahead.
             JsonTokenType tokenType = reader.TokenType;
-            if (tokenType == JsonTokenType.StartObject || tokenType == JsonTokenType.StartArray)
+            if (tokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
             {
                 // Attempt to skip to make sure we have all the data we need.
                 bool complete = reader.TrySkip();
 
                 // We need to restore the state in all cases as we need to be positioned back before
                 // the current token to either attempt to skip again or to actually read the value.
-
-                reader = new Utf8JsonReader(reader.OriginalSpan.Slice(checked((int)initialReaderBytesConsumed)),
-                    isFinalBlock: reader.IsFinalBlock,
-                    state: initialReaderState);
-
-                Debug.Assert(reader.BytesConsumed == 0);
-                state.BytesConsumed += initialReaderBytesConsumed;
+                reader = restore;
 
                 if (!complete)
                 {
