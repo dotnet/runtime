@@ -13359,7 +13359,6 @@ add_mibc_group_method_methods (MonoAotCompile *acfg, MonoMethod *mibcGroupMethod
 		ERROR_DECL(method_entry_error);
 		MonoMethod *methodEntry = mono_get_method_checked (image, mibcGroupMethodEntryToken, mibcModuleClass, context, method_entry_error);
 		if (!is_ok (method_entry_error)) {
-			g_warning ("Method not found for method token '%x' from mibc image '%s'.\n", mibcGroupMethodEntryToken, image->name);
 			mono_error_cleanup (method_entry_error);
 			continue;
 		}
