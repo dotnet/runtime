@@ -639,18 +639,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
     Thread *pThread = GetThread();
 
-#ifdef _DEBUG
-    static int breakOnSO = -1;
-
-    if (breakOnSO == -1)
-        breakOnSO = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BreakOnSO);
-
-    if (breakOnSO != 0 && exceptionCode == STATUS_STACK_OVERFLOW)
-    {
-        DebugBreak();   // ASSERTing will overwrite the guard region
-    }
-#endif
-
     // We always want to be in co-operative mode when we run this function and whenever we return
     // from it, want to go to pre-emptive mode because are returning to OS.
     _ASSERTE(pThread->PreemptiveGCDisabled());

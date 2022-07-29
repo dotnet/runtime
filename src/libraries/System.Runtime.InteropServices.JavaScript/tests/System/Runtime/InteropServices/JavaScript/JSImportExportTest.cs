@@ -150,8 +150,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void CreateFunctionInternal()
         {
-            Func<string> internals = Utils.CreateFunctionString("return INTERNAL.BINDING_ASM");
-            Assert.Equal("[System.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.JavaScriptExports", internals());
+            Func<bool> internals = Utils.CreateFunctionBool("return INTERNAL.mono_wasm_runtime_is_ready");
+            Assert.True(internals());
         }
 
         #endregion

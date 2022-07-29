@@ -196,7 +196,6 @@
       <_WasmPropertyNames Include="WasmDedup" />
       <_WasmPropertyNames Include="WasmLinkIcalls" />
       <_WasmPropertyNames Include="WasmNativeStrip" />
-      <_WasmPropertyNames Include="WasmEnableES6" />
       <_WasmPropertyNames Include="_WasmDevel" />
       <_WasmPropertyNames Include="_WasmStrictVersionMatch" />
       <_WasmPropertyNames Include="WasmEmitSymbolMap" />

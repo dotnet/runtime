@@ -26,6 +26,11 @@ namespace System.Text.Json.Serialization.Metadata
 
         private JsonPropertyInfoList? _properties;
 
+        /// <summary>
+        /// Indices of required properties.
+        /// </summary>
+        internal int NumberOfRequiredProperties { get; private set; }
+
         private Action<object>? _onSerializing;
         private Action<object>? _onSerialized;
         private Action<object>? _onDeserializing;
@@ -878,13 +883,21 @@ namespace System.Text.Json.Serialization.Metadata
                 ExtensionDataProperty.EnsureConfigured();
             }
 
+            int numberOfRequiredProperties = 0;
             foreach (KeyValuePair<string, JsonPropertyInfo> jsonPropertyInfoKv in PropertyCache.List)
             {
                 JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value;
 
+                if (jsonPropertyInfo.IsRequired)
+                {
+                    jsonPropertyInfo.RequiredPropertyIndex = numberOfRequiredProperties++;
+                }
+
                 jsonPropertyInfo.EnsureChildOf(this);
                 jsonPropertyInfo.EnsureConfigured();
             }
+
+            NumberOfRequiredProperties = numberOfRequiredProperties;
         }
 
         internal void InitializeConstructorParameters(JsonParameterInfoValues[] jsonParameters, bool sourceGenMode = false)

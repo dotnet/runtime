@@ -1785,7 +1785,7 @@ void Thread::RemoveAbortRequestBit()
 }
 
 // Make sure that when AbortRequest bit is cleared, we also dec TrapReturningThreads count.
-void Thread::UnmarkThreadForAbort()
+void Thread::UnmarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType /* = EEPolicy::TA_Rude */)
 {
     CONTRACTL
     {
@@ -1794,10 +1794,13 @@ void Thread::UnmarkThreadForAbort()
     }
     CONTRACTL_END;
 
-    // Switch to COOP (for ClearAbortReason) before acquiring AbortRequestLock
-    GCX_COOP();
-
     AbortRequestLockHolder lh(this);
+
+    if (m_AbortType > (DWORD)abortType)
+    {
+        // Aborting at a higher level
+        return;
+    }
 
     m_AbortType = EEPolicy::TA_None;
     m_AbortEndTime = MAXULONGLONG;

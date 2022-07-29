@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         private byte[] _certData;
         private X509Extension _cdpExtension;
         private X509Extension _aiaExtension;
-        private X509Extension _akidExtension;
+        private X509AuthorityKeyIdentifierExtension _akidExtension;
 
         private List<(byte[], DateTimeOffset)> _revocationList;
         private byte[] _crl;
@@ -305,7 +305,67 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
 
             DateTimeOffset newExpiry = now.AddSeconds(2);
+            X509AuthorityKeyIdentifierExtension akid = _akidExtension ??= CreateAkidExtension();
 
+            if (OmitNextUpdateInCrl)
+            {
+                crl = BuildCrlManually(now, newExpiry, akid);
+            }
+            else
+            {
+                CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+                if (_revocationList is not null)
+                {
+                    foreach ((byte[] serial, DateTimeOffset when) in _revocationList)
+                    {
+                        builder.AddEntry(serial, when);
+                    }
+                }
+
+                DateTimeOffset thisUpdate;
+                DateTimeOffset nextUpdate;
+
+                if (RevocationExpiration.HasValue)
+                {
+                    nextUpdate = RevocationExpiration.GetValueOrDefault();
+                    thisUpdate = _cert.NotBefore;
+                }
+                else
+                {
+                    thisUpdate = now;
+                    nextUpdate = newExpiry;
+                }
+
+                using (RSA key = _cert.GetRSAPrivateKey())
+                {
+                    crl = builder.Build(
+                        CorruptRevocationIssuerName ? s_nonParticipatingName : _cert.SubjectName,
+                        X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pkcs1),
+                        _crlNumber,
+                        nextUpdate,
+                        HashAlgorithmName.SHA256,
+                        _akidExtension,
+                        thisUpdate);
+                }
+            }
+
+            if (CorruptRevocationSignature)
+            {
+                crl[^2] ^= 0xFF;
+            }
+
+            _crl = crl;
+            _crlExpiry = newExpiry;
+            _crlNumber++;
+            return crl;
+        }
+
+        private byte[] BuildCrlManually(
+            DateTimeOffset now,
+            DateTimeOffset newExpiry,
+            X509AuthorityKeyIdentifierExtension akidExtension)
+        {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
             using (writer.PushSequence())
@@ -383,22 +443,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     // Extensions (SEQUENCE OF)
                     using (writer.PushSequence())
                     {
-                        if (_akidExtension == null)
-                        {
-                            _akidExtension = CreateAkidExtension();
-                        }
-
                         // Authority Key Identifier Extension
                         using (writer.PushSequence())
                         {
-                            writer.WriteObjectIdentifier(_akidExtension.Oid.Value);
+                            writer.WriteObjectIdentifier(akidExtension.Oid.Value);
 
-                            if (_akidExtension.Critical)
+                            if (akidExtension.Critical)
                             {
                                 writer.WriteBoolean(true);
                             }
 
-                            writer.WriteOctetString(_akidExtension.RawData);
+                            writer.WriteOctetString(akidExtension.RawData);
                         }
 
                         // CRL Number Extension
@@ -439,11 +494,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 writer.WriteBitString(signature);
             }
 
-            _crl = writer.Encode();
-
-            _crlExpiry = newExpiry;
-            _crlNumber++;
-            return _crl;
+            return writer.Encode();
         }
 
         internal void DesignateOcspResponder(X509Certificate2 responder)
@@ -706,7 +757,7 @@ SingleResponse ::= SEQUENCE {
             return CertificateRevocationListBuilder.BuildCrlDistributionPointExtension(new[] { cdp });
         }
 
-        private X509Extension CreateAkidExtension()
+        private X509AuthorityKeyIdentifierExtension CreateAkidExtension()
         {
             X509SubjectKeyIdentifierExtension skid =
                 _cert.Extensions.OfType<X509SubjectKeyIdentifierExtension>().SingleOrDefault();

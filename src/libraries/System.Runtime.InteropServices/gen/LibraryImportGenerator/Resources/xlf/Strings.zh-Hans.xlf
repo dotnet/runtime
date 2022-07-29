@@ -39,7 +39,7 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessage">
         <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">源生成的 P/Invoke 不支持“{0}”配置。如果需要指定配置，请改用常规的“DllImport”。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
@@ -49,17 +49,17 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageParameter">
         <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">源生成的 P/Invoke 不支持参数“{1}”的指定“{0}”配置。如果需要指定配置，请改用常规的“DllImport”。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageReturn">
         <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">源生成的 P/Invoke 不支持方法“{1}”返回值的指定“{0}”配置。如果需要指定配置，请改用常规的“DllImport”。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">源生成的 P/Invoke 不支持“{1}”的指定值“{0}”。如果需要指定值，请改用常规的“DllImport”。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
@@ -109,12 +109,12 @@
       </trans-unit>
       <trans-unit id="ElementTypesOfReturnTypesMustMatchDescription">
         <source>The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</source>
-        <target state="new">The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</target>
+        <target state="translated">第一个方法返回的跨度的元素类型必须与第二个方法返回的跨度的元素类型为相同的类型。</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementTypesOfReturnTypesMustMatchMessage">
         <source>The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</source>
-        <target state="new">The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</target>
+        <target state="translated">“{0}”返回的跨度的元素类型必须与“{1}”返回的跨度的元素类型为相同的类型。</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustBeNonNullDescription">
@@ -129,22 +129,22 @@
       </trans-unit>
       <trans-unit id="FirstParameterMustMatchReturnTypeDescription">
         <source>The first parameter of the first method must be the same type as the return types of the second method.</source>
-        <target state="new">The first parameter of the first method must be the same type as the return types of the second method.</target>
+        <target state="translated">第一个方法的第一个参数必须与第二个方法的返回类型为相同的类型。</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParameterMustMatchReturnTypeMessage">
         <source>The first parameter of '{0}' must be the same type as the return type of '{1}'</source>
-        <target state="new">The first parameter of '{0}' must be the same type as the return type of '{1}'</target>
+        <target state="translated">“{0}”的第一个参数必须与“{1}”的返回类型为相同的类型</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParametersMustMatchDescription">
         <source>The first parameters of the two methods must be the same type.</source>
-        <target state="new">The first parameters of the two methods must be the same type.</target>
+        <target state="translated">这两种方法的第一个参数必须为相同的类型。</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParametersMustMatchMessage">
         <source>The first parameter of '{0}' and '{1}' must be the same type</source>
-        <target state="new">The first parameter of '{0}' and '{1}' must be the same type</target>
+        <target state="translated">“{0}”和“{1}”的第一个参数必须为相同的类型</target>
         <note />
       </trans-unit>
       <trans-unit id="FromUnmanagedOverloadsNotSupportedDescription">
@@ -184,7 +184,7 @@
       </trans-unit>
       <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
         <source>Invalid 'CustomMarshallerAttribute' usage</source>
-        <target state="new">Invalid 'CustomMarshallerAttribute' usage</target>
+        <target state="translated">“CustomMarshallerAttribute”用法无效</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
@@ -204,7 +204,7 @@
       </trans-unit>
       <trans-unit id="InvalidNativeMarshallingAttributeUsageTitle">
         <source>Invalid 'NativeMarshallingAttribute' usage</source>
-        <target state="new">Invalid 'NativeMarshallingAttribute' usage</target>
+        <target state="translated">“NativeMarshallingAttribute”用法无效</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
@@ -254,22 +254,22 @@
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</source>
-        <target state="new">A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</target>
+        <target state="translated">支持从托管到非托管的封送的连续集合封送程序必须提供返回“ReadOnlySpan&lt;&gt;”的“GetManagedValuesSource”和返回“Span&lt;&gt;”的“GetUnmanagedValuesDestination”方法。</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'</target>
+        <target state="translated">类型“{0}”指定它支持“{1}”封送模式，但不提供返回“ReadOnlySpan&lt;&gt;”的“GetManagedValuesSource”和返回“Span&lt;&gt;”的“GetUnmanagedValuesDestination”方法</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
-        <target state="new">A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</target>
+        <target state="translated">支持从非托管封送封送到托管的连续集合封送程序必须提供采用“int”并返回“Span&lt;&gt;”的“GetManagedValuesDestination”和采用“int”并返回“ReadOnlySpan&lt;&gt;”的“GetUnmanagedValuesSource”方法。</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</target>
+        <target state="translated">类型“{0}”指定它支持“{1}”封送模式，但不提供采用“int”并返回“Span&lt;&gt;”的“GetManagedValuesDestination”和采用“int”并返回“ReadOnlySpan&lt;&gt;”的“GetUnmanagedValuesSource”方法</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
@@ -314,12 +314,12 @@
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStructDescription">
         <source>A marshaller type must either be a stateless static class or a stateful value type. A non-static class is not allowed.</source>
-        <target state="new">A marshaller type must either be a stateless static class or a stateful value type. A non-static class is not allowed.</target>
+        <target state="translated">封送程序类型必须为无状态静态类或有状态值类型。不允许使用非静态类。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStructMessage">
         <source>The type '{0}' must be a static class or a value type</source>
-        <target state="new">The type '{0}' must be a static class or a value type</target>
+        <target state="translated">类型“{0}”必须为静态类或值类型</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
@@ -359,92 +359,92 @@
       </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
         <source>The return type the two method must be the expected type.</source>
-        <target state="new">The return type the two method must be the expected type.</target>
+        <target state="translated">这两种方法的返回类型必须为预期类型。</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeMessage">
         <source>The return type of '{0}' must be '{1}'</source>
-        <target state="new">The return type of '{0}' must be '{1}'</target>
+        <target state="translated">“{0}”的返回类型必须为“{1}”</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypesMustMatchDescription">
         <source>The return types of the two methods must be the same type.</source>
-        <target state="new">The return types of the two methods must be the same type.</target>
+        <target state="translated">这两种方法的返回类型必须为相同的类型。</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypesMustMatchMessage">
         <source>The return type of '{0}' must be the same type as the return type of '{1}'</source>
-        <target state="new">The return type of '{0}' must be the same type as the return type of '{1}'</target>
+        <target state="translated">“{0}”的返回类型必须与“{1}”的返回类型为相同的类型</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
+        <target state="translated">如果在封送程序类型上提供采用“Span&lt;T&gt;”的“AllocateContainerForUnmanagedElements”方法以使用“通过调用方分配的缓冲区从托管到非托管”形状，则该类型必须提供静态“BufferSize”属性以提供调用方分配的缓冲区中的元素数。</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
+        <target state="translated">封送程序类型“{0}”必须具有静态只读“int”“BufferSize”属性以指定调用方分配的缓冲区的大小，因为它具有采用调用方分配的“Span&lt;{1}&gt;”的“AllocateContainerForUnmanagedElements”方法</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that takes the managed value as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
-        <target state="new">A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that takes the managed value as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</target>
+        <target state="translated">支持从托管到非托管的封送的连续集合封送程序必须提供将托管值用作参数并返回“ReadOnlySpan&lt;&gt;”的“GetManagedValuesSource”和将非托管值用作参数并返回“Span&lt;&gt;”的“GetUnmanagedValuesDestination”方法</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that takes '{2}' as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that takes '{2}' as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</target>
+        <target state="translated">类型“{0}”指定它支持“{1}”封送模式，但不提供将“{2}”用作参数并返回“ReadOnlySpan&lt;&gt;”的“GetManagedValuesSource 和将非托管值用作参数并返回“Span&lt;&gt;”的“GetUnmanagedValuesDestination”方法</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes the managed value and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
-        <target state="new">A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes the managed value and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</target>
+        <target state="translated">支持从非托管到托管的封送的连续集合封送程序必须提供采用托管值并返回“Span&lt;&gt;”的“GetManagedValuesDestination”以及采用非托管值和“int”并返回“ReadOnlySpan&lt;&gt;”的“GetUnmanagedValuesSource”方法。</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes '{2}' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes '{2}' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</target>
+        <target state="translated">类型“{0}”指定它支持“{1}”封送模式，但不提供采用“{2}”并返回“Span&lt;&gt;”的“GetManagedValuesDestination”以及采用非托管值和“int”并返回“ReadOnlySpan&lt;&gt;”的“GetManagedValuesSource”方法</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsDescription">
         <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</source>
-        <target state="new">A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</target>
+        <target state="translated">支持从托管到非托管的封送的无状态连续集合封送程序必须提供将非托管类型用作第一个参数并将元素数用作 “int” 参数的“AllocateContainerForManagedElements” 方法</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</target>
+        <target state="translated">类型“{0}”指定它支持“{2}”的“{1}”封送模式，但不提供将非托管类型用作第一个参数并将“int”用作第二个参数的双参数“AllocateContainerForManagedElements”方法</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsDescription">
         <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</source>
-        <target state="new">A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</target>
+        <target state="translated">支持从托管到非托管的封送的无状态连续集合封送程序必须提供将托管类型用作第一个参数并将元素数作为 “out int” 参数提供的“AllocateContainerForUnmanagedElements” 方法</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</target>
+        <target state="translated">类型“{0}”指定它支持“{2}”的“{1}”封送模式，但不提供将“{2}”用作第一个参数并将“out int”用作第二个参数的双参数“AllocateContainerForUnmanagedElements”方法</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessRequiresConvertToManagedDescription">
         <source>A stateless value marshaller that supports marshalling from unmanaged to managed must provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns the the managed type.</source>
-        <target state="new">A stateless value marshaller that supports marshalling from unmanaged to managed must provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns the the managed type.</target>
+        <target state="translated">支持从非托管到托管的封送的无状态值封送程序必须提供将非托管类型用作参数并返回托管类型的“ConvertToManaged”方法。</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessRequiresConvertToManagedMessage">
         <source>The type '{0}' specifies it supports the '{1}' marshal mode, but it does not provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns '{2}'</source>
-        <target state="new">The type '{0}' specifies it supports the '{1}' marshal mode, but it does not provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns '{2}'</target>
+        <target state="translated">类型“{0}”指定它支持“{1}”封送模式，但不提供将非托管类型用作参数并返回“{2}”的“ConvertToManaged”方法</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessValueInRequiresConvertToUnmanagedDescription">
         <source>A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</source>
-        <target state="new">A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</target>
+        <target state="translated">支持从托管到非托管的封送的无状态值封送程序必须提供将托管值用作参数并返回“非托管”类型的值的单参数“ConvertToUnmanaged”方法。</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessValueInRequiresConvertToUnmanagedMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</target>
+        <target state="translated">类型“{0}”指定它支持“{2}”的“{1}”封送模式，但不提供将“{2}”用作参数并返回“非托管”类型的值的单参数“ConvertToUnmanaged”方法</target>
         <note />
       </trans-unit>
       <trans-unit id="ToUnmanagedFromManagedTypesMustMatchDescription">
@@ -459,12 +459,12 @@
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedDescription">
         <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
-        <target state="new">The unmanaged type for a custom marshaller must be a C# unmanaged type.</target>
+        <target state="translated">自定义封送程序的非托管类型必须为 C# 非托管类型。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedMessage">
         <source>The return type of '{0}' must be unmanaged</source>
-        <target state="new">The return type of '{0}' must be unmanaged</target>
+        <target state="translated">“{0}”的返回类型必须为非托管</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
