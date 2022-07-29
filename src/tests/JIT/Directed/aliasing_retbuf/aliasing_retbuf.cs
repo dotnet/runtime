@@ -39,7 +39,7 @@ public unsafe class AliasingRetBuf
         IntPtr export = NativeLibrary.GetExport(lib, "TransposeRetBuf");
 
         f = new Foo { A = 3, B = 2, C = 1 };
-        CallPtrFPtr(&f, (delegate* unmanaged[SuppressGCTransition]<Foo*, Foo>)export);
+        CallPtrFPtr(&f, (delegate* unmanaged[Cdecl, SuppressGCTransition]<Foo*, Foo>)export);
         if (f.A != 2 || f.B != 1 || f.C != 3)
         {
             Console.WriteLine("FAIL: After CallPtrFPtr: {0}", f);
@@ -47,7 +47,7 @@ public unsafe class AliasingRetBuf
         }
 
         f = new Foo { A = 3, B = 2, C = 1 };
-        CallStructFieldFPtr(ref f, (delegate* unmanaged[SuppressGCTransition]<Foo*, Foo>)export);
+        CallStructFieldFPtr(ref f, (delegate* unmanaged[Cdecl, SuppressGCTransition]<Foo*, Foo>)export);
         if (f.A != 2 || f.B != 1 || f.C != 3)
         {
             Console.WriteLine("FAIL: After CallStructFieldFPtr: {0}", f);
@@ -55,7 +55,7 @@ public unsafe class AliasingRetBuf
         }
 
         f = new Foo { A = 3, B = 2, C = 1 };
-        CallRefFPtr(ref f, (delegate* unmanaged[SuppressGCTransition]<ref Foo, Foo>)export);
+        CallRefFPtr(ref f, (delegate* unmanaged[Cdecl, SuppressGCTransition]<ref Foo, Foo>)export);
         if (f.A != 2 || f.B != 1 || f.C != 3)
         {
             Console.WriteLine("FAIL: After CallRefFPtr: {0}", f);
@@ -91,19 +91,19 @@ public unsafe class AliasingRetBuf
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-    private static void CallPtrFPtr(Foo* fi, delegate* unmanaged[SuppressGCTransition]<Foo*, Foo> fptr)
+    private static void CallPtrFPtr(Foo* fi, delegate* unmanaged[Cdecl, SuppressGCTransition]<Foo*, Foo> fptr)
     {
         *fi = fptr(fi);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-    private static void CallRefFPtr(ref Foo fi, delegate* unmanaged[SuppressGCTransition]<ref Foo, Foo> fptr)
+    private static void CallRefFPtr(ref Foo fi, delegate* unmanaged[Cdecl, SuppressGCTransition]<ref Foo, Foo> fptr)
     {
         fi = fptr(ref fi);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-    private static void CallStructFieldFPtr(ref Foo fi, delegate* unmanaged[SuppressGCTransition]<Foo*, Foo> fptr)
+    private static void CallStructFieldFPtr(ref Foo fi, delegate* unmanaged[Cdecl, SuppressGCTransition]<Foo*, Foo> fptr)
     {
         Fooer fooer = new() { F = fi };
         fooer.F = fi;
@@ -119,11 +119,11 @@ public unsafe class AliasingRetBuf
 
     static class AliasingRetBufNative
     {
-        [DllImport(nameof(AliasingRetBufNative), EntryPoint = "TransposeRetBuf")]
+        [DllImport(nameof(AliasingRetBufNative), EntryPoint = "TransposeRetBuf", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static unsafe extern Foo TransposeRetBufPtr(Foo* fi);
 
-        [DllImport(nameof(AliasingRetBufNative), EntryPoint = "TransposeRetBuf")]
+        [DllImport(nameof(AliasingRetBufNative), EntryPoint = "TransposeRetBuf", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static unsafe extern Foo TransposeRetBufRef(ref Foo fi);
     }
