@@ -301,6 +301,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestArrayResetGetElementOnByRefArray ();
 				TestArrayResetAfterCall ();
 				TestArrayResetAfterAssignment ();
+
+				TestAddressOfElement ();
 			}
 
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
@@ -510,6 +512,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				_externalArray = arr;
 
 				arr[0, 0].RequiresPublicFields (); // Should warn
+			}
+
+			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			static void TestAddressOfElement ()
+			{
+				Type[,] arr = new Type[,] { { typeof (TestType) } };
+				ref Type t = ref arr[0, 0];
+				t.RequiresPublicMethods ();
 			}
 
 			static Type[,] _externalArray;
