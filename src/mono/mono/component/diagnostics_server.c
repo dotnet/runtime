@@ -7,7 +7,7 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-compiler.h>
 #include <eventpipe/ds-server.h>
-#ifdef HOST_WASM
+#if defined (HOST_WASM) && !defined(HOST_WASI)
 #include <eventpipe/ep-ipc-stream.h>
 #include <mono/component/event_pipe-wasm.h>
 #include <mono/utils/mono-coop-semaphore.h>
