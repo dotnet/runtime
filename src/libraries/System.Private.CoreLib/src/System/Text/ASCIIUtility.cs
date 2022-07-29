@@ -1569,12 +1569,11 @@ namespace System.Text
             // Intrinsified in mono interpreter
             nuint currentOffset = 0;
 
-            if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= 2 * (uint)Vector<byte>.Count)
             {
-                if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
-                {
-                    currentOffset = WidenAsciiToUtf16_Intrinsified(pAsciiBuffer, pUtf16Buffer, elementCount);
-                }
+                currentOffset = Vector256.IsHardwareAccelerated
+                    ? WidenAsciiToUtf16_Vector256(pAsciiBuffer, pUtf16Buffer, elementCount)
+                    : WidenAsciiToUtf16_Vector128(pAsciiBuffer, pUtf16Buffer, elementCount);
             }
             else if (Vector.IsHardwareAccelerated)
             {
@@ -1704,10 +1703,7 @@ namespace System.Text
             goto Finish;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool ContainsNonAsciiByte(Vector128<byte> asciiVector) => asciiVector.ExtractMostSignificantBits() != 0;
-
-        private static unsafe nuint WidenAsciiToUtf16_Intrinsified(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
+        private static unsafe nuint WidenAsciiToUtf16_Vector128(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
         {
             Debug.Assert(Vector128.IsHardwareAccelerated);
             Debug.Assert(BitConverter.IsLittleEndian);
@@ -1738,6 +1734,40 @@ namespace System.Text
 
                 currentOffset += (nuint)Vector128<byte>.Count;
                 pCurrentWriteAddress += (nuint)Vector128<byte>.Count;
+            } while (currentOffset <= finalOffsetWhereCanRunLoop);
+
+            return currentOffset;
+        }
+
+        private static unsafe nuint WidenAsciiToUtf16_Vector256(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
+        {
+            Debug.Assert(Vector256.IsHardwareAccelerated);
+            Debug.Assert(BitConverter.IsLittleEndian);
+            Debug.Assert(elementCount >= 2 * (uint)Vector256<byte>.Count);
+
+            nuint currentOffset = 0;
+            ushort* pCurrentWriteAddress = (ushort*)pUtf16Buffer;
+
+            // Calculating the destination address outside the loop results in significant
+            // perf wins vs. relying on the JIT to fold memory addressing logic into the
+            // write instructions. See: https://github.com/dotnet/runtime/issues/33002
+            nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector256<byte>.Count;
+
+            do
+            {
+                Vector256<byte> asciiVector = Vector256.Load(pAsciiBuffer + currentOffset);
+
+                if (asciiVector.ExtractMostSignificantBits() != 0)
+                {
+                    break;
+                }
+
+                (Vector256<ushort> low, Vector256<ushort> upper) = Vector256.Widen(asciiVector);
+                low.Store(pCurrentWriteAddress);
+                upper.Store(pCurrentWriteAddress + Vector256<ushort>.Count);
+
+                currentOffset += (nuint)Vector256<byte>.Count;
+                pCurrentWriteAddress += (nuint)Vector256<byte>.Count;
             } while (currentOffset <= finalOffsetWhereCanRunLoop);
 
             return currentOffset;
