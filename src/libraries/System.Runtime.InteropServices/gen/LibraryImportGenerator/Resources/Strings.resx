@@ -174,10 +174,6 @@
   <data name="ConvertToLibraryImportTitle" xml:space="preserve">
     <value>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</value>
   </data>
-  <data name="ConvertToLibraryImportWarning" xml:space="preserve">
-    <value>Conversion to 'LibraryImport' may change behavior and compatibility. See {0} for more information.</value>
-    <comment>{0} is a documentation link</comment>
-  </data>
   <data name="ConvertToLibraryImportWithSuffix" xml:space="preserve">
     <value>Convert to 'LibraryImport' with '{0}' suffix</value>
   </data>
@@ -455,5 +451,14 @@
   </data>
   <data name="RequiresAllowUnsafeBlocksTitle" xml:space="preserve">
     <value>LibraryImportAttribute requires unsafe code.</value>
+  </data>
+  <data name="ConvertToLibraryImportAddUnsafe" xml:space="preserve">
+    <value>Convert to 'LibraryImport' and enable unsafe code</value>
+  </data>
+  <data name="ConvertToLibraryImportMayRequireCustomMarshalling" xml:space="preserve">
+    <value>Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</value>
+  </data>
+  <data name="ConvertToLibraryImportWithSuffixAddUnsafe" xml:space="preserve">
+    <value>Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</value>
   </data>
 </root>

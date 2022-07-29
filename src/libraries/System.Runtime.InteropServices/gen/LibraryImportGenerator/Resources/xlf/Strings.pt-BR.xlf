@@ -77,9 +77,19 @@
         <target state="translated">Converter em 'LibraryImport'</target>
         <note />
       </trans-unit>
+      <trans-unit id="ConvertToLibraryImportAddUnsafe">
+        <source>Convert to 'LibraryImport' and enable unsafe code</source>
+        <target state="new">Convert to 'LibraryImport' and enable unsafe code</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConvertToLibraryImportDescription">
         <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
         <target state="translated">Use 'LibraryImportAttribute' em vez de 'DllImportAttribute' para gerar código de marshalling P/Invoke no tempo de compilação</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportMayRequireCustomMarshalling">
+        <source>Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</source>
+        <target state="new">Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToLibraryImportMessage">
@@ -92,14 +102,14 @@
         <target state="translated">Use 'LibraryImportAttribute' em vez de 'DllImportAttribute' para gerar código de marshalling P/Invoke no tempo de compilação</target>
         <note />
       </trans-unit>
-      <trans-unit id="ConvertToLibraryImportWarning">
-        <source>Conversion to 'LibraryImport' may change behavior and compatibility. See {0} for more information.</source>
-        <target state="translated">A conversão para 'LibraryImport' pode alterar o comportamento e a compatibilidade. Consulte {0} para obter mais informações.</target>
-        <note>{0} is a documentation link</note>
-      </trans-unit>
       <trans-unit id="ConvertToLibraryImportWithSuffix">
         <source>Convert to 'LibraryImport' with '{0}' suffix</source>
         <target state="translated">Converter em 'LibraryImport' com '{0}' sufixo</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportWithSuffixAddUnsafe">
+        <source>Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</source>
+        <target state="new">Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</target>
         <note />
       </trans-unit>
       <trans-unit id="CustomMarshallerTypeMustHaveRequiredShapeTitle">
