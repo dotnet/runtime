@@ -24,7 +24,7 @@
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportMessage">
         <source>'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</source>
-        <target state="new">'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</target>
+        <target state="translated">'{0}'에는 'DllImportAttribute'에 해당하는 항목이 없으며 전달되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportTitle">
@@ -39,7 +39,7 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessage">
         <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">'{0}' 구성은 소스 생성 P/Invoke에서 지원되지 않습니다. 지정된 구성이 필요한 경우 일반 'DllImport'를 대신 사용하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
@@ -49,17 +49,17 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageParameter">
         <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">매개 변수 '{1}'에 대해 지정된 '{0}' 구성이 소스 생성 P/Invoke에서 지원되지 않습니다. 지정된 구성이 필요한 경우 일반 'DllImport'를 대신 사용하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageReturn">
         <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">메서드 '{0}'의 반환 값에 대해 지정된 '{1}' 구성은 소스 생성 P/Invoke에서 지원되지 않습니다. 지정된 구성이 필요한 경우 일반 'DllImport'를 대신 사용하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">'{1}'에 대해 지정된 값 '{0}'은(는) 소스 생성 P/Invoke에서 지원되지 않습니다. 지정된 값이 필요한 경우 일반 ‘DllImport’를 대신 사용하세요.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
@@ -109,12 +109,12 @@
       </trans-unit>
       <trans-unit id="ElementTypesOfReturnTypesMustMatchDescription">
         <source>The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</source>
-        <target state="new">The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</target>
+        <target state="translated">첫 번째 메서드에서 반환된 범위의 요소 형식은 두 번째 메서드에서 반환된 범위의 요소 형식과 같은 형식이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementTypesOfReturnTypesMustMatchMessage">
         <source>The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</source>
-        <target state="new">The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</target>
+        <target state="translated">'{0}'에서 반환된 범위의 요소 형식은 '{1}'에서 반환된 범위의 요소 형식과 동일한 형식이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustBeNonNullDescription">
@@ -129,22 +129,22 @@
       </trans-unit>
       <trans-unit id="FirstParameterMustMatchReturnTypeDescription">
         <source>The first parameter of the first method must be the same type as the return types of the second method.</source>
-        <target state="new">The first parameter of the first method must be the same type as the return types of the second method.</target>
+        <target state="translated">첫 번째 메서드의 첫 번째 매개 변수는 두 번째 메서드의 반환 형식과 같은 형식이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParameterMustMatchReturnTypeMessage">
         <source>The first parameter of '{0}' must be the same type as the return type of '{1}'</source>
-        <target state="new">The first parameter of '{0}' must be the same type as the return type of '{1}'</target>
+        <target state="translated">'{0}'의 첫 번째 매개 변수는 '{1}'의 반환 형식과 동일해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParametersMustMatchDescription">
         <source>The first parameters of the two methods must be the same type.</source>
-        <target state="new">The first parameters of the two methods must be the same type.</target>
+        <target state="translated">두 메서드의 첫 번째 매개 변수는 동일한 형식이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParametersMustMatchMessage">
         <source>The first parameter of '{0}' and '{1}' must be the same type</source>
-        <target state="new">The first parameter of '{0}' and '{1}' must be the same type</target>
+        <target state="translated">'{0}' 및 '{1}'의 첫 번째 매개 변수는 동일한 형식이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="FromUnmanagedOverloadsNotSupportedDescription">
@@ -184,7 +184,7 @@
       </trans-unit>
       <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
         <source>Invalid 'CustomMarshallerAttribute' usage</source>
-        <target state="new">Invalid 'CustomMarshallerAttribute' usage</target>
+        <target state="translated">잘못된 'CustomMarshallerAttribute' 사용</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
@@ -204,7 +204,7 @@
       </trans-unit>
       <trans-unit id="InvalidNativeMarshallingAttributeUsageTitle">
         <source>Invalid 'NativeMarshallingAttribute' usage</source>
-        <target state="new">Invalid 'NativeMarshallingAttribute' usage</target>
+        <target state="translated">잘못된 'NativeMarshallingAttribute' 사용</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
@@ -254,22 +254,22 @@
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</source>
-        <target state="new">A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</target>
+        <target state="translated">관리형 컬렉션부터 비관리형까지 마샬링까지 지원하는 연속 컬렉션 마샬러는 'ReadOnlySpan&lt;&gt;'을 반환하는 'GetManagedValuesSource'와 'Span&lt;&gt;'을 반환하는 'GetUnmanagedValuesDestination' 메서드를 제공해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'</target>
+        <target state="translated">형식 '{0}'은(는) '{1}' 마샬 모드를 지원하지만 'Span&lt;&gt;'을 반환하는 'ReadOnlySpan&lt;&gt;' 및 'GetUnmanagedValuesDestination' 메서드를 반환하는 'GetManagedValuesSource'를 제공하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
-        <target state="new">A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</target>
+        <target state="translated">비관리형부터 관리형까지 마샬링을 지원하는 연속 컬렉션 마샬러는 'int'를 입력하면 'Span&lt;&gt;'을 반환하는 'GetManagedValuesDestination'과 'Int'를 입력하면 'ReadOnlySpan&lt;&gt;'을 반환하는 'GetUnmanagedValuesSource' 메서드를 제공해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</target>
+        <target state="translated">'{0}' 형식은 '{1}' 마샬 모드를 지원하지만 'int'를 입력하면 'Span&lt;&gt;'을 반환하는 'GetManagedValuesDestination' 메서드 및 ‘int’를 입력하면 'ReadOnlySpan&lt;&gt;'을 반환하는 'GetUnmanagedValuesSource'을 제공하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
@@ -314,12 +314,12 @@
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStructDescription">
         <source>A marshaller type must either be a stateless static class or a stateful value type. A non-static class is not allowed.</source>
-        <target state="new">A marshaller type must either be a stateless static class or a stateful value type. A non-static class is not allowed.</target>
+        <target state="translated">마샬러 형식은 상태 비저장 정적 클래스 또는 상태 저장 값 형식이어야 합니다. 비정적 클래스는 사용할 수 없습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStructMessage">
         <source>The type '{0}' must be a static class or a value type</source>
-        <target state="new">The type '{0}' must be a static class or a value type</target>
+        <target state="translated">'{0}' 형식은 정적 클래스 또는 값 형식이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
@@ -359,92 +359,92 @@
       </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
         <source>The return type the two method must be the expected type.</source>
-        <target state="new">The return type the two method must be the expected type.</target>
+        <target state="translated">두 메서드가 필요한 형식이어야 하는 반환 형식입니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeMessage">
         <source>The return type of '{0}' must be '{1}'</source>
-        <target state="new">The return type of '{0}' must be '{1}'</target>
+        <target state="translated">'{0}'의 반환 형식은 '{1}'이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypesMustMatchDescription">
         <source>The return types of the two methods must be the same type.</source>
-        <target state="new">The return types of the two methods must be the same type.</target>
+        <target state="translated">두 메서드의 반환 형식은 같아야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypesMustMatchMessage">
         <source>The return type of '{0}' must be the same type as the return type of '{1}'</source>
-        <target state="new">The return type of '{0}' must be the same type as the return type of '{1}'</target>
+        <target state="translated">'{0}' 반환 형식은 '{1}' 반환 형식과 같아야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
+        <target state="translated">마샬러 형식에서 'Span&lt;T&gt;'을 사용하는 'AllocateContainerForUnmanagedElements' 메서드를 제공하여 '호출자 할당 버퍼로 관리되지 않음' 셰이프를 사용하는 경우 형식은 호출자 할당 버퍼의 요소 수를 제공하기 위해 정적 'BufferSize' 속성을 제공해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
+        <target state="translated">마샬러 유형 '{0}'에는 호출자 할당 'Span&lt;{1}&gt;'을 사용하는 'AllocateContainerForUnmanagedElements' 메서드가 있으므로 호출자 할당 버퍼의 크기를 지정하려면 정적 읽기 전용 'int' 'BufferSize' 속성이 있어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that takes the managed value as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
-        <target state="new">A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that takes the managed value as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</target>
+        <target state="translated">관리형부터 비관리형 마샬링까지 지원하는 연속 컬렉션 마샬러는 관리되는 값을 매개 변수로 입력하면 'ReadOnlySpan&lt;&gt;'을 반환하는 'GetManagedValuesSource'와 비관리형 값을 매개 변수로 입력하면 'Span&lt;&gt;'을 반환하는 'GetUnmanagedValuesDestination' 메서드를 제공해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that takes '{2}' as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that takes '{2}' as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</target>
+        <target state="translated">'{0}' 형식은 '{1}' 마샬링 모드를 지원하지만 '{2}' 매개 변수로 사용하고 'ReadOnlySpan&lt;&gt;' 및 'GetUnmanagedValuesDestination' 메서드를 반환하는 'GetManagedValuesSource'를 제공하지 않습니다. 이 메서드는 비관리형 값을 매개 변수를 입력하면 'Span&lt;&gt;'을 반환합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes the managed value and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
-        <target state="new">A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes the managed value and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</target>
+        <target state="translated">비관리형부터 관리형 마샬링까지 지원하는 연속 컬렉션 마샬러는 관리되는 값을 입력하면 'Span&lt;&gt;'을 반환하는 'GetManagedValuesDestination'과 관리되지 않는 값을 입력하면 'ReadOnlySpan&lt;&gt;'을 반환하는 'GetUnmanagedValuesSource' 메서드를 제공해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes '{2}' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes '{2}' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</target>
+        <target state="translated">'{0}' 형식은 '{1}' 마샬 모드를 지원하지만 '{2}'을(를) 입력하면 'Span&lt;&gt;'을 반환하는 'GetManagedValuesDestination' 메서드 및 관리되지 않는 값과 ‘int’를 입력하면 'ReadOnlySpan&lt;&gt;'을 반환하는 'GetUnmanagedValuesSource'을 제공하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsDescription">
         <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</source>
-        <target state="new">A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</target>
+        <target state="translated">관리형 컬렉션부터 비관리형까지 마샬링까지 지원하는 상태 비저장 연속 컬렉션 마샬러는 비관리형 형식을 첫 번째 매개 변수로 사용하고 요소 수를 'int' 매개 변수로 사용하는 'AllocateContainerForManagedElements' 메서드를 제공해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</target>
+        <target state="translated">'{0}' 형식은 '{2}'에 대해 '{1}' 마샬 모드를 지원하지만 비관리형 형식을 첫 번째 매개 변수로 사용하고 두 번째 매개 변수로 'out int'를 사용하는 이중 변수 'AllocateContainerForManagedElements' 메서드를 제공하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsDescription">
         <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</source>
-        <target state="new">A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</target>
+        <target state="translated">관리형부터 비관리형 마샬링까지 지원하는 상태 비저장 연속 컬렉션 마샬러는 비관리형 형식을 첫 번째 매개 변수를 사용하고 요소 수를 'out int' 매개 변수로 사용하는 'AllocateContainerForUnmanagedElements' 메서드를 제공해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</target>
+        <target state="translated">'{0}' 형식은 '{2}'에 대해 '{1}' 마샬 모드를 지원하지만 '{2}'을 첫 번째 매개 변수로 사용하고 두 번째 매개 변수로 'out int'를 사용하는 이중 변수 'AllocateContainerForUnmanagedElements' 메서드를 제공하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessRequiresConvertToManagedDescription">
         <source>A stateless value marshaller that supports marshalling from unmanaged to managed must provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns the the managed type.</source>
-        <target state="new">A stateless value marshaller that supports marshalling from unmanaged to managed must provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns the the managed type.</target>
+        <target state="translated">비관리형 형식부터 관리형 형식까지 마샬링을 지원하는 상태 비저장 값 마샬러는 비관리형 형식을 매개 변수로 사용하고 관리형 형식을 반환하는 'ConvertToManaged' 메서드를 제공해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessRequiresConvertToManagedMessage">
         <source>The type '{0}' specifies it supports the '{1}' marshal mode, but it does not provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns '{2}'</source>
-        <target state="new">The type '{0}' specifies it supports the '{1}' marshal mode, but it does not provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns '{2}'</target>
+        <target state="translated">'{0}' 형식은 '{1}' 마샬 모드를 지원하지만 비관리형을 매개 변수로 입력하면 '{2}'을(를) 반환하는 'ConvertToManaged' 메서드를 제공하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessValueInRequiresConvertToUnmanagedDescription">
         <source>A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</source>
-        <target state="new">A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</target>
+        <target state="translated">관리형부터 비관리형 마샬링까지 지원하는 상태 비저장 값 마샬러는 관리형 값을 매개 변수로 사용하고 '비관리형' 형식의 값을 반환하는 단일 매개 변수 'ConvertToUnmanaged' 메서드를 제공해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessValueInRequiresConvertToUnmanagedMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</target>
+        <target state="translated">'{0}' 형식은 '{2}'에 대해 '{1}' 마샬링 모드를 지원하지만 '{2}'을 매개 변수로 입력하면 '비관리형' 형식의 값을 반환하는 단일 매개 변수 'ConvertToUnmanaged' 메서드를 제공하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToUnmanagedFromManagedTypesMustMatchDescription">
@@ -459,12 +459,12 @@
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedDescription">
         <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
-        <target state="new">The unmanaged type for a custom marshaller must be a C# unmanaged type.</target>
+        <target state="translated">사용자 지정 마샬러의 비관리형 형식은 C# 비관리형 형식이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedMessage">
         <source>The return type of '{0}' must be unmanaged</source>
-        <target state="new">The return type of '{0}' must be unmanaged</target>
+        <target state="translated">'{0}'의 반환 형식은 비관리형이어야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">

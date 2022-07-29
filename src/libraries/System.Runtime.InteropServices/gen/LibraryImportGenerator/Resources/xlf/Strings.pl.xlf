@@ -24,7 +24,7 @@
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportMessage">
         <source>'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</source>
-        <target state="new">'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</target>
+        <target state="translated">Element „{0}” nie ma odpowiednika w atrybucie „DllImportAtttribute” i nie zostanie przekazany</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportTitle">

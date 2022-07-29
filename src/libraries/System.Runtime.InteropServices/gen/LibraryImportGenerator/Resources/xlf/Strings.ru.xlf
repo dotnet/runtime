@@ -39,7 +39,7 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessage">
         <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">Конфигурация "{0}" не поддерживается P/Invokes, созданными источником. Если требуется указанная конфигурация, используйте вместо нее обычный "DllImport".</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
@@ -49,17 +49,17 @@
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageParameter">
         <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">Указанная конфигурация "{0}" для параметра "{1}" не поддерживается P/Invokes, созданными источником. Если требуется указанная конфигурация, используйте вместо нее обычный "DllImport".</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageReturn">
         <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">Указанная конфигурация "{0}" для возвращаемого значения метода "{1}" не поддерживается созданным источником P/Invokes. Если указанная конфигурация обязательна, используйте обычный метод "DllImport".</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValue">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</source>
-        <target state="new">The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</target>
+        <target state="translated">Указанное значение "{0}" для "{1}" не поддерживается P/Invokes, сгенерированными источником. Если требуется указанное значение, используйте вместо него обычный "DllImport".</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitle">
@@ -109,12 +109,12 @@
       </trans-unit>
       <trans-unit id="ElementTypesOfReturnTypesMustMatchDescription">
         <source>The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</source>
-        <target state="new">The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</target>
+        <target state="translated">Тип элемента диапазона, возвращаемого первым методом, должен быть того же типа, что и тип элемента диапазона, возвращаемого вторым методом.</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementTypesOfReturnTypesMustMatchMessage">
         <source>The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</source>
-        <target state="new">The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</target>
+        <target state="translated">Тип диапазона, возвращаемого "{0}", должен быть того же типа, что и тип диапазона, возвращаемого "{1}".</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustBeNonNullDescription">
@@ -129,22 +129,22 @@
       </trans-unit>
       <trans-unit id="FirstParameterMustMatchReturnTypeDescription">
         <source>The first parameter of the first method must be the same type as the return types of the second method.</source>
-        <target state="new">The first parameter of the first method must be the same type as the return types of the second method.</target>
+        <target state="translated">Первый параметр первого метода должен иметь тот же тип, что и возвращаемые типы второго метода.</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParameterMustMatchReturnTypeMessage">
         <source>The first parameter of '{0}' must be the same type as the return type of '{1}'</source>
-        <target state="new">The first parameter of '{0}' must be the same type as the return type of '{1}'</target>
+        <target state="translated">Первый параметр "{0}" должен иметь тот же тип, что и тип возвращаемого значения "{1}"</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParametersMustMatchDescription">
         <source>The first parameters of the two methods must be the same type.</source>
-        <target state="new">The first parameters of the two methods must be the same type.</target>
+        <target state="translated">Первые параметры двух методов должны быть одного типа.</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParametersMustMatchMessage">
         <source>The first parameter of '{0}' and '{1}' must be the same type</source>
-        <target state="new">The first parameter of '{0}' and '{1}' must be the same type</target>
+        <target state="translated">Первый параметр "{0}" и "{1}" должны быть одного типа</target>
         <note />
       </trans-unit>
       <trans-unit id="FromUnmanagedOverloadsNotSupportedDescription">
@@ -184,7 +184,7 @@
       </trans-unit>
       <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
         <source>Invalid 'CustomMarshallerAttribute' usage</source>
-        <target state="new">Invalid 'CustomMarshallerAttribute' usage</target>
+        <target state="translated">Недопустимое использование "CustomMarshallerAttribute"</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
@@ -204,7 +204,7 @@
       </trans-unit>
       <trans-unit id="InvalidNativeMarshallingAttributeUsageTitle">
         <source>Invalid 'NativeMarshallingAttribute' usage</source>
-        <target state="new">Invalid 'NativeMarshallingAttribute' usage</target>
+        <target state="translated">Недопустимое использование "NativeMarsingAttribute"</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
@@ -254,22 +254,22 @@
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</source>
-        <target state="new">A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</target>
+        <target state="translated">Непрерывный маршалер коллекции, поддерживающий маршалинг из управляемого в неуправляемый, должен предоставлять метод "GetManagedValuesSource", который возвращает "ReadOnlySpan&lt;&gt;" и метод "GetUnmanagedValuesDestination", возвращающий "Span&lt;&gt;".</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'</target>
+        <target state="translated">Тип "{0}" указывает, что он поддерживает режим маршалирования "{1}", но не предоставляет метод "GetManagedValuesSource", возвращающий "ReadOnlySpan&lt;&gt;", и метод GetUnmanagedValuesDestination, возвращающий "Span&lt;&gt;".</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
-        <target state="new">A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</target>
+        <target state="translated">Непрерывный маршалер коллекции, поддерживающий маршалинг из управляемого в неуправляемый, должен предоставлять метод "GetManagedValuesDestination", который принимает "int" и возвращает "Span"&lt;&gt;, и метод "GetUnmanagedValuesSource", который принимает "int" и возвращает "ReadOnlySpan&lt;&gt;".</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</target>
+        <target state="translated">Тип "{0}" указывает, что он поддерживает маршализацию "{1}"l, но не предоставляет "GetManagedValuesDestination", принимающий "int" и возвращающий "Span&lt;&gt;", и метод "GetUnmanagedValuesSource", принимающий "int" и возвращающий "ReadOnlySpan&lt;&gt;"</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
@@ -314,12 +314,12 @@
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStructDescription">
         <source>A marshaller type must either be a stateless static class or a stateful value type. A non-static class is not allowed.</source>
-        <target state="new">A marshaller type must either be a stateless static class or a stateful value type. A non-static class is not allowed.</target>
+        <target state="translated">Тип маршалера должен быть статическим классом без сохранения состояния или типом значения с отслеживанием состояния. Нестатический класс не допускается.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStructMessage">
         <source>The type '{0}' must be a static class or a value type</source>
-        <target state="new">The type '{0}' must be a static class or a value type</target>
+        <target state="translated">Тип "{0}" должен быть статическим классом или типом значения</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
@@ -359,92 +359,92 @@
       </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
         <source>The return type the two method must be the expected type.</source>
-        <target state="new">The return type the two method must be the expected type.</target>
+        <target state="translated">Тип возвращаемого значения метода two должен быть ожидаемым.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeMessage">
         <source>The return type of '{0}' must be '{1}'</source>
-        <target state="new">The return type of '{0}' must be '{1}'</target>
+        <target state="translated">Тип возвращаемого значения "{0}" должен быть "{1}"</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypesMustMatchDescription">
         <source>The return types of the two methods must be the same type.</source>
-        <target state="new">The return types of the two methods must be the same type.</target>
+        <target state="translated">Типы возвращаемого метода должны быть одинаковыми.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypesMustMatchMessage">
         <source>The return type of '{0}' must be the same type as the return type of '{1}'</source>
-        <target state="new">The return type of '{0}' must be the same type as the return type of '{1}'</target>
+        <target state="translated">Тип возвращаемого значения "{0}" должен быть тем же, что и тип возвращаемого значения "{1}"</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
+        <target state="translated">Когда форма "Управляемый в неуправляемый с буфером, выделенным вызывающим объектом" используется путем предоставления метода "AllocateContainerForUnmanagedElements", принимающим "Span&lt;T&gt;" для типа маршаллера, тип должен предоставлять статическое свойство "BufferSize", чтобы предоставить число элементов в выделенном вызывающей стороне буфере.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
+        <target state="translated">У типа маршалера "{0}" должно быть статическое свойство "int" "BufferSize" только для чтения, чтобы указать размер буфера, выделенного вызывающей стороной, поскольку он имеет метод "AllocateContainerForUnmanagedElements", принимающий выделенную вызывающей стороной область "Span&lt;{1}&gt;"</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that takes the managed value as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
-        <target state="new">A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that takes the managed value as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</target>
+        <target state="translated">Непрерывный маршалер коллекций, поддерживающий маршаллинг от управляемого к неуправляемому, должен предоставить метод "GetManagedValuesSource", принимающий управляемое значение в качестве параметра и возвращающий метод ReadOnlySpan&lt;&gt;, и метод "GetUnmanagedValuesDestination", принимающий неуправляемое значение в качестве параметра и возвращающий "Span&lt;&gt;"</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that takes '{2}' as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that takes '{2}' as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</target>
+        <target state="translated">Тип "{0}" указывает, что он поддерживает маршалинг "{1}", но не предоставляет "GetManagedValuesSource", принимающий "{2}" в качестве параметра и возвращающий "ReadOnlySpan&lt;&gt;", а также метод "GetUnmanagedValuesDestination", принимающий неуправляемое значение как параметр и возвращающий "Span&lt;&gt;"</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes the managed value and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
-        <target state="new">A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes the managed value and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</target>
+        <target state="translated">Непрерывный маршалер коллекции, поддерживающий маршалирование из управляемого в неуправляемый, должен предоставить метод "GetManagedValuesDestination", принимающий управляемое значение и возвращающий "Span&lt;&gt;", и метод "GetUnmanagedValuesSource", принимающий неуправляемое значение и целое число и возвращающий значение "ReadOnlySpan&lt;&gt;".</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes '{2}' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes '{2}' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</target>
+        <target state="translated">Тип "{0}" указывает, что он поддерживает маршалинг "{1}", но он не предоставляет "GetManagedValuesDestination", принимающий "{2}" и возвращающий "Span&lt;&gt;", а также метод "GetUnmanagedValuesSource", принимающий неуправляемое значение и "int" и возвращающий "ReadOnlySpan&lt;&gt;"</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsDescription">
         <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</source>
-        <target state="new">A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</target>
+        <target state="translated">Непрерывный маршаллер коллекций без сохранения состояния, который поддерживает маршалирование от управляемого к неуправляемому, должен предоставить метод "AllocateContainerForManagedElements", принимающий неуправляемый тип в качестве первого параметра и количество элементов в качестве параметра "int".</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</target>
+        <target state="translated">Тип "{0}" указывает, что он поддерживает маршалирование "{1}" для {2}"', но не предоставляет метод с двумя параметрами "AllocateContainerForManagedElements", принимающий неуправляемый тип в качестве первого параметра и "int" в качестве второго параметра.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsDescription">
         <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</source>
-        <target state="new">A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</target>
+        <target state="translated">Непрерывный маршаллер коллекций без сохранения состояния, который поддерживает маршалинг от управляемого к неуправляемому, должен предоставить метод "AllocateContainerForUnmanagedElements", принимающий управляемый тип в качестве первого параметра и предоставляющий количество элементов в качестве параметра "out int".</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</target>
+        <target state="translated">Тип "{0}" указывает, что он поддерживает маршалирование "{1}" для "{2}"но не предоставляет метод "AllocateContainerForUnmanagedElements" с двумя параметрами, который принимает "{2}" в качестве первого параметра и "out int" в качестве второго параметра.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessRequiresConvertToManagedDescription">
         <source>A stateless value marshaller that supports marshalling from unmanaged to managed must provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns the the managed type.</source>
-        <target state="new">A stateless value marshaller that supports marshalling from unmanaged to managed must provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns the the managed type.</target>
+        <target state="translated">Маршалер значений без отслеживания состояния, поддерживающий маршаллинг от управляемого к неуправляемому, должен предоставить метод с одним параметром "ConvertToManaged", принимающий неуправляемый тип в качестве параметра и возвращающий управляемый тип.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessRequiresConvertToManagedMessage">
         <source>The type '{0}' specifies it supports the '{1}' marshal mode, but it does not provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns '{2}'</source>
-        <target state="new">The type '{0}' specifies it supports the '{1}' marshal mode, but it does not provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns '{2}'</target>
+        <target state="translated">Тип "{0}" указывает, что он поддерживает маршалирование "{1}", но он не предоставляет метод "ConvertToManaged", принимающий неуправляемый тип в качестве параметра и возвращающий "{2}"</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessValueInRequiresConvertToUnmanagedDescription">
         <source>A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</source>
-        <target state="new">A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</target>
+        <target state="translated">Маршалер значений без отслеживания состояния, поддерживающий маршаллинг от управляемого к неуправляемому, должен предоставить метод с одним параметром "ConvertToUnmanaged", принимающий управляемое значение в качестве параметра и возвращающий значение типа "unmanaged'".</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessValueInRequiresConvertToUnmanagedMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</target>
+        <target state="translated">Тип "{0}" указывает, что он поддерживает маршалинг "{1}" для "{2}", но не предоставляет метод "ConvertToUnmanaged" с одним параметром, который принимает "{2}" в качестве параметра и возвращает значение типа "unmanaged"</target>
         <note />
       </trans-unit>
       <trans-unit id="ToUnmanagedFromManagedTypesMustMatchDescription">
@@ -459,12 +459,12 @@
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedDescription">
         <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
-        <target state="new">The unmanaged type for a custom marshaller must be a C# unmanaged type.</target>
+        <target state="translated">Неуправляемый тип для пользовательского маршаллера должен быть неуправляемым типом C#.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedMessage">
         <source>The return type of '{0}' must be unmanaged</source>
-        <target state="new">The return type of '{0}' must be unmanaged</target>
+        <target state="translated">Тип возвращаемого значения "{0}" должен быть неуправляемым</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
