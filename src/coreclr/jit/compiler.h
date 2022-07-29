@@ -7288,28 +7288,32 @@ protected:
     AssertionIndex optAssertionCount;           // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
 
-#ifdef DEBUG
-#define ASSERTION_VAR(name)             \
+#if TRACK_ASSERTION_STATS
+
+#define ASSERTION_STATS_DECL_VAR(name)  \
     unsigned name##Iter = 0;            \
-    unsigned name##Count = 0;           \
-    unsigned missed##name##Iter  = 0;   \
-    unsigned missed##name##Count = 0;   \
+    unsigned name##MatchCount = 0;      \
+    unsigned name##MissedIter  = 0;     \
+    unsigned name##MissedCount = 0;     \
     unsigned name##CallCount = 0;
 
-ASSERTION_VAR(addAssertion)
-ASSERTION_VAR(subRange)
-ASSERTION_VAR(subType)
-ASSERTION_VAR(equalOrNotEqua)
-ASSERTION_VAR(noNull)
-ASSERTION_VAR(propLclVar)
-ASSERTION_VAR(propEqualOrNot)
-ASSERTION_VAR(propEqualZero)
-ASSERTION_VAR(propBndChk)
-ASSERTION_VAR(impliedByCopy)
-ASSERTION_VAR(impliedByConst)
-ASSERTION_VAR(impliedByType)
+ASSERTION_STATS_DECL_VAR(addAssertion)
+ASSERTION_STATS_DECL_VAR(subRange)
+ASSERTION_STATS_DECL_VAR(subType)
+ASSERTION_STATS_DECL_VAR(equalOrNotEqua)
+ASSERTION_STATS_DECL_VAR(noNull)
+ASSERTION_STATS_DECL_VAR(propLclVar)
+ASSERTION_STATS_DECL_VAR(propEqualOrNot)
+ASSERTION_STATS_DECL_VAR(propEqualZero)
+ASSERTION_STATS_DECL_VAR(propBndChk)
 
-#endif
+#define RECORD_ASSERTION_STATS(x) x
+
+#else
+
+#define RECORD_ASSERTION_STATS(x)
+
+#endif // TRACK_ASSERTION_STATS
 
     struct AssertionDscKeyFuncs
     {

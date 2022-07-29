@@ -6448,28 +6448,28 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     compHasBackwardJump          = false;
     compHasBackwardJumpInHandler = false;
 
+#if TRACK_ASSERTION_STATS
+
+#define ASSERTION_STATS_ZERO(name)      \
+    name##Iter = 0;                     \
+    name##MatchCount = 0;               \
+    name##MissedIter  = 0;              \
+    name##MissedCount = 0;              \
+    name##CallCount = 0;
+
+    ASSERTION_STATS_ZERO(addAssertion)
+    ASSERTION_STATS_ZERO(subRange)
+    ASSERTION_STATS_ZERO(subType)
+    ASSERTION_STATS_ZERO(equalOrNotEqua)
+    ASSERTION_STATS_ZERO(noNull)
+    ASSERTION_STATS_ZERO(propLclVar)
+    ASSERTION_STATS_ZERO(propEqualOrNot)
+    ASSERTION_STATS_ZERO(propEqualZero)
+    ASSERTION_STATS_ZERO(propBndChk)
+
+#endif // TRACK_ASSERTION_STATS
+
 #ifdef DEBUG
-
-#define ASSERTION_ZERO(name)    \
-    name##Count = 0;            \
-    name##Iter = 0;             \
-    missed##name##Iter  = 0;    \
-    missed##name##Count = 0;                                                                                  \
-    name##CallCount     = 0;
-    
-    ASSERTION_ZERO(addAssertion)
-    ASSERTION_ZERO(subRange)
-    ASSERTION_ZERO(subType)
-    ASSERTION_ZERO(equalOrNotEqua)
-    ASSERTION_ZERO(noNull)
-    ASSERTION_ZERO(propLclVar)
-    ASSERTION_ZERO(propEqualOrNot)
-    ASSERTION_ZERO(propEqualZero)
-    ASSERTION_ZERO(propBndChk)
-    ASSERTION_ZERO(impliedByCopy)
-    ASSERTION_ZERO(impliedByConst)
-    ASSERTION_ZERO(impliedByType)
-
     compCurBB = nullptr;
     lvaTable  = nullptr;
 
@@ -8604,64 +8604,57 @@ void JitTimer::PrintCsvHeader()
         // Write the header if the file is empty
         if (ftell(s_csvFile) == 0)
         {
-            //fprintf(s_csvFile, "\"Method Name\",");
+            fprintf(s_csvFile, "\"Method Name\",");
             fprintf(s_csvFile, "\"Assembly or SPMI Index\",");
             fprintf(s_csvFile, "\"IL Bytes\",");
             fprintf(s_csvFile, "\"Basic Blocks\",");
-
+            fprintf(s_csvFile, "\"Min Opts\",");
+            fprintf(s_csvFile, "\"Loops\",");
+            fprintf(s_csvFile, "\"Loops Cloned\",");
+#if FEATURE_LOOP_ALIGN
 #ifdef DEBUG
-#define ASSERTION_TITLE(name) \
-    fprintf(s_csvFile, "\"" ## name ## "Match\",");     \
-    fprintf(s_csvFile, "\"" ## name ## "Iter\",");      \
-    fprintf(s_csvFile, "\"" ## name ## "Ratio\",");     \
-    fprintf(s_csvFile, "\"" ## name ## "MissedCount\",");     \
-    fprintf(s_csvFile, "\"" ## name ## "MissedIter\",");     \
-    fprintf(s_csvFile, "\"" ## name ## "MissedRatio\",");     \
-    fprintf(s_csvFile, "\"" ## name ## "CallCount\",");
+            fprintf(s_csvFile, "\"Alignment Candidates\",");
+            fprintf(s_csvFile, "\"Loops Aligned\",");
+#endif // DEBUG
+#endif // FEATURE_LOOP_ALIGN
+            for (int i = 0; i < PHASE_NUMBER_OF; i++)
+            {
+                fprintf(s_csvFile, "\"%s\",", PhaseNames[i]);
+                if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
+                {
+                    fprintf(s_csvFile, "\"Node Count After %s\",", PhaseNames[i]);
+                }
+            }
 
+            InlineStrategy::DumpCsvHeader(s_csvFile);
 
-ASSERTION_TITLE("AddAssertion")
-ASSERTION_TITLE("SubType")
-ASSERTION_TITLE("SubRange")
-ASSERTION_TITLE("EqualOrNotEqual")
-ASSERTION_TITLE("NoNull")
-ASSERTION_TITLE("PropLclVar")
-ASSERTION_TITLE("PropEqualOrNot")
-ASSERTION_TITLE("PropEqualZero")
-ASSERTION_TITLE("PropBndChk")
+#if TRACK_ASSERTION_STATS
 
-#endif
+#define ASSERTION_TITLE(name)                                                                                          \
+    fprintf(s_csvFile, "\""##name##"Match\",");                                                                        \
+    fprintf(s_csvFile, "\""##name##"Iter\",");                                                                         \
+    fprintf(s_csvFile, "\""##name##"MissedCount\",");                                                                  \
+    fprintf(s_csvFile, "\""##name##"MissedIter\",");                                                                   \
+    fprintf(s_csvFile, "\""##name##"CallCount\",");
 
+            ASSERTION_TITLE("AddAssertion")
+            ASSERTION_TITLE("SubType")
+            ASSERTION_TITLE("SubRange")
+            ASSERTION_TITLE("EqualOrNotEqual")
+            ASSERTION_TITLE("NoNull")
+            ASSERTION_TITLE("PropLclVar")
+            ASSERTION_TITLE("PropEqualOrNot")
+            ASSERTION_TITLE("PropEqualZero")
+            ASSERTION_TITLE("PropBndChk")
+
+#endif // TRACK_ASSERTION_STATS
+
+            fprintf(s_csvFile, "\"Executable Code Bytes\",");
+            fprintf(s_csvFile, "\"GC Info Bytes\",");
+            fprintf(s_csvFile, "\"Total Bytes Allocated\",");
+            fprintf(s_csvFile, "\"Total Cycles\",");
+            fprintf(s_csvFile, "\"CPS\"");
             fprintf(s_csvFile, "\n");
-
-
-
-                //            fprintf(s_csvFile, "\"Min Opts\",");
-//            fprintf(s_csvFile, "\"Loops\",");
-//            fprintf(s_csvFile, "\"Loops Cloned\",");
-//#if FEATURE_LOOP_ALIGN
-//#ifdef DEBUG
-//            fprintf(s_csvFile, "\"Alignment Candidates\",");
-//            fprintf(s_csvFile, "\"Loops Aligned\",");
-//#endif // DEBUG
-//#endif // FEATURE_LOOP_ALIGN
-//            for (int i = 0; i < PHASE_NUMBER_OF; i++)
-//            {
-//                fprintf(s_csvFile, "\"%s\",", PhaseNames[i]);
-//                if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
-//                {
-//                    fprintf(s_csvFile, "\"Node Count After %s\",", PhaseNames[i]);
-//                }
-//            }
-//
-//            InlineStrategy::DumpCsvHeader(s_csvFile);
-//
-//            fprintf(s_csvFile, "\"Executable Code Bytes\",");
-//            fprintf(s_csvFile, "\"GC Info Bytes\",");
-//            fprintf(s_csvFile, "\"Total Bytes Allocated\",");
-//            fprintf(s_csvFile, "\"Total Cycles\",");
-//            fprintf(s_csvFile, "\"CPS\"\n");
-
             fflush(s_csvFile);
         }
     }
@@ -8700,44 +8693,72 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         return;
     }
 
-    //fprintf(s_csvFile, "\"%s\",", methName);
-    //if (index != 0)
+    fprintf(s_csvFile, "\"%s\",", methName);
+    if (index != 0)
     {
         fprintf(s_csvFile, "%d,", index);
     }
-    //else
-    //{
-    //    const char* methodAssemblyName = comp->info.compCompHnd->getAssemblyName(
-    //        comp->info.compCompHnd->getModuleAssembly(comp->info.compCompHnd->getClassModule(comp->info.compClassHnd)));
-    //    fprintf(s_csvFile, "\"%s\",", methodAssemblyName);
-    //}
-
-
+    else
+    {
+        const char* methodAssemblyName = comp->info.compCompHnd->getAssemblyName(
+            comp->info.compCompHnd->getModuleAssembly(comp->info.compCompHnd->getClassModule(comp->info.compClassHnd)));
+        fprintf(s_csvFile, "\"%s\",", methodAssemblyName);
+    }
     fprintf(s_csvFile, "%u,", comp->info.compILCodeSize);
     fprintf(s_csvFile, "%u,", comp->fgBBcount);
-
+    fprintf(s_csvFile, "%u,", comp->opts.MinOpts());
+    fprintf(s_csvFile, "%u,", comp->optLoopCount);
+    fprintf(s_csvFile, "%u,", comp->optLoopsCloned);
+#if FEATURE_LOOP_ALIGN
 #ifdef DEBUG
+    fprintf(s_csvFile, "%u,", comp->loopAlignCandidates);
+    fprintf(s_csvFile, "%u,", comp->loopsAligned);
+#endif // DEBUG
+#endif // FEATURE_LOOP_ALIGN
+    unsigned __int64 totCycles = 0;
+    for (int i = 0; i < PHASE_NUMBER_OF; i++)
+    {
+        if (!PhaseHasChildren[i])
+        {
+            totCycles += m_info.m_cyclesByPhase[i];
+        }
+        fprintf(s_csvFile, "%I64u,", m_info.m_cyclesByPhase[i]);
 
-#define ASSERTION_STATS(name) \
-    assert(comp->##name##Iter >= comp->##name##Count);  \
-    fprintf(s_csvFile, "%u,", comp->##name##Count); \
-    fprintf(s_csvFile, "%u,", comp->##name##Iter);  \
-    fprintf(s_csvFile, "%d,", (comp->##name##Count == 0) ? 0 : (comp->##name##Iter / comp->##name##Count));                    \
-    fprintf(s_csvFile, "%u,", comp->missed##name##Count);  \
-    fprintf(s_csvFile, "%u,", comp->missed##name##Iter);                                                               \
-    fprintf(s_csvFile, "%d,", (comp->missed##name##Count == 0) ? 0 : (comp->missed##name##Iter / comp->missed##name##Count));                    \
+        if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
+        {
+            fprintf(s_csvFile, "%u,", m_info.m_nodeCountAfterPhase[i]);
+        }
+    }
+
+    comp->m_inlineStrategy->DumpCsvData(s_csvFile);
+
+#if TRACK_ASSERTION_STATS
+
+#define ASSERTION_STATS(name)                                                                                          \
+    assert(comp->##name##Iter >= comp->##name##MatchCount);                                                            \
+    fprintf(s_csvFile, "%u,", comp->##name##MatchCount);                                                               \
+    fprintf(s_csvFile, "%u,", comp->##name##Iter);                                                                     \
+    fprintf(s_csvFile, "%u,", comp->name##MissedCount);                                                                \
+    fprintf(s_csvFile, "%u,", comp->name##MissedIter);                                                                 \
     fprintf(s_csvFile, "%u,", comp->##name##CallCount);
 
-ASSERTION_STATS(addAssertion)
-ASSERTION_STATS(subRange)
-ASSERTION_STATS(subType)
-ASSERTION_STATS(equalOrNotEqua)
-ASSERTION_STATS(noNull)
-ASSERTION_STATS(propLclVar)
-ASSERTION_STATS(propEqualOrNot)
-ASSERTION_STATS(propEqualZero)
-ASSERTION_STATS(propBndChk)
-#endif
+    ASSERTION_STATS(addAssertion)
+    ASSERTION_STATS(subRange)
+    ASSERTION_STATS(subType)
+    ASSERTION_STATS(equalOrNotEqua)
+    ASSERTION_STATS(noNull)
+    ASSERTION_STATS(propLclVar)
+    ASSERTION_STATS(propEqualOrNot)
+    ASSERTION_STATS(propEqualZero)
+    ASSERTION_STATS(propBndChk)
+
+#endif // TRACK_ASSERTION_STATS
+
+    fprintf(s_csvFile, "%u,", comp->info.compNativeCodeSize);
+    fprintf(s_csvFile, "%Iu,", comp->compInfoBlkSize);
+    fprintf(s_csvFile, "%Iu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
+    fprintf(s_csvFile, "%I64u,", m_info.m_totalCycles);
+    fprintf(s_csvFile, "%f", CachedCyclesPerSecond());
     fprintf(s_csvFile, "\n");
     fflush(s_csvFile);
 }
