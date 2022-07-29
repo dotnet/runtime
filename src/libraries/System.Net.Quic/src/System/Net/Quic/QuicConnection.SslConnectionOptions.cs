@@ -80,7 +80,7 @@ public partial class QuicConnection
                         chain.ChainPolicy.RevocationMode = _revocationMode;
                         chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
 
-                        // TODO: configure chain.ChainPolicy.CustomTrustStore to mirror behavior of SslStream.VerifyRemoteCertificate
+                        // TODO: configure chain.ChainPolicy.CustomTrustStore to mirror behavior of SslStream.VerifyRemoteCertificate (https://github.com/dotnet/runtime/issues/73053)
                     }
 
                     // set ApplicationPolicy unless already provided.
