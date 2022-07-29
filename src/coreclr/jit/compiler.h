@@ -6996,7 +6996,7 @@ public:
     BitVecTraits* apTraits;
     ASSERT_TP     apFull;
 
-    enum optAssertionKind
+    enum optAssertionKind : unsigned short
     {
         OAK_INVALID,
         OAK_EQUAL,
@@ -7037,6 +7037,7 @@ public:
     struct AssertionDsc
     {
         optAssertionKind assertionKind;
+        bool             vnBased;
         struct SsaVar
         {
             unsigned lclNum; // assigned to or property of this local var number
@@ -7076,7 +7077,6 @@ public:
                 IntegralRange u2;
             };
         } op2;
-        bool vnBased : 1;
 
         bool IsCheckedBoundArithBound()
         {
