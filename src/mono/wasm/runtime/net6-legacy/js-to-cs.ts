@@ -1,24 +1,16 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
-import { Module, runtimeHelpers } from "./imports";
-import {
-    assert_not_disposed,
-    cs_owned_js_handle_symbol, get_cs_owned_object_by_js_handle_ref,
-    get_js_owned_object_by_gc_handle_ref, js_owned_gc_handle_symbol,
-    mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle,
-    mono_wasm_release_cs_owned_object, setup_managed_proxy, teardown_managed_proxy
-} from "./gc-handles";
-import corebindings from "./corebindings";
-import cwraps from "./cwraps";
-import { mono_wasm_new_root, mono_wasm_release_roots, WasmRoot, mono_wasm_new_external_root } from "./roots";
-import { wrap_error_root } from "./method-calls";
-import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "./strings";
-import { isThenable } from "./cancelable-promise";
+import { isThenable } from "../cancelable-promise";
+import cwraps from "../cwraps";
+import { js_owned_gc_handle_symbol, assert_not_disposed, cs_owned_js_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, mono_wasm_release_cs_owned_object, teardown_managed_proxy, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
+import { runtimeHelpers, Module } from "../imports";
+import { wrap_error_root } from "../invoke-js";
+import { setI32_unchecked, setU32_unchecked, setF64, setB32 } from "../memory";
+import { WasmRoot, mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root } from "../roots";
+import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "../strings";
+import { MonoObject, is_nullish, MonoClass, wasm_type_symbol, MonoArray, MonoMethod, MonoObjectNull, JSHandle, MonoObjectRef, JSHandleNull, JSHandleDisposed } from "../types";
+import { TypedArray, Int32Ptr } from "../types/emscripten";
 import { has_backing_array_buffer } from "./buffers";
-import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol, MonoClass, MonoObjectRef, is_nullish } from "./types";
-import { setF64, setI32_unchecked, setU32_unchecked, setB32 } from "./memory";
-import { Int32Ptr, TypedArray } from "./types/emscripten";
+import { legacyManagedExports } from "./corebindings";
+import { get_js_owned_object_by_gc_handle_ref } from "./cs-to-js";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
@@ -29,7 +21,7 @@ export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any,
             return;
         case typeof js_obj === "symbol":
         case typeof js_obj === "string":
-            corebindings._create_uri_ref(js_obj, result.address);
+            legacyManagedExports._create_uri_ref(js_obj, result.address);
             return;
         default:
             _extract_mono_obj_root(should_add_in_flight, js_obj, result);
@@ -108,7 +100,7 @@ export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, s
         }
         case js_obj.constructor.name === "Date":
             // getTime() is always UTC
-            corebindings._create_date_time_ref(js_obj.getTime(), result.address);
+            legacyManagedExports._create_date_time_ref(js_obj.getTime(), result.address);
             return;
         default:
             _extract_mono_obj_root(should_add_in_flight, js_obj, result);
@@ -125,8 +117,8 @@ function _extract_mono_obj_root(should_add_in_flight: boolean, js_obj: any, resu
     if (js_obj[js_owned_gc_handle_symbol] !== undefined) {
         // for js_owned_gc_handle we don't want to create new proxy
         // since this is strong gc_handle we don't need to in-flight reference
-        assert_not_disposed(js_obj);
-        get_js_owned_object_by_gc_handle_ref(js_obj[js_owned_gc_handle_symbol], result.address);
+        const gc_handle = assert_not_disposed(js_obj);
+        get_js_owned_object_by_gc_handle_ref(gc_handle, result.address);
         return;
     }
     if (js_obj[cs_owned_js_handle_symbol]) {
@@ -148,7 +140,7 @@ function _extract_mono_obj_root(should_add_in_flight: boolean, js_obj: any, resu
 
         const js_handle = mono_wasm_get_js_handle(js_obj);
 
-        corebindings._create_cs_owned_proxy_ref(js_handle, wasm_type_id, should_add_in_flight ? 1 : 0, result.address);
+        legacyManagedExports._create_cs_owned_proxy_ref(js_handle, wasm_type_id, should_add_in_flight ? 1 : 0, result.address);
     }
 }
 
@@ -245,13 +237,13 @@ export function _wrap_js_thenable_as_task_root(thenable: Promise<any>, resultRoo
     // Note that we do not implement promise/task roundtrip.
     // With more complexity we could recover original instance when this Task is marshaled back to JS.
     // TODO optimization: return the tcs.Task on this same call instead of _get_tcs_task
-    const tcs_gc_handle = corebindings._create_tcs();
+    const tcs_gc_handle = legacyManagedExports._create_tcs();
     const holder: any = { tcs_gc_handle };
     setup_managed_proxy(holder, tcs_gc_handle);
     thenable.then((result) => {
-        corebindings._set_tcs_result_ref(tcs_gc_handle, result);
+        legacyManagedExports._set_tcs_result_ref(tcs_gc_handle, result);
     }, (reason) => {
-        corebindings._set_tcs_failure(tcs_gc_handle, reason ? reason.toString() : "");
+        legacyManagedExports._set_tcs_failure(tcs_gc_handle, reason ? reason.toString() : "");
     }).finally(() => {
         // let go of the thenable reference
         mono_wasm_release_cs_owned_object(thenable_js_handle);
@@ -259,7 +251,7 @@ export function _wrap_js_thenable_as_task_root(thenable: Promise<any>, resultRoo
     });
 
 
-    corebindings._get_tcs_task_ref(tcs_gc_handle, resultRoot.address);
+    legacyManagedExports._get_tcs_task_ref(tcs_gc_handle, resultRoot.address);
 
     // returns raw pointer to tcs.Task
     return {
@@ -284,3 +276,14 @@ export function mono_wasm_typed_array_to_array_ref(js_handle: JSHandle, is_excep
         resultRoot.release();
     }
 }
+
+// when should_add_in_flight === true, the JSObject would be temporarily hold by Normal gc_handle, so that it would not get collected during transition to the managed stack.
+// its InFlight gc_handle would be freed when the instance arrives to managed side via Interop.Runtime.ReleaseInFlight
+export function get_cs_owned_object_by_js_handle_ref(js_handle: JSHandle, should_add_in_flight: boolean, result: MonoObjectRef): void {
+    if (js_handle === JSHandleNull || js_handle === JSHandleDisposed) {
+        setI32_unchecked(result, 0);
+        return;
+    }
+    legacyManagedExports._get_cs_owned_object_by_js_handle_ref(js_handle, should_add_in_flight ? 1 : 0, result);
+}
+

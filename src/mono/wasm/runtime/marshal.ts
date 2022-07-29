@@ -55,6 +55,17 @@ export interface JSMarshalerArgument extends NativePointer {
     __brand: "JSMarshalerArgument"
 }
 
+export function alloc_stack_frame(size: number): JSMarshalerArguments {
+    const anyModule = Module as any;
+    const args = anyModule.stackAlloc(JavaScriptMarshalerArgSize * size);
+    mono_assert(args && (<any>args) % 8 == 0, "Arg alignment");
+    const exc = get_arg(args, 0);
+    set_arg_type(exc, MarshalerType.None);
+    const res = get_arg(args, 1);
+    set_arg_type(res, MarshalerType.None);
+    return args;
+}
+
 export function get_arg(args: JSMarshalerArguments, index: number): JSMarshalerArgument {
     mono_assert(args, "Null args");
     return <any>args + (index * JavaScriptMarshalerArgSize);
