@@ -4665,7 +4665,11 @@ void LinearScan::allocateRegisters()
         {
             assert(lastAllocatedRefPosition->registerAssignment != RBM_NONE);
             RegRecord* regRecord = lastAllocatedRefPosition->getInterval()->assignedReg;
+
+            INDEBUG(activeRefPosition = lastAllocatedRefPosition);
             unassignPhysReg(regRecord, lastAllocatedRefPosition);
+            INDEBUG(activeRefPosition = nullptr);
+
             // Now set lastAllocatedRefPosition to null, so that we don't try to spill it again
             lastAllocatedRefPosition = nullptr;
         }
