@@ -23,5 +23,6 @@ source $scriptroot/eng/common/tools.sh
 InitializeDotNetCli true # Install
 __dotnetDir=${_InitializeDotNetCli}
 
+export DOTNET_ROOT=${__dotnetDir}
 dotnetPath=${__dotnetDir}/dotnet
 ${dotnetPath} "$@"
