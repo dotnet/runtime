@@ -3695,6 +3695,12 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* base, bool co
             break;
         }
 
+        if (addOp1->IsCnsIntOrI() && addOp2->IsCnsIntOrI())
+        {
+            // will be folded
+            break;
+        }
+
         // mark it with GTF_ADDRMODE_NO_CSE
         add->gtFlags |= GTF_ADDRMODE_NO_CSE;
 

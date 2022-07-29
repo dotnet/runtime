@@ -23,6 +23,7 @@
 #include "corprof.h"
 #include "eeprofinterfaces.h"
 #include "dynamicinterfacecastable.h"
+#include "frozenobjectheap.h"
 
 #ifndef TARGET_UNIX
 // Included for referencing __report_gsfailure
@@ -2420,7 +2421,7 @@ HCIMPL1(StringObject*, FramedAllocateString, DWORD stringLength)
 HCIMPLEND
 
 /*********************************************************************/
-OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok)
+OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString)
 {
     CONTRACTL {
         THROWS;
@@ -2431,7 +2432,19 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
 
     Module* module = GetModule(scopeHnd);
-    return module->ResolveStringRef(metaTok);
+
+    // ResolveStringRef returns a small pinned object that points to StringObject
+    OBJECTHANDLE strObjHandle = module->ResolveStringRef(metaTok);
+
+    // Let's see if that StringObject is pinned too (stored in Frozen Object Heap)
+    FrozenObjectHeap* foh = SystemDomain::GetSegmentWithFrozenObjects();
+    Object* strObj = *reinterpret_cast<Object **>(strObjHandle);
+    if (ppPinnedString != nullptr && foh != nullptr && foh->IsInHeap(strObj))
+    {
+        *ppPinnedString = strObj;
+    }
+
+    return strObjHandle;
 }
 
 /*********************************************************************/

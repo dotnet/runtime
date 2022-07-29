@@ -64,7 +64,6 @@
 #endif
 
 #include "tailcallhelp.h"
-#include "frozenobjectheap.h"
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
@@ -11637,13 +11636,13 @@ InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd
     }
     else
     {
-        void** ptr = (void**)ConstructStringLiteral(scopeHnd, metaTok); // throws
+        // If ConstructStringLiteral returns a pinned reference we can return it by value (IAT_VALUE)
+        void* ppPinnedString = nullptr;
+        void** ptr = (void**)ConstructStringLiteral(scopeHnd, metaTok, &ppPinnedString);
 
-        FrozenObjectHeap* foh = SystemDomain::GetSegmentWithFrozenObjects();
-        // If it's in the frozen segment we can pass the direct reference.
-        if ((foh != nullptr) && foh->IsInHeap((Object*)*ptr))
+        if (ppPinnedString != nullptr)
         {
-            *ppValue = *ptr;
+            *ppValue = ppPinnedString;
             result = IAT_VALUE;
         }
         else

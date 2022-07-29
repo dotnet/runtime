@@ -94,8 +94,8 @@ Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
     _ASSERT(IS_ALIGNED(m_pCurrent, DATA_ALIGNMENT));
     _ASSERT(IS_ALIGNED(objectSize, DATA_ALIGNMENT));
 
-    uint8_t* obj = ALIGN_UP(m_pCurrent, DATA_ALIGNMENT);
-    if (objectSize > (size_t)(m_pStart + m_Size))
+    uint8_t* obj = m_pCurrent;
+    if ((size_t)(m_pStart + m_Size) < (size_t)(obj + objectSize))
     {
         // heap is full
         return nullptr;
