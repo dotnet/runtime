@@ -1990,7 +1990,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     for (AssertionIndex index = optAssertionCount; index >= 1; index--)
     {
         AssertionDsc* curAssertion = optGetAssertion(index);
-        if (curAssertion->Equals(newAssertion))
+        if (curAssertion->Equals(*newAssertion))
         {
             found      = true;
             slowAnswer = index;

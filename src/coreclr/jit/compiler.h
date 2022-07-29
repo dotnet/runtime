@@ -7335,7 +7335,7 @@ protected:
         }
     };
 
-    typedef JitHashTable<const AssertionDsc&, AssertionDscKeyFuncs, AssertionIndex> AssertionDscMap;
+    typedef JitHashTable<AssertionDsc, AssertionDscKeyFuncs, AssertionIndex> AssertionDscMap;
     AssertionDscMap* optAssertionDscMap;
 
 public:
