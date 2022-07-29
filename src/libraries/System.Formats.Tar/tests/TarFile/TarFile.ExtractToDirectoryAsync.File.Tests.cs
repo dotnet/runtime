@@ -192,7 +192,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public async Task UnixFileModes()
+        public async Task UnixFileModes_Async()
         {
             using TempDirectory source = new TempDirectory();
             using TempDirectory destination = new TempDirectory();
@@ -249,7 +249,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public async Task UnixFileModes_RestrictiveParentDir()
+        public async Task UnixFileModes_RestrictiveParentDir_Async()
         {
             using TempDirectory source = new TempDirectory();
             using TempDirectory destination = new TempDirectory();

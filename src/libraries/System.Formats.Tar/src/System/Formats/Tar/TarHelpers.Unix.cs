@@ -42,12 +42,12 @@ namespace System.Formats.Tar
         private sealed class ReverseStringComparer : IComparer<string>
         {
             public int Compare (string? x, string? y)
-                => StringComparer.InvariantCulture.Compare(y, x);
+                => StringComparer.Ordinal.Compare(y, x);
         }
 
         private static readonly ReverseStringComparer s_reverseStringComparer = new();
 
-        internal static UnixFileMode UMask => s_umask.Value;
+        private static UnixFileMode UMask => s_umask.Value;
 
         /*
             Tar files are usually ordered: parent directories come before their child entries.
@@ -74,7 +74,6 @@ namespace System.Formats.Tar
             // Restrictive mask for creating the missing parent directories while extracting.
             const UnixFileMode ExtractPermissions = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
 
-            Debug.Assert(!OperatingSystem.IsWindows());
             Debug.Assert(pendingModes is not null);
 
             if (Directory.Exists(fullPath))

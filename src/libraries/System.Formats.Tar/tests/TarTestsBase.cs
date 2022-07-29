@@ -370,6 +370,21 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        public static IEnumerable<object[]> GetFormatsAndFiles()
+        {
+            foreach (TarEntryType entryType in new[] { TarEntryType.V7RegularFile, TarEntryType.Directory })
+            {
+                yield return new object[] { TarEntryFormat.V7, entryType };
+            }
+            foreach (TarEntryFormat format in new[] { TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
+            {
+                foreach (TarEntryType entryType in new[] { TarEntryType.RegularFile, TarEntryType.Directory })
+                {
+                    yield return new object[] { format, entryType };
+                }
+            }
+        }
+
         protected static void SetUnixFileMode(string path, UnixFileMode mode)
         {
             if (!PlatformDetection.IsWindows)
@@ -397,6 +412,36 @@ namespace System.Formats.Tar.Tests
             {
                 Assert.Equal(mode, File.GetUnixFileMode(path));
             }
+        }
+
+        protected (string, string, TarEntry) Prepare_Extract(TempDirectory root, TarEntryFormat format, TarEntryType entryType)
+        {
+            string entryName = entryType.ToString();
+            string destination = Path.Join(root.Path, entryName);
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, entryName);
+            Assert.NotNull(entry);
+            entry.Mode = TestPermission1;
+
+            return (entryName, destination, entry);
+        }
+
+        protected void Verify_Extract(string destination, TarEntry entry, TarEntryType entryType)
+        {
+            if (entryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
+            {
+                Assert.True(File.Exists(destination));
+            }
+            else if (entryType is TarEntryType.Directory)
+            {
+                Assert.True(Directory.Exists(destination));
+            }
+            else
+            {
+                Assert.True(false, "Unchecked entry type.");
+            }
+
+            AssertFileModeEquals(destination, TestPermission1);
         }
     }
 }
