@@ -76,7 +76,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
         [InlineData(60)]
         [InlineData(0)]
-        [ConditionalFact(nameof(IsLdapConfigurationExist))]
+        [ConditionalTheory(nameof(IsLdapConfigurationExist))]
         public void TestSearchWithTimeLimit(int timeLimit)
         {
             using LdapConnection connection = GetConnection();
