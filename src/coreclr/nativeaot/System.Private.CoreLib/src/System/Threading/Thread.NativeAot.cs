@@ -322,6 +322,12 @@ namespace System.Threading
         /// </summary>
         internal const int OptimalMaxSpinWaitsPerSpinIteration = 64;
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void LongSpinWait(int iterations)
+        {
+            RuntimeImports.RhLongSpinWait(iterations);
+        }
+
         public static void SpinWait(int iterations)
         {
             if (iterations <= 0)
@@ -333,7 +339,7 @@ namespace System.Threading
 
             if (iterations > spinWaitCoopThreshold)
             {
-                RuntimeImports.RhLongSpinWait(iterations);
+                LongSpinWait(iterations);
             }
             else
             {
