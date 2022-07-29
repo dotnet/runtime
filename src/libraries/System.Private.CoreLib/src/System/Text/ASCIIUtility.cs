@@ -1762,37 +1762,20 @@ namespace System.Text
 
                 if (containsNonAsciiBytes)
                 {
-                    // non-ASCII byte somewhere
-                    goto NonAsciiDataSeenInInnerLoop;
+                    break;
                 }
 
                 // Vector128.Widen is not used here as it less performant on ARM64
                 utf16HalfVector = Vector128.WidenLower(asciiVector);
-                utf16HalfVector.StoreAligned((ushort*)pCurrentWriteAddress);
+                utf16HalfVector.Store((ushort*)pCurrentWriteAddress);
                 utf16HalfVector = Vector128.WidenUpper(asciiVector);
-                utf16HalfVector.StoreAligned((ushort*)pCurrentWriteAddress + Vector128<ushort>.Count);
+                utf16HalfVector.Store((ushort*)pCurrentWriteAddress + Vector128<ushort>.Count);
 
                 currentOffset += SizeOfVector128;
                 pCurrentWriteAddress += SizeOfVector128;
             } while (currentOffset <= finalOffsetWhereCanRunLoop);
 
-        Finish:
-
             return currentOffset;
-
-        NonAsciiDataSeenInInnerLoop:
-
-            // Can we at least widen the first part of the vector?
-
-            if (!containsNonAsciiBytes)
-            {
-                // First part was all ASCII, widen
-                utf16HalfVector = Vector128.WidenLower(asciiVector);
-                utf16HalfVector.StoreAligned((ushort*)(pUtf16Buffer + currentOffset));
-                currentOffset += SizeOfVector128 / 2;
-            }
-
-            goto Finish;
         }
 
         /// <summary>
