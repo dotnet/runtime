@@ -527,7 +527,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
 
         // noRangeChecks depends on initial values being FALSE
         BOOL bSmallObjectHeapPtr = FALSE, bLargeObjectHeapPtr = FALSE;
-        if (!noRangeChecks && !GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(this))
+        if (!noRangeChecks)
         {
             bSmallObjectHeapPtr = GCHeapUtilities::GetGCHeap()->IsHeapPointer(this, true);
             if (!bSmallObjectHeapPtr)

@@ -143,7 +143,7 @@ StringLiteralMap::~StringLiteralMap()
 
 
 
-STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bAddIfNotFound, BOOL bAppDomainWontUnload)
+STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bAddIfNotFound, BOOL bIsCollectible)
 {
     CONTRACTL
     {
@@ -165,7 +165,9 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
     // someone beat us to inserting it. (m_StringToEntryHashTable->GetValue(pStringData, &Data))
     // (Rather than waiting until after we look the string up in the global map)
 
-    StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetStringLiteral(pStringData, dwHash, bAddIfNotFound, bAppDomainWontUnload));
+    // Don't use FOH for collectible modules to avoid potential memory leaks
+    const bool preferFrozenObjectHeap = !bIsCollectible;
+    StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetStringLiteral(pStringData, dwHash, bAddIfNotFound, preferFrozenObjectHeap));
 
     _ASSERTE(pEntry || !bAddIfNotFound);
 
@@ -177,7 +179,7 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
         // TODO: except that by not inserting into our local table we always take the global map lock
         // and come into this path, when we could succeed at a lock free lookup above.
 
-        if (!bAppDomainWontUnload)
+        if (bIsCollectible)
         {
             // Make sure some other thread has not already added it.
             if (!m_StringToEntryHashTable->GetValue(pStringData, &Data))
@@ -209,7 +211,7 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
     return NULL;
 }
 
-STRINGREF *StringLiteralMap::GetInternedString(STRINGREF *pString, BOOL bAddIfNotFound, BOOL bAppDomainWontUnload)
+STRINGREF *StringLiteralMap::GetInternedString(STRINGREF *pString, BOOL bAddIfNotFound, BOOL bIsCollectible)
 {
     CONTRACTL
     {
@@ -242,7 +244,10 @@ STRINGREF *StringLiteralMap::GetInternedString(STRINGREF *pString, BOOL bAddIfNo
         // (Rather than waiting until after we look the string up in the global map)
 
         // Retrieve the string literal from the global string literal map.
-        StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetInternedString(pString, dwHash, bAddIfNotFound));
+
+        // Don't use FOH for collectible modules to avoid potential memory leaks
+        const bool preferFrozenObjectHeap = !bIsCollectible;
+        StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetInternedString(pString, dwHash, bAddIfNotFound, preferFrozenObjectHeap));
 
         _ASSERTE(pEntry || !bAddIfNotFound);
 
@@ -254,7 +259,7 @@ STRINGREF *StringLiteralMap::GetInternedString(STRINGREF *pString, BOOL bAddIfNo
             // TODO: except that by not inserting into our local table we always take the global map lock
             // and come into this path, when we could succeed at a lock free lookup above.
 
-            if (!bAppDomainWontUnload)
+            if (bIsCollectible)
             {
                 // Since GlobalStringLiteralMap::GetInternedString() could have caused a GC,
                 // we need to recreate the string data.
@@ -357,7 +362,7 @@ void GlobalStringLiteralMap::Init()
         ThrowOutOfMemory();
 }
 
-StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStringData, DWORD dwHash, BOOL bAddIfNotFound, BOOL bAppDomainWontUnload)
+StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStringData, DWORD dwHash, BOOL bAddIfNotFound, BOOL bPreferFrozenObjectHeap)
 {
     CONTRACTL
     {
@@ -383,13 +388,15 @@ StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStri
     else
     {
         if (bAddIfNotFound)
-            pEntry = AddStringLiteral(pStringData, bAppDomainWontUnload);
+        {
+            pEntry = AddStringLiteral(pStringData, bPreferFrozenObjectHeap);
+        }
     }
 
     return pEntry;
 }
 
-StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound)
+StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound, BOOL bPreferFrozenObjectHeap)
 {
     CONTRACTL
     {
@@ -417,7 +424,7 @@ StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString
     else
     {
         if (bAddIfNotFound)
-            pEntry = AddInternedString(pString);
+            pEntry = AddInternedString(pString, bPreferFrozenObjectHeap);
     }
 
     return pEntry;
@@ -507,7 +514,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
     return pRet;
 }
 
-StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString)
+StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString, bool preferFrozenObjHeap)
 {
 
     CONTRACTL
@@ -521,7 +528,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString
     CONTRACTL_END;
 
     EEStringData StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
-    return AddStringLiteral(&StringData, true);
+    return AddStringLiteral(&StringData, preferFrozenObjHeap);
 }
 
 void GlobalStringLiteralMap::RemoveStringLiteralEntry(StringLiteralEntry *pEntry)

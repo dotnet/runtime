@@ -42,10 +42,10 @@ public:
     }
 
     // Method to retrieve a string from the map.
-    STRINGREF *GetStringLiteral(EEStringData *pStringData, BOOL bAddIfNotFound, BOOL bAppDomainWontUnload);
+    STRINGREF *GetStringLiteral(EEStringData *pStringData, BOOL bAddIfNotFound, BOOL bIsCollectible);
 
     // Method to explicitly intern a string object.
-    STRINGREF *GetInternedString(STRINGREF *pString, BOOL bAddIfNotFound, BOOL bAppDomainWontUnload);
+    STRINGREF *GetInternedString(STRINGREF *pString, BOOL bAddIfNotFound, BOOL bIsCollectible);
 
 private:
     // Hash tables that maps a Unicode string to a COM+ string handle.
@@ -71,10 +71,10 @@ public:
     void Init();
 
     // Method to retrieve a string from the map. Takes a precomputed hash (for perf).
-    StringLiteralEntry *GetStringLiteral(EEStringData *pStringData, DWORD dwHash, BOOL bAddIfNotFound, BOOL bAppDomainWontUnload);
+    StringLiteralEntry *GetStringLiteral(EEStringData *pStringData, DWORD dwHash, BOOL bAddIfNotFound, BOOL bPreferFrozenObjectHeap);
 
     // Method to explicitly intern a string object. Takes a precomputed hash (for perf).
-    StringLiteralEntry *GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound);
+    StringLiteralEntry *GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound, BOOL bPreferFrozenObjectHeap);
 
     // Method to calculate the hash
     DWORD GetHash(EEStringData* pData)
@@ -95,7 +95,7 @@ private:
     StringLiteralEntry *AddStringLiteral(EEStringData *pStringData, bool preferFrozenObjHeap);
 
     // Helper method to add an interned string.
-    StringLiteralEntry *AddInternedString(STRINGREF *pString);
+    StringLiteralEntry *AddInternedString(STRINGREF *pString, bool preferFrozenObjHeap);
 
     // Called by StringLiteralEntry when its RefCount falls to 0.
     void RemoveStringLiteralEntry(StringLiteralEntry *pEntry);
