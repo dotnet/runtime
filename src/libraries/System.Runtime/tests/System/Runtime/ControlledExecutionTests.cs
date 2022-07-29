@@ -33,7 +33,7 @@ namespace System.Runtime.Tests
 
         // Tests that catch blocks are not aborted. The action catches the ThreadAbortException and throws an exception of a different type.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72703", TestPlatforms.AnyUnix)]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/72703", TestPlatforms.AnyUnix)]
         public void CancelOnTimeout_ThrowFromCatch()
         {
             Console.WriteLine("CancelOnTimeout_ThrowFromCatch");
