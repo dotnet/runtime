@@ -403,12 +403,12 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
             }
         }
 
-        [Theory]
-        [InlineData("SHA256")]
-        [InlineData("SHA1")]
-        public static void VerifySignature_DSA(string hashAlgorithm)
+        [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        public static void VerifySignature_DSA()
         {
-            HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
+            // macOS is limited to FIPS 186-2 DSA, so SHA-1 is the only valid algorithm.
+            HashAlgorithmName hashAlgorithmName = HashAlgorithmName.SHA1;
 
             using (DSA key = DSA.Create(TestData.GetDSA1024Params()))
             {
