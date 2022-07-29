@@ -2580,12 +2580,14 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
         {
             case ZERO_EXTEND_SMALL_INT: // small type/int/long -> ubyte/ushort
                 assert(varTypeIsUnsigned(srcLoadType) || (genTypeSize(srcLoadType) >= genTypeSize(castType)));
-                m_extendKind = LOAD_ZERO_EXTEND_SMALL_INT;
+                m_extendKind    = LOAD_ZERO_EXTEND_SMALL_INT;
+                m_extendSrcSize = min(genTypeSize(srcLoadType), genTypeSize(castType));
                 break;
 
             case SIGN_EXTEND_SMALL_INT: // small type/int/long -> byte/short
                 assert(varTypeIsSigned(srcLoadType) || (genTypeSize(srcLoadType) >= genTypeSize(castType)));
-                m_extendKind = LOAD_SIGN_EXTEND_SMALL_INT;
+                m_extendKind    = LOAD_SIGN_EXTEND_SMALL_INT;
+                m_extendSrcSize = min(genTypeSize(srcLoadType), genTypeSize(castType));
                 break;
 
 #ifdef TARGET_64BIT
