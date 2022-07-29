@@ -193,6 +193,8 @@ namespace ILCompiler
                 // TODO: Process exported types
 
                 // TODO: Semantics differ and xml format is cecil specific, therefore they are discrepancies on things like nested types
+                // for now just hack replacing / for + to support basic resolving of nested types
+                fullname = fullname.Replace("/", "+");
                 TypeDesc type = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(assembly, fullname, throwIfNotFound: false);
 
                 if (type == null)
@@ -380,13 +382,10 @@ namespace ILCompiler
                 {
                     return;
                 }
-                foreach (var @event in type.GetEventsOnTypeHierarchy(filter: null))
+                foreach (var @event in type.GetEventsOnTypeHierarchy(e => e.Name == name))
                 {
-                    if (@event.Name == name)
-                    {
-                        foundMatch = true;
-                        ProcessEvent(type, @event, nav, customData);
-                    }
+                    foundMatch = true;
+                    ProcessEvent(type, @event, nav, customData);
                 }
 
                 if (!foundMatch)
@@ -398,7 +397,7 @@ namespace ILCompiler
 
         protected static EventPseudoDesc? GetEvent(TypeDesc type, string signature)
         {
-            foreach (EventPseudoDesc @event in type.GetEventsOnTypeHierarchy(e => string.Concat(e.AddMethod.Signature[0].GetDisplayName(), " ", e.Name) == signature))
+            foreach (EventPseudoDesc @event in type.GetEventsOnTypeHierarchy(e => string.Concat(CecilTypeNameFormatter.Instance.FormatName(e.AddMethod.Signature[0]), " ", e.Name) == signature))
                 return @event;
 
             return null;
@@ -435,13 +434,10 @@ namespace ILCompiler
             if (!String.IsNullOrEmpty(name))
             {
                 bool foundMatch = false;
-                foreach (PropertyPseudoDesc property in type.GetPropertiesOnTypeHierarchy(filter: null))
+                foreach (PropertyPseudoDesc property in type.GetPropertiesOnTypeHierarchy(p => p.Name == name))
                 {
-                    if (property.Name == name)
-                    {
-                        foundMatch = true;
-                        ProcessProperty(type, property, nav, customData, false);
-                    }
+                   foundMatch = true;
+                   ProcessProperty(type, property, nav, customData, false);
                 }
 
                 if (!foundMatch)
@@ -453,7 +449,7 @@ namespace ILCompiler
 
         protected static PropertyPseudoDesc? GetProperty(TypeDesc type, string signature)
         {
-            foreach (PropertyPseudoDesc property in type.GetPropertiesOnTypeHierarchy(p => string.Concat(p.Signature.ReturnType.GetDisplayName(), " ", p.Name) == signature))
+            foreach (PropertyPseudoDesc property in type.GetPropertiesOnTypeHierarchy(p => string.Concat(CecilTypeNameFormatter.Instance.FormatName(p.Signature.ReturnType), " ", p.Name) == signature))
                 return property;
 
             return null;

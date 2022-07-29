@@ -20,11 +20,11 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Node that embedded xml files to find and root dependencies.
     /// </summary>
-    public class AssemblyEmbeddedInfoNode : DependencyNodeCore<NodeFactory>
+    public class EmbeddedTrimmingDescriptorNode : DependencyNodeCore<NodeFactory>
     {
         private readonly EcmaModule _module;
 
-        public AssemblyEmbeddedInfoNode(EcmaModule module)
+        public EmbeddedTrimmingDescriptorNode(EcmaModule module)
         {
             _module = module;
         }
@@ -55,7 +55,8 @@ namespace ILCompiler.DependencyAnalysis
                         ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                     }
 
-                    return DescriptorMarker.GetDependencies(factory, ms, resource, _module, "name", new Dictionary<string, bool>());
+                    var metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
+                    return DescriptorMarker.GetDependencies(factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), metadataManager.FeatureSwitches);
                 }
             }
             return Array.Empty<DependencyListEntry>();

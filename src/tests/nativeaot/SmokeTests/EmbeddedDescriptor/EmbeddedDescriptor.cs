@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using System.Diagnostics.CodeAnalysis;
 
 using BindingFlags = System.Reflection.BindingFlags;
@@ -17,6 +16,7 @@ class Program
         ThrowIfMemberNotPresent(typeof(Program), nameof(PropertyKeptViaDescriptor));
         ThrowIfMemberNotPresent(typeof(Program), nameof(EventKeptViaDescriptor));
         ThrowIfTypeNotPresent(typeof(Program), nameof(NestedTypeKeptViaDescriptor));
+        ThrowIfTypePresent(typeof(Program), nameof(NestedTypeNonKept));
         return 100;
     }
 
@@ -31,6 +31,10 @@ class Program
     public event EventHandler EventKeptViaDescriptor { add { } remove { } }
 
     class NestedTypeKeptViaDescriptor
+    {
+    }
+
+    class NestedTypeNonKept
     {
     }
 

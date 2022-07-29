@@ -57,7 +57,7 @@ namespace ILCompiler
             if (GetTypePreserve(nav) == TypePreserve.All)
             {
                 foreach (var type in assembly.GetAllTypes())
-                    MarkAndPreserveAll(type, nav);
+                    MarkAndPreserve(type, nav, TypePreserve.All);
                 
                 //foreach (var exportedType in assembly.MainModule.ExportedTypes)
                 //    _context.MarkingHelpers.MarkExportedType(exportedType, assembly.MainModule, new DependencyInfo(DependencyKind.XmlDescriptor, assembly.MainModule), GetMessageOriginForPosition(nav));
@@ -78,13 +78,13 @@ namespace ILCompiler
 
                 string fullname = GetFullName(namespaceNav);
                 bool foundMatch = false;
-                foreach (TypeDesc type in assembly.GetAllTypes())
+                foreach (DefType type in assembly.GetAllTypes())
                 {
-                    if (type is not DefType defType || defType.Namespace != fullname)
+                    if (type.Namespace != fullname)
                         continue;
 
                     foundMatch = true;
-                    MarkAndPreserveAll(type, nav);
+                    MarkAndPreserve(type, nav, TypePreserve.All);
                 }
 
                 if (!foundMatch)
@@ -94,12 +94,18 @@ namespace ILCompiler
             }
         }
 
-        void MarkAndPreserveAll(TypeDesc type, XPathNavigator nav)
+        void MarkAndPreserve(TypeDesc type, XPathNavigator nav, TypePreserve preserve)
         {
-            var members = type.GetDynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All);
+            var bindingOptions = preserve switch {
+                TypePreserve.Methods => DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods,
+                TypePreserve.Fields => DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields,
+                TypePreserve.All => DynamicallyAccessedMemberTypes.All,
+                _ => DynamicallyAccessedMemberTypes.None,
+            };
+            var members = type.GetDynamicallyAccessedMembers(bindingOptions);
             foreach (var member in members)
             {
-                string reason = "type was kept in its entirity by the embedded descriptor file";
+                string reason = "member was kept by a descriptor file";
                 switch (member)
                 {
                     case MethodDesc m:
@@ -130,6 +136,7 @@ namespace ILCompiler
             }
 
 #if false
+            // Code handles getting nested types inside GetDynamicallyAccessedMembers() this code is not necessary
             if (!type.HasNestedTypes)
                 return;
 
@@ -164,7 +171,7 @@ namespace ILCompiler
                 case TypePreserve.Fields:
                 case TypePreserve.Methods:
                 case TypePreserve.All:
-                    //_context.Annotations.SetPreserve(type, preserve);
+                    MarkAndPreserve(type, nav, preserve);
                     break;
             }
 
@@ -174,41 +181,7 @@ namespace ILCompiler
             if (!required)
                 return;
 
-
-            var members = type.GetDynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All);
-            foreach (var member in members)
-            {
-                string reason = "type was kept in its entirity by the embedded descriptor file";
-                switch (member)
-                {
-                    case MethodDesc m:
-                        RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, m, reason);
-                        break;
-                    case FieldDesc field:
-                        RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, _factory, field, reason);
-                        break;
-                    case MetadataType nestedType:
-                        RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, _factory, nestedType, reason);
-                        break;
-                    case PropertyPseudoDesc property:
-                        if (property.GetMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, property.GetMethod, reason);
-                        if (property.SetMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, property.SetMethod, reason);
-                        break;
-                    case EventPseudoDesc @event:
-                        if (@event.AddMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, @event.AddMethod, reason);
-                        if (@event.RemoveMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, @event.RemoveMethod, reason);
-                        break;
-                    default:
-                        Debug.Fail(member.GetType().ToString());
-                        break;
-                }
-            }
-
-            RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, _factory, type, "type marked via descriptor");
+            RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, _factory, type, "member marked via descriptor");
 
 #if false
             if (type.IsNested)

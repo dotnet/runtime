@@ -5,5 +5,5 @@
     <property signature="System.Int32 PropertyKeptViaDescriptor"/>
     <event signature="System.EventHandler EventKeptViaDescriptor"/>
   </type>
-  <type fullname="Program/SimpleTest"/>
+  <type fullname="Program/NestedTypeKeptViaDescriptor"/>
 </linker>

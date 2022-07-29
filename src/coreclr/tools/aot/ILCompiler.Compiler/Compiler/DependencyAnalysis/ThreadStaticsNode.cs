@@ -62,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis
                 result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
             }
 
-            NodeHelpers.ModuleConstructorCall(ref result, factory, _type, "Static base in a module with initializer");
+            ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref result, factory, _type.Module);
 
             EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref result);
             return result;

@@ -24,7 +24,8 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.InteropStubManager.AddDependenciesDueToPInvoke(ref dependencies, factory, method);
 
-            NodeHelpers.ModuleConstructorCall(ref dependencies, factory, method.OwningType, "Method in a module with initializer");
+            if (method.OwningType is MetadataType mdType)
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
 
             if (method.IsIntrinsic)
             {

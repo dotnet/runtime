@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text;
 
@@ -382,9 +383,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new DataflowAnalyzedMethodNode(il.MethodIL);
             });
 
-            _assemblyEmbeddedInfo = new NodeCache<EcmaModule, AssemblyEmbeddedInfoNode>((module) =>
+            _embeddedTrimmingDescriptors = new NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode>((module) =>
             {
-                return new AssemblyEmbeddedInfoNode(module);
+                return new EmbeddedTrimmingDescriptorNode(module);
             });
 
             _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, EmbeddedObjectNode>((TypeDesc type) =>
@@ -694,11 +695,11 @@ namespace ILCompiler.DependencyAnalysis
             return _dataflowAnalyzedMethods.GetOrAdd(new MethodILKey(methodIL));
         }
 
-        private NodeCache<EcmaModule, AssemblyEmbeddedInfoNode> _assemblyEmbeddedInfo;
+        private NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode> _embeddedTrimmingDescriptors;
 
-        public AssemblyEmbeddedInfoNode AssemblyEmbeddedInfo(EcmaModule module)
+        public EmbeddedTrimmingDescriptorNode EmbeddedTrimmingDescriptor(EcmaModule module)
         {
-            return _assemblyEmbeddedInfo.GetOrAdd(module);
+            return _embeddedTrimmingDescriptors.GetOrAdd(module);
         }
 
         private NodeCache<GCPointerMap, GCStaticEETypeNode> _GCStaticEETypes;

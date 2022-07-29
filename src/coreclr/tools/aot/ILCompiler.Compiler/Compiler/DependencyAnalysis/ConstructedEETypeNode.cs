@@ -34,7 +34,8 @@ namespace ILCompiler.DependencyAnalysis
             // relocs to nodes we emit.
             dependencyList.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for constructed type");
 
-            NodeHelpers.ModuleConstructorCall(ref dependencyList, factory, _type, "Type in a module with initializer");
+            if(_type is MetadataType mdType)
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, mdType.Module);
 
             DefType closestDefType = _type.GetClosestDefType();
 
