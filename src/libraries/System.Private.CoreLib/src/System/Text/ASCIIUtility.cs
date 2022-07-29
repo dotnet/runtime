@@ -1709,70 +1709,35 @@ namespace System.Text
 
         private static unsafe nuint WidenAsciiToUtf16_Intrinsified(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
         {
-            // JIT turns the below into constants
-
-            uint SizeOfVector128 = (uint)Vector128<byte>.Count;
-            nuint MaskOfAllBitsInVector128 = (nuint)(SizeOfVector128 - 1);
-
-            // This method is written such that control generally flows top-to-bottom, avoiding
-            // jumps as much as possible in the optimistic case of "all ASCII". If we see non-ASCII
-            // data, we jump out of the hot paths to targets at the end of the method.
-
             Debug.Assert(Vector128.IsHardwareAccelerated);
             Debug.Assert(BitConverter.IsLittleEndian);
-            Debug.Assert(elementCount >= 2 * SizeOfVector128);
+            Debug.Assert(elementCount >= 2 * (uint)Vector128<byte>.Count);
 
-            // We're going to get the best performance when we have aligned writes, so we'll take the
-            // hit of potentially unaligned reads in order to hit this sweet spot.
-
-            // First, perform an unaligned read of the first part of the input buffer.
-            Vector128<byte> asciiVector = Vector128.Load(pAsciiBuffer);
-
-            // If there's non-ASCII data in the first 8 elements of the vector, there's nothing we can do.
-            bool containsNonAsciiBytes = ContainsNonAsciiByte(asciiVector);
-            if (containsNonAsciiBytes)
-            {
-                return 0;
-            }
-
-            Vector128<ushort> utf16HalfVector = Vector128.WidenLower(asciiVector);
-            utf16HalfVector.Store((ushort*)pUtf16Buffer);
-
-            // Calculate how many elements we wrote in order to get pOutputBuffer to its next alignment
-            // point, then use that as the base offset going forward. Remember the >> 1 to account for
-            // that we wrote chars, not bytes. This means we may re-read data in the next iteration of
-            // the loop, but this is ok.
-
-            nuint currentOffset = (SizeOfVector128 >> 1) - (((nuint)pUtf16Buffer >> 1) & (MaskOfAllBitsInVector128 >> 1));
-            Debug.Assert(0 < currentOffset && currentOffset <= SizeOfVector128 / sizeof(char));
-
-            nuint finalOffsetWhereCanRunLoop = elementCount - SizeOfVector128;
+            nuint currentOffset = 0;
+            ushort* pCurrentWriteAddress = (ushort*)pUtf16Buffer;
 
             // Calculating the destination address outside the loop results in significant
             // perf wins vs. relying on the JIT to fold memory addressing logic into the
             // write instructions. See: https://github.com/dotnet/runtime/issues/33002
-
-            char* pCurrentWriteAddress = pUtf16Buffer + currentOffset;
+            nuint finalOffsetWhereCanRunLoop = elementCount - (uint)Vector128<byte>.Count;
 
             do
             {
-                // In a loop, perform an unaligned read, widen to two vectors, then aligned write the two vectors.
-                asciiVector = Vector128.Load(pAsciiBuffer + currentOffset);
-                containsNonAsciiBytes = ContainsNonAsciiByte(asciiVector);
+                Vector128<byte> asciiVector = Vector128.Load(pAsciiBuffer + currentOffset);
 
-                if (containsNonAsciiBytes)
+                if (asciiVector.ExtractMostSignificantBits() != 0)
                 {
                     break;
                 }
 
                 // Vector128.Widen is not used here as it less performant on ARM64
-                utf16HalfVector = Vector128.WidenLower(asciiVector);
-                utf16HalfVector.Store((ushort*)pCurrentWriteAddress);
+                Vector128<ushort> utf16HalfVector = Vector128.WidenLower(asciiVector);
+                utf16HalfVector.Store(pCurrentWriteAddress);
                 utf16HalfVector = Vector128.WidenUpper(asciiVector);
-                utf16HalfVector.Store((ushort*)pCurrentWriteAddress + Vector128<ushort>.Count);
+                utf16HalfVector.Store(pCurrentWriteAddress + Vector128<ushort>.Count);
 
-                currentOffset += SizeOfVector128;
-                pCurrentWriteAddress += SizeOfVector128;
+                currentOffset += (nuint)Vector128<byte>.Count;
+                pCurrentWriteAddress += (nuint)Vector128<byte>.Count;
             } while (currentOffset <= finalOffsetWhereCanRunLoop);
 
             return currentOffset;
