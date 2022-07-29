@@ -227,6 +227,7 @@ CannotMakeMemberAbstract : Member 'public System.String System.IO.FileSystemInfo
 TypesMustExist : Type 'System.IO.Enumeration.FileSystemEntry.<_fileNameBuffer>e__FixedBuffer' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Reflection.AssemblyRuntimeNameHelpers' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Reflection.BinderBundle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.DelegateDynamicInvokeInfo' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Reflection.EnumInfo' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.Reflection.ParameterInfo[] System.Reflection.MethodBase.GetParametersNoCopy()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.Reflection.MethodBase System.Reflection.MethodBase.MetadataDefinitionMethod.get()' does not exist in the reference but it does exist in the implementation.
