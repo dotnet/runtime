@@ -8451,6 +8451,12 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
             return true;
         }
 
+        // Check which basic blocks we can run if an exception is thrown from this basic block.
+        // If we can run any handler blocks that will enable us to resume execution in the same method,
+        // such as catch or filter blocks, we cannot inline a P/Invoke for reasons listed above.
+        // If the handler is a fault or finally handler, we can inline a P/Invoke into this block in
+        // the try since the code will not resume execution in the same method after throwing an
+        // exception if only fault or finally handlers are executed.
         for (BasicBlock* ehsucc : block->GetEHSuccs(this))
         {
             if (ehsucc->hasHndIndex() && ehsucc->bbCatchTyp != BBCT_FAULT && ehsucc->bbCatchTyp != BBCT_FINALLY)

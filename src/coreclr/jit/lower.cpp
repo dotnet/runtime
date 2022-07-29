@@ -4387,7 +4387,7 @@ void Lowering::InsertPInvokeMethodProlog()
     if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
 #endif // USE_PER_FRAME_PINVOKE_INIT
     {
-        // Push a frame. The init routine sets InlinedCallFrame's m_pNext, so we just set the thead's top-of-stack
+        // Push a frame. The init routine sets InlinedCallFrame's m_pNext, so we just set the thread's top-of-stack
         GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
         firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
         ContainCheckStoreIndir(frameUpd->AsStoreInd());

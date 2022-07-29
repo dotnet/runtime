@@ -16,6 +16,7 @@
 #include "virtualcallstub.h"
 #include "utilcode.h"
 #include "interoplibinterface.h"
+#include "corinfo.h"
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER

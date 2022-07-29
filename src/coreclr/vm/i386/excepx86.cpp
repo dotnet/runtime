@@ -28,6 +28,7 @@
 #include "eeconfig.h"
 #include "vars.hpp"
 #include "generics.h"
+#include "corinfo.h"
 
 #include "asmconstants.h"
 #include "virtualcallstub.h"
@@ -2998,7 +2999,7 @@ void ResumeAtJitEH(CrawlFrame* pCf,
 
         if (((TADDR)pThread->m_pFrame < pCf->GetRegisterSet()->SP))
         {
-            TADDR returnAddress = ((InlinedCallFrame*)pThread->m_pFrame)->m_pCallerReturnAddressl
+            TADDR returnAddress = ((InlinedCallFrame*)pThread->m_pFrame)->m_pCallerReturnAddress;
 #ifdef USE_PER_FRAME_PINVOKE_INIT
             // If we're setting up the frame for each P/Invoke for the given platform,
             // then we do this for all P/Invokes except ones in IL stubs.
