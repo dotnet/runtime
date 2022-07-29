@@ -111,7 +111,7 @@ namespace System.IO.Hashing.Tests
             {
                 //https://asecuritysite.com/encryption/xxHash, Example 1
                 new LargeTestCase(
-                    "EEEEE...",
+                    "EEEEE... (10GB)",
                     (byte)'E',
                     10L * 1024 * 1024 * 1024, // 10 GB
                     "B19FAE15"),
