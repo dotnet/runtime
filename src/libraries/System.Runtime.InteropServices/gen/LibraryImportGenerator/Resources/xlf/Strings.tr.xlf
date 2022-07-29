@@ -9,12 +9,12 @@
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="translated">Hazırlayıcı türünde 'Span&lt;T&gt;' alan bir 'FromManaged' yöntemi sağlanarak 'Çağıran Tarafından Ayrılan Arabellek ile Yönetilenden Yönetilmeyene' şekli kullanıldığında tür, çağıran tarafından ayrılan arabellekteki öğe sayısını sağlamak için statik bir 'BufferSize' özelliği belirtmelidir.</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="translated">Hazırlayıcı türü '{0}', çağıran tarafından ayrılan arabelleğin boyutunu belirtmek için statik bir salt okunur 'int' 'BufferSize' özelliğine sahip olmalıdır çünkü çağıran tarafından ayrılan 'Span&lt;{1}&gt;' alan bir 'FromManaged' yöntemine sahiptir.</target>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportDescription">
@@ -449,12 +449,12 @@
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="translated">Sıralayıcı türünde 'Span&lt;T&gt;' alan bir 'AllocateContainerForUnmanagedElements' yöntemi sağlanarak 'Çağıran Tarafından Ayrılan Arabellek ile Yönetilenden Yönetilmeyene' şekli kullanıldığında tür, çağıran tarafından ayrılan arabellekteki öğe sayısını sağlamak için statik bir 'BufferSize' özelliği belirtmelidir.</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="translated">'{0}' sıralayıcı türü, çağıran tarafından ayrılan arabelleğin boyutunu belirtmek için statik bir salt okunur 'int' 'BufferSize' özelliğine sahip olmalıdır çünkü çağıran tarafından ayrılan 'Span&lt;{1}&gt;' alan bir 'AllocateContainerForUnmanagedElements' yöntemine sahiptir.</target>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">
