@@ -177,7 +177,7 @@ void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
 //
 // The ShuffleEntry array serves two purposes:
 //
-//  1. A platform-indepedent blueprint for creating the platform-specific
+//  1. A platform-independent blueprint for creating the platform-specific
 //     shuffle thunk.
 //  2. A hash key for finding the shared shuffle thunk for a particular
 //     signature.

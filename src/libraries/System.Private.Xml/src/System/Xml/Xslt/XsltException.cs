@@ -133,7 +133,7 @@ namespace System.Xml.Xsl
             }
         }
 
-        [return: NotNullIfNotNull("key")]
+        [return: NotNullIfNotNull(nameof(key))]
         private static string? FormatMessage(string? key, params string?[]? args)
         {
             string? message = key;

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -57,6 +58,18 @@ namespace System.Security.Cryptography.Tests
                 Assert.Throws<ArgumentException>(() => aes.CreateEncryptor(key192, s_iv));
                 Assert.Throws<ArgumentException>(() => aes.CreateDecryptor(key192, s_iv));
             }
+        }
+
+        [Fact]
+        public static void EnsureSubtleCryptoIsUsed()
+        {
+            bool canUseSubtleCrypto = (bool)Type.GetType("Interop+BrowserCrypto, System.Security.Cryptography")
+                .GetField("CanUseSubtleCrypto", BindingFlags.NonPublic | BindingFlags.Static)
+                .GetValue(null);
+
+            bool expectedCanUseSubtleCrypto = Environment.GetEnvironmentVariable("TEST_EXPECT_SUBTLE_CRYPTO") == "true";
+
+            Assert.Equal(expectedCanUseSubtleCrypto, canUseSubtleCrypto);
         }
     }
 }

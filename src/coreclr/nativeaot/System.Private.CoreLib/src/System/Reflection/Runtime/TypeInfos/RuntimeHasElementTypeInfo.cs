@@ -139,7 +139,7 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         //
-        // Left unsealed because this implemention is correct for ByRefs and Pointers but not Arrays.
+        // Left unsealed because this implementation is correct for ByRefs and Pointers but not Arrays.
         //
         protected override TypeAttributes GetAttributeFlagsImpl()
         {

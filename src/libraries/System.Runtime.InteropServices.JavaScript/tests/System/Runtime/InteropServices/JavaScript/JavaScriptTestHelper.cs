@@ -923,9 +923,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             if (_module == null)
             {
-                Log("JavaScriptTestHelper.mjs importing");
+                // Log("JavaScriptTestHelper.mjs importing");
                 _module = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
-                Log("JavaScriptTestHelper.mjs imported");
+                // Log("JavaScriptTestHelper.mjs imported");
             }
         }
     }

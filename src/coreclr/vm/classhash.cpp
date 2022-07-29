@@ -754,7 +754,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        //Build the cannonical name (convert it to lowercase).
+        //Build the canonical name (convert it to lowercase).
         //Key[0] is the namespace, Key[1] is class name.
 
         pLoader->CreateCanonicallyCasedKey(key[0], key[1], ppszLowerNameSpace, ppszLowerClsName);

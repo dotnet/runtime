@@ -247,12 +247,12 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
     unsigned    lengthOut;
     unsigned    index;
     bool        match;
-    bool        subsitutionRequired;
+    bool        substitutionRequired;
     const char* pChar;
 
-    lengthOut           = 1;
-    subsitutionRequired = false;
-    pChar               = nameIn;
+    lengthOut            = 1;
+    substitutionRequired = false;
+    pChar                = nameIn;
     while (*pChar != '\0')
     {
         match = false;
@@ -268,7 +268,7 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
         }
         if (match)
         {
-            subsitutionRequired = true;
+            substitutionRequired = true;
             lengthOut += (unsigned)strlen(map[index].sub);
         }
         else
@@ -278,7 +278,7 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
         pChar++;
     }
 
-    if (subsitutionRequired)
+    if (substitutionRequired)
     {
         char* newName = getAllocator(CMK_DebugOnly).allocate<char>(lengthOut);
         char* pDest;
@@ -3498,7 +3498,7 @@ void Compiler::fgDebugCheckBlockLinks()
     }
 }
 
-// UniquenessCheckWalker keeps data that is neccesary to check
+// UniquenessCheckWalker keeps data that is necessary to check
 // that each tree has it is own unique id and they do not repeat.
 class UniquenessCheckWalker
 {

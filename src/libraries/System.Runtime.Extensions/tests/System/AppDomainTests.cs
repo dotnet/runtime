@@ -811,9 +811,8 @@ namespace System.Tests
 #pragma warning restore SYSLIB0003 // Obsolete: CAS
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.FileCreateCaseSensitive))]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65560", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {
             ObjectHandle oh = null;

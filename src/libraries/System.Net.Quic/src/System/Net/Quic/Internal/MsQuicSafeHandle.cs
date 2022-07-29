@@ -20,7 +20,8 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
     };
 
     private readonly delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void> _releaseAction;
-    private readonly string _traceId;
+    private string? _traceId;
+    private SafeHandleType _type;
 
     public override bool IsInvalid => handle == IntPtr.Zero;
 
@@ -30,7 +31,7 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
         : base((IntPtr)handle, ownsHandle: true)
     {
         _releaseAction = releaseAction;
-        _traceId = $"[{s_typeName[(int)safeHandleType]}][0x{DangerousGetHandle():X11}]";
+        _type = safeHandleType;
 
         if (NetEventSource.Log.IsEnabled())
         {
@@ -51,7 +52,7 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
         return true;
     }
 
-    public override string ToString() => _traceId;
+    public override string ToString() => _traceId ??= $"[{s_typeName[(int)_type]}][0x{DangerousGetHandle():X11}]";
 }
 
 internal enum SafeHandleType

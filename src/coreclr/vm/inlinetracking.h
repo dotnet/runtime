@@ -131,7 +131,7 @@ public:
 // map can had methods from other modules both as keys and values.
 // - If module has code inlined from other modules we naturally get methods from other modules as keys in the map.
 // - During NGgen process, modules can generate code for generic classes and methods from other modules and
-//   embed them into the image (like List<MyStruct>.FindAll() might get embeded into module of MyStruct).
+//   embed them into the image (like List<MyStruct>.FindAll() might get embedded into module of MyStruct).
 //   In such cases values of the map can belong to other modules.
 //
 // Currently this map is created and updated by modules only during native image generation

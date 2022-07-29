@@ -297,7 +297,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (maximallyConstructableType != this)
             {
-                // MethodTable upgrading from necessary to constructed if some template instantation exists that matches up
+                // MethodTable upgrading from necessary to constructed if some template instantiation exists that matches up
                 // This ensures we don't end up having two EETypes in the system (one is this necessary type, and another one
                 // that was dynamically created at runtime).
                 if (CanonFormTypeMayExist)
@@ -382,8 +382,10 @@ namespace ILCompiler.DependencyAnalysis
                             {
                                 Debug.Assert(!implMethod.IsVirtual);
 
+                                MethodDesc defaultIntfMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
                                 // If the interface method is used virtually, the implementation body is used
-                                result.Add(new CombinedDependencyListEntry(factory.CanonicalEntrypoint(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                                result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
                             }
                             else
                             {
