@@ -1454,6 +1454,8 @@ struct LoadedImage{
         image = _image;
         domain = _domain;
         const char * namepos = strrchr(_name, '/');
+        if (!namepos)
+            namepos = strrchr(_name, '\\');
         if (namepos)
             _name = namepos + 1;
         name = (char*)malloc(strlen(_name) + 1);
