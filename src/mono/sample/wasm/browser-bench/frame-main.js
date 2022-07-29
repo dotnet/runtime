@@ -6,8 +6,8 @@
 import createDotnetRuntime from './dotnet.js'
 
 class FrameApp {
-    async init({ MONO }) {
-        const exports = await MONO.mono_wasm_get_assembly_exports("Wasm.Browser.Bench.Sample.dll");
+    async init({ API }) {
+        const exports = await API.getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
         exports.Sample.AppStartTask.FrameApp.ReachedManaged();
     }
 
@@ -37,7 +37,7 @@ try {
         },
         onConfigLoaded: () => {
             window.parent.resolveAppStartEvent("onConfigLoaded");
-            // Module.config.diagnostic_tracing = true;
+            // Module.config.diagnosticTracing = true;
         },
         onAbort: (error) => {
             wasm_exit(1, error);

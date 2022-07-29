@@ -153,7 +153,7 @@ try {
     initRunArgs();
     applyArguments();
 
-    createDotnetRuntime(({ MONO, INTERNAL, BINDING, IMPORTS, Module }) => ({
+    createDotnetRuntime(({ API, INTERNAL, IMPORTS, Module }) => ({
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
@@ -165,14 +165,14 @@ try {
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
             for (let variable in runArgs.environmentVariables) {
-                config.environment_variables[variable] = runArgs.environmentVariables[variable];
+                config.environmentVariables[variable] = runArgs.environmentVariables[variable];
             }
-            config.diagnostic_tracing = !!runArgs.diagnosticTracing;
+            config.diagnosticTracing = !!runArgs.diagnosticTracing;
             if (!!runArgs.debugging) {
                 if (config.debug_level == 0)
                     config.debug_level = -1;
 
-                config.wait_for_debugger = -1;
+                config.waitForDebugger = -1;
             }
         },
         onDotnetReady: async () => {
@@ -187,7 +187,7 @@ try {
             if (runArgs.runtimeArgs.length > 0)
                 INTERNAL.mono_wasm_set_runtime_options(runArgs.runtimeArgs);
 
-            Object.assign(App, { MONO, BINDING, IMPORTS, Module, runArgs });
+            Object.assign(App, { API, IMPORTS, Module, runArgs });
 
             try {
                 if (App.main) {

@@ -5,7 +5,7 @@ import ProductVersion from "consts:productVersion";
 import Configuration from "consts:configuration";
 
 import { ENVIRONMENT_IS_WORKER, set_imports_exports } from "./imports";
-import { DotnetModule, is_nullish, DotnetPublicAPI, EarlyImports, EarlyExports, EarlyReplacements } from "./types";
+import { DotnetModule, is_nullish, EarlyImports, EarlyExports, EarlyReplacements, MonoConfig } from "./types";
 import { configure_emscripten_startup } from "./startup";
 import { mono_bind_static_method } from "./net6-legacy/method-calls";
 
@@ -14,6 +14,9 @@ import { export_binding_api, export_mono_api } from "./net6-legacy/exports-legac
 import { export_internal } from "./exports-internal";
 import { export_linker } from "./exports-linker";
 import { init_polyfills } from "./polyfills";
+import { EmscriptenModule, NativePointer } from "./types/emscripten";
+import { Diagnostics } from "./diagnostics";
+import { export_api } from "./export-api";
 
 export const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
 export let __linker_exports: any = null;
@@ -40,9 +43,11 @@ function initializeImportsAndExports(
     Object.assign(exports.mono, export_mono_api());
     Object.assign(exports.binding, export_binding_api());
     Object.assign(exports.internal, export_internal());
+    Object.assign(exports.api, export_api());
     __linker_exports = export_linker();
 
     exportedAPI = <any>{
+        API: exports.api,
         MONO: exports.mono,
         BINDING: exports.binding,
         INTERNAL: exports.internal,
@@ -77,7 +82,7 @@ function initializeImportsAndExports(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
-            console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
+            console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
             return mono_bind_static_method(fqn, signature);
         };
 
@@ -154,4 +159,65 @@ class RuntimeList {
 
 export function get_dotnet_instance(): DotnetPublicAPI {
     return exportedAPI;
+}
+
+export interface APIType {
+    // TODO: do we need synchronous version ?
+    // TODO: how do we pass runtime setup ?
+    runMain: (mainAssemblyName: string, args: string[]) => Promise<number>,
+    runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<void>,
+    setEnvironmentVariable: (name: string, value: string) => void,
+    getAssemblyExports(assemblyName: string): Promise<any>,
+    getConfig: () => MonoConfig,
+    applyConfig: (config: MonoConfig) => void,
+    memory: {
+        setB32: (offset: NativePointer, value: number | boolean) => void,
+        setU8: (offset: NativePointer, value: number) => void,
+        setU16: (offset: NativePointer, value: number) => void,
+        setU32: (offset: NativePointer, value: NativePointer | number) => void,
+        setI8: (offset: NativePointer, value: number) => void,
+        setI16: (offset: NativePointer, value: number) => void,
+        setI32: (offset: NativePointer, value: number) => void,
+        setI52: (offset: NativePointer, value: number) => void,
+        setU52: (offset: NativePointer, value: number) => void,
+        setI64Big: (offset: NativePointer, value: bigint) => void,
+        setF32: (offset: NativePointer, value: number) => void,
+        setF64: (offset: NativePointer, value: number) => void,
+        getB32: (offset: NativePointer) => boolean,
+        getU8: (offset: NativePointer) => number,
+        getU16: (offset: NativePointer) => number,
+        getU32: (offset: NativePointer) => number,
+        getI8: (offset: NativePointer) => number,
+        getI16: (offset: NativePointer) => number,
+        getI32: (offset: NativePointer) => number,
+        getI52: (offset: NativePointer) => number,
+        getU52: (offset: NativePointer) => number,
+        getI64Big: (offset: NativePointer) => bigint,
+        getF32: (offset: NativePointer) => number,
+        getF64: (offset: NativePointer) => number,
+    },
+    diagnostics: Diagnostics;
+}
+
+// this represents visibility in the javascript
+// like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts
+export interface DotnetPublicAPI {
+    API: APIType,
+    /**
+     * @deprecated Please use API object instead. See also MONOType in dotnet-legacy.d.ts
+     */
+    MONO: any,
+    /**
+     * @deprecated Please use API object instead. See also BINDINGType in dotnet-legacy.d.ts
+     */
+    BINDING: any,
+    INTERNAL: any,
+    EXPORTS: any,
+    IMPORTS: any,
+    Module: EmscriptenModule,
+    RuntimeId: number,
+    RuntimeBuildInfo: {
+        ProductVersion: string,
+        Configuration: string,
+    }
 }

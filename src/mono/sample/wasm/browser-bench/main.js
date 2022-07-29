@@ -10,8 +10,8 @@ let setTasks;
 let getFullJsonResults;
 
 class MainApp {
-    async init({ MONO }) {
-        const exports = await MONO.mono_wasm_get_assembly_exports("Wasm.Browser.Bench.Sample.dll");
+    async init({ API }) {
+        const exports = await API.getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
         runBenchmark = exports.Sample.Test.RunBenchmark;
         setTasks = exports.Sample.Test.SetTasks;
         getFullJsonResults = exports.Sample.Test.GetFullJsonResults;

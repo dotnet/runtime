@@ -191,7 +191,7 @@ function processQueryArguments(incomingArguments) {
             runArgs.runtimeArgs.push(arg);
         } else if (currentArg == "--disable-on-demand-gc") {
             runArgs.enableGC = false;
-        } else if (currentArg == "--diagnostic_tracing") {
+        } else if (currentArg == "--diagnostic-tracing") {
             runArgs.diagnosticTracing = true;
         } else if (currentArg.startsWith("--working-dir=")) {
             const arg = currentArg.substring("--working-dir=".length);
@@ -343,7 +343,7 @@ if (typeof globalThis.crypto === 'undefined') {
 Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntime]) => {
     applyArguments();
 
-    return createDotnetRuntime(({ MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module }) => ({
+    return createDotnetRuntime(({ API, MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module }) => ({
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: runArgs.configSrc || "./mono-config.json",
@@ -355,14 +355,14 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
             for (let variable in runArgs.environmentVariables) {
-                config.environment_variables[variable] = runArgs.environmentVariables[variable];
+                config.environmentVariables[variable] = runArgs.environmentVariables[variable];
             }
-            config.diagnostic_tracing = !!runArgs.diagnosticTracing;
+            config.diagnosticTracing = !!runArgs.diagnosticTracing;
             if (!!runArgs.debugging) {
                 if (config.debug_level == 0)
                     config.debug_level = -1;
 
-                config.wait_for_debugger = -1;
+                config.waitForDebugger = -1;
             }
 
             if (is_node) {
@@ -396,7 +396,7 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
             }
 
             // Must be after loading npm modules.
-            config.environment_variables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
+            config.environmentVariables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
         },
         preRun: () => {
             if (!runArgs.enableGC) {
@@ -412,7 +412,7 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
 
             Module.FS.chdir(runArgs.workingDirectory);
 
-            App.init({ MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs });
+            App.init({ API, MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs });
         },
         onAbort: (error) => {
             set_exit_code(1, stringify_as_error_with_stack(new Error()));
@@ -423,8 +423,8 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
 });
 
 const App = {
-    init: async function ({ MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs }) {
-        Object.assign(App, { MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs });
+    init: async function ({ API, MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs }) {
+        Object.assign(App, { API, MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs });
         console.info("Initializing.....");
 
         for (let i = 0; i < runArgs.profilers.length; ++i) {
@@ -468,7 +468,7 @@ const App = {
             try {
                 const main_assembly_name = runArgs.applicationArguments[1];
                 const app_args = runArgs.applicationArguments.slice(2);
-                const result = await App.MONO.mono_run_main(main_assembly_name, app_args);
+                const result = await App.API.runMain(main_assembly_name, app_args);
                 set_exit_code(result);
             } catch (error) {
                 if (error.name != "ExitStatus") {
@@ -480,7 +480,7 @@ const App = {
         }
     },
 
-    /** Runs a particular test
+    /** Runs a particular test in legacy interop tests
      * @type {(method_name: string, args: any[]=, signature: any=) => return number}
      */
     call_test_method: function (method_name, args, signature) {

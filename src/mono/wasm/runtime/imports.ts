@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/v8.d.ts" />
 
-import { BINDINGType, MONOType } from "./net6-legacy/exports-legacy";
+import { BINDINGType, MONOType } from "./net6-legacy/export-types";
 import { DotnetModule, EarlyExports, EarlyImports, MonoConfig, RuntimeHelpers } from "./types";
 import { EmscriptenModule } from "./types/emscripten";
 
@@ -68,7 +68,6 @@ export const runtimeHelpers: RuntimeHelpers = <any>{
         MONO.config = value;
         Module.config = value;
     },
-    diagnostic_tracing: false,
-    enable_debugging: false,
+    diagnosticTracing: false,
     fetch: null
 };

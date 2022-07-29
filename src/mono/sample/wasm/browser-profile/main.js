@@ -32,11 +32,11 @@ try {
     const { MONO, BINDING, INTERNAL } = await createDotnetRuntime(({ MONO }) => ({
         configSrc: "./mono-config.json",
         disableDotnet6Compatibility: true,
-        onConfigLoaded: () => {
-            if (MONO.config.enable_profiler) {
-                MONO.config.aot_profiler_options = {
-                    write_at: "Sample.Test::StopProfile",
-                    send_to: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
+        onConfigLoaded: (config) => {
+            if (config.enable_profiler) {
+                config.aotProfilerOptions = {
+                    writeAt: "Sample.Test::StopProfile",
+                    sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
                 }
             }
         },
