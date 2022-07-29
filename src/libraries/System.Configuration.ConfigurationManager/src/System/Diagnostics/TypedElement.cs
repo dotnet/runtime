@@ -6,8 +6,8 @@ namespace System.Diagnostics
 {
     internal class TypedElement : ConfigurationElement
     {
-        protected static readonly ConfigurationProperty s_propTypeName = new ConfigurationProperty("type", typeof(string), string.Empty, ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsTypeStringTransformationRequired);
-        protected static readonly ConfigurationProperty s_propInitData = new ConfigurationProperty("initializeData", typeof(string), string.Empty, ConfigurationPropertyOptions.None);
+        protected static readonly ConfigurationProperty s_propTypeName = new("type", typeof(string), string.Empty, ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsTypeStringTransformationRequired);
+        protected static readonly ConfigurationProperty s_propInitData = new("initializeData", typeof(string), string.Empty, ConfigurationPropertyOptions.None);
 
         protected ConfigurationPropertyCollection _properties;
         protected object _runtimeObject;

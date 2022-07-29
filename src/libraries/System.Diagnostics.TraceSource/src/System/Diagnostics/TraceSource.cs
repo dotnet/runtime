@@ -81,10 +81,10 @@ namespace System.Diagnostics
 
                     NoConfigInit_BeforeEvent();
 
-                    ConfigureTraceSourceEventArgs e = new ConfigureTraceSourceEventArgs(this);
-                    Trace.OnConfigureTraceSource(e);
+                    InitializingTraceSourceEventArgs e = new InitializingTraceSourceEventArgs(this);
+                    OnInitializing(e);
 
-                    if (!e.WasConfigured)
+                    if (!e.WasInitialized)
                     {
                         NoConfigInit_AfterEvent();
                     }
@@ -183,7 +183,7 @@ namespace System.Diagnostics
                 return;
             }
 
-            Trace.OnConfigureTraceSource(new ConfigureTraceSourceEventArgs(this));
+            OnInitializing(new InitializingTraceSourceEventArgs(this));
         }
 
         [Conditional("TRACE")]
@@ -489,15 +489,28 @@ namespace System.Diagnostics
                 Initialize();
                 return _attributes ??= new StringDictionary();
             }
-
-            set
-            {
-                TraceUtils.VerifyAttributes(value, GetSupportedAttributes(), this);
-                _attributes = value;
-            }
         }
 
+        /// <summary>
+        /// The default level assigned in the constructor.
+        /// </summary>
         public SourceLevels DefaultLevel => _switchLevel;
+
+        /// <summary>
+        ///  Occurs when a <see cref="TraceSource"/> needs to be initialized.
+        /// </summary>
+        public static event EventHandler<InitializingTraceSourceEventArgs>? Initializing;
+        internal void OnInitializing(InitializingTraceSourceEventArgs e)
+        {
+            Initializing?.Invoke(this, e);
+
+            TraceUtils.VerifyAttributes(Attributes, GetSupportedAttributes(), this);
+
+            foreach (TraceListener listener in Listeners)
+            {
+                TraceUtils.VerifyAttributes(listener.Attributes, listener.GetSupportedAttributes(), this);
+            }
+        }
 
         public string Name => _sourceName;
 

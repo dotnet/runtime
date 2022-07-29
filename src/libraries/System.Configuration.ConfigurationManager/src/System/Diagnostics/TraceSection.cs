@@ -8,10 +8,10 @@ namespace System.Diagnostics
     internal sealed class TraceSection : ConfigurationElement
     {
         private static readonly ConfigurationPropertyCollection s_properties = new();
-        private static readonly ConfigurationProperty s_propListeners = new ConfigurationProperty("listeners", typeof(ListenerElementsCollection), null, ConfigurationPropertyOptions.None);
-        private static readonly ConfigurationProperty s_propAutoFlush = new ConfigurationProperty("autoflush", typeof(bool), false, ConfigurationPropertyOptions.None);
-        private static readonly ConfigurationProperty s_propIndentSize = new ConfigurationProperty("indentsize", typeof(int), 4, ConfigurationPropertyOptions.None);
-        private static readonly ConfigurationProperty s_propUseGlobalLock = new ConfigurationProperty("useGlobalLock", typeof(bool), true, ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationProperty s_propListeners = new("listeners", typeof(ListenerElementsCollection), null, ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationProperty s_propAutoFlush = new("autoflush", typeof(bool), false, ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationProperty s_propIndentSize = new("indentsize", typeof(int), 4, ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationProperty s_propUseGlobalLock = new("useGlobalLock", typeof(bool), true, ConfigurationPropertyOptions.None);
 
         static TraceSection()
         {

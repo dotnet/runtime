@@ -159,33 +159,18 @@ namespace System.Diagnostics
             TraceInternal.Fail(message, detailMessage);
         }
 
-        public static event EventHandler? ConfigureTrace;
-        internal static void OnConfigureTrace()
+        /// <summary>
+        ///  Occurs when a <see cref="TraceSource"/> needs to be refreshed from configuration.
+        /// </summary>
+        public static event EventHandler? Refreshing;
+        internal static void OnRefreshing()
         {
-            ConfigureTrace?.Invoke(null, EventArgs.Empty);
-        }
-
-        public static event EventHandler? RefreshConfiguration;
-        internal static void OnRefreshConfiguration()
-        {
-            RefreshConfiguration?.Invoke(null, EventArgs.Empty);
-        }
-
-        public static event EventHandler<ConfigureTraceSourceEventArgs>? ConfigureTraceSource;
-        internal static void OnConfigureTraceSource(ConfigureTraceSourceEventArgs e)
-        {
-            ConfigureTraceSource?.Invoke(null, e);
-        }
-
-        public static event EventHandler<ConfigureSwitchEventArgs>? ConfigureSwitch;
-        internal static void OnConfigureSwitch(Switch @switch)
-        {
-            ConfigureSwitch?.Invoke(null, new ConfigureSwitchEventArgs(@switch));
+            Refreshing?.Invoke(null, EventArgs.Empty);
         }
 
         public static void Refresh()
         {
-            OnRefreshConfiguration();
+            OnRefreshing();
             Switch.RefreshAll();
             TraceSource.RefreshAll();
             TraceInternal.Refresh();

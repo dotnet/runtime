@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml.Linq;
-
 namespace System.Diagnostics
 {
     public static class TraceConfiguration
@@ -18,18 +16,19 @@ namespace System.Diagnostics
             if (!s_registered)
             {
                 // Registering callbacks more than once is fine, but avoid the overhead common cases without taking a lock.
-                Trace.RefreshConfiguration += RefreshConfiguration;
-                Trace.ConfigureSwitch += ConfigureSwitch;
-                Trace.ConfigureTrace += ConfigureTraceSettings;
-                Trace.ConfigureTraceSource += ConfigureTraceSource;
+                Trace.Refreshing += RefreshingConfiguration;
+                Switch.Initializing += InitializingSwitch;
+                TraceSource.Initializing += InitializingTraceSource;
+
+                ConfigureTraceSettings();
 
                 s_registered = true;
             }
         }
 
-        private static void RefreshConfiguration(object sender, EventArgs e) => DiagnosticsConfiguration.Refresh();
+        private static void RefreshingConfiguration(object sender, EventArgs e) => DiagnosticsConfiguration.Refresh();
 
-        private static void ConfigureTraceSource(object sender, ConfigureTraceSourceEventArgs e)
+        private static void InitializingTraceSource(object sender, InitializingTraceSourceEventArgs e)
         {
             TraceSource traceSource = e.TraceSource;
 
@@ -41,10 +40,10 @@ namespace System.Diagnostics
                 SourceElement sourceElement = sources[traceSource.Name];
                 if (sourceElement != null)
                 {
-                    e.WasConfigured = true;
+                    e.WasInitialized = true;
 
                     // First check if the type changed.
-                    if (SourceSwitchTypeChanged())
+                    if (HasSourceSwitchTypeChanged())
                     {
                         if (!string.IsNullOrEmpty(sourceElement.SwitchName))
                         {
@@ -98,7 +97,7 @@ namespace System.Diagnostics
                         }
                     }
 
-                    traceSource.Attributes = sourceElement.Attributes;
+                    TraceUtils.CopyStringDictionary(sourceElement.Attributes, traceSource.Attributes);
 
                     traceSource.Listeners.Clear();
                     traceSource.Listeners.AddRange(newListenerCollection);
@@ -111,17 +110,26 @@ namespace System.Diagnostics
                     traceSource.Attributes.Clear();
                 }
 
-                bool SourceSwitchTypeChanged()
+                bool HasSourceSwitchTypeChanged()
                 {
                     string sourceTypeName = sourceElement.SwitchType;
                     Type currentType = traceSource.Switch.GetType();
 
-                    return (string.IsNullOrEmpty(sourceTypeName) && currentType != typeof(SourceSwitch)) ||
-                        (!string.IsNullOrEmpty(sourceTypeName) &&
-                        // Compare with FullName only
-                        sourceTypeName != currentType.FullName &&
-                        // Compare with FullName plus start of AssemblyQualifiedName
-                        !sourceTypeName.StartsWith(currentType.FullName + ","));
+                    if (string.IsNullOrEmpty(sourceTypeName))
+                    {
+                        // SourceSwitch is the default switch type.
+                        return currentType != typeof(SourceSwitch);
+                    }
+
+                    if (sourceTypeName == currentType.FullName)
+                    {
+                        return false;
+                    }
+
+                    // Since there can be more than one valid AssemblyQualifiedName for a given Type this
+                    // check can return true for some cases which can cause a minor side effect of a new
+                    // Switch being created instead of just being refreshed.
+                    return sourceElement.SwitchType != currentType.AssemblyQualifiedName;
                 }
             }
 
@@ -138,7 +146,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static void ConfigureTraceSettings(object sender, EventArgs e)
+        private static void ConfigureTraceSettings()
         {
             // Ported from https://referencesource.microsoft.com/#System/compmod/system/diagnostics/TraceInternal.cs,06360b4de5e221c2, https://referencesource.microsoft.com/#System/compmod/system/diagnostics/TraceInternal.cs,37
 
@@ -153,7 +161,7 @@ namespace System.Diagnostics
                 ListenerElementsCollection listeners = DiagnosticsConfiguration.SystemDiagnosticsSection?.Trace.Listeners;
                 if (listeners != null)
                 {
-                    // If listeners were configured, replace the defaults with these
+                    // If listeners were configured, replace the defaults with these.
                     Trace.Listeners.Clear();
                     foreach (var listener in listeners.GetRuntimeObject())
                     {
@@ -163,7 +171,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static void ConfigureSwitch(object sender, ConfigureSwitchEventArgs e)
+        private static void InitializingSwitch(object sender, InitializingSwitchEventArgs e)
         {
             Switch sw = e.Switch;
 
@@ -184,7 +192,7 @@ namespace System.Diagnostics
                         sw.Value = sw.DefaultValue;
                     }
 
-                    sw.Attributes = mySettings.Attributes;
+                    TraceUtils.CopyStringDictionary(sw.Attributes, mySettings.Attributes);
                 }
             }
         }

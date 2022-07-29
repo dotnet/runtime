@@ -123,11 +123,6 @@ namespace System.Diagnostics
                 Initialize();
                 return _attributes ??= new StringDictionary();
             }
-            set
-            {
-                TraceUtils.VerifyAttributes(value, GetSupportedAttributes(), this);
-                _attributes = value;
-            }
         }
 
         /// <devdoc>
@@ -142,7 +137,9 @@ namespace System.Diagnostics
                 if (!_initialized)
                 {
                     if (InitializeWithStatus())
+                    {
                         OnSwitchSettingChanged();
+                    }
                 }
                 return _switchSetting;
             }
@@ -168,6 +165,9 @@ namespace System.Diagnostics
 
         protected internal virtual string[]? GetSupportedAttributes() => null;
 
+        /// <summary>
+        /// The default value assigned in the constructor.
+        /// </summary>
         public string DefaultValue => _defaultValue;
 
         public string Value
@@ -183,6 +183,16 @@ namespace System.Diagnostics
                 _switchValueString = value;
                 OnValueChanged();
             }
+        }
+
+        /// <summary>
+        ///  Occurs when a <see cref="Switch"/> needs to be initialized.
+        /// </summary>
+        public static event EventHandler<InitializingSwitchEventArgs>? Initializing;
+        internal void OnInitializing()
+        {
+            Initializing?.Invoke(null, new InitializingSwitchEventArgs(this));
+            TraceUtils.VerifyAttributes(Attributes, GetSupportedAttributes(), this);
         }
 
         private void Initialize()
@@ -209,7 +219,7 @@ namespace System.Diagnostics
 
                     try
                     {
-                        Trace.OnConfigureSwitch(this);
+                        OnInitializing();
                     }
                     catch (Exception)
                     {

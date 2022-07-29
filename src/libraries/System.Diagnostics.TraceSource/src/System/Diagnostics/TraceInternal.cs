@@ -285,8 +285,8 @@ namespace System.Diagnostics
         {
             if (!s_settingsInitialized)
             {
-                // we should avoid 2 threads altering the state concurrently for predictable behavior
-                // though it may not be strictly necessary at present
+                // We should avoid 2 threads altering the state concurrently for predictable behavior
+                // though it may not be strictly necessary at present.
                 lock (critSec)
                 {
                     // prevent re-entrance
@@ -301,9 +301,6 @@ namespace System.Diagnostics
                     {
                         s_autoFlush = DiagnosticsConfiguration.AutoFlush;
                         s_useGlobalLock = DiagnosticsConfiguration.UseGlobalLock;
-
-                        Trace.OnConfigureTrace();
-
                         s_settingsInitialized = true;
                         s_settingsInitializing = false;
                     }

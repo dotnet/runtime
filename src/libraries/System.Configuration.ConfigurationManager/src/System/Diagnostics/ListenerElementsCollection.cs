@@ -78,9 +78,9 @@ namespace System.Diagnostics
 
     internal sealed class ListenerElement : TypedElement
     {
-        private static readonly ConfigurationProperty s_propFilter = new ConfigurationProperty("filter", typeof(FilterElement), null, ConfigurationPropertyOptions.None);
-        private static readonly ConfigurationProperty s_propName = new ConfigurationProperty("name", typeof(string), null, ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey);
-        private static readonly ConfigurationProperty s_propOutputOpts = new ConfigurationProperty("traceOutputOptions", typeof(TraceOptions), TraceOptions.None, ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationProperty s_propFilter = new("filter", typeof(FilterElement), null, ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationProperty s_propName = new("name", typeof(string), null, ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey);
+        private static readonly ConfigurationProperty s_propOutputOpts = new("traceOutputOptions", typeof(TraceOptions), TraceOptions.None, ConfigurationPropertyOptions.None);
 
         private ConfigurationProperty _propListenerTypeName;
         private bool _allowReferences;
@@ -208,7 +208,7 @@ namespace System.Diagnostics
                     TraceListener newListener = (TraceListener)BaseGetRuntimeObject();
                     s_initData.AddOrUpdate(newListener, InitData);
                     newListener.Name = Name;
-                    newListener.Attributes = Attributes;
+                    TraceUtils.CopyStringDictionary(Attributes, newListener.Attributes);
                     newListener.TraceOutputOptions = TraceOutputOptions;
 
                     if (Filter != null && !string.IsNullOrEmpty(Filter.TypeName))
@@ -339,7 +339,7 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        listener.Attributes = Attributes;
+                        TraceUtils.CopyStringDictionary(Attributes, listener.Attributes);
                         listener.TraceOutputOptions = TraceOutputOptions;
 
                         if (listener.Filter != null)

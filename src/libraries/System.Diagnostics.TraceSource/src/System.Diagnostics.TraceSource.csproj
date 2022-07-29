@@ -5,8 +5,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\BooleanSwitch.cs" />
-    <Compile Include="System\Diagnostics\ConfigureSwitchEventArgs.cs" />
-    <Compile Include="System\Diagnostics\ConfigureTraceSourceEventArgs.cs" />
+    <Compile Include="System\Diagnostics\InitializingSwitchEventArgs.cs" />
+    <Compile Include="System\Diagnostics\InitializingTraceSourceEventArgs.cs" />
     <Compile Include="System\Diagnostics\CorrelationManager.cs" />
     <Compile Include="System\Diagnostics\DefaultTraceListener.cs" />
     <Compile Include="System\Diagnostics\DiagnosticsConfiguration.cs" />

@@ -20,8 +20,8 @@ namespace System.Diagnostics
     internal sealed class SwitchElement : ConfigurationElement
     {
         private static readonly ConfigurationPropertyCollection _properties = new ConfigurationPropertyCollection();
-        private static readonly ConfigurationProperty _propName = new ConfigurationProperty("name", typeof(string), "", ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey);
-        private static readonly ConfigurationProperty _propValue = new ConfigurationProperty("value", typeof(string), null, ConfigurationPropertyOptions.IsRequired);
+        private static readonly ConfigurationProperty _propName = new("name", typeof(string), "", ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey);
+        private static readonly ConfigurationProperty _propValue = new("value", typeof(string), null, ConfigurationPropertyOptions.IsRequired);
 
         private StringDictionary _attributes;
 

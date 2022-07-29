@@ -4,21 +4,39 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="StringTraceListener.cs" />
     <Compile Include="TraceSourceWithConfigurationTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="testhost_AllTypes.dll.config">
+    <None Include="testhost_AllTypes.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="testhost_ConfigWithRuntime.dll.config">
+    <None Include="testhost_ChangeSwitch_after.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="testhost_RefreshSwitch_after.dll.config">
+    <None Include="testhost_ChangeSwitch_before.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="testhost_RefreshSwitch_before.dll.config">
+    <None Include="testhost_ConfigWithRuntime.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="testhost_RemoveSource_after.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="testhost_RemoveSource_before.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="testhost_RemoveSwitch_after.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="testhost_RemoveSwitch_before.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="testhost_Switch_MissingValue_Throws.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

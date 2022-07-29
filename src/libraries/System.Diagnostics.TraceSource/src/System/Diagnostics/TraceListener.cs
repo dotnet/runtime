@@ -45,11 +45,6 @@ namespace System.Diagnostics
         public StringDictionary Attributes
         {
             get => _attributes ??= new StringDictionary();
-            set
-            {
-                TraceUtils.VerifyAttributes(value, GetSupportedAttributes(), this);
-                _attributes = value;
-            }
         }
 
         /// <devdoc>
@@ -59,7 +54,6 @@ namespace System.Diagnostics
         public virtual string Name
         {
             get { return _listenerName ?? ""; }
-
             set { _listenerName = value; }
         }
 

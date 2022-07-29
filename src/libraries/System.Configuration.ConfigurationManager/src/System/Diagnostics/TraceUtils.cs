@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Globalization;
 using System.Collections;
 using System.Runtime.Versioning;
+using System.Collections.Specialized;
 
 namespace System.Diagnostics
 {
@@ -197,6 +198,17 @@ namespace System.Diagnostics
             return type.IsEnum ?
                 Enum.Parse(type, value, false) :
                 Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
+        }
+
+        // Copy the StringDictionary to another StringDictionary.
+        // This is not as efficient as directly setting the property, but it avoids having to expose a public setter on the property.
+        internal static void CopyStringDictionary(StringDictionary source, StringDictionary dest)
+        {
+            dest.Clear();
+            foreach (string key in source)
+            {
+                dest[key] = source[key];
+            }
         }
     }
 }

@@ -4,11 +4,11 @@
 namespace System.Diagnostics
 {
     /// <summary>
-    ///     Provides data for the <see cref="Trace.ConfigureSwitch"/> event.
+    ///     Provides data for the <see cref="Switch.Initializing"/> event.
     /// </summary>
-    public sealed class ConfigureSwitchEventArgs : EventArgs
+    public sealed class InitializingSwitchEventArgs : EventArgs
     {
-        public ConfigureSwitchEventArgs(Switch @switch)
+        public InitializingSwitchEventArgs(Switch @switch)
         {
             Switch = @switch;
         }

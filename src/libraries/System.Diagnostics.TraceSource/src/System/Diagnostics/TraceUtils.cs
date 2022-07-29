@@ -30,8 +30,11 @@ namespace System.Diagnostics
                             found = true;
                     }
                 }
+
                 if (!found)
+                {
                     throw new ArgumentException(SR.Format(SR.AttributeNotSupported, key, parent.GetType().FullName));
+                }
             }
         }
     }

@@ -4,16 +4,16 @@
 namespace System.Diagnostics
 {
     /// <summary>
-    ///     Provides data for the <see cref="Trace.ConfigureTraceSource"/> event.
+    ///     Provides data for the <see cref="TraceSource.Initializing"/> event.
     /// </summary>
-    public sealed class ConfigureTraceSourceEventArgs : EventArgs
+    public sealed class InitializingTraceSourceEventArgs : EventArgs
     {
-        public ConfigureTraceSourceEventArgs(TraceSource traceSource)
+        public InitializingTraceSourceEventArgs(TraceSource traceSource)
         {
             TraceSource = traceSource;
         }
 
         public TraceSource TraceSource { get; }
-        public bool WasConfigured { get; set; }
+        public bool WasInitialized { get; set; }
     }
 }

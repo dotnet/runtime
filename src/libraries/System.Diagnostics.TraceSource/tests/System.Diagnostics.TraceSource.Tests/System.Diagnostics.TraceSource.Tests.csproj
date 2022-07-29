@@ -4,10 +4,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
-             Link="Common\TestUtilities\System\DisableParallelization.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="BooleanSwitchClassTests.cs" />
     <Compile Include="DefaultTraceListenerClassTests.cs" />

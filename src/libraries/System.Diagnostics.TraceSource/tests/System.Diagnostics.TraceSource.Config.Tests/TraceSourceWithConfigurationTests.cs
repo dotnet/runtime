@@ -14,12 +14,25 @@ namespace System.Diagnostics.TraceSourceConfigTests
 {
     public class ConfigurationTests
     {
-        private const string ConfigFile = "testhost.dll.config";
+        private static volatile string? _configFile = null;
+
+        private static string ConfigFile
+        {
+            get
+            {
+                if (_configFile == null)
+                {
+                    Configuration.Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                    _configFile = Path.GetFileName(config.FilePath);
+                }
+
+                return _configFile;
+            }
+        }
 
         private static void CreateAndLoadConfigFile(string filename)
         {
             Configuration.Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            Assert.Equal(ConfigFile, Path.GetFileName(config.FilePath));
             string dir = Path.GetDirectoryName(config.FilePath);
             string from = Path.Combine(dir, filename);
             File.Copy(from, ConfigFile, overwrite: true);
@@ -28,9 +41,10 @@ namespace System.Diagnostics.TraceSourceConfigTests
         }
 
         [Fact]
-        public void ConfigWithRuntimeFilterChange()
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+        public void RuntimeFilterChange()
         {
-            CreateAndLoadConfigFile("testhost_ConfigWithRuntime.dll.config");
+            CreateAndLoadConfigFile("testhost_ConfigWithRuntime.config");
 
             TraceSource mySource = new TraceSource("TraceSourceApp");
             StringTraceListener origListener = (StringTraceListener)mySource.Listeners["origListener"];
@@ -40,8 +54,8 @@ namespace System.Diagnostics.TraceSourceConfigTests
             mySource.TraceEvent(TraceEventType.Error, 1, "Error message.");
             mySource.TraceEvent(TraceEventType.Warning, 2, "Warning message.");
 
-            Assert.Equal("TraceSourceApp Error: 1 : Error message.\r\n", origListener.Output);
-            Assert.Equal("TraceSourceApp Error: 1 : Error message.\r\n", secondListener.Output);
+            Assert.Equal($"TraceSourceApp Error: 1 : Error message.{Environment.NewLine}", origListener.Output);
+            Assert.Equal($"TraceSourceApp Error: 1 : Error message.{Environment.NewLine}", secondListener.Output);
 
             // Save the original settings from the configuration file.
             EventTypeFilter configFilter = (EventTypeFilter)mySource.Listeners["origListener"].Filter;
@@ -63,11 +77,11 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
             // Both should be logged for origListener.
             Assert.Equal(
-                "TraceSourceApp Critical: 3 : Critical message.\r\n" +
-                "TraceSourceApp Warning: 4 : Warning message.\r\n", origListener.Output);
+                $"TraceSourceApp Critical: 3 : Critical message.{Environment.NewLine}" +
+                $"TraceSourceApp Warning: 4 : Warning message.{Environment.NewLine}", origListener.Output);
 
             // secondListener is unchanged and doesn't log warnings.
-            Assert.Equal("TraceSourceApp Critical: 3 : Critical message.\r\n", secondListener.Output);
+            Assert.Equal($"TraceSourceApp Critical: 3 : Critical message.{Environment.NewLine}", secondListener.Output);
 
             // Restore the original filter settings.
             origListener.Clear();
@@ -78,8 +92,8 @@ namespace System.Diagnostics.TraceSourceConfigTests
             mySource.TraceEvent(TraceEventType.Error, 5, "Error message.");
             mySource.TraceInformation("Informational message.");
 
-            Assert.Equal("TraceSourceApp Error: 5 : Error message.\r\n", origListener.Output);
-            Assert.Equal("TraceSourceApp Error: 5 : Error message.\r\n", secondListener.Output);
+            Assert.Equal($"TraceSourceApp Error: 5 : Error message.{Environment.NewLine}", origListener.Output);
+            Assert.Equal($"TraceSourceApp Error: 5 : Error message.{Environment.NewLine}", secondListener.Output);
 
             origListener.Clear();
             secondListener.Clear();
@@ -87,32 +101,36 @@ namespace System.Diagnostics.TraceSourceConfigTests
         }
 
         [Fact]
-        public void RefreshSwitchFromConfigFile()
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+        public void Refresh_RemoveSwitch()
         {
             // Use a SourceSwitch that logs Error.
-            CreateAndLoadConfigFile("testhost_RefreshSwitch_before.dll.config");
+            CreateAndLoadConfigFile("testhost_RemoveSwitch_before.config");
 
-            TraceSource mySource = new TraceSource("TraceSourceApp");
-            StringTraceListener listener = (StringTraceListener)mySource.Listeners["origListener"];
+            SourceSwitch sswitch = new SourceSwitch("Refresh_RemoveSwitch_sourceSwitchToBeRemoved", "Warning");
+            Assert.Equal("Warning", sswitch.DefaultValue);
+            Assert.Equal("Error", sswitch.Value);
+
+            TraceSource mySource = new TraceSource("Refresh_RemoveSwitch");
+            StringTraceListener listener = (StringTraceListener)mySource.Listeners["listener"];
+
             Log();
             Assert.Equal(
-                "TraceSourceApp Error: 1 : Error message.\r\n" +
-                "TraceSourceApp Critical: 3 : Critical message.\r\n", listener.Output);
+                $"Refresh_RemoveSwitch Error: 1 : Error message.{Environment.NewLine}" +
+                $"Refresh_RemoveSwitch Critical: 3 : Critical message.{Environment.NewLine}", listener.Output);
 
             // Change the switch to log All.
             listener.Clear();
-            CreateAndLoadConfigFile("testhost_RefreshSwitch_after.dll.config");
+            CreateAndLoadConfigFile("testhost_RemoveSwitch_after.config");
             Trace.Refresh();
+
+            Assert.Equal("Warning", sswitch.DefaultValue);
+            Assert.Equal("Warning", sswitch.Value); // Changed to Warning since the switch was removed from the config.
+
             Log();
-            Assert.Equal(
-                "TraceSourceApp Error: 1 : Error message.\r\n" +
-                "TraceSourceApp Warning: 2 : Warning message.\r\n" +
-                "TraceSourceApp Critical: 3 : Critical message.\r\n" +
-                "TraceSourceApp Information: 0 : Informational message.\r\n", listener.Output);
+            Assert.Equal(string.Empty, listener.Output); // The default replacement switch is off.
 
             listener.Clear();
-            mySource.Close();
-
             void Log()
             {
                 mySource.TraceEvent(TraceEventType.Error, 1, "Error message.");
@@ -123,12 +141,71 @@ namespace System.Diagnostics.TraceSourceConfigTests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+        public void Refresh_ChangeSwitch()
+        {
+            // Use a SourceSwitch that logs Error.
+            CreateAndLoadConfigFile("testhost_ChangeSwitch_before.config");
+
+            TraceSource mySource = new TraceSource("Refresh_ChangeSwitch");
+            StringTraceListener listener = (StringTraceListener)mySource.Listeners["listener"];
+
+            mySource.TraceInformation("Informational message.");
+            Assert.Equal(string.Empty, listener.Output); // Switch is off.
+
+            // Change the switch to log.
+            listener.Clear();
+            CreateAndLoadConfigFile("testhost_ChangeSwitch_after.config");
+            Trace.Refresh();
+
+            mySource.TraceInformation("Informational message.");
+            Assert.Equal($"Refresh_ChangeSwitch Information: 0 : Informational message.{Environment.NewLine}", listener.Output);
+
+            listener.Close();
+            mySource.Close();
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+        public void Refresh_RemoveSource()
+        {
+            // Use a SourceSwitch that logs Error.
+            CreateAndLoadConfigFile("testhost_RemoveSource_before.config");
+
+            TraceSource mySourceToBeRemoved = new TraceSource("Refresh_RemoveSource", SourceLevels.Warning);
+            Assert.Equal(SourceLevels.Warning, mySourceToBeRemoved.DefaultLevel);
+            Assert.Equal(SourceLevels.Error, mySourceToBeRemoved.Switch.Level); // Config has Error.
+            Assert.Equal("Error", mySourceToBeRemoved.Switch.Value);
+
+            StringTraceListener listenerToBeRemoved = (StringTraceListener)mySourceToBeRemoved.Listeners["listener"];
+            listenerToBeRemoved.Clear();
+            mySourceToBeRemoved.TraceEvent(TraceEventType.Error, 1, "Error message.");
+            Assert.Equal($"Refresh_RemoveSource Error: 1 : Error message.{Environment.NewLine}", listenerToBeRemoved.Output);
+
+            // Change the switch to log All.
+            listenerToBeRemoved.Clear();
+            CreateAndLoadConfigFile("testhost_RemoveSource_after.config");
+            Trace.Refresh();
+
+            Assert.Equal(SourceLevels.Warning, mySourceToBeRemoved.DefaultLevel);
+            Assert.Equal(SourceLevels.Warning, mySourceToBeRemoved.Switch.Level); // Changed to Warning since the switch was removed from the config.
+            Assert.Equal("Error", mySourceToBeRemoved.Switch.Value);
+
+            mySourceToBeRemoved.TraceEvent(TraceEventType.Error, 1, "Error message.");
+            Assert.Equal(string.Empty, listenerToBeRemoved.Output);
+
+            listenerToBeRemoved.Clear();
+            //mySourceToBeRemoved.Close();
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public void ConfigWithEvents_RuntimeListener()
         {
-            CreateAndLoadConfigFile("testhost_ConfigWithRuntime.dll.config");
+            CreateAndLoadConfigFile("testhost_ConfigWithRuntime.config");
 
-            Trace.ConfigureTraceSource += SubscribeToConfigTracesource_ConfigureTraceSource;
-            Trace.ConfigureSwitch += SubscribeToConfigTracesource_ConfigureSwitch;
+            TraceSource.Initializing += SubscribeToTraceSource_Initializing;
+            Switch.Initializing += SubscribeToSwitch_Initializing;
 
             TraceSource mySource = new("TraceSource_NoListeners");
             Assert.Equal(1, mySource.Listeners.Count); // The default listener was removed via the config
@@ -137,22 +214,22 @@ namespace System.Diagnostics.TraceSourceConfigTests
             // Only the Critical should be logged.
             // The config setting was to only log Error, but changed to Critical in the event handler.
             Log();
-            Assert.Equal("TraceSource_NoListeners Critical: 3 : Critical message.\r\n", dynamicallyAddedListener.Output);
+            Assert.Equal($"TraceSource_NoListeners Critical: 3 : Critical message.{Environment.NewLine}", dynamicallyAddedListener.Output);
 
             // Log all.
             dynamicallyAddedListener.Clear();
             mySource.Switch.Level = SourceLevels.All;
             Log();
             Assert.Equal(
-                "TraceSource_NoListeners Error: 1 : Error message.\r\n" +
-                "TraceSource_NoListeners Warning: 2 : Warning message.\r\n" +
-                "TraceSource_NoListeners Critical: 3 : Critical message.\r\n" +
-                "TraceSource_NoListeners Information: 0 : Informational message.\r\n", dynamicallyAddedListener.Output);
+                $"TraceSource_NoListeners Error: 1 : Error message.{Environment.NewLine}" +
+                $"TraceSource_NoListeners Warning: 2 : Warning message.{Environment.NewLine}" +
+                $"TraceSource_NoListeners Critical: 3 : Critical message.{Environment.NewLine}" +
+                $"TraceSource_NoListeners Information: 0 : Informational message.{Environment.NewLine}", dynamicallyAddedListener.Output);
 
             dynamicallyAddedListener.Clear();
             mySource.Close();
-            Trace.ConfigureTraceSource -= SubscribeToConfigTracesource_ConfigureTraceSource;
-            Trace.ConfigureSwitch -= SubscribeToConfigTracesource_ConfigureSwitch;
+            TraceSource.Initializing -= SubscribeToTraceSource_Initializing;
+            Switch.Initializing -= SubscribeToSwitch_Initializing;
 
             void Log()
             {
@@ -163,7 +240,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
             }
         }
 
-        private void SubscribeToConfigTracesource_ConfigureTraceSource(object? sender, ConfigureTraceSourceEventArgs e)
+        private void SubscribeToTraceSource_Initializing(object? sender, InitializingTraceSourceEventArgs e)
         {
             TraceSource traceSource = e.TraceSource;
             if (traceSource.Name == "TraceSource_NoListeners")
@@ -173,7 +250,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
             }
         }
 
-        private void SubscribeToConfigTracesource_ConfigureSwitch(object? sender, ConfigureSwitchEventArgs e)
+        private void SubscribeToSwitch_Initializing(object? sender, InitializingSwitchEventArgs e)
         {
             Switch sw = e.Switch;
             if (sw.DisplayName == "generalSourceSwitch_Error")
@@ -188,9 +265,10 @@ namespace System.Diagnostics.TraceSourceConfigTests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public void AllTypes()
         {
-            CreateAndLoadConfigFile("testhost_AllTypes.dll.config");
+            CreateAndLoadConfigFile("testhost_AllTypes.config");
 
             TraceSource mySource;
 
@@ -203,7 +281,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
             mySource = new("DelimitedListTraceListener");
             Assert.Equal("L1", mySource.Listeners[1].Name);
 
-            // Only supported on .NET Framework.
+            // The referenced S.R.ConfigurationManager.dll is NetStandard, which does not support EventLogTraceListener.
             mySource = new("EventLogTraceListener");
             Exception e = Assert.Throws<ConfigurationErrorsException>(() => mySource.Listeners[1].Name);
             Assert.IsType<PlatformNotSupportedException>(e.InnerException);
@@ -228,6 +306,15 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
             TraceSource filter_eventTypeFilter = new("filter_eventTypeFilter");
             Assert.IsType<EventTypeFilter>(filter_eventTypeFilter.Listeners[1].Filter);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+        public void Switch_MissingValue_Throws()
+        {
+            Exception e =  Assert.Throws<ConfigurationErrorsException>(() =>
+                CreateAndLoadConfigFile("testhost_Switch_MissingValue_Throws.config"));
+            Assert.Contains("'value'", e.ToString());
         }
     }
 }
