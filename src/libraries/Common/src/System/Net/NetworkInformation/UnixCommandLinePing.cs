@@ -42,14 +42,39 @@ namespace System.Net.NetworkInformation
             {
                 string? linkedName = Interop.Sys.ReadLink(pingBinary);
 
-                // If pingBinary is not link linkedName will be null
-                if (linkedName != null && linkedName.EndsWith("busybox", StringComparison.Ordinal))
+                if (linkedName == null)
                 {
-                    return true;
+                    Interop.Error error = Interop.Sys.GetLastError();
+
+                    if (error == Interop.Error.EINVAL)
+                    {
+                        return false;
+                    }
+
+                    var errorInfo = new Interop.ErrorInfo(error);
+                    switch (error)
+                    {
+                        case Interop.Error.EACCES:
+                            throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, pingBinary), GetIOException(errorInfo, pingBinary));
+                        case Interop.Error.ENOENT:
+                            throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, pingBinary), pingBinary);
+                        default:
+                            throw GetIOException(errorInfo, pingBinary);
+                    }
                 }
+
+                // If pingBinary is not link linkedName will be null
+                return linkedName.EndsWith("busybox", StringComparison.Ordinal);
             }
 
             return false;
+        }
+
+        private static Exception GetIOException(Interop.ErrorInfo errorInfo, string? path = null)
+        {
+            string msg = errorInfo.GetErrorMessage();
+            return new IOException(
+                string.IsNullOrEmpty(path) ? msg : $"{msg} : '{path}'", errorInfo.RawErrno);
         }
 
         public enum PingFragmentOptions { Default, Do, Dont };

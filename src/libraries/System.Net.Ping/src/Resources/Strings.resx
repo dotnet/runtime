@@ -90,4 +90,10 @@
   <data name="net_ping_utility_custom_payload" xml:space="preserve">
     <value>Unable to send custom ping payload. Run program under privileged user account or grant cap_net_raw capability using setcap(8).</value>
   </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>Access to the path '{0}' is denied.</value>
+  </data>
+  <data name="IO_FileNotFound_FileName" xml:space="preserve">
+    <value>Access to the path '{0}' is denied.</value>
+  </data>
 </root>

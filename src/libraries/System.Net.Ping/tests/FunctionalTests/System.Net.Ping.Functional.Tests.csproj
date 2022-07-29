@@ -5,6 +5,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <StringResourcesPath>$(LibrariesProjectRoot)/Common/tests/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
   <!-- Test APIs introduced after 1.0 -->
   <ItemGroup>
@@ -37,5 +38,7 @@
              Link="Common\System\Net\Capability.RawSocketPermissions.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
              Link="Common\System\Text\ValueUtf8Converter.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\Unix\Interop.Errors.cs" />
   </ItemGroup>
 </Project>
