@@ -2848,7 +2848,7 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
     {
         // Make sure assertion kinds are complementary and op1, op2 kinds match.
         AssertionDsc* curAssertion = optGetAssertion(index);
-        if (curAssertion->Complementary(inputAssertion))
+        if (curAssertion->Complementary(*inputAssertion))
         {
             optMapComplementary(assertIndex, index);
             return index;
