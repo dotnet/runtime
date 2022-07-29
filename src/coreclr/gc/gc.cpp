@@ -242,7 +242,7 @@ gc_oh_num gen_to_oh(int gen)
             return gc_oh_num::poh;
         default:
             assert(false);
-            return gc_oh_num::none;
+            return gc_oh_num::unknown;
     }
 }
 
@@ -5628,7 +5628,7 @@ gc_heap::soh_get_segment_to_expand()
 heap_segment*
 gc_heap::get_segment (size_t size, gc_oh_num oh)
 {
-    assert(oh < total_oh_count);
+    assert(oh != gc_oh_num::unknown);
     BOOL uoh_p = (oh == gc_oh_num::loh) || (oh == gc_oh_num::poh);
     if (heap_hard_limit)
         return NULL;
@@ -44051,8 +44051,6 @@ HRESULT GCHeap::Initialize()
 {
     HRESULT hr = S_OK;
 
-    memset (gc_heap::committed_by_oh, 0, sizeof (gc_heap::committed_by_oh));
-
     qpf = (uint64_t)GCToOSInterface::QueryPerformanceFrequency();
     qpf_ms = 1000.0 / (double)qpf;
     qpf_us = 1000.0 * 1000.0 / (double)qpf;
@@ -44078,6 +44076,8 @@ HRESULT GCHeap::Initialize()
     gc_heap::heap_hard_limit_oh[soh] = (size_t)GCConfig::GetGCHeapHardLimitSOH();
     gc_heap::heap_hard_limit_oh[loh] = (size_t)GCConfig::GetGCHeapHardLimitLOH();
     gc_heap::heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
+
+    memset (gc_heap::committed_by_oh, 0, sizeof (gc_heap::committed_by_oh));
 
     gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
 

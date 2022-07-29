@@ -419,7 +419,7 @@ enum gc_oh_num
     soh = 0,
     loh = 1,
     poh = 2,
-    none = -1,
+    unknown = -1,
 };
 
 const int total_oh_count = gc_oh_num::poh + 1;
