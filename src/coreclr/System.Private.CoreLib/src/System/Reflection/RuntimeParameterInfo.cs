@@ -504,7 +504,7 @@ namespace System.Reflection
                     m_tkParamDef == m.m_tkParamDef &&
                     GetRuntimeModule()!.Equals(m.GetRuntimeModule()));
 
-        public override int GetHashCode() => base.GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(m_tkParamDef.GetHashCode(), GetRuntimeModule()!.GetHashCode());
         #endregion
 
         #region ICustomAttributeProvider

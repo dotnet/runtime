@@ -11,7 +11,7 @@ namespace System.Reflection.Metadata
     /// <summary>Metadata update handler used to clear a Type's reflection cache in response to a metadata update notification.</summary>
     internal static class RuntimeTypeMetadataUpdateHandler
     {
-        public static bool HotReloadDeltaApplied { get; internal set; }
+        public static bool HotReloadDeltaApplied { get; private set; }
 
         /// <summary>Clear type caches in response to an update notification.</summary>
         /// <param name="types">The specific types to be cleared, or null to clear everything.</param>
@@ -19,6 +19,7 @@ namespace System.Reflection.Metadata
         public static void ClearCache(Type[]? types)
         {
             HotReloadDeltaApplied = true;
+
             if (RequiresClearingAllTypes(types))
             {
                 // TODO: This should ideally be in a QCall in the runtime.  As written here:

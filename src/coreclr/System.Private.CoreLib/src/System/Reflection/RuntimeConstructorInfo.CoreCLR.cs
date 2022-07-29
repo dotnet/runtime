@@ -127,7 +127,7 @@ namespace System.Reflection
                     MetadataToken == m.MetadataToken &&
                     RuntimeTypeHandle.GetModule(m_declaringType).Equals(RuntimeTypeHandle.GetModule(m.m_declaringType)));
 
-        public override int GetHashCode() => base.GetHashCode();
+        public override int GetHashCode() => m_handle.GetHashCode();
         #endregion
 
         #region ICustomAttributeProvider

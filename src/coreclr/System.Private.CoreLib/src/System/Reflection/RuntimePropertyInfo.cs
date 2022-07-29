@@ -185,7 +185,7 @@ namespace System.Reflection
             obj == (object)this ||
                 (RuntimeTypeMetadataUpdateHandler.HotReloadDeltaApplied && CacheEquals(obj));
 
-        public override int GetHashCode() => base.GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(m_token.GetHashCode(), Module.GetHashCode());
         #endregion
 
         #region PropertyInfo Overrides

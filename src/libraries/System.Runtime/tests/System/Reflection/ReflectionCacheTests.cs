@@ -40,7 +40,6 @@ namespace System.Reflection.Tests
             Assert.NotNull(pi2);
             Assert.NotNull(fi2);
 
-            Assert.False(HotReloadDeltaApplied());
             Assert.Same(mi1, mi2);
             Assert.Same(pi1, pi2);
             Assert.Same(fi1, fi2);
@@ -74,6 +73,13 @@ namespace System.Reflection.Tests
             EventInfo ei1 = s_type.GetEvent(nameof(Event1));
             ConstructorInfo ci1 = s_type.GetConstructor(Type.EmptyTypes);
             ParameterInfo pai1 = mi1.GetParameters()[0];
+            int mi1Hash = mi1.GetHashCode();
+            int pi1Hash = pi1.GetHashCode();
+            int fi1Hash = fi1.GetHashCode();
+            int ei1Hash = ei1.GetHashCode();
+            int ci1Hash = ci1.GetHashCode();
+            int pai1Hash = pai1.GetHashCode();
+
             Assert.NotNull(mi1);
             Assert.NotNull(pi1);
             Assert.NotNull(fi1);
@@ -83,13 +89,19 @@ namespace System.Reflection.Tests
 
             clearCache(justSpecificType ? new[] { typeof(ReflectionCacheTests) } : null);
             Assert.True(HotReloadDeltaApplied());
-
             MethodInfo mi2 = s_type.GetMethod(nameof(GetMethod_MultipleCalls_ClearCache_DifferentObjects));
             PropertyInfo pi2 = s_type.GetProperty(nameof(Property));
             FieldInfo fi2 = s_type.GetField(nameof(Field1));
             EventInfo ei2 = s_type.GetEvent(nameof(Event1));
             ConstructorInfo ci2 = s_type.GetConstructor(Type.EmptyTypes);
             ParameterInfo pai2 = mi2.GetParameters()[0];
+            int mi2Hash = mi2.GetHashCode();
+            int pi2Hash = pi2.GetHashCode();
+            int fi2Hash = fi2.GetHashCode();
+            int ei2Hash = ei2.GetHashCode();
+            int ci2Hash = ci2.GetHashCode();
+            int pai2Hash = pai2.GetHashCode();
+
             Assert.NotNull(mi2);
             Assert.NotNull(pi2);
             Assert.NotNull(fi2);
@@ -97,18 +109,29 @@ namespace System.Reflection.Tests
             Assert.Equal(nameof(Property), pi2.Name);
             Assert.Equal(nameof(Field1), fi2.Name);
 
+            // After the Cache cleared the references of same member will be diffenet 
             Assert.NotSame(mi1, mi2);
             Assert.NotSame(pi1, pi2);
             Assert.NotSame(fi1, fi2);
             Assert.NotSame(ei1, ei2);
             Assert.NotSame(ci1, ci2);
             Assert.NotSame(pai1, pai2);
+
+            // But they should be evaluated as Equal so that there were no issue using the same member after hot reload
             Assert.Equal(mi1, mi2);
             Assert.Equal(pi1, pi2);
             Assert.Equal(fi1, fi2);
             Assert.Equal(ei1, ei2);
             Assert.Equal(ci1, ci2);
             Assert.Equal(pai1, pai2);
+
+            // And the HashCode of a member before and after hot reload should produce same result 
+            Assert.Equal(mi1Hash, mi2Hash);
+            Assert.Equal(pi1Hash, pi2Hash);
+            Assert.Equal(fi1Hash, fi2Hash);
+            Assert.Equal(ei1Hash, ei2Hash);
+            Assert.Equal(ci1Hash, ci2Hash);
+            Assert.Equal(pai1Hash, pai2Hash);
         }
 
         private static Action<Type[]> GetClearCacheMethod()

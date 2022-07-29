@@ -164,7 +164,7 @@ namespace System.Reflection
             if (IsGenericMethod)
                 return ValueType.GetHashCodeOfPtr(m_handle);
             else
-                return base.GetHashCode();
+                return m_handle.GetHashCode();
         }
 
         public override bool Equals(object? obj)
