@@ -714,6 +714,9 @@ internal sealed class FirefoxMonoProxy : MonoProxy
     internal override void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Task<Result> debuggerAgentBufferTask)
     {
         var context = GetContextFixefox(sessionId);
+        if (context.LastDebuggerAgentBufferReceived != null)
+            logger.LogTrace($"Trying to reset debugger agent buffer before use it.");
+
         context.LastDebuggerAgentBufferReceived = debuggerAgentBufferTask;
     }
 
@@ -723,7 +726,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         Result res = await context.LastDebuggerAgentBufferReceived;
         if (!res.IsOk)
             return false;
-
+        context.LastDebuggerAgentBufferReceived = null;
         byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
         using var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
         retDebuggerCmdReader.ReadBytes(11);
