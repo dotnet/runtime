@@ -927,6 +927,11 @@ namespace ILCompiler
                 methodILDefinition = FlowAnnotations.ILProvider.GetMethodIL(userMethod);
             }
 
+            // Data-flow (reflection scanning) for compiler-generated methods will happen as part of the
+            // data-flow scan of the user-defined method which uses this compiler-generated method.
+            if (CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodILDefinition.OwningMethod))
+                return;
+
             dependencies = dependencies ?? new DependencyList();
             dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), reason);
         }
