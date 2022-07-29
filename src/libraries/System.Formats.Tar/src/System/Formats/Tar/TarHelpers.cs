@@ -27,7 +27,7 @@ namespace System.Formats.Tar
             UnixFileMode.GroupRead |
             UnixFileMode.OtherRead;
 
-        private const UnixFileMode DefaultDirectoryMode =
+        internal const UnixFileMode DefaultDirectoryMode =
             DefaultFileMode |
             UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
 
