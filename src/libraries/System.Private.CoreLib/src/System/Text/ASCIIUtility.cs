@@ -1380,44 +1380,10 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
-            if (Sse2.IsSupported)
-            {
-                if (Sse41.IsSupported)
-                {
-                    Vector128<ushort> asciiMaskForTestZ = Vector128.Create((ushort)0xFF80);
-                    // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                    if (!Sse41.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16()))
-                    {
-                        return true;
-                    }
-                }
-                else
-                {
-                    Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80);
-                    // The operation below forces the 0x8000 bit of each WORD to be set iff the WORD element
-                    // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
-                    // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
-                    if ((Sse2.MoveMask(Sse2.AddSaturate(utf16Vector, asciiMaskForAddSaturate).AsByte()) & 0b_1010_1010_1010_1010) != 0)
-                    {
-                        return true;
-                    }
-                }
-            }
-            else if (AdvSimd.Arm64.IsSupported)
-            {
-                // First we pick four chars, a larger one from all four pairs of adjecent chars in the vector.
-                // If any of those four chars has a non-ASCII bit set, we have seen non-ASCII data.
-                Vector128<ushort> maxChars = AdvSimd.Arm64.MaxPairwise(utf16Vector, utf16Vector);
-                if ((maxChars.AsUInt64().ToScalar() & 0xFF80FF80FF80FF80) != 0)
-                {
-                    return true;
-                }
-            }
-            else
-            {
-                throw new PlatformNotSupportedException();
-            }
-            return false;
+            const ushort asciiMask = ushort.MaxValue - 127; // 0x7F80
+            Vector128<ushort> zeroIsAscii = utf16Vector & Vector128.Create(asciiMask);
+            // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
+            return !Vector128.EqualsAll(zeroIsAscii, Vector128<ushort>.Zero);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
