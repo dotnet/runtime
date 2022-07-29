@@ -53,7 +53,7 @@ namespace Microsoft.Interop.JavaScript
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // Collect all methods adorned with LibraryImportAttribute
+            // Collect all methods adorned with JSExportAttribute
             var attributedMethods = context.SyntaxProvider
                 .CreateSyntaxProvider(
                     static (node, ct) => ShouldVisitNode(node),
