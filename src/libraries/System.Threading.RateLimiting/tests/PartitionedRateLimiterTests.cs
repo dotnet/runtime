@@ -662,11 +662,11 @@ namespace System.Threading.RateLimiting.Tests
             });
 
             var translateCallCount = 0;
-            var translateLimiter = limiter.TranslateKey<int>(i =>
+            var translateLimiter = limiter.WithTranslatedKey<int>(i =>
             {
                 translateCallCount++;
                 return i.ToString();
-            });
+            }, leaveOpen: true);
 
             var lease = translateLimiter.AttemptAcquire(1);
             Assert.True(lease.IsAcquired);
@@ -711,11 +711,11 @@ namespace System.Threading.RateLimiting.Tests
             });
 
             var translateCallCount = 0;
-            var translateLimiter = limiter.TranslateKey<int>(i =>
+            var translateLimiter = limiter.WithTranslatedKey<int>(i =>
             {
                 translateCallCount++;
                 return i.ToString();
-            });
+            }, leaveOpen: true);
 
             var lease = await translateLimiter.AcquireAsync(1);
             Assert.True(lease.IsAcquired);
@@ -760,11 +760,11 @@ namespace System.Threading.RateLimiting.Tests
             });
 
             var translateCallCount = 0;
-            var translateLimiter = limiter.TranslateKey<int>(i =>
+            var translateLimiter = limiter.WithTranslatedKey<int>(i =>
             {
                 translateCallCount++;
                 return i.ToString();
-            });
+            }, leaveOpen: true);
 
             Assert.Equal(1, translateLimiter.GetAvailablePermits(1));
             Assert.Equal(1, translateCallCount);
@@ -818,17 +818,57 @@ namespace System.Threading.RateLimiting.Tests
             });
 
             var translateCallCount = 0;
-            var translateLimiter = limiter.TranslateKey<int>(i =>
+            var translateLimiter = limiter.WithTranslatedKey<int>(i =>
             {
                 translateCallCount++;
                 return i.ToString();
-            });
+            }, leaveOpen: true);
 
             translateLimiter.Dispose();
 
             var lease = limiter.AttemptAcquire("1");
             Assert.True(lease.IsAcquired);
 
+            Assert.Throws<ObjectDisposedException>(() => translateLimiter.AttemptAcquire(1));
+        }
+
+        [Fact]
+        public void Translate_DisposeDoesDisposeInnerLimiter()
+        {
+            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                if (resource == "1")
+                {
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
+                        _ => new ConcurrencyLimiterOptions
+                        {
+                            PermitLimit = 1,
+                            QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                            QueueLimit = 1
+                        });
+                }
+                else
+                {
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
+                        _ => new ConcurrencyLimiterOptions
+                        {
+                            PermitLimit = 1,
+                            QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                            QueueLimit = 1
+                        });
+                }
+            });
+
+            var translateCallCount = 0;
+            var translateLimiter = limiter.WithTranslatedKey<int>(i =>
+            {
+                translateCallCount++;
+                return i.ToString();
+            }, leaveOpen: false);
+
+            translateLimiter.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => limiter.AttemptAcquire("1"));
             Assert.Throws<ObjectDisposedException>(() => translateLimiter.AttemptAcquire(1));
         }
 
@@ -860,17 +900,57 @@ namespace System.Threading.RateLimiting.Tests
             });
 
             var translateCallCount = 0;
-            var translateLimiter = limiter.TranslateKey<int>(i =>
+            var translateLimiter = limiter.WithTranslatedKey<int>(i =>
             {
                 translateCallCount++;
                 return i.ToString();
-            });
+            }, leaveOpen: true);
 
             await translateLimiter.DisposeAsync();
 
             var lease = limiter.AttemptAcquire("1");
             Assert.True(lease.IsAcquired);
 
+            Assert.Throws<ObjectDisposedException>(() => translateLimiter.AttemptAcquire(1));
+        }
+
+        [Fact]
+        public async Task Translate_DisposeAsyncDoesDisposeInnerLimiter()
+        {
+            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                if (resource == "1")
+                {
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
+                        _ => new ConcurrencyLimiterOptions
+                        {
+                            PermitLimit = 1,
+                            QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                            QueueLimit = 1
+                        });
+                }
+                else
+                {
+                    return RateLimitPartition.GetConcurrencyLimiter(1,
+                        _ => new ConcurrencyLimiterOptions
+                        {
+                            PermitLimit = 1,
+                            QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                            QueueLimit = 1
+                        });
+                }
+            });
+
+            var translateCallCount = 0;
+            var translateLimiter = limiter.WithTranslatedKey<int>(i =>
+            {
+                translateCallCount++;
+                return i.ToString();
+            }, leaveOpen: false);
+
+            await translateLimiter.DisposeAsync();
+
+            Assert.Throws<ObjectDisposedException>(() => limiter.AttemptAcquire("1"));
             Assert.Throws<ObjectDisposedException>(() => translateLimiter.AttemptAcquire(1));
         }
     }
