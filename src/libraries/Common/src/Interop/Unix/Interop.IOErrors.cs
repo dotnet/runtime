@@ -110,8 +110,7 @@ internal static partial class Interop
             case Error.ENOENT:
                 // For Windows compatibility, throw DirectoryNotFoundException instead of FileNotFoundException
                 // when the parent folder does not exist.
-                if ((!isDirError && (path is null ||
-                                     DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path))))))
+                if (!isDirError && (path is null || ParentDirectoryExists(path)))
                 {
                     return !string.IsNullOrEmpty(path) ?
                         new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, path), path) :
@@ -158,21 +157,11 @@ internal static partial class Interop
             default:
                 return GetIOException(errorInfo, path);
 
-            static bool DirectoryExists(string? fullPath)
+            static bool ParentDirectoryExists(string fullPath)
             {
-                if (fullPath is null)
-                {
-                    return false;
-                }
+                string? parentPath = Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(fullPath));
 
-                Interop.Sys.FileStatus fileinfo;
-
-                if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
-                {
-                    return false;
-                }
-
-                return ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
+                return Directory.Exists(parentPath);
             }
         }
     }
