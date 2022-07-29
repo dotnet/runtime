@@ -11,6 +11,7 @@
 #include "common.h"
 #include "eeconfig.h"
 #include "stringliteralmap.h"
+#include "frozenobjectheap.h"
 
 /*
     Thread safety in GlobalStringLiteralMap / StringLiteralMap
@@ -143,7 +144,7 @@ StringLiteralMap::~StringLiteralMap()
 
 
 
-STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bAddIfNotFound, BOOL bIsCollectible)
+STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bAddIfNotFound, BOOL bIsCollectible, void** ppPinnedString)
 {
     CONTRACTL
     {
@@ -203,6 +204,17 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
         // Retrieve the string objectref from the string literal entry.
         pStrObj = pEntry->GetStringObject();
         _ASSERTE(!bAddIfNotFound || pStrObj);
+
+        FrozenObjectHeap* foh = SystemDomain::GetSegmentWithFrozenObjects();
+        if (pStrObj != nullptr && preferFrozenObjectHeap && ppPinnedString != nullptr && foh != nullptr)
+        {
+            Object* underlyingStrObj = *reinterpret_cast<Object**>(pStrObj);
+            if (foh->IsInHeap(underlyingStrObj))
+            {
+                *ppPinnedString = underlyingStrObj;
+            }
+        }
+
         return pStrObj;
     }
     // If the bAddIfNotFound flag is set then we better have a string
