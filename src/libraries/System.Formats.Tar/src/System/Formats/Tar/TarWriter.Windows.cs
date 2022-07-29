@@ -11,9 +11,6 @@ namespace System.Formats.Tar
     // Windows specific methods for the TarWriter class.
     public sealed partial class TarWriter : IDisposable
     {
-        // For files, use 755 on Windows.
-        private const UnixFileMode WindowsFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.UserExecute;
-
         // Windows specific implementation of the method that reads an entry from disk and writes it into the archive stream.
         private TarEntry ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)
         {
@@ -54,7 +51,7 @@ namespace System.Formats.Tar
             entry._header._aTime = info.LastAccessTimeUtc;
             entry._header._cTime = info.LastWriteTimeUtc; // There is no "change time" property
 
-            entry.Mode = attributes.HasFlag(FileAttributes.Directory) ? TarHelpers.DefaultDirectoryMode : WindowsFileMode;
+            entry.Mode = attributes.HasFlag(FileAttributes.Directory) ? TarHelpers.DefaultDirectoryMode : TarHelpers.WindowsFileMode;
 
             if (entry.EntryType == TarEntryType.SymbolicLink)
             {

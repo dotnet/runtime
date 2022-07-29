@@ -395,17 +395,15 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        protected static void AssertEntryModeEquals(TarEntry entry, UnixFileMode mode)
+        protected static void AssertEntryModeFromFileSystemEquals(TarEntry entry, UnixFileMode fileMode)
         {
-            if (!PlatformDetection.IsWindows)
+            if (PlatformDetection.IsWindows)
             {
-                Assert.Equal(mode, entry.Mode);
-            }
-            else
-            {
+                // Windows files don't have a mode. Set the expected value.
                 bool isDirectory = entry.EntryType == TarEntryType.Directory;
-                Assert.Equal(isDirectory ? DefaultDirectoryMode : DefaultFileMode, entry.Mode);
+                fileMode = isDirectory ? DefaultDirectoryMode : WindowsFileMode;
             }
+            Assert.Equal(fileMode, entry.Mode);
         }
 
         protected static void AssertFileModeEquals(string path, UnixFileMode mode)

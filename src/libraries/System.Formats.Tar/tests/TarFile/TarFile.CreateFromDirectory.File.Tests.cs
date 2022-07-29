@@ -98,27 +98,27 @@ namespace System.Formats.Tar.Tests
                     x.EntryType == TarEntryType.Directory &&
                     x.Name == prefix);
                 Assert.NotNull(baseEntry);
-                AssertEntryModeEquals(baseEntry, baseDirectoryMode);
+                AssertEntryModeFromFileSystemEquals(baseEntry, baseDirectoryMode);
             }
 
             TarEntry entry1 = entries.FirstOrDefault(x =>
                 x.EntryType == TarEntryType.RegularFile &&
                 x.Name == prefix + fileName1);
             Assert.NotNull(entry1);
-            AssertEntryModeEquals(entry1, filename1Mode);
+            AssertEntryModeFromFileSystemEquals(entry1, filename1Mode);
 
             TarEntry directory = entries.FirstOrDefault(x =>
                 x.EntryType == TarEntryType.Directory &&
                 x.Name == prefix + subDirectoryName);
             Assert.NotNull(directory);
-            AssertEntryModeEquals(directory, subDirectoryMode);
+            AssertEntryModeFromFileSystemEquals(directory, subDirectoryMode);
 
             string actualFileName2 = subDirectoryName + fileName2; // Notice the trailing separator in subDirectoryName
             TarEntry entry2 = entries.FirstOrDefault(x =>
                 x.EntryType == TarEntryType.RegularFile &&
                 x.Name == prefix + actualFileName2);
             Assert.NotNull(entry2);
-            AssertEntryModeEquals(entry2, filename2Mode);
+            AssertEntryModeFromFileSystemEquals(entry2, filename2Mode);
         }
 
         [Fact]

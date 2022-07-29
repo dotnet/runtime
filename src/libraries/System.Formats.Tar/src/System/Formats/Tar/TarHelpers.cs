@@ -22,12 +22,20 @@ namespace System.Formats.Tar
         internal const byte EqualsChar = 0x3d;
         internal const byte NewLineChar = 0xa;
 
+        // Default mode for TarEntry created for a file-type.
         private const UnixFileMode DefaultFileMode =
             UnixFileMode.UserRead | UnixFileMode.UserWrite |
             UnixFileMode.GroupRead |
             UnixFileMode.OtherRead;
 
+        // Default mode for TarEntry created for a directory-type.
         internal const UnixFileMode DefaultDirectoryMode =
+            DefaultFileMode |
+            UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+
+        // Windows files don't have a mode.
+        // Use the default mode with the x-bit set for all.
+        internal const UnixFileMode WindowsFileMode =
             DefaultFileMode |
             UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
 
