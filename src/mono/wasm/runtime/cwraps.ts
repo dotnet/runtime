@@ -72,6 +72,10 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "string", "bool", "number"]],
     [true, "mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
     [true, "mono_wasm_event_pipe_session_disable", "bool", ["number"]],
+    [true, "mono_wasm_diagnostic_server_create_thread", "bool", ["string", "number"]],
+    [true, "mono_wasm_diagnostic_server_thread_attach_to_runtime", "void", []],
+    [true, "mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
+    [true, "mono_wasm_diagnostic_server_create_stream", "number", []],
 
     //DOTNET
     [true, "mono_wasm_string_from_js", "number", ["string"]],
