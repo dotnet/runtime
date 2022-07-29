@@ -39,5 +39,16 @@ namespace System.Reflection
         {
             return (T)DispatchProxyGenerator.CreateProxyInstance(typeof(TProxy), typeof(T));
         }
+
+        [RequiresDynamicCode("Creating a proxy instance requires generating code at runtime")]
+        public static object Create([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type proxyType)
+        {
+            if (!proxyType.IsAssignableTo(typeof(DispatchProxy)))
+            {
+                throw new ArgumentException("proxyType must be assignable to DispatchProxy");
+            }
+
+            return DispatchProxyGenerator.CreateProxyInstance(proxyType, interfaceType);
+        }
     }
 }
