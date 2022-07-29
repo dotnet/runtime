@@ -2574,7 +2574,7 @@ namespace System.Tests
         };
 
         // https://github.com/dotnet/runtime/issues/73031 is the tracking issue to investigate the test failure on Android.
-        private static bool CanRunNJulianRuleTest => PlatformDetection.IsNotAndroid && RemoteExecutor.IsSupported;
+        private static bool CanRunNJulianRuleTest => !PlatformDetection.IsLinuxBionic && RemoteExecutor.IsSupported;
 
         [ConditionalTheory(nameof(CanRunNJulianRuleTest))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
