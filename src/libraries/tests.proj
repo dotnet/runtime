@@ -576,9 +576,7 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.IO.Compression\tests\System.IO.Compression.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
-    <!-- Remove the condition after https://github.com/dotnet/runtime/issues/70012 is fixed -->
-    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj"
-                      Condition="'$(TargetOS)' == 'windows'" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
