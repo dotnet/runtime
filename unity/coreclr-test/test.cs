@@ -68,6 +68,14 @@ namespace TestDll
             return 42;
         }
     }
+
+    public class ClassExplicitlyImplementingInterface : TestInterface
+    {
+        int TestInterface.Method()
+        {
+            return 42;
+        }
+    }
     
     public class ClassDerivingFromClassImplementingInterface : ClassImplementingInterface
     {
@@ -117,6 +125,21 @@ namespace TestDll
             return i;
         }
     }    
+
+    public struct StructExplicitlyImplementingInterface : TestInterface
+    {
+        public int i;
+
+        public void Setup()
+        {
+            i = 42;
+        }
+
+        int TestInterface.Method()
+        {
+            return i;
+        }
+    }
 
     public abstract class BaseClass
     {
