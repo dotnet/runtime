@@ -129,7 +129,7 @@ namespace Grpc.Testing
             }
         }
 
-        private static void EnsureCompression(BoolValue? expectCompressed, ServerCallContext context)
+        private static void EnsureCompression(BoolValue expectCompressed, ServerCallContext context)
         {
             if (expectCompressed != null)
             {

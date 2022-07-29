@@ -569,7 +569,8 @@
   </ItemGroup>
 
   <ItemGroup>
-     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
+    <GrpcTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
@@ -590,9 +591,11 @@
     <ProjectReference Condition="'$(RunHighAOTResourceRequiringTestsOnly)' == 'true'"
                       Include="@(HighAOTResourceRequiringProject)"
                       BuildInParallel="false" />
+    <ProjectReference Condition="'$(RunGrpcTestsOnly)' == 'true'"
+                      Include="@(GrpcTestProject)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true'">
+  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TestAssemblies)' == 'true'" />
@@ -628,7 +631,7 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'iOSSimulator'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'iOSSimulator'">
     <!-- https://github.com/dotnet/runtime/issues/57666 -->
     <!-- <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
                       BuildInParallel="false" /> -->
@@ -637,13 +640,13 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'tvOS'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'tvOS'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Device\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'MacCatalyst'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'MacCatalyst'">
     <!-- https://github.com/dotnet/runtime/issues/57666 -->
     <!-- <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
                       BuildInParallel="false" /> -->
@@ -652,13 +655,13 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'tvOSSimulator'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'tvOSSimulator'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'Android'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'Android'">
     <ProjectReference Include="$(MonoProjectRoot)sample\Android\AndroidSampleApp.csproj"
                       BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\**\*.Test.csproj"

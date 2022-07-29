@@ -17,25 +17,12 @@ schedules:
     branches:
       include:
       - main
-    always: true # the test is independent of the changes to the main branch since the client code is in another repo
+    always: true
 
-# TODO do we need those variables?
-# variables:
-#   - template: /eng/pipelines/common/variables.yml
+variables:
+  - template: /eng/pipelines/common/variables.yml
 
 jobs:
-
-# TODO we basically need to:
-#
-# 1) cd src/tests/src/tests/FunctionalTests/Android/Device_Emulator/gRPC/grpc-dotnet
-# 2) docker build -t grpc-server -f testassets/InteropTestsWebsite .
-# 3) docker run --name grpc-server -d -p 50052:50052 -p 80:80 grpc-server
-# 4) adb reverse tcp:50052 tcp:50052; adb reverse tcp:80 tcp:80
-# 5) dotnet build -t:Run -p:Configuration=Release ../Android.Device_Emulator.gRPC.Test.csproj
-# 6) ... expect the result to be 42
-# 7) docker stop grpc-server (if we care)
-#
-# so... 1-4) are helix pre-scripts, 5) is the main command, 7) is helix post-script?
 
 #
 # Android devices
@@ -43,24 +30,20 @@ jobs:
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    # TODO which job template?
-    # jobTemplate: /eng/pipelines/common/global-build-job.yml
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    # - Android_arm TODO do we need/want it?
-    - Android_arm64
+    - Android_x64
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono # TODO ???
-      # we don't want to build the whole .net
-      # buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAdditionalTimezoneChecks=true
+      nameSuffix: AllSubsets_Mono_gRPC
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunGrpcTestsOnly=true /p:BuildGrpcServerDockerImage=true
       timeoutInMinutes: 180
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
         creator: dotnet-bot
+        extraHelixArguments: /p:RunGrpcTestsOnly=true /p:BuildGrpcServerDockerImage=true
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-
-# TODO Android_x64, Android_x86 - do those queues have docker?
