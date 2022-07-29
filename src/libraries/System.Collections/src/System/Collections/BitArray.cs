@@ -341,10 +341,13 @@ namespace System.Collections
 
             if (Vector.IsHardwareAccelerated)
             {
-                for (; i < (uint)count - (Vector<int>.Count - 1u); i += Vector<int>.Count)
+                fixed (int* pThisBuffer = thisArray)
+                fixed (int* pValueBuffer = valueArray)
                 {
-                    Vector<int> result = new Vector<int>(thisArray, i) & new Vector<int>(valueArray, i);
-                    result.CopyTo(thisArray, i);
+                    for (; i <= (uint)count - Vector<int>.Count; i += Vector<int>.Count)
+                    {
+                        Unsafe.WriteUnaligned(pThisBuffer + i, Unsafe.ReadUnaligned<Vector<int>>(pThisBuffer + i) & Unsafe.ReadUnaligned<Vector<int>>(pValueBuffer + i));
+                    }
                 }
             }
 
@@ -394,12 +397,12 @@ namespace System.Collections
 
             int i = 0;
 
-            if (Vector.IsHardwareAccelerated)
+            fixed (int* pThisBuffer = thisArray)
+            fixed (int* pValueBuffer = valueArray)
             {
-                for (; i < (uint)count - (Vector<int>.Count - 1u); i += Vector<int>.Count)
+                for (; i <= (uint)count - Vector<int>.Count; i += Vector<int>.Count)
                 {
-                    Vector<int> result = new Vector<int>(thisArray, i) | new Vector<int>(valueArray, i);
-                    result.CopyTo(thisArray, i);
+                    Unsafe.WriteUnaligned(pThisBuffer + i, Unsafe.ReadUnaligned<Vector<int>>(pThisBuffer + i) | Unsafe.ReadUnaligned<Vector<int>>(pValueBuffer + i));
                 }
             }
 
@@ -449,12 +452,12 @@ namespace System.Collections
 
             int i = 0;
 
-            if (Vector.IsHardwareAccelerated)
+            fixed (int* pThisBuffer = thisArray)
+            fixed (int* pValueBuffer = valueArray)
             {
-                for (; i < (uint)count - (Vector<int>.Count - 1u); i += Vector<int>.Count)
+                for (; i <= (uint)count - Vector<int>.Count; i += Vector<int>.Count)
                 {
-                    Vector<int> result = new Vector<int>(thisArray, i) ^ new Vector<int>(valueArray, i);
-                    result.CopyTo(thisArray, i);
+                    Unsafe.WriteUnaligned(pThisBuffer + i, Unsafe.ReadUnaligned<Vector<int>>(pThisBuffer + i) ^ Unsafe.ReadUnaligned<Vector<int>>(pValueBuffer + i));
                 }
             }
 
@@ -497,12 +500,11 @@ namespace System.Collections
 
             int i = 0;
 
-            if (Vector.IsHardwareAccelerated)
+            fixed (int* pThisBuffer = thisArray)
             {
-                for (; i < (uint)count - (Vector<int>.Count - 1u); i += Vector<int>.Count)
+                for (; i <= (uint)count - Vector<int>.Count; i += Vector<int>.Count)
                 {
-                    Vector<int> result = ~new Vector<int>(thisArray, i);
-                    result.CopyTo(thisArray, i);
+                    Unsafe.WriteUnaligned(pThisBuffer + i, ~Unsafe.ReadUnaligned<Vector<int>>(pThisBuffer + i));
                 }
             }
 
