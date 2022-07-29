@@ -76,7 +76,7 @@ inline
 EventPipeEventSource *
 ep_event_source_get (void)
 {
-	// Singelton.
+	// Singleton.
 	return &_ep_event_source_instance;
 }
 

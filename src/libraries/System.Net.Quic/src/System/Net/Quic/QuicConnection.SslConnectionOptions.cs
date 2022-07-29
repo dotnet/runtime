@@ -55,73 +55,95 @@ public partial class QuicConnection
         public unsafe int ValidateCertificate(QUIC_BUFFER* certificatePtr, QUIC_BUFFER* chainPtr, out X509Certificate2? certificate)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
+            IntPtr certificateBuffer = 0;
+            int certificateLength = 0;
+
             X509Chain? chain = null;
-            IntPtr certificateBuffer = default;
-            int certificateLength = default;
-
-            certificate = null;
-
-            if (certificatePtr is not null)
+            X509Certificate2? result = null;
+            try
             {
-                chain = new X509Chain();
-                chain.ChainPolicy.RevocationMode = _revocationMode;
-                chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-                chain.ChainPolicy.ApplicationPolicy.Add(_isClient ? s_serverAuthOid : s_clientAuthOid);
-
-                if (OperatingSystem.IsWindows())
+                if (certificatePtr is not null)
                 {
-                    certificate = new X509Certificate2((IntPtr)certificatePtr);
+                    chain = new X509Chain();
+                    chain.ChainPolicy.RevocationMode = _revocationMode;
+                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+                    chain.ChainPolicy.ApplicationPolicy.Add(_isClient ? s_serverAuthOid : s_clientAuthOid);
+
+                    if (MsQuicApi.UsesSChannelBackend)
+                    {
+                        result = new X509Certificate2((IntPtr)certificatePtr);
+                    }
+                    else
+                    {
+                        if (certificatePtr->Length > 0)
+                        {
+                            certificateBuffer = (IntPtr)certificatePtr->Buffer;
+                            certificateLength = (int)certificatePtr->Length;
+                            result = new X509Certificate2(certificatePtr->Span);
+                        }
+
+                        if (chainPtr->Length > 0)
+                        {
+                            X509Certificate2Collection additionalCertificates = new X509Certificate2Collection();
+                            additionalCertificates.Import(chainPtr->Span);
+                            chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
+                        }
+                    }
                 }
-                else
+
+                if (result is not null)
                 {
-                    if (certificatePtr->Length > 0)
+                    sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain!, result, checkCertName: true, !_isClient, _targetHost, certificateBuffer, certificateLength);
+                }
+                else if (_certificateRequired)
+                {
+                    sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
+                }
+
+                int status = QUIC_STATUS_SUCCESS;
+                if (_validationCallback is not null)
+                {
+                    if (!_validationCallback(_connection, result, chain, sslPolicyErrors))
                     {
-                        certificateBuffer = (IntPtr)certificatePtr->Buffer;
-                        certificateLength = (int)certificatePtr->Length;
-                        certificate = new X509Certificate2(certificatePtr->Span);
-                    }
-                    if (chainPtr->Length > 0)
-                    {
-                        X509Certificate2Collection additionalCertificates = new X509Certificate2Collection();
-                        additionalCertificates.Import(chainPtr->Span);
-                        chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
+                        if (_isClient)
+                        {
+                            throw new AuthenticationException(SR.net_quic_cert_custom_validation);
+                        }
+
+                        status = QUIC_STATUS_USER_CANCELED;
                     }
                 }
-            }
-
-            if (certificate is not null)
-            {
-                sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain!, certificate, true, !_isClient, _targetHost, certificateBuffer, certificateLength);
-            }
-
-            if (certificate is null && _certificateRequired)
-            {
-                sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
-            }
-
-            if (_validationCallback is not null)
-            {
-                if (!_validationCallback(_connection, certificate, chain, sslPolicyErrors))
+                else if (sslPolicyErrors != SslPolicyErrors.None)
                 {
                     if (_isClient)
                     {
-                        throw new AuthenticationException(SR.net_quic_cert_custom_validation);
+                        throw new AuthenticationException(SR.Format(SR.net_quic_cert_chain_validation, sslPolicyErrors));
                     }
-                    return QUIC_STATUS_USER_CANCELED;
-                }
-                return QUIC_STATUS_SUCCESS;
-            }
 
-            if (sslPolicyErrors != SslPolicyErrors.None)
+                    status = QUIC_STATUS_HANDSHAKE_FAILURE;
+                }
+
+                certificate = result;
+                return status;
+            }
+            catch
             {
-                if (_isClient)
-                {
-                    throw new AuthenticationException(SR.Format(SR.net_quic_cert_chain_validation, sslPolicyErrors));
-                }
-                return QUIC_STATUS_HANDSHAKE_FAILURE;
+                result?.Dispose();
+                throw;
             }
+            finally
+            {
+                if (chain is not null)
+                {
+                    X509ChainElementCollection elements = chain.ChainElements;
+                    for (int i = 0; i < elements.Count; i++)
+                    {
+                        elements[i].Certificate.Dispose();
+                    }
 
-            return QUIC_STATUS_SUCCESS;
+                    chain.Dispose();
+                }
+            }
         }
     }
 }

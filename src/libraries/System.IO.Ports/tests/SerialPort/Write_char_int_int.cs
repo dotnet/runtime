@@ -234,14 +234,14 @@ namespace System.IO.Ports.Tests
             {
                 int bufferLength = null == buffer ? 0 : buffer.Length;
 
-                Debug.WriteLine("Verifying write method throws {0} buffer.Lenght={1}, offset={2}, count={3}", expectedException, bufferLength, offset, count);
+                Debug.WriteLine("Verifying write method throws {0} buffer.Length={1}, offset={2}, count={3}", expectedException, bufferLength, offset, count);
                 com.Open();
 
                 try
                 {
                     com.Write(buffer, offset, count);
 
-                    Fail("ERROR!!!: No Excpetion was thrown");
+                    Fail("ERROR!!!: No Exception was thrown");
                 }
                 catch (Exception e)
                 {
@@ -275,7 +275,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
             {
-                Debug.WriteLine("Verifying write method buffer.Lenght={0}, offset={1}, count={2}, endocing={3}",
+                Debug.WriteLine("Verifying write method buffer.Length={0}, offset={1}, count={2}, endocing={3}",
                     buffer.Length, offset, count, encoding.EncodingName);
 
                 com1.Encoding = encoding;

@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
+using static System.Net.Http.Functional.Tests.TestHelper;
+
 namespace System.Net.WebSockets.Client.Tests
 {
     public class ConnectTest_Http2 : ClientWebSocketTestBase
@@ -18,7 +20,7 @@ namespace System.Net.WebSockets.Client.Tests
         public ConnectTest_Http2(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
         public async Task ConnectAsync_VersionNotSupported_Throws()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -28,8 +30,7 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     clientSocket.Options.HttpVersion = HttpVersion.Version20;
                     clientSocket.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
-                    using var handler = new SocketsHttpHandler();
-                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                    using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
                     Task t = clientSocket.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
                     var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
                     Assert.IsType<HttpRequestException>(ex.InnerException);
@@ -44,7 +45,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
         public async Task ConnectAsync_VersionSupported_Success()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -54,8 +55,7 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     cws.Options.HttpVersion = HttpVersion.Version20;
                     cws.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
-                    using var handler = new SocketsHttpHandler();
-                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                    using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
                     await cws.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
                 }
             },

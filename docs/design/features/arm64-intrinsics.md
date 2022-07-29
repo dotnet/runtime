@@ -215,7 +215,7 @@ arguments are not constant.
     + Review of existing documentation shows `ARM64` intrinsics are mostly absent or undocumented so
     initially this will not be necessary for `ARM64`
     + See gcc manual "AArch64 Built-in Functions"
-    + MSVC ARM64 documentation has not been publically released
+    + MSVC ARM64 documentation has not been publicly released
 
 ## Phased Implementation
 

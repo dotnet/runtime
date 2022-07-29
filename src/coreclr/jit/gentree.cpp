@@ -812,7 +812,7 @@ bool GenTree::IsMultiRegNode() const
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
-        return true;
+        return AsMultiRegOp()->GetRegCount() > 1;
     }
 #endif
 
@@ -6212,7 +6212,7 @@ bool GenTree::TryGetUseBinOp(GenTree* operand, GenTree*** pUse)
 //------------------------------------------------------------------------
 // GenTree::ReplaceOperand:
 //    Replace a given operand to this node with a new operand. If the
-//    current node is a call node, this will also udpate the call
+//    current node is a call node, this will also update the call
 //    argument table if necessary.
 //
 // Arguments:
@@ -8508,6 +8508,8 @@ GenTree* Compiler::gtCloneExpr(
                 copy = new (this, GT_BOX)
                     GenTreeBox(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsBox()->gtAsgStmtWhenInlinedBoxValue,
                                tree->AsBox()->gtCopyStmtWhenInlinedBoxValue);
+                tree->AsBox()->SetCloned();
+                copy->AsBox()->SetCloned();
                 break;
 
             case GT_INTRINSIC:
@@ -8717,7 +8719,7 @@ GenTree* Compiler::gtCloneExpr(
 
 DONE:
 
-    copy->gtVNPair = tree->gtVNPair; // A cloned tree gets the orginal's Value number pair
+    copy->gtVNPair = tree->gtVNPair; // A cloned tree gets the original's Value number pair
 
     /* Compute the flags for the copied node. Note that we can do this only
        if we didnt gtFoldExpr(copy) */
@@ -9934,10 +9936,6 @@ void Compiler::gtDispNodeName(GenTree* tree)
             if (tree->gtFlags & GTF_CALL_POP_ARGS)
             {
                 gtfTypeBufWalk += SimpleSprintf_s(gtfTypeBufWalk, gtfTypeBuf, sizeof(gtfTypeBuf), " popargs");
-            }
-            if (tree->AsCall()->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
-            {
-                gtfTypeBufWalk += SimpleSprintf_s(gtfTypeBufWalk, gtfTypeBuf, sizeof(gtfTypeBuf), " thiscall");
             }
 #ifdef TARGET_X86
             gtfTypeBufWalk += SimpleSprintf_s(gtfTypeBufWalk, gtfTypeBuf, sizeof(gtfTypeBuf), " %s",
@@ -13444,7 +13442,7 @@ DONE_FOLD:
 
     /* The node has beeen folded into 'op' */
 
-    // If there was an assigment update, we just morphed it into
+    // If there was an assignment update, we just morphed it into
     // a use, update the flags appropriately
     if (op->gtOper == GT_LCL_VAR)
     {
@@ -13616,6 +13614,13 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         return nullptr;
     }
 
+    // If this box is no longer single-use, bail.
+    if (box->WasCloned())
+    {
+        JITDUMP(" bailing; unsafe to remove box that has been cloned\n");
+        return nullptr;
+    }
+
     // If we're eventually going to return the type handle, remember it now.
     GenTree* boxTypeHandle = nullptr;
     if ((options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE) || (options == BR_DONT_REMOVE_WANT_TYPE_HANDLE))
@@ -13730,7 +13735,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         lvaSetStruct(boxTempLcl, boxClass, isUnsafeValueClass);
         var_types boxTempType = lvaTable[boxTempLcl].lvType;
 
-        // Remove the newobj and assigment to box temp
+        // Remove the newobj and assignment to box temp
         JITDUMP("Bashing NEWOBJ [%06u] to NOP\n", dspTreeID(asg));
         asg->gtBashToNOP();
 
@@ -14308,7 +14313,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                             // constant to an int as would be obtained by passing that constant as
                             // a parameter and then casting that parameter to an int type.
 
-                            // Don't fold overflowing converions, as the value returned by
+                            // Don't fold overflowing conversions, as the value returned by
                             // JIT's codegen doesn't always match with the C compiler's cast result.
                             // We want the behavior to be the same with or without folding.
 
@@ -17496,10 +17501,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     break;
                 }
             }
-            if (call->IsInlineCandidate())
+            if (call->IsInlineCandidate() && !call->IsGuardedDevirtualizationCandidate())
             {
                 // For inline candidates, we've already cached the return
-                // type class handle in the inline info.
+                // type class handle in the inline info (for GDV candidates,
+                // this data is valid only for a correct guess, so we cannot
+                // use it).
                 InlineCandidateInfo* inlInfo = call->gtInlineCandidateInfo;
                 assert(inlInfo != nullptr);
 
@@ -21687,9 +21694,10 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
         else
         {
             CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSimdOrHW(type, simdBaseJitType, isSimdAsHWIntrinsic);
-
-            GenTree* op1Dup = fgMakeMultiUse(&op1, clsHnd);
-            retNode = gtNewSimdHWIntrinsicNode(type, op1, op1Dup, cnsNode, NI_SSE_Shuffle, simdBaseJitType, simdSize,
+            // for double we need SSE2, but we can't use the integral path ^ because we still need op1Dup here
+            NamedIntrinsic ni     = simdBaseType == TYP_DOUBLE ? NI_SSE2_Shuffle : NI_SSE_Shuffle;
+            GenTree*       op1Dup = fgMakeMultiUse(&op1, clsHnd);
+            retNode               = gtNewSimdHWIntrinsicNode(type, op1, op1Dup, cnsNode, ni, simdBaseJitType, simdSize,
                                                isSimdAsHWIntrinsic);
         }
     }

@@ -226,7 +226,7 @@ public:
     // LIR::Range:
     //
     // Represents a contiguous range of LIR nodes. Provides a variety of
-    // variety of utilites that modify the LIR contained in the range. Unlike
+    // variety of utilities that modify the LIR contained in the range. Unlike
     // `ReadOnlyRange`, values of this type may be edited.
     //
     // Because it is not a final class, it is possible to slice values of this

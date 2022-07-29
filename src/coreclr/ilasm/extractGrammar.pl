@@ -27,7 +27,7 @@ $grammar =~ s/\b([A-Z0-9_]+)_\b/'\L$1\E'/sg;
 $grammar =~ s/\b_([A-Z0-9]+)\b/'\L.$1\E'/sg;
 
 	# do the special punctuation by hand
-$grammar =~ s/\bELIPSIS\b/'...'/sg;
+$grammar =~ s/\bELLIPSIS\b/'...'/sg;
 $grammar =~ s/\bDCOLON\b/'::'/sg;
 
 #<STRIP>

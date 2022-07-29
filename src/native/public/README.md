@@ -23,7 +23,7 @@ new public API function incurs a maintenance cost.  Care should be taken.
 
 The headers `mono-private-unstable.h` in each subdirectory are an exception to the above guarantees.
 Functions added to these headers represent "work in progress" and may break API semantics or ABI
-compatability.  Clients using these functions are generally tightly coupled to the development of
+compatibility.  Clients using these functions are generally tightly coupled to the development of
 the runtime and take on responsibility for any breaking changes.
 
 

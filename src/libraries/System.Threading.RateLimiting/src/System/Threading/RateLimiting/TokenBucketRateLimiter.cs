@@ -45,7 +45,33 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="TokenBucketRateLimiter"/>.</param>
         public TokenBucketRateLimiter(TokenBucketRateLimiterOptions options)
         {
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+            if (options.TokenLimit <= 0 || options.TokensPerPeriod <= 0)
+            {
+                throw new ArgumentException($"Both {nameof(options.TokenLimit)} and {nameof(options.TokensPerPeriod)} must be set to values greater than 0.", nameof(options));
+            }
+            if (options.QueueLimit < 0)
+            {
+                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
+            }
+            if (options.ReplenishmentPeriod < TimeSpan.Zero)
+            {
+                throw new ArgumentException($"{nameof(options.ReplenishmentPeriod)} must be set to a value greater than or equal to TimeSpan.Zero.", nameof(options));
+            }
+
+            _options = new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = options.TokenLimit,
+                QueueProcessingOrder = options.QueueProcessingOrder,
+                QueueLimit = options.QueueLimit,
+                ReplenishmentPeriod = options.ReplenishmentPeriod,
+                TokensPerPeriod = options.TokensPerPeriod,
+                AutoReplenishment = options.AutoReplenishment
+            };
+
             _tokenCount = options.TokenLimit;
 
             _idleSince = _lastReplenishmentTick = Stopwatch.GetTimestamp();

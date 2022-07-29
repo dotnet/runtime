@@ -224,7 +224,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Marshal as instance of ArraySegment class on JavaScript side.
         /// </summary>
         /// <remarks>
-        /// ArraySegment will hold <see cref="GCHandleType.Pinned"/> to underlying array until diposed or garbage collected on JS side.
+        /// ArraySegment will hold <see cref="GCHandleType.Pinned"/> to underlying array until disposed or garbage collected on JS side.
         /// </remarks>
         public static JSMarshalerType ArraySegment(JSMarshalerType element)
         {

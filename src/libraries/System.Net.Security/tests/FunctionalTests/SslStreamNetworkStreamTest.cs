@@ -153,10 +153,11 @@ namespace System.Net.Security.Tests
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await s.ConnectAsync(Configuration.Security.TlsRenegotiationServer, 443);
             using (NetworkStream ns = new NetworkStream(s))
+            using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
             using (SslStream ssl = new SslStream(ns, true, validationCallback))
             {
                 X509CertificateCollection certBundle = new X509CertificateCollection();
-                certBundle.Add(Configuration.Certificates.GetClientCertificate());
+                certBundle.Add(clientCert);
 
                 // Perform handshake to establish secure connection.
                 await ssl.AuthenticateAsClientAsync(Configuration.Security.TlsRenegotiationServer, certBundle, SslProtocols.Tls12, false);
@@ -256,6 +257,8 @@ namespace System.Net.Security.Tests
                 // verify that the session is usable with or without client's certificate
                 await TestHelper.PingPong(client, server, cts.Token);
                 await TestHelper.PingPong(server, client, cts.Token);
+
+                server.RemoteCertificate?.Dispose();
             }
         }
 
@@ -333,6 +336,8 @@ namespace System.Net.Security.Tests
                 // verify that the session is usable with or without client's certificate
                 await TestHelper.PingPong(client, server, cts.Token);
                 await TestHelper.PingPong(server, client, cts.Token);
+
+                server.RemoteCertificate?.Dispose();
             }
         }
 
@@ -492,9 +497,9 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         [InlineData(true)]
         [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Android, "SslStream Renegotiate is not supported in SslStream on Android")]
         public async Task SslStream_NegotiateClientCertificateAsyncTls13_Succeeds(bool sendClientCertificate)
         {
             bool negotiateClientCertificateCalled = false;
@@ -560,6 +565,8 @@ namespace System.Net.Security.Tests
                 // verify that the session is usable with or without client's certificate
                 await TestHelper.PingPong(client, server, cts.Token);
                 await TestHelper.PingPong(server, client, cts.Token);
+
+                server.RemoteCertificate?.Dispose();
             }
         }
 
@@ -619,6 +626,8 @@ namespace System.Net.Security.Tests
                 await t;
 
                 await Assert.ThrowsAsync<InvalidOperationException>(() => server.NegotiateClientCertificateAsync());
+
+                server.RemoteCertificate?.Dispose();
             }
         }
 
@@ -744,7 +753,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         public async Task SslStream_UntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
             int split = Random.Shared.Next(0, certificates.serverChain.Count - 1);
@@ -798,7 +807,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
         {
             string errorMessage;
@@ -845,7 +854,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
             List<SslStream> streams = new List<SslStream>();
@@ -929,7 +938,6 @@ namespace System.Net.Security.Tests
         [InlineData(16384 * 100, 4096, 1024, true)]
         [InlineData(16384 * 100, 1024 * 20, 1024, true)]
         [InlineData(16384, 3, 3, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_RandomSizeWrites_OK(int bufferSize, int readBufferSize, int writeBufferSize, bool useAsync)
         {
             byte[] dataToCopy = RandomNumberGenerator.GetBytes(bufferSize);

@@ -74,12 +74,17 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (contentType == Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED || contentType == Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED_EMBED)
                     {
+                        pCertContext?.Dispose();
                         pCertContext = GetSignerInPKCS7Store(hCertStore, hCryptMsg);
                     }
                     else if (contentType == Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PFX)
                     {
                         if (loadFromFile)
+                        {
                             rawData = File.ReadAllBytes(fileName!);
+                        }
+
+                        pCertContext?.Dispose();
                         pCertContext = FilterPFXStore(rawData, password, pfxCertStoreFlags);
 
                         // If PersistKeySet is set we don't delete the key, so that it persists.
@@ -198,6 +203,7 @@ namespace System.Security.Cryptography.X509Certificates
                         if (pCertContext.IsInvalid)
                         {
                             // Doesn't have a private key but hang on to it anyway in case we don't find any certs with a private key.
+                            pCertContext.Dispose();
                             pCertContext = pEnumContext.Duplicate();
                         }
                     }
@@ -205,6 +211,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (pCertContext.IsInvalid)
                 {
+                    pCertContext.Dispose();
                     throw new CryptographicException(SR.Cryptography_Pfx_NoCertificates);
                 }
 

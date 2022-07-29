@@ -51,17 +51,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- CLR NativeAot only builds in a subset of the matrix -->
-    <NativeAotSupported Condition="('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'OSX') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64') and ('$(TargetOS)' != 'OSX' or '$(TargetArchitecture)' != 'arm64')">true</NativeAotSupported>
-
-    <!-- If we're building clr.nativeaotlibs and not building the CLR runtime, compile libraries against NativeAOT CoreLib -->
-    <UseNativeAotCoreLib Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+'))">true</UseNativeAotCoreLib>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(PrimaryRuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
+
+    <DefaultNativeAotSubsets>clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime</DefaultNativeAotSubsets>
 
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(MonoAOTLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
@@ -87,6 +81,7 @@
   <PropertyGroup>
     <_subset>$(_subset.Replace('+clr.paltests+', '+clr.paltests+clr.paltestlist+'))</_subset>
     <_subset>$(_subset.Replace('+clr+', '+$(DefaultCoreClrSubsets)+'))</_subset>
+    <_subset>$(_subset.Replace('+clr.aot+', '+$(DefaultNativeAotSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+mono+', '+$(DefaultMonoSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+libs+', '+$(DefaultLibrariesSubsets)+'))</_subset>
     <_subset>$(_subset.Replace('+host+', '+$(DefaultHostSubsets)+'))</_subset>
@@ -99,6 +94,14 @@
     <ClrDefaultRuntimeBuildSubsets>ClrRuntimeSubset=true;ClrJitSubset=true;ClrILToolsSubset=true</ClrDefaultRuntimeBuildSubsets>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- CLR NativeAot only builds in a subset of the matrix -->
+    <NativeAotSupported Condition="('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'OSX') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64') and ('$(TargetOS)' != 'OSX' or '$(TargetArchitecture)' != 'arm64')">true</NativeAotSupported>
+
+    <!-- If we're building clr.nativeaotlibs and not building the CLR runtime, compile libraries against NativeAOT CoreLib -->
+    <UseNativeAotCoreLib Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr.native+')) and !$(_subset.Contains('+clr.runtime+'))">true</UseNativeAotCoreLib>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- CoreClr -->
     <SubsetName Include="Clr" Description="The full CoreCLR runtime. Equivalent to: $(DefaultCoreClrSubsets)" />
@@ -106,9 +109,10 @@
     <SubsetName Include="Clr.ILTools" Description="The CoreCLR IL tools (ilasm/ildasm)." />
     <SubsetName Include="Clr.Runtime" Description="The CoreCLR .NET runtime. Includes clr.jit, clr.iltools, clr.hosts." />
     <SubsetName Include="Clr.Native" Description="All CoreCLR native non-test components, including the runtime, jits, and other native tools. Includes clr.hosts, clr.runtime, clr.jit, clr.alljits, clr.paltests, clr.iltools, clr.nativeaotruntime, clr.spmi." />
+    <SubsetName Include="Clr.Aot" Description="Everything needed for Native AOT workloads, including clr.alljits, clr.tools, clr.nativeaotlibs, and clr.nativeaotruntime" />
     <SubsetName Include="Clr.NativeAotLibs" Description="The CoreCLR native AOT CoreLib and other low level class libraries." />
     <SubsetName Include="Clr.NativeAotRuntime" Description="The stripped-down CoreCLR native AOT runtime." />
-    <SubsetName Include="Clr.CrossArchTools" Description="The cross-targetted CoreCLR tools." />
+    <SubsetName Include="Clr.CrossArchTools" Description="The cross-targeted CoreCLR tools." />
     <SubsetName Include="Clr.PalTests" OnDemand="true" Description="The CoreCLR PAL tests." />
     <SubsetName Include="Clr.PalTestList" OnDemand="true" Description="Generate the list of the CoreCLR PAL tests. When using the command line, use Clr.PalTests instead." />
     <SubsetName Include="Clr.Hosts" Description="The CoreCLR corerun test host." />

@@ -18,10 +18,10 @@ namespace System.Threading.RateLimiting
     }
     public sealed partial class ConcurrencyLimiterOptions
     {
-        public ConcurrencyLimiterOptions(int permitLimit, System.Threading.RateLimiting.QueueProcessingOrder queueProcessingOrder, int queueLimit) { }
-        public int PermitLimit { get { throw null; } }
-        public int QueueLimit { get { throw null; } }
-        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } }
+        public ConcurrencyLimiterOptions() { }
+        public int PermitLimit { get { throw null; } set { throw null; } }
+        public int QueueLimit { get { throw null; } set { throw null; } }
+        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } set { throw null; } }
     }
     public sealed partial class FixedWindowRateLimiter : System.Threading.RateLimiting.ReplenishingRateLimiter
     {
@@ -38,12 +38,12 @@ namespace System.Threading.RateLimiting
     }
     public sealed partial class FixedWindowRateLimiterOptions
     {
-        public FixedWindowRateLimiterOptions(int permitLimit, System.Threading.RateLimiting.QueueProcessingOrder queueProcessingOrder, int queueLimit, System.TimeSpan window, bool autoReplenishment = true) { }
-        public bool AutoReplenishment { get { throw null; } }
-        public int PermitLimit { get { throw null; } }
-        public int QueueLimit { get { throw null; } }
-        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } }
-        public System.TimeSpan Window { get { throw null; } }
+        public FixedWindowRateLimiterOptions() { }
+        public bool AutoReplenishment { get { throw null; } set { throw null; } }
+        public int PermitLimit { get { throw null; } set { throw null; } }
+        public int QueueLimit { get { throw null; } set { throw null; } }
+        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } set { throw null; } }
+        public System.TimeSpan Window { get { throw null; } set { throw null; } }
     }
     public static partial class MetadataName
     {
@@ -70,15 +70,16 @@ namespace System.Threading.RateLimiting
     public abstract partial class PartitionedRateLimiter<TResource> : System.IAsyncDisposable, System.IDisposable
     {
         protected PartitionedRateLimiter() { }
-        public System.Threading.RateLimiting.RateLimitLease Acquire(TResource resourceID, int permitCount = 1) { throw null; }
-        protected abstract System.Threading.RateLimiting.RateLimitLease AcquireCore(TResource resourceID, int permitCount);
+        public System.Threading.RateLimiting.RateLimitLease Acquire(TResource resource, int permitCount = 1) { throw null; }
+        protected abstract System.Threading.RateLimiting.RateLimitLease AcquireCore(TResource resource, int permitCount);
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
-        public abstract int GetAvailablePermits(TResource resourceID);
-        public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsync(TResource resourceID, int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(TResource resourceID, int permitCount, System.Threading.CancellationToken cancellationToken);
+        public abstract int GetAvailablePermits(TResource resource);
+        public System.Threading.RateLimiting.PartitionedRateLimiter<TOuter> TranslateKey<TOuter>(System.Func<TOuter, TResource> keyAdapter) { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsync(TResource resource, int permitCount = 1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        protected abstract System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAndAcquireAsyncCore(TResource resource, int permitCount, System.Threading.CancellationToken cancellationToken);
     }
     public enum QueueProcessingOrder
     {
@@ -150,13 +151,13 @@ namespace System.Threading.RateLimiting
     }
     public sealed partial class SlidingWindowRateLimiterOptions
     {
-        public SlidingWindowRateLimiterOptions(int permitLimit, System.Threading.RateLimiting.QueueProcessingOrder queueProcessingOrder, int queueLimit, System.TimeSpan window, int segmentsPerWindow, bool autoReplenishment = true) { }
-        public bool AutoReplenishment { get { throw null; } }
-        public int PermitLimit { get { throw null; } }
-        public int QueueLimit { get { throw null; } }
-        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } }
-        public int SegmentsPerWindow { get { throw null; } }
-        public System.TimeSpan Window { get { throw null; } }
+        public SlidingWindowRateLimiterOptions() { }
+        public bool AutoReplenishment { get { throw null; } set { throw null; } }
+        public int PermitLimit { get { throw null; } set { throw null; } }
+        public int QueueLimit { get { throw null; } set { throw null; } }
+        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } set { throw null; } }
+        public int SegmentsPerWindow { get { throw null; } set { throw null; } }
+        public System.TimeSpan Window { get { throw null; } set { throw null; } }
     }
     public sealed partial class TokenBucketRateLimiter : System.Threading.RateLimiting.ReplenishingRateLimiter
     {
@@ -173,12 +174,12 @@ namespace System.Threading.RateLimiting
     }
     public sealed partial class TokenBucketRateLimiterOptions
     {
-        public TokenBucketRateLimiterOptions(int tokenLimit, System.Threading.RateLimiting.QueueProcessingOrder queueProcessingOrder, int queueLimit, System.TimeSpan replenishmentPeriod, int tokensPerPeriod, bool autoReplenishment = true) { }
-        public bool AutoReplenishment { get { throw null; } }
-        public int QueueLimit { get { throw null; } }
-        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } }
-        public System.TimeSpan ReplenishmentPeriod { get { throw null; } }
-        public int TokenLimit { get { throw null; } }
-        public int TokensPerPeriod { get { throw null; } }
+        public TokenBucketRateLimiterOptions() { }
+        public bool AutoReplenishment { get { throw null; } set { throw null; } }
+        public int QueueLimit { get { throw null; } set { throw null; } }
+        public System.Threading.RateLimiting.QueueProcessingOrder QueueProcessingOrder { get { throw null; } set { throw null; } }
+        public System.TimeSpan ReplenishmentPeriod { get { throw null; } set { throw null; } }
+        public int TokenLimit { get { throw null; } set { throw null; } }
+        public int TokensPerPeriod { get { throw null; } set { throw null; } }
     }
 }

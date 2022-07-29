@@ -344,7 +344,7 @@ Histogram loopExitCountTable(loopExitCountBuckets);
 //                of the BYTE[] returned from getClassGClayout()
 //
 // Return Value:
-//    The corresponsing enum value from the JIT's var_types
+//    The corresponding enum value from the JIT's var_types
 //
 // Notes:
 //   The gcLayout of each field of a struct is returned from getClassGClayout()
@@ -9539,6 +9539,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[BOX_VALUE]");
                 }
+
+                if (tree->gtFlags & GTF_BOX_CLONED)
+                {
+                    chars += printf("[BOX_CLONED]");
+                }
                 break;
 
             case GT_ARR_ADDR:
@@ -9729,14 +9734,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[CALL_M_SPECIAL_INTRINSIC]");
                     }
 
-                    if (call->IsUnmanaged())
-                    {
-                        if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
-                        {
-                            chars += printf("[CALL_M_UNMGD_THISCALL]");
-                        }
-                    }
-                    else if (call->IsVirtualStub())
+                    if (call->IsVirtualStub())
                     {
                         if (call->gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT)
                         {

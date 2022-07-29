@@ -626,12 +626,11 @@ namespace System.Net.Http.Functional.Tests
                     await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
                         {
-                            using HttpClientHandler handler = CreateHttpClientHandler(version);
+                            using HttpClientHandler handler = CreateHttpClientHandler(version, allowAllCertificates: true);
                             using HttpClient client = CreateHttpClient(handler, useVersionString);
 
                             var socketsHttpHandler = GetUnderlyingSocketsHttpHandler(handler);
                             socketsHttpHandler.MaxConnectionsPerServer = 1;
-                            socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
 
                             // Dummy request to establish connection and ensure that the MaxConcurrentStreams setting has been acknowledged
                             await client.GetStringAsync(uri);

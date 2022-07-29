@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
@@ -11,6 +13,81 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 {
     public class JsonSourceGeneratorDiagnosticsTests
     {
+        /// <summary>
+        /// https://github.com/dotnet/runtime/issues/61379
+        /// </summary>
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
+        public void EmitsDocumentationOnPublicMembersAndDoesNotCauseCS1591()
+        {
+            // Compile the referenced assembly first.
+            Compilation documentedCompilation = CompilationHelper.CreateReferencedModelWithFullyDocumentedProperties();
+
+            // Emit the image of the referenced assembly.
+            byte[] documentedImage = CompilationHelper.CreateAssemblyImage(documentedCompilation);
+
+            // Main source for current compilation.
+            string source = @"
+            using System.Collections.Generic;
+            using System.Text.Json.Serialization;
+            using ReferencedAssembly;
+
+            namespace JsonSourceGenerator
+            {
+                /// <summary>
+                /// Documentation
+                /// </summary>
+                [JsonSerializable(typeof(DocumentedModel))]
+                [JsonSerializable(typeof(DocumentedModel2<string>))]
+                public partial class JsonContext : JsonSerializerContext
+                {
+                }
+
+                /// <summary>
+                /// Documentation
+                /// </summary>
+                public class DocumentedModel2<T>
+                {
+                    /// <summary>
+                    /// Documentation
+                    /// </summary>
+                    public List<Model> Models { get; set; }
+                    /// documentation
+                    public T Prop { get; set; }
+                }
+
+                /// <summary>
+                /// Documentation
+                /// </summary>
+                public class DocumentedModel
+                {
+                    /// <summary>
+                    /// Documentation
+                    /// </summary>
+                    public List<Model> Models { get; set; }
+                }
+            }";
+
+            MetadataReference[] additionalReferences = {
+                MetadataReference.CreateFromImage(documentedImage),
+            };
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences, configureParseOptions: options => options.WithDocumentationMode(DocumentationMode.Diagnose));
+
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            compilation = CompilationHelper.RunGenerators(compilation, out var _, generator);
+
+            using var emitStream = new MemoryStream();
+            using var xmlStream = new MemoryStream();
+            var result = compilation.Emit(emitStream, xmlDocumentationStream: xmlStream);
+            var diagnostics = result.Diagnostics;
+
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, diagnostics, Array.Empty<(Location, string)>());
+        }
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void SuccessfulSourceGeneration()
