@@ -3069,11 +3069,9 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
         case TYP_REF:
         {
-            assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
-            // Support onle ref(ref(0)), do not support other forms (e.g byref(ref(0)).
             if (tree->TypeGet() == TYP_REF)
             {
-                conValTree = gtNewIconNode(0, TYP_REF);
+                conValTree = gtNewIconNode(vnStore->ConstantValue<size_t>(vnCns), TYP_REF);
             }
         }
         break;
@@ -4030,8 +4028,14 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             else if (op1->TypeGet() == TYP_REF)
             {
                 // The only constant of TYP_REF that ValueNumbering supports is 'null'
-                assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
-                printf("null\n");
+                if (vnStore->ConstantValue<size_t>(vnCns) == 0)
+                {
+                    printf("null\n");
+                }
+                else
+                {
+                    printf("%d (gcref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+                }
             }
             else if (op1->TypeGet() == TYP_BYREF)
             {
@@ -4084,9 +4088,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         }
         else if (op1->TypeGet() == TYP_REF)
         {
-            op1->BashToConst(0, TYP_REF);
-            // The only constant of TYP_REF that ValueNumbering supports is 'null'
-            noway_assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
+            op1->BashToConst(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_REF);
         }
         else if (op1->TypeGet() == TYP_BYREF)
         {
