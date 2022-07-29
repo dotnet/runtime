@@ -78,6 +78,18 @@ namespace Mono.Linker
 					if (IsSuppressedOnElement (id, warningOriginMember, out info))
 						return true;
 
+					if (warningOriginMember is MethodDefinition method) {
+						if (method.TryGetProperty (out var property)) {
+							Debug.Assert (property.DeclaringType == warningOriginMember.DeclaringType);
+							warningOriginMember = property;
+							continue;
+						} else if (method.TryGetEvent (out var @event)) {
+							Debug.Assert (@event.DeclaringType == warningOriginMember.DeclaringType);
+							warningOriginMember = @event;
+							continue;
+						}
+					}
+
 					warningOriginMember = warningOriginMember.DeclaringType;
 				}
 			}
