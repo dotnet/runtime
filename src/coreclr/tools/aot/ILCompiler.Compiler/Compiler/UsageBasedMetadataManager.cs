@@ -8,12 +8,7 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Xml;
 
-using Internal.IL;
-using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
-
 using ILCompiler.Dataflow;
-using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Metadata;
@@ -30,10 +25,8 @@ using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using EcmaModule = Internal.TypeSystem.Ecma.EcmaModule;
 using EcmaType = Internal.TypeSystem.Ecma.EcmaType;
-using CustomAttributeHandle = System.Reflection.Metadata.CustomAttributeHandle;
-using CustomAttributeTypeProvider = Internal.TypeSystem.Ecma.CustomAttributeTypeProvider;
-using MetadataExtensions = Internal.TypeSystem.Ecma.MetadataExtensions;
 using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
+using MetadataExtensions = Internal.TypeSystem.Ecma.MetadataExtensions;
 
 namespace ILCompiler
 {
