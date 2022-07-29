@@ -119,6 +119,31 @@ namespace System.IO.Hashing.Tests
                     "BDD40F0FAC166EAA"),
             };
 
+        public static IEnumerable<object[]> LargeTestCases
+        {
+            get
+            {
+                object[] arr = new object[1];
+
+                foreach (LargeTestCase testCase in LargeTestCaseDefinitions)
+                {
+                    arr[0] = testCase;
+                    yield return arr;
+                }
+            }
+        }
+
+        protected static IEnumerable<LargeTestCase> LargeTestCaseDefinitions { get; } =
+            new[]
+            {
+                //https://asecuritysite.com/encryption/xxHash, Example 1
+                new LargeTestCase(
+                    "EEEEE...",
+                    (byte)'E',
+                    10L * 1024 * 1024 * 1024, // 10 GB
+                    "F3CB8D45A8B695EF"),
+            };
+
         protected override NonCryptographicHashAlgorithm CreateInstance() => new XxHash64();
 
         protected override byte[] StaticOneShot(byte[] source) => XxHash64.Hash(source);
@@ -150,6 +175,14 @@ namespace System.IO.Hashing.Tests
         public void InstanceMultiAppendGetCurrentHash(TestCase testCase)
         {
             InstanceMultiAppendGetCurrentHashDriver(testCase);
+        }
+
+        [Theory]
+        [MemberData(nameof(LargeTestCases))]
+        [OuterLoop]
+        public void InstanceMultiAppendLargeInput(LargeTestCase testCase)
+        {
+            InstanceMultiAppendLargeInputDriver(testCase);
         }
 
         [Theory]
