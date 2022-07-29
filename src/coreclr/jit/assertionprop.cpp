@@ -3333,10 +3333,6 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             {
                 return nullptr;
             }
-            if ((curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK) == GTF_ICON_STR_HDL)
-            {
-                return nullptr;
-            }
 
             // We assume that we do not try to do assertion prop on mismatched
             // accesses (note that we widen normalize-on-load local accesses

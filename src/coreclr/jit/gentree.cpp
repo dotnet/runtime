@@ -3697,7 +3697,7 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* base, bool co
 
         if (addOp1->IsCnsIntOrI() && addOp2->IsCnsIntOrI())
         {
-            // will be folded
+            // Might be folded
             break;
         }
 

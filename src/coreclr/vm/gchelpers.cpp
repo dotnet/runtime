@@ -821,7 +821,7 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle elementType, BOOL bAll
     return AllocateSzArray(arrayType, (INT32) cElements, flags);
 }
 
-STRINGREF AllocateString(DWORD cchStringLength)
+STRINGREF AllocateString( DWORD cchStringLength )
 {
     CONTRACTL {
         THROWS;
@@ -847,10 +847,9 @@ STRINGREF AllocateString(DWORD cchStringLength)
     SIZE_T totalSize = PtrAlign(StringObject::GetSize(cchStringLength));
     _ASSERTE(totalSize > cchStringLength);
 
-    GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
-
     SetTypeHandleOnThreadForAlloc(TypeHandle(g_pStringClass));
 
+    GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
     if (totalSize >= g_pConfig->GetGCLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
