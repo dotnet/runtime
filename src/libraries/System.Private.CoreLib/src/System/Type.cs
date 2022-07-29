@@ -526,6 +526,19 @@ namespace System
             throw NotImplemented.ByDesign;
         }
 
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The runtime overrides this method with AOT compatible implementation")]
+        public virtual Array GetEnumValuesAsUnderlyingType()
+        {
+            if (!IsEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
+            Array enumValues = GetEnumValues();
+            Array ret = Array.CreateInstance(GetEnumUnderlyingType(), enumValues.Length);
+            Array.Copy(enumValues, ret, enumValues.Length);
+            return ret;
+        }
+
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public virtual Type MakeArrayType() => throw new NotSupportedException();
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]

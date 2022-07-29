@@ -7,6 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+using Internal;
 
 namespace System
 {
@@ -124,11 +126,30 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            // Get all of the values
+            // Get all of tkhe values
             ulong[] values = Enum.InternalGetValues(this);
 
             // Create a generic Array
             Array ret = Array.CreateInstance(this, values.Length);
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                object val = Enum.ToObject(this, values[i]);
+                ret.SetValue(val, i);
+            }
+
+            return ret;
+        }
+
+        public override Array GetEnumValuesAsUnderlyingType()
+        {
+            if (!IsActualEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
+            // Get all of the values
+            ulong[] values = Enum.InternalGetValues(this);
+
+            Array ret = Array.CreateInstance(Enum.InternalGetUnderlyingType(this), values.Length);
 
             for (int i = 0; i < values.Length; i++)
             {

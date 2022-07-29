@@ -322,6 +322,15 @@ namespace System
             return enumType.GetEnumValues();
         }
 
+        public static Array GetValuesAsUnderlyingType<TEnum>() where TEnum : struct, Enum =>
+            GetValuesAsUnderlyingType(typeof(TEnum));
+
+        public static Array GetValuesAsUnderlyingType(Type enumType)
+        {
+            ArgumentNullException.ThrowIfNull(enumType);
+            return enumType.GetEnumValuesAsUnderlyingType();
+        }
+
         [Intrinsic]
         public bool HasFlag(Enum flag)
         {
