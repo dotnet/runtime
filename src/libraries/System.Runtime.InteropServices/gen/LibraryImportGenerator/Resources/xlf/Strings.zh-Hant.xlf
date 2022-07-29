@@ -7,12 +7,12 @@
         <target state="translated">新增遺漏的自訂類型排列器成員</target>
         <note />
       </trans-unit>
-      <trans-unit id="CallerAllocConstructorMustHaveBufferSizeDescription">
+      <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
         <target state="translated">當透過提供在封送處理器類型上採用 'Span&lt;T&gt;' 的 'FromManaged' 方法來使用 'Managed to Unmanaged with Caller-Allocated Buffer' 圖形時，該類型必須提供靜態 'BufferSize' 屬性以提供 caller-allocated 緩衝區中的元素數字。</target>
         <note />
       </trans-unit>
-      <trans-unit id="CallerAllocConstructorMustHaveBufferSizeMessage">
+      <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
         <target state="translated">封送處理器類型 '{0}' 必須有靜態唯讀 'int' 'BufferSize' 屬性，以指定 caller-allocated 緩衝區的大小，因為它具有採用 caller-allocated 'Span&lt;{1}&gt;' 的 FromManaged 方法</target>
         <note />
@@ -117,6 +117,16 @@
         <target state="translated">封送處理器類型沒有必要的圖形</target>
         <note />
       </trans-unit>
+      <trans-unit id="ElementMarshallerCannotBeStatefulDescription">
+        <source>A marshaller for an element scenario cannot be stateful.</source>
+        <target state="new">A marshaller for an element scenario cannot be stateful.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementMarshallerCannotBeStatefulMessage">
+        <source>The specified marshaller type '{0}' is a stateful marshaller, but stateful marshallers are not allowed in the provided marshal mode '{1}'</source>
+        <target state="new">The specified marshaller type '{0}' is a stateful marshaller, but stateful marshallers are not allowed in the provided marshal mode '{1}'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ElementTypesOfReturnTypesMustMatchDescription">
         <source>The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</source>
         <target state="translated">第一個方法傳回之跨距的元素類型必須與第二個方法傳回之跨距的元素類型相同類型。</target>
@@ -163,8 +173,8 @@
         <note />
       </trans-unit>
       <trans-unit id="FromUnmanagedOverloadsNotSupportedMessage">
-        <source>Overloading the 'FromUnmanaged' method is not supported in custom marshallers</source>
-        <target state="translated">自訂封送處理器中不支援多載 'FromUnmanaged' 方法</target>
+        <source>The type '{0}' overloads the 'FromUnmanaged' method, which is not supported in custom marshallers</source>
+        <target state="new">The type '{0}' overloads the 'FromUnmanaged' method, which is not supported in custom marshallers</target>
         <note />
       </trans-unit>
       <trans-unit id="GetPinnableReferenceReturnTypeBlittableDescription">
@@ -387,12 +397,62 @@
         <target state="translated">'{0}' 的傳回類型必須與 '{1}' 的傳回類型相同</target>
         <note />
       </trans-unit>
-      <trans-unit id="StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeDescription">
+      <trans-unit id="StatefulMarshallerRequiresFreeDescription">
+        <source>A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</source>
+        <target state="new">A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFreeMessage">
+        <source>The type '{0}' is a stateful marshaller and does not have a zero-parameter void-returning instance method named 'Free'</source>
+        <target state="new">The type '{0}' is a stateful marshaller and does not have a zero-parameter void-returning instance method named 'Free'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromManagedDescription">
+        <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</source>
+        <target state="new">A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromManagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromManaged' that takes a '{2}' as a parameter and returns 'void'</source>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromManaged' that takes a '{2}' as a parameter and returns 'void'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromUnmanagedDescription">
+        <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</source>
+        <target state="new">A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromUnmanaged' that takes the 'unmanaged' value as a parameter and returns 'void'</source>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromUnmanaged' that takes the 'unmanaged' value as a parameter and returns 'void'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToManagedDescription">
+        <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</source>
+        <target state="new">A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToManagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToManaged' that returns '{2}'</source>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToManaged' that returns '{2}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToUnmanagedDescription">
+        <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</source>
+        <target state="new">A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToUnmanaged' that returns the 'unmanaged' type for the marshaller</source>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToUnmanaged' that returns the 'unmanaged' type for the marshaller</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
         <target state="translated">當透過提供在封送處理程式類型上採用 'Span&lt;T&gt;' 的 'AllocateContainerForUnmanagedElements' 方法來使用 'Managed to Unmanaged with Caller-Allocated Buffer' 圖形時，該類型必須提供靜態 'BufferSize' 屬性以提供 caller-allocated 緩衝區中的元素數目。</target>
         <note />
       </trans-unit>
-      <trans-unit id="StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeMessage">
+      <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
         <target state="translated">封送處理程式類型 '{0}' 必須有靜態唯讀 'int' 'BufferSize' 屬性，以指定 caller-allocated 緩衝區的大小，因為它具有採用 caller-allocated 'Span&lt;{1}&gt;' 的 'AllocateContainerForUnmanagedElements' 方法</target>
         <note />

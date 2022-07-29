@@ -117,16 +117,16 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CallerAllocConstructorMustHaveBufferSizeDescription" xml:space="preserve">
+  <data name="CallerAllocFromManagedMustHaveBufferSizeDescription" xml:space="preserve">
     <value>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</value>
   </data>
-  <data name="CallerAllocConstructorMustHaveBufferSizeMessage" xml:space="preserve">
+  <data name="CallerAllocFromManagedMustHaveBufferSizeMessage" xml:space="preserve">
     <value>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</value>
   </data>
-  <data name="StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeDescription" xml:space="preserve">
+  <data name="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription" xml:space="preserve">
     <value>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</value>
   </data>
-  <data name="StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeMessage" xml:space="preserve">
+  <data name="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage" xml:space="preserve">
     <value>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</value>
   </data>
   <data name="CannotForwardToDllImportDescription" xml:space="preserve">
@@ -375,7 +375,7 @@
     <value>Overloading the 'FromUnmanaged' method is unuspported as some shapes are unable to distinguish between overloads.</value>
   </data>
   <data name="FromUnmanagedOverloadsNotSupportedMessage" xml:space="preserve">
-    <value>Overloading the 'FromUnmanaged' method is not supported in custom marshallers</value>
+    <value>The type '{0}' overloads the 'FromUnmanaged' method, which is not supported in custom marshallers</value>
   </data>
   <data name="ToUnmanagedFromManagedTypesMustMatchDescription" xml:space="preserve">
     <value>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same.</value>
@@ -443,6 +443,12 @@
   <data name="ElementTypesOfReturnTypesMustMatchMessage" xml:space="preserve">
     <value>The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</value>
   </data>
+  <data name="ElementMarshallerCannotBeStatefulDescription" xml:space="preserve">
+    <value>A marshaller for an element scenario cannot be stateful.</value>
+  </data>
+  <data name="ElementMarshallerCannotBeStatefulMessage" xml:space="preserve">
+    <value>The specified marshaller type '{0}' is a stateful marshaller, but stateful marshallers are not allowed in the provided marshal mode '{1}'</value>
+  </data>
   <data name="RequiresAllowUnsafeBlocksDescription" xml:space="preserve">
     <value>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
   </data>
@@ -451,6 +457,36 @@
   </data>
   <data name="RequiresAllowUnsafeBlocksTitle" xml:space="preserve">
     <value>LibraryImportAttribute requires unsafe code.</value>
+  </data>
+  <data name="StatefulMarshallerRequiresFromManagedDescription" xml:space="preserve">
+    <value>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</value>
+  </data>
+  <data name="StatefulMarshallerRequiresFromManagedMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromManaged' that takes a '{2}' as a parameter and returns 'void'</value>
+  </data>
+  <data name="StatefulMarshallerRequiresToUnmanagedDescription" xml:space="preserve">
+    <value>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</value>
+  </data>
+  <data name="StatefulMarshallerRequiresToUnmanagedMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToUnmanaged' that returns the 'unmanaged' type for the marshaller</value>
+  </data>
+  <data name="StatefulMarshallerRequiresFromUnmanagedDescription" xml:space="preserve">
+    <value>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</value>
+  </data>
+  <data name="StatefulMarshallerRequiresFromUnmanagedMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromUnmanaged' that takes the 'unmanaged' value as a parameter and returns 'void'</value>
+  </data>
+  <data name="StatefulMarshallerRequiresToManagedDescription" xml:space="preserve">
+    <value>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</value>
+  </data>
+  <data name="StatefulMarshallerRequiresToManagedMessage" xml:space="preserve">
+    <value>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToManaged' that returns '{2}'</value>
+  </data>
+  <data name="StatefulMarshallerRequiresFreeDescription" xml:space="preserve">
+    <value>A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</value>
+  </data>
+  <data name="StatefulMarshallerRequiresFreeMessage" xml:space="preserve">
+    <value>The type '{0}' is a stateful marshaller and does not have a zero-parameter void-returning instance method named 'Free'</value>
   </data>
   <data name="ConvertToLibraryImportAddUnsafe" xml:space="preserve">
     <value>Convert to 'LibraryImport' and enable unsafe code</value>
