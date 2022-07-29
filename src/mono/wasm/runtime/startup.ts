@@ -675,7 +675,7 @@ async function start_asset_download(asset: AssetEntry): Promise<AssetEntry | und
             sourcePrefix = "";
 
         let attemptUrl;
-        const assemblyRootFolder = config.assemblyRootFolder || (<any>config).assembly_root;
+        const assemblyRootFolder = config.assemblyRootFolder;
         if (!asset.resolvedUrl) {
             if (sourcePrefix === "") {
                 if (asset.behavior === "assembly" || asset.behavior === "pdb")

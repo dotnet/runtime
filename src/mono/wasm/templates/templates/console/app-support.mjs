@@ -94,7 +94,7 @@ function mergeArguments() {
         } else if (currentArg.startsWith("--runtime-arg=")) {
             const arg = currentArg.substring("--runtime-arg=".length);
             runArgs.runtimeArgs.push(arg);
-        } else if (currentArg == "--diagnostic_tracing") {
+        } else if (currentArg == "--diagnostic-tracing") {
             runArgs.diagnosticTracing = true;
         } else if (currentArg.startsWith("--working-dir=")) {
             const arg = currentArg.substring("--working-dir=".length);
@@ -137,14 +137,14 @@ try {
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
             for (let variable in runArgs.environmentVariables) {
-                config.environment_variables[variable] = runArgs.environmentVariables[variable];
+                config.environmentVariables[variable] = runArgs.environmentVariables[variable];
             }
-            config.diagnostic_tracing = !!runArgs.diagnosticTracing;
+            config.diagnosticTracing = !!runArgs.diagnosticTracing;
             if (is_debugging) {
-                if (config.debug_level == 0)
-                    config.debug_level = -1;
+                if (config.debugLevel == 0)
+                    config.debugLevel = -1;
 
-                config.wait_for_debugger = -1;
+                config.waitForDebugger = -1;
             }
         },
         onDotnetReady: async () => {

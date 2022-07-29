@@ -17,7 +17,7 @@
       - $(RunAOTCompilation) - Defaults to false.
 
       - $(WasmDebugLevel)
-                              > 0 enables debugging and sets the debug log level to debug_level
+                              > 0 enables debugging and sets the debug log level to debugLevel
                               == 0 disables debugging and enables interpreter optimizations
                               < 0 enabled debugging and disables debug logging.
 

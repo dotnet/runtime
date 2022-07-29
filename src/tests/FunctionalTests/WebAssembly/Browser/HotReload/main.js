@@ -13,7 +13,7 @@ try {
     const { BINDING } = await createDotnetRuntime(({ MONO }) => ({
         configSrc: "./mono-config.json",
         onConfigLoaded: () => {
-            MONO.config.environment_variables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
+            MONO.config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
         },
     }));
     const testMeaning = BINDING.bind_static_method("[WebAssembly.Browser.HotReload.Test] Sample.Test:TestMeaning");

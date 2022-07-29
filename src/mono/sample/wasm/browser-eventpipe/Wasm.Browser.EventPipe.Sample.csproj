@@ -20,23 +20,23 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
     <WasmExtraFilesToDeploy Include="mock.js" Condition="'$(MonoDiagnosticsMock)' == 'true'"/>
-    <WasmExtraConfig Condition="true" Include="environment_variables" Value='
+    <WasmExtraConfig Condition="true" Include="environmentVariables" Value='
 {
   "MONO_LOG_LEVEL": "warning",
   "MONO_LOG_MASK": "all"
 }' />
     <!-- this option requires running dotnet-dsrouter and a real dotnet-trace client -->
-    <WasmExtraConfig Condition="true and '$(MonoDiagnosticsMock)' != 'true'" Include="diagnostic_options" Value='
+    <WasmExtraConfig Condition="true and '$(MonoDiagnosticsMock)' != 'true'" Include="diagnosticOptions" Value='
 {
-  "server": { "suspend": true, "connect_url": "ws://localhost:8088/diagnostics" }
+  "server": { "suspend": true, "connectUrl": "ws://localhost:8088/diagnostics" }
 }' />
     <!-- this option requires compiling the runtime with /p:MonoDiagnosticsMock=true and also building this project with the same property-->
-    <WasmExtraConfig Condition="true and '$(MonoDiagnosticsMock)' == 'true'" Include="diagnostic_options" Value='
+    <WasmExtraConfig Condition="true and '$(MonoDiagnosticsMock)' == 'true'" Include="diagnosticOptions" Value='
 {
-  "server": { "suspend": false, "connect_url": "mock:./mock.js" }
+  "server": { "suspend": false, "connectUrl": "mock:./mock.js" }
 }' />
     <!-- this option will create an EventPipe session at startup, that will dump its data into the Emscripten VFS -->
-    <WasmExtraConfig Condition="false" Include="diagnostic_options" Value='
+    <WasmExtraConfig Condition="false" Include="diagnosticOptions" Value='
 {
   "sessions": [ { "collectRundownEvents": "true", "providers": "WasmHello::5:EventCounterIntervalSec=1" } ]
 }' />

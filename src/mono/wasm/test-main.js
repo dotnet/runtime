@@ -359,8 +359,8 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
             }
             config.diagnosticTracing = !!runArgs.diagnosticTracing;
             if (!!runArgs.debugging) {
-                if (config.debug_level == 0)
-                    config.debug_level = -1;
+                if (config.debugLevel == 0)
+                    config.debugLevel = -1;
 
                 config.waitForDebugger = -1;
             }
