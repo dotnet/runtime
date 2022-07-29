@@ -327,6 +327,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfInterface")]
         internal static extern unsafe object IsInstanceOfInterface(MethodTable* pTargetType, object obj);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfException")]
+        internal static extern unsafe bool IsInstanceOfException(MethodTable* pTargetType, object obj);
+
         internal static unsafe object IsInstanceOfInterface(EETypePtr pTargetType, object obj)
             => IsInstanceOfInterface(pTargetType.ToPointer(), obj);
 
