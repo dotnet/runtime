@@ -126,7 +126,7 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            // Get all of tkhe values
+            // Get all of the values
             ulong[] values = Enum.InternalGetValues(this);
 
             // Create a generic Array
