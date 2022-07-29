@@ -7753,6 +7753,14 @@ inline
 BOOL gc_heap::ephemeral_pointer_p (uint8_t* o)
 {
 #ifdef USE_REGIONS
+#ifdef FEATURE_BASICFREEZE
+    if ((o >= g_gc_highest_address) || (o < g_gc_lowest_address))
+    {
+        // objects in frozen segments are not ephemeral
+        return FALSE;
+    }
+#endif
+
     int gen_num = object_gennum ((uint8_t*)o);
     assert (gen_num >= 0);
     return (gen_num < max_generation);
