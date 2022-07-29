@@ -292,36 +292,19 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 {
     assert(tree != nullptr);
 
-    GenTreeCall*   call = nullptr;
-    GenTreeLclVar* lcl  = nullptr;
-    var_types      treeType;
-#if defined(TARGET_ARM)
-    GenTreePutArgSplit* splitArg = nullptr;
-    GenTreeMultiRegOp*  multiReg = nullptr;
-#endif
+    var_types treeType       = TYP_UNDEF;
+    bool      isMultiRegTree = false;
 
-    if (tree->IsMultiRegCall())
-    {
-        call                              = tree->AsCall();
-        const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
-        treeType                          = retTypeDesc->GetReturnRegType(regIdx);
-    }
-#ifdef TARGET_ARM
-    else if (tree->OperIsPutArgSplit())
-    {
-        splitArg = tree->AsPutArgSplit();
-        treeType = splitArg->GetRegType(regIdx);
-    }
-    else if (tree->OperIsMultiRegOp())
-    {
-        multiReg = tree->AsMultiRegOp();
-        treeType = multiReg->GetRegType(regIdx);
-    }
-#endif // TARGET_ARM
-    else if (tree->IsMultiRegLclVar())
+    if (tree->IsMultiRegLclVar())
     {
         LclVarDsc* varDsc = m_rsCompiler->lvaGetDesc(tree->AsLclVar());
         treeType          = varDsc->TypeGet();
+        isMultiRegTree    = true;
+    }
+    else if (tree->IsMultiRegNode())
+    {
+        treeType       = tree->GetRegTypeByIndex(regIdx);
+        isMultiRegTree = true;
     }
     else
     {
@@ -353,29 +336,9 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     assert((tree->gtFlags & GTF_SPILL) != 0);
 
     GenTreeFlags regFlags = GTF_EMPTY;
-    if (call != nullptr)
+    if (isMultiRegTree)
     {
-        regFlags = call->GetRegSpillFlagByIdx(regIdx);
-        assert((regFlags & GTF_SPILL) != 0);
-        regFlags &= ~GTF_SPILL;
-    }
-#ifdef TARGET_ARM
-    else if (splitArg != nullptr)
-    {
-        regFlags = splitArg->GetRegSpillFlagByIdx(regIdx);
-        assert((regFlags & GTF_SPILL) != 0);
-        regFlags &= ~GTF_SPILL;
-    }
-    else if (multiReg != nullptr)
-    {
-        regFlags = multiReg->GetRegSpillFlagByIdx(regIdx);
-        assert((regFlags & GTF_SPILL) != 0);
-        regFlags &= ~GTF_SPILL;
-    }
-#endif // TARGET_ARM
-    else if (lcl != nullptr)
-    {
-        regFlags = lcl->GetRegSpillFlagByIdx(regIdx);
+        regFlags = tree->GetRegSpillFlagByIdx(regIdx);
         assert((regFlags & GTF_SPILL) != 0);
         regFlags &= ~GTF_SPILL;
     }
@@ -385,13 +348,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         tree->gtFlags &= ~GTF_SPILL;
     }
 
-#if defined(TARGET_ARM)
-    assert(tree->GetRegNum() == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg) ||
-           (splitArg != nullptr && splitArg->GetRegNumByIdx(regIdx) == reg) ||
-           (multiReg != nullptr && multiReg->GetRegNumByIdx(regIdx) == reg));
-#else
-    assert(tree->GetRegNum() == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg));
-#endif // !TARGET_ARM
+    assert(tree->GetRegByIndex(regIdx) == reg);
 
     // Are any registers free for spillage?
     SpillDsc* spill = SpillDsc::alloc(m_rsCompiler, this, tempType);
@@ -435,29 +392,11 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     // Mark the tree node as having been spilled
     rsMarkSpill(tree, reg);
 
-    // In case of multi-reg call node also mark the specific
-    // result reg as spilled.
-    if (call != nullptr)
+    // In case of multi-reg call node also mark the specific result reg as spilled.
+    if (isMultiRegTree)
     {
         regFlags |= GTF_SPILLED;
-        call->SetRegSpillFlagByIdx(regFlags, regIdx);
-    }
-#ifdef TARGET_ARM
-    else if (splitArg != nullptr)
-    {
-        regFlags |= GTF_SPILLED;
-        splitArg->SetRegSpillFlagByIdx(regFlags, regIdx);
-    }
-    else if (multiReg != nullptr)
-    {
-        regFlags |= GTF_SPILLED;
-        multiReg->SetRegSpillFlagByIdx(regFlags, regIdx);
-    }
-#endif // TARGET_ARM
-    else if (lcl != nullptr)
-    {
-        regFlags |= GTF_SPILLED;
-        lcl->SetRegSpillFlagByIdx(regFlags, regIdx);
+        tree->SetRegSpillFlagByIdx(regFlags, regIdx);
     }
 }
 
