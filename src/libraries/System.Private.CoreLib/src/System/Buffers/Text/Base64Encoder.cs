@@ -426,7 +426,7 @@ namespace System.Buffers.Text
                 Vector128<byte> str = Vector128.LoadUnsafe(ref *src);
 
                 // Reshuffle
-                str = Vector128.Shuffle(str, shuffleVec);
+                str = SimdShuffle(str, shuffleVec, mask8F);
                 // str, bytes MSB to LSB:
                 // k l j k
                 // h i g h
@@ -503,7 +503,7 @@ namespace System.Buffers.Text
                 Vector128<sbyte> tmp = indices.AsSByte() - mask;
 
                 // Add offsets to input values:
-                str += Vector128.Shuffle(lut, AdvSimd.IsSupported ? tmp.AsByte() & mask8F : tmp.AsByte());
+                str += SimdShuffle(lut, tmp.AsByte(), mask8F);
 
                 AssertWrite<Vector128<sbyte>>(dest, destStart, destLength);
                 str.Store(dest);
