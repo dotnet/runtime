@@ -3673,14 +3673,11 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
-#if TRACK_ASSERTION_STATS
-    unsigned        iterCount = 0;
-#endif
+    RECORD_ASSERTION_STATS(unsigned iterCount = 0);
     while (iter.NextElem(&index))
     {
-#if TRACK_ASSERTION_STATS
-        iterCount++;
-#endi
+        RECORD_ASSERTION_STATS(iterCount++);
+
         AssertionIndex assertionIndex = GetAssertionIndex(index);
         if (assertionIndex > optAssertionCount)
         {
@@ -3716,7 +3713,6 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         }
 
         // There are no constant assertions for structs.
-        // OK - Then why is the check inside the for-loop for global prop?
         if (varTypeIsStruct(tree))
         {
             continue;
@@ -3901,10 +3897,11 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
-    unsigned        iterCount = 0;
+    RECORD_ASSERTION_STATS(unsigned iterCount = 0);
+
     while (iter.NextElem(&index))
     {
-        iterCount++;
+        RECORD_ASSERTION_STATS(iterCount++);
 
         AssertionIndex assertionIndex = GetAssertionIndex(index);
         if (assertionIndex > optAssertionCount)
@@ -3968,10 +3965,11 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_T
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
-    unsigned        iterCount = 0;
+    RECORD_ASSERTION_STATS(unsigned iterCount = 0);
+
     while (iter.NextElem(&index))
     {
-        iterCount++;
+        RECORD_ASSERTION_STATS(iterCount++);
         AssertionIndex assertionIndex = GetAssertionIndex(index);
         if (assertionIndex > optAssertionCount)
         {
@@ -4647,10 +4645,11 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
         //
         BitVecOps::Iter iter(apTraits, assertions);
         unsigned        index = 0;
-        unsigned        iterCount = 0;
+        RECORD_ASSERTION_STATS(unsigned iterCount = 0);
+
         while (iter.NextElem(&index))
         {
-            iterCount++;
+            RECORD_ASSERTION_STATS(iterCount++);
             AssertionIndex assertionIndex = GetAssertionIndex(index);
             if (assertionIndex > optAssertionCount)
             {
@@ -4681,7 +4680,6 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
             return assertionIndex;
         }
 
-        
         RECORD_ASSERTION_STATS(noNullMissedCount++);
         RECORD_ASSERTION_STATS(noNullMissedIter += BitVecOps::Count(apTraits, assertions));
     }
@@ -4849,10 +4847,12 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
-    unsigned         iterCount = 0;
+    RECORD_ASSERTION_STATS(unsigned iterCount = 0);
+
     while (iter.NextElem(&index))
     {
-        iterCount++;
+        RECORD_ASSERTION_STATS(iterCount++);
+
         AssertionIndex assertionIndex = GetAssertionIndex(index);
         if (assertionIndex > optAssertionCount)
         {
