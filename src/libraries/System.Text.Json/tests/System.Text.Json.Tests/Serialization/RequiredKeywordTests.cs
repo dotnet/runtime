@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json.Serialization.Metadata;
+using Microsoft.Diagnostics.Runtime.ICorDebug;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -72,6 +73,10 @@ namespace System.Text.Json.Serialization.Tests
                 IgnoreNullValues = ignoreNullValues
             };
 
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembers>(options),
+                nameof(PersonWithRequiredMembers.FirstName),
+                nameof(PersonWithRequiredMembers.LastName));
+
             var obj = new PersonWithRequiredMembers()
             {
                 FirstName = "foo",
@@ -131,6 +136,12 @@ namespace System.Text.Json.Serialization.Tests
             {
                 IgnoreNullValues = ignoreNullValues
             };
+
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndSmallParametrizedCtor>(options),
+                nameof(PersonWithRequiredMembersAndSmallParametrizedCtor.FirstName),
+                nameof(PersonWithRequiredMembersAndSmallParametrizedCtor.LastName),
+                nameof(PersonWithRequiredMembersAndSmallParametrizedCtor.Info1),
+                nameof(PersonWithRequiredMembersAndSmallParametrizedCtor.Info2));
 
             var obj = new PersonWithRequiredMembersAndSmallParametrizedCtor("badfoo", "badbar")
             {
@@ -208,6 +219,17 @@ namespace System.Text.Json.Serialization.Tests
             {
                 IgnoreNullValues = ignoreNullValues
             };
+
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndLargeParametrizedCtor>(options),
+                nameof(PersonWithRequiredMembersAndLargeParametrizedCtor.AProp),
+                nameof(PersonWithRequiredMembersAndLargeParametrizedCtor.BProp),
+                nameof(PersonWithRequiredMembersAndLargeParametrizedCtor.CProp),
+                nameof(PersonWithRequiredMembersAndLargeParametrizedCtor.DProp),
+                nameof(PersonWithRequiredMembersAndLargeParametrizedCtor.EProp),
+                nameof(PersonWithRequiredMembersAndLargeParametrizedCtor.FProp),
+                nameof(PersonWithRequiredMembersAndLargeParametrizedCtor.GProp),
+                nameof(PersonWithRequiredMembersAndLargeParametrizedCtor.HProp),
+                nameof(PersonWithRequiredMembersAndLargeParametrizedCtor.IProp));
 
             var obj = new PersonWithRequiredMembersAndLargeParametrizedCtor("bada", "badb", "badc", "badd", "bade", "badf", "badg")
             {
@@ -314,6 +336,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async void ClassWithRequiredKeywordAndSetsRequiredMembersOnCtorWorks()
         {
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndSetsRequiredMembers>(JsonSerializerOptions.Default)
+                /* no required members */);
+
             var obj = new PersonWithRequiredMembersAndSetsRequiredMembers()
             {
                 FirstName = "foo",
@@ -347,6 +372,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async void ClassWithRequiredKeywordSmallParametrizedCtorAndSetsRequiredMembersOnCtorWorks()
         {
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndSmallParametrizedCtorAndSetsRequiredMembers>(JsonSerializerOptions.Default)
+                /* no required members */);
+
             var obj = new PersonWithRequiredMembersAndSmallParametrizedCtorAndSetsRequiredMembers("foo", "bar");
 
             string json = await Serializer.SerializeWrapper(obj);
@@ -375,12 +403,15 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async void ClassWithRequiredKeywordLargeParametrizedCtorAndSetsRequiredMembersOnCtorWorks()
         {
-            var obj = new PersonWithRequiredMembersAndLargeParametrizedCtorndSetsRequiredMembers("a", "b", "c", "d", "e", "f", "g");
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndLargeParametrizedCtorAndSetsRequiredMembers>(JsonSerializerOptions.Default)
+                /* no required members */);
+
+            var obj = new PersonWithRequiredMembersAndLargeParametrizedCtorAndSetsRequiredMembers("a", "b", "c", "d", "e", "f", "g");
 
             string json = await Serializer.SerializeWrapper(obj);
             Assert.Equal("""{"A":"a","B":"b","C":"c","D":"d","E":"e","F":"f","G":"g"}""", json);
 
-            var deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtorndSetsRequiredMembers>(json);
+            var deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtorAndSetsRequiredMembers>(json);
             Assert.Equal("a", deserialized.A);
             Assert.Equal("b", deserialized.B);
             Assert.Equal("c", deserialized.C);
@@ -390,7 +421,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("g", deserialized.G);
         }
 
-        private class PersonWithRequiredMembersAndLargeParametrizedCtorndSetsRequiredMembers
+        private class PersonWithRequiredMembersAndLargeParametrizedCtorAndSetsRequiredMembers
         {
             public required string A { get; set; }
             public required string B { get; set; }
@@ -401,7 +432,7 @@ namespace System.Text.Json.Serialization.Tests
             public required string G { get; set; }
 
             [SetsRequiredMembers]
-            public PersonWithRequiredMembersAndLargeParametrizedCtorndSetsRequiredMembers(string a, string b, string c, string d, string e, string f, string g)
+            public PersonWithRequiredMembersAndLargeParametrizedCtorAndSetsRequiredMembers(string a, string b, string c, string d, string e, string f, string g)
             {
                 A = a;
                 B = b;
@@ -414,7 +445,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void RemovingRequiredPropertiesAllowsDeserialization()
+        public async void RemovingPropertiesWithRequiredKeywordAllowsDeserialization()
         {
             JsonSerializerOptions options = new()
             {
@@ -428,6 +459,7 @@ namespace System.Text.Json.Serialization.Tests
                             {
                                 if (ti.Properties[i].Name == nameof(PersonWithRequiredMembers.FirstName))
                                 {
+                                    Assert.True(ti.Properties[i].IsRequired);
                                     JsonPropertyInfo property = ti.CreateJsonPropertyInfo(typeof(string), nameof(PersonWithRequiredMembers.FirstName));
                                     property.Get = (obj) => ((PersonWithRequiredMembers)obj).FirstName;
                                     property.Set = (obj, val) => ((PersonWithRequiredMembers)obj).FirstName = (string)val;
@@ -435,11 +467,52 @@ namespace System.Text.Json.Serialization.Tests
                                 }
                                 else if (ti.Properties[i].Name == nameof(PersonWithRequiredMembers.LastName))
                                 {
+                                    Assert.True(ti.Properties[i].IsRequired);
                                     JsonPropertyInfo property = ti.CreateJsonPropertyInfo(typeof(string), nameof(PersonWithRequiredMembers.LastName));
                                     property.Get = (obj) => ((PersonWithRequiredMembers)obj).LastName;
                                     property.Set = (obj, val) => ((PersonWithRequiredMembers)obj).LastName = (string)val;
                                     ti.Properties[i] = property;
                                 }
+                                else
+                                {
+                                    Assert.False(ti.Properties[i].IsRequired);
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            var obj = new PersonWithRequiredMembers()
+            {
+                FirstName = "foo",
+                LastName = "bar"
+            };
+
+            string json = await Serializer.SerializeWrapper(obj, options);
+            Assert.Equal("""{"FirstName":"foo","MiddleName":"","LastName":"bar"}""", json);
+
+            json = """{"LastName":"bar"}""";
+            PersonWithRequiredMembers deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json, options);
+            Assert.Null(deserialized.FirstName);
+            Assert.Equal("", deserialized.MiddleName);
+            Assert.Equal("bar", deserialized.LastName);
+        }
+
+        [Fact]
+        public async void ChangingPropertiesWithRequiredKeywordToNotBeRequiredAllowsDeserialization()
+        {
+            JsonSerializerOptions options = new()
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                {
+                    Modifiers =
+                    {
+                        (ti) =>
+                        {
+                            for (int i = 0; i < ti.Properties.Count; i++)
+                            {
+                                ti.Properties[i].IsRequired = false;
                             }
                         }
                     }
@@ -516,6 +589,35 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonExtensionData]
             public required Dictionary<string, JsonElement>? TestExtensionData { get; set; }
+        }
+
+        private static JsonTypeInfo GetTypeInfo<T>(JsonSerializerOptions options)
+        {
+            // For some variations of test (i.e. AsyncStreamWithSmallBuffer)
+            // we don't use options directly and use copy with changed settings.
+            // Because of that options.GetTypeInfo might throw even when Serializer.(De)SerializeWrapper was called..
+            // We call into Serialize here to ensure that options are locked and options.GetTypeInfo queried.
+            JsonSerializer.Serialize<T>(default(T), options);
+            return options.GetTypeInfo(typeof(T));
+        }
+
+        private static void AssertJsonTypeInfoHasRequiredProperties(JsonTypeInfo typeInfo, params string[] requiredProperties)
+        {
+            HashSet<string> requiredPropertiesSet = new(requiredProperties);
+
+            foreach (var property in typeInfo.Properties)
+            {
+                if (requiredPropertiesSet.Remove(property.Name))
+                {
+                    Assert.True(property.IsRequired);
+                }
+                else
+                {
+                    Assert.False(property.IsRequired);
+                }
+            }
+
+            Assert.Empty(requiredPropertiesSet);
         }
     }
 }

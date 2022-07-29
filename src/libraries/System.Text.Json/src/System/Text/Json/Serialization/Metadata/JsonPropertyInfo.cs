@@ -203,7 +203,18 @@ namespace System.Text.Json.Serialization.Metadata
 
         private bool _isExtensionDataProperty;
 
-        internal bool IsRequired
+        /// <summary>
+        /// Specifies whether the current property is required during deserialization.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        /// </exception>
+        /// <remarks>
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// the value of this property will be mapped from based on presence of <see cref="JsonRequiredAttribute"/> annotation or presence of <see langword="required"/> keyword.
+        /// If SetsRequiredMembersAttribute is specified on the constructor the <see langword="required"/> keyword will not influence value of this property.
+        /// </remarks>
+        public bool IsRequired
         {
             get => _isRequired;
             set
@@ -506,10 +517,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineIsRequired(MemberInfo memberInfo, bool shouldCheckForRequiredKeyword)
         {
-            if (shouldCheckForRequiredKeyword && memberInfo.HasRequiredMemberAttribute())
-            {
-                IsRequired = true;
-            }
+            IsRequired = memberInfo.GetCustomAttribute<JsonRequiredAttribute>(inherit: false) != null
+                || (shouldCheckForRequiredKeyword && memberInfo.HasRequiredMemberAttribute());
         }
 
         internal abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);

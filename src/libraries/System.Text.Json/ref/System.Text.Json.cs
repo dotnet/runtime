@@ -944,6 +944,11 @@ namespace System.Text.Json.Serialization
         public JsonPropertyOrderAttribute(int order) { }
         public int Order { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false)]
+    public sealed partial class JsonRequiredAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonRequiredAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=true)]
     public sealed partial class JsonSerializableAttribute : System.Text.Json.Serialization.JsonAttribute
     {
@@ -1152,6 +1157,7 @@ namespace System.Text.Json.Serialization.Metadata
         public System.Text.Json.Serialization.JsonConverter? CustomConverter { get { throw null; } set { } }
         public System.Func<object, object?>? Get { get { throw null; } set { } }
         public bool IsExtensionData { get { throw null; } set { } }
+        public bool IsRequired { get { throw null; } set { } }
         public string Name { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonNumberHandling? NumberHandling { get { throw null; } set { } }
         public System.Text.Json.JsonSerializerOptions Options { get { throw null; } }

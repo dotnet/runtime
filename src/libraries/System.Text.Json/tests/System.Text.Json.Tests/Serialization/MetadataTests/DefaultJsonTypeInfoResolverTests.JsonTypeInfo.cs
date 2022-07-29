@@ -430,12 +430,16 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Null(property.ShouldSerialize);
                 Assert.Null(typeInfo.NumberHandling);
 
+                Assert.Throws<InvalidOperationException>(() => property.AttributeProvider = property.AttributeProvider);
                 Assert.Throws<InvalidOperationException>(() => property.CustomConverter = property.CustomConverter);
                 Assert.Throws<InvalidOperationException>(() => property.Name = property.Name);
                 Assert.Throws<InvalidOperationException>(() => property.Get = property.Get);
                 Assert.Throws<InvalidOperationException>(() => property.Set = property.Set);
                 Assert.Throws<InvalidOperationException>(() => property.ShouldSerialize = property.ShouldSerialize);
                 Assert.Throws<InvalidOperationException>(() => property.NumberHandling = property.NumberHandling);
+                Assert.Throws<InvalidOperationException>(() => property.Order = property.Order);
+                Assert.Throws<InvalidOperationException>(() => property.IsExtensionData = property.IsExtensionData);
+                Assert.Throws<InvalidOperationException>(() => property.IsRequired = property.IsRequired);
             }
         }
 
@@ -942,7 +946,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("bar", deserialized.C);
             Assert.True(deserialized.E);
         }
-
 
         [Theory]
         [InlineData(typeof(ICollection<string>))]
