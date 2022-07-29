@@ -91,7 +91,7 @@ jobs:
       isSingleFile: true
       nameSuffix: NativeAOT_Libs_Passing
       buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
-      timeoutInMinutes: 180
+      timeoutInMinutes: 240
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:

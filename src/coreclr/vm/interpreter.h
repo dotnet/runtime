@@ -60,7 +60,7 @@ typedef SIZE_T NativePtr;
 
 #define NYI_INTERP(msg) _ASSERTE_MSG(false, msg)
 // I wanted to define NYI_INTERP as the following in retail:
-//   #define NYI_INTERP(msg) _ASSERTE_ALL_BUILDS(__FILE__, false)
+//   #define NYI_INTERP(msg) _ASSERTE_ALL_BUILDS(false)
 // but doing so gave a very odd unreachable code error.
 
 
