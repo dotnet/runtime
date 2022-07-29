@@ -99,7 +99,7 @@ namespace System.Text.Json
                 if (runtimeType != jsonTypeInfo.Type)
                 {
                     isPolymorphicType = true;
-                    return jsonTypeInfo.Options.GetTypeInfoForPolymorphicRootType(runtimeType);
+                    return jsonTypeInfo.Options.GetTypeInfoForRootType(runtimeType);
                 }
             }
 
