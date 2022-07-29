@@ -2,17 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
-using System.Xml.Schema;
-using System.Reflection;
-using System.Reflection.Emit;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Security;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.DataContracts;
+using System.Security;
+using System.Xml;
+using System.Xml.Schema;
 
 namespace System.Runtime.Serialization
 {
@@ -83,7 +84,7 @@ namespace System.Runtime.Serialization
                     bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null);
                     try
                     {
-                        _ilg.BeginMethod("Read" + classContract.StableName.Name + "FromXml", Globals.TypeOfXmlFormatClassReaderDelegate, memberAccessFlag);
+                        _ilg.BeginMethod("Read" + classContract.XmlName.Name + "FromXml", Globals.TypeOfXmlFormatClassReaderDelegate, memberAccessFlag);
                     }
                     catch (SecurityException securityException)
                     {
@@ -206,11 +207,11 @@ namespace System.Runtime.Serialization
                 {
                     if (isGetOnlyCollection)
                     {
-                        _ilg.BeginMethod("Read" + collectionContract.StableName.Name + "FromXml" + "IsGetOnly", Globals.TypeOfXmlFormatGetOnlyCollectionReaderDelegate, memberAccessFlag);
+                        _ilg.BeginMethod("Read" + collectionContract.XmlName.Name + "FromXml" + "IsGetOnly", Globals.TypeOfXmlFormatGetOnlyCollectionReaderDelegate, memberAccessFlag);
                     }
                     else
                     {
-                        _ilg.BeginMethod("Read" + collectionContract.StableName.Name + "FromXml" + string.Empty, Globals.TypeOfXmlFormatCollectionReaderDelegate, memberAccessFlag);
+                        _ilg.BeginMethod("Read" + collectionContract.XmlName.Name + "FromXml" + string.Empty, Globals.TypeOfXmlFormatCollectionReaderDelegate, memberAccessFlag);
                     }
                 }
                 catch (SecurityException securityException)
@@ -429,12 +430,12 @@ namespace System.Runtime.Serialization
                         value = _ilg.DeclareLocal(memberType, dataMember.Name + "Value");
                         _ilg.Stloc(value);
                         _ilg.Call(_contextArg, XmlFormatGeneratorStatics.StoreCollectionMemberInfoMethod, value);
-                        ReadValue(memberType, dataMember.Name, classContract.StableName.Namespace);
+                        ReadValue(memberType, dataMember.Name, classContract.XmlName.Namespace);
                     }
                     else
                     {
                         _ilg.Call(_contextArg, XmlFormatGeneratorStatics.ResetCollectionMemberInfoMethod);
-                        value = ReadValue(memberType, dataMember.Name, classContract.StableName.Namespace);
+                        value = ReadValue(memberType, dataMember.Name, classContract.XmlName.Namespace);
                         _ilg.LoadAddress(_objectLocal);
                         _ilg.ConvertAddress(_objectLocal.LocalType, _objectType);
                         _ilg.Ldloc(value);
@@ -645,7 +646,7 @@ namespace System.Runtime.Serialization
                     }
                 }
                 string itemName = collectionContract.ItemName;
-                string itemNs = collectionContract.StableName.Namespace;
+                string itemNs = collectionContract.XmlName.Namespace;
 
                 _objectLocal = _ilg.DeclareLocal(type, "objectDeserialized");
                 if (!isArray)
@@ -760,7 +761,7 @@ namespace System.Runtime.Serialization
                 Type itemType = collectionContract.ItemType;
                 bool isArray = (collectionContract.Kind == CollectionKind.Array);
                 string itemName = collectionContract.ItemName;
-                string itemNs = collectionContract.StableName.Namespace;
+                string itemNs = collectionContract.XmlName.Namespace;
 
                 _objectLocal = _ilg.DeclareLocal(type, "objectDeserialized");
                 _ilg.Load(_contextArg);

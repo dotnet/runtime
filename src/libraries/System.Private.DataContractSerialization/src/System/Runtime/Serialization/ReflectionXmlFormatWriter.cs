@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.Serialization.DataContracts;
 using System.Xml;
 
 namespace System.Runtime.Serialization
@@ -230,11 +231,11 @@ namespace System.Runtime.Serialization
 
             // Check for conflict with derived type members
             string? name = member.Name;
-            string? ns = classContract.StableName.Namespace;
+            string? ns = classContract.XmlName.Namespace;
             ClassDataContract? currentContract = derivedMostClassContract;
             while (currentContract != null && currentContract != classContract)
             {
-                if (ns == currentContract.StableName.Namespace)
+                if (ns == currentContract.XmlName.Namespace)
                 {
                     List<DataMember> members = currentContract.Members!;
                     for (int j = 0; j < members.Count; j++)

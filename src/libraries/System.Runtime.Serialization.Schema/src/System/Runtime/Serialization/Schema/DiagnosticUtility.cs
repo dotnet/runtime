@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-namespace System.Runtime.Serialization.Schema
+namespace System.Runtime.Serialization
 {
     internal static class DiagnosticUtility
     {

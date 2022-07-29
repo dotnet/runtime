@@ -9,7 +9,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Xml;
 
-namespace System.Runtime.Serialization
+namespace System.Runtime.Serialization.DataContracts
 {
     internal abstract class PrimitiveDataContract : DataContract
     {

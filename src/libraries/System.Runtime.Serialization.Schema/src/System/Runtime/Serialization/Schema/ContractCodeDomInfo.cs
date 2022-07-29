@@ -7,9 +7,9 @@ using System.Collections.Generic;
 using System.Xml;
 using System.Xml.Schema;
 
-using ExceptionUtil = System.Runtime.Serialization.Schema.DiagnosticUtility.ExceptionUtility;
+using ExceptionUtil = System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility;
 
-namespace System.Runtime.Serialization.Schema
+namespace System.Runtime.Serialization
 {
     internal sealed class ContractCodeDomInfo
     {

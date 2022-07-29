@@ -46,6 +46,8 @@ namespace System.Runtime.Serialization.Json
         public int MaxItemsInObjectGraph { get { throw null; } }
         public bool SerializeReadOnlyTypes { get { throw null; } }
         public bool UseSimpleDictionaryFormat { get { throw null; } }
+        public System.Runtime.Serialization.ISerializationSurrogateProvider? GetSerializationSurrogateProvider() { throw null; }
+        public void SetSerializationSurrogateProvider(System.Runtime.Serialization.ISerializationSurrogateProvider? provider) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override bool IsStartObject(System.Xml.XmlDictionaryReader reader) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
@@ -78,11 +80,6 @@ namespace System.Runtime.Serialization.Json
         public override void WriteStartObject(System.Xml.XmlDictionaryWriter writer, object? graph) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the required types are preserved.")]
         public override void WriteStartObject(System.Xml.XmlWriter writer, object? graph) { }
-    }
-    public static partial class DataContractJsonSerializerExtensions
-    {
-        public static System.Runtime.Serialization.ISerializationSurrogateProvider? GetSerializationSurrogateProvider(this System.Runtime.Serialization.Json.DataContractJsonSerializer serializer) { throw null; }
-        public static void SetSerializationSurrogateProvider(this System.Runtime.Serialization.Json.DataContractJsonSerializer serializer, System.Runtime.Serialization.ISerializationSurrogateProvider? provider) { }
     }
     public partial class DataContractJsonSerializerSettings
     {

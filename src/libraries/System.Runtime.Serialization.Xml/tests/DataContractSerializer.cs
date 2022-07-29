@@ -2728,14 +2728,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    public static void XsdDataContractExporterTest()
-    {
-        XsdDataContractExporter exporter = new XsdDataContractExporter();
-        Assert.Throws<PlatformNotSupportedException>(() => exporter.CanExport(typeof(Employee)));
-        Assert.Throws<PlatformNotSupportedException>(() => exporter.Export(typeof(Employee)));
-    }
-
-    [Fact]
     public static void DCS_MyISerializableType()
     {
         var value = new MyISerializableType();

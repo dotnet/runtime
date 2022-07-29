@@ -6,12 +6,13 @@ using System.CodeDom;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.DataContracts;
 using System.Xml;
 using System.Xml.Schema;
 
-using ExceptionUtil = System.Runtime.Serialization.Schema.DiagnosticUtility.ExceptionUtility;
+using ExceptionUtil = System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility;
 
-namespace System.Runtime.Serialization.Schema
+namespace System.Runtime.Serialization
 {
     /// <summary>
     /// Allows the transformation of a set of XML schema files (.xsd) into common language runtime (CLR) types.
@@ -26,7 +27,7 @@ namespace System.Runtime.Serialization.Schema
     /// data represented by CLR types and when you need to export XML schemas for each data type to be consumed by other Web
     /// services.That is, <see cref="XsdDataContractExporter"/> transforms a set of CLR types into a set of XML schemas.
     /// </remarks>
-    public sealed class XsdDataContractImporter
+    public class XsdDataContractImporter
     {
         private CodeCompileUnit _codeCompileUnit = null!;   // Not directly referenced. Always lazy initialized by property getter.
         private DataContractSet? _dataContractSet;
@@ -68,7 +69,7 @@ namespace System.Runtime.Serialization.Schema
                 if (_dataContractSet == null)
                 {
                     _dataContractSet = Options == null ? new DataContractSet(null, null, null) :
-                                                        new DataContractSet(Options.SurrogateProvider, Options.ReferencedTypes, Options.ReferencedCollectionTypes);
+                                                        new DataContractSet(Options.DataContractSurrogate, Options.ReferencedTypes, Options.ReferencedCollectionTypes);
                 }
                 return _dataContractSet;
             }
@@ -78,7 +79,7 @@ namespace System.Runtime.Serialization.Schema
         /// Transforms the specified set of XML schemas contained in an <see cref="XmlSchemaSet"/> into a <see cref="System.CodeDom.CodeCompileUnit"/>.
         /// </summary>
         /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schema representations to generate CLR types for.</param>
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public void Import(XmlSchemaSet schemas)
         {
             if (schemas == null)
@@ -92,7 +93,7 @@ namespace System.Runtime.Serialization.Schema
         /// </summary>
         /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schema representations.</param>
         /// <param name="typeNames">A <see cref="ICollection{T}"/> (of <see cref="XmlQualifiedName"/>) that represents the set of schema types to import.</param>
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public void Import(XmlSchemaSet schemas, ICollection<XmlQualifiedName> typeNames)
         {
             if (schemas == null)
@@ -109,7 +110,7 @@ namespace System.Runtime.Serialization.Schema
         /// </summary>
         /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schema representations.</param>
         /// <param name="typeName">A <see cref="XmlQualifiedName"/> that represents a specific schema type to import.</param>
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public void Import(XmlSchemaSet schemas, XmlQualifiedName typeName)
         {
             if (schemas == null)
@@ -129,7 +130,7 @@ namespace System.Runtime.Serialization.Schema
         /// <param name="schemas">An <see cref="XmlSchemaSet"/> that contains the schemas to transform.</param>
         /// <param name="element">An <see cref="XmlSchemaElement"/> that represents the specific schema element to transform.</param>
         /// <returns>An <see cref="XmlQualifiedName"/> that represents the specified element.</returns>
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public XmlQualifiedName? Import(XmlSchemaSet schemas, XmlSchemaElement element)
         {
             if (schemas == null)
@@ -149,7 +150,7 @@ namespace System.Runtime.Serialization.Schema
         /// </summary>
         /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schemas to transform.</param>
         /// <returns>true if the schemas can be transformed to data contract types; otherwise, false.</returns>
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas)
         {
             if (schemas == null)
@@ -164,7 +165,7 @@ namespace System.Runtime.Serialization.Schema
         /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schemas to transform.</param>
         /// <param name="typeNames">An <see cref="ICollection{T}"/> of <see cref="XmlQualifiedName"/> that represents the set of schema types to import.</param>
         /// <returns>true if the schemas can be transformed; otherwise, false.</returns>
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas, ICollection<XmlQualifiedName> typeNames)
         {
             if (schemas == null)
@@ -182,7 +183,7 @@ namespace System.Runtime.Serialization.Schema
         /// <param name="schemas">A <see cref="XmlSchemaSet"/> that contains the schema representations.</param>
         /// <param name="typeName">An <see cref="XmlQualifiedName"/> that specifies the names of the schema types that need to be imported from the <see cref="XmlSchemaSet"/>.</param>
         /// <returns>true if the schemas can be transformed to data contract types; otherwise, false.</returns>
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas, XmlQualifiedName typeName)
         {
             if (schemas == null)
@@ -200,7 +201,7 @@ namespace System.Runtime.Serialization.Schema
         /// <param name="schemas">An <see cref="XmlSchemaSet"/> to import.</param>
         /// <param name="element">A specific <see cref="XmlSchemaElement"/> to check in the set of schemas.</param>
         /// <returns>true if the element can be imported; otherwise, false.</returns>
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public bool CanImport(XmlSchemaSet schemas, XmlSchemaElement element)
         {
             if (schemas == null)
@@ -218,7 +219,7 @@ namespace System.Runtime.Serialization.Schema
         /// </summary>
         /// <param name="typeName">The <see cref="XmlQualifiedName"/> that specifies the schema type to look up.</param>
         /// <returns>A <see cref="CodeTypeReference"/> reference to the CLR type generated for the schema type with the typeName specified.</returns>
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public CodeTypeReference GetCodeTypeReference(XmlQualifiedName typeName)
         {
             DataContract dataContract = FindDataContract(typeName);
@@ -232,7 +233,7 @@ namespace System.Runtime.Serialization.Schema
         /// <param name="typeName">An <see cref="XmlQualifiedName"/> that specifies the XML qualified name of the schema type to look up.</param>
         /// <param name="element">An <see cref="XmlSchemaElement"/> that specifies an element in an XML schema.</param>
         /// <returns>A <see cref="CodeTypeReference"/> that represents the type that was generated for the specified schema type.</returns>
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public CodeTypeReference GetCodeTypeReference(XmlQualifiedName typeName, XmlSchemaElement element)
         {
             if (element == null)
@@ -244,7 +245,7 @@ namespace System.Runtime.Serialization.Schema
             return codeExporter.GetElementTypeReference(dataContract, element.IsNillable);
         }
 
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         internal DataContract FindDataContract(XmlQualifiedName typeName)
         {
             if (typeName == null)
@@ -265,7 +266,7 @@ namespace System.Runtime.Serialization.Schema
         /// </summary>
         /// <param name="typeName">An <see cref="XmlQualifiedName"/> that represents the schema type to look up known types for.</param>
         /// <returns>A collection of type <see cref="CodeTypeReference"/>.</returns>
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         public ICollection<CodeTypeReference>? GetKnownTypeReferences(XmlQualifiedName typeName)
         {
             if (typeName == null)
@@ -303,7 +304,7 @@ namespace System.Runtime.Serialization.Schema
             }
         }
 
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         private IList<XmlQualifiedName>? InternalImport(XmlSchemaSet schemas, ICollection<XmlQualifiedName>? typeNames, ICollection<XmlSchemaElement>? elements)
         {
             DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
@@ -335,7 +336,7 @@ namespace System.Runtime.Serialization.Schema
             }
         }
 
-        [RequiresUnreferencedCode(Globals.SerializerTrimmerWarning)]
+        [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
         private bool InternalCanImport(XmlSchemaSet schemas, ICollection<XmlQualifiedName>? typeNames, ICollection<XmlSchemaElement>? elements)
         {
             DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
@@ -347,7 +348,7 @@ namespace System.Runtime.Serialization.Schema
                     DataContractSet.ImportSchemaSet(schemas, typeNames, ImportXmlDataType);
                 return true;
             }
-            catch (ArgumentException)
+            catch (InvalidDataContractException)
             {
                 _dataContractSet = oldValue;
                 return false;
@@ -360,7 +361,7 @@ namespace System.Runtime.Serialization.Schema
         }
 
         private static XmlQualifiedName? s_actualTypeAnnotationName;
-        internal static XmlQualifiedName ActualTypeAnnotationName => s_actualTypeAnnotationName ??= new XmlQualifiedName(Globals.ActualTypeLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName ActualTypeAnnotationName => s_actualTypeAnnotationName ??= new XmlQualifiedName(ImportGlobals.ActualTypeLocalName, ImportGlobals.SerializationNamespace);
 
         internal static XmlQualifiedName ImportActualType(XmlSchemaAnnotation? annotation, XmlQualifiedName defaultTypeName, XmlQualifiedName typeName)
         {
@@ -368,12 +369,12 @@ namespace System.Runtime.Serialization.Schema
             if (actualTypeElement == null)
                 return defaultTypeName;
 
-            XmlNode? nameAttribute = actualTypeElement.Attributes.GetNamedItem(Globals.ActualTypeNameAttribute);
+            XmlNode? nameAttribute = actualTypeElement.Attributes.GetNamedItem(ImportGlobals.ActualTypeNameAttribute);
             if (nameAttribute?.Value == null)
-                throw ExceptionUtil.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.AnnotationAttributeNotFound, ActualTypeAnnotationName.Name, typeName.Name, typeName.Namespace, Globals.ActualTypeNameAttribute)));
-            XmlNode? nsAttribute = actualTypeElement.Attributes.GetNamedItem(Globals.ActualTypeNamespaceAttribute);
+                throw ExceptionUtil.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.AnnotationAttributeNotFound, ActualTypeAnnotationName.Name, typeName.Name, typeName.Namespace, ImportGlobals.ActualTypeNameAttribute)));
+            XmlNode? nsAttribute = actualTypeElement.Attributes.GetNamedItem(ImportGlobals.ActualTypeNamespaceAttribute);
             if (nsAttribute?.Value == null)
-                throw ExceptionUtil.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.AnnotationAttributeNotFound, ActualTypeAnnotationName.Name, typeName.Name, typeName.Namespace, Globals.ActualTypeNamespaceAttribute)));
+                throw ExceptionUtil.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.AnnotationAttributeNotFound, ActualTypeAnnotationName.Name, typeName.Name, typeName.Namespace, ImportGlobals.ActualTypeNamespaceAttribute)));
             return new XmlQualifiedName(nameAttribute.Value, nsAttribute.Value);
         }
 

@@ -6,12 +6,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.DataContracts;
 using System.Security;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
 namespace System.Runtime.Serialization
 {
@@ -138,7 +139,7 @@ namespace System.Runtime.Serialization
                 return retObj;
 
             bool knownTypesAddedInCurrentScope = false;
-            if (dataContract.KnownDataContracts != null)
+            if (dataContract.KnownDataContracts?.Count > 0)
             {
                 scopedKnownTypes.Push(dataContract.KnownDataContracts);
                 knownTypesAddedInCurrentScope = true;
@@ -197,7 +198,7 @@ namespace System.Runtime.Serialization
                 scopedKnownTypes.Pop();
                 knownTypesAddedInCurrentScope = false;
             }
-            if (knownDataContracts != null)
+            if (knownDataContracts?.Count > 0)
             {
                 scopedKnownTypes.Push(knownDataContracts);
                 knownTypesAddedInCurrentScope = true;

@@ -6,9 +6,9 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 
-namespace System.Runtime.Serialization.Schema
+namespace System.Runtime.Serialization
 {
-    internal static class Globals
+    internal static class ImportGlobals
     {
         internal const string SerializerTrimmerWarning = "Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the " +
             "required types are preserved.";
@@ -88,10 +88,10 @@ namespace System.Runtime.Serialization.Schema
         internal static Uri DataContractXsdBaseNamespaceUri => s_dataContractXsdBaseNamespaceUri ??= new Uri(DataContractXsdBaseNamespace);
 
         private static XmlQualifiedName? s_idQualifiedName;
-        internal static XmlQualifiedName IdQualifiedName => s_idQualifiedName ??= new XmlQualifiedName(Globals.IdLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName IdQualifiedName => s_idQualifiedName ??= new XmlQualifiedName(ImportGlobals.IdLocalName, ImportGlobals.SerializationNamespace);
 
         private static XmlQualifiedName? s_refQualifiedName;
-        internal static XmlQualifiedName RefQualifiedName => s_refQualifiedName ??= new XmlQualifiedName(Globals.RefLocalName, Globals.SerializationNamespace);
+        internal static XmlQualifiedName RefQualifiedName => s_refQualifiedName ??= new XmlQualifiedName(ImportGlobals.RefLocalName, ImportGlobals.SerializationNamespace);
 
         private static Type? s_typeOfXmlElement;
         internal static Type TypeOfXmlElement => s_typeOfXmlElement ??= typeof(XmlElement);

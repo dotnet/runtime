@@ -11,9 +11,9 @@ using System.Security;
 using System.Threading;
 using System.Xml;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
-namespace System.Runtime.Serialization
+namespace System.Runtime.Serialization.DataContracts
 {
     internal sealed class ClassDataContract : DataContract
     {
@@ -108,7 +108,7 @@ namespace System.Runtime.Serialization
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.KnownDataContracts;
-            set => _helper.KnownDataContracts = value;
+            internal set => _helper.KnownDataContracts = value;
         }
 
         public override bool IsISerializable
@@ -259,7 +259,7 @@ namespace System.Runtime.Serialization
             if (!childType.IsEnum && !Globals.TypeOfIXmlSerializable.IsAssignableFrom(childType)
                 && DataContract.GetBuiltInDataContract(childType) == null && childType != Globals.TypeOfDBNull)
             {
-                string ns = DataContract.GetStableName(childType).Namespace;
+                string ns = DataContract.GetXmlName(childType).Namespace;
                 if (ns.Length > 0 && ns != dataContract.Namespace.Value)
                     return dictionary.Add(ns);
             }
@@ -607,14 +607,14 @@ namespace System.Runtime.Serialization
             internal ClassDataContractCriticalHelper([DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
                 Type type) : base(type)
             {
-                XmlQualifiedName stableName = GetStableNameAndSetHasDataContract(type);
+                XmlQualifiedName xmlName = GetXmlNameAndSetHasDataContract(type);
                 if (type == Globals.TypeOfDBNull)
                 {
-                    StableName = stableName;
+                    XmlName = xmlName;
                     _members = new List<DataMember>();
                     XmlDictionary dictionary = new XmlDictionary(2);
-                    Name = dictionary.Add(StableName.Name);
-                    Namespace = dictionary.Add(StableName.Namespace);
+                    Name = dictionary.Add(XmlName.Name);
+                    Namespace = dictionary.Add(XmlName.Namespace);
                     ContractNamespaces = MemberNames = MemberNamespaces = Array.Empty<XmlDictionaryString>();
                     EnsureMethodsImported();
                     return;
@@ -662,15 +662,15 @@ namespace System.Runtime.Serialization
 
                 if (_isISerializable)
                 {
-                    SetDataContractName(stableName);
+                    SetDataContractName(xmlName);
                 }
                 else
                 {
-                    StableName = stableName;
+                    XmlName = xmlName;
                     ImportDataMembers();
                     XmlDictionary dictionary = new XmlDictionary(2 + Members.Count);
-                    Name = dictionary.Add(StableName.Name);
-                    Namespace = dictionary.Add(StableName.Namespace);
+                    Name = dictionary.Add(XmlName.Name);
+                    Namespace = dictionary.Add(XmlName.Namespace);
 
                     int baseMemberCount = 0;
                     int baseContractCount = 0;
@@ -711,10 +711,10 @@ namespace System.Runtime.Serialization
                 [DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
                 Type type, XmlDictionaryString ns, string[] memberNames) : base(type)
             {
-                StableName = new XmlQualifiedName(GetStableNameAndSetHasDataContract(type).Name, ns.Value);
+                XmlName = new XmlQualifiedName(GetXmlNameAndSetHasDataContract(type).Name, ns.Value);
                 ImportDataMembers();
                 XmlDictionary dictionary = new XmlDictionary(1 + Members.Count);
-                Name = dictionary.Add(StableName.Name);
+                Name = dictionary.Add(XmlName.Name);
                 Namespace = ns;
                 ContractNamespaces = new XmlDictionaryString[] { Namespace };
                 MemberNames = new XmlDictionaryString[Members.Count];
@@ -962,7 +962,7 @@ namespace System.Runtime.Serialization
                 List<Member> membersInHierarchy = new List<Member>();
                 foreach (DataMember member in members)
                 {
-                    membersInHierarchy.Add(new Member(member, StableName!.Namespace, baseTypeIndex));
+                    membersInHierarchy.Add(new Member(member, XmlName!.Namespace, baseTypeIndex));
                 }
                 ClassDataContract? currContract = BaseClassContract;
                 while (currContract != null)
@@ -971,7 +971,7 @@ namespace System.Runtime.Serialization
 
                     foreach (DataMember member in currContract.Members!)
                     {
-                        membersInHierarchy.Add(new Member(member, currContract.StableName!.Namespace, baseTypeIndex));
+                        membersInHierarchy.Add(new Member(member, currContract.XmlName!.Namespace, baseTypeIndex));
                     }
                     currContract = currContract.BaseClassContract;
                 }
@@ -1016,15 +1016,15 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private XmlQualifiedName GetStableNameAndSetHasDataContract(Type type)
+            private XmlQualifiedName GetXmlNameAndSetHasDataContract(Type type)
             {
-                return DataContract.GetStableName(type, out _hasDataContract);
+                return DataContract.GetXmlName(type, out _hasDataContract);
             }
 
             /// <SecurityNote>
             /// RequiresReview - marked SRR because callers may need to depend on isNonAttributedType for a security decision
             ///            isNonAttributedType must be calculated correctly
-            ///            SetIsNonAttributedType should not be called before GetStableNameAndSetHasDataContract since it
+            ///            SetIsNonAttributedType should not be called before GetXmlNameAndSetHasDataContract since it
             ///            is dependent on the correct calculation of hasDataContract
             /// Safe - does not let caller influence isNonAttributedType calculation; no harm in leaking value
             /// </SecurityNote>
@@ -1128,7 +1128,7 @@ namespace System.Runtime.Serialization
                 {
                     _baseContract = value;
                     if (_baseContract != null && IsValueType)
-                        ThrowInvalidDataContractException(SR.Format(SR.ValueTypeCannotHaveBaseType, StableName!.Name, StableName.Namespace, _baseContract.StableName!.Name, _baseContract.StableName.Namespace));
+                        ThrowInvalidDataContractException(SR.Format(SR.ValueTypeCannotHaveBaseType, XmlName!.Name, XmlName.Namespace, _baseContract.XmlName!.Name, _baseContract.XmlName.Namespace));
                 }
             }
 
@@ -1198,6 +1198,7 @@ namespace System.Runtime.Serialization
                                 Interlocked.MemoryBarrier();
                                 _isKnownTypeAttributeChecked = true;
                             }
+                            _knownDataContracts ??= new DataContractDictionary();
                         }
                     }
                     return _knownDataContracts;
@@ -1303,12 +1304,12 @@ namespace System.Runtime.Serialization
                 if (boundContracts != null && boundContracts.TryGetValue(this, out DataContract? boundContract))
                     return boundContract;
 
-                XmlQualifiedName stableName;
+                XmlQualifiedName xmlName;
                 object[] genericParams;
                 Type boundType;
                 if (type.IsGenericTypeDefinition)
                 {
-                    stableName = StableName;
+                    xmlName = XmlName;
                     genericParams = paramContracts;
 
                     // NOTE TODO smolloy - this type-binding ('boundType') stuff is new. We did not do this in NetFx. We used to use default constructors and let the
@@ -1321,8 +1322,8 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    //partial Generic: Construct stable name from its open generic type definition
-                    stableName = DataContract.GetStableName(type.GetGenericTypeDefinition());
+                    //partial Generic: Construct xml name from its open generic type definition
+                    xmlName = DataContract.GetXmlName(type.GetGenericTypeDefinition());
                     Type[] paramTypes = type.GetGenericArguments();
                     genericParams = new object[paramTypes.Length];
                     for (int i = 0; i < paramTypes.Length; i++)
@@ -1343,7 +1344,7 @@ namespace System.Runtime.Serialization
                 ClassDataContract boundClassContract = new ClassDataContract(boundType);
                 boundContracts ??= new Dictionary<DataContract, DataContract>();
                 boundContracts.Add(this, boundClassContract);
-                boundClassContract.StableName = CreateQualifiedName(DataContract.ExpandGenericParameters(XmlConvert.DecodeName(stableName.Name), new GenericNameProvider(DataContract.GetClrTypeFullName(UnderlyingType), genericParams)), stableName.Namespace);
+                boundClassContract.XmlName = CreateQualifiedName(DataContract.ExpandGenericParameters(XmlConvert.DecodeName(xmlName.Name), new GenericNameProvider(DataContract.GetClrTypeFullName(UnderlyingType), genericParams)), xmlName.Namespace);
                 if (BaseClassContract != null)
                     boundClassContract.BaseClassContract = (ClassDataContract)BaseClassContract.BindGenericParameters(paramContracts, boundContracts);
                 boundClassContract.IsISerializable = IsISerializable;

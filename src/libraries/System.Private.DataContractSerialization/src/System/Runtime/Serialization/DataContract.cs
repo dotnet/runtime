@@ -11,12 +11,13 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Xml;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
-namespace System.Runtime.Serialization
+namespace System.Runtime.Serialization.DataContracts
 {
     public abstract class DataContract
     {
@@ -47,7 +48,7 @@ namespace System.Runtime.Serialization
         internal MethodInfo? ParseMethod => _helper.ParseMethod;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public static DataContract GetDataContract(Type type)
+        internal static DataContract GetDataContract(Type type)
         {
             return GetDataContract(type.TypeHandle, type);
         }
@@ -134,15 +135,6 @@ namespace System.Runtime.Serialization
             return DataContractCriticalHelper.GetClrTypeString(key);
         }
 
-        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public static Type GetSurrogateType(ISerializationSurrogateProvider surrogateProvider, Type type)
-        {
-            if (surrogateProvider != null)
-                return DataContractSurrogateCaller.GetDataContractType(surrogateProvider, type);
-
-            return type;
-        }
-
         [DoesNotReturn]
         internal static void ThrowInvalidDataContractException(string? message, Type? type)
         {
@@ -195,10 +187,10 @@ namespace System.Runtime.Serialization
             internal set => _helper.IsReference = value;
         }
 
-        public virtual XmlQualifiedName StableName
+        public virtual XmlQualifiedName XmlName
         {
-            get => _helper.StableName;
-            internal set => _helper.StableName = value;
+            get => _helper.XmlName;
+            internal set => _helper.XmlName = value;
         }
 
         public virtual DataContract? BaseContract
@@ -218,7 +210,7 @@ namespace System.Runtime.Serialization
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.KnownDataContracts;
-            set => _helper.KnownDataContracts = value;
+            internal set => _helper.KnownDataContracts = value;
         }
 
         public virtual bool IsISerializable
@@ -253,7 +245,7 @@ namespace System.Runtime.Serialization
 
         internal virtual bool IsPrimitive => false;
 
-        public virtual bool IsKeyValue(out string? keyName, out string? valueName, out string? itemName)
+        public virtual bool IsDictionaryLike([NotNullWhen(true)] out string? keyName, [NotNullWhen(true)] out string? valueName, [NotNullWhen(true)] out string? itemName)
         {
             keyName = valueName = itemName = null;
             return false;
@@ -315,7 +307,7 @@ namespace System.Runtime.Serialization
             private Type? _originalUnderlyingType;
             private bool _isValueType;
             private GenericInfo? _genericInfo;
-            private XmlQualifiedName _stableName = null!; // StableName is always set in concrete ctors set except for the "invalid" CollectionDataContract
+            private XmlQualifiedName _xmlName = null!; // XmlName is always set in concrete ctors set except for the "invalid" CollectionDataContract
             private XmlDictionaryString _name = null!; // Name is always set in concrete ctors set except for the "invalid" CollectionDataContract
             private XmlDictionaryString _ns = null!; // Namespace is always set in concrete ctors set except for the "invalid" CollectionDataContract
 
@@ -482,10 +474,10 @@ namespace System.Runtime.Serialization
                             if (type != originalType)
                             {
                                 var originalDataContract = new ClassDataContract(originalType);
-                                if (dataContract.StableName != originalDataContract.StableName)
+                                if (dataContract.XmlName != originalDataContract.XmlName)
                                 {
-                                    // for non-DC types, type adapters will not have the same stable name (contract name).
-                                    dataContract.StableName = originalDataContract.StableName;
+                                    // for non-DC types, type adapters will not have the same xml name (contract name).
+                                    dataContract.XmlName = originalDataContract.XmlName;
                                 }
                             }
                         }
@@ -1012,10 +1004,10 @@ namespace System.Runtime.Serialization
                 set => _isValueType = value;
             }
 
-            internal XmlQualifiedName StableName
+            internal XmlQualifiedName XmlName
             {
-                get => _stableName;
-                set => _stableName = value;
+                get => _xmlName;
+                set => _xmlName = value;
             }
 
             internal GenericInfo? GenericInfo
@@ -1094,19 +1086,19 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            internal void SetDataContractName(XmlQualifiedName stableName)
+            internal void SetDataContractName(XmlQualifiedName xmlName)
             {
                 XmlDictionary dictionary = new XmlDictionary(2);
-                Name = dictionary.Add(stableName.Name);
-                Namespace = dictionary.Add(stableName.Namespace);
-                StableName = stableName;
+                Name = dictionary.Add(xmlName.Name);
+                Namespace = dictionary.Add(xmlName.Namespace);
+                XmlName = xmlName;
             }
 
             internal void SetDataContractName(XmlDictionaryString name, XmlDictionaryString ns)
             {
                 Name = name;
                 Namespace = ns;
-                StableName = CreateQualifiedName(name.Value, ns.Value);
+                XmlName = CreateQualifiedName(name.Value, ns.Value);
             }
 
             [DoesNotReturn]
@@ -1117,7 +1109,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public static bool IsTypeSerializable(Type type)
+        internal static bool IsTypeSerializable(Type type)
         {
             return IsTypeSerializable(type, null);
         }
@@ -1220,7 +1212,7 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-        public static string EncodeLocalName(string localName)
+        internal static string EncodeLocalName(string localName)
         {
             if (IsAsciiLocalName(localName))
                 return localName;
@@ -1245,22 +1237,22 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public static XmlQualifiedName GetStableName(Type type)
+        public static XmlQualifiedName GetXmlName(Type type)
         {
-            return GetStableName(type, out _);
+            return GetXmlName(type, out _);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static XmlQualifiedName GetStableName(Type type, out bool hasDataContract)
+        internal static XmlQualifiedName GetXmlName(Type type, out bool hasDataContract)
         {
-            return GetStableName(type, new HashSet<Type>(), out hasDataContract);
+            return GetXmlName(type, new HashSet<Type>(), out hasDataContract);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static XmlQualifiedName GetStableName(Type type, HashSet<Type> previousCollectionTypes, out bool hasDataContract)
+        internal static XmlQualifiedName GetXmlName(Type type, HashSet<Type> previousCollectionTypes, out bool hasDataContract)
         {
             type = UnwrapRedundantNullableType(type);
-            if (TryGetBuiltInXmlAndArrayTypeStableName(type, previousCollectionTypes, out XmlQualifiedName? stableName))
+            if (TryGetBuiltInXmlAndArrayTypeXmlName(type, previousCollectionTypes, out XmlQualifiedName? xmlName))
             {
                 hasDataContract = false;
             }
@@ -1268,21 +1260,21 @@ namespace System.Runtime.Serialization
             {
                 if (TryGetDCAttribute(type, out DataContractAttribute? dataContractAttribute))
                 {
-                    stableName = GetDCTypeStableName(type, dataContractAttribute);
+                    xmlName = GetDCTypeXmlName(type, dataContractAttribute);
                     hasDataContract = true;
                 }
                 else
                 {
-                    stableName = GetNonDCTypeStableName(type, previousCollectionTypes);
+                    xmlName = GetNonDCTypeXmlName(type, previousCollectionTypes);
                     hasDataContract = false;
                 }
             }
 
-            return stableName;
+            return xmlName;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static XmlQualifiedName GetDCTypeStableName(Type type, DataContractAttribute dataContractAttribute)
+        private static XmlQualifiedName GetDCTypeXmlName(Type type, DataContractAttribute dataContractAttribute)
         {
             string? name, ns;
             if (dataContractAttribute.IsNameSetExplicitly)
@@ -1295,7 +1287,7 @@ namespace System.Runtime.Serialization
                 name = DataContract.EncodeLocalName(name);
             }
             else
-                name = GetDefaultStableLocalName(type);
+                name = GetDefaultXmlLocalName(type);
 
             if (dataContractAttribute.IsNamespaceSetExplicitly)
             {
@@ -1311,16 +1303,16 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static XmlQualifiedName GetNonDCTypeStableName(Type type, HashSet<Type> previousCollectionTypes)
+        private static XmlQualifiedName GetNonDCTypeXmlName(Type type, HashSet<Type> previousCollectionTypes)
         {
             string? name, ns;
 
             if (CollectionDataContract.IsCollection(type, out Type? itemType))
             {
                 ValidatePreviousCollectionTypes(type, itemType, previousCollectionTypes);
-                return GetCollectionStableName(type, itemType, previousCollectionTypes, out _);
+                return GetCollectionXmlName(type, itemType, previousCollectionTypes, out _);
             }
-            name = GetDefaultStableLocalName(type);
+            name = GetDefaultXmlLocalName(type);
 
             // ensures that ContractNamespaceAttribute is honored when used with non-attributed types
             if (ClassDataContract.IsNonAttributedTypeValidForSerialization(type))
@@ -1329,33 +1321,33 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                ns = GetDefaultStableNamespace(type);
+                ns = GetDefaultXmlNamespace(type);
             }
             return CreateQualifiedName(name, ns);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static bool TryGetBuiltInXmlAndArrayTypeStableName(Type type, HashSet<Type> previousCollectionTypes, [NotNullWhen(true)] out XmlQualifiedName? stableName)
+        private static bool TryGetBuiltInXmlAndArrayTypeXmlName(Type type, HashSet<Type> previousCollectionTypes, [NotNullWhen(true)] out XmlQualifiedName? xmlName)
         {
-            stableName = null;
+            xmlName = null;
 
             DataContract? builtInContract = GetBuiltInDataContract(type);
             if (builtInContract != null)
             {
-                stableName = builtInContract.StableName;
+                xmlName = builtInContract.XmlName;
             }
             else if (Globals.TypeOfIXmlSerializable.IsAssignableFrom(type))
             {
-                SchemaExporter.GetXmlTypeInfo(type, out XmlQualifiedName xmlTypeStableName, out _, out _);
-                stableName = xmlTypeStableName;
+                SchemaExporter.GetXmlTypeInfo(type, out XmlQualifiedName xmlTypeName, out _, out _);
+                xmlName = xmlTypeName;
             }
             else if (type.IsArray)
             {
                 Type itemType = type.GetElementType()!;
                 ValidatePreviousCollectionTypes(type, itemType, previousCollectionTypes);
-                stableName = GetCollectionStableName(type, itemType, previousCollectionTypes, out _);
+                xmlName = GetCollectionXmlName(type, itemType, previousCollectionTypes, out _);
             }
-            return stableName != null;
+            return xmlName != null;
         }
 
         internal static bool TryGetDCAttribute(Type type, [NotNullWhen(true)] out DataContractAttribute? dataContractAttribute)
@@ -1376,13 +1368,13 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static XmlQualifiedName GetCollectionStableName(Type type, Type itemType, out CollectionDataContractAttribute? collectionContractAttribute)
+        internal static XmlQualifiedName GetCollectionXmlName(Type type, Type itemType, out CollectionDataContractAttribute? collectionContractAttribute)
         {
-            return GetCollectionStableName(type, itemType, new HashSet<Type>(), out collectionContractAttribute);
+            return GetCollectionXmlName(type, itemType, new HashSet<Type>(), out collectionContractAttribute);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static XmlQualifiedName GetCollectionStableName(Type type, Type itemType, HashSet<Type> previousCollectionTypes, out CollectionDataContractAttribute? collectionContractAttribute)
+        internal static XmlQualifiedName GetCollectionXmlName(Type type, Type itemType, HashSet<Type> previousCollectionTypes, out CollectionDataContractAttribute? collectionContractAttribute)
         {
             string? name, ns;
             object[] collectionContractAttributes = type.GetCustomAttributes(Globals.TypeOfCollectionDataContractAttribute, false).ToArray();
@@ -1403,7 +1395,7 @@ namespace System.Runtime.Serialization
                     name = DataContract.EncodeLocalName(name);
                 }
                 else
-                    name = GetDefaultStableLocalName(type);
+                    name = GetDefaultXmlLocalName(type);
 
                 if (collectionContractAttribute.IsNamespaceSetExplicitly)
                 {
@@ -1419,9 +1411,9 @@ namespace System.Runtime.Serialization
             {
                 collectionContractAttribute = null;
                 string arrayOfPrefix = Globals.ArrayPrefix + GetArrayPrefix(ref itemType);
-                XmlQualifiedName elementStableName = GetStableName(itemType, previousCollectionTypes, out _);
-                name = arrayOfPrefix + elementStableName.Name;
-                ns = GetCollectionNamespace(elementStableName.Namespace);
+                XmlQualifiedName elementXmlName = GetXmlName(itemType, previousCollectionTypes, out _);
+                name = arrayOfPrefix + elementXmlName.Name;
+                ns = GetCollectionNamespace(elementXmlName.Namespace);
             }
             return CreateQualifiedName(name, ns);
         }
@@ -1451,14 +1443,14 @@ namespace System.Runtime.Serialization
             XmlQualifiedName itemName;
             if (IsValueType && isNullable)
             {
-                GenericInfo genericInfo = new GenericInfo(DataContract.GetStableName(Globals.TypeOfNullable), Globals.TypeOfNullable.FullName!);
-                genericInfo.Add(new GenericInfo(StableName, null));
+                GenericInfo genericInfo = new GenericInfo(DataContract.GetXmlName(Globals.TypeOfNullable), Globals.TypeOfNullable.FullName!);
+                genericInfo.Add(new GenericInfo(XmlName, null));
                 genericInfo.AddToLevel(0, 1);
-                itemName = genericInfo.GetExpandedStableName();
+                itemName = genericInfo.GetExpandedXmlName();
             }
             else
             {
-                itemName = StableName;
+                itemName = XmlName;
             }
             string ns = GetCollectionNamespace(itemName.Namespace);
             string name = Globals.ArrayPrefix + itemName.Name;
@@ -1466,13 +1458,13 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static XmlQualifiedName GetDefaultStableName(Type type)
+        internal static XmlQualifiedName GetDefaultXmlName(Type type)
         {
-            return CreateQualifiedName(GetDefaultStableLocalName(type), GetDefaultStableNamespace(type));
+            return CreateQualifiedName(GetDefaultXmlLocalName(type), GetDefaultXmlNamespace(type));
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static string GetDefaultStableLocalName(Type type)
+        private static string GetDefaultXmlLocalName(Type type)
         {
             if (type.IsGenericParameter)
                 return "{" + type.GenericParameterPosition + "}";
@@ -1509,7 +1501,7 @@ namespace System.Runtime.Serialization
                         localName.Append('{').Append(i).Append('}');
                     else
                     {
-                        XmlQualifiedName qname = DataContract.GetStableName(genParam);
+                        XmlQualifiedName qname = DataContract.GetXmlName(genParam);
                         localName.Append(qname.Name);
                         namespaces.Append(' ').Append(qname.Namespace);
                         if (parametersFromBuiltInNamespaces)
@@ -1538,7 +1530,7 @@ namespace System.Runtime.Serialization
 
             if (ns == null)
             {
-                ns = GetDefaultStableNamespace(type);
+                ns = GetDefaultXmlNamespace(type);
             }
             else
             {
@@ -1585,11 +1577,11 @@ namespace System.Runtime.Serialization
             return (ns == Globals.SchemaNamespace || ns == Globals.SerializationNamespace);
         }
 
-        internal static string GetDefaultStableNamespace(Type type)
+        internal static string GetDefaultXmlNamespace(Type type)
         {
             if (type.IsGenericParameter)
                 return "{ns}";
-            return GetDefaultStableNamespace(type.Namespace);
+            return GetDefaultXmlNamespace(type.Namespace);
         }
 
         internal static XmlQualifiedName CreateQualifiedName(string localName, string ns)
@@ -1597,27 +1589,27 @@ namespace System.Runtime.Serialization
             return new XmlQualifiedName(localName, GetNamespace(ns));
         }
 
-        internal static string GetDefaultStableNamespace(string? clrNs)
+        internal static string GetDefaultXmlNamespace(string? clrNs)
         {
             return new Uri(Globals.DataContractXsdBaseNamespaceUri, clrNs ?? string.Empty).AbsoluteUri;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static void GetDefaultStableName(string fullTypeName, out string localName, out string ns)
+        internal static void GetDefaultXmlName(string fullTypeName, out string localName, out string ns)
         {
             CodeTypeReference typeReference = new CodeTypeReference(fullTypeName);
-            GetDefaultStableName(typeReference, out localName, out ns);
+            GetDefaultName(typeReference, out localName, out ns);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static void GetDefaultStableName(CodeTypeReference typeReference, out string localName, out string ns)
+        private static void GetDefaultName(CodeTypeReference typeReference, out string localName, out string ns)
         {
             string fullTypeName = typeReference.BaseType;
             DataContract? dataContract = GetBuiltInDataContract(fullTypeName);
             if (dataContract != null)
             {
-                localName = dataContract.StableName.Name;
-                ns = dataContract.StableName.Namespace;
+                localName = dataContract.XmlName.Name;
+                ns = dataContract.XmlName.Namespace;
                 return;
             }
 
@@ -1630,7 +1622,7 @@ namespace System.Runtime.Serialization
                 List<int> nestedParamCounts = GetDataContractNameForGenericName(localName, localNameBuilder);
                 foreach (CodeTypeReference typeArg in typeReference.TypeArguments)
                 {
-                    GetDefaultStableName(typeArg, out string typeArgName, out string typeArgNs);
+                    GetDefaultName(typeArg, out string typeArgName, out string typeArgNs);
                     localNameBuilder.Append(typeArgName);
                     argNamespacesBuilder.Append(' ').Append(typeArgNs);
                     if (parametersFromBuiltInNamespaces)
@@ -1653,7 +1645,7 @@ namespace System.Runtime.Serialization
             }
 
             localName = DataContract.EncodeLocalName(localName);
-            ns = GetDefaultStableNamespace(ns);
+            ns = GetDefaultXmlNamespace(ns);
         }
 
         private static void CheckExplicitDataContractNamespaceUri(string dataContractNs, Type type)
@@ -2018,7 +2010,7 @@ namespace System.Runtime.Serialization
                         DataContract itemDataContract = DataContract.GetDataContract(Globals.TypeOfKeyValuePair.MakeGenericType(collectionDataContract.ItemType.GetGenericArguments()));
                         knownDataContracts ??= new DataContractDictionary();
 
-                        knownDataContracts.TryAdd(itemDataContract.StableName, itemDataContract);
+                        knownDataContracts.TryAdd(itemDataContract.XmlName, itemDataContract);
                     }
                 }
                 catch (InvalidDataContractException)
@@ -2042,15 +2034,15 @@ namespace System.Runtime.Serialization
             {
                 nameToDataContractTable = new DataContractDictionary();
             }
-            else if (nameToDataContractTable.TryGetValue(dataContract.StableName, out DataContract? alreadyExistingContract))
+            else if (nameToDataContractTable.TryGetValue(dataContract.XmlName, out DataContract? alreadyExistingContract))
             {
                 // NOTE TODO smolloy - The existing contract type was used as-is in NetFx. The call to get the appropriate adapter type was added in CoreFx with https://github.com/dotnet/runtime/commit/50c0a70c52fa66fafa1227be552ccdab5e4cf8e4
                 // Don't throw duplicate if its a KeyValuePair<K,T> as it could have been added by Dictionary<K,T>
                 if (DataContractCriticalHelper.GetDataContractAdapterType(alreadyExistingContract.UnderlyingType) != DataContractCriticalHelper.GetDataContractAdapterType(type))
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.DupContractInKnownTypes, type, alreadyExistingContract.UnderlyingType, dataContract.StableName.Namespace, dataContract.StableName.Name)));
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.DupContractInKnownTypes, type, alreadyExistingContract.UnderlyingType, dataContract.XmlName.Namespace, dataContract.XmlName.Name)));
                 return;
             }
-            nameToDataContractTable.Add(dataContract.StableName, dataContract);
+            nameToDataContractTable.Add(dataContract.XmlName, dataContract);
             ImportKnownTypeAttributes(type, typesChecked, ref nameToDataContractTable);
         }
 
@@ -2069,7 +2061,7 @@ namespace System.Runtime.Serialization
         {
             if (other is DataContract dataContract)
             {
-                return (StableName.Name == dataContract.StableName.Name && StableName.Namespace == dataContract.StableName.Namespace && IsReference == dataContract.IsReference);
+                return (XmlName.Name == dataContract.XmlName.Name && XmlName.Namespace == dataContract.XmlName.Namespace && IsReference == dataContract.IsReference);
             }
             return false;
         }
@@ -2237,7 +2229,10 @@ namespace System.Runtime.Serialization
             return typeName.Replace('.', '_');
         }
     }
+}
 
+namespace System.Runtime.Serialization
+{
     internal interface IGenericNameProvider
     {
         int GetParameterCount();
@@ -2287,7 +2282,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public string GetParameterName(int paramIndex)
         {
-            return GetStableName(paramIndex).Name;
+            return GetXmlName(paramIndex).Name;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -2295,7 +2290,7 @@ namespace System.Runtime.Serialization
         {
             StringBuilder namespaces = new StringBuilder();
             for (int j = 0; j < GetParameterCount(); j++)
-                namespaces.Append(' ').Append(GetStableName(j).Namespace);
+                namespaces.Append(' ').Append(GetXmlName(j).Namespace);
             return namespaces.ToString();
         }
 
@@ -2313,7 +2308,7 @@ namespace System.Runtime.Serialization
                 for (int j = 0; j < GetParameterCount(); j++)
                 {
                     if (parametersFromBuiltInNamespaces)
-                        parametersFromBuiltInNamespaces = DataContract.IsBuiltInNamespace(GetStableName(j).Namespace);
+                        parametersFromBuiltInNamespaces = DataContract.IsBuiltInNamespace(GetXmlName(j).Namespace);
                     else
                         break;
                 }
@@ -2322,7 +2317,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private XmlQualifiedName GetStableName(int i)
+        private XmlQualifiedName GetXmlName(int i)
         {
             object o = _genericParams[i];
             XmlQualifiedName? qname = o as XmlQualifiedName;
@@ -2330,9 +2325,9 @@ namespace System.Runtime.Serialization
             {
                 Type? paramType = o as Type;
                 if (paramType != null)
-                    _genericParams[i] = qname = DataContract.GetStableName(paramType);
+                    _genericParams[i] = qname = DataContract.GetXmlName(paramType);
                 else
-                    _genericParams[i] = qname = ((DataContract)o).StableName;
+                    _genericParams[i] = qname = ((DataContract)o).XmlName;
             }
             return qname;
         }
@@ -2341,27 +2336,27 @@ namespace System.Runtime.Serialization
     internal sealed class GenericInfo : IGenericNameProvider
     {
         private string? _genericTypeName;
-        private XmlQualifiedName _stableName;
+        private XmlQualifiedName _xmlName;
         private List<GenericInfo>? _paramGenericInfos;
         private List<int> _nestedParamCounts;
 
-        internal GenericInfo(XmlQualifiedName stableName, string? genericTypeName)
+        internal GenericInfo(XmlQualifiedName xmlName, string? genericTypeName)
         {
-            _stableName = stableName;
+            _xmlName = xmlName;
             _genericTypeName = genericTypeName;
             _nestedParamCounts = new List<int>();
             _nestedParamCounts.Add(0);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public XmlQualifiedName GetExpandedStableName()
+        public XmlQualifiedName GetExpandedXmlName()
         {
             if (_paramGenericInfos == null)
-                return _stableName;
-            return new XmlQualifiedName(DataContract.EncodeLocalName(DataContract.ExpandGenericParameters(XmlConvert.DecodeName(_stableName.Name), this)), _stableName.Namespace);
+                return _xmlName;
+            return new XmlQualifiedName(DataContract.EncodeLocalName(DataContract.ExpandGenericParameters(XmlConvert.DecodeName(_xmlName.Name), this)), _xmlName.Namespace);
         }
 
-        public XmlQualifiedName StableName => _stableName;
+        public XmlQualifiedName XmlName => _xmlName;
 
         public IList<GenericInfo>? Parameters => _paramGenericInfos;
 
@@ -2385,9 +2380,9 @@ namespace System.Runtime.Serialization
                 _nestedParamCounts[level] = _nestedParamCounts[level] + count;
         }
 
-        internal string GetStableNamespace()
+        internal string GetXmlNamespace()
         {
-            return _stableName.Namespace;
+            return _xmlName.Namespace;
         }
 
         int IGenericNameProvider.GetParameterCount()
@@ -2404,7 +2399,7 @@ namespace System.Runtime.Serialization
         string IGenericNameProvider.GetParameterName(int paramIndex)
         {
             Debug.Assert(_paramGenericInfos != null);
-            return _paramGenericInfos[paramIndex].GetExpandedStableName().Name;
+            return _paramGenericInfos[paramIndex].GetExpandedXmlName().Name;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -2415,7 +2410,7 @@ namespace System.Runtime.Serialization
 
             StringBuilder namespaces = new StringBuilder();
             for (int j = 0; j < _paramGenericInfos.Count; j++)
-                namespaces.Append(' ').Append(_paramGenericInfos[j].GetStableNamespace());
+                namespaces.Append(' ').Append(_paramGenericInfos[j].GetXmlNamespace());
             return namespaces.ToString();
         }
 
@@ -2437,7 +2432,7 @@ namespace System.Runtime.Serialization
                 for (int j = 0; j < _paramGenericInfos.Count; j++)
                 {
                     if (parametersFromBuiltInNamespaces)
-                        parametersFromBuiltInNamespaces = DataContract.IsBuiltInNamespace(_paramGenericInfos[j].GetStableNamespace());
+                        parametersFromBuiltInNamespaces = DataContract.IsBuiltInNamespace(_paramGenericInfos[j].GetXmlNamespace());
                     else
                         break;
                 }

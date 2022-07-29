@@ -5,6 +5,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Serialization.DataContracts;
 
 namespace System.Runtime.Serialization
 {
@@ -40,26 +41,26 @@ namespace System.Runtime.Serialization
             return surrogateProvider.GetDeserializedObject(obj, memberType);
         }
 
-        internal static object? GetCustomDataToExport(ISerializationExtendedSurrogateProvider surrogateProvider, MemberInfo memberInfo, Type dataContractType)
+        internal static object? GetCustomDataToExport(ISerializationSurrogateProvider2 surrogateProvider, MemberInfo memberInfo, Type dataContractType)
         {
             return surrogateProvider.GetCustomDataToExport(memberInfo, dataContractType);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static object? GetCustomDataToExport(ISerializationExtendedSurrogateProvider surrogateProvider, Type clrType, Type dataContractType)
+        internal static object? GetCustomDataToExport(ISerializationSurrogateProvider2 surrogateProvider, Type clrType, Type dataContractType)
         {
             if (DataContract.GetBuiltInDataContract(clrType) != null)
                 return null;
             return surrogateProvider.GetCustomDataToExport(clrType, dataContractType);
         }
 
-        internal static void GetKnownCustomDataTypes(ISerializationExtendedSurrogateProvider surrogateProvider, Collection<Type> customDataTypes)
+        internal static void GetKnownCustomDataTypes(ISerializationSurrogateProvider2 surrogateProvider, Collection<Type> customDataTypes)
         {
             surrogateProvider.GetKnownCustomDataTypes(customDataTypes);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static Type? GetReferencedTypeOnImport(ISerializationExtendedSurrogateProvider surrogateProvider, string typeName, string typeNamespace, object? customData)
+        internal static Type? GetReferencedTypeOnImport(ISerializationSurrogateProvider2 surrogateProvider, string typeName, string typeNamespace, object? customData)
         {
             if (DataContract.GetBuiltInDataContract(typeName, typeNamespace) != null)
                 return null;

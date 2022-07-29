@@ -6,10 +6,10 @@ using System.Reflection;
 
 namespace System.Runtime.Serialization
 {
-    public interface ISerializationExtendedSurrogateProvider : ISerializationSurrogateProvider
+    public interface ISerializationSurrogateProvider2 : ISerializationSurrogateProvider
     {
         object? GetCustomDataToExport(MemberInfo memberInfo, Type dataContractType);
-        object? GetCustomDataToExport(Type clrType, Type dataContractType);
+        object? GetCustomDataToExport(Type runtimeType, Type dataContractType);
         void GetKnownCustomDataTypes(Collection<Type> customDataTypes);
         Type? GetReferencedTypeOnImport(string typeName, string typeNamespace, object? customData);
     }

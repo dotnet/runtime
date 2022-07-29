@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace System.Runtime.Serialization
+namespace System.Runtime.Serialization.DataContracts
 {
     internal sealed class GenericParameterDataContract : DataContract
     {
@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization
                 Type type)
                 : base(type)
             {
-                SetDataContractName(DataContract.GetStableName(type));
+                SetDataContractName(DataContract.GetXmlName(type));
                 _parameterPosition = type.GenericParameterPosition;
             }
 

@@ -2,17 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
-using System.Xml.Schema;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Security;
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization.DataContracts;
+using System.Security;
+using System.Xml;
+using System.Xml.Schema;
 
 namespace System.Runtime.Serialization
 {
@@ -78,7 +79,7 @@ namespace System.Runtime.Serialization
                     bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null);
                     try
                     {
-                        _ilg.BeginMethod("Write" + classContract.StableName.Name + "ToXml", Globals.TypeOfXmlFormatClassWriterDelegate, memberAccessFlag);
+                        _ilg.BeginMethod("Write" + classContract.XmlName.Name + "ToXml", Globals.TypeOfXmlFormatClassWriterDelegate, memberAccessFlag);
                     }
                     catch (SecurityException securityException)
                     {
@@ -120,7 +121,7 @@ namespace System.Runtime.Serialization
                     bool memberAccessFlag = collectionContract.RequiresMemberAccessForWrite(null);
                     try
                     {
-                        _ilg.BeginMethod("Write" + collectionContract.StableName.Name + "ToXml", Globals.TypeOfXmlFormatCollectionWriterDelegate, memberAccessFlag);
+                        _ilg.BeginMethod("Write" + collectionContract.XmlName.Name + "ToXml", Globals.TypeOfXmlFormatCollectionWriterDelegate, memberAccessFlag);
                     }
                     catch (SecurityException securityException)
                     {
@@ -781,11 +782,11 @@ namespace System.Runtime.Serialization
 
                 // Check for conflict with derived type members
                 string name = member.Name;
-                string ns = classContract.StableName.Namespace;
+                string ns = classContract.XmlName.Namespace;
                 ClassDataContract? currentContract = derivedMostClassContract;
                 while (currentContract != null && currentContract != classContract)
                 {
-                    if (ns == currentContract.StableName.Namespace)
+                    if (ns == currentContract.XmlName.Namespace)
                     {
                         List<DataMember> members = currentContract.Members!;
                         for (int j = 0; j < members.Count; j++)

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
@@ -222,7 +223,7 @@ namespace System.Runtime.Serialization
             else
             {
                 context.ResetCollectionMemberInfo();
-                var value = ReflectionReadValue(xmlReader, context, dataMember, classContract.StableName.Namespace);
+                var value = ReflectionReadValue(xmlReader, context, dataMember, classContract.XmlName.Namespace);
                 MemberInfo memberInfo = dataMember.MemberInfo;
                 Debug.Assert(memberInfo != null);
 

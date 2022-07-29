@@ -3,14 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Xml;
-using System.Linq;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics;
 
-namespace System.Runtime.Serialization
+namespace System.Runtime.Serialization.DataContracts
 {
     internal sealed class EnumDataContract : DataContract
     {
@@ -95,9 +95,9 @@ namespace System.Runtime.Serialization
 
             internal static void Add(Type type, string localName)
             {
-                XmlQualifiedName stableName = CreateQualifiedName(localName, Globals.SchemaNamespace);
-                s_typeToName.Add(type, stableName);
-                s_nameToType.Add(stableName, type);
+                XmlQualifiedName xmlName = CreateQualifiedName(localName, Globals.SchemaNamespace);
+                s_typeToName.Add(type, xmlName);
+                s_nameToType.Add(xmlName, type);
             }
 
             internal static XmlQualifiedName GetBaseContractName(Type type)
@@ -119,19 +119,19 @@ namespace System.Runtime.Serialization
                 [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
                 Type type) : base(type)
             {
-                StableName = DataContract.GetStableName(type, out _hasDataContract);
+                XmlName = DataContract.GetXmlName(type, out _hasDataContract);
                 Type baseType = Enum.GetUnderlyingType(type);
                 XmlQualifiedName baseTypeName = GetBaseContractName(baseType);
                 _baseContract = DataContract.GetBuiltInDataContract(baseTypeName.Name, baseTypeName.Namespace)!;
-                // NOTE TODO smolloy - Setting StableName might be redundant. But I don't want to miss an edge case.
-                _baseContract.StableName = baseTypeName;
+                // NOTE TODO smolloy - Setting XmlName might be redundant. But I don't want to miss an edge case.
+                _baseContract.XmlName = baseTypeName;
                 ImportBaseType(baseType);
                 IsFlags = type.IsDefined(Globals.TypeOfFlagsAttribute, false);
                 ImportDataMembers();
 
                 XmlDictionary dictionary = new XmlDictionary(2 + Members.Count);
-                Name = dictionary.Add(StableName.Name);
-                Namespace = dictionary.Add(StableName.Namespace);
+                Name = dictionary.Add(XmlName.Name);
+                Namespace = dictionary.Add(XmlName.Namespace);
                 _childElementNames = new XmlDictionaryString[Members.Count];
                 for (int i = 0; i < Members.Count; i++)
                     _childElementNames[i] = dictionary.Add(Members[i].Name);
@@ -153,7 +153,7 @@ namespace System.Runtime.Serialization
 
             internal XmlQualifiedName BaseContractName
             {
-                get => _baseContract.StableName;
+                get => _baseContract.XmlName;
 
                 [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 set
@@ -161,11 +161,11 @@ namespace System.Runtime.Serialization
                     Type? baseType = GetBaseType(value);
                     if (baseType == null)
                         ThrowInvalidDataContractException(
-                                SR.Format(SR.InvalidEnumBaseType, value.Name, value.Namespace, StableName.Name, StableName.Namespace));
+                                SR.Format(SR.InvalidEnumBaseType, value.Name, value.Namespace, XmlName.Name, XmlName.Namespace));
                     ImportBaseType(baseType);
                     _baseContract = DataContract.GetBuiltInDataContract(value.Name, value.Namespace)!;
-                    // NOTE TODO smolloy - Setting StableName might be redundant. But I don't want to miss an edge case.
-                    _baseContract.StableName = value;
+                    // NOTE TODO smolloy - Setting XmlName might be redundant. But I don't want to miss an edge case.
+                    _baseContract.XmlName = value;
                 }
             }
 

@@ -10,11 +10,12 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.DataContracts;
 using System.Security;
 using System.Text;
 using System.Xml;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -198,6 +199,19 @@ namespace System.Runtime.Serialization.Json
             {
                 return _rootName ?? JsonGlobals.rootDictionaryString;
             }
+        }
+
+        // These Get/Set methods mirror the extensions that were added to DCS in the early days of Core, which allowed
+        // using a slimmed-down surrogate on both NetFx and Core via type-forwarding mechanisms. That's why these are
+        // a pair of methods instead of making the property itself public.
+        public ISerializationSurrogateProvider? GetSerializationSurrogateProvider()
+        {
+            return SerializationSurrogateProvider;
+        }
+
+        public void SetSerializationSurrogateProvider(ISerializationSurrogateProvider? provider)
+        {
+            SerializationSurrogateProvider = provider;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]

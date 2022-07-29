@@ -9,10 +9,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.DataContracts;
 using System.Xml;
 using System.Xml.Schema;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 using SchemaObjectDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.SchemaObjectInfo>;
 
 namespace System.Runtime.Serialization
@@ -22,8 +23,8 @@ namespace System.Runtime.Serialization
     {
         private DataContractSet _dataContractSet;
         private XmlSchemaSet _schemaSet;
-        private ICollection<XmlQualifiedName>? _typeNames;
-        private ICollection<XmlSchemaElement>? _elements;
+        private IEnumerable<XmlQualifiedName>? _typeNames;
+        private IEnumerable<XmlSchemaElement>? _elements;
         private bool _importXmlDataType;
         private SchemaObjectDictionary _schemaObjects = null!;   // Not directly referenced. Always lazy initialized by property getter.
         private List<XmlSchemaRedefine> _redefineList = null!;   // Not directly referenced. Always lazy initialized by property getter.
@@ -31,7 +32,7 @@ namespace System.Runtime.Serialization
 
         private static Hashtable? s_serializationSchemaElements;
 
-        internal SchemaImporter(XmlSchemaSet schemas, ICollection<XmlQualifiedName>? typeNames, ICollection<XmlSchemaElement>? elements, DataContractSet dataContractSet, bool importXmlDataType)
+        internal SchemaImporter(XmlSchemaSet schemas, IEnumerable<XmlQualifiedName>? typeNames, IEnumerable<XmlSchemaElement>? elements, DataContractSet dataContractSet, bool importXmlDataType)
         {
             _dataContractSet = dataContractSet;
             _schemaSet = schemas;
@@ -41,7 +42,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal void Import([NotNullIfNotNull("_elements")] out IList<XmlQualifiedName>? elementTypeNames)
+        internal void Import([NotNullIfNotNull("_elements")] out List<XmlQualifiedName>? elementTypeNames)
         {
             elementTypeNames = null!;
 
@@ -97,29 +98,32 @@ namespace System.Runtime.Serialization
                     ImportType(typeName);
                 }
 
-                if (_elements?.Count > 0)
+                if (_elements != null)
                 {
-                    elementTypeNames = new List<XmlQualifiedName>();
+                    var elementNameList = new List<XmlQualifiedName>();
                     foreach (XmlSchemaElement element in _elements)
                     {
                         XmlQualifiedName typeName = element.SchemaTypeName;
                         if (typeName != null && typeName.Name.Length > 0)
                         {
-                            elementTypeNames.Add(ImportType(typeName).StableName);
+                            elementNameList.Add(ImportType(typeName).XmlName);
                         }
                         else
                         {
                             XmlSchema? schema = SchemaHelper.GetSchemaWithGlobalElementDeclaration(element, _schemaSet);
                             if (schema == null)
                             {
-                                elementTypeNames.Add(ImportAnonymousElement(element, element.QualifiedName).StableName);
+                                elementNameList.Add(ImportAnonymousElement(element, element.QualifiedName).XmlName);
                             }
                             else
                             {
-                                elementTypeNames.Add(ImportAnonymousGlobalElement(element, element.QualifiedName, schema.TargetNamespace).StableName);
+                                elementNameList.Add(ImportAnonymousGlobalElement(element, element.QualifiedName, schema.TargetNamespace).XmlName);
                             }
                         }
                     }
+
+                    if (elementNameList.Count > 0)
+                        elementTypeNames = elementNameList;
                 }
             }
             ImportKnownTypesForObject();
@@ -223,9 +227,9 @@ namespace System.Runtime.Serialization
                         {
                             // Expected: will throw exception if schema set contains types that are not supported
                             DataContract dataContract = ImportType(knownType);
-                            if (!knownDataContracts.TryGetValue(dataContract.StableName, out _))
+                            if (!knownDataContracts.TryGetValue(dataContract.XmlName, out _))
                             {
-                                knownDataContracts.Add(dataContract.StableName, dataContract);
+                                knownDataContracts.Add(dataContract.XmlName, dataContract);
                             }
                         }
                         _dataContractSet.KnownTypesForObject = knownDataContracts;
@@ -548,7 +552,7 @@ namespace System.Runtime.Serialization
             else if (restriction.BaseType != null)
             {
                 DataContract baseContract = ImportType(restriction.BaseType);
-                return (baseContract.StableName == expectedBase || baseContract is EnumDataContract);
+                return (baseContract.XmlName == expectedBase || baseContract is EnumDataContract);
             }
 
             return false;
@@ -644,7 +648,7 @@ namespace System.Runtime.Serialization
         private ClassDataContract ImportClass(XmlQualifiedName typeName, XmlSchemaSequence rootSequence, XmlQualifiedName? baseTypeName, XmlSchemaAnnotation? annotation, bool isReference)
         {
             ClassDataContract dataContract = new ClassDataContract(Globals.TypeOfSchemaDefinedType);
-            dataContract.StableName = typeName;
+            dataContract.XmlName = typeName;
             AddDataContract(dataContract);
 
             dataContract.IsValueType = IsValueType(typeName, annotation);
@@ -658,7 +662,7 @@ namespace System.Runtime.Serialization
                     if (IsISerializableDerived(typeName, rootSequence))
                         dataContract.IsISerializable = true;
                     else
-                        ThrowTypeCannotBeImportedException(dataContract.StableName.Name, dataContract.StableName.Namespace, SR.Format(SR.DerivedTypeNotISerializable, baseTypeName.Name, baseTypeName.Namespace));
+                        ThrowTypeCannotBeImportedException(dataContract.XmlName.Name, dataContract.XmlName.Namespace, SR.Format(SR.DerivedTypeNotISerializable, baseTypeName.Name, baseTypeName.Namespace));
                 }
                 if (dataContract.BaseClassContract.IsReference)
                 {
@@ -694,7 +698,7 @@ namespace System.Runtime.Serialization
                 return xmlDataContract;
 
             xmlDataContract = new XmlDataContract(Globals.TypeOfSchemaDefinedType);
-            xmlDataContract.StableName = typeName;
+            xmlDataContract.XmlName = typeName;
             xmlDataContract.IsValueType = false;
             AddDataContract(xmlDataContract);
             if (xsdType != null)
@@ -811,7 +815,7 @@ namespace System.Runtime.Serialization
         private ClassDataContract ImportISerializable(XmlQualifiedName typeName, XmlSchemaSequence rootSequence, XmlQualifiedName? baseTypeName, XmlSchemaObjectCollection attributes, XmlSchemaAnnotation? annotation)
         {
             ClassDataContract dataContract = new ClassDataContract(Globals.TypeOfSchemaDefinedType);
-            dataContract.StableName = typeName;
+            dataContract.XmlName = typeName;
             dataContract.IsISerializable = true;
             AddDataContract(dataContract);
 
@@ -823,7 +827,7 @@ namespace System.Runtime.Serialization
                 ImportBaseContract(baseTypeName, dataContract);
                 Debug.Assert(dataContract.BaseClassContract != null);    // ImportBaseContract will always set this... or throw.
                 if (!dataContract.BaseClassContract.IsISerializable)
-                    ThrowISerializableTypeCannotBeImportedException(dataContract.StableName.Name, dataContract.StableName.Namespace, SR.Format(SR.BaseTypeNotISerializable, baseTypeName.Name, baseTypeName.Namespace));
+                    ThrowISerializableTypeCannotBeImportedException(dataContract.XmlName.Name, dataContract.XmlName.Namespace, SR.Format(SR.BaseTypeNotISerializable, baseTypeName.Name, baseTypeName.Namespace));
                 if (!IsISerializableDerived(typeName, rootSequence))
                     ThrowISerializableTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.ISerializableDerivedContainsOneOrMoreItems));
             }
@@ -887,7 +891,7 @@ namespace System.Runtime.Serialization
         {
             ClassDataContract? baseContract = ImportType(baseTypeName) as ClassDataContract;
             if (baseContract == null)
-                ThrowTypeCannotBeImportedException(dataContract.StableName.Name, dataContract.StableName.Namespace, SR.Format(dataContract.IsISerializable ? SR.InvalidISerializableDerivation : SR.InvalidClassDerivation, baseTypeName.Name, baseTypeName.Namespace));
+                ThrowTypeCannotBeImportedException(dataContract.XmlName.Name, dataContract.XmlName.Namespace, SR.Format(dataContract.IsISerializable ? SR.InvalidISerializableDerivation : SR.InvalidClassDerivation, baseTypeName.Name, baseTypeName.Namespace));
 
             // Note: code ignores IsValueType annotation if derived type exists
             if (baseContract.IsValueType)
@@ -896,13 +900,8 @@ namespace System.Runtime.Serialization
             ClassDataContract? ancestorDataContract = baseContract;
             while (ancestorDataContract != null)
             {
-                DataContractDictionary? knownDataContracts = ancestorDataContract.KnownDataContracts;
-                if (knownDataContracts == null)
-                {
-                    knownDataContracts = new DataContractDictionary();
-                    ancestorDataContract.KnownDataContracts = knownDataContracts;
-                }
-                knownDataContracts.Add(dataContract.StableName, dataContract);
+                DataContractDictionary knownDataContracts = ancestorDataContract.KnownDataContracts!;   // Might be .Count == 0, but always non-null for ClassDataContract
+                knownDataContracts.Add(dataContract.XmlName, dataContract);
                 ancestorDataContract = ancestorDataContract.BaseClassContract;
             }
 
@@ -934,7 +933,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ImportClassMember(XmlSchemaElement element, ClassDataContract dataContract)
         {
-            XmlQualifiedName typeName = dataContract.StableName;
+            XmlQualifiedName typeName = dataContract.XmlName;
 
             Debug.Assert(element.Name != null);
 
@@ -1040,7 +1039,7 @@ namespace System.Runtime.Serialization
         private CollectionDataContract ImportCollection(XmlQualifiedName typeName, XmlSchemaSequence rootSequence, XmlSchemaObjectCollection attributes, XmlSchemaAnnotation? annotation, bool isReference)
         {
             CollectionDataContract dataContract = new CollectionDataContract(Globals.TypeOfSchemaDefinedType, CollectionKind.Array);
-            dataContract.StableName = typeName;
+            dataContract.XmlName = typeName;
             AddDataContract(dataContract);
 
             dataContract.IsReference = isReference;
@@ -1108,13 +1107,13 @@ namespace System.Runtime.Serialization
                 dataContract.ValueName = value.Name;
                 if (element.SchemaType != null)
                 {
-                    _dataContractSet.Remove(keyValueContract.StableName);
+                    _dataContractSet.Remove(keyValueContract.XmlName);
 
-                    GenericInfo genericInfo = new GenericInfo(DataContract.GetStableName(Globals.TypeOfKeyValue), Globals.TypeOfKeyValue.FullName);
+                    GenericInfo genericInfo = new GenericInfo(DataContract.GetXmlName(Globals.TypeOfKeyValue), Globals.TypeOfKeyValue.FullName);
                     genericInfo.Add(GetGenericInfoForDataMember(key));
                     genericInfo.Add(GetGenericInfoForDataMember(value));
                     genericInfo.AddToLevel(0, 2);
-                    dataContract.ItemContract.StableName = new XmlQualifiedName(genericInfo.GetExpandedStableName().Name, typeName.Namespace);
+                    dataContract.ItemContract.XmlName = new XmlQualifiedName(genericInfo.GetExpandedXmlName().Name, typeName.Namespace);
                 }
             }
 
@@ -1127,12 +1126,12 @@ namespace System.Runtime.Serialization
             GenericInfo genericInfo;
             if (dataMember.MemberTypeContract.IsValueType && dataMember.IsNullable)
             {
-                genericInfo = new GenericInfo(DataContract.GetStableName(Globals.TypeOfNullable), Globals.TypeOfNullable.FullName);
-                genericInfo.Add(new GenericInfo(dataMember.MemberTypeContract.StableName, null));
+                genericInfo = new GenericInfo(DataContract.GetXmlName(Globals.TypeOfNullable), Globals.TypeOfNullable.FullName);
+                genericInfo.Add(new GenericInfo(dataMember.MemberTypeContract.XmlName, null));
             }
             else
             {
-                genericInfo = new GenericInfo(dataMember.MemberTypeContract.StableName, null);
+                genericInfo = new GenericInfo(dataMember.MemberTypeContract.XmlName, null);
             }
 
             return genericInfo;
@@ -1181,7 +1180,7 @@ namespace System.Runtime.Serialization
         private EnumDataContract ImportEnum(XmlQualifiedName typeName, XmlSchemaSimpleTypeRestriction restriction, bool isFlags, XmlSchemaAnnotation? annotation)
         {
             EnumDataContract dataContract = new EnumDataContract(Globals.TypeOfSchemaDefinedType);
-            dataContract.StableName = typeName;
+            dataContract.XmlName = typeName;
             dataContract.BaseContractName = ImportActualType(annotation, SchemaExporter.DefaultEnumBaseTypeName, typeName);
             dataContract.IsFlags = isFlags;
             AddDataContract(dataContract);
@@ -1388,7 +1387,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddDataContract(DataContract dataContract)
         {
-            _dataContractSet.Add(dataContract.StableName, dataContract);
+            _dataContractSet.Add(dataContract.XmlName, dataContract);
         }
 
         private static string? GetInnerText(XmlQualifiedName typeName, XmlElement? xmlElement)

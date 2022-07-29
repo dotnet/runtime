@@ -6,10 +6,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Serialization.DataContracts;
 using System.Security;
 using System.Xml;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
 namespace System.Runtime.Serialization
 {
@@ -195,7 +196,7 @@ namespace System.Runtime.Serialization
         internal bool IsKnownType(DataContract dataContract, DataContractDictionary? knownDataContracts, Type? declaredType)
         {
             bool knownTypesAddedInCurrentScope = false;
-            if (knownDataContracts != null)
+            if (knownDataContracts?.Count > 0)
             {
                 scopedKnownTypes.Push(knownDataContracts);
                 knownTypesAddedInCurrentScope = true;
@@ -213,7 +214,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal bool IsKnownType(DataContract dataContract, Type? declaredType)
         {
-            DataContract? knownContract = ResolveDataContractFromKnownTypes(dataContract.StableName.Name, dataContract.StableName.Namespace, null /*memberTypeContract*/, declaredType);
+            DataContract? knownContract = ResolveDataContractFromKnownTypes(dataContract.XmlName.Name, dataContract.XmlName.Namespace, null /*memberTypeContract*/, declaredType);
             return knownContract != null && knownContract.UnderlyingType == dataContract.UnderlyingType;
         }
 
@@ -248,13 +249,13 @@ namespace System.Runtime.Serialization
             {
                 if (memberTypeContract != null
                     && !memberTypeContract.UnderlyingType.IsInterface
-                    && memberTypeContract.StableName == qname)
+                    && memberTypeContract.XmlName == qname)
                 {
                     dataContract = memberTypeContract;
                 }
                 if (dataContract == null && rootTypeDataContract != null)
                 {
-                    if (rootTypeDataContract.StableName == qname)
+                    if (rootTypeDataContract.XmlName == qname)
                         dataContract = rootTypeDataContract;
                     else
                         dataContract = ResolveDataContractFromRootDataContract(qname);
@@ -270,7 +271,7 @@ namespace System.Runtime.Serialization
             while (collectionContract != null)
             {
                 DataContract itemContract = GetDataContract(GetSurrogatedType(collectionContract.ItemType));
-                if (itemContract.StableName == typeQName)
+                if (itemContract.XmlName == typeQName)
                 {
                     return itemContract;
                 }

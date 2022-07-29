@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Serialization.DataContracts;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Schema;
@@ -321,7 +322,7 @@ namespace System.Runtime.Serialization
 
         private static MemberInfo? s_schemaMemberInfoPlaceholder;
         internal static MemberInfo SchemaMemberInfoPlaceholder =>
-            s_schemaMemberInfoPlaceholder ??= TypeOfSchemaDefinedType.GetField("_stableName", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            s_schemaMemberInfoPlaceholder ??= TypeOfSchemaDefinedType.GetField("_xmlName", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
         private static Uri? s_dataContractXsdBaseNamespaceUri;
         internal static Uri DataContractXsdBaseNamespaceUri =>

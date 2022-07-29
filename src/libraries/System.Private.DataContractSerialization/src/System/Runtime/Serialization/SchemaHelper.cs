@@ -29,11 +29,11 @@ namespace System.Runtime.Serialization
 
     internal sealed class SchemaDefinedType
     {
-        private XmlQualifiedName _stableName;
+        private XmlQualifiedName _xmlName;
 
-        public SchemaDefinedType(XmlQualifiedName stableName)
+        public SchemaDefinedType(XmlQualifiedName xmlName)
         {
-            _stableName = stableName;
+            _xmlName = xmlName;
         }
     }
 

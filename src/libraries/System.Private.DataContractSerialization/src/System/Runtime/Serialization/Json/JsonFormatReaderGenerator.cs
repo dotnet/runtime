@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime;
+using System.Runtime.Serialization.DataContracts;
 using System.Security;
 using System.Xml;
 
@@ -62,7 +63,7 @@ namespace System.Runtime.Serialization.Json
                 bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null);
                 try
                 {
-                    BeginMethod(_ilg, "Read" + DataContract.SanitizeTypeName(classContract.StableName!.Name) + "FromJson", typeof(JsonFormatClassReaderDelegate), memberAccessFlag);
+                    BeginMethod(_ilg, "Read" + DataContract.SanitizeTypeName(classContract.XmlName!.Name) + "FromJson", typeof(JsonFormatClassReaderDelegate), memberAccessFlag);
                 }
                 catch (SecurityException securityException)
                 {
@@ -143,11 +144,11 @@ namespace System.Runtime.Serialization.Json
                 {
                     if (isGetOnlyCollection)
                     {
-                        BeginMethod(_ilg, "Read" + DataContract.SanitizeTypeName(collectionContract.StableName.Name) + "FromJson" + "IsGetOnly", typeof(JsonFormatGetOnlyCollectionReaderDelegate), memberAccessFlag);
+                        BeginMethod(_ilg, "Read" + DataContract.SanitizeTypeName(collectionContract.XmlName.Name) + "FromJson" + "IsGetOnly", typeof(JsonFormatGetOnlyCollectionReaderDelegate), memberAccessFlag);
                     }
                     else
                     {
-                        BeginMethod(_ilg, "Read" + DataContract.SanitizeTypeName(collectionContract.StableName.Name) + "FromJson", typeof(JsonFormatCollectionReaderDelegate), memberAccessFlag);
+                        BeginMethod(_ilg, "Read" + DataContract.SanitizeTypeName(collectionContract.XmlName.Name) + "FromJson", typeof(JsonFormatCollectionReaderDelegate), memberAccessFlag);
                     }
                 }
                 catch (SecurityException securityException)

@@ -48,7 +48,6 @@
     <Compile Include="$(RuntimeSerializationSources)\ObjectToIdCache.cs" />
     <Compile Include="$(RuntimeSerializationSources)\PrimitiveDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ReflectionClassWriter.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\ReflectionFeature.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ReflectionReader.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ReflectionXmlFormatReader.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ReflectionXmlFormatWriter.cs" />

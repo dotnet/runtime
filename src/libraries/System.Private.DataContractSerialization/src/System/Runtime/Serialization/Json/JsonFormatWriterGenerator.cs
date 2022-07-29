@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.Serialization.DataContracts;
 using System.Security;
 using System.Xml;
 
@@ -56,7 +57,7 @@ namespace System.Runtime.Serialization.Json
                 bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null);
                 try
                 {
-                    BeginMethod(_ilg, "Write" + DataContract.SanitizeTypeName(classContract.StableName.Name) + "ToJson", typeof(JsonFormatClassWriterDelegate), memberAccessFlag);
+                    BeginMethod(_ilg, "Write" + DataContract.SanitizeTypeName(classContract.XmlName.Name) + "ToJson", typeof(JsonFormatClassWriterDelegate), memberAccessFlag);
                 }
                 catch (SecurityException securityException)
                 {
@@ -82,7 +83,7 @@ namespace System.Runtime.Serialization.Json
                 bool memberAccessFlag = collectionContract.RequiresMemberAccessForWrite(null);
                 try
                 {
-                    BeginMethod(_ilg, "Write" + DataContract.SanitizeTypeName(collectionContract.StableName.Name) + "ToJson", typeof(JsonFormatCollectionWriterDelegate), memberAccessFlag);
+                    BeginMethod(_ilg, "Write" + DataContract.SanitizeTypeName(collectionContract.XmlName.Name) + "ToJson", typeof(JsonFormatCollectionWriterDelegate), memberAccessFlag);
                 }
                 catch (SecurityException securityException)
                 {

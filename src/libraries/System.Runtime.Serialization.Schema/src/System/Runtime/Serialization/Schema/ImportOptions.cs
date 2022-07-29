@@ -5,9 +5,8 @@ using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 
-namespace System.Runtime.Serialization.Schema
+namespace System.Runtime.Serialization
 {
     /// <summary>
     /// Represents the options that can be set on an <see cref="XsdDataContractImporter"/>.
@@ -15,7 +14,7 @@ namespace System.Runtime.Serialization.Schema
     /// <remarks>
     /// The <see cref="XsdDataContractImporter"/> is used to generate code from XML schema using the .NET CodeDOM. To generate an XML schema from an assembly, use the <see cref="XsdDataContractExporter"/>.
     /// </remarks>
-    public sealed class ImportOptions
+    public class ImportOptions
     {
         private ICollection<Type>? _referencedTypes;
         private ICollection<Type>? _referencedCollectionTypes;
@@ -36,9 +35,9 @@ namespace System.Runtime.Serialization.Schema
         /// </summary>
         /// <remarks>
         /// The interface type for this option is ISerializationSurrogateProvider, but to take full advantage of the imported code modification
-        /// abilities, using an ISerializationExtendedSurrogateProvider is recommended.
+        /// abilities, using an <see cref="ISerializationSurrogateProvider2"/>ISerializationSurrogateProvider2 that also implements <see cref="ISerializationCodeDomSurrogateProvider"/> is recommended.
         /// </remarks>
-        public ISerializationSurrogateProvider? SurrogateProvider { get; set; }
+        public ISerializationSurrogateProvider? DataContractSurrogate { get; set; }
 
         /// <summary>
         /// Gets or sets a value that specifies whether generated code will be marked internal or public.
@@ -69,10 +68,5 @@ namespace System.Runtime.Serialization.Schema
         /// Gets a <see cref="IList{T}"/> containing types referenced in generated code.
         /// </summary>
         public ICollection<Type> ReferencedTypes => _referencedTypes ??= new List<Type>();
-
-        /// <summary>
-        /// A Func to processes the type that has been generated from the imported schema.
-        /// </summary>
-        public Func<CodeTypeDeclaration, CodeCompileUnit, CodeTypeDeclaration?>? ProcessImportedType;
     }
 }

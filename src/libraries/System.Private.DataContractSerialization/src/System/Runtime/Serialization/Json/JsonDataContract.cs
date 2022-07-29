@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime;
-using System.Runtime.Serialization;
-using System.Reflection;
-using System.Xml;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Runtime;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.DataContracts;
+using System.Xml;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -287,13 +288,13 @@ namespace System.Runtime.Serialization.Json
                             DataContract itemContract = collectionDataContract.ItemContract;
                             _knownDataContracts ??= new DataContractDictionary();
 
-                            _knownDataContracts.TryAdd(itemContract.StableName, itemContract);
+                            _knownDataContracts.TryAdd(itemContract.XmlName, itemContract);
 
                             if (collectionDataContract.ItemType.IsGenericType
                                 && collectionDataContract.ItemType.GetGenericTypeDefinition() == typeof(KeyValue<,>))
                             {
                                 DataContract itemDataContract = DataContract.GetDataContract(Globals.TypeOfKeyValuePair.MakeGenericType(collectionDataContract.ItemType.GenericTypeArguments));
-                                _knownDataContracts.TryAdd(itemDataContract.StableName, itemDataContract);
+                                _knownDataContracts.TryAdd(itemDataContract.XmlName, itemDataContract);
                             }
 
                             if (!(itemContract is CollectionDataContract))

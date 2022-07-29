@@ -13,9 +13,9 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
-namespace System.Runtime.Serialization
+namespace System.Runtime.Serialization.DataContracts
 {
     internal delegate IXmlSerializable CreateXmlSerializableDelegate();
     public sealed class XmlDataContract : DataContract
@@ -35,7 +35,7 @@ namespace System.Runtime.Serialization
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.KnownDataContracts;
-            set => _helper.KnownDataContracts = value;
+            internal set => _helper.KnownDataContracts = value;
         }
 
         public XmlSchemaType? XsdType
@@ -139,21 +139,21 @@ namespace System.Runtime.Serialization
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveCollectionDataContract, DataContract.GetClrTypeFullName(type))));
                 bool hasRoot;
                 XmlSchemaType? xsdType;
-                XmlQualifiedName stableName;
-                SchemaExporter.GetXmlTypeInfo(type, out stableName, out xsdType, out hasRoot);
-                StableName = stableName;
+                XmlQualifiedName xmlName;
+                SchemaExporter.GetXmlTypeInfo(type, out xmlName, out xsdType, out hasRoot);
+                XmlName = xmlName;
                 XsdType = xsdType;
                 HasRoot = hasRoot;
                 XmlDictionary dictionary = new XmlDictionary();
-                Name = dictionary.Add(StableName.Name);
-                Namespace = dictionary.Add(StableName.Namespace);
+                Name = dictionary.Add(XmlName.Name);
+                Namespace = dictionary.Add(XmlName.Namespace);
                 object[]? xmlRootAttributes = UnderlyingType?.GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
                 if (xmlRootAttributes == null || xmlRootAttributes.Length == 0)
                 {
                     if (hasRoot)
                     {
                         _topLevelElementName = Name;
-                        _topLevelElementNamespace = (this.StableName.Namespace == Globals.SchemaNamespace) ? DictionaryGlobals.EmptyString : Namespace;
+                        _topLevelElementNamespace = (this.XmlName.Namespace == Globals.SchemaNamespace) ? DictionaryGlobals.EmptyString : Namespace;
                         _isTopLevelElementNullable = true;
                     }
                 }
@@ -190,6 +190,7 @@ namespace System.Runtime.Serialization
                                 Interlocked.MemoryBarrier();
                                 _isKnownTypeAttributeChecked = true;
                             }
+                            _knownDataContracts ??= new DataContractDictionary();
                         }
                     }
                     return _knownDataContracts;
@@ -394,7 +395,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    return (StableName.Name == dataContract.StableName.Name && StableName.Namespace == dataContract.StableName.Namespace);
+                    return (XmlName.Name == dataContract.XmlName.Name && XmlName.Namespace == dataContract.XmlName.Namespace);
                 }
             }
             return false;

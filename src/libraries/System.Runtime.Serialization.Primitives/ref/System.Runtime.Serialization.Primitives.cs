@@ -78,10 +78,10 @@ namespace System.Runtime.Serialization
         object GetObjectToSerialize(object obj, System.Type targetType);
         System.Type GetSurrogateType(System.Type type);
     }
-    public interface ISerializationExtendedSurrogateProvider : ISerializationSurrogateProvider
+    public interface ISerializationSurrogateProvider2 : ISerializationSurrogateProvider
     {
         object? GetCustomDataToExport(MemberInfo memberInfo, Type dataContractType);
-        object? GetCustomDataToExport(Type clrType, Type dataContractType);
+        object? GetCustomDataToExport(Type runtimeType, Type dataContractType);
         void GetKnownCustomDataTypes(Collection<Type> customDataTypes);
         Type? GetReferencedTypeOnImport(string typeName, string typeNamespace, object? customData);
     }

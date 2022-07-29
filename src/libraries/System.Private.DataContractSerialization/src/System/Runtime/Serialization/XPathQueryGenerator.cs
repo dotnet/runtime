@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
-using System.Reflection;
-using System.Globalization;
 using System.Collections.Generic;
-using System.Xml;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.Serialization.DataContracts;
+using System.Text;
+using System.Xml;
 
 namespace System.Runtime.Serialization
 {

@@ -12,7 +12,7 @@ using System.Security;
 using System.Threading;
 using System.Xml;
 
-using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
 namespace System.Runtime.Serialization
 {
@@ -74,7 +74,10 @@ namespace System.Runtime.Serialization
         Enumerable,
         Array,
     }
+}
 
+namespace System.Runtime.Serialization.DataContracts
+{
     internal sealed class CollectionDataContract : DataContract
     {
         internal const string ContractTypeString = nameof(CollectionDataContract);
@@ -187,7 +190,7 @@ namespace System.Runtime.Serialization
             set => _helper.ValueName = value;
         }
 
-        public override bool IsKeyValue(out string? keyName, out string? valueName, out string? itemName)
+        public override bool IsDictionaryLike([NotNullWhen(true)] out string? keyName, [NotNullWhen(true)] out string? valueName, [NotNullWhen(true)] out string? itemName)
         {
             keyName = KeyName;
             valueName = ValueName;
@@ -250,7 +253,7 @@ namespace System.Runtime.Serialization
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.KnownDataContracts;
-            set => _helper.KnownDataContracts = value;
+            internal set => _helper.KnownDataContracts = value;
         }
 
         internal string? InvalidCollectionInSharedContractMessage => _helper.InvalidCollectionInSharedContractMessage;
@@ -465,9 +468,9 @@ namespace System.Runtime.Serialization
                     }
 
                     XmlDictionary dictionary = isDictionary ? new XmlDictionary(5) : new XmlDictionary(3);
-                    Name = dictionary.Add(StableName.Name);
-                    Namespace = dictionary.Add(StableName.Namespace);
-                    _itemName = itemName ?? DataContract.GetStableName(DataContract.UnwrapNullableType(itemType)).Name;
+                    Name = dictionary.Add(XmlName.Name);
+                    Namespace = dictionary.Add(XmlName.Namespace);
+                    _itemName = itemName ?? DataContract.GetXmlName(DataContract.UnwrapNullableType(itemType)).Name;
                     _collectionItemName = dictionary.Add(_itemName);
                     if (isDictionary)
                     {
@@ -490,7 +493,7 @@ namespace System.Runtime.Serialization
                     type = Globals.TypeOfObjectArray;
                 if (type.GetArrayRank() > 1)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.SupportForMultidimensionalArraysNotPresent));
-                StableName = DataContract.GetStableName(type);
+                XmlName = DataContract.GetXmlName(type);
                 Init(CollectionKind.Array, type.GetElementType(), null);
             }
 
@@ -500,7 +503,7 @@ namespace System.Runtime.Serialization
                 Type type,
                 CollectionKind kind) : base(type)
             {
-                StableName = DataContract.GetStableName(type);
+                XmlName = DataContract.GetXmlName(type);
                 Init(kind, type.GetElementType(), null);
             }
 
@@ -513,7 +516,7 @@ namespace System.Runtime.Serialization
             {
                 if (type.GetArrayRank() > 1)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.SupportForMultidimensionalArraysNotPresent));
-                StableName = CreateQualifiedName(Globals.ArrayPrefix + itemContract.StableName.Name, itemContract.StableName.Namespace);
+                XmlName = CreateQualifiedName(Globals.ArrayPrefix + itemContract.XmlName.Name, itemContract.XmlName.Namespace);
                 _itemContract = itemContract;
                 Init(CollectionKind.Array, type.GetElementType(), null);
             }
@@ -532,7 +535,7 @@ namespace System.Runtime.Serialization
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.CollectionMustHaveItemType, GetClrTypeFullName(type))));
 
                 CollectionDataContractAttribute? collectionContractAttribute;
-                StableName = DataContract.GetCollectionStableName(type, itemType, out collectionContractAttribute);
+                XmlName = DataContract.GetCollectionXmlName(type, itemType, out collectionContractAttribute);
 
                 Init(kind, itemType, collectionContractAttribute);
                 _getEnumeratorMethod = getEnumeratorMethod;
@@ -682,6 +685,7 @@ namespace System.Runtime.Serialization
                                 Interlocked.MemoryBarrier();
                                 _isKnownTypeAttributeChecked = true;
                             }
+                            _knownDataContracts ??= new DataContractDictionary();
                         }
                     }
                     return _knownDataContracts;
@@ -1353,11 +1357,11 @@ namespace System.Runtime.Serialization
             boundContracts.Add(this, boundCollectionContract);
             boundCollectionContract.ItemContract = ItemContract.BindGenericParameters(paramContracts, boundContracts);
             boundCollectionContract.IsItemTypeNullable = !boundCollectionContract.ItemContract.IsValueType;
-            boundCollectionContract.ItemName = ItemNameSetExplicit ? ItemName : boundCollectionContract.ItemContract.StableName.Name;
+            boundCollectionContract.ItemName = ItemNameSetExplicit ? ItemName : boundCollectionContract.ItemContract.XmlName.Name;
             boundCollectionContract.KeyName = KeyName;
             boundCollectionContract.ValueName = ValueName;
-            boundCollectionContract.StableName = CreateQualifiedName(DataContract.ExpandGenericParameters(XmlConvert.DecodeName(StableName.Name), new GenericNameProvider(DataContract.GetClrTypeFullName(UnderlyingType), paramContracts)),
-                IsCollectionDataContract(UnderlyingType) ? StableName.Namespace : DataContract.GetCollectionNamespace(boundCollectionContract.ItemContract.StableName.Namespace));
+            boundCollectionContract.XmlName = CreateQualifiedName(DataContract.ExpandGenericParameters(XmlConvert.DecodeName(XmlName.Name), new GenericNameProvider(DataContract.GetClrTypeFullName(UnderlyingType), paramContracts)),
+                IsCollectionDataContract(UnderlyingType) ? XmlName.Namespace : DataContract.GetCollectionNamespace(boundCollectionContract.ItemContract.XmlName.Namespace));
             return boundCollectionContract;
         }
 
