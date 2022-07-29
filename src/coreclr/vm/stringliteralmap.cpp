@@ -165,7 +165,7 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
     // someone beat us to inserting it. (m_StringToEntryHashTable->GetValue(pStringData, &Data))
     // (Rather than waiting until after we look the string up in the global map)
 
-    StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetStringLiteral(pStringData, dwHash, bAddIfNotFound));
+    StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetStringLiteral(pStringData, dwHash, bAddIfNotFound, bAppDomainWontUnload));
 
     _ASSERTE(pEntry || !bAddIfNotFound);
 
@@ -357,7 +357,7 @@ void GlobalStringLiteralMap::Init()
         ThrowOutOfMemory();
 }
 
-StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStringData, DWORD dwHash, BOOL bAddIfNotFound)
+StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStringData, DWORD dwHash, BOOL bAddIfNotFound, BOOL bAppDomainWontUnload)
 {
     CONTRACTL
     {
@@ -383,7 +383,7 @@ StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStri
     else
     {
         if (bAddIfNotFound)
-            pEntry = AddStringLiteral(pStringData, true);
+            pEntry = AddStringLiteral(pStringData, bAppDomainWontUnload);
     }
 
     return pEntry;

@@ -873,7 +873,7 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap)
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    STRINGREF orStringRef;
+    STRINGREF orStringRef = NULL;
     StringObject* orString = nullptr;
 
     // Limit the maximum string size to <2GB to mitigate risk of security issues caused by 32-bit integer

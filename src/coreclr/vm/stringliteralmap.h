@@ -71,7 +71,7 @@ public:
     void Init();
 
     // Method to retrieve a string from the map. Takes a precomputed hash (for perf).
-    StringLiteralEntry *GetStringLiteral(EEStringData *pStringData, DWORD dwHash, BOOL bAddIfNotFound);
+    StringLiteralEntry *GetStringLiteral(EEStringData *pStringData, DWORD dwHash, BOOL bAddIfNotFound, BOOL bAppDomainWontUnload);
 
     // Method to explicitly intern a string object. Takes a precomputed hash (for perf).
     StringLiteralEntry *GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound);
