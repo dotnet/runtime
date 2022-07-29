@@ -170,6 +170,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            jsonTypeInfo.EnsureConfigured();
             return Read<TValue>(ref reader, jsonTypeInfo);
         }
 
@@ -238,8 +239,8 @@ namespace System.Text.Json
 
         private static TValue? Read<TValue>(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
         {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
             ReadStack state = default;
-            jsonTypeInfo.EnsureConfigured();
             state.Initialize(jsonTypeInfo);
 
             JsonReaderState readerState = reader.CurrentState;
@@ -422,8 +423,7 @@ namespace System.Text.Json
 
                 var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
 
-                JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.EffectiveConverter;
-                TValue? value = ReadCore<TValue>(jsonConverter, ref newReader, jsonTypeInfo.Options, ref state);
+                TValue? value = ReadCore<TValue>(ref newReader, jsonTypeInfo, ref state);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(newReader.BytesConsumed == length);

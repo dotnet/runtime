@@ -271,8 +271,8 @@ namespace System.Text.Json.Serialization.Metadata
         // If enumerable or dictionary, the JsonTypeInfo for the element type.
         private JsonTypeInfo? _elementTypeInfo;
 
-        // Avoids having to perform an expensive cast to JsonTypeInfo<T> to check if there is a Serialize method.
-        internal bool HasSerializeHandler { get; private protected set; }
+        // Flag indicating that JsonTypeInfo<T>.SerializeHandler is populated and is compatible with the associated Options instance.
+        internal bool CanUseSerializeHandler { get; private protected set; }
 
         // Configure would normally have thrown why initializing properties for source gen but type had SerializeHandler
         // so it is allowed to be used for fast-path serialization but it will throw if used for metadata-based serialization
@@ -539,6 +539,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             PropertyInfoForTypeInfo.EnsureChildOf(this);
             PropertyInfoForTypeInfo.EnsureConfigured();
+
+            CanUseSerializeHandler &= Options.SerializerContext?.CanUseSerializationLogic == true;
 
             JsonConverter converter = Converter;
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == Converter.ConverterStrategy,
