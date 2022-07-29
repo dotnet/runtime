@@ -784,20 +784,6 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        //[Theory]
-        //[InlineData(-2)]
-        //[InlineData(false)]
-        //[InlineData("string")]
-        //[InlineData(3.1415926)]
-        //public static void CustomSystemObjectConverter_ObjectJsonTypeInfoDoesNotUsePolymorphism(object value)
-        //{
-        //    var options = new JsonSerializerOptions { Converters = { new CustomSystemObjectConverter() } };
-
-        //    JsonTypeInfo<object> objectTypeInfo = (JsonTypeInfo<object>)options.GetTypeInfo(typeof(object));
-        //    string json = JsonSerializer.Serialize(value, objectTypeInfo);
-
-        //}
-
         private class CustomSystemObjectConverter : JsonConverter<object>
         {
             public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
