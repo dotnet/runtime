@@ -38,6 +38,8 @@ namespace System.IO.Hashing.Tests
         private const string SixtyThreeBytes3 = SixtyThreeBytes + SixtyThreeBytes + SixtyThreeBytes;
         private const string ThirtyTwoBytes = "This string has 32 ASCII bytes..";
         private const string ThirtyTwoBytes3 = ThirtyTwoBytes + ThirtyTwoBytes + ThirtyTwoBytes;
+        private const string SixteenBytes = "0123456789ABCDEF";
+        private const string SixteenBytes3 = SixteenBytes + SixteenBytes + SixteenBytes;
 
         protected static IEnumerable<TestCase> TestCaseDefinitions { get; } =
             new[]
@@ -109,7 +111,12 @@ namespace System.IO.Hashing.Tests
                 new TestCase(
                     $"{ThirtyTwoBytes} (x3)",
                     Encoding.ASCII.GetBytes(ThirtyTwoBytes3),
-                    "975E3E6FE7E67FBC")
+                    "975E3E6FE7E67FBC"),
+                // 16 * 3 bytes, filling the holdback buffer exactly on the second Append call.
+                new TestCase(
+                    $"{SixteenBytes} (x3)",
+                    Encoding.ASCII.GetBytes(SixteenBytes3),
+                    "BDD40F0FAC166EAA"),
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new XxHash64();
