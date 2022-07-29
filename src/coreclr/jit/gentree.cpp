@@ -3695,12 +3695,6 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* base, bool co
             break;
         }
 
-        if (addOp1->IsCnsIntOrI() && addOp2->IsCnsIntOrI())
-        {
-            // Might be folded
-            break;
-        }
-
         // mark it with GTF_ADDRMODE_NO_CSE
         add->gtFlags |= GTF_ADDRMODE_NO_CSE;
 
@@ -3841,9 +3835,16 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
 //
 bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 {
-    // Relative of order of global / side effects can't be swapped.
-
     bool canSwap = true;
+
+    // Don't swap "CONST_HDL op CNS"
+    if (firstNode->IsIntegralConst() && secondNode->IsIntegralConst() &&
+        varTypeIsGC(firstNode) && !varTypeIsGC(secondNode))
+    {
+        canSwap = false;
+    }
+
+    // Relative of order of global / side effects can't be swapped.
 
     if (optValnumCSE_phase)
     {
