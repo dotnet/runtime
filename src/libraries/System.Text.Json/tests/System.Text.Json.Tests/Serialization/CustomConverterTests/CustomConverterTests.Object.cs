@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -9,7 +10,7 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class CustomConverterTests
     {
         /// <summary>
-        /// A converter that uses Object as it's type.
+        /// A converter that uses Object as its type.
         /// </summary>
         private class ObjectToCustomerOrIntConverter : JsonConverter<object>
         {
@@ -756,26 +757,46 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expectedJson, actualJson);
         }
 
-        [Fact]
-        public static void CustomSystemObjectConverter_DoesNotUsePolymorphismInAllContexts()
+        [Theory]
+        [InlineData(-2)]
+        [InlineData(false)]
+        [InlineData("string")]
+        [InlineData(3.1415926)]
+        public static void CustomSystemObjectConverter_DoesNotUsePolymorphismInAllContexts(object value)
         {
             // Regression test for https://github.com/dotnet/runtime/issues/72681
 
             var options = new JsonSerializerOptions { Converters = { new CustomSystemObjectConverter() } };
 
-            object value = "string";
-            string json = JsonSerializer.Serialize(value, options);
-            Assert.Equal("42", json);
+            TestValue(value, "42");
+            TestValue(new { Value = value }, """{"Value":42}""");
+            TestValue(new object[] { value }, "[42]");
+            TestValue(new Dictionary<string, object> { ["key"] = value }, """{"key":42}""");
 
-            json = JsonSerializer.Serialize(new { Value = value }, options);
-            Assert.Equal("""{"Value":42}""", json);
+            void TestValue<T>(T value, string expectedJson)
+            {
+                string json = JsonSerializer.Serialize(value, options);
+                Assert.Equal(expectedJson, json);
 
-            json = JsonSerializer.Serialize(new object[] { value }, options);
-            Assert.Equal("[42]", json);
-
-            json = JsonSerializer.Serialize(new Dictionary<string, object> { ["key"] = value }, options);
-            Assert.Equal("""{"key":42}""", json);
+                JsonTypeInfo<T> jsonTypeInfo = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
+                json = JsonSerializer.Serialize(value, jsonTypeInfo);
+                Assert.Equal(expectedJson, json);
+            }
         }
+
+        //[Theory]
+        //[InlineData(-2)]
+        //[InlineData(false)]
+        //[InlineData("string")]
+        //[InlineData(3.1415926)]
+        //public static void CustomSystemObjectConverter_ObjectJsonTypeInfoDoesNotUsePolymorphism(object value)
+        //{
+        //    var options = new JsonSerializerOptions { Converters = { new CustomSystemObjectConverter() } };
+
+        //    JsonTypeInfo<object> objectTypeInfo = (JsonTypeInfo<object>)options.GetTypeInfo(typeof(object));
+        //    string json = JsonSerializer.Serialize(value, objectTypeInfo);
+
+        //}
 
         private class CustomSystemObjectConverter : JsonConverter<object>
         {
