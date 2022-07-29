@@ -64,7 +64,7 @@ typedef union  {
 # define TYPEDEF_MR 272
 # define TYPEDEF_CA 273
 # define DCOLON 274
-# define ELIPSIS 275
+# define ELLIPSIS 275
 # define VOID_ 276
 # define BOOL_ 277
 # define CHAR_ 278

@@ -10,12 +10,14 @@ using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 
 namespace System.Text.Json
 {
     /// <summary>
     /// Provides options to be used with <see cref="JsonSerializer"/>.
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public sealed partial class JsonSerializerOptions
     {
         internal const int BufferSizeDefault = 16 * 1024;
@@ -32,7 +34,22 @@ namespace System.Text.Json
         /// so using fresh default instances every time one is needed can result in redundant recomputation of converters.
         /// This property provides a shared instance that can be consumed by any number of components without necessitating any converter recomputation.
         /// </remarks>
-        public static JsonSerializerOptions Default { get; } = CreateDefaultImmutableInstance();
+        public static JsonSerializerOptions Default
+        {
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+            get
+            {
+                if (s_defaultOptions is not JsonSerializerOptions options)
+                {
+                    options = GetOrCreateDefaultOptionsInstance();
+                }
+
+                return options;
+            }
+        }
+
+        private static JsonSerializerOptions? s_defaultOptions;
 
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
         private IJsonTypeInfoResolver? _typeInfoResolver;
@@ -57,7 +74,7 @@ namespace System.Text.Json
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
 
-        private volatile bool _isLockedInstance;
+        private volatile bool _isImmutable;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -159,19 +176,20 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Gets or sets a <see cref="JsonTypeInfo"/> contract resolver.
+        /// Gets or sets the <see cref="JsonTypeInfo"/> contract resolver used by this instance.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
         /// <remarks>
-        /// A <see langword="null"/> setting is equivalent to using the reflection-based <see cref="DefaultJsonTypeInfoResolver"/>.
+        /// A <see langword="null"/> setting is equivalent to using the reflection-based <see cref="DefaultJsonTypeInfoResolver" />.
+        /// The property will be populated automatically once used with one of the <see cref="JsonSerializer"/> methods.
         /// </remarks>
-        [AllowNull]
-        public IJsonTypeInfoResolver TypeInfoResolver
+        public IJsonTypeInfoResolver? TypeInfoResolver
         {
-            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
             get
             {
-                return _typeInfoResolver ??= DefaultJsonTypeInfoResolver.RootDefaultInstance();
+                return _typeInfoResolver;
             }
             set
             {
@@ -179,9 +197,6 @@ namespace System.Text.Json
                 _typeInfoResolver = value;
             }
         }
-
-        // Needed since public property is RequiresUnreferencedCode.
-        internal IJsonTypeInfoResolver? TypeInfoResolverSafe => _typeInfoResolver;
 
         /// <summary>
         /// Defines whether an extra comma at the end of a list of JSON values in an object or array
@@ -592,13 +607,14 @@ namespace System.Text.Json
                 new ReflectionMemberAccessor();
 #endif
 
-        internal bool IsLockedInstance
+        internal bool IsImmutable
         {
-            get => _isLockedInstance;
+            get => _isImmutable;
             set
             {
                 Debug.Assert(value, "cannot unlock options instances");
-                _isLockedInstance = true;
+                Debug.Assert(_typeInfoResolver != null, "cannot lock without a resolver.");
+                _isImmutable = true;
             }
         }
 
@@ -609,43 +625,26 @@ namespace System.Text.Json
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal void InitializeForReflectionSerializer()
         {
-            if (!_isInitializedForReflectionSerializer)
-            {
-                DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance();
-                _typeInfoResolver ??= defaultResolver;
-                IsLockedInstance = true;
-
-                CachingContext? context = GetCachingContext();
-                Debug.Assert(context != null);
-
-                if (context.Options != this)
-                {
-                    // We're using a shared caching context deriving from a different options instance;
-                    // for coherence ensure that it has been opted in for reflection-based serialization as well.
-                    context.Options.InitializeForReflectionSerializer();
-                }
-
-                _isInitializedForReflectionSerializer = true;
-            }
+            // Even if a resolver has already been specified, we need to root
+            // the default resolver to gain access to the default converters.
+            DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance();
+            _typeInfoResolver ??= defaultResolver;
+            IsImmutable = true;
+            _isInitializedForReflectionSerializer = true;
         }
 
+        internal bool IsInitializedForReflectionSerializer => _isInitializedForReflectionSerializer;
         private volatile bool _isInitializedForReflectionSerializer;
 
         internal void InitializeForMetadataGeneration()
         {
-            if (!_isInitializedForMetadataGeneration)
+            if (_typeInfoResolver is null)
             {
-                if (_typeInfoResolver is null)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoUsedButTypeInfoResolverNotSet();
-                }
-
-                IsLockedInstance = true;
-                _isInitializedForMetadataGeneration = true;
+                ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoUsedButTypeInfoResolverNotSet();
             }
-        }
 
-        private volatile bool _isInitializedForMetadataGeneration;
+            IsImmutable = true;
+        }
 
         private JsonTypeInfo? GetTypeInfoNoCaching(Type type)
         {
@@ -710,7 +709,7 @@ namespace System.Text.Json
 
         internal void VerifyMutable()
         {
-            if (_isLockedInstance)
+            if (_isImmutable)
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable(_typeInfoResolver as JsonSerializerContext);
             }
@@ -726,14 +725,23 @@ namespace System.Text.Json
                 _options = options;
             }
 
-            protected override bool IsLockedInstance => _options.IsLockedInstance;
+            protected override bool IsImmutable => _options.IsImmutable;
             protected override void VerifyMutable() => _options.VerifyMutable();
         }
 
-        private static JsonSerializerOptions CreateDefaultImmutableInstance()
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static JsonSerializerOptions GetOrCreateDefaultOptionsInstance()
         {
-            var options = new JsonSerializerOptions { IsLockedInstance = true };
-            return options;
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance(),
+                IsImmutable = true
+            };
+
+            return Interlocked.CompareExchange(ref s_defaultOptions, options, null) ?? options;
         }
+
+        private string DebuggerDisplay => $"TypeInfoResolver = {TypeInfoResolver?.GetType()?.Name}, IsImmutable = {IsImmutable}";
     }
 }

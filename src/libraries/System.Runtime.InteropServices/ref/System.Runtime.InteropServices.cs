@@ -814,6 +814,10 @@ namespace System.Runtime.InteropServices
         public static void* Realloc(void* ptr, nuint byteCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void Clear(void* ptr, nuint byteCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void Copy(void* source, void* destination, nuint byteCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void Fill(void* ptr, nuint byteCount, byte value) { throw null; }
     }
     public readonly partial struct NFloat : System.IComparable, System.IComparable<System.Runtime.InteropServices.NFloat>, System.IEquatable<System.Runtime.InteropServices.NFloat>, System.IFormattable, System.IParsable<System.Runtime.InteropServices.NFloat>, System.ISpanFormattable, System.ISpanParsable<System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IComparisonOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IDecrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.IDivisionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IEqualityOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IExponentialFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointConstants<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IHyperbolicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IIncrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.ILogarithmicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IMinMaxValue<System.Runtime.InteropServices.NFloat>, System.Numerics.IModulusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.INumber<System.Runtime.InteropServices.NFloat>, System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>, System.Numerics.IPowerFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IRootFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.ISignedNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.ITrigonometricFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryPlusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>
     {
@@ -2200,72 +2204,6 @@ namespace System.Runtime.InteropServices.Marshalling
             public void Free() { throw null; }
         }
     }
-
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class)]
-    public sealed partial class ContiguousCollectionMarshallerAttribute : System.Attribute
-    {
-    }
-
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = true)]
-    public sealed partial class CustomMarshallerAttribute : System.Attribute
-    {
-        public CustomMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.Marshalling.MarshalMode marshalMode, System.Type marshallerType) { }
-        public System.Type ManagedType { get { throw null; } }
-        public System.Runtime.InteropServices.Marshalling.MarshalMode MarshalMode { get { throw null; } }
-        public System.Type MarshallerType { get { throw null; } }
-        public struct GenericPlaceholder
-        {
-        }
-    }
-
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
-    public sealed partial class CustomTypeMarshallerAttribute : System.Attribute
-    {
-        public CustomTypeMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind marshallerKind = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind.Value) { }
-        public System.Type ManagedType { get { throw null; } }
-        public System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind MarshallerKind { get { throw null; } }
-        public int BufferSize { get { throw null; } set { } }
-        public System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerDirection Direction { get { throw null; } set { } }
-        public System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures Features { get { throw null; } set { } }
-        public struct GenericPlaceholder
-        {
-        }
-    }
-    [System.FlagsAttribute]
-    public enum CustomTypeMarshallerDirection
-    {
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        None = 0,
-        In = 0x1,
-        Out = 0x2,
-        Ref = In | Out,
-    }
-    [System.FlagsAttribute]
-    public enum CustomTypeMarshallerFeatures
-    {
-        None = 0,
-        UnmanagedResources = 0x1,
-        CallerAllocatedBuffer = 0x2,
-        TwoStageMarshalling = 0x4
-    }
-    public enum CustomTypeMarshallerKind
-    {
-        Value,
-        LinearCollection
-    }
-    public enum MarshalMode
-    {
-        Default = 0,
-        ManagedToUnmanagedIn = 1,
-        ManagedToUnmanagedRef = 2,
-        ManagedToUnmanagedOut = 3,
-        UnmanagedToManagedIn = 4,
-        UnmanagedToManagedRef = 5,
-        UnmanagedToManagedOut = 6,
-        ElementIn = 7,
-        ElementRef = 8,
-        ElementOut = 9
-    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
     public sealed partial class MarshalUsingAttribute : System.Attribute
     {
@@ -2276,12 +2214,6 @@ namespace System.Runtime.InteropServices.Marshalling
         public int ConstantElementCount { get { throw null; } set { } }
         public int ElementIndirectionDepth { get { throw null; } set { } }
         public const string ReturnsCountValue = "return-value";
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct | System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Delegate)]
-    public sealed partial class NativeMarshallingAttribute : System.Attribute
-    {
-        public NativeMarshallingAttribute(System.Type nativeType) { }
-        public System.Type NativeType { get { throw null; } }
     }
     [System.CLSCompliant(false)]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),

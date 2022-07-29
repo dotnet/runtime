@@ -112,7 +112,7 @@ DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_ARRAY,          TARGET_POINTER_SIZE,  TYPE_GC
 
 DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_GENERICINST,    -1,                   TYPE_GC_OTHER, 0)
 
-DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_TYPEDBYREF,     TARGET_POINTER_SIZE*2,TYPE_GC_BYREF, 0)
+DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_TYPEDBYREF,     TARGET_POINTER_SIZE*2,TYPE_GC_OTHER, 0)
 DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_VALUEARRAY_UNSUPPORTED, -1,           TYPE_GC_NONE,  0)
 DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_I,              TARGET_POINTER_SIZE,  TYPE_GC_NONE,  1)
 DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_U,              TARGET_POINTER_SIZE,  TYPE_GC_NONE,  1)
@@ -133,13 +133,6 @@ unsigned GetSizeForCorElementType(CorElementType etyp)
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(gElementTypeInfo[etyp].m_elementType == etyp);
         return gElementTypeInfo[etyp].m_cbSize;
-}
-
-const ElementTypeInfo* GetElementTypeInfo(CorElementType etyp)
-{
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(gElementTypeInfo[etyp].m_elementType == etyp);
-        return &gElementTypeInfo[etyp];
 }
 
 #ifndef DACCESS_COMPILE
@@ -499,7 +492,7 @@ void Signature::PrettyPrint(const CHAR * pszMethodName,
 
 //---------------------------------------------------------------------------------------
 //
-// Get the raw signature pointer contained in this Siganture.
+// Get the raw signature pointer contained in this Signature.
 //
 // Return Value:
 //    the raw signature pointer
@@ -518,7 +511,7 @@ PCCOR_SIGNATURE Signature::GetRawSig() const
 
 //---------------------------------------------------------------------------------------
 //
-// Get the length of the raw signature contained in this Siganture.
+// Get the length of the raw signature contained in this Signature.
 //
 // Return Value:
 //    the length of the raw signature
@@ -2373,6 +2366,11 @@ CorElementType SigPointer::PeekElemTypeNormalized(Module* pModule, const SigType
             if (pthValueType != NULL)
                 *pthValueType = th;
         }
+    }
+    else if (type == ELEMENT_TYPE_TYPEDBYREF)
+    {
+        if (pthValueType != NULL)
+            *pthValueType = TypeHandle(g_TypedReferenceMT);
     }
 
     return(type);
@@ -4772,7 +4770,7 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
         // NB: we do not attempt to match constraints equivalent to object (and ValueType when tok1 is notNullable)
         // because they
         // a) are vacuous, and
-        // b) may be implicit (ie. absent) in the overriden variable's declaration
+        // b) may be implicit (ie. absent) in the overridden variable's declaration
         if (!(CompareTypeDefOrRefOrSpec(pModule1, tkConstraintType1, NULL,
                                        CoreLibBinder::GetModule(), g_pObjectClass->GetCl(), NULL, NULL) ||
           (((specialConstraints1 & gpNotNullableValueTypeConstraint) != 0) &&
@@ -4810,7 +4808,7 @@ BOOL MetaSig::CompareMethodConstraints(const Substitution *pSubst1,
                                        mdMethodDef tok1, //implementation
                                        const Substitution *pSubst2,
                                        Module *pModule2,
-                                       mdMethodDef tok2) //declaration w.r.t subsitution
+                                       mdMethodDef tok2) //declaration w.r.t substitution
 {
     CONTRACTL
     {
@@ -5120,7 +5118,7 @@ VOID MetaSig::GcScanRoots(ArgDestination *pValue,
             // for value classes describes the state of the instance in its boxed
             // state.  Here we are dealing with an unboxed instance, so we must adjust
             // the object size and series offsets appropriately.
-            _ASSERTE(etype == ELEMENT_TYPE_VALUETYPE);
+            _ASSERTE(etype == ELEMENT_TYPE_VALUETYPE || etype == ELEMENT_TYPE_TYPEDBYREF);
             {
                 PTR_MethodTable pMT = thValueType.AsMethodTable();
 

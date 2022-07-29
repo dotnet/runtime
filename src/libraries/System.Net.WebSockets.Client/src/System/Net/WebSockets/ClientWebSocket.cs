@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -50,7 +52,27 @@ namespace System.Net.WebSockets
             }
         }
 
+        public System.Net.HttpStatusCode HttpStatusCode => _innerWebSocket?.HttpStatusCode ?? 0;
+
+        // setter to clean up when not needed anymore
+        public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders
+        {
+            get => _innerWebSocket?.HttpResponseHeaders;
+            set
+            {
+                if (_innerWebSocket != null)
+                {
+                    _innerWebSocket.HttpResponseHeaders = value;
+                }
+            }
+        }
+
         public Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
+        {
+            return ConnectAsync(uri, null, cancellationToken);
+        }
+
+        public Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(uri);
 
@@ -77,16 +99,16 @@ namespace System.Net.WebSockets
             }
 
             Options.SetToReadOnly();
-            return ConnectAsyncCore(uri, cancellationToken);
+            return ConnectAsyncCore(uri, invoker, cancellationToken);
         }
 
-        private async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken)
+        private async Task ConnectAsyncCore(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken)
         {
             _innerWebSocket = new WebSocketHandle();
 
             try
             {
-                await _innerWebSocket.ConnectAsync(uri, cancellationToken, Options).ConfigureAwait(false);
+                await _innerWebSocket.ConnectAsync(uri, invoker, cancellationToken, Options).ConfigureAwait(false);
             }
             catch
             {

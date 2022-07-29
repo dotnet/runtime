@@ -30,7 +30,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexCharClass.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCompilationInfo.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexFindOptimizations.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexGeneratorAttribute.cs" />
+    <Compile Include="System\Text\RegularExpressions\GeneratedRegexAttribute.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexInterpreter.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexInterpreterCode.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexMatchTimeoutException.cs" />
@@ -70,6 +70,7 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\MintermGenerator.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\RegexNodeConverter.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SparseIntMap.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\StateFlags.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicMatch.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexBuilder.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexNode.cs" />

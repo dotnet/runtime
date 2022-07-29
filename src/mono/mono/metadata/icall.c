@@ -268,7 +268,7 @@ static MonoTypeEnum
 get_normalized_integral_array_element_type (MonoTypeEnum elementType)
 {
 	// Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
-	// Enums with interchangeable underlying types are interchangable
+	// Enums with interchangeable underlying types are interchangeable
 	// BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
 
 	switch (elementType) {
@@ -2765,6 +2765,10 @@ ves_icall_RuntimeTypeHandle_GetCorElementType (MonoQCallTypeHandle type_handle)
 {
 	MonoType *type = type_handle.type;
 
+	// Enums in generic classes should still return VALUETYPE
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !m_type_is_byref (type))
+		return MONO_TYPE_VALUETYPE;
+
 	if (m_type_is_byref (type))
 		return MONO_TYPE_BYREF;
 	else
@@ -3246,7 +3250,7 @@ init_io_stream_slots (void)
 
 
 static MonoBoolean
-stream_has_overriden_begin_or_end_method (MonoObjectHandle stream, int begin_slot, int end_slot, MonoError *error)
+stream_has_overridden_begin_or_end_method (MonoObjectHandle stream, int begin_slot, int end_slot, MonoError *error)
 {
 	MonoClass* curr_klass = MONO_HANDLE_GET_CLASS (stream);
 	MonoClass* base_klass = mono_class_try_get_stream_class ();
@@ -3261,10 +3265,10 @@ stream_has_overriden_begin_or_end_method (MonoObjectHandle stream, int begin_slo
 	// in this case we can safely assume the methods are not overridden
 	// otherwise - check vtable
 	MonoMethod **curr_klass_vtable = m_class_get_vtable (curr_klass);
-	gboolean begin_is_overriden = begin_slot != -1 && curr_klass_vtable [begin_slot] != NULL && curr_klass_vtable [begin_slot]->klass != base_klass;
-	gboolean end_is_overriden = end_slot != -1 && curr_klass_vtable [end_slot] != NULL && curr_klass_vtable [end_slot]->klass != base_klass;
+	gboolean begin_is_overridden = begin_slot != -1 && curr_klass_vtable [begin_slot] != NULL && curr_klass_vtable [begin_slot]->klass != base_klass;
+	gboolean end_is_overridden = end_slot != -1 && curr_klass_vtable [end_slot] != NULL && curr_klass_vtable [end_slot]->klass != base_klass;
 
-	return begin_is_overriden || end_is_overriden;
+	return begin_is_overridden || end_is_overridden;
 }
 
 MonoBoolean
@@ -3273,8 +3277,8 @@ ves_icall_System_IO_Stream_HasOverriddenBeginEndRead (MonoObjectHandle stream, M
 	if (!io_stream_slots_set)
 		init_io_stream_slots ();
 
-	// return true if BeginRead or EndRead were overriden
-	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_read_slot, io_stream_end_read_slot, error);
+	// return true if BeginRead or EndRead were overridden
+	return stream_has_overridden_begin_or_end_method (stream, io_stream_begin_read_slot, io_stream_end_read_slot, error);
 }
 
 MonoBoolean
@@ -3283,8 +3287,8 @@ ves_icall_System_IO_Stream_HasOverriddenBeginEndWrite (MonoObjectHandle stream, 
 	if (!io_stream_slots_set)
 		init_io_stream_slots ();
 
-	// return true if BeginWrite or EndWrite were overriden
-	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_write_slot, io_stream_end_write_slot, error);
+	// return true if BeginWrite or EndWrite were overridden
+	return stream_has_overridden_begin_or_end_method (stream, io_stream_begin_write_slot, io_stream_end_write_slot, error);
 }
 
 MonoBoolean
@@ -6221,7 +6225,7 @@ ves_icall_System_ArgIterator_IntGetNextArgWithType (MonoArgIterator *iter, MonoT
 			continue;
 		res->type = iter->sig->params [i];
 		res->klass = mono_class_from_mono_type_internal (res->type);
-		/* FIXME: endianess issue... */
+		/* FIXME: endianness issue... */
 		arg_size = mono_type_stack_size (res->type, &align);
 #if defined(__arm__)
 		iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
@@ -6657,7 +6661,7 @@ mono_dangerous_add_internal_call_coop (const char *name, gconstpointer method)
 * Additionally, the method must switch to GC Safe mode to perform all blocking
 * operations: performing blocking I/O, taking locks, etc. The method can't throw or raise
 * exceptions or call other methods that will throw or raise exceptions since the runtime won't
-* be able to detect exeptions and unwinder won't be able to correctly find last managed frame in callstack.
+* be able to detect exceptions and unwinder won't be able to correctly find last managed frame in callstack.
 * This registration method is for icalls that needs very low overhead and follow all rules in their implementation.
 *
 */

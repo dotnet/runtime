@@ -381,6 +381,7 @@ namespace System.Security.Cryptography
                 // with the already loaded key.
                 ForceSetKeySize(BitsPerByte * Interop.AndroidCrypto.DsaKeySize(newKey));
 
+                FreeKey();
                 _key = new Lazy<SafeDsaHandle>(newKey);
             }
 

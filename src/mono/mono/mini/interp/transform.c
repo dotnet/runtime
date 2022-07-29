@@ -3015,6 +3015,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		csignature = mono_method_signature_internal (target_method);
 	}
 
+	if (calli && csignature->param_count == 0 && csignature->call_convention == MONO_CALL_THISCALL) {
+		mono_error_set_generic_error (error, "System", "InvalidProgramException", "thiscall with 0 arguments");
+		return FALSE;
+	}
+
 	if (check_visibility && target_method && !mono_method_can_access_method (method, target_method))
 		interp_generate_mae_throw (td, method, target_method);
 

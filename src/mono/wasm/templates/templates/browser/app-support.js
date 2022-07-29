@@ -142,16 +142,10 @@ function applyArguments() {
     }
 }
 
-const anchorTagForAbsoluteUrlConversions = document.createElement('a');
-const toAbsoluteUrl = function toAbsoluteUrl(path, prefix) {
-    anchorTagForAbsoluteUrlConversions.href = prefix + path;
-    return anchorTagForAbsoluteUrlConversions.href;
-}
-
 try {
     const argsResponse = await fetch('./runArgs.json')
     if (!argsResponse.ok) {
-        console.debug(`could not load ./runArgs.json: ${response.status}. Ignoring`);
+        console.debug(`could not load ./runArgs.json: ${argsResponse.status}. Ignoring`);
     } else {
         runArgs = await argsResponse.json();
         console.debug(`runArgs: ${JSON.stringify(runArgs)}`);
@@ -159,11 +153,10 @@ try {
     initRunArgs();
     applyArguments();
 
-    createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
+    createDotnetRuntime(({ MONO, INTERNAL, BINDING, IMPORTS, Module }) => ({
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
-        locateFile: toAbsoluteUrl,
         onConfigLoaded: (config) => {
             if (!Module.config) {
                 const err = new Error("Could not find ./mono-config.json. Cancelling run");
@@ -194,7 +187,7 @@ try {
             if (runArgs.runtimeArgs.length > 0)
                 INTERNAL.mono_wasm_set_runtime_options(runArgs.runtimeArgs);
 
-            Object.assign(App, { MONO, BINDING, Module, runArgs });
+            Object.assign(App, { MONO, BINDING, IMPORTS, Module, runArgs });
 
             try {
                 if (App.main) {

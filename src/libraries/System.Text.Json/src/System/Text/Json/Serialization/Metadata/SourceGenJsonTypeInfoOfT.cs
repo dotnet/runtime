@@ -20,14 +20,17 @@ namespace System.Text.Json.Serialization.Metadata
         public SourceGenJsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
             : base(converter, options)
         {
-            PolymorphismOptions = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
+            PopulatePolymorphismMetadata();
             MapInterfaceTypesToCallbacks();
+
+            // Plug in any converter configuration -- should be run last.
+            converter.ConfigureJsonTypeInfo(this, options);
         }
 
         /// <summary>
         /// Creates serialization metadata for an object.
         /// </summary>
-        public SourceGenJsonTypeInfo(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) : this(GetConverter(objectInfo), options)
+        public SourceGenJsonTypeInfo(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) : base(GetConverter(objectInfo), options)
         {
             if (objectInfo.ObjectWithParameterizedConstructorCreator != null)
             {
@@ -43,6 +46,11 @@ namespace System.Text.Json.Serialization.Metadata
             PropInitFunc = objectInfo.PropertyMetadataInitializer;
             SerializeHandler = objectInfo.SerializeHandler;
             NumberHandling = objectInfo.NumberHandling;
+            PopulatePolymorphismMetadata();
+            MapInterfaceTypesToCallbacks();
+
+            // Plug in any converter configuration -- should be run last.
+            Converter.ConfigureJsonTypeInfo(this, options);
         }
 
         /// <summary>
@@ -54,7 +62,7 @@ namespace System.Text.Json.Serialization.Metadata
             Func<JsonConverter<T>> converterCreator,
             object? createObjectWithArgs = null,
             object? addFunc = null)
-            : this(new JsonMetadataServicesConverter<T>(converterCreator()), options)
+            : base(new JsonMetadataServicesConverter<T>(converterCreator()), options)
         {
             if (collectionInfo is null)
             {
@@ -69,6 +77,11 @@ namespace System.Text.Json.Serialization.Metadata
             CreateObjectWithArgs = createObjectWithArgs;
             AddMethodDelegate = addFunc;
             CreateObject = collectionInfo.ObjectCreator;
+            PopulatePolymorphismMetadata();
+            MapInterfaceTypesToCallbacks();
+
+            // Plug in any converter configuration -- should be run last.
+            Converter.ConfigureJsonTypeInfo(this, options);
         }
 
         private static JsonConverter GetConverter(JsonObjectInfoValues<T> objectInfo)
@@ -94,8 +107,13 @@ namespace System.Text.Json.Serialization.Metadata
             JsonParameterInfoValues[] array;
             if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
             {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(Options.TypeInfoResolverSafe, Type);
-                return null!;
+                if (SerializeHandler == null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(Options.TypeInfoResolver, Type);
+                }
+
+                array = Array.Empty<JsonParameterInfoValues>();
+                MetadataSerializationNotSupported = true;
             }
 
             return array;
@@ -126,13 +144,12 @@ namespace System.Text.Json.Serialization.Metadata
                     return;
                 }
 
-                if (SerializeHandler != null && context?.CanUseSerializationLogic == true)
+                if (SerializeHandler == null)
                 {
-                    ThrowOnDeserialize = true;
-                    return;
+                    ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
                 }
 
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolverSafe, Type);
+                MetadataSerializationNotSupported = true;
                 return;
             }
 

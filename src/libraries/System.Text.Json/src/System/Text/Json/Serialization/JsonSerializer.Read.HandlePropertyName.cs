@@ -56,7 +56,7 @@ namespace System.Text.Json
                     if (createExtensionProperty)
                     {
                         Debug.Assert(obj != null, "obj is null");
-                        CreateDataExtensionProperty(obj, dataExtProperty, options);
+                        CreateExtensionDataProperty(obj, dataExtProperty, options);
                     }
 
                     jsonPropertyInfo = dataExtProperty;
@@ -98,7 +98,7 @@ namespace System.Text.Json
             return unescapedPropertyName;
         }
 
-        internal static void CreateDataExtensionProperty(
+        internal static void CreateExtensionDataProperty(
             object obj,
             JsonPropertyInfo jsonPropertyInfo,
             JsonSerializerOptions options)
@@ -130,19 +130,17 @@ namespace System.Text.Json
                     // Avoid a reference to the JsonNode type for trimming
                     if (jsonPropertyInfo.PropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)
                     {
-                        extensionData = jsonPropertyInfo.EffectiveConverter.CreateObject(options);
+                        ThrowHelper.ThrowInvalidOperationException_NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty();
                     }
                     else
                     {
                         ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.PropertyType);
                     }
                 }
-                else
-                {
-                    extensionData = createObjectForExtensionDataProp();
-                }
 
-                jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, extensionData);
+                extensionData = createObjectForExtensionDataProp();
+                Debug.Assert(jsonPropertyInfo.Set != null);
+                jsonPropertyInfo.Set(obj, extensionData);
             }
 
             // We don't add the value to the dictionary here because we need to support the read-ahead functionality for Streams.

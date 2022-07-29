@@ -218,34 +218,5 @@ namespace ILCompiler
 
             return InstantiateCanonicalDynamicInvokeMethodForMethod(thunk, method);
         }
-
-        protected override void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-        {
-            if (!ConstructedEETypeNode.CreationAllowed(type))
-            {
-                // Both EETypeNode and ConstructedEETypeNode call into this logic. EETypeNode will only call for unconstructable
-                // EETypes. We don't have templates for those.
-                return;
-            }
-
-            DefType closestDefType = type.GetClosestDefType();
-
-            // TODO-SIZE: this is overly generous in the templates we create
-            if (_blockingPolicy is FullyBlockedMetadataBlockingPolicy)
-                return;
-
-            if (closestDefType.HasInstantiation)
-            {
-                TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
-                TypeDesc canonClosestDefType = closestDefType.ConvertToCanonForm(CanonicalFormKind.Specific);
-
-                // Add a dependency on the template for this type, if the canonical type should be generated into this binary.
-                // If the type is an array type, the check should be on its underlying Array<T> type. This is because a copy of
-                // an array type gets placed into each module but the Array<T> type only exists in the defining module and only 
-                // one template is needed for the Array<T> type by the dynamic type loader.
-                if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any) && !factory.NecessaryTypeSymbol(canonClosestDefType).RepresentsIndirectionCell)
-                    dependencies.Add(factory.NativeLayout.TemplateTypeLayout(canonType), "Template Type Layout");
-            }
-        }
     }
 }

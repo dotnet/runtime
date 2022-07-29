@@ -79,11 +79,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
                         // Gather the possible endings for satisfying nullability
                         possibleEndings.Clear();
-                        if (SymbolicRegexMatcher<TSet>.NfaStateHandler.CanBeNullable(this, in statesWrapper))
+                        StateFlags flags = SymbolicRegexMatcher<TSet>.NfaStateHandler.GetStateFlags(this, in statesWrapper);
+                        if (flags.CanBeNullable())
                         {
                             // Unconditionally final state or end of the input due to \Z anchor for example
-                            if (SymbolicRegexMatcher<TSet>.NfaStateHandler.IsNullable(this, in statesWrapper) ||
-                                SymbolicRegexMatcher<TSet>.NfaStateHandler.IsNullableFor(this, in statesWrapper, CharKind.BeginningEnd))
+                            if (flags.IsNullable() || SymbolicRegexMatcher<TSet>.NfaStateHandler.IsNullableFor(this, in statesWrapper, CharKind.BeginningEnd))
                             {
                                 possibleEndings.Add("");
                             }

@@ -102,7 +102,7 @@ namespace Internal.Reflection.Execution
                 tMethods[i] = (MethodInfo)methodBase;
                 continue;
 
-notFound:
+            notFound:
                 if (instanceType.IsAbstract)
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.Arg_InterfaceMapMustNotBeAbstract, interfaceType.FullName, instanceType.FullName));
@@ -161,6 +161,13 @@ notFound:
             }
 #endif
             return null;
+        }
+
+        public override IntPtr GetDynamicInvokeThunk(MethodInvoker invoker, out IntPtr genericDictionary)
+        {
+            MethodInvokeInfo invokeInfo = ((MethodInvokerWithMethodInvokeInfo)invoker).MethodInvokeInfo;
+            genericDictionary = invokeInfo.DynamicInvokeGenericDictionary;
+            return invokeInfo.DynamicInvokeMethod;
         }
     }
 }

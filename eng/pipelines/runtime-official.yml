@@ -11,6 +11,7 @@ trigger:
     - docs/manpages/*
     exclude:
     - '**.md'
+    - .devcontainer/*
     - .github/*
     - docs/*
     - LICENSE.TXT
@@ -18,7 +19,7 @@ trigger:
     - THIRD-PARTY-NOTICES.TXT
 
 # This is an official pipeline that should not be triggerable from a PR,
-# there is no public pipeline assosiated with it.
+# there is no public pipeline associated with it.
 pr: none
 
 variables:
@@ -142,6 +143,38 @@ stages:
         buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig)
         nameSuffix: AllSubsets_Mono
         isOfficialBuild: ${{ variables.isOfficialBuild }}
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: MonoRuntimePacks
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Browser_wasm
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig) /p:MonoWasmBuildVariant=perftrace
+        nameSuffix: AllSubsets_Mono_perftrace
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        runtimeVariant: perftrace
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: MonoRuntimePacks
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Browser_wasm
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread
+        nameSuffix: AllSubsets_Mono_multithread
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        runtimeVariant: multithread
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
           name: MonoRuntimePacks

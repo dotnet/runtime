@@ -9,14 +9,15 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</MonoWasmThreads>
-    <MonoWasmThreadsNoUser Condition="'$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' == 'true'">true</MonoWasmThreadsNoUser>
+    <MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreads>
+    <MonoWasmThreadsNoUser Condition="('$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' == 'true') or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreadsNoUser>
+    <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Release'">false</MonoDiagnosticsMock>
+    <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Debug'">true</MonoDiagnosticsMock>
   </PropertyGroup>
 
   <PropertyGroup>
     <ICULibDir Condition="'$(MonoWasmThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
     <ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
-    <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">true</WasmEnableES6>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
@@ -124,10 +125,8 @@
       <_EmccCommonFlags Condition="'$(WasmEnableSIMD)' == 'true'" Include="-msimd128" />
       <_EmccCommonFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
-      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=2" />
-      <!--
-      <_EmccLinkFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' == 'true'" />
-      -->
+      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=4" />
+      <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE_STRICT=2" /> <!-- hard error if worker pool is exhausted -->
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
@@ -215,7 +214,7 @@
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
-      <CMakeConfigurationLinkFlags Condition="'$(WasmEnableES6)' != 'false'">$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
 
@@ -260,13 +259,6 @@
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime/cjs/dotnet.cjs.pre.js;
-                       runtime/cjs/dotnet.cjs.lib.js;
-                       runtime/cjs/dotnet.cjs.post.js;
-                       runtime/cjs/dotnet.cjs.extpost.js;"
-          DestinationFolder="$(NativeBinDir)src/cjs"
-          SkipUnchangedFiles="true" />
-
     <Copy SourceFiles="runtime/es6/dotnet.es6.pre.js;
                        runtime/es6/dotnet.es6.lib.js;
                        runtime/es6/dotnet.es6.post.js;"
@@ -293,7 +285,6 @@
                              $(_EmccCompileRspPath);
                              $(_EmccLinkRspPath);
                              $(NativeBinDir)src\emcc-props.json" />
-      <WasmSrcFilesCjs Include="$(NativeBinDir)src\cjs\*.js;" />
       <WasmSrcFilesEs6 Include="$(NativeBinDir)src\es6\*.js;" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>
@@ -324,10 +315,6 @@
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(WasmSrcFilesCjs)"
-          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src\cjs"
-          SkipUnchangedFiles="true" />
-
     <Copy SourceFiles="@(WasmSrcFilesEs6)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src\es6"
           SkipUnchangedFiles="true" />
@@ -343,7 +330,6 @@
           >
     <!-- install typescript and rollup -->
     <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm ci" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
-    <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' == 'true'" Command="npm audit --verbose --registry=https://registry.npmjs.org/" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
     <!-- npm install is faster on dev machine as it doesn't wipe node_modules folder -->
     <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' != 'true'" Command="npm install" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
@@ -351,24 +337,46 @@
   </Target>
 
   <ItemGroup>
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.ts"/>
+    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/**/*.ts"
+		   Exclude="$(MonoProjectRoot)wasm/runtime/dotnet.d.ts;$(MonoProjectRoot)wasm/runtime/diagnostics-mock.d.ts;$(MonoProjectRoot)wasm/runtime/node_modules/**/*.ts" />
+    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/**/tsconfig.*"
+		   Exclude="$(MonoProjectRoot)wasm/runtime/node_modules/**/tsconfig.*" />
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.js"/>
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/workers/**/*.ts"/>
-    <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/types/*.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtimetypes/*.d.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.json"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.js"/>
   </ItemGroup>
 
+  <Target Name="SetMonoRollupEnvironment">
+    <PropertyGroup>
+      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),MonoDiagnosticsMock:$(MonoDiagnosticsMock)</MonoRollupEnvironment>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_RollupEnvIntermediateFile>$(WasmObjDir)\.rollup.env</_RollupEnvIntermediateFile>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="WriteRollupEnvToFile" DependsOnTargets="SetMonoRollupEnvironment">
+    <!-- the purpose of this file is to be an input to the BuildWithRollup target.  That way if any
+         of the environment values change, we will do a new rollup build.  For example if the
+         `MonoWasmThreads` property is changed between builds by a developer. -->
+    <WriteLinesToFile File="$(_RollupEnvIntermediateFile)"
+		      Lines="$(MonoRollupEnvironment)"
+		      WriteOnlyWhenDifferent="true"
+		      Overwrite="true" />
+  </Target>
+
   <Target Name="BuildWithRollup"
-          Inputs="@(_RollupInputs)"
+          Inputs="@(_RollupInputs);$(_RollupEnvIntermediateFile)"
           Outputs="$(NativeBinDir).rollup-stamp"
+	  DependsOnTargets="WriteRollupEnvToFile"
           >
     <!-- code style check -->
     <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
     <!-- compile typescript -->
-    <RunWithEmSdkEnv Command="npm run rollup -- --environment Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
+    <RunWithEmSdkEnv Command="npm run rollup -- --environment $(MonoRollupEnvironment)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
     <Copy SourceFiles="runtime/package.json;"
           DestinationFolder="$(NativeBinDir)"

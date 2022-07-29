@@ -395,7 +395,9 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (findResults.IsInvalid)
             {
-                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                Exception e = Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                findResults.Dispose();
+                throw e;
             }
 
             SafeCertContextHandle? pCertContext = null;

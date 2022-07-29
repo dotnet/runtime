@@ -166,7 +166,7 @@ enum ReadyToRunTypeLayoutFlags
 enum ReadyToRunVirtualFunctionOverrideFlags
 {
     READYTORUN_VIRTUAL_OVERRIDE_None = 0x00,
-    READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverriden = 0x01,
+    READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverridden = 0x01,
 };
 
 enum class ReadyToRunCrossModuleInlineFlags : uint32_t
@@ -367,7 +367,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_FltRound                  = 0xE3,
 
 #ifdef FEATURE_EH_FUNCLETS
-    // Personality rountines
+    // Personality routines
     READYTORUN_HELPER_PersonalityRoutine        = 0xF0,
     READYTORUN_HELPER_PersonalityRoutineFilterFunclet = 0xF1,
 #endif

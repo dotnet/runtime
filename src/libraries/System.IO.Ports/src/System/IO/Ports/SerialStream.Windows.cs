@@ -349,7 +349,7 @@ namespace System.IO.Ports
 
                 int oldReadConstant = _commTimeouts.ReadTotalTimeoutConstant;
                 int oldReadInterval = _commTimeouts.ReadIntervalTimeout;
-                int oldReadMultipler = _commTimeouts.ReadTotalTimeoutMultiplier;
+                int oldReadMultiplier = _commTimeouts.ReadTotalTimeoutMultiplier;
 
                 // NOTE: this logic should match what is in the constructor
                 if (value == 0)
@@ -376,7 +376,7 @@ namespace System.IO.Ports
                 if (Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts) == false)
                 {
                     _commTimeouts.ReadTotalTimeoutConstant = oldReadConstant;
-                    _commTimeouts.ReadTotalTimeoutMultiplier = oldReadMultipler;
+                    _commTimeouts.ReadTotalTimeoutMultiplier = oldReadMultiplier;
                     _commTimeouts.ReadIntervalTimeout = oldReadInterval;
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
@@ -578,7 +578,9 @@ namespace System.IO.Ports
 
             if (tempHandle.IsInvalid)
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error(portName);
+                Exception e = Win32Marshal.GetExceptionForLastWin32Error(portName);
+                tempHandle.Dispose();
+                throw e;
             }
 
             try
@@ -833,7 +835,7 @@ namespace System.IO.Ports
             return result;
         }
 
-        // Uses Win32 method to dump out the receive buffer; analagous to MSComm's "InBufferCount = 0"
+        // Uses Win32 method to dump out the receive buffer; analogous to MSComm's "InBufferCount = 0"
         internal void DiscardInBuffer()
         {
 
@@ -841,7 +843,7 @@ namespace System.IO.Ports
                 throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
-        // Uses Win32 method to dump out the xmit buffer; analagous to MSComm's "OutBufferCount = 0"
+        // Uses Win32 method to dump out the xmit buffer; analogous to MSComm's "OutBufferCount = 0"
         internal void DiscardOutBuffer()
         {
             if (Interop.Kernel32.PurgeComm(_handle, Interop.Kernel32.PurgeFlags.PURGE_TXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_TXABORT) == false)
