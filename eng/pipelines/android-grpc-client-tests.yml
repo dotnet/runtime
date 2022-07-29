@@ -1,7 +1,3 @@
-# TODO file name == pipeline name (/azp run android-grpc-client-tests ?)
-#
-# TODO description + instructions
-#
 # We run this pipeline on a schedule and also developers can run it
 # via /azp run command on PRs.
 #
@@ -25,7 +21,7 @@ variables:
 jobs:
 
 #
-# Android devices
+# Android emulators
 # Build the whole product using Mono and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
