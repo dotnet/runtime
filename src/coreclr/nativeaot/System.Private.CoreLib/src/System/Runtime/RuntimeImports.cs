@@ -388,6 +388,11 @@ namespace System.Runtime
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial void RhSpinWait(int iterations);
 
+        // Call RhSpinWait with a GC transition
+        [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void RhLongSpinWait(int iterations);
+
         // Yield the cpu to another thread ready to process, if one is available.
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhYield")]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]

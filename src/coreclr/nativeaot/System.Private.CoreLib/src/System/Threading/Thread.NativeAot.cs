@@ -324,17 +324,18 @@ namespace System.Threading
 
         public static void SpinWait(int iterations)
         {
-            // Max iterations to be done in one call to RhSpinWait.
+            if (iterations <= 0)
+                return;
+
+            // Max iterations to be done in RhSpinWait.
             // RhSpinWait does not switch GC modes and we want to avoid native spinning in coop mode for too long.
-            const int spinWaitBatch = 10000;
+            const int spinWaitCoopThreshold = 10000;
 
-            while (iterations > spinWaitBatch)
+            if (iterations > spinWaitCoopThreshold)
             {
-                RuntimeImports.RhSpinWait(spinWaitBatch);
-                iterations -= spinWaitBatch;
+                RuntimeImports.RhLongSpinWait(iterations);
             }
-
-            if (iterations > 0)
+            else
             {
                 RuntimeImports.RhSpinWait(iterations);
             }
