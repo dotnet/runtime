@@ -229,7 +229,7 @@
     <value>An X509Extension with OID '{0}' has already been specified.</value>
   </data>
   <data name="Cryptography_CertReq_ExtensionRequestInOtherAttributes" xml:space="preserve">
-    <value>The OtherRequestAttributes collection contains a PKCS#9 Extension Request Attribute.  This attribute cannot be manually specified, it is generated via the CertificateExtensions property.</value>
+    <value>The OtherRequestAttributes collection contains a PKCS#9 Extension Request Attribute. This attribute cannot be manually specified, it is generated via the CertificateExtensions property.</value>
   </data>
   <data name="Cryptography_CertReq_IssuerBasicConstraintsInvalid" xml:space="preserve">
     <value>The issuer certificate does not have an appropriate value for the Basic Constraints extension.</value>

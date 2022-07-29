@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.X509Certificates
             CertificateRequestLoadOptions.SkipSignatureValidation |
             CertificateRequestLoadOptions.UnsafeLoadCertificateExtensions;
 
-        public static unsafe CertificateRequest LoadSigningRequestPem(
+        public static CertificateRequest LoadSigningRequestPem(
             string pkcs10Pem,
             HashAlgorithmName signerHashAlgorithm,
             CertificateRequestLoadOptions options = CertificateRequestLoadOptions.Default,
@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.X509Certificates
                 signerSignaturePadding);
         }
 
-        public static unsafe CertificateRequest LoadSigningRequestPem(
+        public static CertificateRequest LoadSigningRequestPem(
             ReadOnlySpan<char> pkcs10Pem,
             HashAlgorithmName signerHashAlgorithm,
             CertificateRequestLoadOptions options = CertificateRequestLoadOptions.Default,
@@ -49,7 +49,8 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     byte[] rented = ArrayPool<byte>.Shared.Rent(fields.DecodedDataLength);
 
-                    if (!Convert.TryFromBase64Chars(contents[fields.Base64Data], rented, out int bytesWritten))
+                    if (!Convert.TryFromBase64Chars(contents[fields.Base64Data], rented, out int bytesWritten) ||
+                        bytesWritten != fields.DecodedDataLength)
                     {
                         Debug.Fail("Base64Decode failed, but PemEncoding said it was legal");
                         throw new UnreachableException();
@@ -72,10 +73,11 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            throw new CryptographicException(SR.Cryptography_NoPemOfLabel, PemLabels.Pkcs10CertificateRequest);
+            throw new CryptographicException(
+                SR.Format(SR.Cryptography_NoPemOfLabel, PemLabels.Pkcs10CertificateRequest));
         }
 
-        public static unsafe CertificateRequest LoadSigningRequest(
+        public static CertificateRequest LoadSigningRequest(
             byte[] pkcs10,
             HashAlgorithmName signerHashAlgorithm,
             CertificateRequestLoadOptions options = CertificateRequestLoadOptions.Default,
@@ -92,7 +94,7 @@ namespace System.Security.Cryptography.X509Certificates
                 signerSignaturePadding);
         }
 
-        public static unsafe CertificateRequest LoadSigningRequest(
+        public static CertificateRequest LoadSigningRequest(
             ReadOnlySpan<byte> pkcs10,
             HashAlgorithmName signerHashAlgorithm,
             out int bytesConsumed,
