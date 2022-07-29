@@ -9,25 +9,21 @@ using System.Reflection;
 namespace System.ComponentModel
 {
     /// <summary>
-    /// Provides a type converter to convert <see cref='System.TimeOnly'/>
-    /// objects to and from various other representations.
+    /// Provides a type converter to convert <see cref='System.TimeOnly'/> objects to and from various other representations.
     /// </summary>
     public class TimeOnlyConverter : TypeConverter
     {
         /// <summary>
-        /// Gets a value indicating whether this converter can convert an
-        /// object in the given source type to a <see cref='System.TimeOnly'/>
+        /// Gets a value indicating whether this converter can convert an object in the given source type to a <see cref='System.TimeOnly'/>
         /// object using the specified context.
         /// </summary>
+        /// <inheritdoc />
         public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        /// <summary>
-        /// Gets a value indicating whether this converter can convert an object
-        /// to the given destination type using the context.
-        /// </summary>
+        /// <inheritdoc />
         public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
@@ -36,6 +32,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to a <see cref='System.TimeOnly'/> object.
         /// </summary>
+        /// <inheritdoc />
         public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string text)
@@ -75,9 +72,9 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Converts the given value object to a <see cref='System.TimeOnly'/>
-        /// object using the arguments.
+        /// Converts the given value object from a <see cref='System.TimeOnly'/> object using the arguments.
         /// </summary>
+        /// <inheritdoc />
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(string) && value is TimeOnly timeOnly)

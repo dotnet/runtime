@@ -328,7 +328,7 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
 
     // Static value classes are stored as handles so that GC can deal with them properly.  Thus, we need to follow the
     // handle like an objectref.  Do this by forcing CreateValueByType to think this is an objectref. Note: we don't do
-    // this for value classes that have an RVA, since they're layed out at the RVA with no handle.
+    // this for value classes that have an RVA, since they're laid out at the RVA with no handle.
     bool fIsBoxed = (fIsValueClass &&
                      !pFieldData->m_fFldIsRVA &&
                      !pFieldData->m_fFldIsPrimitive &&

@@ -16,124 +16,124 @@ namespace Microsoft.Interop.JavaScript
             {
                 return SpecialTypeInfo.Void;
             }
-            string diagonsticFormattedName = type.ToDisplayString();
-            return CreateJSTypeInfoForTypeSymbol(fullTypeName, diagonsticFormattedName);
+            string diagnosticFormattedName = type.ToDisplayString();
+            return CreateJSTypeInfoForTypeSymbol(fullTypeName, diagnosticFormattedName);
         }
 
-        public static ManagedTypeInfo CreateJSTypeInfoForTypeSymbol(string fullTypeName, string diagonsticFormattedName)
+        public static ManagedTypeInfo CreateJSTypeInfoForTypeSymbol(string fullTypeName, string diagnosticFormattedName)
         {
             switch (fullTypeName.Trim())
             {
                 case "global::System.Void":
                 case "void":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.Void);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.Void);
                 case "global::System.Boolean":
                 case "bool":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.Boolean);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.Boolean);
                 case "global::System.Byte":
                 case "byte":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.Byte);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.Byte);
                 case "global::System.Char":
                 case "char":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.Char);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.Char);
                 case "global::System.Int16":
                 case "short":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.Int16);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.Int16);
                 case "global::System.Int32":
                 case "int":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.Int32);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.Int32);
                 case "global::System.Int64":
                 case "long":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.Int64);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.Int64);
                 case "global::System.Single":
                 case "float":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.Single);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.Single);
                 case "global::System.Double":
                 case "double":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.Double);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.Double);
                 case "global::System.IntPtr":
                 case "nint":
                 case "void*":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.IntPtr);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.IntPtr);
                 case "global::System.DateTime":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.DateTime);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.DateTime);
                 case "global::System.DateTimeOffset":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.DateTimeOffset);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.DateTimeOffset);
                 case "global::System.Exception":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.Exception);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.Exception);
                 case "global::System.Object":
                 case "object":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.Object);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.Object);
                 case "global::System.String":
                 case "string":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.String);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.String);
                 case "global::System.Runtime.InteropServices.JavaScript.JSObject":
-                    return new JSSimpleTypeInfo(fullTypeName, diagonsticFormattedName, KnownManagedType.JSObject);
+                    return new JSSimpleTypeInfo(fullTypeName, diagnosticFormattedName, KnownManagedType.JSObject);
 
                 //nullable
                 case string ftn when ftn.EndsWith("?"):
                     var ut = fullTypeName.Remove(fullTypeName.Length - 1);
-                    if (CreateJSTypeInfoForTypeSymbol(ut, diagonsticFormattedName) is JSSimpleTypeInfo uti)
+                    if (CreateJSTypeInfoForTypeSymbol(ut, diagnosticFormattedName) is JSSimpleTypeInfo uti)
                     {
-                        return new JSNullableTypeInfo(fullTypeName, diagonsticFormattedName, uti);
+                        return new JSNullableTypeInfo(fullTypeName, diagnosticFormattedName, uti);
                     }
-                    return new JSInvalidTypeInfo(fullTypeName, diagonsticFormattedName);
+                    return new JSInvalidTypeInfo(fullTypeName, diagnosticFormattedName);
 
                 // array
                 case string ftn when ftn.EndsWith("[]"):
                     var et = fullTypeName.Remove(fullTypeName.Length - 2);
-                    if (CreateJSTypeInfoForTypeSymbol(et, diagonsticFormattedName) is JSSimpleTypeInfo eti)
+                    if (CreateJSTypeInfoForTypeSymbol(et, diagnosticFormattedName) is JSSimpleTypeInfo eti)
                     {
-                        return new JSArrayTypeInfo(fullTypeName, diagonsticFormattedName, eti);
+                        return new JSArrayTypeInfo(fullTypeName, diagnosticFormattedName, eti);
                     }
-                    return new JSInvalidTypeInfo(fullTypeName, diagonsticFormattedName);
+                    return new JSInvalidTypeInfo(fullTypeName, diagnosticFormattedName);
 
                 // task
                 case Constants.TaskGlobal:
-                    return new JSTaskTypeInfo(fullTypeName, diagonsticFormattedName, (JSSimpleTypeInfo)CreateJSTypeInfoForTypeSymbol("void", diagonsticFormattedName));
+                    return new JSTaskTypeInfo(fullTypeName, diagnosticFormattedName, (JSSimpleTypeInfo)CreateJSTypeInfoForTypeSymbol("void", diagnosticFormattedName));
                 case string ft when ft.StartsWith(Constants.TaskGlobal):
                     var rt = fullTypeName.Substring(Constants.TaskGlobal.Length + 1, fullTypeName.Length - Constants.TaskGlobal.Length - 2);
-                    if (CreateJSTypeInfoForTypeSymbol(rt, diagonsticFormattedName) is JSSimpleTypeInfo rti)
+                    if (CreateJSTypeInfoForTypeSymbol(rt, diagnosticFormattedName) is JSSimpleTypeInfo rti)
                     {
-                        return new JSTaskTypeInfo(fullTypeName, diagonsticFormattedName, rti);
+                        return new JSTaskTypeInfo(fullTypeName, diagnosticFormattedName, rti);
                     }
-                    return new JSInvalidTypeInfo(fullTypeName, diagonsticFormattedName);
+                    return new JSInvalidTypeInfo(fullTypeName, diagnosticFormattedName);
 
                 // span
                 case string ft when ft.StartsWith(Constants.SpanGlobal):
                     var st = fullTypeName.Substring(Constants.SpanGlobal.Length + 1, fullTypeName.Length - Constants.SpanGlobal.Length - 2);
-                    if (CreateJSTypeInfoForTypeSymbol(st, diagonsticFormattedName) is JSSimpleTypeInfo sti)
+                    if (CreateJSTypeInfoForTypeSymbol(st, diagnosticFormattedName) is JSSimpleTypeInfo sti)
                     {
-                        return new JSSpanTypeInfo(fullTypeName, diagonsticFormattedName, sti);
+                        return new JSSpanTypeInfo(fullTypeName, diagnosticFormattedName, sti);
                     }
-                    return new JSInvalidTypeInfo(fullTypeName, diagonsticFormattedName);
+                    return new JSInvalidTypeInfo(fullTypeName, diagnosticFormattedName);
 
                 // array segment
                 case string ft when ft.StartsWith(Constants.ArraySegmentGlobal):
                     var gt = fullTypeName.Substring(Constants.ArraySegmentGlobal.Length + 1, fullTypeName.Length - Constants.ArraySegmentGlobal.Length - 2);
-                    if (CreateJSTypeInfoForTypeSymbol(gt, diagonsticFormattedName) is JSSimpleTypeInfo gti)
+                    if (CreateJSTypeInfoForTypeSymbol(gt, diagnosticFormattedName) is JSSimpleTypeInfo gti)
                     {
-                        return new JSArraySegmentTypeInfo(fullTypeName, diagonsticFormattedName, gti);
+                        return new JSArraySegmentTypeInfo(fullTypeName, diagnosticFormattedName, gti);
                     }
-                    return new JSInvalidTypeInfo(fullTypeName, diagonsticFormattedName);
+                    return new JSInvalidTypeInfo(fullTypeName, diagnosticFormattedName);
 
                 // action
                 case Constants.ActionGlobal:
-                    return new JSFunctionTypeInfo(fullTypeName, diagonsticFormattedName, true, Array.Empty<JSSimpleTypeInfo>());
+                    return new JSFunctionTypeInfo(fullTypeName, diagnosticFormattedName, true, Array.Empty<JSSimpleTypeInfo>());
                 case string ft when ft.StartsWith(Constants.ActionGlobal):
                     var argNames = fullTypeName.Substring(Constants.ActionGlobal.Length + 1, fullTypeName.Length - Constants.ActionGlobal.Length - 2);
                     if (!argNames.Contains("<"))
                     {
                         var ga = argNames.Split(',')
-                            .Select(argName => CreateJSTypeInfoForTypeSymbol(argName, diagonsticFormattedName) as JSSimpleTypeInfo)
+                            .Select(argName => CreateJSTypeInfoForTypeSymbol(argName, diagnosticFormattedName) as JSSimpleTypeInfo)
                             .ToArray();
                         if (ga.Any(x => x == null))
                         {
-                            return new JSInvalidTypeInfo(fullTypeName, diagonsticFormattedName);
+                            return new JSInvalidTypeInfo(fullTypeName, diagnosticFormattedName);
                         }
-                        return new JSFunctionTypeInfo(fullTypeName, diagonsticFormattedName, true, ga);
+                        return new JSFunctionTypeInfo(fullTypeName, diagnosticFormattedName, true, ga);
                     }
-                    return new JSInvalidTypeInfo(fullTypeName, diagonsticFormattedName);
+                    return new JSInvalidTypeInfo(fullTypeName, diagnosticFormattedName);
 
                 // function
                 case string ft when ft.StartsWith(Constants.FuncGlobal):
@@ -141,17 +141,17 @@ namespace Microsoft.Interop.JavaScript
                     if (!fargNames.Contains("<"))
                     {
                         var ga = fargNames.Split(',')
-                            .Select(argName => CreateJSTypeInfoForTypeSymbol(argName, diagonsticFormattedName) as JSSimpleTypeInfo)
+                            .Select(argName => CreateJSTypeInfoForTypeSymbol(argName, diagnosticFormattedName) as JSSimpleTypeInfo)
                             .ToArray();
                         if (ga.Any(x => x == null))
                         {
-                            return new JSInvalidTypeInfo(fullTypeName, diagonsticFormattedName);
+                            return new JSInvalidTypeInfo(fullTypeName, diagnosticFormattedName);
                         }
-                        return new JSFunctionTypeInfo(fullTypeName, diagonsticFormattedName, false, ga);
+                        return new JSFunctionTypeInfo(fullTypeName, diagnosticFormattedName, false, ga);
                     }
-                    return new JSInvalidTypeInfo(fullTypeName, diagonsticFormattedName);
+                    return new JSInvalidTypeInfo(fullTypeName, diagnosticFormattedName);
                 default:
-                    return new JSInvalidTypeInfo(fullTypeName, diagonsticFormattedName);
+                    return new JSInvalidTypeInfo(fullTypeName, diagnosticFormattedName);
             }
         }
 

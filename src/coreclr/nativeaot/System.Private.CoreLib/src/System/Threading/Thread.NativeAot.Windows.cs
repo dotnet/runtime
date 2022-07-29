@@ -247,33 +247,42 @@ namespace System.Threading
 
         private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
+            ApartmentState retState;
+
             if (this != CurrentThread)
             {
                 using (LockHolder.Hold(_lock))
                 {
                     if (HasStarted())
                         throw new ThreadStateException();
-                    _initialApartmentState = state;
-                    return true;
+
+                    // Compat: Disallow resetting the initial apartment state
+                    if (_initialApartmentState == ApartmentState.Unknown)
+                        _initialApartmentState = state;
+
+                    retState = _initialApartmentState;
                 }
             }
-
-            if ((t_comState & ComState.Locked) == 0)
+            else
             {
-                if (state != ApartmentState.Unknown)
+
+                if ((t_comState & ComState.Locked) == 0)
                 {
-                    InitializeCom(state);
+                    if (state != ApartmentState.Unknown)
+                    {
+                        InitializeCom(state);
+                    }
+                    else
+                    {
+                        UninitializeCom();
+                    }
                 }
-                else
-                {
-                    UninitializeCom();
-                }
+
+                // Clear the cache and check whether new state matches the desired state
+                t_apartmentType = ApartmentType.Unknown;
+
+                retState = GetApartmentState();
             }
-
-            // Clear the cache and check whether new state matches the desired state
-            t_apartmentType = ApartmentType.Unknown;
-
-            ApartmentState retState = GetApartmentState();
 
             if (retState != state)
             {

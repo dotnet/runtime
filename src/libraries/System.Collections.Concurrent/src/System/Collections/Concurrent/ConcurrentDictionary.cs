@@ -311,7 +311,7 @@ namespace System.Collections.Concurrent
         /// found and removed; otherwise, false.
         /// </returns>
         /// <remarks>
-        /// Both the specifed key and value must match the entry in the dictionary for it to be removed.
+        /// Both the specified key and value must match the entry in the dictionary for it to be removed.
         /// The key is compared using the dictionary's comparer (or the default comparer for <typeparamref name="TKey"/>
         /// if no comparer was provided to the dictionary when it was constructed).  The value is compared using the
         /// default comparer for <typeparamref name="TValue"/>.

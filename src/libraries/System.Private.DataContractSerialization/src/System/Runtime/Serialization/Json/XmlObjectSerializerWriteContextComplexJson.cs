@@ -338,7 +338,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        [return: NotNullIfNotNull("oldItemContract")]
+        [return: NotNullIfNotNull(nameof(oldItemContract))]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract? GetRevisedItemContract(DataContract oldItemContract)
         {

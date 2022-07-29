@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization
             return surrogateProvider.GetSurrogateType(type) ?? type;
         }
 
-        [return: NotNullIfNotNull("obj")]
+        [return: NotNullIfNotNull(nameof(obj))]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static object? GetObjectToSerialize(ISerializationSurrogateProvider surrogateProvider, object? obj, Type objType, Type membertype)
         {
@@ -30,7 +30,7 @@ namespace System.Runtime.Serialization
             return surrogateProvider.GetObjectToSerialize(obj, membertype);
         }
 
-        [return: NotNullIfNotNull("obj")]
+        [return: NotNullIfNotNull(nameof(obj))]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static object? GetDeserializedObject(ISerializationSurrogateProvider surrogateProvider, object? obj, Type objType, Type memberType)
         {

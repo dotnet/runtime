@@ -153,6 +153,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 {
                     throw new Exception($"At attempt={attempt}, index={index}: {ex.Message}", ex);
                 }
+                await Task.Yield();
             }
         }
 

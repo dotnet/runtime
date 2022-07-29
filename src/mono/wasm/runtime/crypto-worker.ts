@@ -62,7 +62,7 @@ export function dotnet_browser_encrypt_decrypt(isEncrypting: boolean, key_buffer
     }
 
     if (result.length > output_len) {
-        console.error(`ENCRYPT DECRYPT: Encrypt/Decrypt length exceeds output length: ${result.length} > ${output_len}`);
+        console.error(`MONO_WASM_ENCRYPT_DECRYPT: Encrypt/Decrypt length exceeds output length: ${result.length} > ${output_len}`);
         return ERR_ARGS;
     }
 
@@ -91,7 +91,7 @@ function _send_simple_msg(msg: any, prefix: string, output_buffer: number, outpu
     }
 
     if (result.length > output_len) {
-        console.error(`${prefix}: Result length exceeds output length: ${result.length} > ${output_len}`);
+        console.error(`MONO_WASM_ENCRYPT_DECRYPT: ${prefix}: Result length exceeds output length: ${result.length} > ${output_len}`);
         return ERR_ARGS;
     }
 
@@ -132,7 +132,7 @@ function _send_msg_worker(msg: any): number | any {
         const responseJson = JSON.parse(response);
 
         if (responseJson.error !== undefined) {
-            console.error(`Worker failed with: ${responseJson.error}`);
+            console.error(`MONO_WASM_ENCRYPT_DECRYPT: Worker failed with: ${responseJson.error}`);
             if (responseJson.error_type == "ArgumentsError")
                 return ERR_ARGS;
             if (responseJson.error_type == "WorkerFailedError")
@@ -144,9 +144,9 @@ function _send_msg_worker(msg: any): number | any {
         return responseJson.result;
     } catch (err) {
         if (err instanceof Error && err.stack !== undefined)
-            console.error(`${err.stack}`);
+            console.error(`MONO_WASM_ENCRYPT_DECRYPT: ${err.stack}`);
         else
-            console.error(`_send_msg_worker failed: ${err}`);
+            console.error(`MONO_WASM_ENCRYPT_DECRYPT: _send_msg_worker failed: ${err}`);
         return ERR_OP_FAILED;
     }
 }
@@ -202,10 +202,9 @@ class LibraryChannel {
 
     public send_msg(msg: string): string {
         try {
-            let state = Atomics.load(this.comm, this.STATE_IDX);
-            if (state !== this.STATE_IDLE)
-                console.log(`send_msg, waiting for idle now, ${state}`);
-            state = this.wait_for_state(pstate => pstate == this.STATE_IDLE, "waiting");
+            // const state = Atomics.load(this.comm, this.STATE_IDX);
+            // if (state !== this.STATE_IDLE) console.debug(`MONO_WASM_ENCRYPT_DECRYPT: send_msg, waiting for idle now, ${state}`);
+            this.wait_for_state(pstate => pstate == this.STATE_IDLE, "waiting");
 
             this.send_request(msg);
             return this.read_response();
@@ -214,14 +213,13 @@ class LibraryChannel {
             throw err;
         }
         finally {
-            const state = Atomics.load(this.comm, this.STATE_IDX);
-            if (state !== this.STATE_IDLE)
-                console.log(`state at end of send_msg: ${state}`);
+            // const state = Atomics.load(this.comm, this.STATE_IDX);
+            // if (state !== this.STATE_IDLE) console.debug(`MONO_WASM_ENCRYPT_DECRYPT: state at end of send_msg: ${state}`);
         }
     }
 
     public shutdown(): void {
-        console.debug("Shutting down crypto");
+        // console.debug("MONO_WASM_ENCRYPT_DECRYPT: Shutting down crypto");
         const state = Atomics.load(this.comm, this.STATE_IDX);
         if (state !== this.STATE_IDLE)
             throw new Error(`OWNER: Invalid sync communication channel state: ${state}`);
@@ -232,14 +230,15 @@ class LibraryChannel {
         Atomics.notify(this.comm, this.STATE_IDX);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private reset(reason: string): void {
-        console.debug(`reset: ${reason}`);
+        // console.debug(`MONO_WASM_ENCRYPT_DECRYPT: reset: ${reason}`);
         const state = Atomics.load(this.comm, this.STATE_IDX);
         if (state === this.STATE_SHUTDOWN)
             return;
 
         if (state === this.STATE_RESET || state === this.STATE_IDLE) {
-            console.debug(`state is already RESET or idle: ${state}`);
+            // console.debug(`MONO_WASM_ENCRYPT_DECRYPT: state is already RESET or idle: ${state}`);
             return;
         }
 

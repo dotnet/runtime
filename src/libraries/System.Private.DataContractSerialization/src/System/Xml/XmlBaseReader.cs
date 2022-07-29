@@ -779,7 +779,7 @@ namespace System.Xml
             if (!_attributeSorter.Sort(attributeNodes, attributeCount))
             {
                 int attribute1, attribute2;
-                _attributeSorter.GetIndeces(out attribute1, out attribute2);
+                _attributeSorter.GetIndices(out attribute1, out attribute2);
                 if (attributeNodes[attribute1].QNameType == QNameType.Xmlns)
                     XmlExceptionHelper.ThrowDuplicateXmlnsAttribute(this, attributeNodes[attribute1].Namespace.Prefix.GetString(), xmlnsNamespace);
                 else
@@ -2636,7 +2636,7 @@ namespace System.Xml
                 return sorted;
             }
 
-            public void GetIndeces(out int attributeIndex1, out int attributeIndex2)
+            public void GetIndices(out int attributeIndex1, out int attributeIndex2)
             {
                 attributeIndex1 = _attributeIndex1;
                 attributeIndex2 = _attributeIndex2;
@@ -2657,10 +2657,10 @@ namespace System.Xml
                 if (_indices != null && _indices.Length == _attributeCount && IsSorted())
                     return true;
 
-                object[] newIndeces = new object[_attributeCount];
-                for (int i = 0; i < newIndeces.Length; i++)
-                    newIndeces[i] = i;
-                _indices = newIndeces;
+                object[] newIndices = new object[_attributeCount];
+                for (int i = 0; i < newIndices.Length; i++)
+                    newIndices[i] = i;
+                _indices = newIndices;
                 Array.Sort(_indices, 0, _attributeCount, this);
                 return IsSorted();
             }

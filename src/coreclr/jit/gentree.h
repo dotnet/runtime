@@ -177,10 +177,10 @@ inline ExceptionSetFlags& operator&=(ExceptionSetFlags& a, ExceptionSetFlags b)
 */
 enum TargetHandleType : BYTE
 {
-    THT_Unknown                  = 2,
-    THT_GSCookieCheck            = 4,
-    THT_SetGSCookie              = 6,
-    THT_IntializeArrayIntrinsics = 8
+    THT_Unknown                   = 2,
+    THT_GSCookieCheck             = 4,
+    THT_SetGSCookie               = 6,
+    THT_InitializeArrayIntrinsics = 8
 };
 #endif
 /*****************************************************************************/
@@ -468,7 +468,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_LIVENESS_MASK   = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
 
-    GTF_VAR_CAST        = 0x01000000, // GT_LCL_VAR -- has been explictly cast (variable node may not be type of local)
+    GTF_VAR_CAST        = 0x01000000, // GT_LCL_VAR -- has been explicitly cast (variable node may not be type of local)
     GTF_VAR_ITERATOR    = 0x00800000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
     GTF_VAR_CLONED      = 0x00400000, // GT_LCL_VAR -- this node has been cloned or is a clone
     GTF_VAR_CONTEXT     = 0x00200000, // GT_LCL_VAR -- this node is part of a runtime lookup
@@ -543,6 +543,7 @@ enum GenTreeFlags : unsigned int
     GTF_QMARK_CAST_INSTOF       = 0x80000000, // GT_QMARK -- Is this a top (not nested) level qmark created for
                                               //             castclass or instanceof?
 
+    GTF_BOX_CLONED              = 0x40000000, // GT_BOX -- this box and its operand has been cloned, cannot assume it to be single-use anymore
     GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
 
     GTF_ARR_ADDR_NONNULL        = 0x80000000, // GT_ARR_ADDR -- this array's address is not null
@@ -2133,9 +2134,9 @@ public:
         SetAllEffectsFlags((firstSource->gtFlags | secondSource->gtFlags) & GTF_ALL_EFFECT);
     }
 
-    void SetAllEffectsFlags(GenTree* firstSource, GenTree* secondSource, GenTree* thirdSouce)
+    void SetAllEffectsFlags(GenTree* firstSource, GenTree* secondSource, GenTree* thirdSource)
     {
-        SetAllEffectsFlags((firstSource->gtFlags | secondSource->gtFlags | thirdSouce->gtFlags) & GTF_ALL_EFFECT);
+        SetAllEffectsFlags((firstSource->gtFlags | secondSource->gtFlags | thirdSource->gtFlags) & GTF_ALL_EFFECT);
     }
 
     void SetAllEffectsFlags(GenTreeFlags sourceFlags)
@@ -3259,7 +3260,7 @@ inline void GenTreeIntConCommon::SetIntegralValue(int64_t value)
 // This function is intended to be used where its truncating behavior is
 // desirable. One example is folding of ADD(CNS_INT, CNS_INT) performed in
 // wider integers, which is typical when compiling on 64 bit hosts, as
-// most aritmetic is done in ssize_t's aka int64_t's in that case, while
+// most arithmetic is done in ssize_t's aka int64_t's in that case, while
 // the node itself can be of a narrower type.
 //
 // Arguments:
@@ -3874,6 +3875,16 @@ struct GenTreeBox : public GenTreeUnOp
     {
     }
 #endif
+
+    bool WasCloned()
+    {
+        return (gtFlags & GTF_BOX_CLONED) != 0;
+    }
+
+    void SetCloned()
+    {
+        gtFlags |= GTF_BOX_CLONED;
+    }
 };
 
 // GenTreeField -- data member ref (GT_FIELD)
@@ -3980,7 +3991,6 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_NOGCCHECK               = 0x00000020, // not a call for computing full interruptability and therefore no GC check is required.
     GTF_CALL_M_SPECIAL_INTRINSIC       = 0x00000040, // function that could be optimized as an intrinsic
                                                      // in special cases. Used to optimize fast way out in morphing
-    GTF_CALL_M_UNMGD_THISCALL          = 0x00000080, // "this" pointer (first argument) should be enregistered (only for GTF_CALL_UNMANAGED)
     GTF_CALL_M_VIRTSTUB_REL_INDIRECT   = 0x00000080, // the virtstub is indirected through a relative address (only for GTF_CALL_VIRT_STUB)
     GTF_CALL_M_NONVIRT_SAME_THIS       = 0x00000080, // callee "this" pointer is equal to caller this pointer (only for GTF_CALL_NONVIRT)
     GTF_CALL_M_FRAME_VAR_DEATH         = 0x00000100, // the compLvFrameListRoot variable dies here (last use)
@@ -6761,7 +6771,7 @@ struct GenTreeAddrMode : public GenTreeOp
     //
     // So, for example:
     //      1. Base + Index is legal with Scale==1
-    //      2. If Index is null, Scale should be zero (or unintialized / unused)
+    //      2. If Index is null, Scale should be zero (or uninitialized / unused)
     //      3. If Scale==1, then we should have "Base" instead of "Index*Scale", and "Base + Offset" instead of
     //         "Index*Scale + Offset".
 
@@ -8470,7 +8480,7 @@ inline bool GenTree::IsFloatNegativeZero() const
 }
 
 //-------------------------------------------------------------------
-// IsFloatPositiveZero: returns true if this is exactly a const float value of postive zero (+0.0)
+// IsFloatPositiveZero: returns true if this is exactly a const float value of positive zero (+0.0)
 //
 // Returns:
 //     True if this represents a const floating-point value of exactly positive zero (+0.0).

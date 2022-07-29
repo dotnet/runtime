@@ -178,6 +178,12 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         return nullptr;
     }
 
+    // NextCallRetAddr requires a CALL, so return nullptr.
+    if (info.compHasNextCallRetAddr)
+    {
+        return nullptr;
+    }
+
     CORINFO_CLASS_HANDLE argClass         = NO_CLASS_HANDLE;
     var_types            retType          = JITtype2varType(sig->retType);
     CorInfoType          simdBaseJitType  = CORINFO_TYPE_UNDEF;

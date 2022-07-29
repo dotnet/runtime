@@ -71,7 +71,7 @@ if [[ "$buildcurrentlibraries" -eq 1 ]]; then
 fi
 
 build_args=""
-if [[ -z "$imagename" ]]; then
+if [[ -n "$imagename" ]]; then
     build_args=" --build-arg SDK_BASE_IMAGE=$imagename"
 fi
 

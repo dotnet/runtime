@@ -486,7 +486,7 @@ namespace System.Globalization
                     {
                         if (_name.Length == 5 && _name[2] == '-')
                         {
-                            // We need to keep the parent chain for the zh cultures as follows to preserve the resource lookup compatability
+                            // We need to keep the parent chain for the zh cultures as follows to preserve the resource lookup compatibility
                             //      zh-CN -> zh-Hans -> zh -> Invariant
                             //      zh-HK -> zh-Hant -> zh -> Invariant
                             //      zh-MO -> zh-Hant -> zh -> Invariant

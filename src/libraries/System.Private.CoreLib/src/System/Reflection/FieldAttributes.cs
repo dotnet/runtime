@@ -3,7 +3,7 @@
 
 namespace System.Reflection
 {
-    // This Enum matchs the CorFieldAttr defined in CorHdr.h
+    // This Enum matches the CorFieldAttr defined in CorHdr.h
     [Flags]
     public enum FieldAttributes
     {

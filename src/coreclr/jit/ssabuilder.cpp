@@ -1606,7 +1606,7 @@ void SsaBuilder::SetupBBRoot()
     // it shouldn't matter...)
     bbRoot->inheritWeight(oldFirst);
 
-    // There's an artifical incoming reference count for the first BB.  We're about to make it no longer
+    // There's an artificial incoming reference count for the first BB.  We're about to make it no longer
     // the first BB, so decrement that.
     assert(oldFirst->bbRefs > 0);
     oldFirst->bbRefs--;

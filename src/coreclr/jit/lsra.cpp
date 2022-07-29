@@ -1615,7 +1615,7 @@ void LinearScan::identifyCandidates()
     // and those that meet the second.
     // The first threshold is used for methods that are heuristically deemed either to have light
     // fp usage, or other factors that encourage conservative use of callee-save registers, such
-    // as multiple exits (where there might be an early exit that woudl be excessively penalized by
+    // as multiple exits (where there might be an early exit that would be excessively penalized by
     // lots of prolog/epilog saves & restores).
     // The second threshold is used where there are factors deemed to make it more likely that fp
     // fp callee save registers will be needed, such as loops or many fp vars.
@@ -1744,7 +1744,7 @@ void LinearScan::identifyCandidates()
                 localVarIntervals[varDsc->lvVarIndex] = nullptr;
             }
             // The current implementation of multi-reg structs that are referenced collectively
-            // (i.e. by refering to the parent lclVar rather than each field separately) relies
+            // (i.e. by referring to the parent lclVar rather than each field separately) relies
             // on all or none of the fields being candidates.
             if (varDsc->lvIsStructField)
             {
@@ -9341,7 +9341,7 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
             // i.e. in the "localDefUse" case.
             // There used to be an assert here that we wouldn't spill such a node.
             // However, we can have unused lclVars that wind up being the node at which
-            // it is spilled. This probably indicates a bug, but we don't realy want to
+            // it is spilled. This probably indicates a bug, but we don't really want to
             // assert during a dump.
             if (spillChar == 'S')
             {

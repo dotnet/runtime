@@ -384,7 +384,7 @@ ULONG __stdcall Unknown_Release(IUnknown* pUnk)
     CONTRACTL_END;
 
     // Don't switch domains since we need to allow release calls to go through
-    // even after the AD has been unlaoded. Furthermore release doesn't require
+    // even after the AD has been unloaded. Furthermore release doesn't require
     // us to transition into the domain to work properly.
     return Unknown_Release_Internal(pUnk);
 }
@@ -430,7 +430,7 @@ ULONG __stdcall Unknown_ReleaseInner(IUnknown* pUnk)
     CONTRACTL_END;
 
     // Don't switch domains since we need to allow release calls to go through
-    // even after the AD has been unlaoded. Furthermore release doesn't require
+    // even after the AD has been unloaded. Furthermore release doesn't require
     // us to transition into the domain to work properly.
     return Unknown_ReleaseInner_Internal(pUnk);
 }
@@ -476,7 +476,7 @@ ULONG __stdcall Unknown_ReleaseSpecial(IUnknown* pUnk)
     CONTRACTL_END;
 
     // Don't switch domains since we need to allow release calls to go through
-    // even after the AD has been unlaoded. Furthermore release doesn't require
+    // even after the AD has been unloaded. Furthermore release doesn't require
     // us to transition into the domain to work properly.
     return Unknown_ReleaseSpecial_Internal(pUnk);
 }
@@ -504,7 +504,7 @@ ULONG __stdcall Unknown_ReleaseSpecial_IErrorInfo(IUnknown* pUnk)
     CONTRACT_VIOLATION(GCViolation);
 
     // Don't switch domains since we need to allow release calls to go through
-    // even after the AD has been unlaoded. Furthermore release doesn't require
+    // even after the AD has been unloaded. Furthermore release doesn't require
     // us to transition into the domain to work properly.
     return Unknown_ReleaseSpecial_IErrorInfo_Internal(pUnk);
 }

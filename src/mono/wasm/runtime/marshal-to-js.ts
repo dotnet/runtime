@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { PromiseControl, promise_control_symbol, create_cancelable_promise } from "./cancelable-promise";
+import { createPromiseController, assertIsControllablePromise, getPromiseController } from "./promise-controller";
 import cwraps from "./cwraps";
 import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy } from "./gc-handles";
 import { Module, runtimeHelpers } from "./imports";
@@ -10,9 +10,10 @@ import {
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
     get_arg_b8, get_arg_date, get_arg_length, set_js_handle, get_arg, set_arg_type,
     get_signature_arg2_type, get_signature_arg1_type, get_signature_type, cs_to_js_marshalers, js_to_cs_marshalers,
-    get_signature_res_type, JavaScriptMarshalerArgSize, set_gc_handle, is_args_exception, get_arg_u16, array_element_size, get_string_root, ArraySegment, Span, MemoryViewType, get_signature_arg3_type, MarshalerType, get_arg_i64_big, get_arg_intptr, get_arg_element_type
+    get_signature_res_type, get_arg_u16, array_element_size, get_string_root,
+    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, MarshalerType, get_arg_i64_big, get_arg_intptr, get_arg_element_type
 } from "./marshal";
-import { conv_string, conv_string_root } from "./strings";
+import { conv_string_root } from "./strings";
 import { mono_assert, JSHandleNull, GCHandleNull } from "./types";
 import { TypedArray } from "./types/emscripten";
 
@@ -239,48 +240,14 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, 
         return null;
     }
 
-    const anyModule = Module as any;
     const gc_handle = get_arg_gc_handle(arg);
     let result = _lookup_js_owned_object(gc_handle);
     if (result === null || result === undefined) {
         // this will create new Function for the C# delegate
-        result = (arg1_js: any, arg2_js: any, arg3_js: any) => {
-
-            const sp = anyModule.stackSave();
-            try {
-                const args = anyModule.stackAlloc(JavaScriptMarshalerArgSize * 5);
-                const exc = get_arg(args, 0);
-                set_arg_type(exc, MarshalerType.None);
-                const res = get_arg(args, 1);
-                set_arg_type(res, MarshalerType.None);
-                set_gc_handle(res, <any>gc_handle);
-                const arg1 = get_arg(args, 2);
-                const arg2 = get_arg(args, 3);
-                const arg3 = get_arg(args, 4);
-
-                if (arg1_converter) {
-                    arg1_converter(arg1, arg1_js);
-                }
-                if (arg2_converter) {
-                    arg2_converter(arg2, arg2_js);
-                }
-                if (arg3_converter) {
-                    arg3_converter(arg3, arg3_js);
-                }
-
-                const fail = cwraps.mono_wasm_invoke_method_bound(runtimeHelpers.call_delegate, args);
-                if (fail) throw new Error("ERR23: Unexpected error: " + conv_string(fail));
-                if (is_args_exception(args)) throw marshal_exception_to_js(exc);
-
-                if (res_converter) {
-                    return res_converter(res);
-                }
-
-            } finally {
-                anyModule.stackRestore(sp);
-            }
+        result = (arg1_js: any, arg2_js: any, arg3_js: any): any => {
+            // arg numbers are shifted by one, the real first is a gc handle of the callback
+            return runtimeHelpers.javaScriptExports._call_delegate(gc_handle, arg1_js, arg2_js, arg3_js, res_converter, arg1_converter, arg2_converter, arg3_converter);
         };
-
         setup_managed_proxy(result, gc_handle);
     }
 
@@ -314,8 +281,8 @@ function _marshal_task_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, res_
     }
     const promise = mono_wasm_get_jsobj_from_js_handle(js_handle);
     mono_assert(!!promise, () => `ERR28: promise not found for js_handle: ${js_handle} `);
-    const promise_control = promise[promise_control_symbol] as PromiseControl;
-    mono_assert(!!promise_control, () => `ERR27: promise_control not found for js_handle: ${js_handle} `);
+    assertIsControllablePromise<any>(promise);
+    const promise_control = getPromiseController(promise);
 
     const orig_resolve = promise_control.resolve;
     promise_control.resolve = (argInner: JSMarshalerArgument) => {
@@ -350,7 +317,7 @@ export function mono_wasm_marshal_promise(args: JSMarshalerArguments): void {
     const js_handle = get_arg_js_handle(arg_handle);
 
     if (js_handle === JSHandleNull) {
-        const { promise, promise_control } = create_cancelable_promise();
+        const { promise, promise_control } = createPromiseController();
         const js_handle = mono_wasm_get_js_handle(promise)!;
         set_js_handle(res, js_handle);
 
@@ -370,8 +337,8 @@ export function mono_wasm_marshal_promise(args: JSMarshalerArguments): void {
         // resolve existing promise
         const promise = mono_wasm_get_jsobj_from_js_handle(js_handle);
         mono_assert(!!promise, () => `ERR25: promise not found for js_handle: ${js_handle} `);
-        const promise_control = promise[promise_control_symbol] as PromiseControl;
-        mono_assert(!!promise_control, () => `ERR26: promise_control not found for js_handle: ${js_handle} `);
+        assertIsControllablePromise(promise);
+        const promise_control = getPromiseController(promise);
 
         if (exc_type !== MarshalerType.None) {
             const reason = marshal_exception_to_js(exc);
@@ -476,7 +443,7 @@ function _marshal_cs_object_to_js(arg: JSMarshalerArgument): any {
 }
 
 function _marshal_array_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): Array<any> | TypedArray | null {
-    mono_assert(!!sig, "Expected valid sig paramater");
+    mono_assert(!!sig, "Expected valid sig parameter");
     const element_type = get_signature_arg1_type(sig);
     return _marshal_array_to_js_impl(arg, element_type);
 }
@@ -534,7 +501,7 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
 }
 
 function _marshal_span_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): Span {
-    mono_assert(!!sig, "Expected valid sig paramater");
+    mono_assert(!!sig, "Expected valid sig parameter");
 
     const element_type = get_signature_arg1_type(sig);
     const buffer_ptr = get_arg_intptr(arg);
@@ -556,7 +523,7 @@ function _marshal_span_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): S
 }
 
 function _marshal_array_segment_to_js(arg: JSMarshalerArgument, sig?: JSMarshalerType): ArraySegment {
-    mono_assert(!!sig, "Expected valid sig paramater");
+    mono_assert(!!sig, "Expected valid sig parameter");
 
     const element_type = get_signature_arg1_type(sig);
     const buffer_ptr = get_arg_intptr(arg);

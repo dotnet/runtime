@@ -370,13 +370,13 @@ namespace
 // Creating structs using the macro table in CLRConfigValues.h
 //
 
-// These macros intialize ConfigDWORDInfo structs.
+// These macros initialize ConfigDWORDInfo structs.
 #define RETAIL_CONFIG_DWORD_INFO(symbol, name, defaultValue, description) \
     const CLRConfig::ConfigDWORDInfo CLRConfig::symbol = {name, defaultValue, CLRConfig::LookupOptions::Default};
 #define RETAIL_CONFIG_DWORD_INFO_EX(symbol, name, defaultValue, description, lookupOptions) \
     const CLRConfig::ConfigDWORDInfo CLRConfig::symbol = {name, defaultValue, lookupOptions};
 
-// These macros intialize ConfigStringInfo structs.
+// These macros initialize ConfigStringInfo structs.
 #define RETAIL_CONFIG_STRING_INFO(symbol, name, description) \
     const CLRConfig::ConfigStringInfo CLRConfig::symbol = {name, CLRConfig::LookupOptions::Default};
 #define RETAIL_CONFIG_STRING_INFO_EX(symbol, name, description, lookupOptions) \

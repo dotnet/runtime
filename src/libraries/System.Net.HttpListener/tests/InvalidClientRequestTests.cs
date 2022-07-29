@@ -94,6 +94,9 @@ namespace System.Net.Tests
             // No body
             yield return new object[] { "POST {path} HTTP/1.1", null, null, null, "Length Required" };
             yield return new object[] { "PUT {path} HTTP/1.1", null, null, null, "Length Required" };
+
+            // ? prior to path and query.  This may or may not fail, depending on the OS, but in either case it shouldn't crash.
+            yield return new object[] { "GET http://ab?cd{path} HTTP/1.1", null, null, null, "" };
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/2284", TestRuntimes.Mono)]

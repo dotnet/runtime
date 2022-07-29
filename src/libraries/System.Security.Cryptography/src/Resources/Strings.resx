@@ -96,6 +96,9 @@
   <data name="Argument_InvalidFlag" xml:space="preserve">
     <value>Value of flags is invalid.</value>
   </data>
+  <data name="Argument_InvalidHostnameOrIPAddress" xml:space="preserve">
+    <value>The provided value is not a valid DNS hostname or IP Address.</value>
+  </data>
   <data name="Argument_InvalidNameType" xml:space="preserve">
     <value>The value of 'nameType' is invalid.</value>
   </data>
@@ -107,6 +110,9 @@
   </data>
   <data name="Argument_InvalidRandomRange" xml:space="preserve">
     <value>Range of random number does not contain at least one possibility.</value>
+  </data>
+  <data name="Argument_InvalidSerialNumberBytes" xml:space="preserve">
+    <value>The provided serial number is invalid. Ensure the input is in big-endian byte order and that all redundant leading bytes have been removed.</value>
   </data>
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Value was invalid.</value>
@@ -254,6 +260,15 @@
   </data>
   <data name="Cryptography_Config_EncodedOIDError" xml:space="preserve">
     <value>Encoded OID length is too large (greater than 0x7f bytes).</value>
+  </data>
+  <data name="Cryptography_CRLBuilder_DatesReversed" xml:space="preserve">
+    <value>The provided thisUpdate value is later than the nextUpdate value.</value>
+  </data>
+  <data name="Cryptography_CRLBuilder_IssuerKeyUsageInvalid" xml:space="preserve">
+    <value>The issuer certificate's Key Usage extension is present but does not contain the CrlSign flag.</value>
+  </data>
+  <data name="Cryptography_CRLBuilder_ReasonNotSupported" xml:space="preserve">
+    <value>The specified revocation reason is not supported.</value>
   </data>
   <data name="Cryptography_CryptoStream_FlushFinalBlockTwice" xml:space="preserve">
     <value>FlushFinalBlock() method was called twice on a CryptoStream. It can only be called once.</value>
@@ -450,6 +465,9 @@
   <data name="Cryptography_MustTransformWholeBlock" xml:space="preserve">
     <value>TransformBlock may only process bytes in block sized increments.</value>
   </data>
+  <data name="Cryptography_NoPemOfLabel" xml:space="preserve">
+    <value>The contents do not contain a PEM with a '{0}' label, or the content is malformed.</value>
+  </data>
   <data name="Cryptography_NotValidPrivateKey" xml:space="preserve">
     <value>Key is not a valid private key.</value>
   </data>
@@ -597,11 +615,23 @@
   <data name="Cryptography_UnsupportedPaddingMode" xml:space="preserve">
     <value>The specified PaddingMode is not supported.</value>
   </data>
+  <data name="Cryptography_X500_MultiValued" xml:space="preserve">
+    <value>Single-element methods are not valid on an X.500 Relative Distinguished Name that has multiple elements.</value>
+  </data>
   <data name="Cryptography_X509_AIA_MustNotBuildEmpty" xml:space="preserve">
     <value>At least one of the ocspUris or caIssuersUris values must be non-empty.</value>
   </data>
   <data name="Cryptography_X509_AIA_NullValue" xml:space="preserve">
     <value>One of the ocspUris or caIssuersUris enumerables contains a null value.</value>
+  </data>
+  <data name="Cryptography_X509_AKID_NoSKID" xml:space="preserve">
+    <value>The provided certificate does not have a Subject Key Identifier extension.</value>
+  </data>
+  <data name="Cryptography_X509_CDP_MustNotBuildEmpty" xml:space="preserve">
+    <value>The collection of distribution URIs must be non-empty.</value>
+  </data>
+  <data name="Cryptography_X509_CDP_NullValue" xml:space="preserve">
+    <value>One of the provided CRL Distribution Point URIs is a null value.</value>
   </data>
   <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
     <value>Certificate '{0}' is corrupted.</value>
@@ -645,6 +675,9 @@
   <data name="Cryptography_X509_PKCS12_PersistKeySetNotSupported" xml:space="preserve">
     <value>The PKCS#12 PersistKeySet flag is not supported on this platform.</value>
   </data>
+  <data name="Cryptography_X509_SAN_UnknownIPAddressSize" xml:space="preserve">
+    <value>The Subject Alternative Name has an ipAddress entry that is not a recognized size.</value>
+  </data>
   <data name="Cryptography_X509_Store_RootUnsupported" xml:space="preserve">
     <value>Root certificate store is not supported on this platform.</value>
   </data>
@@ -674,6 +707,9 @@
   </data>
   <data name="Cryptography_X509_StoreRemoveFailure" xml:space="preserve">
     <value>The X509 certificate could not be removed from the store.</value>
+  </data>
+  <data name="Cryptography_X509_TooManySANs" xml:space="preserve">
+    <value>The X509 certificate has more than one Subject Alternative Name extension.</value>
   </data>
   <data name="Cryptography_X509Store_WouldModifyAdminTrust" xml:space="preserve">
     <value>Removing the requested certificate would modify admin trust settings, and has been denied.</value>

@@ -93,7 +93,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 
             MySite.mySite.Target(MySite.mySite, typed);
 
-            // call should suceed becasue of the IVT to Microsoft.CSharp
+            // call should suceed because of the IVT to Microsoft.CSharp
             Assert.Equal("CALLED", Class1.Result);
 
             // make a callsite as if it is contained inside "System.Exception"

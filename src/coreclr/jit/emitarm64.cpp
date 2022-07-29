@@ -7692,7 +7692,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
 /*****************************************************************************
  *
- *  Add an instruction referencing two register and consectutive stack-based local variable slots.
+ *  Add an instruction referencing two register and consecutive stack-based local variable slots.
  */
 void emitter::emitIns_R_R_S_S(
     instruction ins, emitAttr attr1, emitAttr attr2, regNumber reg1, regNumber reg2, int varx, int offs)
@@ -12694,9 +12694,9 @@ void emitter::emitDispInsHelp(
                     emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
                     size_t targetHandle = id->idDebugOnlyInfo()->idMemCookie;
 
-                    if (targetHandle == THT_IntializeArrayIntrinsics)
+                    if (targetHandle == THT_InitializeArrayIntrinsics)
                     {
-                        targetName = "IntializeArrayIntrinsics";
+                        targetName = "InitializeArrayIntrinsics";
                     }
                     else if (targetHandle == THT_GSCookieCheck)
                     {
