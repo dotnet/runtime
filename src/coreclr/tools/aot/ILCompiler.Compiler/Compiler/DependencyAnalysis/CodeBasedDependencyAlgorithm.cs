@@ -6,13 +6,15 @@ using System.Diagnostics;
 using Internal.IL;
 using Internal.Text;
 using Internal.TypeSystem;
+
+using ILCompiler.Compiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.DependencyAnalysis;
 
 using DependencyList=ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using CombinedDependencyList=System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
 using DependencyListEntry=ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
-using ILCompiler.Compiler.Compiler.DependencyAnalysis;
+
 
 namespace ILCompiler.DependencyAnalysis
 {

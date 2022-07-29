@@ -12,6 +12,7 @@ using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using ILCompiler.Dataflow;
 using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
@@ -27,7 +28,6 @@ using EcmaType = Internal.TypeSystem.Ecma.EcmaType;
 using CustomAttributeHandle = System.Reflection.Metadata.CustomAttributeHandle;
 using CustomAttributeTypeProvider = Internal.TypeSystem.Ecma.CustomAttributeTypeProvider;
 using MetadataExtensions = Internal.TypeSystem.Ecma.MetadataExtensions;
-using ILCompiler.Dataflow;
 
 namespace ILCompiler
 {

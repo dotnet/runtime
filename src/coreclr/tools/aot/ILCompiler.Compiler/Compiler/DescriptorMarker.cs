@@ -10,10 +10,12 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Xml.XPath;
+
 using ILCompiler;
 using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysis;
 using ILLink.Shared;
+
 using Internal.TypeSystem;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
@@ -184,6 +186,7 @@ namespace ILCompiler
             RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, _factory, type, "member marked via descriptor");
 
 #if false
+            // Getting the dependencies of a nested type should mark the rest, this code is not needed
             if (type.IsNested)
             {
                 var currentType = type;

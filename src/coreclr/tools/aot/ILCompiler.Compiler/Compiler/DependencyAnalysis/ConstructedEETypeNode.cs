@@ -4,10 +4,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using ILCompiler.Compiler.DependencyAnalysis;
+
 using Internal.Runtime;
 using Internal.TypeSystem;
 using Internal.IL;
-using ILCompiler.Compiler.Compiler.DependencyAnalysis;
 
 namespace ILCompiler.DependencyAnalysis
 {

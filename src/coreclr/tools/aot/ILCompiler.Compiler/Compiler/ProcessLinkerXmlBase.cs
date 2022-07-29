@@ -15,8 +15,10 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
+
 using ILCompiler.Dataflow;
 using ILLink.Shared;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -194,6 +196,7 @@ namespace ILCompiler
 
                 // TODO: Semantics differ and xml format is cecil specific, therefore they are discrepancies on things like nested types
                 // for now just hack replacing / for + to support basic resolving of nested types
+                // https://github.com/dotnet/runtime/issues/73083
                 fullname = fullname.Replace("/", "+");
                 TypeDesc type = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(assembly, fullname, throwIfNotFound: false);
 

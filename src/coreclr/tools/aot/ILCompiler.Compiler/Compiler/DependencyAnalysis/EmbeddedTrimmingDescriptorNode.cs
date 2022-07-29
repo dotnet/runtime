@@ -3,17 +3,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-
-using Internal.TypeSystem;
-using Internal.Runtime;
-using Internal.IL;
-
-using ILCompiler.DependencyAnalysisFramework;
-using Internal.TypeSystem.Ecma;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+
+using ILCompiler.DependencyAnalysisFramework;
+
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {

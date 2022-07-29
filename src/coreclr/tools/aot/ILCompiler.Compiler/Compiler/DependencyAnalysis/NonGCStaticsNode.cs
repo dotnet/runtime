@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using ILCompiler.Compiler.Compiler.DependencyAnalysis;
+
+using ILCompiler.Compiler.DependencyAnalysis;
+
 using Internal.Text;
 using Internal.TypeSystem;
 

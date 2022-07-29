@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using ILCompiler.Compiler.Compiler.DependencyAnalysis;
+
+using ILCompiler.Compiler.DependencyAnalysis;
+
 using Internal.Text;
 using Internal.TypeSystem;
 
