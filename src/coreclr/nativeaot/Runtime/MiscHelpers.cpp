@@ -48,6 +48,9 @@ COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 // Busy spin for the given number of iterations.
 EXTERN_C NATIVEAOT_API void __cdecl RhSpinWait(int32_t iterations)
 {
+    // limit the spin count in coop mode.
+    ASSERT(iterations > 0 && iterations <= 10000);
+
     YieldProcessorNormalizationInfo normalizationInfo;
     YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, iterations);
 }
