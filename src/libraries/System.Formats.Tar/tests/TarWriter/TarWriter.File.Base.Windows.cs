@@ -11,7 +11,7 @@ namespace System.Formats.Tar.Tests
         {
             Assert.True(entry.ModificationTime > DateTimeOffset.UnixEpoch);
 
-            // Archives created in Windows always set mode to 777
+            UnixFileMode expectedMode = Directory.Exists(filePath) ? DefaultDirectoryMode : WindowsFileMode;
             Assert.Equal(DefaultWindowsMode, entry.Mode);
 
             Assert.Equal(DefaultUid, entry.Uid);
