@@ -70,13 +70,13 @@ public unsafe class AliasingRetBuf
         return 100 + failures;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static void CallPtrPInvoke(Foo* fi)
     {
         *fi = AliasingRetBufNative.TransposeRetBufPtr(fi);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static void CallRefPInvoke(ref Foo fi)
     {
         fi = AliasingRetBufNative.TransposeRetBufRef(ref fi);
@@ -90,13 +90,13 @@ public unsafe class AliasingRetBuf
         fi = fooer.F;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static void CallPtrFPtr(Foo* fi, delegate* unmanaged[SuppressGCTransition]<Foo*, Foo> fptr)
     {
         *fi = fptr(fi);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static void CallRefFPtr(ref Foo fi, delegate* unmanaged[SuppressGCTransition]<ref Foo, Foo> fptr)
     {
         fi = fptr(ref fi);
