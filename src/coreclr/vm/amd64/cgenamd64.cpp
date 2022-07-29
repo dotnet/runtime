@@ -713,7 +713,7 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
     DWORD* pOffset          = (DWORD*) (pEndOfFunction)  - offsetNum;
     DWORD  offsetInFunc     = *pOffset;
 
-    _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/cGenAMD64.cpp", (offsetInFunc >= 0) && (offsetInFunc < functionSize));
+    _ASSERTE_ALL_BUILDS((offsetInFunc >= 0) && (offsetInFunc < functionSize));
 
     return offsetInFunc;
 }
@@ -772,7 +772,7 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
     }
     CONTRACTL_END;
 
-    // Move an an argument into the second argument register and jump to a target function.
+    // Move an argument into the second argument register and jump to a target function.
 
 #ifdef UNIX_AMD64_ABI
     *(UINT16 *)p = 0xBE48; // mov rsi, XXXXXX

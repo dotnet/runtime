@@ -22,9 +22,9 @@ namespace System.Tests
         {
             // Regression test for bug where a short input array caused an exception to be thrown
             byte[] inputBuffer = "abc"u8.ToArray();
-            char[] ouputBuffer = new char[4];
-            Convert.ToBase64CharArray(inputBuffer, 0, 3, ouputBuffer, 0);
-            Convert.ToBase64CharArray(inputBuffer, 0, 2, ouputBuffer, 0);
+            char[] outputBuffer = new char[4];
+            Convert.ToBase64CharArray(inputBuffer, 0, 3, outputBuffer, 0);
+            Convert.ToBase64CharArray(inputBuffer, 0, 2, outputBuffer, 0);
         }
 
         [Fact]

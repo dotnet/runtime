@@ -185,7 +185,7 @@ enum MethodDescClassification
 //
 // A MethodDesc is the representation of a method of a type.  These live in code:MethodDescChunk which in
 // turn lives in code:EEClass.   They are conceptually cold (we do not expect to access them in normal
-// program exectution, but we often fall short of that goal.
+// program execution, but we often fall short of that goal.
 //
 // A Method desc knows how to get at its metadata token code:GetMemberDef, its chunk
 // code:MethodDescChunk, which in turns knows how to get at its type code:MethodTable.
@@ -1461,7 +1461,7 @@ public:
     PCODE GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags = CORINFO_ACCESS_LDFTN);
 
     // Internal version of GetMultiCallableAddrOfCode. Returns NULL if attempt to acquire directly
-    // callable entrypoint would result into unnecesary allocation of indirection stub. Caller should use
+    // callable entrypoint would result into unnecessary allocation of indirection stub. Caller should use
     // indirect call via slot in this case.
     PCODE TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags);
 
@@ -1566,7 +1566,7 @@ public:
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
     // an MD for a generic instantiation...In other words the MethodDescs and the
     // MethodTable are guaranteed to be "tightly-knit", i.e. if one is present in
-    // an NGEN image then then other will be, and if one is "used" at runtime then
+    // an NGEN image then the other will be, and if one is "used" at runtime then
     // the other will be too.
     BOOL IsTightlyBoundToMethodTable();
 
@@ -1604,7 +1604,7 @@ public:
     // In general you don't want to call GetCallTarget - you want to
     // use either "call" directly or call MethodDesc::GetSingleCallableAddrOfVirtualizedCode and
     // then "CallTarget".  Note that GetCallTarget is approximately GetSingleCallableAddrOfCode
-    // but the additional wierdness that class-based-virtual calls (but not interface calls nor calls
+    // but the additional weirdness that class-based-virtual calls (but not interface calls nor calls
     // on proxies) are resolved to their target.  Because of this, many clients of "Call" (see above)
     // end up doing some resolution for interface calls and/or proxies themselves.
     PCODE GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType = TypeHandle());
@@ -3704,6 +3704,34 @@ public:
     CalledMethod * GetNext() { return m_pNext; }
 };
 #endif
+
+#ifdef FEATURE_READYTORUN
+struct ReadyToRunStandaloneMethodMetadata
+{
+    ReadyToRunStandaloneMethodMetadata() :
+        pByteData(nullptr),
+        cByteData(0),
+        pTypes(nullptr),
+        cTypes(0)
+    {}
+
+    ~ReadyToRunStandaloneMethodMetadata()
+    {
+        if (pByteData != nullptr)
+            delete[] pByteData;
+        if (pTypes != nullptr)
+            delete[] pTypes;
+    }
+
+    const uint8_t * pByteData;
+    size_t cByteData;
+    const TypeHandle * pTypes;
+    size_t cTypes;
+};
+
+ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(MethodDesc *pMD);
+void InitReadyToRunStandaloneMethodMetadata();
+#endif // FEATURE_READYTORUN
 
 #include "method.inl"
 

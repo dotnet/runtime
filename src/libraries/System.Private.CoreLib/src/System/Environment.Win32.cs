@@ -191,7 +191,7 @@ namespace System
                     // The docs don't call this out clearly, but experimenting shows that the error returned is the following.
                     if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                     {
-                        throw new InvalidOperationException(Win32Marshal.GetMessage(error));
+                        throw new InvalidOperationException(Marshal.GetPInvokeErrorMessage(error));
                     }
 
                     domainBuilder.EnsureCapacity((int)length);

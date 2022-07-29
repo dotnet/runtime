@@ -626,12 +626,11 @@ namespace System.Net.Http.Functional.Tests
                     await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
                         {
-                            using HttpClientHandler handler = CreateHttpClientHandler(version);
+                            using HttpClientHandler handler = CreateHttpClientHandler(version, allowAllCertificates: true);
                             using HttpClient client = CreateHttpClient(handler, useVersionString);
 
                             var socketsHttpHandler = GetUnderlyingSocketsHttpHandler(handler);
                             socketsHttpHandler.MaxConnectionsPerServer = 1;
-                            socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
 
                             // Dummy request to establish connection and ensure that the MaxConcurrentStreams setting has been acknowledged
                             await client.GetStringAsync(uri);
@@ -664,7 +663,7 @@ namespace System.Net.Http.Functional.Tests
                                 connection = await server.EstablishGenericConnectionAsync();
                             }
 
-                            using (connection)
+                            await using (connection)
                             {
                                 // Dummy request to ensure that the MaxConcurrentStreams setting has been acknowledged
                                 await connection.ReadRequestDataAsync(readBody: false);
@@ -682,7 +681,7 @@ namespace System.Net.Http.Functional.Tests
                                 await connection.ReadRequestDataAsync(readBody: false);
                                 await connection.SendResponseAsync();
                             };
-                        }, options: new Http3Options { MaxBidirectionalStreams = 1 });
+                        }, options: new Http3Options { MaxInboundBidirectionalStreams = 1 });
 
                     await WaitForEventCountersAsync(events);
                 });

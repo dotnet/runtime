@@ -187,6 +187,17 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetTotalAllocatedBytes")]
         internal static extern long RhGetTotalAllocatedBytes();
 
+        internal enum GCConfigurationType
+        {
+            Int64,
+            StringUtf8,
+            Boolean
+        }
+
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static unsafe partial void RhEnumerateConfigurationValues(void* configurationContext, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
+
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial long RhGetTotalAllocatedBytesPrecise();
@@ -449,12 +460,15 @@ namespace System.Runtime
         internal static extern int RhGetThunkSize();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetThreadLocalStorageForDynamicType")]
-        internal static extern IntPtr RhGetThreadLocalStorageForDynamicType(int index, int tlsStorageSize, int numTlsCells);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatchOnType")]
-        internal static extern IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot);
+        // For my life cannot figure out the ordering of modifiers this is expecting.
+#pragma warning disable IDE0036
+        internal static extern unsafe IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot, EETypePtr* pGenericContext);
+
+        internal static unsafe IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot)
+        {
+            return RhResolveDispatchOnType(instanceType, interfaceType, slot, null);
+        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetRuntimeHelperForType")]
@@ -631,34 +645,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
         internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
 
-        // The GC conservative reporting descriptor is a special structure of data that the GC
-        // parses to determine whether there are specific regions of memory that it should not
-        // collect or move around.
-        // This can only be used to report memory regions on the current stack and the structure must itself
-        // be located on the stack.
-        // This structure is contractually required to be 4 pointers in size. All details about
-        // the contents are abstracted into the runtime
-        // To use, place one of these structures on the stack, and then pass it by ref to a function
-        // which will pin the byref to create a pinned interior pointer.
-        // Then, call RhInitializeConservativeReportingRegion to mark the region as conservatively reported.
-        // When done, call RhDisableConservativeReportingRegion to disable conservative reporting, or
-        // simply let it be pulled off the stack.
-        internal struct ConservativelyReportedRegionDesc
-        {
-            private IntPtr _ptr1;
-            private IntPtr _ptr2;
-            private IntPtr _ptr3;
-            private IntPtr _ptr4;
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhInitializeConservativeReportingRegion")]
-        internal static extern unsafe void RhInitializeConservativeReportingRegion(ConservativelyReportedRegionDesc* regionDesc, void* bufferBegin, int cbBuffer);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhDisableConservativeReportingRegion")]
-        internal static extern unsafe void RhDisableConservativeReportingRegion(ConservativelyReportedRegionDesc* regionDesc);
-
         //
         // ETW helpers.
         //
@@ -683,7 +669,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpCheckedXchg")]
-        internal static extern object InterlockedExchange([NotNullIfNotNull("value")] ref object? location1, object? value);
+        internal static extern object InterlockedExchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpMemoryBarrier")]

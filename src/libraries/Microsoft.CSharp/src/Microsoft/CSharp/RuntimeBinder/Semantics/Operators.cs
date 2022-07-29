@@ -1283,11 +1283,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // Try the conversion - if it fails, do a cast without user defined casts.
-            Expr arg = tryConvert(pArgument, uofs.GetType());
-            if (arg == null)
-            {
-                arg = mustCast(pArgument, uofs.GetType(), CONVERTTYPE.NOUDC);
-            }
+            Expr arg =
+                tryConvert(pArgument, uofs.GetType()) ??
+                mustCast(pArgument, uofs.GetType(), CONVERTTYPE.NOUDC);
 
             return uofs.pfn(this, ek, flags, arg);
         }

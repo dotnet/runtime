@@ -10,8 +10,9 @@ trigger:
     include:
     - '*'
     exclude:
-    - /**/*.md
+    - '**.md'
     - eng/Version.Details.xml
+    - .devcontainer/*
     - .github/*
     - docs/*
     - LICENSE.TXT
@@ -35,8 +36,9 @@ pr:
     include:
     - '*'
     exclude:
-    - /**/*.md
+    - '**.md'
     - eng/Version.Details.xml
+    - .devcontainer/*
     - .github/*
     - docs/*
     - LICENSE.TXT

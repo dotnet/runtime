@@ -11,6 +11,7 @@ To merge pull requests, you must have write permissions in the repository. If yo
 * All changes should follow the existing code style. You can read more about different code styles at [docs/coding-guidelines](coding-guidelines/).
 * Use Draft pull requests for changes you are still working on but want early CI loop feedback. When you think your changes are ready for review, [change the status](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/changing-the-stage-of-a-pull-request) of your pull request.
 * Avoid rebasing your changes. If you are asked to make changes during the review process do them as a new commit.
+* To resolve merge conflicts, use "merge" instead of "rebase".
 
 ## Pull Request Ownership
 

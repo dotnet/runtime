@@ -2773,7 +2773,7 @@ void MethodContext::recGetArgClass(CORINFO_SIG_INFO*       sig,
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
 
     // Only setting values for CORINFO_SIG_INFO things the EE seems to pay attention to... this is necessary since some of the values
-    // are unset and fail our precise comparisions...
+    // are unset and fail our precise comparisons...
 
     SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.classInstCount, sig->sigInst.classInst, SigInstHandleMap, &key.sigInst_classInstCount, &key.sigInst_classInst_Index);
     SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap, &key.sigInst_methInstCount, &key.sigInst_methInst_Index);

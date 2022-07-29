@@ -186,38 +186,5 @@ namespace System.Formats.Tar.Tests
                 TarEntryFormat.Gnu => new GnuTarEntry(other),
                 _ => throw new FormatException($"Unexpected format: {targetFormat}")
             };
-
-        protected TarEntryType GetTarEntryTypeForTarEntryFormat(TarEntryType entryType, TarEntryFormat format)
-        {
-            if (format is TarEntryFormat.V7)
-            {
-                if (entryType is TarEntryType.RegularFile)
-                {
-                    return TarEntryType.V7RegularFile;
-                }
-            }
-            else
-            {
-                if (entryType is TarEntryType.V7RegularFile)
-                {
-                    return TarEntryType.RegularFile;
-                }
-            }
-            return entryType;
-        }
-
-        protected void CheckConversionType(TarEntry entry, TarEntryFormat expectedFormat)
-        {
-            Type expectedType = expectedFormat switch
-            {
-                TarEntryFormat.V7 => typeof(V7TarEntry),
-                TarEntryFormat.Ustar => typeof(UstarTarEntry),
-                TarEntryFormat.Pax => typeof(PaxTarEntry),
-                TarEntryFormat.Gnu => typeof(GnuTarEntry),
-                _ => throw new FormatException($"Unexpected format {expectedFormat}")
-            };
-
-            Assert.Equal(expectedType, entry.GetType());
-        }
     }
 }

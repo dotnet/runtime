@@ -9,7 +9,7 @@ parameters:
   #     Will only include paths specified in the list.
   #  3. exclude + include:
   #     1st we evaluate changes for all paths except ones in excluded list. If we can't find
-  #     any applicable changes like that, then we evaluate changes for incldued paths
+  #     any applicable changes like that, then we evaluate changes for included paths
   #     if any of these two finds changes, then a variable will be set to true.
   #  In order to consume this variable you need to reference it via: $[ dependencies.evaluate_paths.outputs['SetPathVars_<subset>.containschange'] ]
   #
@@ -40,7 +40,7 @@ jobs:
       - ${{ each path in parameters.paths }}:
         - template: evaluate-changed-paths.yml
           parameters:
-            subsetName: ${{ path.subset }} 
+            subsetName: ${{ path.subset }}
             arguments:
             # The commit that we're building is always a merge commit that is merging into the target branch.
             # So the first parent of the commit is on the target branch and the second parent is on the source branch.

@@ -741,7 +741,7 @@ struct LoaderHeapFreeBlock
             {
                 memset((BYTE*)pMem + GetOsPageSize(), 0xcc, dwTotalSize);
             }
-#endif // DEBUG            
+#endif // DEBUG
 
             LoaderHeapFreeBlock *pNewBlock = new (nothrow) LoaderHeapFreeBlock;
             // If we fail allocating the LoaderHeapFreeBlock, ignore the failure and don't insert the free block at all.
@@ -1280,7 +1280,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         if (IsInterleaved())
         {
-            // The end of commited region for interleaved heaps points to the end of the executable
+            // The end of committed region for interleaved heaps points to the end of the executable
             // page and the data pages goes right after that. So we skip the data page here.
             m_pPtrToEndOfCommittedRegion += GetOsPageSize();
         }
@@ -1615,8 +1615,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
                 LoaderHeapSniffer::PitchSniffer(&message);
             }
 
-            StackScratchBuffer scratch;
-            DbgAssertDialog(szFile, lineNum, (char*) message.GetANSI(scratch));
+            DbgAssertDialog(szFile, lineNum, (char*) message.GetUTF8());
 
         }
     }
@@ -2229,8 +2228,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
 
         }
 
-        StackScratchBuffer scratch;
-        DbgAssertDialog(__FILE__, __LINE__, (char*) message.GetANSI(scratch));
+        DbgAssertDialog(__FILE__, __LINE__, (char*) message.GetUTF8());
 
     }
 

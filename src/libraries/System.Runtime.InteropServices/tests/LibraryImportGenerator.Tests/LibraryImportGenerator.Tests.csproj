@@ -3,6 +3,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <IncludeLibraryImportGeneratorSources>false</IncludeLibraryImportGeneratorSources>
   </PropertyGroup>
 
   <ItemGroup>

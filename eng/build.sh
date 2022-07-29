@@ -392,7 +392,7 @@ while [[ $# > 0 ]]; do
         echo "No cmake args supplied." 1>&2
         exit 1
       fi
-      cmakeargs="${cmakeargs} ${opt} $2"
+      cmakeargs="${cmakeargs} $2"
       shift 2
       ;;
 

@@ -81,7 +81,7 @@ namespace System.Net.Http.Functional.Tests
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
             Task serverTask = Task.Run(async () =>
             {
-                using Http2LoopbackConnection connection = await firstServer.EstablishConnectionAsync();
+                await using Http2LoopbackConnection connection = await firstServer.EstablishConnectionAsync();
 
                 int streamId = await connection.ReadRequestHeaderAsync();
                 await connection.WriteFrameAsync(new AltSvcFrame($"https://{firstServer.Address.IdnHost}:{firstServer.Address.Port}", $"h3=\"{secondServer.Address.IdnHost}:{secondServer.Address.Port}\"", streamId: 0));
@@ -106,7 +106,7 @@ namespace System.Net.Http.Functional.Tests
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
             Task serverTask = Task.Run(async () =>
             {
-                using Http2LoopbackConnection connection = await firstServer.EstablishConnectionAsync();
+                await using Http2LoopbackConnection connection = await firstServer.EstablishConnectionAsync();
 
                 int streamId = await connection.ReadRequestHeaderAsync();
                 await connection.SendDefaultResponseHeadersAsync(streamId);

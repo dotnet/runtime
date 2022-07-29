@@ -49,10 +49,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 obj = (T)CreateObject(ref state.Current);
 
-                if (obj is IJsonOnDeserializing onDeserializing)
-                {
-                    onDeserializing.OnDeserializing();
-                }
+                jsonTypeInfo.OnDeserializing?.Invoke(obj);
 
                 if (argumentState.FoundPropertyCount > 0)
                 {
@@ -83,9 +80,9 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (useExtensionProperty)
                         {
-                            Debug.Assert(jsonPropertyInfo == state.Current.JsonTypeInfo.DataExtensionProperty);
+                            Debug.Assert(jsonPropertyInfo == state.Current.JsonTypeInfo.ExtensionDataProperty);
                             state.Current.JsonPropertyNameAsString = dataExtKey;
-                            JsonSerializer.CreateDataExtensionProperty(obj, jsonPropertyInfo, options);
+                            JsonSerializer.CreateExtensionDataProperty(obj, jsonPropertyInfo, options);
                         }
 
                         ReadPropertyValue(obj, ref state, ref tempReader, jsonPropertyInfo, useExtensionProperty);
@@ -175,10 +172,7 @@ namespace System.Text.Json.Serialization.Converters
                     state.ReferenceId = null;
                 }
 
-                if (obj is IJsonOnDeserializing onDeserializing)
-                {
-                    onDeserializing.OnDeserializing();
-                }
+                jsonTypeInfo.OnDeserializing?.Invoke(obj);
 
                 if (argumentState.FoundPropertyCount > 0)
                 {
@@ -194,9 +188,9 @@ namespace System.Text.Json.Serialization.Converters
                         }
                         else
                         {
-                            Debug.Assert(jsonPropertyInfo == state.Current.JsonTypeInfo.DataExtensionProperty);
+                            Debug.Assert(jsonPropertyInfo == state.Current.JsonTypeInfo.ExtensionDataProperty);
 
-                            JsonSerializer.CreateDataExtensionProperty(obj, jsonPropertyInfo, options);
+                            JsonSerializer.CreateExtensionDataProperty(obj, jsonPropertyInfo, options);
                             object extDictionary = jsonPropertyInfo.GetValueAsObject(obj)!;
 
                             if (extDictionary is IDictionary<string, JsonElement> dict)
@@ -216,10 +210,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            if (obj is IJsonOnDeserialized onDeserialized)
-            {
-                onDeserialized.OnDeserialized();
-            }
+            jsonTypeInfo.OnDeserialized?.Invoke(obj);
 
             // Unbox
             Debug.Assert(obj != null);
@@ -534,7 +525,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
-            jsonTypeInfo.ValidateCanBeUsedForDeserialization();
+            jsonTypeInfo.ValidateCanBeUsedForMetadataSerialization();
 
             if (jsonTypeInfo.ParameterCount != jsonTypeInfo.ParameterCache!.Count)
             {

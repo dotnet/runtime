@@ -429,10 +429,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (roleObjectEntry != null)
-                {
-                    roleObjectEntry.Dispose();
-                }
+                roleObjectEntry?.Dispose();
             }
 
             // invalidate the role collection so that it gets loaded again next time
@@ -712,11 +709,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedRoles == null)
-                {
-                    _cachedRoles = new ActiveDirectoryRoleCollection(GetRoles());
-                }
-                return _cachedRoles;
+                return _cachedRoles ??= new ActiveDirectoryRoleCollection(GetRoles());
             }
         }
 
@@ -1005,10 +998,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.InvalidFlags, nameof(flag));
             }
 
-            if (domainName == null)
-            {
-                domainName = DirectoryContext.GetLoggedOnDomain();
-            }
+            domainName ??= DirectoryContext.GetLoggedOnDomain();
 
             // call DsGetDcName
             errorCode = Locator.DsGetDcNameWrapper(null, domainName, siteName, (long)flag | (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);

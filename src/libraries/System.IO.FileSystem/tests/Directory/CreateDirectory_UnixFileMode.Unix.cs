@@ -14,7 +14,7 @@ namespace System.IO.Tests
             return Directory.CreateDirectory(path, AllAccess);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsStartingProcessesSupported))]
         [MemberData(nameof(TestUnixFileModes))]
         public void CreateWithUnixFileMode(UnixFileMode mode)
         {

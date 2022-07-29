@@ -665,7 +665,7 @@ pal::string_t pal::get_current_os_rid_platform()
     return ridOS;
 }
 #elif defined(TARGET_FREEBSD)
-// On FreeBSD get major verion. Minors should be compatible
+// On FreeBSD get major version. Minors should be compatible
 pal::string_t pal::get_current_os_rid_platform()
 {
     pal::string_t ridOS;
@@ -755,7 +755,7 @@ pal::string_t pal::get_current_os_rid_platform()
 #else
 // For some distros, we don't want to use the full version from VERSION_ID. One example is
 // Red Hat Enterprise Linux, which includes a minor version in their VERSION_ID but minor
-// versions are backwards compatable.
+// versions are backwards compatible.
 //
 // In this case, we'll normalized RIDs like 'rhel.7.2' and 'rhel.7.3' to a generic
 // 'rhel.7'. This brings RHEL in line with other distros like CentOS or Debian which

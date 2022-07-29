@@ -10,7 +10,7 @@ namespace System.Xml
     internal static class XmlComplianceUtil
     {
         // Replaces \r\n, \n, \r and \t with single space (0x20) and then removes spaces
-        // at the beggining and the end of the string and replaces sequences of spaces
+        // at the beginning and the end of the string and replaces sequences of spaces
         // with a single space.
         public static string NonCDataNormalize(string value)
         {
@@ -59,10 +59,7 @@ namespace System.Xml
                 }
                 if (j > i + 1 || value[i] != 0x20)
                 {
-                    if (norValue == null)
-                    {
-                        norValue = new StringBuilder(len);
-                    }
+                    norValue ??= new StringBuilder(len);
                     norValue.Append(value, startPos, i - startPos);
                     norValue.Append((char)0x20);
                     startPos = j;
@@ -118,10 +115,7 @@ namespace System.Xml
                     continue;
                 }
 
-                if (norValue == null)
-                {
-                    norValue = new StringBuilder(len);
-                }
+                norValue ??= new StringBuilder(len);
                 if (startPos < i)
                 {
                     norValue.Append(value, startPos, i - startPos);

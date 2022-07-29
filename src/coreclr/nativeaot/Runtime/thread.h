@@ -8,6 +8,10 @@ class ThreadStore;
 class CLREventStatic;
 class Thread;
 
+#ifdef TARGET_UNIX
+#include "UnixContext.h"
+#endif
+
 // The offsets of some fields in the thread (in particular, m_pTransitionFrame) are known to the compiler and get
 // inlined into the code.  Let's make sure they don't change just because we enable/disable server GC in a particular
 // runtime build.
@@ -28,10 +32,10 @@ class Thread;
 #endif // HOST_64BIT
 
 #define TOP_OF_STACK_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-1)
-#define REDIRECTED_THREAD_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-2)
 
-#define DYNAMIC_TYPE_TLS_OFFSET_FLAG 0x80000000
-
+// the thread has been interrupted and context for the interruption point
+// can be retrieved via GetInterruptedContext()
+#define INTERRUPTED_THREAD_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-2)
 
 enum SyncRequestResult
 {
@@ -66,21 +70,14 @@ struct ThreadBuffer
 {
     uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
     uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
-#if DACCESS_COMPILE
-    volatile
     PInvokeTransitionFrame* m_pTransitionFrame;
-#else
-    PInvokeTransitionFrame* m_pTransitionFrame;
-#endif
     PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode
     PInvokeTransitionFrame* m_pCachedTransitionFrame;
     PTR_Thread              m_pNext;                                // used by ThreadStore's SList<Thread>
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
-#ifdef HOST_64BIT
-    uintptr_t              m_uHijackedReturnValueFlags;            // used on ARM64 only; however, ARM64 and AMD64 share field offsets
-#endif // HOST_64BIT
+    uintptr_t               m_uHijackedReturnValueFlags;            
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
     PTR_PTR_VOID            m_pThreadLocalModuleStatics;
@@ -91,17 +88,14 @@ struct ThreadBuffer
     uint64_t                m_uPalThreadIdForLogging;               // @TODO: likely debug-only
     EEThreadId              m_threadId;
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
+    NATIVE_CONTEXT*         m_interruptedContext;                   // context for an asynchronously interrupted thread.
 #ifdef FEATURE_SUSPEND_REDIRECTION
-    uint8_t*                m_redirectionContextBuffer;              // storage for redirection context, allocated on demand
-    CONTEXT*                m_redirectionContext;                    // legacy context somewhere inside the context buffer
+    uint8_t*                m_redirectionContextBuffer;             // storage for redirection context, allocated on demand
 #endif //FEATURE_SUSPEND_REDIRECTION
+
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
-
-    // Thread Statics Storage for dynamic types
-    uint32_t          m_numDynamicTypesTlsCells;
-    PTR_PTR_UInt8   m_pDynamicTypesTlsCells;
 
 };
 
@@ -141,8 +135,19 @@ private:
     void ClearState(ThreadStateFlags flags);
     bool IsStateSet(ThreadStateFlags flags);
 
-    static UInt32_BOOL HijackCallback(HANDLE hThread, PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext);
-    bool InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTargets[]);
+
+    static void HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack);
+
+    //
+    // Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.
+    // Thus they cannot have any parameters or return anything.
+    //
+    typedef void HijackFunc();
+
+    void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
+    void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
+    void HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction);
+    bool InlineSuspend(NATIVE_CONTEXT* interruptedContext);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
     bool Redirect();
@@ -153,9 +158,6 @@ private:
     void CrossThreadUnhijack();
     void UnhijackWorker();
     void EnsureRuntimeInitialized();
-#ifdef _DEBUG
-    bool DebugIsSuspended();
-#endif
 
     //
     // SyncState members
@@ -183,7 +185,7 @@ public:
     bool GcScanRoots(GcScanRootsCallbackFunc * pfnCallback, void * token, PTR_PAL_LIMITED_CONTEXT pInitialContext);
 #endif
 
-    bool                Hijack();
+    void                Hijack();
     void                Unhijack();
 #ifdef FEATURE_GC_STRESS
     static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
@@ -200,9 +202,6 @@ public:
 
     void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
 
-    PTR_UInt8           AllocateThreadLocalStorageForDynamicType(uint32_t uTlsTypeOffset, uint32_t tlsStorageSize, uint32_t numTlsCells);
-
-    PTR_UInt8           GetThreadLocalStorageForDynamicType(uint32_t uTlsTypeOffset);
     PTR_UInt8           GetThreadLocalStorage(uint32_t uTlsIndex, uint32_t uTlsStartOffset);
 
     void                PushExInfo(ExInfo * pExInfo);
@@ -257,7 +256,6 @@ public:
     //
     // Managed/unmanaged interop transitions support APIs
     //
-    void WaitForSuspend();
     void WaitForGC(PInvokeTransitionFrame* pTransitionFrame);
 
     void ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame);
@@ -274,8 +272,10 @@ public:
     Object* GetThreadStaticStorageForModule(uint32_t moduleIndex);
     bool SetThreadStaticStorageForModule(Object* pStorage, uint32_t moduleIndex);
 
+    NATIVE_CONTEXT* GetInterruptedContext();
+
 #ifdef FEATURE_SUSPEND_REDIRECTION
-    CONTEXT* GetRedirectionContext();
+    NATIVE_CONTEXT* EnsureRedirectionContext();
 #endif //FEATURE_SUSPEND_REDIRECTION
 };
 

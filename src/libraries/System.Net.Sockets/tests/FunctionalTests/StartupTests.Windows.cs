@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -88,7 +89,8 @@ namespace System.Net.Sockets.Tests
         public static void Ctor_SafeHandle() => RemoteExecutor.Invoke(() =>
         {
             using var pipe = new AnonymousPipeServerStream();
-            SocketException se = Assert.Throws<SocketException>(() => new Socket(new SafeSocketHandle(pipe.ClientSafePipeHandle.DangerousGetHandle(), ownsHandle: false)));
+            using SafeHandle clientSafeHandle = pipe.ClientSafePipeHandle;
+            SocketException se = Assert.Throws<SocketException>(() => new Socket(new SafeSocketHandle(clientSafeHandle.DangerousGetHandle(), ownsHandle: false)));
             Assert.Equal(SocketError.NotSocket, se.SocketErrorCode);
         }).Dispose();
     }

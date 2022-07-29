@@ -431,11 +431,8 @@ namespace System.Xml.XPath
                         }
                         break;
                     case XPathNamespaceScope.All:
-                        a = GetFirstNamespaceDeclarationGlobal(e);
-                        if (a == null)
-                        {
-                            a = GetXmlNamespaceDeclaration();
-                        }
+                        a = GetFirstNamespaceDeclarationGlobal(e) ??
+                            GetXmlNamespaceDeclaration();
                         break;
                 }
                 if (a != null)

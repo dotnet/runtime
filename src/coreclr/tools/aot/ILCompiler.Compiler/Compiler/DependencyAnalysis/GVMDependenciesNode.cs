@@ -117,11 +117,6 @@ namespace ILCompiler.DependencyAnalysis
                     potentialOverrideType.ConvertToCanonForm(CanonicalFormKind.Specific) != potentialOverrideType)
                     continue;
 
-                // Similarly, if the type is canonical but this method instantiation isn't, don't mix them.
-                if (!methodIsShared &&
-                    potentialOverrideType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                    continue;
-
                 // If this is an interface gvm, look for types that implement the interface
                 // and other instantantiations that have the same canonical form.
                 // This ensure the various slot numbers remain equivalent across all types where there is an equivalence

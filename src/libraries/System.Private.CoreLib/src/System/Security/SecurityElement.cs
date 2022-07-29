@@ -18,7 +18,7 @@ namespace System.Security
         private const int AttributesTypical = 4 * 2;  // 4 attributes, times 2 strings per attribute
         private const int ChildrenTypical = 1;
 
-        private static readonly char[] s_escapeChars = new char[] { '<', '>', '\"', '\'', '&' };
+        private const string EscapeChars = "<>\"'&";
         private static readonly string[] s_escapeStringPairs = new string[]
         {
             // these must be all once character escape sequences or a new escaping algorithm is needed
@@ -318,7 +318,7 @@ namespace System.Security
             return c.ToString();
         }
 
-        [return: NotNullIfNotNull("str")]
+        [return: NotNullIfNotNull(nameof(str))]
         public static string? Escape(string? str)
         {
             if (str == null)
@@ -326,36 +326,16 @@ namespace System.Security
 
             StringBuilder? sb = null;
 
-            int strLen = str.Length;
-            int index; // Pointer into the string that indicates the location of the current '&' character
-            int newIndex = 0; // Pointer into the string that indicates the start index of the "remaining" string (that still needs to be processed).
-
-            while (true)
+            ReadOnlySpan<char> span = str;
+            int pos;
+            while ((pos = span.IndexOfAny(EscapeChars)) >= 0)
             {
-                index = str.IndexOfAny(s_escapeChars, newIndex);
-
-                if (index < 0)
-                {
-                    if (sb == null)
-                        return str;
-                    else
-                    {
-                        sb.Append(str, newIndex, strLen - newIndex);
-                        return sb.ToString();
-                    }
-                }
-                else
-                {
-                    sb ??= new StringBuilder();
-
-                    sb.Append(str, newIndex, index - newIndex);
-                    sb.Append(GetEscapeSequence(str[index]));
-
-                    newIndex = (index + 1);
-                }
+                sb ??= new StringBuilder();
+                sb.Append(span.Slice(0, pos)).Append(GetEscapeSequence(span[pos]));
+                span = span.Slice(pos + 1);
             }
 
-            // no normal exit is possible
+            return sb == null ? str : sb.Append(span).ToString();
         }
 
         private static string GetUnescapeSequence(string str, int index, out int newIndex)

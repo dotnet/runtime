@@ -390,10 +390,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void CacheRecord(RecordBuilder record)
         {
-            if (_outputCache == null)
-            {
-                _outputCache = new ArrayList();
-            }
+            _outputCache ??= new ArrayList();
 
             _outputCache.Add(record.MainNode.Clone());
         }
@@ -660,7 +657,7 @@ namespace System.Xml.Xsl.XsltOld
                         break;
                     }
                 }
-                Debug.Assert(0 <= i, "find char wasn't realy find");
+                Debug.Assert(0 <= i, "find char wasn't really find");
                 pos++;
             }
 

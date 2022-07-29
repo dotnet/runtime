@@ -91,8 +91,7 @@ namespace System.Net
 
         internal async Task WriteWebSocketHandshakeHeadersAsync()
         {
-            if (_closed)
-                throw new ObjectDisposedException(GetType().ToString());
+            ObjectDisposedException.ThrowIf(_closed, this);
 
             if (_stream.CanWrite)
             {

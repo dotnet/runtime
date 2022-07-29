@@ -33,12 +33,21 @@ namespace System.IO.Compression
             {
                 case CompressionMode.Compress:
                     if (!stream.CanWrite)
+                    {
                         throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(stream));
+                    }
+
+                    _encoder.SetQuality(BrotliUtils.Quality_Default);
+                    _encoder.SetWindow(BrotliUtils.WindowBits_Default);
                     break;
+
                 case CompressionMode.Decompress:
                     if (!stream.CanRead)
+                    {
                         throw new ArgumentException(SR.Stream_FalseCanRead, nameof(stream));
+                    }
                     break;
+
                 default:
                     throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(mode));
             }

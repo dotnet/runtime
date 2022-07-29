@@ -2365,6 +2365,12 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     return false; // not encodable
 }
 
+// true if this 'imm' can be encoded as a input operand to a ccmp instruction
+/*static*/ bool emitter::emitIns_valid_imm_for_ccmp(INT64 imm)
+{
+    return ((imm & 0x01f) == imm);
+}
+
 // true if 'imm' can be encoded as an offset in a ldp/stp instruction
 /*static*/ bool emitter::canEncodeLoadOrStorePairOffset(INT64 imm, emitAttr attr)
 {
@@ -7437,7 +7443,7 @@ void emitter::emitIns_R_I_FLAGS_COND(
                 ins = insReverse(ins);
                 imm = -imm;
             }
-            if ((imm >= 0) && (imm <= 31))
+            if (isValidUimm5(imm))
             {
                 cfi.imm5  = imm;
                 cfi.flags = flags;
@@ -7686,7 +7692,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
 /*****************************************************************************
  *
- *  Add an instruction referencing two register and consectutive stack-based local variable slots.
+ *  Add an instruction referencing two register and consecutive stack-based local variable slots.
  */
 void emitter::emitIns_R_R_S_S(
     instruction ins, emitAttr attr1, emitAttr attr2, regNumber reg1, regNumber reg2, int varx, int offs)
@@ -8434,12 +8440,9 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
     /* Figure out the encoding format of the instruction */
 
-    bool idjShort = false;
     switch (ins)
     {
         case INS_bl_local:
-            idjShort = true;
-            FALLTHROUGH;
         case INS_b:
             // Unconditional jump is a single form.
             // Assume is long in case we cross hot/cold sections.
@@ -8473,7 +8476,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
     id->idIns(ins);
     id->idInsFmt(fmt);
-    id->idjShort = idjShort;
+    id->idjShort = false;
 
 #ifdef DEBUG
     // Mark the finally call
@@ -8489,15 +8492,14 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
         // Skip unconditional jump that has a single form.
         // The target needs to be relocated.
-        if (!idjShort)
-        {
-            id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+        id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
 
 #ifdef DEBUG
-            if (emitComp->opts.compLongAddress) // Force long branches
-                id->idjKeepLong = 1;
-#endif // DEBUG
+        if (emitComp->opts.compLongAddress) // Force long branches
+        {
+            id->idjKeepLong = true;
         }
+#endif // DEBUG
     }
     else
     {
@@ -12692,9 +12694,9 @@ void emitter::emitDispInsHelp(
                     emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
                     size_t targetHandle = id->idDebugOnlyInfo()->idMemCookie;
 
-                    if (targetHandle == THT_IntializeArrayIntrinsics)
+                    if (targetHandle == THT_InitializeArrayIntrinsics)
                     {
-                        targetName = "IntializeArrayIntrinsics";
+                        targetName = "InitializeArrayIntrinsics";
                     }
                     else if (targetHandle == THT_GSCookieCheck)
                     {
@@ -12984,7 +12986,7 @@ void emitter::emitDispInsHelp(
             cfi.immCFVal = (unsigned)emitGetInsSC(id);
             emitDispImm(cfi.imm5, true);
             emitDispFlags(cfi.flags);
-            printf(",");
+            printf(", ");
             emitDispCond(cfi.cond);
             break;
 
@@ -13054,7 +13056,7 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg2(), size, true);
             cfi.immCFVal = (unsigned)emitGetInsSC(id);
             emitDispFlags(cfi.flags);
-            printf(",");
+            printf(", ");
             emitDispCond(cfi.cond);
             break;
 

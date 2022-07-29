@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace Generators
 {
@@ -35,9 +36,14 @@ namespace Generators
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            const string EventSourceAutoGenerateAttribute = "System.Diagnostics.Tracing.EventSourceAutoGenerateAttribute";
+
             IncrementalValuesProvider<EventSourceClass> eventSourceClasses =
-                context.SyntaxProvider
-                .CreateSyntaxProvider(IsSyntaxTargetForGeneration, GetSemanticTargetForGeneration)
+                context.SyntaxProvider.ForAttributeWithMetadataName(
+                    context,
+                    EventSourceAutoGenerateAttribute,
+                    (node, _) => node is ClassDeclarationSyntax,
+                    GetSemanticTargetForGeneration)
                 .Where(x => x is not null);
 
             context.RegisterSourceOutput(eventSourceClasses, EmitSourceFile);

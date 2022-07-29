@@ -697,12 +697,7 @@ namespace System.Reflection.Emit
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern object GetRegisteredToken(int token);
 
-        internal ITokenGenerator GetTokenGenerator()
-        {
-            if (token_gen == null)
-                token_gen = new ModuleBuilderTokenGenerator(this);
-            return token_gen;
-        }
+        internal ITokenGenerator GetTokenGenerator() => token_gen ??= new ModuleBuilderTokenGenerator(this);
 
         // Called from the runtime to return the corresponding finished reflection object
         internal static object RuntimeResolve(object obj)
@@ -744,8 +739,7 @@ namespace System.Reflection.Emit
 
         internal void CreateGlobalType()
         {
-            if (global_type == null)
-                global_type = new TypeBuilder(this, 0, 1);
+            global_type ??= new TypeBuilder(this, 0, 1);
         }
 
         public override Assembly Assembly
@@ -780,6 +774,8 @@ namespace System.Reflection.Emit
         internal ModuleBuilder InternalModule => this;
 
         internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
+
+        protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(_impl);
 
         [RequiresUnreferencedCode("Methods might be removed")]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)

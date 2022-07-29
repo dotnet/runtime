@@ -757,6 +757,12 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
 {
     if (PALIsInitialized())
     {
+        CLRConfigNoCache enableDumpOnSigTerm = CLRConfigNoCache::Get("EnableDumpOnSigTerm", /*noprefix*/ false, &getenv);
+        DWORD val = 0;
+        if (enableDumpOnSigTerm.IsSet() && enableDumpOnSigTerm.TryAsInteger(10, val) && val == 1)
+        {
+            PROCCreateCrashDumpIfEnabled(code);
+        }
         // g_pSynchronizationManager shouldn't be null if PAL is initialized.
         _ASSERTE(g_pSynchronizationManager != nullptr);
 

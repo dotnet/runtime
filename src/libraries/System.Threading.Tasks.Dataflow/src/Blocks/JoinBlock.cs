@@ -795,7 +795,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             lock (_sharedResources.IncomingLock)
             {
                 _decliningPermanently = true;
-                if (_messages != null) _messages.Clear();
+                _messages?.Clear();
             }
 
             // Release any postponed messages

@@ -103,7 +103,7 @@ mono_flight_recorder_init (size_t max_count, size_t payload_size)
 
 	// First byte after end of pointer array is the flexible-shape memory
 	intptr_t memory = (intptr_t) &recorder->items[recorder->max_count];
-	for (int i=0; i < recorder->max_count; i++) {
+	for (gsize i=0; i < recorder->max_count; i++) {
 		recorder->items [i] = (MonoFlightRecorderItem *) (memory + (item_size * i));
 		g_assert ((intptr_t) recorder->items [i] < end_of_memory);
 	}

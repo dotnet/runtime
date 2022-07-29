@@ -305,7 +305,7 @@ namespace System.Xml
         //Hashtable namespaces;
         // linked list of pushed nametables (to support nested binary-xml documents)
         private NestedBinXml? _prevNameInfo;
-        // XmlTextReader to handle embeded text blocks
+        // XmlTextReader to handle embedded text blocks
         private XmlReader? _textXmlReader;
         // close input flag
         private readonly bool _closeInput;
@@ -2766,11 +2766,7 @@ namespace System.Xml
             while (PeekToken() == BinXmlToken.CData)
             {
                 _pos++; // skip over token byte
-                if (sb == null)
-                {
-                    sb = new StringBuilder(value.Length + value.Length / 2);
-                    sb.Append(value);
-                }
+                sb ??= new StringBuilder(value.Length + value.Length / 2).Append(value);
                 sb.Append(ParseText());
             }
             if (sb != null)

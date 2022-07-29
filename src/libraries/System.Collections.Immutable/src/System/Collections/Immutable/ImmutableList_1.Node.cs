@@ -1038,10 +1038,7 @@ namespace System.Collections.Immutable
                 {
                     if (match(item))
                     {
-                        if (list == null)
-                        {
-                            list = new List<T>();
-                        }
+                        list ??= new List<T>();
 
                         list.Add(item);
                     }

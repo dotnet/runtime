@@ -93,9 +93,23 @@ namespace Sample
             return recursiveFib (n - 1) + recursiveFib (n - 2);
         }
 
+#if false
+            // dead code to prove that starting user threads isn't possible on the perftracing runtime
+            public static void Meth() {
+                    Thread.Sleep (500);
+                    while (!GetCancellationToken().IsCancellationRequested) {
+                            Console.WriteLine ("ping");
+                            Thread.Sleep (500);
+                    }
+            }
+#endif
+
         public static async Task<double> StartAsyncWork(int N)
         {
             CancellationToken ct = GetCancellationToken();
+#if false
+            new Thread(new ThreadStart(Meth)).Start();
+#endif
             await Task.Delay(1);
             long b;
             WasmHelloEventSource.Instance.NewCallsCounter();

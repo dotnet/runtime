@@ -59,10 +59,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void InsertExtensionNamespace(string nspace)
         {
-            if (_extensionNamespaces == null)
-            {
-                _extensionNamespaces = new Hashtable();
-            }
+            _extensionNamespaces ??= new Hashtable();
             _extensionNamespaces[nspace] = null;
         }
 
@@ -77,10 +74,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void InsertExcludedNamespace(string nspace)
         {
-            if (_excludedNamespaces == null)
-            {
-                _excludedNamespaces = new Hashtable();
-            }
+            _excludedNamespaces ??= new Hashtable();
             _excludedNamespaces[nspace] = null;
         }
 
@@ -97,10 +91,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             Debug.Assert(variable != null);
 
-            if (_variables == null)
-            {
-                _variables = new Hashtable();
-            }
+            _variables ??= new Hashtable();
             _variables[variable.Name!] = variable;
         }
 

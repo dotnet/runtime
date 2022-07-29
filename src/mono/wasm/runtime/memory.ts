@@ -1,3 +1,4 @@
+import monoWasmThreads from "consts:monoWasmThreads";
 import { Module, runtimeHelpers } from "./imports";
 import { mono_assert } from "./types";
 import { VoidPtr, NativePointer, ManagedPointer } from "./types/emscripten";
@@ -103,7 +104,7 @@ export function setI32(offset: _MemOffset, value: number): void {
     Module.HEAP32[<any>offset >>> 2] = value;
 }
 
-function autoThrowI52 (error: I52Error) {
+function autoThrowI52(error: I52Error) {
     if (error === I52Error.NONE)
         return;
 
@@ -138,14 +139,19 @@ export function setU52(offset: _MemOffset, value: number): void {
 
 export function setI64Big(offset: _MemOffset, value: bigint): void {
     mono_assert(is_bigint_supported, "BigInt is not supported.");
+    mono_assert(typeof value === "bigint", () => `Value is not an bigint: ${value} (${typeof (value)})`);
+    mono_assert(value >= min_int64_big && value <= max_int64_big, () => `Overflow: value ${value} is out of ${min_int64_big} ${max_int64_big} range`);
+
     HEAPI64[<any>offset >>> 3] = value;
 }
 
 export function setF32(offset: _MemOffset, value: number): void {
+    mono_assert(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
     Module.HEAPF32[<any>offset >>> 2] = value;
 }
 
 export function setF64(offset: _MemOffset, value: number): void {
+    mono_assert(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
     Module.HEAPF64[<any>offset >>> 3] = value;
 }
 
@@ -211,8 +217,12 @@ export function getF64(offset: _MemOffset): number {
     return Module.HEAPF64[<any>offset >>> 3];
 }
 
-export function afterUpdateGlobalBufferAndViews(buffer: Buffer): void {
+let max_int64_big: BigInt;
+let min_int64_big: BigInt;
+export function afterUpdateGlobalBufferAndViews(buffer: ArrayBufferLike): void {
     if (is_bigint_supported) {
+        max_int64_big = BigInt("9223372036854775807");
+        min_int64_big = BigInt("-9223372036854775808");
         HEAPI64 = new BigInt64Array(buffer);
     }
 }
@@ -246,3 +256,26 @@ export function withStackAlloc<T1, T2, T3, TResult>(bytesWanted: number, f: (ptr
     }
 }
 
+// @bytes must be a typed array. space is allocated for it in the native heap
+//  and it is copied to that location. returns the address of the allocation.
+export function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr {
+    const memoryOffset = Module._malloc(bytes.length);
+    const heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>memoryOffset, bytes.length);
+    heapBytes.set(bytes);
+    return memoryOffset;
+}
+
+const BuiltinAtomics = globalThis.Atomics;
+
+export const Atomics = monoWasmThreads ? {
+    storeI32(offset: _MemOffset, value: number): void {
+
+        BuiltinAtomics.store(Module.HEAP32, <any>offset >>> 2, value);
+    },
+    notifyI32(offset: _MemOffset, count: number): void {
+        BuiltinAtomics.notify(Module.HEAP32, <any>offset >>> 2, count);
+    }
+} : {
+    storeI32: setI32,
+    notifyI32: () => { /*empty*/ }
+};

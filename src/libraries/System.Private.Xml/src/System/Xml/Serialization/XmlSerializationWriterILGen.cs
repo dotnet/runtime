@@ -68,7 +68,7 @@ namespace System.Xml.Serialization
             GenerateInitCallbacksMethod();
             this.typeBuilder.DefineDefaultConstructor(
                 CodeGenerator.PublicMethodAttributes);
-            return this.typeBuilder.CreateTypeInfo()!.AsType();
+            return this.typeBuilder.CreateType();
         }
 
         [RequiresUnreferencedCode("calls GenerateTypeElement")]
@@ -1612,9 +1612,13 @@ namespace System.Xml.Serialization
                     {
                         anyCount++;
                         if (element.Name != null && element.Name.Length > 0)
+                        {
                             namedAnys.Add(element);
-                        else if (unnamedAny == null)
-                            unnamedAny = element;
+                        }
+                        else
+                        {
+                            unnamedAny ??= element;
+                        }
                     }
                     else if (choice != null)
                     {
@@ -2596,12 +2600,12 @@ namespace System.Xml.Serialization
             ilg.Ceq();
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? GetQuotedCSharpString(string? value) =>
             value is null ? null :
             $"@\"{GetCSharpString(value)}\"";
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? GetCSharpString(string? value)
         {
             if (value == null)

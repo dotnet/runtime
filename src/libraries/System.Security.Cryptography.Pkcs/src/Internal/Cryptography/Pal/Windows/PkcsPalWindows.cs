@@ -86,7 +86,7 @@ namespace Internal.Cryptography.Pal.Windows
         {
             using (SafeCertContextHandle hCertContext = certificate.CreateCertContextHandle())
             {
-                byte[] ski = hCertContext.GetSubjectKeyIdentifer();
+                byte[] ski = hCertContext.GetSubjectKeyIdentifier();
                 return ski;
             }
         }

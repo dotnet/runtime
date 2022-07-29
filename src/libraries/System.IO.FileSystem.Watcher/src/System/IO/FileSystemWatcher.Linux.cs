@@ -36,6 +36,7 @@ namespace System.IO
             if (handle.IsInvalid)
             {
                 Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                handle.Dispose();
                 switch (error.Error)
                 {
                     case Interop.Error.EMFILE:

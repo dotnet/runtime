@@ -125,10 +125,7 @@ namespace System.Xml
                         // recursively load all children.
                         if (!fEmptyElement)
                         {
-                            if (parent != null)
-                            {
-                                parent.AppendChildForLoad(element, _doc);
-                            }
+                            parent?.AppendChildForLoad(element, _doc);
                             parent = element;
                             continue;
                         }
@@ -315,8 +312,7 @@ namespace System.Xml
 
             XmlUnspecifiedAttribute? defAttr = attr as XmlUnspecifiedAttribute;
             // If user overrides CreateDefaultAttribute, then attr will NOT be a XmlUnspecifiedAttribute instance.
-            if (defAttr != null)
-                defAttr.SetSpecified(false);
+            defAttr?.SetSpecified(false);
 
             return attr;
         }

@@ -141,7 +141,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Make sure we're not disposed or deleted.
                 CheckDisposedOrDeleted();
 
-                // Check that we actually support this propery in our store
+                // Check that we actually support this property in our store
                 //CheckSupportedProperty(PropertyNames.GroupMembers);
 
                 if (_members == null)
@@ -221,8 +221,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "Group", "Dispose: disposing");
 
-                    if (_members != null)
-                        _members.Dispose();
+                    _members?.Dispose();
 
                     _disposed = true;
                     GC.SuppressFinalize(this);
@@ -333,8 +332,7 @@ namespace System.DirectoryServices.AccountManagement
             _groupScopeChanged = (_groupScopeChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
             _isSecurityGroupChanged = (_isSecurityGroupChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
 
-            if (_members != null)
-                _members.ResetTracking();
+            _members?.ResetTracking();
 
             base.ResetAllChangeStatus();
         }

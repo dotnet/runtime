@@ -493,10 +493,7 @@ namespace System.Net.Sockets
             PinSocketAddressBuffer();
 
             // Create a WSAMessageBuffer if none exists yet.
-            if (_wsaMessageBufferPinned == null)
-            {
-                _wsaMessageBufferPinned = GC.AllocateUninitializedArray<byte>(sizeof(Interop.Winsock.WSAMsg), pinned: true);
-            }
+            _wsaMessageBufferPinned ??= GC.AllocateUninitializedArray<byte>(sizeof(Interop.Winsock.WSAMsg), pinned: true);
 
             // Create and pin an appropriately sized control buffer if none already
             IPAddress? ipAddress = (_socketAddress!.Family == AddressFamily.InterNetworkV6 ? _socketAddress.GetIPAddress() : null);
@@ -517,10 +514,7 @@ namespace System.Net.Sockets
             uint wsaRecvMsgWSABufferCount;
             if (_bufferList == null)
             {
-                if (_wsaRecvMsgWSABufferArrayPinned == null)
-                {
-                    _wsaRecvMsgWSABufferArrayPinned = GC.AllocateUninitializedArray<WSABuffer>(1, pinned: true);
-                }
+                _wsaRecvMsgWSABufferArrayPinned ??= GC.AllocateUninitializedArray<WSABuffer>(1, pinned: true);
 
                 fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
                 {
@@ -1186,6 +1180,7 @@ namespace System.Net.Sockets
         private unsafe void FinishOperationReceiveMessageFrom()
         {
             Interop.Winsock.WSAMsg* PtrMessage = (Interop.Winsock.WSAMsg*)Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBufferPinned!, 0);
+            _socketFlags = PtrMessage->flags;
 
             if (_controlBufferPinned!.Length == sizeof(Interop.Winsock.ControlData))
             {
