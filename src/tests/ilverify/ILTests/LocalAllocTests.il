@@ -25,4 +25,19 @@
         pop // pop ldnull
         ret
     }
+
+    .method private hidebysig instance void Load.LocAllocShouldFailWhenSizeIsAbsent_Invalid_StackUnderflow() cil managed
+    {
+        localloc
+        pop // pop localloc pointer
+        ret
+    }
+
+    .method private hidebysig instance void Load.LocAllocShouldSuccesWhenSizeIsPresent_Valid() cil managed
+    {
+        ldc.i4.2 // size parameter for localloc
+        localloc
+        pop // pop localloc pointer
+        ret
+    }
 }
