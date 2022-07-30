@@ -17,7 +17,7 @@ FrozenObjectHeap::FrozenObjectHeap():
 }
 
 #define FOH_RESERVE_PAGES 1024 // e.g. reserve 4Mb of virtual memory
-#define FOH_COMMIT_PAGES 1  // e.g. commit 128Kb chunks
+#define FOH_COMMIT_PAGES 32  // e.g. commit 128Kb chunks
 
 FrozenObjectHeap::~FrozenObjectHeap()
 {
