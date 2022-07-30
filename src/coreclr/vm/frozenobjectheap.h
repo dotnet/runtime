@@ -13,14 +13,13 @@ public:
     FrozenObjectHeap();
     ~FrozenObjectHeap();
     Object* AllocateObject(size_t objectSize);
-    bool IsInHeap(Object* object);
 
 private:
     bool Initialize();
 
     uint8_t* m_pStart;
     uint8_t* m_pCurrent;
-    uint8_t* m_pCommited;
+    size_t m_SizeCommited;
     size_t m_Size;
     size_t m_PageSize;
     segment_handle m_SegmentHandle;

@@ -11,7 +11,6 @@
 #include "common.h"
 #include "eeconfig.h"
 #include "stringliteralmap.h"
-#include "frozenobjectheap.h"
 
 /*
     Thread safety in GlobalStringLiteralMap / StringLiteralMap
@@ -205,16 +204,14 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
         pStrObj = pEntry->GetStringObject();
         _ASSERTE(!bAddIfNotFound || pStrObj);
 
-        FrozenObjectHeap* foh = SystemDomain::GetSegmentWithFrozenObjects();
-        if (pStrObj != nullptr && preferFrozenObjectHeap && ppPinnedString != nullptr && foh != nullptr)
+        if (pStrObj != nullptr && preferFrozenObjectHeap && ppPinnedString != nullptr)
         {
             Object* underlyingStrObj = *reinterpret_cast<Object**>(pStrObj);
-            if (foh->IsInHeap(underlyingStrObj))
+            if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(underlyingStrObj))
             {
                 *ppPinnedString = underlyingStrObj;
             }
         }
-
         return pStrObj;
     }
     // If the bAddIfNotFound flag is set then we better have a string

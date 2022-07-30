@@ -7,7 +7,7 @@
 FrozenObjectHeap::FrozenObjectHeap():
     m_pStart(nullptr),
     m_pCurrent(nullptr),
-    m_pCommited(nullptr),
+    m_SizeCommited(0),
     m_Size(0),
     m_SegmentHandle(nullptr)
     COMMA_INDEBUG(m_ObjectsCount(0))
@@ -15,6 +15,9 @@ FrozenObjectHeap::FrozenObjectHeap():
     m_PageSize = GetOsPageSize();
     m_Crst.Init(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC);
 }
+
+#define FOH_RESERVE_PAGES 1024 // e.g. reserve 4Mb of virtual memory
+#define FOH_COMMIT_PAGES 1  // e.g. commit 128Kb chunks
 
 FrozenObjectHeap::~FrozenObjectHeap()
 {
@@ -31,15 +34,20 @@ FrozenObjectHeap::~FrozenObjectHeap()
 
 bool FrozenObjectHeap::Initialize()
 {
-    m_Size = m_PageSize * 1024; // e.g. 4Mb
+    m_Size = m_PageSize * FOH_RESERVE_PAGES;
 
+    _ASSERT(FOH_RESERVE_PAGES > FOH_COMMIT_PAGES);
+    _ASSERT(FOH_RESERVE_PAGES % FOH_COMMIT_PAGES == 0);
     _ASSERT(m_PageSize > MIN_OBJECT_SIZE);
     _ASSERT(m_SegmentHandle == nullptr);
     _ASSERT(m_pStart == nullptr);
 
-    // TODO: Implement COMMIT on demand.
-    void* alloc = ClrVirtualAllocAligned(nullptr, m_Size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, m_PageSize);
-    ZeroMemory(alloc, m_Size); // Will remove, was just testing.
+    void* alloc = ClrVirtualAllocAligned(nullptr, m_Size, MEM_RESERVE, PAGE_READWRITE, m_PageSize);
+    if (alloc != nullptr)
+    {
+        // Commit FOH_COMMIT_PAGES pages in advance
+        alloc = ClrVirtualAllocAligned(alloc, m_PageSize * FOH_COMMIT_PAGES, MEM_COMMIT, PAGE_READWRITE, m_PageSize);
+    }
 
     if (alloc != nullptr)
     {
@@ -47,7 +55,7 @@ bool FrozenObjectHeap::Initialize()
         si.pvMem = alloc;
         si.ibFirstObject = sizeof(ObjHeader);
         si.ibAllocated = si.ibFirstObject;
-        si.ibCommit = m_Size;
+        si.ibCommit = m_PageSize * FOH_COMMIT_PAGES;
         si.ibReserved = m_Size;
 
         m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&si);
@@ -55,10 +63,9 @@ bool FrozenObjectHeap::Initialize()
         {
             m_pStart = static_cast<uint8_t*>(alloc);
             m_pCurrent = m_pStart;
-            m_pCommited = m_pStart;
+            m_SizeCommited = si.ibCommit;
             INDEBUG(m_ObjectsCount = 0);
             ASSERT((intptr_t)m_pCurrent % DATA_ALIGNMENT == 0);
-            //printf("\nFOH from %p to %p\n", m_pStart, m_pStart + m_Size);
             return true;
         }
 
@@ -69,8 +76,12 @@ bool FrozenObjectHeap::Initialize()
     return false;
 }
 
+
 Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
 {
+    // NOTE: objectSize is expected be the full size including header
+    _ASSERT(objectSize >= MIN_OBJECT_SIZE);
+
     CrstHolder ch(&m_Crst);
 
     if (objectSize > m_PageSize)
@@ -91,9 +102,7 @@ Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
 
     _ASSERT(m_pStart != nullptr);
     _ASSERT(m_SegmentHandle != nullptr);
-
     _ASSERT(IS_ALIGNED(m_pCurrent, DATA_ALIGNMENT));
-    _ASSERT(IS_ALIGNED(objectSize, DATA_ALIGNMENT));
 
     uint8_t* obj = m_pCurrent;
     if ((size_t)(m_pStart + m_Size) < (size_t)(obj + objectSize))
@@ -102,20 +111,24 @@ Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
         return nullptr;
     }
 
+    // Check if we need to commit a new chunk
+    if ((size_t)(m_pStart + m_SizeCommited) < (size_t)(obj + objectSize))
+    {
+        if (ClrVirtualAllocAligned(m_pCurrent, m_PageSize * FOH_COMMIT_PAGES, MEM_COMMIT, PAGE_READWRITE, m_PageSize) == nullptr)
+        {
+            // We failed to commit a new chunk of the reserved memory
+            return nullptr;
+        }
+        m_SizeCommited += m_PageSize * FOH_COMMIT_PAGES;
+    }
+
+    ZeroMemory(obj, objectSize);
     INDEBUG(m_ObjectsCount++);
     m_pCurrent = obj + objectSize;
 
-    // Skip object header (NOTE: objectSize already includes it)
-    return reinterpret_cast<Object*>(obj + sizeof(ObjHeader));
-}
+    // Notify GC that we bumped the pointer
+    GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(m_SegmentHandle, m_pCurrent, m_pStart + m_SizeCommited);
 
-bool FrozenObjectHeap::IsInHeap(Object* object)
-{
-    const auto ptr = reinterpret_cast<uint8_t*>(object);
-    if (ptr >= m_pStart && ptr < m_pCurrent)
-    {
-        _ASSERT(GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(object));
-        return true;
-    }
-    return false;
+    // Skip object header
+    return reinterpret_cast<Object*>(obj + sizeof(ObjHeader));
 }
