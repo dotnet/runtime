@@ -44691,7 +44691,7 @@ bool GCHeap::IsEphemeral (Object* object)
 {
     uint8_t* o = (uint8_t*)object;
 #if defined(FEATURE_BASICFREEZE) && defined(USE_REGIONS)
-    if (!is_in_heap_range(o))
+    if (!is_in_heap_range (o))
     {
         // Objects in frozen segments are not ephemeral
         return FALSE;
