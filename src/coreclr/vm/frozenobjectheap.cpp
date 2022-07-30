@@ -46,7 +46,7 @@ bool FrozenObjectHeap::Initialize()
     _ASSERT(m_SegmentHandle == nullptr);
     _ASSERT(m_pStart == nullptr);
 
-    void* alloc = ClrVirtualAlloc(nullptr, m_SizeReserved, MEM_RESERVE, PAGE_READWRITE);
+    void* alloc = ClrVirtualAllocAligned(nullptr, m_SizeReserved, MEM_RESERVE, PAGE_READWRITE, DATA_ALIGNMENT);
     if (alloc != nullptr)
     {
         // Commit FOH_COMMIT_SIZE chunk in advance
