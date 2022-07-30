@@ -466,7 +466,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void GetEnumValuesAsUnderlyingType_UInt()
         {
-            GetEnumValues(typeof(UIntEnum), new uint[] { 1, 10 });
+            GetEnumValuesAsUnderlyingType(typeof(UIntEnum), new uint[] { 1, 10 });
         }
 
         private static void GetEnumValuesAsUnderlyingType(Type enumType, Array expected)
