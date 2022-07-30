@@ -11,10 +11,21 @@ namespace System.Runtime.Tests
 {
     public class ControlledExecutionTests
     {
+        private const int NumberOfTests = 5;
+        private static int s_testCounter;
+
         private bool _startedExecution, _caughtException, _finishedExecution;
         private Exception _exception;
         private CancellationTokenSource _cts;
         private volatile int _counter;
+
+        private static void FailTheLastTest()
+        {
+            if (PlatformDetection.IsNotWindows)
+            {
+                Assert.True(s_testCounter < NumberOfTests, "All tests passed");
+            }
+        }
 
         // Tests cancellation on timeout. The ThreadAbortException must be mapped to OperationCanceledException.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
@@ -33,9 +44,9 @@ namespace System.Runtime.Tests
 
         // Tests that catch blocks are not aborted. The action catches the ThreadAbortException and throws an exception of a different type.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        //[ActiveIssue("https://github.com/dotnet/runtime/issues/72703", TestPlatforms.AnyUnix)]
         public void CancelOnTimeout_ThrowFromCatch()
         {
+            s_testCounter++;
             Console.WriteLine("CancelOnTimeout_ThrowFromCatch");
             var cts = new CancellationTokenSource();
             cts.CancelAfter(200);
@@ -45,12 +56,15 @@ namespace System.Runtime.Tests
             Assert.True(_caughtException);
             Assert.False(_finishedExecution);
             Assert.IsType<TimeoutException>(_exception);
+
+            FailTheLastTest();
         }
 
         // Tests that finally blocks are not aborted. The action throws an exception from a finally block.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void CancelOnTimeout_ThrowFromFinally()
         {
+            s_testCounter++;
             Console.WriteLine("CancelOnTimeout_ThrowFromFinally");
             var cts = new CancellationTokenSource();
             cts.CancelAfter(200);
@@ -58,12 +72,15 @@ namespace System.Runtime.Tests
 
             Assert.True(_startedExecution);
             Assert.IsType<TimeoutException>(_exception);
+
+            FailTheLastTest();
         }
 
         // Tests that finally blocks are not aborted. The action throws an exception from a try block.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void CancelOnTimeout_Finally()
         {
+            s_testCounter++;
             Console.WriteLine("CancelOnTimeout_Finally");
             var cts = new CancellationTokenSource();
             cts.CancelAfter(200);
@@ -72,12 +89,15 @@ namespace System.Runtime.Tests
             Assert.True(_startedExecution);
             Assert.True(_finishedExecution);
             Assert.IsType<TimeoutException>(_exception);
+
+            FailTheLastTest();
         }
 
         // Tests cancellation before calling the Run method
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void CancelBeforeRun()
         {
+            s_testCounter++;
             Console.WriteLine("CancelBeforeRun");
             var cts = new CancellationTokenSource();
             cts.Cancel();
@@ -85,12 +105,15 @@ namespace System.Runtime.Tests
             RunTest(LengthyAction, cts.Token);
 
             Assert.IsType<OperationCanceledException>(_exception);
+
+            FailTheLastTest();
         }
 
         // Tests cancellation by the action itself
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void CancelItself()
         {
+            s_testCounter++;
             Console.WriteLine("CancelItself");
             _cts = new CancellationTokenSource();
             RunTest(Action_CancelItself, _cts.Token);
@@ -99,6 +122,8 @@ namespace System.Runtime.Tests
             Assert.False(_finishedExecution);
             Assert.IsType<AggregateException>(_exception);
             Assert.IsType<ThreadAbortException>(_exception.InnerException);
+
+            FailTheLastTest();
         }
 
         private void RunTest(Action action, CancellationToken cancellationToken)

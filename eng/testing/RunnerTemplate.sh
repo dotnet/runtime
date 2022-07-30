@@ -138,8 +138,7 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
     # See discussions in:
     #   https://github.com/dotnet/core-eng/issues/15333
     #   https://github.com/dotnet/core-eng/issues/15597
-    #ulimit -c 0
-    ulimit -c unlimited
+    ulimit -c 0
   fi
 
 elif [[ "$(uname -s)" == "Linux" ]]; then
