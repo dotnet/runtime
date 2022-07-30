@@ -1991,7 +1991,7 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
             found      = true;
             slowAnswer = index;
             RECORD_ASSERTION_STATS(addAssertionMatchCount++);
-            RECORD_ASSERTION_STATS(addAssertionIter += (optAssertionCount - index  + 1));
+            RECORD_ASSERTION_STATS(addAssertionIter += (optAssertionCount - index + 1));
             break;
         }
     }
@@ -2917,7 +2917,8 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
     }
 
     RECORD_ASSERTION_STATS(subRangeMissedCount++);
-    RECORD_ASSERTION_STATS(subRangeMissedIter += (optLocalAssertionProp ? optAssertionCount : (BitVecOps::Count(apTraits, assertions))));
+    RECORD_ASSERTION_STATS(subRangeMissedIter +=
+                           (optLocalAssertionProp ? optAssertionCount : (BitVecOps::Count(apTraits, assertions))));
 
     return NO_ASSERTION_INDEX;
 }
@@ -2990,7 +2991,8 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
     }
 
     RECORD_ASSERTION_STATS(subTypeMissedCount++);
-    RECORD_ASSERTION_STATS(subTypeMissedIter += (optLocalAssertionProp ? optAssertionCount : (BitVecOps::Count(apTraits, assertions))));
+    RECORD_ASSERTION_STATS(subTypeMissedIter +=
+                           (optLocalAssertionProp ? optAssertionCount : (BitVecOps::Count(apTraits, assertions))));
     return NO_ASSERTION_INDEX;
 }
 
@@ -3751,7 +3753,8 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
     }
 
     RECORD_ASSERTION_STATS(propLclVarMissedCount++);
-    RECORD_ASSERTION_STATS(propLclVarMissedIter += (optLocalAssertionProp ? optAssertionCount : (BitVecOps::Count(apTraits, assertions))));
+    RECORD_ASSERTION_STATS(propLclVarMissedIter +=
+                           (optLocalAssertionProp ? optAssertionCount : (BitVecOps::Count(apTraits, assertions))));
 
     return nullptr;
 }
@@ -3863,7 +3866,8 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
     }
 
     RECORD_ASSERTION_STATS(equalOrNotEquaMissedCount++);
-    RECORD_ASSERTION_STATS(equalOrNotEquaMissedIter += (optLocalAssertionProp ? optAssertionCount : (BitVecOps::Count(apTraits, assertions))));
+    RECORD_ASSERTION_STATS(equalOrNotEquaMissedIter +=
+                           (optLocalAssertionProp ? optAssertionCount : (BitVecOps::Count(apTraits, assertions))));
 
     return NO_ASSERTION_INDEX;
 }

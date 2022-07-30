@@ -25,7 +25,8 @@ CONFIG_INTEGER(DebugBreakOnVerificationFailure, W("DebugBreakOnVerificationFailu
 CONFIG_INTEGER(DiffableDasm, W("JitDiffableDasm"), 0)          // Make the disassembly diff-able
 CONFIG_INTEGER(JitDasmWithAddress, W("JitDasmWithAddress"), 0) // Print the process address next to each instruction of
                                                                // the disassembly
-CONFIG_INTEGER(DisplayLoopHoistStats, W("JitLoopHoistStats"), 0) // Display JIT loop hoisting statistics
+CONFIG_INTEGER(DisplayLoopHoistStats, W("JitLoopHoistStats"), 0)         // Display JIT loop hoisting statistics
+CONFIG_INTEGER(DisplayAssertionPropStats, W("JitAssertionPropStats"), 0) // Display JIT assertion statistics
 CONFIG_INTEGER(DisplayLsraStats, W("JitLsraStats"), 0)       // Display JIT Linear Scan Register Allocator statistics
                                                              // If set to "1", display the stats in textual format.
                                                              // If set to "2", display the stats in csv format.

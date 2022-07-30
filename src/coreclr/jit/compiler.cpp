@@ -1674,6 +1674,15 @@ void Compiler::compShutdown()
     }
 #endif // LOOP_HOIST_STATS
 
+#if TRACK_ASSERTION_STATS
+#ifdef DEBUG // Always display assertion stats in retail
+    if (JitConfig.DisplayAssertionPropStats() != 0)
+#endif // DEBUG
+    {
+        PrintAggregateAssertionStats(jitstdout);
+    }
+#endif
+
 #if TRACK_ENREG_STATS
     if (JitConfig.JitEnregStats() != 0)
     {
@@ -6036,6 +6045,10 @@ void Compiler::compCompileFinish()
     AddLoopHoistStats();
 #endif // LOOP_HOIST_STATS
 
+#if TRACK_ASSERTION_STATS
+    AddAssertionStats();
+#endif // TRACK_ASSERTION_STATS
+
 #if MEASURE_NODE_SIZE
     genTreeNcntHist.record(static_cast<unsigned>(genNodeSizeStatsPerFunc.genTreeNodeCnt));
     genTreeNsizHist.record(static_cast<unsigned>(genNodeSizeStatsPerFunc.genTreeNodeSize));
@@ -6450,12 +6463,12 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
 #if TRACK_ASSERTION_STATS
 
-#define ASSERTION_STATS_ZERO(name)      \
-    name##Iter = 0;                     \
-    name##MatchCount = 0;               \
-    name##MissedIter  = 0;              \
-    name##MissedCount = 0;              \
-    name##CallCount = 0;
+#define ASSERTION_STATS_ZERO(name)                                                                                     \
+    name##Iter        = 0;                                                                                             \
+    name##MatchCount  = 0;                                                                                             \
+    name##MissedIter  = 0;                                                                                             \
+    name##MissedCount = 0;                                                                                             \
+    name##CallCount   = 0;
 
     ASSERTION_STATS_ZERO(addAssertion)
     ASSERTION_STATS_ZERO(subRange)
@@ -8628,27 +8641,6 @@ void JitTimer::PrintCsvHeader()
 
             InlineStrategy::DumpCsvHeader(s_csvFile);
 
-#if TRACK_ASSERTION_STATS
-
-#define ASSERTION_TITLE(name)                                                                                          \
-    fprintf(s_csvFile, "\""##name##"Match\",");                                                                        \
-    fprintf(s_csvFile, "\""##name##"Iter\",");                                                                         \
-    fprintf(s_csvFile, "\""##name##"MissedCount\",");                                                                  \
-    fprintf(s_csvFile, "\""##name##"MissedIter\",");                                                                   \
-    fprintf(s_csvFile, "\""##name##"CallCount\",");
-
-            ASSERTION_TITLE("AddAssertion")
-            ASSERTION_TITLE("SubType")
-            ASSERTION_TITLE("SubRange")
-            ASSERTION_TITLE("EqualOrNotEqual")
-            ASSERTION_TITLE("NoNull")
-            ASSERTION_TITLE("PropLclVar")
-            ASSERTION_TITLE("PropEqualOrNot")
-            ASSERTION_TITLE("PropEqualZero")
-            ASSERTION_TITLE("PropBndChk")
-
-#endif // TRACK_ASSERTION_STATS
-
             fprintf(s_csvFile, "\"Executable Code Bytes\",");
             fprintf(s_csvFile, "\"GC Info Bytes\",");
             fprintf(s_csvFile, "\"Total Bytes Allocated\",");
@@ -8731,28 +8723,6 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     }
 
     comp->m_inlineStrategy->DumpCsvData(s_csvFile);
-
-#if TRACK_ASSERTION_STATS
-
-#define ASSERTION_STATS(name)                                                                                          \
-    assert(comp->##name##Iter >= comp->##name##MatchCount);                                                            \
-    fprintf(s_csvFile, "%u,", comp->##name##MatchCount);                                                               \
-    fprintf(s_csvFile, "%u,", comp->##name##Iter);                                                                     \
-    fprintf(s_csvFile, "%u,", comp->name##MissedCount);                                                                \
-    fprintf(s_csvFile, "%u,", comp->name##MissedIter);                                                                 \
-    fprintf(s_csvFile, "%u,", comp->##name##CallCount);
-
-    ASSERTION_STATS(addAssertion)
-    ASSERTION_STATS(subRange)
-    ASSERTION_STATS(subType)
-    ASSERTION_STATS(equalOrNotEqua)
-    ASSERTION_STATS(noNull)
-    ASSERTION_STATS(propLclVar)
-    ASSERTION_STATS(propEqualOrNot)
-    ASSERTION_STATS(propEqualZero)
-    ASSERTION_STATS(propBndChk)
-
-#endif // TRACK_ASSERTION_STATS
 
     fprintf(s_csvFile, "%u,", comp->info.compNativeCodeSize);
     fprintf(s_csvFile, "%Iu,", comp->compInfoBlkSize);
@@ -8845,6 +8815,83 @@ void Compiler::PrintPerMethodLoopHoistStats()
            m_totalHoistedExpressions, exprsPerLoopWithExpr);
 }
 #endif // LOOP_HOIST_STATS
+
+#if TRACK_ASSERTION_STATS
+// Static fields.
+CritSecObject Compiler::s_assertionStatsLock; // Default constructor.
+
+#define ASSERTION_STATS_DEF_VAR(name)                                                                                  \
+    unsigned Compiler::s_##name##Iter        = 0;                                                                      \
+    unsigned Compiler::s_##name##MatchCount  = 0;                                                                      \
+    unsigned Compiler::s_##name##MissedIter  = 0;                                                                      \
+    unsigned Compiler::s_##name##MissedCount = 0;                                                                      \
+    unsigned Compiler::s_##name##CallCount   = 0;
+
+ASSERTION_STATS_DEF_VAR(addAssertion)
+ASSERTION_STATS_DEF_VAR(subRange)
+ASSERTION_STATS_DEF_VAR(subType)
+ASSERTION_STATS_DEF_VAR(equalOrNotEqua)
+ASSERTION_STATS_DEF_VAR(noNull)
+ASSERTION_STATS_DEF_VAR(propLclVar)
+ASSERTION_STATS_DEF_VAR(propEqualOrNot)
+ASSERTION_STATS_DEF_VAR(propEqualZero)
+ASSERTION_STATS_DEF_VAR(propBndChk)
+
+#undef ASSERTION_STATS_DEF_VAR
+
+// static
+void Compiler::PrintAggregateAssertionStats(FILE* f)
+{
+    fprintf(f, "\n");
+    fprintf(f, "---------------------------------------------------\n");
+    fprintf(f, "Assertion stats\n");
+    fprintf(f, "---------------------------------------------------\n");
+
+#define ASSERTION_TITLE(name, value)                                                                                   \
+    fprintf(f, "---" name "---\n");                                                                                    \
+    fprintf(f, name "Match: %u\n", s_##value##MatchCount);                                                             \
+    fprintf(f, name "Iter: %u\n", s_##value##Iter);                                                                    \
+    fprintf(f, name "MissedIter: %u\n", s_##value##MissedIter);                                                        \
+    fprintf(f, name "MissedCount: %u\n", s_##value##MissedCount);                                                      \
+    fprintf(f, name "CallCount: %u\n", s_##value##CallCount);                                                          \
+    fprintf(f, "\n");
+
+    ASSERTION_TITLE("AddAssertion", addAssertion)
+    ASSERTION_TITLE("SubType", subType)
+    ASSERTION_TITLE("SubRange", subRange)
+    ASSERTION_TITLE("EqualOrNotEqual", equalOrNotEqua)
+    ASSERTION_TITLE("NoNull", noNull)
+    ASSERTION_TITLE("PropLclVar", propLclVar)
+    ASSERTION_TITLE("PropEqualOrNot", propEqualOrNot)
+    ASSERTION_TITLE("PropEqualZero", propEqualZero)
+    ASSERTION_TITLE("PropBndChk", propBndChk)
+}
+
+void Compiler::AddAssertionStats()
+{
+    CritSecHolder statsLock(s_assertionStatsLock);
+
+#define INCREMENT_STATS(name)                                                                                          \
+    s_##name##Iter += name##Iter;                                                                                      \
+    s_##name##MatchCount += name##MatchCount;                                                                          \
+    s_##name##MissedIter += name##MissedIter;                                                                          \
+    s_##name##MissedCount += name##MissedCount;                                                                        \
+    s_##name##CallCount += name##CallCount;
+
+    INCREMENT_STATS(addAssertion)
+    INCREMENT_STATS(subRange)
+    INCREMENT_STATS(subType)
+    INCREMENT_STATS(equalOrNotEqua)
+    INCREMENT_STATS(noNull)
+    INCREMENT_STATS(propLclVar)
+    INCREMENT_STATS(propEqualOrNot)
+    INCREMENT_STATS(propEqualZero)
+    INCREMENT_STATS(propBndChk)
+
+#undef INCREMENT_STATS
+}
+
+#endif
 
 //------------------------------------------------------------------------
 // RecordStateAtEndOfInlining: capture timing data (if enabled) after

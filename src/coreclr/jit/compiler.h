@@ -7288,33 +7288,6 @@ protected:
     AssertionIndex optAssertionCount;           // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
 
-#if TRACK_ASSERTION_STATS
-
-#define ASSERTION_STATS_DECL_VAR(name)  \
-    unsigned name##Iter = 0;            \
-    unsigned name##MatchCount = 0;      \
-    unsigned name##MissedIter  = 0;     \
-    unsigned name##MissedCount = 0;     \
-    unsigned name##CallCount = 0;
-
-ASSERTION_STATS_DECL_VAR(addAssertion)
-ASSERTION_STATS_DECL_VAR(subRange)
-ASSERTION_STATS_DECL_VAR(subType)
-ASSERTION_STATS_DECL_VAR(equalOrNotEqua)
-ASSERTION_STATS_DECL_VAR(noNull)
-ASSERTION_STATS_DECL_VAR(propLclVar)
-ASSERTION_STATS_DECL_VAR(propEqualOrNot)
-ASSERTION_STATS_DECL_VAR(propEqualZero)
-ASSERTION_STATS_DECL_VAR(propBndChk)
-
-#define RECORD_ASSERTION_STATS(x) x
-
-#else
-
-#define RECORD_ASSERTION_STATS(x)
-
-#endif // TRACK_ASSERTION_STATS
-
     struct AssertionDscKeyFuncs
     {
         static bool Equals(const AssertionDsc& x, const AssertionDsc& y)
@@ -10045,6 +10018,45 @@ public:
 
     static void PrintAggregateLoopHoistStats(FILE* f);
 #endif // LOOP_HOIST_STATS
+
+#if TRACK_ASSERTION_STATS
+
+    static CritSecObject s_assertionStatsLock; // This lock protects the data structures below.
+
+#define ASSERTION_STATS_DECL_VAR(name)                                                                                 \
+    unsigned        name##Iter        = 0;                                                                             \
+    unsigned        name##MatchCount  = 0;                                                                             \
+    unsigned        name##MissedIter  = 0;                                                                             \
+    unsigned        name##MissedCount = 0;                                                                             \
+    unsigned        name##CallCount   = 0;                                                                             \
+    static unsigned s_##name##Iter;                                                                                    \
+    static unsigned s_##name##MatchCount;                                                                              \
+    static unsigned s_##name##MissedIter;                                                                              \
+    static unsigned s_##name##MissedCount;                                                                             \
+    static unsigned s_##name##CallCount;
+
+    ASSERTION_STATS_DECL_VAR(addAssertion)
+    ASSERTION_STATS_DECL_VAR(subRange)
+    ASSERTION_STATS_DECL_VAR(subType)
+    ASSERTION_STATS_DECL_VAR(equalOrNotEqua)
+    ASSERTION_STATS_DECL_VAR(noNull)
+    ASSERTION_STATS_DECL_VAR(propLclVar)
+    ASSERTION_STATS_DECL_VAR(propEqualOrNot)
+    ASSERTION_STATS_DECL_VAR(propEqualZero)
+    ASSERTION_STATS_DECL_VAR(propBndChk)
+
+#undef ASSERTION_STATS_DECL_VAR
+
+#define RECORD_ASSERTION_STATS(x) x
+
+    void        AddAssertionStats();
+    static void PrintAggregateAssertionStats(FILE* f);
+
+#else
+
+#define RECORD_ASSERTION_STATS(x)
+
+#endif // TRACK_ASSERTION_STATS
 
 #if TRACK_ENREG_STATS
     class EnregisterStats
