@@ -62,7 +62,7 @@ namespace System.ComponentModel
         /// </summary>
         protected virtual IComparer Comparer => InvariantComparer.Default;
 
-        private static long GetEnumValue(bool isUnderlyingTypeUInt64, Enum enumVal, CultureInfo? culture)
+        private static long GetEnumValue(bool isUnderlyingTypeUInt64, object enumVal, CultureInfo? culture)
         {
             return isUnderlyingTypeUInt64 ?
                 unchecked((long)Convert.ToUInt64(enumVal, culture)) :
@@ -85,7 +85,7 @@ namespace System.ComponentModel
                         string[] values = strValue.Split(',');
                         foreach (string v in values)
                         {
-                            convertedValue |= GetEnumValue(isUnderlyingTypeUInt64, (Enum)Enum.Parse(EnumType, v, true), culture);
+                            convertedValue |= GetEnumValue(isUnderlyingTypeUInt64, Enum.Parse(EnumType, v, true), culture);
                         }
                         return Enum.ToObject(EnumType, convertedValue);
                     }
@@ -175,11 +175,10 @@ namespace System.ComponentModel
                     long[] ulValues = new long[objValues.Length];
                     for (int idx = 0; idx < objValues.Length; idx++)
                     {
-                        ulValues[idx] = isUnderlyingTypeUInt64 ? unchecked((long)Convert.ToUInt64(objValues.GetValue(idx), culture)) :
-                            Convert.ToInt64(objValues.GetValue(idx), culture);
+                        ulValues[idx] = GetEnumValue(isUnderlyingTypeUInt64, objValues.GetValue(idx)!, culture);
                     }
 
-                    long longValue = GetEnumValue(isUnderlyingTypeUInt64, (Enum)value, culture);
+                    long longValue = GetEnumValue(isUnderlyingTypeUInt64, value, culture);
                     bool valueFound = true;
                     while (valueFound)
                     {
