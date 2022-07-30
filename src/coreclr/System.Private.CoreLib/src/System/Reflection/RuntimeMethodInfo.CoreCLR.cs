@@ -161,7 +161,7 @@ namespace System.Reflection
         {
             // See RuntimeMethodInfo.Equals() below.
             if (IsGenericMethod)
-                return ValueType.GetHashCodeOfPtr(m_handle);
+                return RuntimeHelpers.GetHashCodeOfPtr(m_handle);
             else
                 return base.GetHashCode();
         }
