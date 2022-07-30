@@ -2001,7 +2001,8 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     }
 #endif // DEBUG
 
-    optCanPropLclVar |= newAssertion->assertionKind == OAK_EQUAL && newAssertion->op1.kind != O1K_LCLVAR;
+    // Track the shortcircuit criterias
+    optCanPropLclVar |= newAssertion->assertionKind == OAK_EQUAL && newAssertion->op1.kind == O1K_LCLVAR;
     optCanPropEqual |= newAssertion->assertionKind == OAK_EQUAL || newAssertion->assertionKind == OAK_NOT_EQUAL;
     optCanPropNonNull |=
         newAssertion->assertionKind == OAK_NOT_EQUAL && newAssertion->op2.vn == ValueNumStore::VNForNull();
