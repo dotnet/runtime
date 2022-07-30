@@ -1369,24 +1369,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader\DefaultInterfaceMethods\constrainedcall\constrained2\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader\DefaultInterfaceMethods\constrainedcall\constrained2_gm\*" />
 
-        <!-- Catch(T) in shared code -->
-        <!-- https://github.com/dotnet/runtimelab/issues/204 -->
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\throwincatch_generics_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\throwincatch_generics_do\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\throwincatch_generics_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\throwincatch_generics_ro\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchnestedtype_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchnestedtype_do\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchnestedtype_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchnestedtype_ro\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchsimpletype_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchsimpletype_do\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchsimpletype_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchsimpletype_ro\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/InstructionCombining/ArrayLengthArithmetic/*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b441487/b441487/*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_21990/GitHub_21990/*" />
-
         <!-- Arrays with non-zero lower bounds -->
         <!-- https://github.com/dotnet/runtimelab/issues/155 -->
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_b_il_r\*" />
@@ -1454,6 +1436,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Generics/Exceptions/GenericCatchInterfaceProgram/**">
+            <Issue>https://github.com/dotnet/runtime/issues/72827</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
             <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
         </ExcludeList>

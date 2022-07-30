@@ -376,7 +376,7 @@ namespace LibraryImportGenerator.UnitTests
             await VerifyCS.VerifyCodeFixAsync(
                 source,
                 fixedSource,
-                VerifyCS.Diagnostic(CallerAllocConstructorMustHaveBufferSizeRule).WithLocation(0).WithArguments("MarshallerType", "byte"));
+                VerifyCS.Diagnostic(CallerAllocFromManagedMustHaveBufferSizeRule).WithLocation(0).WithArguments("MarshallerType", "byte"));
         }
 
         [Fact]
@@ -384,7 +384,7 @@ namespace LibraryImportGenerator.UnitTests
         {
             string entryPointTypeSource = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
                 
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|SYSLIB1057:OtherMarshallerType|}))]
@@ -427,9 +427,9 @@ namespace LibraryImportGenerator.UnitTests
         {
             string entryPointTypeSource = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|SYSLIB1057:OtherMarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.UnmanagedToManagedOut, typeof({|SYSLIB1057:OtherMarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ElementIn, typeof({|SYSLIB1057:OtherMarshallerType|}))]
@@ -482,10 +482,10 @@ namespace LibraryImportGenerator.UnitTests
         {
             string source = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
                 class ManagedType2 {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|#0:MarshallerType|}))]
                 [CustomMarshaller(typeof(ManagedType2), MarshalMode.ManagedToUnmanagedIn, typeof({|#1:MarshallerType|}))]
                 static class MarshallerType
@@ -495,10 +495,10 @@ namespace LibraryImportGenerator.UnitTests
 
             string fixedSource = """
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 class ManagedType {}
                 class ManagedType2 {}
-                
+
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType))]
                 [CustomMarshaller(typeof(ManagedType2), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType))]
                 static class MarshallerType

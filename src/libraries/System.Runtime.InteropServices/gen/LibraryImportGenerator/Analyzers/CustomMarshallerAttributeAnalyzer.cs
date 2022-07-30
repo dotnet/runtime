@@ -64,6 +64,17 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.MarshallerTypeMustBeStaticClassOrStructDescription)));
 
+        /// <inheritdoc cref="SR.ElementMarshallerCannotBeStatefulMessage" />
+        public static readonly DiagnosticDescriptor ElementMarshallerCannotBeStatefulRule =
+            new DiagnosticDescriptor(
+                Ids.InvalidMarshallerType,
+                GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
+                GetResourceString(nameof(SR.ElementMarshallerCannotBeStatefulMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.ElementMarshallerCannotBeStatefulDescription)));
+
         /// <inheritdoc cref="SR.TypeMustBeUnmanagedMessage" />
         public static readonly DiagnosticDescriptor UnmanagedTypeMustBeUnmanagedRule =
             new DiagnosticDescriptor(
@@ -196,27 +207,93 @@ namespace Microsoft.Interop.Analyzers
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsDescription)));
 
-        /// <inheritdoc cref="SR.CallerAllocConstructorMustHaveBufferSizeMessage" />
-        public static readonly DiagnosticDescriptor CallerAllocConstructorMustHaveBufferSizeRule =
+        /// <inheritdoc cref="SR.CallerAllocFromManagedMustHaveBufferSizeMessage" />
+        public static readonly DiagnosticDescriptor CallerAllocFromManagedMustHaveBufferSizeRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
-                GetResourceString(nameof(SR.CallerAllocConstructorMustHaveBufferSizeMessage)),
+                GetResourceString(nameof(SR.CallerAllocFromManagedMustHaveBufferSizeMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.CallerAllocConstructorMustHaveBufferSizeDescription)));
+                description: GetResourceString(nameof(SR.CallerAllocFromManagedMustHaveBufferSizeDescription)));
 
-        /// <inheritdoc cref="SR.CallerAllocConstructorMustHaveBufferSizeMessage" />
-        public static readonly DiagnosticDescriptor StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeRule =
+        /// <inheritdoc cref="SR.StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage" />
+        public static readonly DiagnosticDescriptor StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeRule =
             new DiagnosticDescriptor(
                 Ids.CustomMarshallerTypeMustHaveRequiredShape,
                 GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
-                GetResourceString(nameof(SR.StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeMessage)),
+                GetResourceString(nameof(SR.StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeDescription)));
+                description: GetResourceString(nameof(SR.StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription)));
+
+        /// <inheritdoc cref="SR.StatefulMarshallerRequiresFromManagedMessage" />
+        public static readonly DiagnosticDescriptor StatefulMarshallerRequiresFromManagedRule =
+            new DiagnosticDescriptor(
+                Ids.CustomMarshallerTypeMustHaveRequiredShape,
+                GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
+                GetResourceString(nameof(SR.StatefulMarshallerRequiresFromManagedMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.StatefulMarshallerRequiresFromManagedDescription)));
+
+        /// <inheritdoc cref="SR.StatefulMarshallerRequiresToUnmanagedMessage" />
+        public static readonly DiagnosticDescriptor StatefulMarshallerRequiresToUnmanagedRule =
+            new DiagnosticDescriptor(
+                Ids.CustomMarshallerTypeMustHaveRequiredShape,
+                GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
+                GetResourceString(nameof(SR.StatefulMarshallerRequiresToUnmanagedMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.StatefulMarshallerRequiresToUnmanagedDescription)));
+
+        /// <inheritdoc cref="SR.StatefulMarshallerRequiresToManagedMessage" />
+        public static readonly DiagnosticDescriptor StatefulMarshallerRequiresToManagedRule =
+            new DiagnosticDescriptor(
+                Ids.CustomMarshallerTypeMustHaveRequiredShape,
+                GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
+                GetResourceString(nameof(SR.StatefulMarshallerRequiresToManagedMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.StatefulMarshallerRequiresToManagedDescription)));
+
+        /// <inheritdoc cref="SR.StatefulMarshallerRequiresFromUnmanagedMessage" />
+        public static readonly DiagnosticDescriptor StatefulMarshallerRequiresFromUnmanagedRule =
+            new DiagnosticDescriptor(
+                Ids.CustomMarshallerTypeMustHaveRequiredShape,
+                GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
+                GetResourceString(nameof(SR.StatefulMarshallerRequiresFromUnmanagedMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.StatefulMarshallerRequiresFromUnmanagedDescription)));
+
+        /// <inheritdoc cref="SR.StatefulMarshallerRequiresFreeMessage" />
+        public static readonly DiagnosticDescriptor StatefulMarshallerRequiresFreeRule =
+            new DiagnosticDescriptor(
+                Ids.CustomMarshallerTypeMustHaveRequiredShape,
+                GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
+                GetResourceString(nameof(SR.StatefulMarshallerRequiresFreeMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.StatefulMarshallerRequiresFreeDescription)));
+
+        /// <inheritdoc cref="SR.FromUnmanagedOverloadsNotSupportedMessage" />
+        public static readonly DiagnosticDescriptor FromUnmanagedOverloadsNotSupportedRule =
+            new DiagnosticDescriptor(
+                Ids.CustomMarshallerTypeMustHaveRequiredShape,
+                GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
+                GetResourceString(nameof(SR.FromUnmanagedOverloadsNotSupportedMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.FromUnmanagedOverloadsNotSupportedDescription)));
 
         /// <inheritdoc cref="SR.MarshallerTypeMustBeClosedOrMatchArityMessage" />
         public static readonly DiagnosticDescriptor MarshallerTypeMustBeClosedOrMatchArityRule =
@@ -390,6 +467,50 @@ namespace Microsoft.Interop.Analyzers
                     isEnabledByDefault: true,
                     description: GetResourceString(nameof(SR.StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsDescription)));
 
+            /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatefulMarshallerRequiresFromManagedRule" />
+            public static readonly DiagnosticDescriptor StatefulMarshallerRequiresFromManagedRule =
+                new DiagnosticDescriptor(
+                    Ids.CustomMarshallerTypeMustHaveRequiredShape,
+                    GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
+                    GetResourceString(nameof(SR.StatefulMarshallerRequiresFromManagedMessage)),
+                    Category,
+                    DiagnosticSeverity.Info,
+                    isEnabledByDefault: true,
+                    description: GetResourceString(nameof(SR.StatefulMarshallerRequiresFromManagedDescription)));
+
+            /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatefulMarshallerRequiresToUnmanagedRule" />
+            public static readonly DiagnosticDescriptor StatefulMarshallerRequiresToUnmanagedRule =
+                new DiagnosticDescriptor(
+                    Ids.CustomMarshallerTypeMustHaveRequiredShape,
+                    GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
+                    GetResourceString(nameof(SR.StatefulMarshallerRequiresToUnmanagedMessage)),
+                    Category,
+                    DiagnosticSeverity.Info,
+                    isEnabledByDefault: true,
+                    description: GetResourceString(nameof(SR.StatefulMarshallerRequiresToUnmanagedDescription)));
+
+            /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatefulMarshallerRequiresToManagedRule" />
+            public static readonly DiagnosticDescriptor StatefulMarshallerRequiresToManagedRule =
+                new DiagnosticDescriptor(
+                    Ids.CustomMarshallerTypeMustHaveRequiredShape,
+                    GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
+                    GetResourceString(nameof(SR.StatefulMarshallerRequiresToManagedMessage)),
+                    Category,
+                    DiagnosticSeverity.Info,
+                    isEnabledByDefault: true,
+                    description: GetResourceString(nameof(SR.StatefulMarshallerRequiresToManagedDescription)));
+
+            /// <inheritdoc cref="CustomMarshallerAttributeAnalyzer.StatefulMarshallerRequiresFromUnmanagedRule" />
+            public static readonly DiagnosticDescriptor StatefulMarshallerRequiresFromUnmanagedRule =
+                new DiagnosticDescriptor(
+                    Ids.CustomMarshallerTypeMustHaveRequiredShape,
+                    GetResourceString(nameof(SR.CustomMarshallerTypeMustHaveRequiredShapeTitle)),
+                    GetResourceString(nameof(SR.StatefulMarshallerRequiresFromUnmanagedMessage)),
+                    Category,
+                    DiagnosticSeverity.Info,
+                    isEnabledByDefault: true,
+                    description: GetResourceString(nameof(SR.StatefulMarshallerRequiresFromUnmanagedDescription)));
+
             internal static DiagnosticDescriptor GetDefaultMarshalModeDiagnostic(DiagnosticDescriptor errorDescriptor)
             {
                 if (ReferenceEquals(errorDescriptor, CustomMarshallerAttributeAnalyzer.StatelessValueInRequiresConvertToUnmanagedRule))
@@ -416,6 +537,22 @@ namespace Microsoft.Interop.Analyzers
                 {
                     return StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule;
                 }
+                if (ReferenceEquals(errorDescriptor, CustomMarshallerAttributeAnalyzer.StatefulMarshallerRequiresFromManagedRule))
+                {
+                    return StatefulMarshallerRequiresFromManagedRule;
+                }
+                if (ReferenceEquals(errorDescriptor, CustomMarshallerAttributeAnalyzer.StatefulMarshallerRequiresToUnmanagedRule))
+                {
+                    return StatefulMarshallerRequiresToUnmanagedRule;
+                }
+                if (ReferenceEquals(errorDescriptor, CustomMarshallerAttributeAnalyzer.StatefulMarshallerRequiresToManagedRule))
+                {
+                    return StatefulMarshallerRequiresToManagedRule;
+                }
+                if (ReferenceEquals(errorDescriptor, CustomMarshallerAttributeAnalyzer.StatefulMarshallerRequiresFromUnmanagedRule))
+                {
+                    return StatefulMarshallerRequiresFromUnmanagedRule;
+                }
                 return errorDescriptor;
             }
         }
@@ -437,7 +574,21 @@ namespace Microsoft.Interop.Analyzers
                 LinearCollectionOutRequiresCollectionMethodsRule,
                 StatelessLinearCollectionOutRequiresCollectionMethodsRule,
                 StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule,
-                CallerAllocConstructorMustHaveBufferSizeRule,
+                StatefulMarshallerRequiresFromManagedRule,
+                StatefulMarshallerRequiresToUnmanagedRule,
+                StatefulMarshallerRequiresToManagedRule,
+                StatefulMarshallerRequiresFromUnmanagedRule,
+                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatelessValueInRequiresConvertToUnmanagedRule),
+                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule),
+                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatelessRequiresConvertToManagedRule),
+                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule),
+                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule),
+                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule),
+                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatefulMarshallerRequiresFromManagedRule),
+                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatefulMarshallerRequiresToUnmanagedRule),
+                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatefulMarshallerRequiresToManagedRule),
+                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatefulMarshallerRequiresFromUnmanagedRule),
+                CallerAllocFromManagedMustHaveBufferSizeRule,
                 MarshallerTypeMustBeClosedOrMatchArityRule,
                 FirstParameterMustMatchReturnTypeRule,
                 ReturnTypesMustMatchRule,
@@ -445,12 +596,9 @@ namespace Microsoft.Interop.Analyzers
                 ElementTypesOfReturnTypesMustMatchRule,
                 ManagedTypeMustBeClosedOrMatchArityRule,
                 ManagedTypeMustBeNonNullRule,
-                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatelessValueInRequiresConvertToUnmanagedRule),
-                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule),
-                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatelessRequiresConvertToManagedRule),
-                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule),
-                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule),
-                DefaultMarshalModeDiagnostics.GetDefaultMarshalModeDiagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule));
+                ElementMarshallerCannotBeStatefulRule,
+                StatefulMarshallerRequiresFreeRule,
+                FromUnmanagedOverloadsNotSupportedRule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -580,7 +728,7 @@ namespace Microsoft.Interop.Analyzers
                     {
                         CheckForBufferSizeMember(
                             diagnosticReporter,
-                            isLinearCollectionMarshaller ? StatelessLinearCollectionCallerAllocConstructorMustHaveBufferSizeRule : CallerAllocConstructorMustHaveBufferSizeRule,
+                            isLinearCollectionMarshaller ? StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeRule : CallerAllocFromManagedMustHaveBufferSizeRule,
                             marshallerType,
                             methods.ToUnmanagedWithBuffer!);
                     }
@@ -836,10 +984,246 @@ namespace Microsoft.Interop.Analyzers
                 return false;
             }
 
-#pragma warning disable CA1822 // Mark members as static
             private void AnalyzeStatefulMarshallerType(DiagnosticReporter diagnosticReporter, ITypeSymbol managedType, MarshalMode mode, INamedTypeSymbol marshallerType, bool isLinearCollectionMarshaller)
-#pragma warning restore CA1822 // Mark members as static
             {
+                if (mode is MarshalMode.ElementIn
+                    or MarshalMode.ElementRef
+                    or MarshalMode.ElementOut)
+                {
+                    diagnosticReporter.CreateAndReportDiagnostic(ElementMarshallerCannotBeStatefulRule, marshallerType.ToDisplayString(), mode);
+                    return;
+                }
+
+                var (shape, methods) = StatefulMarshallerShapeHelper.GetShapeForType(marshallerType, managedType, isLinearCollectionMarshaller, _compilation);
+                var fromUnmanagedCandidates = StatefulMarshallerShapeHelper.GetFromUnmanagedMethodCandidates(marshallerType);
+
+                bool reportedDiagnostics = false;
+                DiagnosticReporter trackingReporter = new DiagnosticReporter((descriptor, properties, args) =>
+                {
+                    reportedDiagnostics = true;
+                    diagnosticReporter.CreateAndReportDiagnostic(descriptor, properties, args);
+                });
+                trackingReporter = AdaptReporterForMarshalMode(trackingReporter, mode);
+
+                ReportDiagnosticsForMissingMembers(trackingReporter);
+
+                // If we encountered any missing-member diagnostics, then we'll stop checking for additional errors here.
+                if (reportedDiagnostics)
+                    return;
+
+                ReportDiagnosticsForMismatchedMemberSignatures(trackingReporter);
+
+                void ReportDiagnosticsForMissingMembers(DiagnosticReporter diagnosticReporter)
+                {
+                    // If a caller-allocated-buffer convert method exists, verify that the BufferSize property exists
+                    if (shape.HasFlag(MarshallerShape.CallerAllocatedBuffer) && mode == MarshalMode.ManagedToUnmanagedIn)
+                    {
+                        CheckForBufferSizeMember(
+                            diagnosticReporter,
+                            CallerAllocFromManagedMustHaveBufferSizeRule,
+                            marshallerType,
+                            methods.FromManagedWithBuffer!);
+                    }
+
+                    if (ManualTypeMarshallingHelper.ModeUsesManagedToUnmanagedShape(mode))
+                    {
+                        // If the marshaller mode uses the managed->unmanaged shapes,
+                        // verify that we have either a full managed-to-unmanaged shape
+                        // or that our scenario supports the caller-allocated buffer managed-to-unmanaged shape
+                        // and that the caller-allocated-buffer shape is present.
+                        if (!(shape.HasFlag(MarshallerShape.ToUnmanaged) || (mode == MarshalMode.ManagedToUnmanagedIn && shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))))
+                        {
+                            // Verify that all of the following methods are present with valid shapes:
+                            // - FromManaged
+                            // - ToUnmanaged
+                            if (methods.FromManaged is null && methods.FromManagedWithBuffer is null)
+                            {
+                                diagnosticReporter.CreateAndReportDiagnostic(
+                                    StatefulMarshallerRequiresFromManagedRule,
+                                    MissingMemberNames.CreateDiagnosticPropertiesForMissingMembersDiagnostic(
+                                        mode,
+                                        ShapeMemberNames.Value.Stateful.FromManaged),
+                                    marshallerType.ToDisplayString(),
+                                    mode,
+                                    managedType.ToDisplayString());
+                            }
+                            if (methods.ToUnmanaged is null)
+                            {
+                                diagnosticReporter.CreateAndReportDiagnostic(
+                                    StatefulMarshallerRequiresToUnmanagedRule,
+                                    MissingMemberNames.CreateDiagnosticPropertiesForMissingMembersDiagnostic(
+                                        mode,
+                                        ShapeMemberNames.Value.Stateful.ToUnmanaged),
+                                    marshallerType.ToDisplayString(),
+                                    mode,
+                                    managedType.ToDisplayString());
+                            }
+
+                            if (isLinearCollectionMarshaller)
+                            {
+                                // Verify that all of the following methods are present with valid shapes:
+                                // - GetManagedValuesSource
+                                // - GetUnmanagedValuesDestination
+                                List<string> missingCollectionMethods = new();
+                                if (methods.ManagedValuesSource is null)
+                                {
+                                    missingCollectionMethods.Add(ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesSource);
+                                }
+                                if (methods.UnmanagedValuesDestination is null)
+                                {
+                                    missingCollectionMethods.Add(ShapeMemberNames.LinearCollection.Stateful.GetUnmanagedValuesDestination);
+                                }
+                                if (missingCollectionMethods.Count > 0)
+                                {
+                                    diagnosticReporter.CreateAndReportDiagnostic(
+                                        LinearCollectionInRequiresCollectionMethodsRule,
+                                        MissingMemberNames.CreateDiagnosticPropertiesForMissingMembersDiagnostic(
+                                            mode,
+                                            missingCollectionMethods),
+                                        marshallerType.ToDisplayString(),
+                                        mode,
+                                        managedType.ToDisplayString());
+                                }
+                            }
+                        }
+                    }
+
+                    if (ManualTypeMarshallingHelper.ModeUsesUnmanagedToManagedShape(mode))
+                    {
+                        // If the marshaller mode uses the unmanaged->managed shapes,
+                        // verify that we have a full unmanaged-to-managed shape
+                        if ((shape & (MarshallerShape.ToManaged | MarshallerShape.GuaranteedUnmarshal)) == 0)
+                        {
+                            // Verify that all of the following methods are present with valid shapes:
+                            // - ToManaged or ToManagedFinally
+                            // - FromUnmanaged
+                            if (methods.ToManaged is null && methods.ToManagedGuaranteed is null)
+                            {
+                                diagnosticReporter.CreateAndReportDiagnostic(
+                                    StatefulMarshallerRequiresToManagedRule,
+                                    MissingMemberNames.CreateDiagnosticPropertiesForMissingMembersDiagnostic(
+                                        mode,
+                                        ShapeMemberNames.Value.Stateful.ToManaged),
+                                    marshallerType.ToDisplayString(),
+                                    mode,
+                                    managedType.ToDisplayString());
+                            }
+
+                            if (fromUnmanagedCandidates.Length == 0)
+                            {
+                                diagnosticReporter.CreateAndReportDiagnostic(
+                                    StatefulMarshallerRequiresFromUnmanagedRule,
+                                    MissingMemberNames.CreateDiagnosticPropertiesForMissingMembersDiagnostic(
+                                        mode,
+                                        ShapeMemberNames.Value.Stateful.FromUnmanaged),
+                                    marshallerType.ToDisplayString(),
+                                    mode,
+                                    managedType.ToDisplayString());
+                            }
+
+                            if (fromUnmanagedCandidates.Length > 1)
+                            {
+                                diagnosticReporter.CreateAndReportDiagnostic(
+                                    FromUnmanagedOverloadsNotSupportedRule,
+                                    marshallerType.ToDisplayString());
+                            }
+
+                            if (isLinearCollectionMarshaller)
+                            {
+                                // Verify that all of the following methods are present with valid shapes:
+                                // - GetUnmanagedValuesSource
+                                // - GetManagedValuesDestination
+                                List<string> missingCollectionMethods = new();
+                                if (methods.UnmanagedValuesSource is null)
+                                {
+                                    missingCollectionMethods.Add(ShapeMemberNames.LinearCollection.Stateful.GetUnmanagedValuesSource);
+                                }
+                                if (methods.ManagedValuesDestination is null)
+                                {
+                                    missingCollectionMethods.Add(ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesDestination);
+                                }
+                                if (missingCollectionMethods.Count > 0)
+                                {
+                                    diagnosticReporter.CreateAndReportDiagnostic(
+                                        LinearCollectionOutRequiresCollectionMethodsRule,
+                                        MissingMemberNames.CreateDiagnosticPropertiesForMissingMembersDiagnostic(
+                                            mode,
+                                            missingCollectionMethods),
+                                        marshallerType.ToDisplayString(),
+                                        mode,
+                                        managedType.ToDisplayString());
+                                }
+                            }
+                        }
+                    }
+
+                    if (methods.Free is null)
+                    {
+                        diagnosticReporter.CreateAndReportDiagnostic(
+                            StatefulMarshallerRequiresFreeRule,
+                            MissingMemberNames.CreateDiagnosticPropertiesForMissingMembersDiagnostic(
+                                mode,
+                                ShapeMemberNames.Free),
+                            marshallerType.ToDisplayString());
+                    }
+                }
+
+                void ReportDiagnosticsForMismatchedMemberSignatures(DiagnosticReporter diagnosticReporter)
+                {
+                    // Verify that the unmanaged type used by the marshaller is consistently
+                    // the same in all of the methods that use the unmanaged type.
+                    // Also, verify that the collection element types are consistent.
+                    ITypeSymbol? unmanagedType = null;
+                    if (ManualTypeMarshallingHelper.ModeUsesManagedToUnmanagedShape(mode))
+                    {
+                        // First verify all usages in the managed->unmanaged shape.
+                        unmanagedType = methods.ToUnmanaged.ReturnType;
+                        if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittable())
+                        {
+                            diagnosticReporter.CreateAndReportDiagnostic(UnmanagedTypeMustBeUnmanagedRule, methods.ToUnmanaged.ToDisplayString());
+                        }
+                    }
+
+                    if (ManualTypeMarshallingHelper.ModeUsesUnmanagedToManagedShape(mode))
+                    {
+                        // Verify the unmanaged types match unmanaged->managed shape
+                        IMethodSymbol fromUnmanagedMethod = fromUnmanagedCandidates[0];
+                        if (unmanagedType is not null && !SymbolEqualityComparer.Default.Equals(unmanagedType, fromUnmanagedMethod.Parameters[0].Type))
+                        {
+                            // If both shapes are present, verify that the unmanaged types match
+                            diagnosticReporter.CreateAndReportDiagnostic(FirstParameterMustMatchReturnTypeRule, fromUnmanagedMethod.ToDisplayString(), methods.ToUnmanaged.ToDisplayString());
+                        }
+                        else
+                        {
+                            unmanagedType = fromUnmanagedMethod.Parameters[0].Type;
+
+                            if (!unmanagedType.IsUnmanagedType && !unmanagedType.IsStrictlyBlittable())
+                            {
+                                diagnosticReporter.CreateAndReportDiagnostic(UnmanagedTypeMustBeUnmanagedRule, fromUnmanagedMethod.ToDisplayString());
+                            }
+                        }
+                    }
+
+                    // Verify that the managed collection element types match.
+                    // Verify that the unmanaged collection types have the expected element types.
+                    if (isLinearCollectionMarshaller)
+                    {
+                        if (methods.ManagedValuesSource is not null && methods.ManagedValuesDestination is not null)
+                        {
+                            if (TryGetElementTypeFromSpanType(methods.ManagedValuesSource.ReturnType, out ITypeSymbol sourceElementType)
+                                && TryGetElementTypeFromSpanType(methods.ManagedValuesDestination.ReturnType, out ITypeSymbol destinationElementType)
+                                && !SymbolEqualityComparer.Default.Equals(sourceElementType, destinationElementType))
+                            {
+                                diagnosticReporter.CreateAndReportDiagnostic(ElementTypesOfReturnTypesMustMatchRule, methods.ManagedValuesSource.ToDisplayString(), methods.ManagedValuesDestination.ToDisplayString());
+                            }
+                        }
+
+                        var (typeArguments, _) = marshallerType.GetAllTypeArgumentsIncludingInContainingTypes();
+                        ITypeSymbol expectedUnmanagedCollectionElementType = typeArguments[typeArguments.Length - 1];
+                        VerifyUnmanagedCollectionElementType(diagnosticReporter, methods.UnmanagedValuesSource, expectedUnmanagedCollectionElementType, _readOnlySpanOfT);
+                        VerifyUnmanagedCollectionElementType(diagnosticReporter, methods.UnmanagedValuesDestination, expectedUnmanagedCollectionElementType, _spanOfT);
+                    }
+                }
             }
         }
     }

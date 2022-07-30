@@ -7514,49 +7514,7 @@ getMethodInfoHelper(
         {
             methInfo->options = CorInfoOptions(methInfo->options|CORINFO_GENERICS_CTXT_KEEP_ALIVE);
         }
-        else
 #endif // defined(PROFILING_SUPPORTED)
-        {
-            // Check all the exception clauses
-
-            if (ftn->IsDynamicMethod())
-            {
-                // @TODO: how do we detect the need to mark this flag?
-            }
-            else
-            {
-                COR_ILMETHOD_SECT_EH_CLAUSE_FAT ehClause;
-
-                for (unsigned i = 0; i < methInfo->EHcount; i++)
-                {
-                    const COR_ILMETHOD_SECT_EH_CLAUSE_FAT* ehInfo =
-                            (COR_ILMETHOD_SECT_EH_CLAUSE_FAT*)header->EH->EHClause(i, &ehClause);
-
-                    // Is it a typed catch clause?
-                    if (ehInfo->GetFlags() != COR_ILEXCEPTION_CLAUSE_NONE)
-                        continue;
-
-                    // Check if we catch "C<T>" ?
-
-                    DWORD catchTypeToken = ehInfo->GetClassToken();
-                    if (TypeFromToken(catchTypeToken) != mdtTypeSpec)
-                        continue;
-
-                    PCCOR_SIGNATURE pSig;
-                    ULONG cSig;
-                    IfFailThrow(ftn->GetMDImport()->GetTypeSpecFromToken(catchTypeToken, &pSig, &cSig));
-
-                    SigPointer psig(pSig, cSig);
-
-                    SigTypeContext sigTypeContext(ftn);
-                    if (psig.IsPolyType(&sigTypeContext) & hasSharableVarsMask)
-                    {
-                        methInfo->options = CorInfoOptions(methInfo->options|CORINFO_GENERICS_CTXT_KEEP_ALIVE);
-                        break;
-                    }
-                }
-            }
-        }
     }
 
     PCCOR_SIGNATURE pSig = NULL;
