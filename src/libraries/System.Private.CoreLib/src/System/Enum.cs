@@ -315,7 +315,7 @@ namespace System
             (TEnum[])GetValues(typeof(TEnum));
 #endif
 
-        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload or the GetValuesAsUnderlyingType method instead.")]
         public static Array GetValues(Type enumType)
         {
             ArgumentNullException.ThrowIfNull(enumType);

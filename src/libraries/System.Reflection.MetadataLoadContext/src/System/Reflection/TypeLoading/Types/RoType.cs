@@ -288,6 +288,7 @@ namespace System.Reflection.TypeLoading
         private volatile RoType? _lazyUnderlyingEnumType;
         public sealed override Array GetEnumValues() => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
+#if NET7_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "Enum Types are not trimmed.")]
         public override Array GetEnumValuesAsUnderlyingType()
@@ -317,6 +318,7 @@ namespace System.Reflection.TypeLoading
 
             return ret;
         }
+#endif
 
         // No trust environment to apply these to.
         public sealed override bool IsSecurityCritical => throw new InvalidOperationException(SR.InvalidOperation_IsSecurity);

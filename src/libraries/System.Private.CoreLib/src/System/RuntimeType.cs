@@ -120,7 +120,7 @@ namespace System
             return new ReadOnlySpan<string>(ret).ToArray();
         }
 
-        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetEnumValues<TEnum> overload or the GetEnumValuesAsUnderlyingType method instead.")]
         public override Array GetEnumValues()
         {
             if (!IsActualEnum)

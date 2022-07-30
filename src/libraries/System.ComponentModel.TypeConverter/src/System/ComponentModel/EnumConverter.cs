@@ -171,11 +171,12 @@ namespace System.ComponentModel
                     bool isUnderlyingTypeUInt64 = Enum.GetUnderlyingType(EnumType) == typeof(ulong);
                     List<Enum> flagValues = new List<Enum>();
 
-                    Array objValues = Enum.GetValues(EnumType);
+                    Array objValues = Enum.GetValuesAsUnderlyingType(EnumType);
                     long[] ulValues = new long[objValues.Length];
                     for (int idx = 0; idx < objValues.Length; idx++)
                     {
-                        ulValues[idx] = GetEnumValue(isUnderlyingTypeUInt64, (Enum)objValues.GetValue(idx)!, culture);
+                        ulValues[idx] = isUnderlyingTypeUInt64 ? unchecked((long)Convert.ToUInt64(objValues.GetValue(idx), culture)) :
+                            Convert.ToInt64(objValues.GetValue(idx), culture);
                     }
 
                     long longValue = GetEnumValue(isUnderlyingTypeUInt64, (Enum)value, culture);
