@@ -7753,8 +7753,6 @@ inline
 BOOL gc_heap::ephemeral_pointer_p (uint8_t* o)
 {
 #ifdef USE_REGIONS
-
-
     int gen_num = object_gennum ((uint8_t*)o);
     assert (gen_num >= 0);
     return (gen_num < max_generation);
@@ -44693,7 +44691,7 @@ bool GCHeap::IsEphemeral (Object* object)
 {
     uint8_t* o = (uint8_t*)object;
 #if defined(FEATURE_BASICFREEZE) && defined(USE_REGIONS)
-    if (!is_in_heap_range(o))
+    if (!is_in_heap_range (o))
     {
         // objects in frozen segments are not ephemeral
         return FALSE;
