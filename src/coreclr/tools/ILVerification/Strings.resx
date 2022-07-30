@@ -447,4 +447,7 @@
   <data name="InterfaceMethodNotImplemented" xml:space="preserve">
     <value>Class implements interface but not method, Class: '{0}' Interface: '{1}' Missing method: '{2}'.</value>
   </data>
+  <data name="LocallocStackNotEmpty" xml:space="preserve">
+    <value>Evaluation stack should contain single element - size.</value>
+  </data>
 </root>
