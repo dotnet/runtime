@@ -2582,7 +2582,7 @@ namespace Internal.IL
 
             var size = Pop();
 
-            FatalCheck(_stackTop == 0, VerifierError.LocallocStackNotEmpty);
+            Check(_stackTop == 0, VerifierError.LocallocStackNotEmpty);
 
             CheckIsInteger(size);
 
