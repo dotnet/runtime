@@ -4701,7 +4701,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
  */
 GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    if (optLocalAssertionProp)
+    if (optLocalAssertionProp || !optCanPropBndsChk)
     {
         return nullptr;
     }
@@ -4738,8 +4738,6 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         {
             continue;
         }
-
-        assert(optCanPropBndsChk);
 
         GenTreeBoundsChk* arrBndsChk = tree->AsBoundsChk();
 
