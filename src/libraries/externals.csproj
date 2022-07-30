@@ -74,8 +74,8 @@
           AfterTargets="AfterResolveReferences"
           Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TestNativeAot)' != 'true'">
     <ItemGroup>
-      <RuntimeFiles Include="@(HostFxrFile)" />
-      <RuntimeFiles Include="@(HostPolicyFile)" />
+      <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)')" />
+      <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)')" />
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" />
