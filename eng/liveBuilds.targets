@@ -118,12 +118,6 @@
       <MonoIncludeFiles Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
 
-    <!-- Host files. Mobile uses a different hosting model, so we don't include the .NET host components there. -->
-    <ItemGroup Condition="'$(TargetsMobile)' != 'true' and Exists('$(DotNetHostBinDir)')">
-      <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)hostpolicy$(LibSuffix)" />
-      <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(LibSuffix)" PackOnly="true" />
-    </ItemGroup>
-
     <Error Condition="'@(RuntimeFiles)' == ''" Text="The '$(RuntimeFlavor)' subset must be built before building this project." />
   </Target>
 
