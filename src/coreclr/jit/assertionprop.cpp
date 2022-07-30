@@ -979,6 +979,10 @@ void Compiler::optAssertionInit(bool isLocalProp)
     optAssertionCount      = 0;
     optAssertionPropagated = false;
     bbJtrueAssertionOut    = nullptr;
+    optCanPropLclVar       = false;
+    optCanPropEqual        = false;
+    optCanPropNonNull      = false;
+    optCanPropBndsChk      = false;
 }
 
 #ifdef DEBUG
@@ -1350,7 +1354,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             assertion.op1.kind           = O1K_ARR_BND;
             assertion.op1.bnd.vnIdx      = optConservativeNormalVN(arrBndsChk->GetIndex());
             assertion.op1.bnd.vnLen      = optConservativeNormalVN(arrBndsChk->GetArrayLength());
-            optCanPropBndsChk            = true;
             goto DONE_ASSERTION;
         }
     }
@@ -1997,6 +2000,13 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
     }
 #endif // DEBUG
 
+    optCanPropLclVar |= newAssertion->assertionKind == OAK_EQUAL && newAssertion->op1.kind != O1K_LCLVAR;
+    optCanPropEqual |= newAssertion->assertionKind == OAK_EQUAL || newAssertion->assertionKind == OAK_NOT_EQUAL;
+    optCanPropNonNull |=
+        newAssertion->assertionKind == OAK_NOT_EQUAL && newAssertion->op2.vn == ValueNumStore::VNForNull();
+    optCanPropSubRange |= newAssertion->assertionKind == OAK_SUBRANGE && newAssertion->op1.kind == O1K_LCLVAR;
+    optCanPropBndsChk |= newAssertion->op1.kind == O1K_ARR_BND;
+
     // Assertion mask bits are [index + 1].
     if (optLocalAssertionProp)
     {
@@ -2372,7 +2382,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         dsc.op1.bnd.vnLen = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
         dsc.op2.kind      = O2K_INVALID;
         dsc.op2.vn        = ValueNumStore::NoVN;
-        optCanPropBndsChk = true;
 
         AssertionIndex index = optAddAssertion(&dsc);
         if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
@@ -2829,7 +2838,7 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 //
 AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions)
 {
-    if (!optLocalAssertionProp && BitVecOps::IsEmpty(apTraits, assertions))
+    if ((!optLocalAssertionProp && BitVecOps::IsEmpty(apTraits, assertions) || !optCanPropSubRange)
     {
         return NO_ASSERTION_INDEX;
     }
@@ -2842,8 +2851,6 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
             (curAssertion->assertionKind == OAK_SUBRANGE) &&
             (curAssertion->op1.kind == O1K_LCLVAR))
         {
-            assert(optCanPropSubRange);
-
             // For local assertion prop use comparison on locals, and use comparison on vns for global prop.
             bool isEqual = optLocalAssertionProp
                                ? (curAssertion->op1.lcl.lclNum == tree->AsLclVarCommon()->GetLclNum())
@@ -3604,7 +3611,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
 
     // There are no constant assertions for structs in global propagation.
     //
-    if (!optLocalAssertionProp && varTypeIsStruct(tree))
+    if ((!optLocalAssertionProp && varTypeIsStruct(tree)) || !optCanPropLclVar)
     {
         return nullptr;
     }
@@ -3624,8 +3631,6 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         {
             continue;
         }
-
-        assert(optCanPropLclVar);
 
         // Copy prop.
         if (curAssertion->op2.kind == O2K_LCLVAR_COPY)
@@ -3809,7 +3814,7 @@ AssertionIndex Compiler::optLocalAssertionIsEqualOrNotEqual(
 //
 AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2)
 {
-    if (BitVecOps::IsEmpty(apTraits, assertions))
+    if (BitVecOps::IsEmpty(apTraits, assertions) || !optCanPropEqual)
     {
         return NO_ASSERTION_INDEX;
     }
@@ -3827,8 +3832,6 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
         {
             continue;
         }
-
-        assert(optCanPropEqual);
 
         if ((curAssertion->op1.vn == vnStore->VNConservativeNormalValue(op1->gtVNPair)) &&
             (curAssertion->op2.vn == vnStore->VNConservativeNormalValue(op2->gtVNPair)))
@@ -3864,7 +3867,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
  */
 AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_TP assertions, GenTree* op1)
 {
-    if (BitVecOps::IsEmpty(apTraits, assertions))
+    if (BitVecOps::IsEmpty(apTraits, assertions) || !optCanPropEqual)
     {
         return NO_ASSERTION_INDEX;
     }
@@ -3882,8 +3885,6 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_T
         {
             continue;
         }
-
-        assert(optCanPropEqual);
 
         if ((curAssertion->op1.vn == vnStore->VNConservativeNormalValue(op1->gtVNPair)) &&
             (curAssertion->op2.vn == vnStore->VNZeroForType(op1->TypeGet())))
@@ -4505,6 +4506,11 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
     *pVnBased = false;
 #endif
 
+    if (!optCanPropNonNull)
+    {
+        return NO_ASSERTION_INDEX;
+    }
+
     // If local assertion prop use lcl comparison, else use VN comparison.
     if (!optLocalAssertionProp)
     {
@@ -4558,8 +4564,6 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
             {
                 continue;
             }
-
-            assert(optCanPropNonNull);
 
             if ((curAssertion->op1.vn != vn) && (curAssertion->op1.vn != vnBase))
             {
