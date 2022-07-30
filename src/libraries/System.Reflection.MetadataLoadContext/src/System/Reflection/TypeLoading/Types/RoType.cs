@@ -296,7 +296,7 @@ namespace System.Reflection.TypeLoading
             if (!IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            FieldInfo[] enumFields = this.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            FieldInfo[] enumFields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             int numValues = enumFields.Length;
             Array ret = Type.GetTypeCode(GetEnumUnderlyingType()) switch
             {
