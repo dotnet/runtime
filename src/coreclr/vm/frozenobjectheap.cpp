@@ -13,7 +13,7 @@ FrozenObjectHeap::FrozenObjectHeap():
     COMMA_INDEBUG(m_ObjectsCount(0))
 {
     m_PageSize = GetOsPageSize();
-    m_Crst.Init(CrstFrozenObjectHeap, CRST_UNSAFE_ANYMODE);
+    m_Crst.Init(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC);
 }
 
 FrozenObjectHeap::~FrozenObjectHeap()
@@ -46,7 +46,7 @@ bool FrozenObjectHeap::Initialize()
         segment_info si;
         si.pvMem = alloc;
         si.ibFirstObject = sizeof(ObjHeader);
-        si.ibAllocated = m_Size;
+        si.ibAllocated = si.ibFirstObject;
         si.ibCommit = m_Size;
         si.ibReserved = m_Size;
 
@@ -58,6 +58,7 @@ bool FrozenObjectHeap::Initialize()
             m_pCommited = m_pStart;
             INDEBUG(m_ObjectsCount = 0);
             ASSERT((intptr_t)m_pCurrent % DATA_ALIGNMENT == 0);
+            //printf("\nFOH from %p to %p\n", m_pStart, m_pStart + m_Size);
             return true;
         }
 
