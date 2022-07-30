@@ -45,7 +45,7 @@
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' == 'apphost'" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(HostFxFile)"
+    <Copy SourceFiles="@(HostFxrFile)"
           DestinationFolder="$(NetCoreAppCurrentTestHostPath)host\fxr\$(ProductVersion)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
