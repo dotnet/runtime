@@ -2215,7 +2215,13 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
 void Compiler::fgAdjustForAddressExposedOrWrittenThis()
 {
-    LclVarDsc* const thisVarDsc = lvaGetDesc(info.compThisArg);
+    LclVarDsc* thisVarDsc = lvaGetDesc(info.compThisArg);
+
+    // Optionally enable adjustment during stress.
+    if (compStressCompile(STRESS_GENERIC_VARN, 15))
+    {
+        thisVarDsc->lvHasILStoreOp = true;
+    }
 
     // If this is exposed or written to, create a temp for the modifiable this
     if (thisVarDsc->IsAddressExposed() || thisVarDsc->lvHasILStoreOp)
