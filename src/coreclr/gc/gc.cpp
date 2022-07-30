@@ -11422,16 +11422,6 @@ heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_he
     return new_segment;
 }
 
-inline void save_allocated(heap_segment* seg)
-{
-#ifndef MULTIPLE_HEAP
-    if (!heap_segment_saved_allocated(seg))
-#endif // !MULTIPLE_HEAP
-    {
-        heap_segment_saved_allocated (seg) = heap_segment_allocated (seg);
-    }
-}
-
 void gc_heap::init_heap_segment (heap_segment* seg, gc_heap* hp
 #ifdef USE_REGIONS
                                  , uint8_t* start, size_t size, int gen_num
@@ -11442,7 +11432,7 @@ void gc_heap::init_heap_segment (heap_segment* seg, gc_heap* hp
     heap_segment_next (seg) = 0;
     heap_segment_plan_allocated (seg) = heap_segment_mem (seg);
     heap_segment_allocated (seg) = heap_segment_mem (seg);
-    save_allocated(seg);
+    heap_segment_saved_allocated (seg) = heap_segment_mem (seg);
     heap_segment_decommit_target (seg) = heap_segment_reserved (seg);
 #ifdef BACKGROUND_GC
     heap_segment_background_allocated (seg) = 0;
@@ -28160,6 +28150,16 @@ void gc_heap::add_plug_in_condemned_info (generation* gen, size_t plug_size)
     bucket_info[bucket_index].size += plug_size;
 }
 #endif //FEATURE_EVENT_TRACE
+
+inline void save_allocated(heap_segment* seg)
+{
+#ifndef MULTIPLE_HEAP
+    if (!heap_segment_saved_allocated(seg))
+#endif // !MULTIPLE_HEAP
+    {
+        heap_segment_saved_allocated (seg) = heap_segment_allocated (seg);
+    }
+}
 
 #ifdef _PREFAST_
 #pragma warning(push)
