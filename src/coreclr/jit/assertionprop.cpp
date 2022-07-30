@@ -983,6 +983,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
     optCanPropEqual        = false;
     optCanPropNonNull      = false;
     optCanPropBndsChk      = false;
+    optCanPropSubRange     = false;
 }
 
 #ifdef DEBUG
@@ -2838,7 +2839,7 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 //
 AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions)
 {
-    if ((!optLocalAssertionProp && BitVecOps::IsEmpty(apTraits, assertions) || !optCanPropSubRange)
+    if ((!optLocalAssertionProp && BitVecOps::IsEmpty(apTraits, assertions)) || !optCanPropSubRange)
     {
         return NO_ASSERTION_INDEX;
     }
