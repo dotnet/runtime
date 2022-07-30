@@ -51,7 +51,9 @@ namespace System.Formats.Tar
             entry._header._aTime = info.LastAccessTimeUtc;
             entry._header._cTime = info.LastWriteTimeUtc; // There is no "change time" property
 
-            entry.Mode = attributes.HasFlag(FileAttributes.Directory) ? TarHelpers.DefaultDirectoryMode : TarHelpers.WindowsFileMode;
+            // The value used the files (WindowsFileMode) and directories (DefaultDirectoryMode) is the same.
+            Debug.Assert(TarHelpers.DefaultDirectoryMode == TarHelpers.WindowsFileMode);
+            entry.Mode = TarHelpers.DefaultDirectoryMode;
 
             if (entry.EntryType == TarEntryType.SymbolicLink)
             {
