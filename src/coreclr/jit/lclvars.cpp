@@ -529,6 +529,14 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
         varDscInfo->varNum++;
         varDscInfo->varDsc++;
     }
+
+    // Under stress, optionally force the jit to act as if `this` is modifable.
+    //
+    if (compStressCompile(STRESS_GENERIC_VARN, 15))
+    {
+        JITDUMP("JITSTRESS: creating modifiable `this`\n");
+        varDsc->lvHasILStoreOp = true;
+    }
 }
 
 /*****************************************************************************/
