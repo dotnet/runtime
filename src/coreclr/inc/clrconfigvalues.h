@@ -404,6 +404,12 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_NGenReserveForJumpStubs, W("NGenReserveForJump
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_BreakOnOutOfMemoryWithinRange, W("BreakOnOutOfMemoryWithinRange"), 0, "Break before out of memory within range exception is thrown")
 
 ///
+/// Frozen segments (aka Frozen Object Heap)
+///
+CONFIG_DWORD_INFO(INTERNAL_FrozenSegmentReserveSize, W("FrozenSegmentReserveSize"), 0x400000, "Amount of memory to reserve for frozen segments") // 4Mb
+CONFIG_DWORD_INFO(INTERNAL_FrozenSegmentCommitSize, W("FrozenSegmentCommitSize"), 0x10000, "Amount of memory to commit on demand for frozen segments") // 64Kb
+
+///
 /// Log
 ///
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_LogEnable, W("LogEnable"), 0, "Turns on the traditional CLR log.")

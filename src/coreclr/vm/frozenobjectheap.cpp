@@ -7,17 +7,14 @@
 FrozenObjectHeap::FrozenObjectHeap():
     m_pStart(nullptr),
     m_pCurrent(nullptr),
-    m_SizeCommited(0),
-    m_Size(0),
+    m_CommitChunkSize(0),
+    m_SizeCommitted(0),
+    m_SizeReserved(0),
     m_SegmentHandle(nullptr)
     COMMA_INDEBUG(m_ObjectsCount(0))
 {
-    m_PageSize = GetOsPageSize();
     m_Crst.Init(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC);
 }
-
-#define FOH_RESERVE_PAGES 1024 // e.g. reserve 4Mb of virtual memory
-#define FOH_COMMIT_PAGES 32  // e.g. commit 128Kb chunks
 
 FrozenObjectHeap::~FrozenObjectHeap()
 {
@@ -34,19 +31,26 @@ FrozenObjectHeap::~FrozenObjectHeap()
 
 bool FrozenObjectHeap::Initialize()
 {
-    m_Size = m_PageSize * FOH_RESERVE_PAGES;
+    // For internal testing
+    m_CommitChunkSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_FrozenSegmentCommitSize);
+    m_SizeReserved = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_FrozenSegmentReserveSize);
 
-    _ASSERT(FOH_RESERVE_PAGES > FOH_COMMIT_PAGES);
-    _ASSERT(FOH_RESERVE_PAGES % FOH_COMMIT_PAGES == 0);
-    _ASSERT(m_PageSize > MIN_OBJECT_SIZE);
+    if (m_SizeReserved == 0)
+    {
+        // A way to disable FrozenObjectHeap
+        return false;
+    }
+
+    _ASSERT(m_SizeReserved > m_CommitChunkSize);
+    _ASSERT(m_SizeReserved % m_CommitChunkSize == 0);
     _ASSERT(m_SegmentHandle == nullptr);
     _ASSERT(m_pStart == nullptr);
 
-    void* alloc = ClrVirtualAllocAligned(nullptr, m_Size, MEM_RESERVE, PAGE_READWRITE, m_PageSize);
+    void* alloc = ClrVirtualAlloc(nullptr, m_SizeReserved, MEM_RESERVE, PAGE_READWRITE);
     if (alloc != nullptr)
     {
-        // Commit FOH_COMMIT_PAGES pages in advance
-        alloc = ClrVirtualAllocAligned(alloc, m_PageSize * FOH_COMMIT_PAGES, MEM_COMMIT, PAGE_READWRITE, m_PageSize);
+        // Commit FOH_COMMIT_SIZE chunk in advance
+        alloc = ClrVirtualAlloc(alloc, m_CommitChunkSize, MEM_COMMIT, PAGE_READWRITE);
     }
 
     if (alloc != nullptr)
@@ -55,15 +59,15 @@ bool FrozenObjectHeap::Initialize()
         si.pvMem = alloc;
         si.ibFirstObject = sizeof(ObjHeader);
         si.ibAllocated = si.ibFirstObject;
-        si.ibCommit = m_PageSize * FOH_COMMIT_PAGES;
-        si.ibReserved = m_Size;
+        si.ibCommit = m_CommitChunkSize;
+        si.ibReserved = m_SizeReserved;
 
         m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&si);
         if (m_SegmentHandle != nullptr)
         {
             m_pStart = static_cast<uint8_t*>(alloc);
             m_pCurrent = m_pStart;
-            m_SizeCommited = si.ibCommit;
+            m_SizeCommitted = si.ibCommit;
             INDEBUG(m_ObjectsCount = 0);
             ASSERT((intptr_t)m_pCurrent % DATA_ALIGNMENT == 0);
             return true;
@@ -84,20 +88,21 @@ Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
 
     CrstHolder ch(&m_Crst);
 
-    if (objectSize > m_PageSize)
-    {
-        // Since FrozenObjectHeap is just an optimization, let's not fill it with large objects.
-        return nullptr;
-    }
-
     if (m_pStart == nullptr)
     {
-        // m_Size > 0 means we already tried to init and it failed.
+        // m_SizeReserved > 0 means we already tried to init and it failed.
         // so bail out to avoid doing Alloc again.
-        if ((m_Size > 0) || !Initialize())
+        if ((m_SizeReserved > 0) || !Initialize())
         {
             return nullptr;
         }
+    }
+
+    if (objectSize > m_CommitChunkSize)
+    {
+        // The current design doesn't allow object larger than FOH_COMMIT_CHUNK_SIZE and
+        // since FrozenObjectHeap is just an optimization, let's not fill it with huge objects.
+        return nullptr;
     }
 
     _ASSERT(m_pStart != nullptr);
@@ -105,29 +110,29 @@ Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
     _ASSERT(IS_ALIGNED(m_pCurrent, DATA_ALIGNMENT));
 
     uint8_t* obj = m_pCurrent;
-    if ((size_t)(m_pStart + m_Size) < (size_t)(obj + objectSize))
+    if ((size_t)(m_pStart + m_SizeReserved) < (size_t)(obj + objectSize))
     {
-        // heap is full
+        // heap is full, caller is expected to switch to other heaps
+        // TODO: register a new frozen segment
         return nullptr;
     }
 
     // Check if we need to commit a new chunk
-    if ((size_t)(m_pStart + m_SizeCommited) < (size_t)(obj + objectSize))
+    if ((size_t)(m_pStart + m_SizeCommitted) < (size_t)(obj + objectSize))
     {
-        if (ClrVirtualAllocAligned(m_pCurrent, m_PageSize * FOH_COMMIT_PAGES, MEM_COMMIT, PAGE_READWRITE, m_PageSize) == nullptr)
+        if (ClrVirtualAlloc(m_pCurrent, m_CommitChunkSize, MEM_COMMIT, PAGE_READWRITE) == nullptr)
         {
             // We failed to commit a new chunk of the reserved memory
             return nullptr;
         }
-        m_SizeCommited += m_PageSize * FOH_COMMIT_PAGES;
+        m_SizeCommitted += m_CommitChunkSize;
     }
 
-    ZeroMemory(obj, objectSize);
     INDEBUG(m_ObjectsCount++);
     m_pCurrent = obj + objectSize;
 
-    // Notify GC that we bumped the pointer
-    GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(m_SegmentHandle, m_pCurrent, m_pStart + m_SizeCommited);
+    // Notify GC that we bumped the pointer and, probably, committed more memory in the reserved part
+    GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(m_SegmentHandle, m_pCurrent, m_pStart + m_SizeCommitted);
 
     // Skip object header
     return reinterpret_cast<Object*>(obj + sizeof(ObjHeader));

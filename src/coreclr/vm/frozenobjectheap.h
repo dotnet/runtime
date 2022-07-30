@@ -19,12 +19,11 @@ private:
 
     uint8_t* m_pStart;
     uint8_t* m_pCurrent;
-    size_t m_SizeCommited;
-    size_t m_Size;
-    size_t m_PageSize;
+    size_t m_CommitChunkSize;
+    size_t m_SizeCommitted;
+    size_t m_SizeReserved;
     segment_handle m_SegmentHandle;
     CrstExplicitInit m_Crst;
-    bool m_FailedToInit;
     INDEBUG(size_t m_ObjectsCount);
 };
 
