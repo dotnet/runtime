@@ -1436,7 +1436,7 @@ internal static class ReflectionTest
 
             Console.WriteLine("Enum.GetEnumValuesAsUnderlyingType");
             {
-                if (Enum.GetEnumValuesAsUnderlyingType(typeof(Mine)) is not int[])
+                if (Enum.GetEnumValuesAsUnderlyingType(typeof(Mine)).GetType() != typeof(int[]))
                     throw new Exception("GetEnumValuesAsUnderlyingType");
             }
 
