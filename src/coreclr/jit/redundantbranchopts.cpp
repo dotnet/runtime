@@ -185,20 +185,37 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
         return;
     }
 
-    // Dominating pred has the form R(x, y)
-    // See if tree pred has the form R*(x, y) or R'(y,x).
+#ifdef DEBUG
+    static ConfigMethodRange JitEnableRboRange;
+    JitEnableRboRange.EnsureInit(JitConfig.JitEnableRboRange());
+    const unsigned hash    = impInlineRoot()->info.compMethodHash();
+    const bool     inRange = JitEnableRboRange.Contains(hash);
+#else
+    const bool inRange = true;
+#endif
+
+    // Dominating compare has the form R(x,y)
+    // See if tree compare has the form R*(x,y) or R*(y,x) where we can infer R* from R
+    //
+    // Could also extend to the unsigned VN relops.
     //
     VNFuncApp treeApp;
-    if (vnStore->GetVNFunc(rii->treeNormVN, &treeApp))
+    if (inRange && GenTree::OperIsCompare(oper) && vnStore->GetVNFunc(rii->treeNormVN, &treeApp))
     {
         genTreeOps const treeOper = genTreeOps(treeApp.m_func);
+        genTreeOps       domOper  = oper;
 
         if (((treeApp.m_args[0] == funcApp.m_args[0]) && (treeApp.m_args[1] == funcApp.m_args[1])) ||
             ((treeApp.m_args[0] == funcApp.m_args[1]) && (treeApp.m_args[1] == funcApp.m_args[0])))
         {
             const bool swapped = (treeApp.m_args[0] == funcApp.m_args[1]);
 
-            switch (oper)
+            if (swapped)
+            {
+                domOper = GenTree::SwapRelop(domOper);
+            }
+
+            switch (domOper)
             {
                 default:
                     break;
@@ -206,60 +223,70 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                 case GT_EQ:
                     rii->canInfer =
                         (treeOper == GT_GE) || (treeOper == GT_LE) || (treeOper == GT_GT) || (treeOper == GT_LT);
-                    rii->reverseSense      = swapped ^ ((treeOper == GT_GT) || (treeOper == GT_LT));
+                    rii->reverseSense      = ((treeOper == GT_GT) || (treeOper == GT_LT));
                     rii->canInferFromTrue  = true;
                     rii->canInferFromFalse = false;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
-                    return;
+                    break;
 
                 case GT_NE:
                     rii->canInfer =
                         (treeOper == GT_GE) || (treeOper == GT_LE) || (treeOper == GT_GT) || (treeOper == GT_LT);
-                    rii->reverseSense      = swapped ^ ((treeOper == GT_GE) || (treeOper == GT_LE));
+                    rii->reverseSense      = ((treeOper == GT_GE) || (treeOper == GT_LE));
                     rii->canInferFromTrue  = false;
                     rii->canInferFromFalse = true;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
-                    return;
+                    break;
 
                 case GT_LE:
                     rii->canInfer =
                         (treeOper == GT_NE) || (treeOper == GT_EQ) || (treeOper == GT_GE) || (treeOper == GT_LT);
-                    rii->reverseSense      = swapped ^ ((treeOper == GT_NE) || (treeOper == GT_GE));
+                    rii->reverseSense      = ((treeOper == GT_NE) || (treeOper == GT_GE));
                     rii->canInferFromFalse = true;
                     rii->canInferFromTrue  = false;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
-                    return;
+                    break;
 
                 case GT_GT:
                     rii->canInfer =
                         (treeOper == GT_NE) || (treeOper == GT_EQ) || (treeOper == GT_GE) || (treeOper == GT_LT);
-                    rii->reverseSense      = swapped ^ ((treeOper == GT_EQ) || (treeOper == GT_LT));
+                    rii->reverseSense      = ((treeOper == GT_EQ) || (treeOper == GT_LT));
                     rii->canInferFromFalse = false;
                     rii->canInferFromTrue  = true;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
-                    return;
+                    break;
 
                 case GT_GE:
                     rii->canInfer =
                         (treeOper == GT_NE) || (treeOper == GT_EQ) || (treeOper == GT_GT) || (treeOper == GT_LE);
-                    rii->reverseSense      = swapped ^ ((treeOper == GT_NE) || (treeOper == GT_LE));
+                    rii->reverseSense      = ((treeOper == GT_NE) || (treeOper == GT_LE));
                     rii->canInferFromFalse = true;
                     rii->canInferFromTrue  = false;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
-                    return;
+                    break;
 
                 case GT_LT:
                     rii->canInfer =
                         (treeOper == GT_NE) || (treeOper == GT_EQ) || (treeOper == GT_GT) || (treeOper == GT_LE);
-                    rii->reverseSense      = swapped ^ ((treeOper == GT_EQ) || (treeOper == GT_GT));
+                    rii->reverseSense      = ((treeOper == GT_EQ) || (treeOper == GT_GT));
                     rii->canInferFromFalse = false;
                     rii->canInferFromTrue  = true;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Unrelated;
-                    return;
+                    break;
+            }
+
+            if (rii->canInfer)
+            {
+                JITDUMP("Can infer %s from [%s] %s\n", GenTree::OpName(treeOp), rii->canInferFromTrue ?: "true"
+                        : "false", GenTreeOpName(op));
+                return;
             }
         }
     }
 
+    // See if dominating compare is a compound comparison that might
+    // tell us the value of the tree compare.
+    //
     // Look for {EQ,NE}({AND,OR,NOT}, 0)
     //
     if (!GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
