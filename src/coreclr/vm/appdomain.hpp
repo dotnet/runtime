@@ -40,7 +40,7 @@ class SystemDomain;
 class AppDomain;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
-class FrozenObjectHeap;
+class FrozenObjectHeapManager;
 class MngStdInterfacesInfo;
 class DomainAssembly;
 class LoadLevelLimiter;
@@ -2467,17 +2467,17 @@ public:
         _ASSERTE(m_pGlobalStringLiteralMap);
         return m_pGlobalStringLiteralMap;
     }
-    static FrozenObjectHeap* GetSegmentWithFrozenObjects()
+    static FrozenObjectHeapManager* GetFrozenObjectHeapManager()
     {
         WRAPPER_NO_CONTRACT;
 
 #ifdef FEATURE_BASICFREEZE
-        if (m_FrozenObjects == NULL)
+        if (m_FrozenObjectHeapManager == NULL)
         {
             SystemDomain::LazyInitFrozenObjectsHeap();
         }
 #endif
-        return m_FrozenObjects;
+        return m_FrozenObjectHeapManager;
     }
 #endif // DACCESS_COMPILE
 
@@ -2648,7 +2648,7 @@ private:
     static CrstStatic       m_SystemDomainCrst;
 
     static GlobalStringLiteralMap *m_pGlobalStringLiteralMap;
-    static FrozenObjectHeap *m_FrozenObjects;
+    static FrozenObjectHeapManager *m_FrozenObjectHeapManager;
 #endif // DACCESS_COMPILE
 
 public:

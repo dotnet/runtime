@@ -6,24 +6,37 @@
 
 #include "common.h"
 #include "gcinterface.h"
+#include <sarray.h>
+
+class FrozenObjectHeap;
+
+class FrozenObjectHeapManager
+{
+public:
+    FrozenObjectHeapManager();
+    Object* AllocateObject(size_t objectSize);
+
+private:
+    CrstExplicitInit m_Crst;
+    SArray<FrozenObjectHeap*> m_FrozenHeaps;
+    FrozenObjectHeap* m_CurrentHeap;
+    size_t m_HeapCommitChunkSize;
+    size_t m_HeapSize;
+};
 
 class FrozenObjectHeap
 {
 public:
-    FrozenObjectHeap();
-    ~FrozenObjectHeap();
+    FrozenObjectHeap(size_t reserveSize, size_t commitChunkSize);
     Object* AllocateObject(size_t objectSize);
 
 private:
-    bool Initialize();
-
     uint8_t* m_pStart;
     uint8_t* m_pCurrent;
     size_t m_CommitChunkSize;
     size_t m_SizeCommitted;
     size_t m_SizeReserved;
     segment_handle m_SegmentHandle;
-    CrstExplicitInit m_Crst;
     INDEBUG(size_t m_ObjectsCount);
 };
 

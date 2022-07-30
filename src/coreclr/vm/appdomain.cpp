@@ -101,8 +101,8 @@ CrstStatic          BaseDomain::m_SpecialStaticsCrst;
 int                 BaseDomain::m_iNumberOfProcessors = 0;
 
 // System Domain Statics
-GlobalStringLiteralMap* SystemDomain::m_pGlobalStringLiteralMap = NULL;
-FrozenObjectHeap*       SystemDomain::m_FrozenObjects           = NULL;
+GlobalStringLiteralMap*  SystemDomain::m_pGlobalStringLiteralMap = NULL;
+FrozenObjectHeapManager* SystemDomain::m_FrozenObjectHeapManager = NULL;
 
 DECLSPEC_ALIGN(16)
 static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
@@ -1209,8 +1209,8 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
     }
     CONTRACTL_END;
 
-    NewHolder<FrozenObjectHeap> pFoh(new FrozenObjectHeap());
-    if (InterlockedCompareExchangeT<FrozenObjectHeap*>(&m_FrozenObjects, pFoh, nullptr) == nullptr)
+    NewHolder<FrozenObjectHeapManager> pFoh(new FrozenObjectHeapManager());
+    if (InterlockedCompareExchangeT<FrozenObjectHeapManager*>(&m_FrozenObjectHeapManager, pFoh, nullptr) == nullptr)
     {
         pFoh.SuppressRelease();
     }

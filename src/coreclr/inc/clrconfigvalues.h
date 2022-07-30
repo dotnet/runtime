@@ -406,8 +406,15 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_BreakOnOutOfMemoryWithinRange, W("BreakOnOutOf
 ///
 /// Frozen segments (aka Frozen Object Heap)
 ///
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_FrozenSegmentReserveSize, W("FrozenSegmentReserveSize"), 0x400000, "Amount of memory to reserve for frozen segments") // 4Mb
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_FrozenSegmentCommitSize, W("FrozenSegmentCommitSize"), 0x10000, "Amount of memory to commit on demand for frozen segments") // 64Kb
+#ifdef _DEBUG
+#define FrozenSegmentReserveSize (0x4000) // 16Kb
+#define FrozenSegmentCommitSize (0x1000)  // 4Kb
+#else
+#define FrozenSegmentReserveSize (0x400000) // 4Mb
+#define FrozenSegmentCommitSize (0x10000)   // 64Kb
+#endif
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_FrozenSegmentReserveSize, W("FrozenSegmentReserveSize"), FrozenSegmentReserveSize, "Amount of memory to reserve for a frozen segment")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_FrozenSegmentCommitSize, W("FrozenSegmentCommitSize"), FrozenSegmentCommitSize, "Amount of memory to commit on demand for frozen segments")
 
 ///
 /// Log
