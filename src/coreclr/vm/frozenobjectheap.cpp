@@ -46,7 +46,7 @@ bool FrozenObjectHeap::Initialize()
     _ASSERT(m_SegmentHandle == nullptr);
     _ASSERT(m_pStart == nullptr);
 
-    void* alloc = ClrVirtualAllocAligned(nullptr, m_SizeReserved, MEM_RESERVE, PAGE_READWRITE, DATA_ALIGNMENT);
+    void* alloc = ClrVirtualAlloc(nullptr, m_SizeReserved, MEM_RESERVE, PAGE_READWRITE);
     if (alloc != nullptr)
     {
         // Commit FOH_COMMIT_SIZE chunk in advance
@@ -55,6 +55,10 @@ bool FrozenObjectHeap::Initialize()
 
     if (alloc != nullptr)
     {
+        // ClrVirtualAlloc is expected to be PageSize-aligned so we can expect
+        // DATA_ALIGNMENT alignment as well
+        _ASSERT(IS_ALIGNED(alloc, DATA_ALIGNMENT));
+
         segment_info si;
         si.pvMem = alloc;
         si.ibFirstObject = sizeof(ObjHeader);
@@ -69,7 +73,6 @@ bool FrozenObjectHeap::Initialize()
             m_pCurrent = m_pStart;
             m_SizeCommitted = si.ibCommit;
             INDEBUG(m_ObjectsCount = 0);
-            ASSERT((intptr_t)m_pCurrent % DATA_ALIGNMENT == 0);
             return true;
         }
 
@@ -120,7 +123,8 @@ Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
     // Check if we need to commit a new chunk
     if ((size_t)(m_pStart + m_SizeCommitted) < (size_t)(obj + objectSize))
     {
-        if (ClrVirtualAlloc(m_pCurrent, m_CommitChunkSize, MEM_COMMIT, PAGE_READWRITE) == nullptr)
+        _ASSERT(m_SizeCommitted + m_CommitChunkSize <= m_SizeReserved);
+        if (ClrVirtualAlloc(m_pStart + m_SizeCommitted, m_CommitChunkSize, MEM_COMMIT, PAGE_READWRITE) == nullptr)
         {
             // We failed to commit a new chunk of the reserved memory
             return nullptr;
