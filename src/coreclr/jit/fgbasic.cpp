@@ -2220,6 +2220,7 @@ void Compiler::fgAdjustForAddressExposedOrWrittenThis()
     // Optionally enable adjustment during stress.
     if (compStressCompile(STRESS_GENERIC_VARN, 15))
     {
+        JITDUMP("JitStress: creating modifiable `this`\n");
         thisVarDsc->lvHasILStoreOp = true;
     }
 
