@@ -16,7 +16,7 @@
 .class public auto ansi beforefieldinit LocAllocTests
         extends [System.Runtime]System.Object
 {
-    .method private hidebysig instance void Load.LocAllocShouldFailWhenStackNotEmpty_Invalid_LocallocStackNotEmpty(class SimpleClass c) cil managed
+    .method private hidebysig instance void Load.LocAllocShouldFailWhenStackNotEmpty_Invalid_LocallocStackNotEmpty() cil managed
     {
         ldnull // pretend there's meaningfull value on stack
         ldc.i4.2 // size parameter for localloc
