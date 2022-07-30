@@ -277,8 +277,8 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
             if (rii->canInfer)
             {
-                JITDUMP("Can infer %s from [%s] %s\n", GenTree::OpName(treeOp), rii->canInferFromTrue ?: "true"
-                        : "false", GenTreeOpName(op));
+                JITDUMP("Can infer %s from [%s] %s\n", GenTree::OpName(treeOper),
+                        rii->canInferFromTrue ? "true" : "false", GenTree::OpName(oper));
                 return;
             }
         }
