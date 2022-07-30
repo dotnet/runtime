@@ -24,6 +24,13 @@
                       Version="$(MicrosoftDiaSymReaderNativeVersion)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <HostFxrFile Include="$(DotNetHostBinDir)$(LibPrefix)hostfxr$(LibSuffix)" />
+    <HostPolicyFile Include="$(DotNetHostBinDir)$(LibPrefix)hostpolicy$(LibSuffix)" />
+    <DotnetExe Include="$(DotNetHostBinDir)dotnet$(ExeSuffix)" />
+  </ItemGroup>
+
+
   <!-- Setup the testing shared framework host -->
   <Target Name="SetupTestingHost"
           AfterTargets="AfterResolveReferences"
@@ -36,15 +43,6 @@
          Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework. -->
     <ItemGroup>
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' == 'apphost'" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <CoreHostFiles Include="$(DotNetHostBinDir)*" />
-      <HostFxFile Include="@(CoreHostFiles)" Condition="'%(CoreHostFiles.Filename)' == 'hostfxr' or
-                                                          '%(CoreHostFiles.Filename)' == 'libhostfxr'" />
-      <HostPolicyFile Include="@(CoreHostFiles)" Condition="'%(CoreHostFiles.Filename)' == 'hostpolicy' or
-                                                              '%(CoreHostFiles.Filename)' == 'libhostpolicy'" />
-      <DotnetExe Include="@(CoreHostFiles)" Condition="'%(CoreHostFiles.Filename)' == 'dotnet'" />
     </ItemGroup>
 
     <Copy SourceFiles="@(HostFxFile)"
@@ -76,6 +74,8 @@
           AfterTargets="AfterResolveReferences"
           Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TestNativeAot)' != 'true'">
     <ItemGroup>
+      <RuntimeFiles Include="@(HostFxrFile)" />
+      <RuntimeFiles Include="@(HostPolicyFile)" />
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" />
