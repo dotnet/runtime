@@ -1110,7 +1110,7 @@ by Brian W. Kernighan and Rob Pike
 
 You may use this code for any purpose, as long as you leave the copyright notice and book citation attached.
 
-Note for code from Euclidean Affine Functions and Applications to Calendar
+Notice for Euclidean Affine Functions and Applications to Calendar
 Algorithms
 -------------------------------
 
