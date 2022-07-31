@@ -49,13 +49,16 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            var BindingFlags BindingFlags =
-                BindingFlags.Instance |
-                BindingFlags.Public |
-                BindingFlags.NonPublic;
+            const BindingFlags BindingFlagsDeclaredOnly =
+                  BindingFlags.Instance |
+                  BindingFlags.Public |
+                  BindingFlags.NonPublic |
+                  BindingFlags.DeclaredOnly;
 
-            if (this.Options.OnlyDeclaredProperties)
-                BindingFlags |= BindingFlags.DeclaredOnly;
+            const BindingFlags BindingFlagsAll =
+                  BindingFlags.Instance |
+                  BindingFlags.Public |
+                  BindingFlags.NonPublic;
 
             Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
             bool propertyOrderSpecified = false;
@@ -68,7 +71,11 @@ namespace System.Text.Json.Serialization.Metadata
             // Walk through the inheritance hierarchy, starting from the most derived type upward.
             for (Type? currentType = Type; currentType != null; currentType = currentType.BaseType)
             {
-                PropertyInfo[] properties = currentType.GetProperties(BindingFlags);
+                var bindingFlags = BindingFlagsDeclaredOnly;
+                if (currentType.IsInterface && !this.Options.OnlyDeclaredPropertiesOnInterfaces)
+                    bindingFlags = BindingFlagsAll;
+
+                PropertyInfo[] properties = currentType.GetProperties(bindingFlags);
 
                 // PropertyCache is not accessed by other threads until the current JsonTypeInfo instance
                 // is finished initializing and added to the cache in JsonSerializerOptions.

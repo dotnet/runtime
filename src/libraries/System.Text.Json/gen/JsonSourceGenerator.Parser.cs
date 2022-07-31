@@ -1022,16 +1022,26 @@ namespace System.Text.Json.SourceGeneration
                         propGenSpecList = new List<PropertyGenerationSpec>();
                         Dictionary<string, PropertyGenerationSpec>? ignoredMembers = null;
 
-                        var BindingFlags bindingFlags =
-                            BindingFlags.Instance |
-                            BindingFlags.Public |
-                            BindingFlags.NonPublic;
+                        const BindingFlags BindingFlagsDeclaredOnly =
+                              BindingFlags.Instance |
+                              BindingFlags.Public |
+                              BindingFlags.NonPublic |
+                              BindingFlags.DeclaredOnly;
+
+                        const BindingFlags BindingFlagsAll =
+                              BindingFlags.Instance |
+                              BindingFlags.Public |
+                              BindingFlags.NonPublic;
 
                         bool propertyOrderSpecified = false;
 
                         for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                         {
                             PropertyGenerationSpec spec;
+
+                            var bindingFlags = BindingFlagsDeclaredOnly;
+                            if (currentType.IsInterface)
+                                bindingFlags = BindingFlagsAll;
 
                             foreach (PropertyInfo propertyInfo in currentType.GetProperties(bindingFlags))
                             {

@@ -71,7 +71,7 @@ namespace System.Text.Json
         private bool _ignoreReadOnlyProperties;
         private bool _ignoreReadonlyFields;
         private bool _includeFields;
-        private bool _onlyDeclaredProperties;
+        private bool _onlyDeclaredPropertiesOnInterfaces;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
 
@@ -514,16 +514,16 @@ namespace System.Text.Json
         /// Specifies that only members declared at the level of the supplied type's hierarchy should be considered.
         /// Inherited members are not considered.
         /// </summary>
-        public bool OnlyDeclaredProperties
+        public bool OnlyDeclaredPropertiesOnInterfaces
         {
             get
             {
-                return _onlyDeclaredProperties;
+                return _onlyDeclaredPropertiesOnInterfaces;
             }
             set
             {
                 VerifyMutable();
-                _onlyDeclaredProperties = value;
+                _onlyDeclaredPropertiesOnInterfaces = value;
             }
         }
 

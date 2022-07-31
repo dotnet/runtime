@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization
         /// Specifies that only members declared at the level of the supplied type's hierarchy should be considered.
         /// Inherited members are not considered.
         /// </summary>
-        public bool OnlyDeclaredProperties { get; set; }
+        public bool OnlyDeclaredPropertiesOnInterfaces { get; set; }
 
         /// <summary>
         /// Specifies a built-in naming polices to convert JSON property names with.
