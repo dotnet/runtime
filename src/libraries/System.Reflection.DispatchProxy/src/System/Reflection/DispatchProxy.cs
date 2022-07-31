@@ -40,12 +40,31 @@ namespace System.Reflection
             return (T)DispatchProxyGenerator.CreateProxyInstance(typeof(TProxy), typeof(T));
         }
 
+        /// <summary>
+        /// Creates an object instance that derives from class <paramref name="proxyType"/>
+        /// and implements interface <paramref name="interfaceType"/>.
+        /// </summary>
+        /// <param name="interfaceType">The interface the proxy should implement.</param>
+        /// <param name="proxyType">The base class to use for the proxy class.</param>
+        /// <returns>An object instance that implements <paramref name="interfaceType"/>.</returns>
+        /// <exception cref="System.ArgumentException"><paramref name="interfaceType"/> is a class,
+        /// or <paramref name="proxyType"/> is sealed or does not have a parameterless constructor</exception>
         [RequiresDynamicCode("Creating a proxy instance requires generating code at runtime")]
         public static object Create([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type proxyType)
         {
+            if (interfaceType == null)
+            {
+                throw new ArgumentNullException(nameof(interfaceType));
+            }
+
+            if (proxyType == null)
+            {
+                throw new ArgumentNullException(nameof(proxyType));
+            }
+
             if (!proxyType.IsAssignableTo(typeof(DispatchProxy)))
             {
-                throw new ArgumentException("proxyType must be assignable to DispatchProxy");
+                throw new ArgumentException(SR.Format(SR.ProxyType_Must_Be_Assignable_To_DispatchProxy, proxyType.Name));
             }
 
             return DispatchProxyGenerator.CreateProxyInstance(proxyType, interfaceType);
