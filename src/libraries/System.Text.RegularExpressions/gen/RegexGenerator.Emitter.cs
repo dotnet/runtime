@@ -348,7 +348,7 @@ namespace System.Text.RegularExpressions.Generator
             bool needsTryFind = false, needsTryMatch = false;
             RegexNode root = rm.Tree.Root.Child(0);
 
-            // We can alway emit our most general purpose scan loop, but there are common situations we can easily check
+            // We can always emit our most general purpose scan loop, but there are common situations we can easily check
             // for where we can emit simpler/better code instead.
             if (root.Kind is RegexNodeKind.Empty)
             {

@@ -640,7 +640,7 @@ retry_state_change:
 				goto retry_state_change;
 			trace_state_change ("ABORT_ASYNC_SUSPEND", info, raw_state, STATE_RUNNING, no_safepoints, -1);
 		}
-		return TRUE; //aborting thread suspend request succeded, thread is running.
+		return TRUE; //aborting thread suspend request succeeded, thread is running.
 
 /*
 STATE_RUNNING: A thread cannot escape suspension once requested.

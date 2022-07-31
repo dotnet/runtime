@@ -116,7 +116,7 @@ static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
         // will stop it (default SIGTTOU action).
         // We change SIGTTOU's disposition to get EINTR instead.
         // This thread may be used to run a signal handler, which may write to
-        // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitly
+        // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitely
         // on EINTR when the process is running in background and the terminal
         // configured with TOSTOP.
         InstallTTOUHandlerForConsole(ttou_handler);

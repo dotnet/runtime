@@ -2393,7 +2393,7 @@ private:
 
         BasicBlock* mergedReturnBlock = nullptr;
 
-        // Do not look for mergable constant returns in debug codegen as
+        // Do not look for mergeable constant returns in debug codegen as
         // we may lose track of sequence points.
         if ((returnBlock != nullptr) && (maxReturns > 1) && !comp->opts.compDbgCode)
         {
@@ -3471,7 +3471,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     }
 #endif // DEBUG
 
-    // Since we may need to create a new transistion block
+    // Since we may need to create a new transition block
     // we assert that it is OK to create new blocks.
     //
     assert(fgSafeBasicBlockCreation);

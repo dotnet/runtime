@@ -4794,7 +4794,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca_address (ctx, sig->ret);
 		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg]->value, pointer_type (LLVMTypeOf (lcall)), FALSE));
-		
+
 		load_name = "process_call_fp_struct";
 		should_promote_to_value = is_simd;
 		break;
@@ -5399,7 +5399,7 @@ emit_llvmonly_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBloc
 
 	g_assert (ctx->cfg->deopt);
 
-	/* This code is not executed becase the landing pad transitions to the intepreter */
+	/* This code is not executed because the landing pad transitions to the interpreter */
 
 	if (!(clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY || clause->flags & MONO_EXCEPTION_CLAUSE_FAULT)) {
 		if (bb->in_scount == 1) {
@@ -8656,7 +8656,7 @@ MONO_RESTORE_WARNING
 
 		case OP_SSE_MOVLPS_STORE:
 		case OP_SSE_MOVHPS_STORE: {
-			/* Store two floats from the low/hight part of rhs into lhs */
+			/* Store two floats from the low/high part of rhs into lhs */
 			LLVMValueRef addr = lhs;
 			LLVMValueRef addr1 = convert (ctx, addr, pointer_type (LLVMFloatType ()));
 			LLVMValueRef addr2 = convert (ctx, LLVMBuildAdd (builder, convert (ctx, addr, IntPtrType ()), convert (ctx, const_int32 (4), IntPtrType ()), ""), pointer_type (LLVMFloatType ()));

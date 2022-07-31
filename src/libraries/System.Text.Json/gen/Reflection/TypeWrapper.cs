@@ -543,7 +543,7 @@ namespace System.Text.Json.Reflection
 
         protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
         {
-            // TODO: peformance; caching; honor bindingAttr
+            // TODO: performance; caching; honor bindingAttr
             foreach (PropertyInfo propertyInfo in GetProperties(bindingAttr))
             {
                 if (propertyInfo.Name == name)

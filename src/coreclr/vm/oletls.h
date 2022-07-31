@@ -68,27 +68,27 @@ typedef struct tagCallEntry
 //+---------------------------------------------------------------------------
 typedef enum tagOLETLSFLAGS
 {
-    OLETLS_LOCALTID             = 0x01,   // This TID is in the current process.
-    OLETLS_UUIDINITIALIZED      = 0x02,   // This Logical thread is init'd.
-    OLETLS_INTHREADDETACH       = 0x04,   // This is in thread detach. Needed
-                                          // due to NT's special thread detach
-                                          // rules.
-    OLETLS_CHANNELTHREADINITIALZED = 0x08,// This channel has been init'd
-    OLETLS_WOWTHREAD            = 0x10,   // This thread is a 16-bit WOW thread.
-    OLETLS_THREADUNINITIALIZING = 0x20,   // This thread is in CoUninitialize.
-    OLETLS_DISABLE_OLE1DDE      = 0x40,   // This thread can't use a DDE window.
-    OLETLS_APARTMENTTHREADED    = 0x80,   // This is an STA apartment thread
-    OLETLS_MULTITHREADED        = 0x100,  // This is an MTA apartment thread
-    OLETLS_IMPERSONATING        = 0x200,  // This thread is impersonating
-    OLETLS_DISABLE_EVENTLOGGER  = 0x400,  // Prevent recursion in event logger
-    OLETLS_INNEUTRALAPT         = 0x800,  // This thread is in the NTA
-    OLETLS_DISPATCHTHREAD       = 0x1000, // This is a dispatch thread
-    OLETLS_HOSTTHREAD           = 0x2000, // This is a host thread
-    OLETLS_ALLOWCOINIT          = 0x4000, // This thread allows inits
-    OLETLS_PENDINGUNINIT        = 0x8000, // This thread has pending uninit
-    OLETLS_FIRSTMTAINIT         = 0x10000,// First thread to attempt an MTA init
-    OLETLS_FIRSTNTAINIT         = 0x20000,// First thread to attempt an NTA init
-    OLETLS_APTINITIALIZING      = 0x40000 // Apartment Object is initializing
+    OLETLS_LOCALTID                 = 0x01,    // This TID is in the current process.
+    OLETLS_UUIDINITIALIZED          = 0x02,    // This Logical thread is init'd.
+    OLETLS_INTHREADDETACH           = 0x04,    // This is in thread detach. Needed
+                                               // due to NT's special thread detach
+                                               // rules.
+    OLETLS_CHANNELTHREADINITIALIZED = 0x08,    // This channel has been init'd
+    OLETLS_WOWTHREAD                = 0x10,    // This thread is a 16-bit WOW thread.
+    OLETLS_THREADUNINITIALIZING     = 0x20,    // This thread is in CoUninitialize.
+    OLETLS_DISABLE_OLE1DDE          = 0x40,    // This thread can't use a DDE window.
+    OLETLS_APARTMENTTHREADED        = 0x80,    // This is an STA apartment thread
+    OLETLS_MULTITHREADED            = 0x100,   // This is an MTA apartment thread
+    OLETLS_IMPERSONATING            = 0x200,   // This thread is impersonating
+    OLETLS_DISABLE_EVENTLOGGER      = 0x400,   // Prevent recursion in event logger
+    OLETLS_INNEUTRALAPT             = 0x800,   // This thread is in the NTA
+    OLETLS_DISPATCHTHREAD           = 0x1000,  // This is a dispatch thread
+    OLETLS_HOSTTHREAD               = 0x2000,  // This is a host thread
+    OLETLS_ALLOWCOINIT              = 0x4000,  // This thread allows inits
+    OLETLS_PENDINGUNINIT            = 0x8000,  // This thread has pending uninit
+    OLETLS_FIRSTMTAINIT             = 0x10000, // First thread to attempt an MTA init
+    OLETLS_FIRSTNTAINIT             = 0x20000, // First thread to attempt an NTA init
+    OLETLS_APTINITIALIZING          = 0x40000  // Apartment Object is initializing
 }  OLETLSFLAGS;
 
 

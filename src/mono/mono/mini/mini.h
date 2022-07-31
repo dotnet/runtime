@@ -1402,7 +1402,7 @@ typedef struct {
 	MonoInst *lmf_addr_var;
 	MonoInst *il_state_var;
 
-	MonoInst *stack_inbalance_var;
+	MonoInst *stack_imbalance_var;
 
 	unsigned char   *cil_start;
 	unsigned char   *native_code;
