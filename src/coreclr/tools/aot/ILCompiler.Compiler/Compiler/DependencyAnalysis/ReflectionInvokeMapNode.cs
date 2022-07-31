@@ -71,8 +71,16 @@ namespace ILCompiler.DependencyAnalysis
                     if (type.IsByRef)
                         type = ((ParameterizedType)type).ParameterType;
 
+                    // Pointer runtime type handles can be created at runtime if necessary
+                    while (type.IsPointer)
+                        type = ((ParameterizedType)type).ParameterType;
+
                     // Skip tracking dependencies for primitive types. Assume that they are always present.
                     if (type.IsPrimitive || type.IsVoid)
+                        return;
+
+                    // Function pointers are supported yet.
+                    if (type.IsFunctionPointer)
                         return;
 
                     dependencies.Add(factory.MaximallyConstructableType(type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Reflection invoke");

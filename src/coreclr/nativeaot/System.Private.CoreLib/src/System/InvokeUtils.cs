@@ -293,7 +293,7 @@ namespace System
             }
 
             scoped ref byte ret = ref Unsafe.As<object?, byte>(ref returnObject);
-            if ((dynamicInvokeInfo.ReturnTransform & DynamicInvokeTransform.AllocateBox) != 0)
+            if ((dynamicInvokeInfo.ReturnTransform & DynamicInvokeTransform.AllocateReturnBox) != 0)
             {
                 returnObject = RuntimeImports.RhNewObject(
                     (dynamicInvokeInfo.ReturnTransform & DynamicInvokeTransform.Pointer) != 0 ?
@@ -363,7 +363,7 @@ namespace System
             }
 
             return ((dynamicInvokeInfo.ReturnTransform & (DynamicInvokeTransform.Nullable | DynamicInvokeTransform.Pointer | DynamicInvokeTransform.ByRef)) != 0) ?
-                ReturnTranform(dynamicInvokeInfo, ref ret) : returnObject;
+                ReturnTranform(dynamicInvokeInfo, ref ret, wrapInTargetInvocationException) : returnObject;
         }
 
         private static unsafe ref byte InvokeWithManyArguments(
@@ -548,20 +548,22 @@ namespace System
                 }
                 else
                 {
-                    // This must be either object reference or we have allocated a value type box earlier
-                    Debug.Assert((transform & (DynamicInvokeTransform.Reference | DynamicInvokeTransform.AllocateBox)) != 0);
+                    // This must be either object reference or a value type box allocated in CheckArguments
                     obj = Unsafe.As<byte, object>(ref byref);
                 }
                 parameters[i] = obj;
             }
         }
 
-        private static unsafe object ReturnTranform(DynamicInvokeInfo dynamicInvokeInfo, ref byte byref)
+        private static unsafe object ReturnTranform(DynamicInvokeInfo dynamicInvokeInfo, ref byte byref, bool wrapInTargetInvocationException)
         {
             if (Unsafe.IsNullRef(ref byref))
             {
                 Debug.Assert((dynamicInvokeInfo.ReturnTransform & DynamicInvokeTransform.ByRef) != 0);
-                throw new NullReferenceException(SR.NullReference_InvokeNullRefReturned);
+                Exception exception = new NullReferenceException(SR.NullReference_InvokeNullRefReturned);
+                if (wrapInTargetInvocationException)
+                    exception = new TargetInvocationException(exception);
+                throw exception;
             }
 
             object obj;

@@ -9,11 +9,11 @@ namespace System.Reflection
     [Flags]
     internal enum DynamicInvokeTransform
     {
-        ByRef       = 0x0001,
-        Nullable    = 0x0002,
-        Pointer     = 0x0004,
-        AllocateBox = 0x0008,
-        Reference   = 0x0010,
+        ByRef               = 0x0001,
+        Nullable            = 0x0002,
+        Pointer             = 0x0004,
+        Reference           = 0x0008,
+        AllocateReturnBox   = 0x0010,
     }
 
     internal readonly struct ArgumentInfo
@@ -102,7 +102,7 @@ namespace System.Reflection
                     if (returnType != typeof(void))
                     {
                         if ((transform & DynamicInvokeTransform.ByRef) == 0)
-                            transform |= DynamicInvokeTransform.AllocateBox;
+                            transform |= DynamicInvokeTransform.AllocateReturnBox;
 
                         if (eeReturnType.IsNullable)
                             transform |= DynamicInvokeTransform.Nullable;
@@ -114,7 +114,7 @@ namespace System.Reflection
 
                     transform |= DynamicInvokeTransform.Pointer;
                     if ((transform & DynamicInvokeTransform.ByRef) == 0)
-                        transform |= DynamicInvokeTransform.AllocateBox;
+                        transform |= DynamicInvokeTransform.AllocateReturnBox;
                 }
                 else
                 {
