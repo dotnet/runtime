@@ -275,18 +275,24 @@ namespace System
 
             object? returnObject = null;
 
-            ref byte thisArg = ref Unsafe.NullRef<byte>();
+            scoped ref byte thisArg = ref Unsafe.NullRef<byte>();
             if (!dynamicInvokeInfo.IsStatic)
             {
                 // The caller is expected to validate this
                 Debug.Assert(thisPtr != null);
 
                 // thisArg is a raw data byref for valuetype instance methods
-                thisArg = dynamicInvokeInfo.IsValueTypeInstanceMethod ? ref thisPtr.GetRawData()
-                    : ref Unsafe.As<object?, byte>(ref thisPtr);
+                if (dynamicInvokeInfo.IsValueTypeInstanceMethod)
+                {
+                    thisArg = ref thisPtr.GetRawData();
+                }
+                else
+                {
+                    thisArg = ref Unsafe.As<object?, byte>(ref thisPtr);
+                }
             }
 
-            ref byte ret = ref Unsafe.As<object?, byte>(ref returnObject);
+            scoped ref byte ret = ref Unsafe.As<object?, byte>(ref returnObject);
             if ((dynamicInvokeInfo.ReturnTransform & DynamicInvokeTransform.AllocateBox) != 0)
             {
                 returnObject = RuntimeImports.RhNewObject(
