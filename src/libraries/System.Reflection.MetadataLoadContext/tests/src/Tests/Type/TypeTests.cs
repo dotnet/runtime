@@ -365,6 +365,7 @@ namespace System.Reflection.Tests
             }
         }
 
+#if NET7_0_OR_GREATER
         [Fact]
         public static void GetEnumValuesAsUnderlyingType()
         {
@@ -386,6 +387,7 @@ namespace System.Reflection.Tests
                 Assert.Equal(Type.GetTypeCode(expectesUIntValues[i].GetType()), Type.GetTypeCode(uintArr.GetValue(i).GetType()));
             }
         }
+#endif        
 
         [Theory]
         [MemberData(nameof(GetTypeCodeTheoryData))]
