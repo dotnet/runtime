@@ -1,0 +1,8 @@
+<Directives>
+  <Application>
+    <Assembly Name="System.Console">
+      <!-- Works around https://github.com/dotnet/runtime/issues/72833 -->
+      <Type Name="System.TermInfo+ParameterizedStrings+FormatParam" Dynamic="Required All" />
+    </Assembly>
+  </Application>
+</Directives>
