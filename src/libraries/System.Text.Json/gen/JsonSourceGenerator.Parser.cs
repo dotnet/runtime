@@ -656,11 +656,11 @@ namespace System.Text.Json.SourceGeneration
                                 }
                             }
                             break;
-                        case nameof(JsonSourceGenerationOptionsAttribute.OnlyDeclaredProperties):
+                        case nameof(JsonSourceGenerationOptionsAttribute.OnlyDeclaredPropertiesOnInterfaces):
                             {
                                 if (bool.TryParse(propertyValueStr, out bool value))
                                 {
-                                    options.OnlyDeclaredProperties = value;
+                                    options.OnlyDeclaredPropertiesOnInterfaces = value;
                                 }
                             }
                             break;
