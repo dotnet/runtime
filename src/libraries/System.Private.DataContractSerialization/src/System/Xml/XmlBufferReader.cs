@@ -342,7 +342,11 @@ namespace System.Xml
         }
 
         public int ReadUInt8()
-            => ReadRawBytes<byte>();
+        {
+            byte b = GetByte();
+            Advance(1);
+            return b;
+        }
 
         public int ReadInt8()
             => (sbyte)ReadUInt8();
