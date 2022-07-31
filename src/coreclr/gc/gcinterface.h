@@ -915,7 +915,7 @@ public:
     virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo) = 0;
 
     // Updates given frozen segment
-    virtual void UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* commited) = 0;
+    virtual void UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed) = 0;
 
     // Unregisters a frozen segment.
     virtual void UnregisterFrozenSegment(segment_handle seg) = 0;

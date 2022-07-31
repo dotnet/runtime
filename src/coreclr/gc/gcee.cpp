@@ -474,11 +474,11 @@ segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
 #endif // FEATURE_BASICFREEZE
 }
 
-void GCHeap::UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* commited)
+void GCHeap::UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed)
 {
 #ifdef FEATURE_BASICFREEZE
     heap_segment* heap_seg = reinterpret_cast<heap_segment*>(seg);
-    heap_segment_committed (heap_seg) = commited;
+    heap_segment_committed (heap_seg) = committed;
     heap_segment_allocated (heap_seg) = allocated;
 #endif // FEATURE_BASICFREEZE
 }
