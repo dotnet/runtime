@@ -44693,7 +44693,7 @@ bool GCHeap::IsEphemeral (Object* object)
 #if defined(FEATURE_BASICFREEZE) && defined(USE_REGIONS)
     if (!is_in_heap_range (o))
     {
-        // objects in frozen segments are not ephemeral
+        // Objects in frozen segments are not ephemeral
         return FALSE;
     }
 #endif
