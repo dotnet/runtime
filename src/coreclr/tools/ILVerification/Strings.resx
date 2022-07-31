@@ -448,6 +448,6 @@
     <value>Class implements interface but not method, Class: '{0}' Interface: '{1}' Missing method: '{2}'.</value>
   </data>
   <data name="LocallocStackNotEmpty" xml:space="preserve">
-    <value>Stack must contain only the size item.</value>
+    <value>Stack must be empty before localloc, except for the size item.</value>
   </data>
 </root>
