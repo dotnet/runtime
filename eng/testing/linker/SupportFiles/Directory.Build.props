@@ -4,6 +4,7 @@
     <PublishTrimmed>true</PublishTrimmed>
     <SkipImportRepoLinkerTargets>true</SkipImportRepoLinkerTargets>
     <TrimMode>link</TrimMode>
+    <TrimmerDefaultAction>link</TrimmerDefaultAction>
     <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
     <SelfContained>true</SelfContained>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
