@@ -3,8 +3,8 @@
     <SkipConfigureTrimming>true</SkipConfigureTrimming>
     <PublishTrimmed>true</PublishTrimmed>
     <SkipImportRepoLinkerTargets>true</SkipImportRepoLinkerTargets>
-    <TrimMode>link</TrimMode>
     <TrimmerDefaultAction>link</TrimmerDefaultAction>
+    <TrimMode>link</TrimMode>
     <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
     <SelfContained>true</SelfContained>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
