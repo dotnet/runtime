@@ -2940,6 +2940,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             {
                 cmp->SetOper(GT_AND);
                 lsh->AsIntCon()->SetIntegralValue(1);
+                ContainCheckBinary(cmp->AsOp()); // Containment is cleared when converting to TEST_*.
 
                 return cmp->gtNext;
             }
