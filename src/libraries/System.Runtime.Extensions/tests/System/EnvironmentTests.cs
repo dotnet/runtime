@@ -557,7 +557,8 @@ namespace System.Tests
             Assert.Equal(folderPath, knownFolder);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60586", TestPlatforms.iOS | TestPlatforms.tvOS)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
         public void GetLogicalDrives_Unix_AtLeastOneIsRoot()
         {
