@@ -2580,8 +2580,10 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         GenTree* objectNode      = call->gtArgs.GetArgByIndex(1)->GetNode();
         GenTree* methodTableNode = call->gtArgs.GetArgByIndex(0)->GetNode();
 
-        assert(objectNode->TypeGet() == TYP_REF);
-        assert(methodTableNode->TypeGet() == TYP_I_IMPL);
+        // objectNode can be TYP_I_IMPL in case if it's a constant handle
+        // (e.g. a string literal from frozen segments)
+        assert(objectNode->TypeIs(TYP_REF, TYP_I_IMPL));
+        assert(methodTableNode->TypeIs(TYP_I_IMPL));
 
         // Reverse the assertion
         assert((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL));

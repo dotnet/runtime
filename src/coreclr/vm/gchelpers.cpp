@@ -890,10 +890,9 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap)
         FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
         if (foh != nullptr)
         {
-            orString = static_cast<StringObject*>(foh->AllocateObject(totalSize));
+            orString = static_cast<StringObject*>(foh->AllocateObject(g_pStringClass, totalSize));
             if (orString != nullptr)
             {
-                orString->SetMethodTable(g_pStringClass);
                 orString->SetStringLength(cchStringLength);
                 _ASSERTE(orString->GetBuffer()[cchStringLength] == W('\0'));
                 orStringRef = ObjectToSTRINGREF(orString);

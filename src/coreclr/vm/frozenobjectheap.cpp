@@ -18,7 +18,7 @@ FrozenObjectHeapManager::FrozenObjectHeapManager():
 //   1) DOTNET_FrozenSegmentReserveSize is 0 (disabled)
 //   2) Object is too large (large than DOTNET_FrozenSegmentCommitSize)
 // in such cases caller is responsible to find a more appropriate heap to allocate it
-Object* FrozenObjectHeapManager::AllocateObject(size_t objectSize)
+Object* FrozenObjectHeapManager::AllocateObject(PTR_MethodTable type, size_t objectSize)
 {
     CONTRACTL
     {
@@ -35,6 +35,7 @@ Object* FrozenObjectHeapManager::AllocateObject(size_t objectSize)
         return nullptr;
     }
 
+    _ASSERT(type != nullptr);
     _ASSERT(m_HeapCommitChunkSize >= MIN_OBJECT_SIZE);
     _ASSERT(m_HeapSize > m_HeapCommitChunkSize);
     _ASSERT(m_HeapSize % m_HeapCommitChunkSize == 0);
@@ -57,7 +58,7 @@ Object* FrozenObjectHeapManager::AllocateObject(size_t objectSize)
         _ASSERT(m_CurrentHeap != nullptr);
     }
 
-    Object* obj = m_CurrentHeap->AllocateObject(objectSize);
+    Object* obj = m_CurrentHeap->AllocateObject(type, objectSize);
 
     // The only case where it might be null is when the current heap is full and we need
     // to create a new one
@@ -67,7 +68,7 @@ Object* FrozenObjectHeapManager::AllocateObject(size_t objectSize)
         m_FrozenHeaps.Append(m_CurrentHeap);
 
         // Try again
-        obj = m_CurrentHeap->AllocateObject(objectSize);
+        obj = m_CurrentHeap->AllocateObject(type, objectSize);
 
         // This time it's not expected to be null
         _ASSERT(obj != nullptr);
@@ -124,7 +125,7 @@ FrozenObjectHeap::FrozenObjectHeap(size_t reserveSize, size_t commitChunkSize):
     return;
 }
 
-Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
+Object* FrozenObjectHeap::AllocateObject(PTR_MethodTable type, size_t objectSize)
 {
     _ASSERT(m_pStart != nullptr && m_SizeReserved > 0 && m_SegmentHandle != nullptr); // Expected to be inited
     _ASSERT(IS_ALIGNED(m_pCurrent, DATA_ALIGNMENT));
@@ -151,9 +152,11 @@ Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
 
     m_pCurrent = obj + objectSize;
 
+    Object* object = reinterpret_cast<Object*>(obj + sizeof(ObjHeader));
+    object->SetMethodTable(type);
+
     // Notify GC that we bumped the pointer and, probably, committed more memory in the reserved part
     GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(m_SegmentHandle, m_pCurrent, m_pStart + m_SizeCommitted);
 
-    // Skip object header
-    return reinterpret_cast<Object*>(obj + sizeof(ObjHeader));
+    return object;
 }
