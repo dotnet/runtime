@@ -15665,7 +15665,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                            constraintCall ? &constrainedResolvedToken : nullptr,
                                                            returnFalseIfInvalid);
 
-                            if (passedConstraintCheck)
+                            // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have
+                            // patchpoints.
+                            //
+                            const bool mayHavePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
+                                                            (JitConfig.TC_OnStackReplacement() > 0) &&
+                                                            compCanHavePatchpoints();
+                            if (passedConstraintCheck && (mayHavePatchpoints || compHasBackwardJump))
                             {
                                 // Now check with the runtime
                                 CORINFO_METHOD_HANDLE declaredCalleeHnd = callInfo.hMethod;
