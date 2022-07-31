@@ -11910,14 +11910,6 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
                 {
                     goto SKIP; // Unsupported type or invalid shift amount.
                 }
-
-                // Reverse the condition if necessary.
-                if (op2Value == 1)
-                {
-                    gtReverseCond(cmp);
-                    op2->SetIntegralValue(0);
-                }
-
                 andOp->gtOp1 = rshiftOp->gtGetOp1();
 
                 DEBUG_DESTROY_NODE(rshiftOp->gtGetOp2());
@@ -11932,6 +11924,13 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
                 andOp->gtOp2 = rshiftOp;
 
                 rshiftOp->SetOper(GT_LSH);
+            }
+
+            // Reverse the condition if necessary.
+            if (op2Value == 1)
+            {
+                gtReverseCond(cmp);
+                op2->SetIntegralValue(0);
             }
         }
     }
