@@ -36,6 +36,12 @@ namespace System.Text.Json.Serialization
         public bool IncludeFields { get; set; }
 
         /// <summary>
+        /// Specifies that only members declared at the level of the supplied type's hierarchy should be considered.
+        /// Inherited members are not considered.
+        /// </summary>
+        public bool OnlyDeclaredProperties { get; set; }
+
+        /// <summary>
         /// Specifies a built-in naming polices to convert JSON property names with.
         /// </summary>
         public JsonKnownNamingPolicy PropertyNamingPolicy { get; set; }

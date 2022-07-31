@@ -656,6 +656,14 @@ namespace System.Text.Json.SourceGeneration
                                 }
                             }
                             break;
+                        case nameof(JsonSourceGenerationOptionsAttribute.OnlyDeclaredProperties):
+                            {
+                                if (bool.TryParse(propertyValueStr, out bool value))
+                                {
+                                    options.OnlyDeclaredProperties = value;
+                                }
+                            }
+                            break;
                         case nameof(JsonSourceGenerationOptionsAttribute.PropertyNamingPolicy):
                             {
                                 if (Enum.TryParse<JsonKnownNamingPolicy>(propertyValueStr, out JsonKnownNamingPolicy value))
@@ -1014,11 +1022,10 @@ namespace System.Text.Json.SourceGeneration
                         propGenSpecList = new List<PropertyGenerationSpec>();
                         Dictionary<string, PropertyGenerationSpec>? ignoredMembers = null;
 
-                        const BindingFlags bindingFlags =
+                        var BindingFlags bindingFlags =
                             BindingFlags.Instance |
                             BindingFlags.Public |
-                            BindingFlags.NonPublic |
-                            BindingFlags.DeclaredOnly;
+                            BindingFlags.NonPublic;
 
                         bool propertyOrderSpecified = false;
 
