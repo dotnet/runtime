@@ -722,7 +722,7 @@ public:
                                                        // Its indices correspond to lvaTable indexes (or lvSlotNum).
 
         bool m_LastBasicBlockHasBeenEmitted; // When true no more siEndVariableLiveRange is considered.
-                                            // No update/start happens when code has been generated.
+                                             // No update/start happens when code has been generated.
 
     public:
         VariableLiveKeeper(unsigned int  totalLocalCount,
