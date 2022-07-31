@@ -49,11 +49,13 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
-            const BindingFlags BindingFlags =
+            var BindingFlags BindingFlags =
                 BindingFlags.Instance |
                 BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.DeclaredOnly;
+                BindingFlags.NonPublic;
+
+            if (this.Options.OnlyDeclaredProperties)
+                BindingFlags |= BindingFlags.DeclaredOnly;
 
             Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
             bool propertyOrderSpecified = false;
