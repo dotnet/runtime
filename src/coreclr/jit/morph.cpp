@@ -11919,9 +11919,9 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
             //   AND(RSH(x, y), 1)  ->  AND(x, LSH(1, y))
             else
             {
-                andOp->gtOp1 = rshiftOp->gtGetOp1();
+                andOp->gtOp1    = rshiftOp->gtGetOp1();
                 rshiftOp->gtOp1 = andOp->gtOp2;
-                andOp->gtOp2 = rshiftOp;
+                andOp->gtOp2    = rshiftOp;
 
                 rshiftOp->SetOper(GT_LSH);
             }
