@@ -2828,38 +2828,15 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         GenTree* andOp1 = op1->gtGetOp1();
         GenTree* andOp2 = op1->gtGetOp2();
 
-        if (op2Value != 0)
+        //
+        // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
+        // into ((x AND mask) NE|EQ 0) when mask is a single bit.
+        //
+        if ((op2Value != 0) && isPow2(static_cast<target_size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
         {
-            // Optimizes (X & 1) == 1 to (X & 1)
-            // The compiler requires jumps to have relop operands, so we do not fold that case.
-            LIR::Use cmpUse;
-            if ((op2Value == 1) && cmp->OperIs(GT_EQ))
-            {
-                if (andOp2->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()) &&
-                    BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE))
-                {
-                    GenTree* next = cmp->gtNext;
-
-                    cmpUse.ReplaceWith(op1);
-
-                    BlockRange().Remove(cmp->gtGetOp2());
-                    BlockRange().Remove(cmp);
-
-                    return next;
-                }
-            }
-
-            //
-            // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
-            // into ((x AND mask) NE|EQ 0) when mask is a single bit.
-            //
-
-            if (isPow2<target_size_t>(static_cast<target_size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
-            {
-                op2Value = 0;
-                op2->SetIconValue(0);
-                cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
-            }
+            op2Value = 0;
+            op2->SetIconValue(0);
+            cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
         }
 
         if (op2Value == 0)
@@ -2954,6 +2931,18 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             }
 
             return cmp->gtNext;
+        }
+        // Transform TEST_NE(x, 1) into AND(x, 1).
+        // The compiler requires jumps to have relop operands, so we do not fold that case.
+        else if (cmp->OperIs(GT_TEST_NE) && lsh->IsIntegralConst(1) && (genActualType(lsh) == cmp->TypeGet()))
+        {
+            if (BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE))
+            {
+                cmp->SetOper(GT_AND);
+                lsh->AsIntCon()->SetIntegralValue(1);
+
+                return cmp->gtNext;
+            }
         }
 #endif // TARGET_XARCH
     }
