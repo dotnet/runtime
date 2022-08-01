@@ -80,7 +80,7 @@ namespace System
         private static object? CheckArgumentConversions(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
         {
             object? dstObject;
-            Exception exception = ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(srcObject, dstEEType, CheckArgumentSemantics.DynamicInvoke, out dstObject);
+            Exception exception = ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(srcObject, dstEEType, semantics, out dstObject);
             if (exception == null)
                 return dstObject;
 
