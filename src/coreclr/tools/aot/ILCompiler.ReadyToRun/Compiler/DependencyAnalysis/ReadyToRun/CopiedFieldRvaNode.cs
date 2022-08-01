@@ -46,15 +46,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
-            builder.RequireInitialPointerAlignment();
+            byte[] rvaData = GetRvaData(factory.Target.PointerSize, out int requiredAlignment);
+            builder.RequireInitialAlignment(requiredAlignment);
             builder.AddSymbol(this);
-            builder.EmitBytes(GetRvaData(factory.Target.PointerSize));
+            builder.EmitBytes(rvaData);
             return builder.ToObjectData();
         }
 
-        private unsafe byte[] GetRvaData(int targetPointerSize)
+        private unsafe byte[] GetRvaData(int targetPointerSize, out int requiredAlignment)
         {
             int size = 0;
+            requiredAlignment = targetPointerSize;
 
             MetadataReader metadataReader = _module.MetadataReader;
             BlobReader metadataBlob = new BlobReader(_module.PEReader.GetMetadata().Pointer, _module.PEReader.GetMetadata().Length);
@@ -80,6 +82,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 Debug.Assert(field.HasRva);
 
                 int currentSize = field.FieldType.GetElementSize().AsInt;
+                requiredAlignment = Math.Max(requiredAlignment, (field.FieldType as MetadataType)?.GetClassLayout().PackingSize ?? 1);
                 if (currentSize > size)
                 {
                     // We need to handle overlapping fields by reusing blobs based on the rva, and just update

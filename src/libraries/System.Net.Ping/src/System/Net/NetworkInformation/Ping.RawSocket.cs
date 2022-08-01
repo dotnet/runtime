@@ -18,8 +18,10 @@ namespace System.Net.NetworkInformation
         private const int IcmpHeaderLengthInBytes = 8;
         private const int MinIpHeaderLengthInBytes = 20;
         private const int MaxIpHeaderLengthInBytes = 60;
+        private const int IpV6HeaderLengthInBytes = 40;
+        private static ushort DontFragment = OperatingSystem.IsFreeBSD() ? (ushort)IPAddress.HostToNetworkOrder((short)0x4000) : (ushort)0x4000;
 
-        private unsafe SocketConfig GetSocketConfig(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
+        private static unsafe SocketConfig GetSocketConfig(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             // Use a random value as the identifier. This doesn't need to be perfectly random
             // or very unpredictable, rather just good enough to avoid unexpected conflicts.
@@ -28,21 +30,23 @@ namespace System.Net.NetworkInformation
 
             bool ipv4 = address.AddressFamily == AddressFamily.InterNetwork;
             bool sendIpHeader = ipv4 && options != null && SendIpHeader;
+            int totalLength = 0;
 
-             if (sendIpHeader)
-             {
+            if (sendIpHeader)
+            {
                 iph.VersionAndLength = 0x45;
+                totalLength = sizeof(IpHeader) + checked(sizeof(IcmpHeader) + buffer.Length);
                 // On OSX this strangely must be host byte order.
-                iph.TotalLength = (ushort)(sizeof(IpHeader) + checked(sizeof(IcmpHeader) +  buffer.Length));
+                iph.TotalLength = OperatingSystem.IsFreeBSD() ? (ushort)IPAddress.HostToNetworkOrder((short)totalLength) : (ushort)totalLength;
                 iph.Protocol = 1; // ICMP
                 iph.Ttl = (byte)options!.Ttl;
-                iph.Flags = (ushort)(options.DontFragment ? 0x4000 : 0);
+                iph.Flags = (ushort)(options.DontFragment ? DontFragment : 0);
 #pragma warning disable 618
                 iph.DestinationAddress = (uint)address.Address;
 #pragma warning restore 618
                 // No need to fill in SourceAddress or checksum.
                 // If left blank, kernel will fill it in - at least on OSX.
-             }
+            }
 
             return new SocketConfig(
                 new IPEndPoint(address, 0), timeout, options,
@@ -51,10 +55,10 @@ namespace System.Net.NetworkInformation
                 {
                     Type = ipv4 ? (byte)IcmpV4MessageType.EchoRequest : (byte)IcmpV6MessageType.EchoRequest,
                     Identifier = id,
-                }, buffer));
+                }, buffer, totalLength));
         }
 
-        private Socket GetRawSocket(SocketConfig socketConfig)
+        private static Socket GetRawSocket(SocketConfig socketConfig)
         {
             IPEndPoint ep = (IPEndPoint)socketConfig.EndPoint;
             AddressFamily addrFamily = ep.Address.AddressFamily;
@@ -104,8 +108,8 @@ namespace System.Net.NetworkInformation
             return socket;
         }
 
-        private bool TryGetPingReply(
-            SocketConfig socketConfig, byte[] receiveBuffer, int bytesReceived, Stopwatch sw, ref int ipHeaderLength,
+        private static bool TryGetPingReply(
+            SocketConfig socketConfig, byte[] receiveBuffer, int bytesReceived, long startingTimestamp, ref int ipHeaderLength,
             [NotNullWhen(true)] out PingReply? reply)
         {
             byte type, code;
@@ -123,22 +127,98 @@ namespace System.Net.NetworkInformation
             }
 
             int icmpHeaderOffset = ipHeaderLength;
+            int dataOffset = ipHeaderLength + IcmpHeaderLengthInBytes;
 
             // Skip IP header.
             IcmpHeader receivedHeader = MemoryMarshal.Read<IcmpHeader>(receiveBuffer.AsSpan(icmpHeaderOffset));
+            ushort identifier;
             type = receivedHeader.Type;
             code = receivedHeader.Code;
 
-            if (socketConfig.Identifier != receivedHeader.Identifier
-                || type == (byte)IcmpV4MessageType.EchoRequest
-                || type == (byte)IcmpV6MessageType.EchoRequest) // Echo Request, ignore
+            // Validate the ICMP header and get the identifier
+            if (socketConfig.IsIpv4)
+            {
+                if (type == (byte)IcmpV4MessageType.EchoReply)
+                {
+                    // Reply packet has the identifier in the ICMP header.
+                    identifier = receivedHeader.Identifier;
+                }
+                else if (type == (byte)IcmpV4MessageType.DestinationUnreachable ||
+                         type == (byte)IcmpV4MessageType.TimeExceeded ||
+                         type == (byte)IcmpV4MessageType.ParameterProblemBadIPHeader ||
+                         type == (byte)IcmpV4MessageType.SourceQuench ||
+                         type == (byte)IcmpV4MessageType.RedirectMessage)
+                {
+                    // Original IP+ICMP request is in the payload. Read the ICMP header from
+                    // the payload to get identifier.
+
+                    if (dataOffset + MinIpHeaderLengthInBytes + IcmpHeaderLengthInBytes > bytesReceived)
+                    {
+                        return false;
+                    }
+
+                    byte ihl = (byte)(receiveBuffer[dataOffset] & 0x0f); // Internet Header Length
+                    int payloadIpHeaderLength = 4 * ihl;
+
+                    if (bytesReceived - dataOffset - payloadIpHeaderLength < IcmpHeaderLengthInBytes)
+                    {
+                        return false; // Not enough bytes to reconstruct actual IP header + ICMP header.
+                    }
+
+                    IcmpHeader originalRequestHeader = MemoryMarshal.Read<IcmpHeader>(receiveBuffer.AsSpan(dataOffset + payloadIpHeaderLength));
+                    identifier = originalRequestHeader.Identifier;
+
+                    // Update the date offset to point past the payload IP+ICMP headers. While the specification
+                    // doesn't indicate there should be any additional data the reality is that we often get the
+                    // original packet data back.
+                    dataOffset += payloadIpHeaderLength + IcmpHeaderLengthInBytes;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (type == (byte)IcmpV6MessageType.EchoReply)
+                {
+                    // Reply packet has the identifier in the ICMP header.
+                    identifier = receivedHeader.Identifier;
+                }
+                else if (type == (byte)IcmpV6MessageType.DestinationUnreachable ||
+                         type == (byte)IcmpV6MessageType.TimeExceeded ||
+                         type == (byte)IcmpV6MessageType.ParameterProblem ||
+                         type == (byte)IcmpV6MessageType.PacketTooBig)
+                {
+                    // Original IP+ICMP request is in the payload. Read the ICMP header from
+                    // the payload to get identifier.
+
+                    if (bytesReceived - dataOffset < IpV6HeaderLengthInBytes + IcmpHeaderLengthInBytes)
+                    {
+                        return false; // Not enough bytes to reconstruct actual IP header + ICMP header.
+                    }
+
+                    IcmpHeader originalRequestHeader = MemoryMarshal.Read<IcmpHeader>(receiveBuffer.AsSpan(dataOffset + IpV6HeaderLengthInBytes));
+                    identifier = originalRequestHeader.Identifier;
+
+                    // Update the date offset to point past the payload IP+ICMP headers. While the specification
+                    // doesn't indicate there should be any additional data the reality is that we often get the
+                    // original packet data back.
+                    dataOffset += IpV6HeaderLengthInBytes + IcmpHeaderLengthInBytes;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            if (socketConfig.Identifier != identifier)
             {
                 return false;
             }
 
-            sw.Stop();
-            long roundTripTime = sw.ElapsedMilliseconds;
-            int dataOffset = ipHeaderLength + IcmpHeaderLengthInBytes;
+            long roundTripTime = (long)Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds;
+
             // We want to return a buffer with the actual data we sent out, not including the header data.
             byte[] dataBuffer = new byte[bytesReceived - dataOffset];
             Buffer.BlockCopy(receiveBuffer, dataOffset, dataBuffer, 0, dataBuffer.Length);
@@ -152,7 +232,7 @@ namespace System.Net.NetworkInformation
             return true;
         }
 
-        private PingReply SendIcmpEchoRequestOverRawSocket(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
+        private static PingReply SendIcmpEchoRequestOverRawSocket(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
             using (Socket socket = GetRawSocket(socketConfig))
@@ -162,14 +242,13 @@ namespace System.Net.NetworkInformation
                 {
                     socket.SendTo(socketConfig.SendBuffer, SocketFlags.None, socketConfig.EndPoint);
 
-                    byte[] receiveBuffer = new byte[MaxIpHeaderLengthInBytes + IcmpHeaderLengthInBytes + buffer.Length];
+                    byte[] receiveBuffer = new byte[2 * (MaxIpHeaderLengthInBytes + IcmpHeaderLengthInBytes) + buffer.Length];
 
-                    long elapsed;
-                    Stopwatch sw = Stopwatch.StartNew();
                     // Read from the socket in a loop. We may receive messages that are not echo replies, or that are not in response
                     // to the echo request we just sent. We need to filter such messages out, and continue reading until our timeout.
                     // For example, when pinging the local host, we need to filter out our own echo requests that the socket reads.
-                    while ((elapsed = sw.ElapsedMilliseconds) < timeout)
+                    long startingTimestamp = Stopwatch.GetTimestamp();
+                    while (Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds < timeout)
                     {
                         int bytesReceived = socket.ReceiveFrom(receiveBuffer, SocketFlags.None, ref socketConfig.EndPoint);
 
@@ -178,7 +257,7 @@ namespace System.Net.NetworkInformation
                             continue; // Not enough bytes to reconstruct IP header + ICMP header.
                         }
 
-                        if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, sw, ref ipHeaderLength, out PingReply? reply))
+                        if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, startingTimestamp, ref ipHeaderLength, out PingReply? reply))
                         {
                             return reply;
                         }
@@ -197,7 +276,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private async Task<PingReply> SendIcmpEchoRequestOverRawSocketAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
+        private static async Task<PingReply> SendIcmpEchoRequestOverRawSocketAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
             using (Socket socket = GetRawSocket(socketConfig))
@@ -213,12 +292,12 @@ namespace System.Net.NetworkInformation
                         timeoutTokenSource.Token)
                         .ConfigureAwait(false);
 
-                    byte[] receiveBuffer = new byte[MaxIpHeaderLengthInBytes + IcmpHeaderLengthInBytes + buffer.Length];
+                    byte[] receiveBuffer = new byte[2 * (MaxIpHeaderLengthInBytes + IcmpHeaderLengthInBytes) + buffer.Length];
 
-                    Stopwatch sw = Stopwatch.StartNew();
                     // Read from the socket in a loop. We may receive messages that are not echo replies, or that are not in response
                     // to the echo request we just sent. We need to filter such messages out, and continue reading until our timeout.
                     // For example, when pinging the local host, we need to filter out our own echo requests that the socket reads.
+                    long startingTimestamp = Stopwatch.GetTimestamp();
                     while (!timeoutTokenSource.IsCancellationRequested)
                     {
                         SocketReceiveFromResult receiveResult = await socket.ReceiveFromAsync(
@@ -234,7 +313,7 @@ namespace System.Net.NetworkInformation
                             continue; // Not enough bytes to reconstruct IP header + ICMP header.
                         }
 
-                        if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, sw, ref ipHeaderLength, out PingReply? reply))
+                        if (TryGetPingReply(socketConfig, receiveBuffer, bytesReceived, startingTimestamp, ref ipHeaderLength, out PingReply? reply))
                         {
                             return reply;
                         }
@@ -260,11 +339,11 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static PingReply CreatePingReply(IPStatus status)
+        private static PingReply CreatePingReply(IPStatus status, IPAddress? address = null, long rtt = 0)
         {
             // Documentation indicates that you should only pay attention to the IPStatus value when
             // its value is not "Success", but the rest of these values match that of the Windows implementation.
-            return new PingReply(new IPAddress(0), null, status, 0, Array.Empty<byte>());
+            return new PingReply(address ?? new IPAddress(0), null, status, rtt, Array.Empty<byte>());
         }
 
 #if DEBUG
@@ -328,14 +407,14 @@ namespace System.Net.NetworkInformation
             public readonly byte[] SendBuffer;
         }
 
-        private static unsafe byte[] CreateSendMessageBuffer(IpHeader ipHeader, IcmpHeader icmpHeader, byte[] payload)
+        private static unsafe byte[] CreateSendMessageBuffer(IpHeader ipHeader, IcmpHeader icmpHeader, byte[] payload, int totalLength = 0)
         {
             int icmpHeaderSize = sizeof(IcmpHeader);
             int offset = 0;
-            int packetSize = ipHeader.TotalLength != 0 ? ipHeader.TotalLength : checked(icmpHeaderSize + payload.Length);
+            int packetSize = totalLength != 0 ? totalLength : checked(icmpHeaderSize + payload.Length);
             byte[] result = new byte[packetSize];
 
-            if (ipHeader.TotalLength != 0)
+            if (totalLength != 0)
             {
                 int ipHeaderSize = sizeof(IpHeader);
                 new Span<byte>(&ipHeader, sizeof(IpHeader)).CopyTo(result);

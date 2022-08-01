@@ -659,7 +659,7 @@ HRESULT ShimProxyCallback::DebuggerError(ICorDebugProcess * pProcess, HRESULT er
 
 
 // Implementation of ICorDebugManagedCallback::LogMessage
-HRESULT ShimProxyCallback::LogMessage(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, LONG lLevel, __in LPWSTR pLogSwitchName, __in LPWSTR pMessage)
+HRESULT ShimProxyCallback::LogMessage(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, LONG lLevel, _In_ LPWSTR pLogSwitchName, _In_ LPWSTR pMessage)
 {
     m_pShim->PreDispatchEvent();
     class LogMessageEvent  : public ManagedEvent
@@ -695,7 +695,7 @@ HRESULT ShimProxyCallback::LogMessage(ICorDebugAppDomain * pAppDomain, ICorDebug
 
 
 // Implementation of ICorDebugManagedCallback::LogSwitch
-HRESULT ShimProxyCallback::LogSwitch(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, LONG lLevel, ULONG ulReason, __in LPWSTR pLogSwitchName, __in LPWSTR pParentName)
+HRESULT ShimProxyCallback::LogSwitch(ICorDebugAppDomain * pAppDomain, ICorDebugThread * pThread, LONG lLevel, ULONG ulReason, _In_ LPWSTR pLogSwitchName, _In_ LPWSTR pParentName)
 {
     m_pShim->PreDispatchEvent();
     class LogSwitchEvent  : public ManagedEvent
@@ -1060,7 +1060,7 @@ HRESULT ShimProxyCallback::FunctionRemapOpportunity(ICorDebugAppDomain * pAppDom
 
 
 // Implementation of ICorDebugManagedCallback2::CreateConnection
-HRESULT ShimProxyCallback::CreateConnection(ICorDebugProcess * pProcess, CONNID dwConnectionId, __in LPWSTR pConnectionName)
+HRESULT ShimProxyCallback::CreateConnection(ICorDebugProcess * pProcess, CONNID dwConnectionId, _In_ LPWSTR pConnectionName)
 {
     m_pShim->PreDispatchEvent();
     class CreateConnectionEvent  : public ManagedEvent

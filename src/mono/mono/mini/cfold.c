@@ -110,7 +110,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 				FOLD_FBINOP (OP_FMUL, *);
 			}
 			dest->opcode = OP_R8CONST;
-			MONO_INST_NULLIFY_SREGS (dest);		
+			MONO_INST_NULLIFY_SREGS (dest);
 		}
 		break;
 	case OP_RADD:
@@ -122,7 +122,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 				FOLD_RBINOP (OP_RMUL, *);
 			}
 			dest->opcode = OP_R4CONST;
-			MONO_INST_NULLIFY_SREGS (dest);		
+			MONO_INST_NULLIFY_SREGS (dest);
 		}
 		break;
 	case OP_IMUL:
@@ -144,13 +144,13 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 				MONO_INST_NULLIFY_SREGS (dest);
 			}
 		} else if (arg1->opcode == OP_ICONST) {
-			/* 
+			/*
 			 * This is commutative so swap the arguments, allowing the _imm variant
 			 * to be used later.
 			 */
 			if (mono_op_to_op_imm (ins->opcode) != -1) {
 				ALLOC_DEST (cfg, dest, ins);
-				dest->opcode = mono_op_to_op_imm (ins->opcode);
+				dest->opcode = GINT_TO_OPCODE (mono_op_to_op_imm (ins->opcode));
 				dest->sreg1 = ins->sreg2;
 				dest->sreg2 = -1;
 				dest->inst_imm = arg1->inst_c0;
@@ -380,8 +380,8 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 				}
 
 				if (overwrite) {
-					/* 
-					 * Can't nullify OP_COMPARE here since the decompose long branch 
+					/*
+					 * Can't nullify OP_COMPARE here since the decompose long branch
 					 * opcodes depend on it being executed. Also, the branch might not
 					 * be eliminated after all if loop opts is disabled, for example.
 					 */
@@ -443,17 +443,17 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 	}
 
 		/*
-		 * TODO: 
+		 * TODO:
 		 * 	conv.* opcodes.
 		 * 	*ovf* opcodes? It's slow and hard to do in C.
-		 *      switch can be replaced by a simple jump 
+		 *      switch can be replaced by a simple jump
 		 */
 	default:
 		return NULL;
 	}
-		
+
     return dest;
-}	
+}
 
 
 #endif /* DISABLE_JIT */

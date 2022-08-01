@@ -5,6 +5,7 @@ using System;
 using Internal.IL;
 using Debug = System.Diagnostics.Debug;
 using Internal.IL.Stubs;
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.TypeSystem.Interop
 {
@@ -75,6 +76,7 @@ namespace Internal.TypeSystem.Interop
 #if !READYTORUN
                 case MarshallerKind.Struct:
                 case MarshallerKind.LayoutClass:
+                    Debug.Assert(interopStateManager is not null, "An InteropStateManager is required to look up the native representation of a non-blittable struct or class with layout.");
                     return interopStateManager.GetStructMarshallingNativeType((MetadataType)type);
 #endif
 
@@ -92,6 +94,9 @@ namespace Internal.TypeSystem.Interop
 
                 case MarshallerKind.OleDateTime:
                     return context.GetWellKnownType(WellKnownType.Double);
+
+                case MarshallerKind.FailedTypeLoad:
+                    return context.GetWellKnownType(WellKnownType.IntPtr);
 
                 case MarshallerKind.SafeHandle:
                 case MarshallerKind.CriticalHandle:
@@ -160,9 +165,9 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.LayoutClassPtr:
                 case MarshallerKind.AsAnyA:
                 case MarshallerKind.AsAnyW:
-                    return context.GetWellKnownType(WellKnownType.IntPtr);
-
                 case MarshallerKind.ComInterface:
+                case MarshallerKind.CustomMarshaler:
+                case MarshallerKind.BlittableValueClassByRefReturn:
                     return context.GetWellKnownType(WellKnownType.IntPtr);
 
 #if !READYTORUN
@@ -220,29 +225,43 @@ namespace Internal.TypeSystem.Interop
         {
             elementMarshallerKind = MarshallerKind.Invalid;
 
-            bool isByRef = false;
-            if (type.IsByRef)
-            {
-                isByRef = true;
-
-                type = type.GetParameterType();
-
-                if (!type.IsPrimitive && type.IsValueType && marshallerType != MarshallerType.Field
-                    && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
-                {
-                    return MarshallerKind.BlittableValueClassWithCopyCtor;
-                }
-
-                // Compat note: CLR allows ref returning blittable structs for IJW
-                if (isReturn)
-                    return MarshallerKind.Invalid;
-            }
             TypeSystemContext context = type.Context;
             NativeTypeKind nativeType = NativeTypeKind.Default;
             bool isField = marshallerType == MarshallerType.Field;
 
             if (marshalAs != null)
                 nativeType = marshalAs.Type;
+
+            if (type.IsByRef)
+            {
+                type = type.GetParameterType();
+
+                if (type.IsValueType && !type.IsPrimitive && !type.IsEnum && !isField
+                    && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
+                {
+                    return MarshallerKind.BlittableValueClassWithCopyCtor;
+                }
+
+                if (isReturn)
+                {
+                    // Allow ref returning blittable structs for IJW
+                    if (type.IsValueType &&
+                        (nativeType == NativeTypeKind.Struct || nativeType == NativeTypeKind.Default) &&
+                        MarshalUtils.IsBlittableType(type))
+                    {
+                        return MarshallerKind.BlittableValueClassByRefReturn;
+                    }
+                    return MarshallerKind.Invalid;
+                }
+            }
+
+            if (nativeType == NativeTypeKind.CustomMarshaler)
+            {
+                if (isField)
+                    return MarshallerKind.FailedTypeLoad;
+                else
+                    return MarshallerKind.CustomMarshaler;
+            }
 
             //
             // Determine MarshalerKind
@@ -395,7 +414,6 @@ namespace Internal.TypeSystem.Interop
                 bool isBlittable = MarshalUtils.IsBlittableType(type);
 
                 // Blittable generics are allowed to be marshalled with the following exceptions:
-                // * ByReference<T>: This represents an interior pointer and is not actually blittable
                 // * Nullable<T>: We don't want to be locked into the default behavior as we may want special handling later
                 // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
                 // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
@@ -404,7 +422,6 @@ namespace Internal.TypeSystem.Interop
                 // We can't block these types for field scenarios for back-compat reasons.
 
                 if (type.HasInstantiation && !isField && (!isBlittable
-                    || InteropTypes.IsSystemByReference(context, type)
                     || InteropTypes.IsSystemSpan(context, type)
                     || InteropTypes.IsSystemReadOnlySpan(context, type)
                     || InteropTypes.IsSystemNullable(context, type)
@@ -438,14 +455,6 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsSzArray)
             {
-#if READYTORUN
-                // We don't want the additional test/maintenance cost of this in R2R.
-                if (isByRef)
-                    return MarshallerKind.Invalid;
-#else
-                _ = isByRef;
-#endif
-
                 if (nativeType == NativeTypeKind.Default)
                     nativeType = NativeTypeKind.Array;
 
@@ -454,7 +463,7 @@ namespace Internal.TypeSystem.Interop
                     case NativeTypeKind.Array:
                         {
                             if (isField)
-                                return MarshallerKind.Invalid;
+                                return MarshallerKind.FailedTypeLoad;
 
                             var arrayType = (ArrayType)type;
 
@@ -501,16 +510,16 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsPointer)
             {
-                if (nativeType == NativeTypeKind.Default)
+                type = type.GetParameterType();
+
+                if (type.IsValueType && !type.IsPrimitive && !type.IsEnum && !isField
+                    && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
                 {
-                    var pointedAtType = type.GetParameterType();
-                    if (!pointedAtType.IsPrimitive && !type.IsEnum && marshallerType != MarshallerType.Field
-                        && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
-                    {
-                        return MarshallerKind.BlittableValueClassWithCopyCtor;
-                    }
-                    return MarshallerKind.BlittableValue;
+                    return MarshallerKind.BlittableValueClassWithCopyCtor;
                 }
+
+                if (nativeType == NativeTypeKind.Default)
+                    return MarshallerKind.BlittableValue;
                 else
                     return MarshallerKind.Invalid;
             }
@@ -521,7 +530,7 @@ namespace Internal.TypeSystem.Interop
                 else
                     return MarshallerKind.Invalid;
             }
-            else if (type.IsDelegate)
+            else if (type.IsDelegate || InteropTypes.IsSystemDelegate(context, type) || InteropTypes.IsSystemMulticastDelegate(context, type))
             {
                 if (type.HasInstantiation)
                 {
@@ -569,6 +578,9 @@ namespace Internal.TypeSystem.Interop
                     case NativeTypeKind.AnsiBStr:
                         return MarshallerKind.AnsiBSTRString;
 
+                    case NativeTypeKind.CustomMarshaler:
+                        return MarshallerKind.CustomMarshaler;
+
                     case NativeTypeKind.Default:
                         if (isAnsi)
                             return MarshallerKind.AnsiString;
@@ -581,6 +593,8 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsObject)
             {
+                if (nativeType == NativeTypeKind.AsAny && isField)
+                    return MarshallerKind.FailedTypeLoad;
                 if (nativeType == NativeTypeKind.AsAny)
                     return isAnsi ? MarshallerKind.AsAnyA : MarshallerKind.AsAnyW;
                 else
@@ -656,7 +670,9 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
             }
             else
+            {
                 return MarshallerKind.Invalid;
+            }
         }
 
         private static MarshallerKind GetArrayElementMarshallerKind(
@@ -827,6 +843,8 @@ namespace Internal.TypeSystem.Interop
                         return MarshallerKind.BSTRString;
                     case NativeTypeKind.AnsiBStr:
                         return MarshallerKind.AnsiBSTRString;
+                    case NativeTypeKind.CustomMarshaler:
+                        return MarshallerKind.CustomMarshaler;
                     default:
                         return MarshallerKind.Invalid;
                 }
@@ -842,6 +860,39 @@ namespace Internal.TypeSystem.Interop
             {
                 return MarshallerKind.Invalid;
             }
+        }
+
+        internal static MarshallerKind GetDisabledMarshallerKind(
+            TypeDesc type)
+        {
+            // Get the underlying type for enum types.
+            TypeDesc underlyingType = type.UnderlyingType;
+            if (underlyingType.Category == TypeFlags.Void)
+            {
+                return MarshallerKind.VoidReturn;
+            }
+            else if (underlyingType.IsByRef)
+            {
+                // Managed refs are not supported when runtime marshalling is disabled.
+                return MarshallerKind.Invalid;
+            }
+            else if (underlyingType.IsPrimitive)
+            {
+                return MarshallerKind.BlittableValue;
+            }
+            else if (underlyingType.IsPointer || underlyingType.IsFunctionPointer)
+            {
+                return MarshallerKind.BlittableValue;
+            }
+            else if (underlyingType.IsValueType)
+            {
+                var defType = (DefType)underlyingType;
+                if (!defType.ContainsGCPointers && !defType.IsAutoLayoutOrHasAutoLayoutFields)
+                {
+                    return MarshallerKind.BlittableValue;
+                }
+            }
+            return MarshallerKind.Invalid;
         }
 
         internal static bool ShouldCheckForPendingException(TargetDetails target, PInvokeMetadata metadata)
@@ -860,6 +911,11 @@ namespace Internal.TypeSystem.Interop
             //   objc_msgSendSuper_stret
             return metadata.Module.Equals(ObjectiveCLibrary)
                 && metadata.Name.StartsWith(ObjectiveCMsgSend);
+        }
+
+        public static bool IsRuntimeMarshallingEnabled(ModuleDesc module)
+        {
+            return module.Assembly is not EcmaAssembly assembly || !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
         }
     }
 }

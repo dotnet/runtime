@@ -258,8 +258,8 @@ static const ULONG RegisterMaskLookup[1 << 6] =
 NTSTATUS
 RtlpUnwindCustom(
     __inout PT_CONTEXT ContextRecord,
-    __in BYTE Opcode,
-    __in PARM_UNWIND_PARAMS UnwindParams
+    _In_ BYTE Opcode,
+    _In_ PARM_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -385,9 +385,9 @@ Return Value:
 NTSTATUS
 RtlpPopVfpRegisterRange(
     __inout PT_CONTEXT ContextRecord,
-    __in ULONG RegStart,
-    __in ULONG RegStop,
-    __in PARM_UNWIND_PARAMS UnwindParams
+    _In_ ULONG RegStart,
+    _In_ ULONG RegStop,
+    _In_ PARM_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -445,9 +445,9 @@ Return Value:
 FORCEINLINE
 WORD
 RtlpRangeToMask(
-    __in ULONG Start,
-    __in ULONG Stop,
-    __in ULONG Lr
+    _In_ ULONG Start,
+    _In_ ULONG Stop,
+    _In_ ULONG Lr
     )
 
 /*++
@@ -485,8 +485,8 @@ Return Value:
 NTSTATUS
 RtlpPopRegisterMask(
     __inout PT_CONTEXT ContextRecord,
-    __in WORD RegMask,
-    __in PARM_UNWIND_PARAMS UnwindParams
+    _In_ WORD RegMask,
+    _In_ PARM_UNWIND_PARAMS UnwindParams
     )
 /*++
 
@@ -556,8 +556,8 @@ Return Value:
 FORCEINLINE
 BOOLEAN
 RtlpCheckCondition(
-    __in PT_CONTEXT ContextRecord,
-    __in ULONG Condition
+    _In_ PT_CONTEXT ContextRecord,
+    _In_ ULONG Condition
     )
 
 /*++
@@ -585,10 +585,10 @@ Return Value:
 
 ULONG
 RtlpComputeScopeSize(
-    __in ULONG UnwindCodePtr,
-    __in ULONG UnwindCodesEndPtr,
-    __in BOOLEAN IsEpilog,
-    __in PVOID UnwindParams
+    _In_ ULONG UnwindCodePtr,
+    _In_ ULONG UnwindCodesEndPtr,
+    _In_ BOOLEAN IsEpilog,
+    _In_ PVOID UnwindParams
     )
 
 /*++
@@ -647,13 +647,13 @@ Return Value:
 
 HRESULT
 RtlpUnwindFunctionCompact(
-    __in ULONG ControlPcRva,
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ ULONG ControlPcRva,
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
-    __out PULONG EstablisherFrame,
-    __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine,
-    __out PVOID *HandlerData,
-    __in PARM_UNWIND_PARAMS UnwindParams
+    _Out_ PULONG EstablisherFrame,
+    _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine,
+    _Out_ PVOID *HandlerData,
+    _In_ PARM_UNWIND_PARAMS UnwindParams
     )
 {
     ULONG CBit;
@@ -771,6 +771,12 @@ RtlpUnwindFunctionCompact(
         if (OffsetInFunction < PrologLength) {
             OffsetInScope = PrologLength - OffsetInFunction;
         }
+    } else {
+        ComputeFramePointerLength = 0;
+        PushPopParamsLength = 0;
+        PushPopFloatingPointLength = 0;
+        PushPopIntegerLength = 0;
+        StackAdjustLength = 0;
     }
 
     //
@@ -916,14 +922,14 @@ RtlpUnwindFunctionCompact(
 
 HRESULT
 RtlpUnwindFunctionFull(
-    __in ULONG ControlPcRva,
-    __in ULONG ImageBase,
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ ULONG ControlPcRva,
+    _In_ ULONG ImageBase,
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
-    __out PULONG EstablisherFrame,
-    __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine,
-    __out PVOID *HandlerData,
-    __in PARM_UNWIND_PARAMS UnwindParams
+    _Out_ PULONG EstablisherFrame,
+    _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine,
+    _Out_ PVOID *HandlerData,
+    _In_ PARM_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -942,7 +948,7 @@ Routine Description:
 Arguments:
 
     ControlPcRva - Supplies the address where control left the specified
-        function, as an offset relative to the IamgeBase.
+        function, as an offset relative to the ImageBase.
 
     ImageBase - Supplies the base address of the image that contains the
         function being unwound.
@@ -964,7 +970,7 @@ Arguments:
         returned.
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     UnwindParams - Additional parameters shared with caller.
 
@@ -1043,6 +1049,8 @@ Return Value:
     if ((HeaderWord & (1 << 21)) != 0) {
         UnwindIndex = EpilogScopeCount;
         EpilogScopeCount = 0;
+    } else {
+        UnwindIndex = 0;
     }
 
     //
@@ -1499,13 +1507,13 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 
 #if defined(HOST_UNIX)
 PEXCEPTION_ROUTINE RtlVirtualUnwind(
-    __in ULONG HandlerType,
-    __in ULONG ImageBase,
-    __in ULONG ControlPc,
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
-    __in OUT PCONTEXT ContextRecord,
-    __out PVOID *HandlerData,
-    __out PULONG EstablisherFrame,
+    _In_ ULONG HandlerType,
+    _In_ ULONG ImageBase,
+    _In_ ULONG ControlPc,
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ OUT PCONTEXT ContextRecord,
+    _Out_ PVOID *HandlerData,
+    _Out_ PULONG EstablisherFrame,
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     )
 {

@@ -20,10 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A service object of type <typeparamref name="T"/> or null if there is no such service.</returns>
         public static T? GetService<T>(this IServiceProvider provider)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
+            ThrowHelper.ThrowIfNull(provider);
 
             return (T?)provider.GetService(typeof(T));
         }
@@ -37,15 +34,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <exception cref="System.InvalidOperationException">There is no service of type <paramref name="serviceType"/>.</exception>
         public static object GetRequiredService(this IServiceProvider provider, Type serviceType)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
-
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
+            ThrowHelper.ThrowIfNull(provider);
+            ThrowHelper.ThrowIfNull(serviceType);
 
             if (provider is ISupportRequiredService requiredServiceSupportingProvider)
             {
@@ -70,10 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <exception cref="System.InvalidOperationException">There is no service of type <typeparamref name="T"/>.</exception>
         public static T GetRequiredService<T>(this IServiceProvider provider) where T : notnull
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
+            ThrowHelper.ThrowIfNull(provider);
 
             return (T)provider.GetRequiredService(typeof(T));
         }
@@ -86,10 +73,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An enumeration of services of type <typeparamref name="T"/>.</returns>
         public static IEnumerable<T> GetServices<T>(this IServiceProvider provider)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
+            ThrowHelper.ThrowIfNull(provider);
 
             return provider.GetRequiredService<IEnumerable<T>>();
         }
@@ -102,15 +86,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An enumeration of services of type <paramref name="serviceType"/>.</returns>
         public static IEnumerable<object?> GetServices(this IServiceProvider provider, Type serviceType)
         {
-            if (provider == null)
-            {
-                throw new ArgumentNullException(nameof(provider));
-            }
-
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
+            ThrowHelper.ThrowIfNull(provider);
+            ThrowHelper.ThrowIfNull(serviceType);
 
             Type? genericEnumerable = typeof(IEnumerable<>).MakeGenericType(serviceType);
             return (IEnumerable<object>)provider.GetRequiredService(genericEnumerable);

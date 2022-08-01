@@ -5,9 +5,16 @@ Codespaces allows you to develop in a Docker container running in the cloud. You
 
 dotnet/runtime runs a nightly GitHub Action to build the latest code in the repo. This allows you to immediately start developing and testing after creating a codespace without having to build the whole repo. When the machine is created, it will have built the repo using the code as of 6 AM UTC that morning.
 
-**NOTE**: In order to use a prebuilt codespace, when you create your machine be sure to select an **`8 core`** machine.
+1. From https://github.com/dotnet/runtime, drop-down the `Code` button and select the `Codespaces` tab.
 
-See https://docs.github.com/codespaces/developing-in-codespaces/creating-a-codespace#creating-a-codespace for instructions on how to create a new codespace.
+![New codespace button](https://docs.github.com/assets/images/help/codespaces/new-codespace-button.png)
+
+2. Select the Machine type. For dotnet/runtime, it is recommended to select at least a `4-core` machine. You can also verify that a "Prebuild" is ready.
+
+![Codespace machine size](./codespace-machine-size.png)
+
+
+*If these instructions are out of date, see https://docs.github.com/codespaces/developing-in-codespaces/creating-a-codespace#creating-a-codespace for instructions on how to create a new codespace.*
 
 ## Updating dotnet/runtime's Codespaces Configuration
 
@@ -17,8 +24,7 @@ The Codespaces configuration is spread across the following places:
     - `devcontainer.json` file configures the codespace and mostly has VS Code settings
     - The Dockerfile used to create the image
     - The `scripts` folder contains any scripts that are executed during the creation of the codespace. This has the build command that builds the entire repo for prebuilds.
-2. The GitHub Action can be configured at [create-codespaces-prebuild](../../.github/workflows/create-codespaces-prebuild.yml)
-    - This contains when the Action is run, what regions we build prebuilds for, and what size machines
+2. The GitHub Action can be configured by following the instructions at https://docs.github.com/codespaces/prebuilding-your-codespaces/configuring-prebuilds.
 
 To test out changes to the `.devcontainer` files, you can follow the process in [Applying changes to your configuration](https://docs.github.com/codespaces/customizing-your-codespace/configuring-codespaces-for-your-project#applying-changes-to-your-configuration) docs. This allows you to rebuild the Codespace privately before creating a PR.
 

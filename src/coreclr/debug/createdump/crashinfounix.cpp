@@ -3,6 +3,14 @@
 
 #include "createdump.h"
 
+#ifndef PT_ARM_EXIDX
+#define PT_ARM_EXIDX   0x70000001      /* See llvm ELF.h */
+#endif
+
+extern CrashInfo* g_crashInfo;
+
+int g_readProcessMemoryErrno = 0;
+
 bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name);
 
 bool
@@ -14,7 +22,17 @@ CrashInfo::Initialize()
     m_fd = open(memPath, O_RDONLY);
     if (m_fd == -1)
     {
-        fprintf(stderr, "open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
+        int err = errno;
+        const char* message = "Problem accessing memory";
+        if (err == EPERM || err == EACCES)
+        {
+            message = "The process or container does not have permissions or access";
+        }
+        else if (err == ENOENT)
+        {
+            message = "Invalid process id";
+        }
+        printf_error("%s: open(%s) FAILED %s (%d)\n", message, memPath, strerror(err), err);
         return false;
     }
     // Get the process info
@@ -58,7 +76,7 @@ CrashInfo::EnumerateAndSuspendThreads()
     DIR* taskDir = opendir(taskPath);
     if (taskDir == nullptr)
     {
-        fprintf(stderr, "opendir(%s) FAILED %s\n", taskPath, strerror(errno));
+        printf_error("Problem enumerating threads: opendir(%s) FAILED %s (%d)\n", taskPath, strerror(errno), errno);
         return false;
     }
 
@@ -76,7 +94,7 @@ CrashInfo::EnumerateAndSuspendThreads()
             }
             else
             {
-                fprintf(stderr, "ptrace(ATTACH, %d) FAILED %s\n", tid, strerror(errno));
+                printf_error("Problem suspending threads: ptrace(ATTACH, %d) FAILED %s (%d)\n", tid, strerror(errno), errno);
                 closedir(taskDir);
                 return false;
             }
@@ -102,7 +120,7 @@ CrashInfo::GetAuxvEntries()
     int fd = open(auxvPath, O_RDONLY, 0);
     if (fd == -1)
     {
-        fprintf(stderr, "open(%s) FAILED %s\n", auxvPath, strerror(errno));
+        printf_error("Problem reading aux info: open(%s) FAILED %s (%d)\n", auxvPath, strerror(errno), errno);
         return false;
     }
     bool result = false;
@@ -131,7 +149,7 @@ CrashInfo::GetAuxvEntries()
 // Get the module mappings for the core dump NT_FILE notes
 //
 bool
-CrashInfo::EnumerateModuleMappings()
+CrashInfo::EnumerateMemoryRegions()
 {
     // Here we read /proc/<pid>/maps file in order to parse it and figure out what it says
     // about a library we are looking for. This file looks something like this:
@@ -159,7 +177,7 @@ CrashInfo::EnumerateModuleMappings()
     FILE* mapsFile = fopen(mapPath, "r");
     if (mapsFile == nullptr)
     {
-        fprintf(stderr, "fopen(%s) FAILED %s\n", mapPath, strerror(errno));
+        printf_error("Problem reading maps file: fopen(%s) FAILED %s (%d)\n", mapPath, strerror(errno), errno);
         return false;
     }
     // linuxGateAddress is the beginning of the kernel's mapping of
@@ -178,7 +196,7 @@ CrashInfo::EnumerateModuleMappings()
         char* permissions = nullptr;
         char* moduleName = nullptr;
 
-        int c = sscanf(line, "%" PRIx64 "-%" PRIx64 " %m[-rwxsp] %" PRIx64 " %*[:0-9a-f] %*d %ms\n", &start, &end, &permissions, &offset, &moduleName);
+        int c = sscanf(line, "%" PRIx64 "-%" PRIx64 " %m[-rwxsp] %" PRIx64 " %*[:0-9a-f] %*d %m[^\n]\n", &start, &end, &permissions, &offset, &moduleName);
         if (c == 4 || c == 5)
         {
             // r = read
@@ -207,6 +225,7 @@ CrashInfo::EnumerateModuleMappings()
             if (moduleName != nullptr && *moduleName == '/')
             {
                 m_moduleMappings.insert(memoryRegion);
+                m_cbModuleMappings += memoryRegion.Size();
             }
             else
             {
@@ -214,7 +233,7 @@ CrashInfo::EnumerateModuleMappings()
             }
             if (linuxGateAddress != nullptr && reinterpret_cast<void*>(start) == linuxGateAddress)
             {
-                InsertMemoryBackedRegion(memoryRegion);
+                InsertMemoryRegion(memoryRegion);
             }
             free(moduleName);
             free(permissions);
@@ -223,7 +242,7 @@ CrashInfo::EnumerateModuleMappings()
 
     if (g_diagnostics)
     {
-        TRACE("Module mappings:\n");
+        TRACE("Module mappings (%06llx):\n", m_cbModuleMappings / PAGE_SIZE);
         for (const MemoryRegion& region : m_moduleMappings)
         {
             region.Trace();
@@ -263,26 +282,70 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
     if (baseAddress == 0 || baseAddress == m_auxvValues[AT_SYSINFO_EHDR]) {
         return;
     }
+    // For reasons unknown the main app singlefile module name is empty in the DSO. This replaces
+    // it with the one found in the /proc/<pid>/maps.
+    if (moduleName.empty())
+    {
+        MemoryRegion search(0, baseAddress, baseAddress + PAGE_SIZE);
+        const MemoryRegion* region = SearchMemoryRegions(m_moduleMappings, search);
+        if (region != nullptr)
+        {
+            moduleName = region->FileName();
+            TRACE("VisitModule using module name from mappings '%s'\n", moduleName.c_str());
+        }
+    }
     AddModuleInfo(false, baseAddress, nullptr, moduleName);
     if (m_coreclrPath.empty())
     {
         size_t last = moduleName.rfind(DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("coreclr"));
-        if (last != std::string::npos) {
+        if (last != std::string::npos)
+        {
             m_coreclrPath = moduleName.substr(0, last + 1);
+            m_runtimeBaseAddress = baseAddress;
 
             // Now populate the elfreader with the runtime module info and
             // lookup the DAC table symbol to ensure that all the memory
             // necessary is in the core dump.
-            if (PopulateForSymbolLookup(baseAddress)) {
+            if (PopulateForSymbolLookup(baseAddress))
+            {
                 uint64_t symbolOffset;
-                if (!TryLookupSymbol("g_dacTable", &symbolOffset))
+                if (!TryLookupSymbol(DACCESS_TABLE_SYMBOL, &symbolOffset))
                 {
-                    TRACE("TryLookupSymbol(g_dacTable) FAILED\n");
+                    TRACE("TryLookupSymbol(" DACCESS_TABLE_SYMBOL ") FAILED\n");
+                }
+            }
+        }
+        else if (g_checkForSingleFile)
+        {
+            if (PopulateForSymbolLookup(baseAddress))
+            {
+                uint64_t symbolOffset;
+                if (TryLookupSymbol("DotNetRuntimeInfo", &symbolOffset))
+                {
+                    m_coreclrPath = GetDirectory(moduleName);
+                    m_runtimeBaseAddress = baseAddress;
+
+                    RuntimeInfo runtimeInfo { };
+                    if (ReadMemory((void*)(baseAddress + symbolOffset), &runtimeInfo, sizeof(RuntimeInfo)))
+                    {
+                        if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
+                        {
+                            TRACE("Found valid single-file runtime info\n");
+                        }
+                    }
                 }
             }
         }
     }
     EnumerateProgramHeaders(baseAddress);
+}
+
+// Helper for PAL_GetUnwindInfoSize. Reads memory directly without adding it to the memory region list.
+BOOL
+ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
+{
+    size_t read = 0;
+    return g_crashInfo->ReadProcessMemory(address, buffer, size, &read);
 }
 
 //
@@ -296,9 +359,37 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
     {
     case PT_DYNAMIC:
     case PT_NOTE:
-    case PT_GNU_EH_FRAME:
-        if (phdr->p_vaddr != 0 && phdr->p_memsz != 0) {
+#if defined(TARGET_ARM)
+    case PT_ARM_EXIDX:
+#endif
+        if (phdr->p_vaddr != 0 && phdr->p_memsz != 0)
+        {
             InsertMemoryRegion(loadbias + phdr->p_vaddr, phdr->p_memsz);
+        }
+        break;
+
+    case PT_GNU_EH_FRAME:
+        if (phdr->p_vaddr != 0 && phdr->p_memsz != 0)
+        {
+            uint64_t ehFrameHdrStart = loadbias + phdr->p_vaddr;
+            uint64_t ehFrameHdrSize = phdr->p_memsz;
+            TRACE("VisitProgramHeader: ehFrameHdrStart %016llx ehFrameHdrSize %08llx\n", ehFrameHdrStart, ehFrameHdrSize);
+            InsertMemoryRegion(ehFrameHdrStart, ehFrameHdrSize);
+
+            uint64_t ehFrameStart;
+            uint64_t ehFrameSize;
+            if (PAL_GetUnwindInfoSize(baseAddress, ehFrameHdrStart, ReadMemoryAdapter, &ehFrameStart, &ehFrameSize))
+            {
+                TRACE("VisitProgramHeader: ehFrameStart %016llx ehFrameSize %08llx\n", ehFrameStart, ehFrameSize);
+                if (ehFrameStart != 0 && ehFrameSize != 0)
+                {
+                    InsertMemoryRegion(ehFrameStart, ehFrameSize);
+                }
+            }
+            else
+            {
+                TRACE("VisitProgramHeader: PAL_GetUnwindInfoSize FAILED\n");
+            }
         }
         break;
 
@@ -314,7 +405,7 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
 uint32_t
 CrashInfo::GetMemoryRegionFlags(uint64_t start)
 {
-    MemoryRegion search(0, start, start + PAGE_SIZE);
+    MemoryRegion search(0, start, start + PAGE_SIZE, 0);
     const MemoryRegion* region = SearchMemoryRegions(m_moduleMappings, search);
     if (region != nullptr) {
         return region->Flags();
@@ -345,7 +436,7 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
         *read = process_vm_readv(m_pid, &local, 1, &remote, 1, 0);
     }
 
-    if (!m_canUseProcVmReadSyscall || (*read == (size_t)-1 && errno == EPERM))
+    if (!m_canUseProcVmReadSyscall || (*read == (size_t)-1 && (errno == EPERM || errno == ENOSYS)))
 #endif
     {
         // If we've failed, avoid going through expensive syscalls
@@ -358,8 +449,9 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
 
     if (*read == (size_t)-1)
     {
-        int readErrno = errno;
-        TRACE_VERBOSE("ReadProcessMemory FAILED, addr: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", address, size, readErrno, strerror(readErrno));
+        // Preserve errno for the ELF dump writer call
+        g_readProcessMemoryErrno = errno;
+        TRACE_VERBOSE("ReadProcessMemory FAILED addr: %" PRIA PRIx " size: %zu error: %s (%d)\n", address, size, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
         return false;
     }
     return true;
@@ -377,7 +469,7 @@ GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
     FILE *statusFile = fopen(statusPath, "r");
     if (statusFile == nullptr)
     {
-        fprintf(stderr, "GetStatus fopen(%s) FAILED\n", statusPath);
+        printf_error("GetStatus fopen(%s) FAILED %s (%d)\n", statusPath, strerror(errno), errno);
         return false;
     }
 

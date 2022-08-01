@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Xml.XPath;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Collections;
+using System.Xml.Schema;
+using MS.Internal.Xml.XPath;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Schema
 {
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
-    using System.Collections;
-    using System.Xml.Schema;
-    using MS.Internal.Xml.XPath;
-    using System.Diagnostics.CodeAnalysis;
-
     /*--------------------------------------------------------------------------------------------- *
      * Dynamic Part Below...                                                                        *
      * -------------------------------------------------------------------------------------------- */
@@ -51,8 +51,8 @@ namespace System.Xml.Schema
             if (depth == this.curDepth - 1)
             {
                 // really need to move the current node pointer to parent
-                // what i did here is for seperating the case of IsDss or only IsChild
-                // bcoz in the first case i need to expect "a" from random depth
+                // what i did here is for separating the case of IsDss or only IsChild
+                // because in the first case i need to expect "a" from random depth
                 // -1 means it doesn't expect some specific depth (referecing the dealing to -1 in movetochild method
                 // while in the second case i can't change the root depth which is 1.
                 if ((this.curNode.Input == parent.RootNode) && (parent.IsDss))
@@ -428,7 +428,7 @@ namespace System.Xml.Schema
         }
 
         // recursive here
-        [return: NotNullIfNotNull("axis")]
+        [return: NotNullIfNotNull(nameof(axis))]
         internal static DoubleLinkAxis? ConvertTree(Axis? axis)
         {
             if (axis == null)
@@ -690,7 +690,7 @@ namespace System.Xml.Schema
         // for (1) & (4) i will have URN set properly
         // for (2) the URN is null
         // for (3) the URN is empty
-        private void SetURN(Axis axis, XmlNamespaceManager nsmgr)
+        private static void SetURN(Axis axis, XmlNamespaceManager nsmgr)
         {
             if (axis.Prefix.Length != 0)
             {      // (1) (4)

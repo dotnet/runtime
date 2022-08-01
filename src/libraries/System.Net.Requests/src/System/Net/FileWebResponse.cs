@@ -51,11 +51,13 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for FileWebResponse.")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for FileWebResponse.")]
         protected override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();

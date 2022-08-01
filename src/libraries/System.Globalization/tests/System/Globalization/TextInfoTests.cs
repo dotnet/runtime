@@ -279,7 +279,7 @@ namespace System.Globalization.Tests
             foreach (string cultureName in GetTestLocales())
             {
                 // Android has its own ICU, which doesn't work well with tr
-                if (!PlatformDetection.IsAndroid)
+                if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
                 {
                     yield return new object[] { cultureName, "I", "\u0131" };
                     yield return new object[] { cultureName, "HI!", "h\u0131!" };
@@ -287,7 +287,7 @@ namespace System.Globalization.Tests
                 }
                 yield return new object[] { cultureName, "\u0130", "i" };
                 yield return new object[] { cultureName, "i", "i" };
-                
+
             }
 
             // ICU has special tailoring for the en-US-POSIX locale which treats "i" and "I" as different letters
@@ -407,7 +407,7 @@ namespace System.Globalization.Tests
             foreach (string cultureName in GetTestLocales())
             {
                 // Android has its own ICU, which doesn't work well with tr
-                if (!PlatformDetection.IsAndroid)
+                if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
                 {
                     yield return new object[] { cultureName, "i", "\u0130" };
                     yield return new object[] { cultureName, "H\u0131\n\0Hi\u0009!", "HI\n\0H\u0130\t!" };
@@ -477,6 +477,14 @@ namespace System.Globalization.Tests
         public void ToStringTest(string name, string expected)
         {
             Assert.Equal(expected, new CultureInfo(name).TextInfo.ToString());
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [InlineData("es-ES")]
+        [InlineData("es-ES_tradnl")]
+        public void TestAsciiCodePageWithCulturesWithAlternativeSortNames(string cultureName)
+        {
+            Assert.Equal(1252, CultureInfo.GetCultureInfo(cultureName).TextInfo.ANSICodePage);
         }
     }
 }

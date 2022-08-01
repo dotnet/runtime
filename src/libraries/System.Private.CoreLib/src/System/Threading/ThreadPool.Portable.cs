@@ -17,14 +17,13 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        // Time-sensitive work items are those that may need to run ahead of normal work items at least periodically. For a
-        // runtime that does not support time-sensitive work items on the managed side, the thread pool yields the thread to the
-        // runtime periodically (by exiting the dispatch loop) so that the runtime may use that thread for processing
-        // any time-sensitive work. For a runtime that supports time-sensitive work items on the managed side, the thread pool
-        // does not yield the thread and instead processes time-sensitive work items queued by specific APIs periodically.
-        internal const bool SupportsTimeSensitiveWorkItems = true;
+        internal static bool UsePortableThreadPoolForIO => true;
 
-#if CORERT
+        // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
+        // the runtime may use the thread for processing other work
+        internal static bool YieldFromDispatchLoop => false;
+
+#if NATIVEAOT
         private const bool IsWorkerTrackingEnabledInConfig = false;
 #else
         private static readonly bool IsWorkerTrackingEnabledInConfig =
@@ -34,37 +33,26 @@ namespace System.Threading
         // Threadpool specific initialization of a new thread. Used by OS-provided threadpools. No-op for portable threadpool.
         internal static void InitializeForThreadPoolThread() { }
 
-        internal static bool CanSetMinIOCompletionThreads(int ioCompletionThreads) => true;
-        internal static void SetMinIOCompletionThreads(int ioCompletionThreads) { }
+#pragma warning disable IDE0060
+        internal static bool CanSetMinIOCompletionThreads(int ioCompletionThreads) => false;
+        internal static bool CanSetMaxIOCompletionThreads(int ioCompletionThreads) => false;
+#pragma warning restore IDE0060
 
-        internal static bool CanSetMaxIOCompletionThreads(int ioCompletionThreads) => true;
+        [Conditional("unnecessary")]
+        internal static void SetMinIOCompletionThreads(int ioCompletionThreads) { }
+        [Conditional("unnecessary")]
         internal static void SetMaxIOCompletionThreads(int ioCompletionThreads) { }
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads) =>
             PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads, completionPortThreads);
-
-        public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
-        {
-            // Note that worker threads and completion port threads share the same thread pool.
-            // The total number of threads cannot exceed MaxPossibleThreadCount.
-            workerThreads = PortableThreadPool.ThreadPoolInstance.GetMaxThreads();
-            completionPortThreads = 1;
-        }
-
+        public static void GetMaxThreads(out int workerThreads, out int completionPortThreads) =>
+            PortableThreadPool.ThreadPoolInstance.GetMaxThreads(out workerThreads, out completionPortThreads);
         public static bool SetMinThreads(int workerThreads, int completionPortThreads) =>
             PortableThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads, completionPortThreads);
-
-        public static void GetMinThreads(out int workerThreads, out int completionPortThreads)
-        {
-            workerThreads = PortableThreadPool.ThreadPoolInstance.GetMinThreads();
-            completionPortThreads = 1;
-        }
-
-        public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
-        {
-            workerThreads = PortableThreadPool.ThreadPoolInstance.GetAvailableThreads();
-            completionPortThreads = 0;
-        }
+        public static void GetMinThreads(out int workerThreads, out int completionPortThreads) =>
+            PortableThreadPool.ThreadPoolInstance.GetMinThreads(out workerThreads, out completionPortThreads);
+        public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads) =>
+            PortableThreadPool.ThreadPoolInstance.GetAvailableThreads(out workerThreads, out completionPortThreads);
 
         /// <summary>
         /// Gets the number of thread pool threads that currently exist.
@@ -92,7 +80,9 @@ namespace System.Threading
         /// </summary>
         /// <param name="cpuUtilization">CPU utilization as a percentage since the last call</param>
         /// <returns>True if the runtime still needs to perform gate activities, false otherwise</returns>
+#pragma warning disable IDE0060
         internal static bool PerformRuntimeSpecificGateActivities(int cpuUtilization) => false;
+#pragma warning restore IDE0060
 
         internal static void NotifyWorkItemProgress() => PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
 
@@ -107,19 +97,17 @@ namespace System.Threading
             PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
-             WaitHandle? waitObject,
-             WaitOrTimerCallback? callBack,
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
              object? state,
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-            if (waitObject == null)
-                throw new ArgumentNullException(nameof(waitObject));
+            ArgumentNullException.ThrowIfNull(waitObject);
+            ArgumentNullException.ThrowIfNull(callBack);
 
-            if (callBack == null)
-                throw new ArgumentNullException(nameof(callBack));
-
+            Thread.ThrowIfNoThreadStart();
             RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(
                 waitObject,
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
@@ -128,8 +116,5 @@ namespace System.Threading
             PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredHandle);
             return registeredHandle;
         }
-
-        internal static void UnsafeQueueWaitCompletion(CompleteWaitThreadPoolWorkItem completeWaitWorkItem) =>
-            UnsafeQueueUserWorkItemInternal(completeWaitWorkItem, preferLocal: false);
     }
 }

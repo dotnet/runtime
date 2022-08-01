@@ -25,21 +25,23 @@ namespace System.IO.Tests
         [Theory, MemberData(nameof(TrailingCharacters))]
         public void SetAttributes_MissingFile(char trailingChar)
         {
+            if (!CanBeReadOnly) return;
             Assert.Throws<FileNotFoundException>(() => SetAttributes(GetTestFilePath() + trailingChar, FileAttributes.ReadOnly));
         }
 
         [Theory, MemberData(nameof(TrailingCharacters))]
         public void SetAttributes_MissingDirectory(char trailingChar)
         {
+            if (!CanBeReadOnly) return;
             Assert.Throws<DirectoryNotFoundException>(() => SetAttributes(Path.Combine(GetTestFilePath(), "file" + trailingChar), FileAttributes.ReadOnly));
         }
 
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymLinksAreReparsePoints()
         {
             string path = CreateItem();
-            string linkPath = GetTestFilePath();
+            string linkPath = GetRandomLinkPath();
 
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: IsDirectory));
 
@@ -47,11 +49,11 @@ namespace System.IO.Tests
             Assert.Equal(FileAttributes.ReparsePoint, FileAttributes.ReparsePoint & GetAttributes(linkPath));
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymLinksReflectSymLinkAttributes()
         {
             string path = CreateItem();
-            string linkPath = GetTestFilePath();
+            string linkPath = GetRandomLinkPath();
 
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: IsDirectory));
 
@@ -59,7 +61,15 @@ namespace System.IO.Tests
             try
             {
                 Assert.Equal(FileAttributes.ReadOnly, FileAttributes.ReadOnly & GetAttributes(path));
-                Assert.NotEqual(FileAttributes.ReadOnly, FileAttributes.ReadOnly & GetAttributes(linkPath));
+                if (OperatingSystem.IsWindows())
+                {
+                    Assert.NotEqual(FileAttributes.ReadOnly, FileAttributes.ReadOnly & GetAttributes(linkPath));   
+                }
+                else
+                {
+                    // On Unix, Get/SetAttributes FileAttributes.ReadOnly operates on the target of the link.
+                    Assert.Equal(FileAttributes.ReadOnly, FileAttributes.ReadOnly & GetAttributes(linkPath));   
+                }
             }
             finally
             {

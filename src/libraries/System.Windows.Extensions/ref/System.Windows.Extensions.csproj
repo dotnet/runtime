@@ -2,25 +2,13 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum)</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Windows.Extensions.cs" />
     <Compile Include="System.Windows.Extensions.Forwards.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\ref\System.Drawing.Common.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.TypeConverter\ref\System.ComponentModel.TypeConverter.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.EventBasedAsync\ref\System.ComponentModel.EventBasedAsync.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.X509Certificates\ref\System.Security.Cryptography.X509Certificates.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Reference Include="System.ComponentModel.EventBasedAsync" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
   </ItemGroup>
 </Project>

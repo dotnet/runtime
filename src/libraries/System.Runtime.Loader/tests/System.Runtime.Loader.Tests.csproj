@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Runtime.Loader.Tests</RootNamespace>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- Some tests rely on no deps.json file being present. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <!-- EnC tests on targets without a remote executor need the environment variable set before launching the test -->
-    <WasmXHarnessMonoArgs>--setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug</WasmXHarnessMonoArgs>
+    <!-- Also ask Mono to use make sequence points even without a debugger attached to match "dotnet watch" behavior -->
+    <WasmXHarnessMonoArgs>--setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug --setenv=MONO_DEBUG=gen-seq-points</WasmXHarnessMonoArgs>
+
+    <!-- disabled due to https://github.com/dotnet/runtime/issues/65672 -->
+    <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ApplyUpdateTest.cs" />
@@ -20,11 +24,16 @@
     <Compile Include="ResourceAssemblyLoadContext.cs" />
     <Compile Include="SatelliteAssemblies.cs" />
     <Compile Include="LoaderLinkTest.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <EmbeddedResource Include="MainStrings*.resx" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <!-- used to figure out which project references are ApplyUpdate tests -->
+    <ApplyUpdateTestPrefix>System.Reflection.Metadata.ApplyUpdate.Test.</ApplyUpdateTestPrefix>
+  </PropertyGroup>
+
   <ItemGroup>
-    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.csproj" />
-    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete.csproj" />
     <!-- iOS & tvOS are aot workloads and loading an embedded assembly results in some dynamic codegen, which is not allowed -->
     <ProjectReference Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
     <ProjectReference Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
@@ -37,13 +46,22 @@
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />
     <ProjectReference Include="LoaderLinkTest.Shared\LoaderLinkTest.Shared.csproj" />
     <ProjectReference Include="LoaderLinkTest.Dynamic\LoaderLinkTest.Dynamic.csproj" />
+
+    <!-- ApplyUpdate tests -->
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1\System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes\System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange\System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis\System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate\System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate.csproj" />
-
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis\System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField\System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass\System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda\System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression\System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType\System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
@@ -53,13 +71,16 @@
 
   <Target Name="PreserveEnCAssembliesFromLinking" Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="ConfigureTrimming">
     <ItemGroup>
-      <!-- Don't modify EnC test assemblies -->
-      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
-      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
-      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
-      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.LambdaBodyChange.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
-      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.LambdaCapturesThis.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
-      <TrimmerRootAssembly Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.FirstCallAfterUpdate.dll'))" Include="%(ResolvedFileToPublish.FullPath)" />
+      <!-- want to compute the intersection: apply update test assemblies that are also resolved to publish.
+        -->
+      <ApplyUpdateTestProjectReference Include="@(ProjectReference)" Condition="$([System.String]::new('%(FileName)').StartsWith('$(ApplyUpdateTestPrefix)'))" />
+      <ApplyUpdateTestAssemblyName Include="@(ApplyUpdateTestProjectReference->'%(FileName).dll')" />
+      <ResolvedFileToPublishNoDirName Include="%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)">
+        <ResolvedFileToPublish>%(ResolvedFileToPublish.FullPath)</ResolvedFileToPublish>
+      </ResolvedFileToPublishNoDirName>
+      <ResolvedApplyUpdateAssembly Include="@(ResolvedFileToPublishNoDirName)" Condition="'@(ResolvedFileToPublishNoDirName)' == '@(ApplyUpdateTestAssemblyName)' and %(Identity) != ''" />
+      <!-- Don't let the IL linker modify EnC test assemblies -->
+      <TrimmerRootAssembly Include="%(ResolvedApplyUpdateAssembly.ResolvedFileToPublish)" />
     </ItemGroup>
   </Target>
 

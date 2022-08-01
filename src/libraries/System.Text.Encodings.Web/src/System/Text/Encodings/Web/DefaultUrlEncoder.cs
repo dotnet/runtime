@@ -16,7 +16,7 @@ namespace System.Text.Encodings.Web
         {
             if (settings is null)
             {
-                throw new ArgumentNullException(nameof(settings));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.settings);
             }
 
             // Per RFC 3987, Sec. 2.2, we want encodings that are safe for

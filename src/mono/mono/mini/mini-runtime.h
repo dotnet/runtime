@@ -54,7 +54,6 @@ typedef struct {
 	MonoInternalHashTable interp_code_hash;
 	/* Maps MonoMethod -> 	MonoMethodRuntimeGenericContext */
 	GHashTable *mrgctx_hash;
-	GHashTable *method_rgctx_hash;
 	/* Maps gpointer -> InterpMethod */
 	GHashTable *interp_method_pointer_hash;
 	/* Protected by 'jit_code_hash_lock' */
@@ -111,6 +110,13 @@ jit_code_hash_unlock (MonoJitMemoryManager *jit_mm)
 	mono_locks_os_release(&(jit_mm)->jit_code_hash_lock, DomainJitCodeHashLock);
 }
 
+/* Per vtable data maintained by the EE */
+typedef struct {
+	/* interp virtual method table */
+	gpointer *interp_vtable;
+	MonoFtnDesc **gsharedvt_vtable;
+} MonoVTableEEData;
+
 /*
  * Stores state need to resume exception handling when using LLVM
  */
@@ -122,6 +128,9 @@ typedef struct {
 	gpointer        ex_obj;
 	MonoLMF *lmf;
 	int first_filter_idx, filter_idx;
+	/* MonoMethodILState */
+	gpointer il_state;
+	MonoGCHandle ex_gchandle;
 } ResumeState;
 
 typedef void (*MonoAbortFunction)(MonoObject*);
@@ -152,14 +161,14 @@ struct MonoJitTlsData {
 
 	/* context to be used by the guard trampoline when resuming interruption.*/
 	MonoContext handler_block_context;
-	/* 
+	/*
 	 * Stores the state at the exception throw site to be used by mono_stack_walk ()
 	 * when it is called from profiler functions during exception handling.
 	 */
 	MonoContext orig_ex_ctx;
 	gboolean orig_ex_ctx_set;
 
-	/* 
+	/*
 	 * The current exception in flight
 	 */
 	MonoGCHandle thrown_exc;
@@ -194,10 +203,19 @@ struct MonoJitTlsData {
 #endif
 };
 
+typedef struct {
+	MonoMethod *method;
+	/* Either the IL offset of the currently executing code, or -1 */
+	int il_offset;
+	/* For every arg+local, either its address on the stack, or NULL */
+	gpointer data [1];
+} MonoMethodILState;
+
 #define MONO_LMFEXT_DEBUGGER_INVOKE 1
 #define MONO_LMFEXT_INTERP_EXIT 2
 #define MONO_LMFEXT_INTERP_EXIT_WITH_CTX 3
 #define MONO_LMFEXT_JIT_ENTRY 4
+#define MONO_LMFEXT_IL_STATE 5
 
 /*
  * The MonoLMF structure is arch specific, it includes at least these fields.
@@ -225,6 +243,7 @@ typedef struct {
 	int kind;
 	MonoContext ctx; /* valid if kind == DEBUGGER_INVOKE || kind == INTERP_EXIT_WITH_CTX */
 	gpointer interp_exit_data; /* valid if kind == INTERP_EXIT || kind == INTERP_EXIT_WITH_CTX */
+	MonoMethodILState *il_state; /* valid if kind == IL_STATE */
 #if defined (_MSC_VER)
 	gboolean interp_exit_label_set;
 #endif
@@ -513,7 +532,7 @@ MonoEECallbacks*       mono_interp_callbacks_pointer;
 
 MONO_COMPONENT_API const MonoEECallbacks* mini_get_interp_callbacks_api (void);
 
-MonoDomain* mini_init                      (const char *filename, const char *runtime_version);
+MonoDomain* mini_init                      (const char *root_domain_name);
 void        mini_cleanup                   (MonoDomain *domain);
 MONO_API MonoDebugOptions *mini_get_debug_options   (void);
 MONO_API gboolean    mini_parse_debug_option (const char *option);
@@ -548,6 +567,7 @@ gint  mono_patch_info_equal (gconstpointer ka, gconstpointer kb);
 MonoJumpInfo *mono_patch_info_list_prepend  (MonoJumpInfo *list, int ip, MonoJumpInfoType type, gconstpointer target);
 MonoJumpInfoToken* mono_jump_info_token_new (MonoMemPool *mp, MonoImage *image, guint32 token);
 MonoJumpInfoToken* mono_jump_info_token_new2 (MonoMemPool *mp, MonoImage *image, guint32 token, MonoGenericContext *context);
+MonoGSharedMethodInfo* mini_gshared_method_info_dup (MonoMemoryManager *mem_manager, MonoGSharedMethodInfo *info);
 gpointer  mono_resolve_patch_target         (MonoMethod *method, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors, MonoError *error);
 gpointer  mono_resolve_patch_target_ext     (MonoMemoryManager *mem_manager, MonoMethod *method, guint8 *code, MonoJumpInfo *patch_info, gboolean run_cctors, MonoError *error);
 void mini_register_jump_site                (MonoMethod *method, gpointer ip);
@@ -632,7 +652,7 @@ mono_is_addr_implicit_null_check (void *addr);
  * Signal handling
  */
 
-#if defined(DISABLE_HW_TRAPS) || defined(MONO_ARCH_DISABLE_HW_TRAPS)
+#if defined(MONO_ARCH_DISABLE_HW_TRAPS)
  // Signal handlers not available
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #endif
@@ -680,10 +700,12 @@ void mini_register_sigterm_handler (void);
 	} while (0)
 
 #define MINI_END_CODEGEN(buf,size,type,arg) do { \
+	MONO_DISABLE_WARNING(4127) /* conditional expression is constant */ \
 	mono_codeman_disable_write (); \
 	mono_arch_flush_icache ((buf), (size)); \
 	if ((int)type != -1) \
 		MONO_PROFILER_RAISE (jit_code_buffer, ((buf), (size), (MonoProfilerCodeBufferType)(type), (arg))); \
+	MONO_RESTORE_WARNING \
 	} while (0)
 
 #endif /* __MONO_MINI_RUNTIME_H__ */

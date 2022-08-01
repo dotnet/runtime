@@ -13,10 +13,7 @@ namespace System.Diagnostics
         public DebuggerTypeProxyAttribute(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             ProxyTypeName = type.AssemblyQualifiedName!;
         }
@@ -37,10 +34,7 @@ namespace System.Diagnostics
             get => _target;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 TargetTypeName = value.AssemblyQualifiedName;
                 _target = value;

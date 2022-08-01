@@ -3,7 +3,7 @@
 
 namespace System.Security.Cryptography
 {
-    public abstract partial class ECDiffieHellman : AsymmetricAlgorithm
+    public abstract partial class ECDiffieHellman : ECAlgorithm
     {
         public override void FromXmlString(string xmlString)
         {

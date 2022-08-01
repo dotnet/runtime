@@ -78,7 +78,7 @@ namespace System.ComponentModel
         /// The unique identifier for this attribute. All ToolboxItemFilterAttributes with the same filter string
         /// are considered the same, so they return the same TypeId.
         /// </summary>
-        public override object TypeId => _typeId ?? (_typeId = GetType().FullName + FilterString);
+        public override object TypeId => _typeId ??= GetType().FullName + FilterString;
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
@@ -104,6 +104,6 @@ namespace System.ComponentModel
                 && other.FilterString.Equals(FilterString);
         }
 
-        public override string ToString() => FilterString + "," + Enum.GetName(typeof(ToolboxItemFilterType), FilterType);
+        public override string ToString() => FilterString + "," + Enum.GetName<ToolboxItemFilterType>(FilterType);
     }
 }

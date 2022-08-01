@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly ILGEN_0x52ea038a {}
+.assembly 'indexMinusOne' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 
-.class ILGEN_0x52ea038a {
+.class public ILGEN_0x52ea038a {
 
 //BEGIN STATIC FIELDS
 .field static native int[] field_0x0
@@ -2517,7 +2517,7 @@ End_Orphan_b_188:
 ldelem.i4
  ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

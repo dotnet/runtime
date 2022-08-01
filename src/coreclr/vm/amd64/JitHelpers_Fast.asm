@@ -1,13 +1,8 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; ==++==
-;
-
-;
-; ==--==
 ; ***********************************************************************
-; File: JitHelpers_Fast.asm, see jithelp.asm for history
+; File: JitHelpers_Fast.asm
 ;
 ; Notes: routinues which we believe to be on the hot path for managed
 ;        code in most scenarios.
@@ -209,7 +204,7 @@ LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
         ret
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
-; JIT_ByRefWriteBarrier has weird symantics, see usage in StubLinkerX86.cpp
+; JIT_ByRefWriteBarrier has weird semantics, see usage in StubLinkerX86.cpp
 ;
 ; Entry:
 ;   RDI - address of ref-field (assigned to)
@@ -435,5 +430,18 @@ ProbeLoop:
         ret
 
 LEAF_END_MARKED JIT_StackProbe, _TEXT
+
+LEAF_ENTRY JIT_ValidateIndirectCall, _TEXT
+        ret
+LEAF_END JIT_ValidateIndirectCall, _TEXT
+
+LEAF_ENTRY JIT_DispatchIndirectCall, _TEXT
+ifdef _DEBUG
+        mov r10, 0CDCDCDCDCDCDCDCDh ; The real helper clobbers these registers, so clobber them too in the fake helper
+        mov r11, 0CDCDCDCDCDCDCDCDh
+endif
+        rexw jmp rax
+LEAF_END JIT_DispatchIndirectCall, _TEXT
+
 
         end

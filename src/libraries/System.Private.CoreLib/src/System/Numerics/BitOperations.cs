@@ -9,8 +9,6 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
-using Internal.Runtime.CompilerServices;
-
 // Some routines inspired by the Stanford Bit Twiddling Hacks by Sean Eron Anderson:
 // http://graphics.stanford.edu/~seander/bithacks.html
 
@@ -165,6 +163,18 @@ namespace System.Numerics
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LeadingZeroCount(Int128 value)
+        {
+            ulong upper = value.Upper;
+
+            if (upper == 0)
+            {
+                return 64 + LeadingZeroCount(value.Lower);
+            }
+            return LeadingZeroCount(upper);
+        }
+
         /// <summary>
         /// Count the number of leading zero bits in a mask.
         /// Similar in behavior to the x86 instruction LZCNT.
@@ -236,6 +246,18 @@ namespace System.Numerics
             }
 
             return LeadingZeroCount(hi);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LeadingZeroCount(UInt128 value)
+        {
+            ulong upper = value.Upper;
+
+            if (upper == 0)
+            {
+                return 64 + LeadingZeroCount(value.Lower);
+            }
+            return LeadingZeroCount(upper);
         }
 
         /// <summary>
@@ -893,6 +915,23 @@ namespace System.Numerics
 
                 return crc;
             }
+        /// Reset the lowest significant bit in the given value
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static uint ResetLowestSetBit(uint value)
+        {
+            // It's lowered to BLSR on x86
+            return value & (value - 1);
+        }
+
+        /// <summary>
+        /// Reset specific bit in the given value
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static uint ResetBit(uint value, int bitPos)
+        {
+            // TODO: Recognize BTR on x86 and LSL+BIC on ARM
+            return value & ~(uint)(1 << bitPos);
         }
     }
 }

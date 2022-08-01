@@ -148,7 +148,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static void* AllocZeroed(nuint elementCount, nuint elementSize)
         {
-            void* result = null;
+            void* result;
 
             if ((elementCount != 0) && (elementSize != 0))
             {

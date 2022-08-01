@@ -44,10 +44,8 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
-            if (password is null)
-                throw new ArgumentNullException(nameof(password));
-            if (salt is null)
-                throw new ArgumentNullException(nameof(salt));
+            ArgumentNullException.ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(salt);
 
             return Pbkdf2(new ReadOnlySpan<byte>(password), new ReadOnlySpan<byte>(salt), iterations, hashAlgorithm, outputLength);
         }
@@ -168,10 +166,8 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
-            if (password is null)
-                throw new ArgumentNullException(nameof(password));
-            if (salt is null)
-                throw new ArgumentNullException(nameof(salt));
+            ArgumentNullException.ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(salt);
 
             return Pbkdf2(password.AsSpan(), new ReadOnlySpan<byte>(salt), iterations, hashAlgorithm, outputLength);
         }
@@ -329,10 +325,8 @@ namespace System.Security.Cryptography
 
         private static void ValidateHashAlgorithm(HashAlgorithmName hashAlgorithm)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
-
-            string hashAlgorithmName = hashAlgorithm.Name;
+            string? hashAlgorithmName = hashAlgorithm.Name;
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithmName, nameof(hashAlgorithm));
 
             // MD5 intentionally left out.
             if (hashAlgorithmName != HashAlgorithmName.SHA1.Name &&

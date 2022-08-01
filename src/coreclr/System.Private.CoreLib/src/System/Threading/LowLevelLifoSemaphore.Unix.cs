@@ -31,8 +31,8 @@ namespace System.Threading
             return waitResult == WaitHandle.WaitSuccess;
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "WaitHandle_CorWaitOnePrioritizedNative")]
-        private static extern int WaitNative(SafeWaitHandle handle, int timeoutMs);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WaitHandle_CorWaitOnePrioritizedNative")]
+        private static partial int WaitNative(SafeWaitHandle handle, int timeoutMs);
 
         public void ReleaseCore(int count)
         {

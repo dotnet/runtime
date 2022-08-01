@@ -33,7 +33,7 @@ namespace System.Reflection.TypeLoading
 
         internal const string UnknownStringMessageInRAF = "Returns <Unknown> for modules with no file path";
 
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
 #endif
         public sealed override string FullyQualifiedName => _fullyQualifiedName;
@@ -41,7 +41,7 @@ namespace System.Reflection.TypeLoading
         public abstract override int MetadataToken { get; }
         public abstract override Guid ModuleVersionId { get; }
 
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
 #endif
         public sealed override string Name

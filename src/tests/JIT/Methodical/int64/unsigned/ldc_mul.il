@@ -17,11 +17,10 @@
 {
 }
 .assembly extern xunit.core {}
-.module 'ldc_mul.exe'
 // MVID: {A15E1196-BF43-4EB9-B2C7-D32EC8A9CA8F}
-.namespace JitTest
+.namespace JitTest_ldc_mul_unsigned_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends ['mscorlib']System.Object
   {
     .method private hidebysig static bool 
@@ -75,7 +74,7 @@
       IL_003e:  ret
     } // end of method 'Test::check'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -91,7 +90,7 @@
       IL_0003:  conv.u8
       IL_0004:  ldc.i8     0xfffffffe00000001
       IL_000d:  ldc.i4.0
-      IL_000e:  call       bool JitTest.Test::check(unsigned int64,
+      IL_000e:  call       bool JitTest_ldc_mul_unsigned_il.Test::check(unsigned int64,
                                                     unsigned int64,
                                                     unsigned int64,
                                                     bool)
@@ -104,7 +103,7 @@
       IL_0024:  conv.u8
       IL_0025:  ldc.i8     0xffffffff00000000
       IL_002e:  ldc.i4.0
-      IL_002f:  call       bool JitTest.Test::check(unsigned int64,
+      IL_002f:  call       bool JitTest_ldc_mul_unsigned_il.Test::check(unsigned int64,
                                                     unsigned int64,
                                                     unsigned int64,
                                                     bool)
@@ -117,7 +116,7 @@
       IL_004a:  ldc.i4.0
       IL_004b:  conv.i8
       IL_004c:  ldc.i4.0
-      IL_004d:  call       bool JitTest.Test::check(unsigned int64,
+      IL_004d:  call       bool JitTest_ldc_mul_unsigned_il.Test::check(unsigned int64,
                                                     unsigned int64,
                                                     unsigned int64,
                                                     bool)
@@ -131,7 +130,7 @@
       IL_0061:  ldc.i4.s   -2
       IL_0063:  conv.i8
       IL_0064:  ldc.i4.0
-      IL_0065:  call       bool JitTest.Test::check(unsigned int64,
+      IL_0065:  call       bool JitTest_ldc_mul_unsigned_il.Test::check(unsigned int64,
                                                     unsigned int64,
                                                     unsigned int64,
                                                     bool)
@@ -145,7 +144,7 @@
       IL_0079:  ldc.i4.0
       IL_007a:  conv.i8
       IL_007b:  ldc.i4.0
-      IL_007c:  call       bool JitTest.Test::check(unsigned int64,
+      IL_007c:  call       bool JitTest_ldc_mul_unsigned_il.Test::check(unsigned int64,
                                                     unsigned int64,
                                                     unsigned int64,
                                                     bool)
@@ -158,7 +157,7 @@
       IL_008b:  ldc.i8     0x1000000000
       IL_0094:  ldc.i8     0x100000000000000
       IL_009d:  ldc.i4.0
-      IL_009e:  call       bool JitTest.Test::check(unsigned int64,
+      IL_009e:  call       bool JitTest_ldc_mul_unsigned_il.Test::check(unsigned int64,
                                                     unsigned int64,
                                                     unsigned int64,
                                                     bool)
@@ -194,6 +193,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_ldc_mul_unsigned_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

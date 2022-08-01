@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" />
     <ProjectReference Include="..\src\Microsoft.Extensions.Logging.EventSource.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>

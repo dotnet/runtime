@@ -2,18 +2,6 @@
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
-    <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">netcoreapp3.1</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
-    <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(DotNetBuildFromSource)' == 'true'">net5.0</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
-    <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">net472</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
-    <MicrosoftDotNetBuildTasksInstallersTaskAssembly>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.installers\$(MicrosoftDotNetBuildTasksInstallersVersion)\tools\$(MicrosoftDotNetBuildTasksInstallersTaskTargetFramework)\Microsoft.DotNet.Build.Tasks.Installers.dll</MicrosoftDotNetBuildTasksInstallersTaskAssembly>
-  </PropertyGroup>
-
-  <UsingTask AssemblyFile="$(PkgMicrosoft_DotNet_Build_Tasks_Workloads)\tools\net472\Microsoft.DotNet.Build.Tasks.Workloads.dll" TaskName="GenerateManifestMsi" />
-  <UsingTask AssemblyFile="$(PkgMicrosoft_DotNet_Build_Tasks_Workloads)\tools\net472\Microsoft.DotNet.Build.Tasks.Workloads.dll" TaskName="GenerateVisualStudioWorkload" />
-  <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(MicrosoftDotNetBuildTasksInstallersTaskAssembly)" />
-  <UsingTask TaskName="CreateLightCommandPackageDrop" AssemblyFile="$(MicrosoftDotNetBuildTasksInstallersTaskAssembly)" />
-
-  <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <IncludeBuildOutput>false</IncludeBuildOutput>
@@ -40,10 +28,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Workloads" Version="$(MicrosoftDotNetBuildTasksWorkloadsPackageVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Workloads" Version="$(MicrosoftDotNetBuildTasksWorkloadsPackageVersion)" />
     <PackageReference Include="Microsoft.Signed.WiX" Version="$(WixPackageVersion)" GeneratePathProperty="true" />
     <PackageReference Include="MicroBuild.Plugins.SwixBuild.Dotnet" Version="$(SwixPackageVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" GeneratePathProperty="True" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
   </ItemGroup>
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
@@ -72,6 +60,9 @@
                           Description=".NET runtime components for tvOS execution."/>
       <ComponentResources Include="runtimes-maccatalyst" Title=".NET Mac Catalyst Build Tools"
                           Description=".NET runtime components for Mac Catalyst execution."/>
+      <ComponentResources Include="runtimes-windows" Title=".NET Windows Runtimes"
+                          Description=".NET runtime components for Windows execution."/>
+      
 
       <!-- Visual Studio components must be versioned. Build tasks will fall back to cobbling a version number from
            the manifest information unless it's overridden. -->
@@ -85,6 +76,7 @@
       <ComponentVersions Include="runtimes-ios" Version="$(FileVersion)" />
       <ComponentVersions Include="runtimes-tvos" Version="$(FileVersion)" />
       <ComponentVersions Include="runtimes-maccatalyst" Version="$(FileVersion)" />
+      <ComponentVersions Include="runtimes-windows" Version="$(FileVersion)" />
     </ItemGroup>
 
     <!-- BAR requires having version information in blobs -->
@@ -137,9 +129,10 @@
     <MSBuild Projects="$(MSBuildProjectFile)" Properties="_WixObjDir=%(Msis.WixObj);_Msi=%(Msis.Identity)" Targets="CreateWixPack" />
 
     <!-- Build the Visual Studio manifest project. -->
-    <ItemGroup>
+    <!-- This is currently a manual endeavor. Building it in CI brings .NET Framework dependencies that make machine servicing harder. -->
+    <!-- <ItemGroup>
       <VisualStudioManifestProjects Include="mono_wasm_mobile.vsmanproj" />
-    </ItemGroup>
+    </ItemGroup> -->
 
     <MSBuild Projects="@(VisualStudioManifestProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath);OutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
 

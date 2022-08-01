@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
-	<Nullable>enable</Nullable>
   </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.IsolatedStorage_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.IsolatedStorage_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStream.cs" />
@@ -18,26 +19,19 @@
     <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs"
              Link="Common\System\Security\IdentityHelper.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\IO\IsolatedStorage\Helper.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
     <Compile Include="System\IO\IsolatedStorage\Helper.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
-    <Reference Include="System.IO.FileSystem" />
+  <ItemGroup>
+    <Reference Include="System.IO.FileSystem.AccessControl" />
     <Reference Include="System.Linq" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Threading" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="System.Runtime" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.FileSystem.AccessControl\src\System.IO.FileSystem.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
+    <Reference Include="System.Security.AccessControl" />
+    <Reference Include="System.Security.Cryptography" />
+    <Reference Include="System.Security.Principal.Windows" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

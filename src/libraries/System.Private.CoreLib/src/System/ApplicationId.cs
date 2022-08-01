@@ -12,10 +12,9 @@ namespace System
 
         public ApplicationId(byte[] publicKeyToken, string name, Version version, string? processorArchitecture, string? culture)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0) throw new ArgumentException(SR.Argument_EmptyApplicationName);
-            if (version == null) throw new ArgumentNullException(nameof(version));
-            if (publicKeyToken == null) throw new ArgumentNullException(nameof(publicKeyToken));
+            ArgumentException.ThrowIfNullOrEmpty(name);
+            ArgumentNullException.ThrowIfNull(version);
+            ArgumentNullException.ThrowIfNull(publicKeyToken);
 
             _publicKeyToken = (byte[])publicKeyToken.Clone();
             Name = name;
@@ -69,35 +68,17 @@ namespace System
             return sb.ToString();
         }
 
-        public override bool Equals([NotNullWhen(true)] object? o)
-        {
-            ApplicationId? other = o as ApplicationId;
-            if (other == null)
-                return false;
+        public override bool Equals([NotNullWhen(true)] object? o) =>
+            o is ApplicationId other &&
+            Equals(Name, other.Name) &&
+            Equals(Version, other.Version) &&
+            Equals(ProcessorArchitecture, other.ProcessorArchitecture) &&
+            Equals(Culture, other.Culture) &&
+            _publicKeyToken.AsSpan().SequenceEqual(other._publicKeyToken);
 
-            if (!(Equals(Name, other.Name) &&
-                  Equals(Version, other.Version) &&
-                  Equals(ProcessorArchitecture, other.ProcessorArchitecture) &&
-                  Equals(Culture, other.Culture)))
-                return false;
-
-            if (_publicKeyToken.Length != other._publicKeyToken.Length)
-                return false;
-
-            for (int i = 0; i < _publicKeyToken.Length; i++)
-            {
-                if (_publicKeyToken[i] != other._publicKeyToken[i])
-                    return false;
-            }
-
-            return true;
-        }
-
-        public override int GetHashCode()
-        {
+        public override int GetHashCode() =>
             // Note: purposely skipping publicKeyToken, processor architecture and culture as they
             // are less likely to make things not equal than name and version.
-            return Name.GetHashCode() ^ Version.GetHashCode();
-        }
+            Name.GetHashCode() ^ Version.GetHashCode();
     }
 }

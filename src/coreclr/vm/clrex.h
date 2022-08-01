@@ -178,7 +178,7 @@ public:
         HandlerState(Thread * pThread, NonNullThread dummy);
 
         void CleanupTry();
-        void SetupCatch(INDEBUG_COMMA(__in_z const char * szFile) int lineNum);
+        void SetupCatch(INDEBUG_COMMA(_In_z_ const char * szFile) int lineNum);
 #ifdef LOGGING // Use parent implementation that inlines into nothing in retail build
         void SucceedCatch();
 #endif
@@ -358,7 +358,7 @@ class EEResourceException : public EEException
     // Unmanaged message text containing only the resource name (GC safe)
     void GetMessage(SString &result);
 
-    // Throwable message containig the resource contents (not GC safe)
+    // Throwable message containing the resource contents (not GC safe)
     BOOL GetThrowableMessage(SString &result);
 
  protected:
@@ -379,6 +379,7 @@ private:
 #endif // _DEBUG
 };
 
+#ifdef FEATURE_COMINTEROP
 // ---------------------------------------------------------------------------
 // EECOMException is an EE exception subclass composed of COM-generated data.
 // Note that you must ensure that the COM data was not derived from a wrapper
@@ -437,6 +438,7 @@ private:
     }
 #endif // _DEBUG
 };
+#endif // FEATURE_COMINTEROP
 
 // ---------------------------------------------------------------------------
 // EEFieldException is an EE exception subclass composed of a field

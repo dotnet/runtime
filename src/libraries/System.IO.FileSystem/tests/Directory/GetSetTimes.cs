@@ -7,7 +7,9 @@ namespace System.IO.Tests
 {
     public class Directory_GetSetTimes : StaticGetSetTimes
     {
-        protected override string GetExistingItem() => Directory.CreateDirectory(GetTestFilePath()).FullName;
+        protected override bool CanBeReadOnly => false;
+
+        protected override string GetExistingItem(bool _) => Directory.CreateDirectory(GetTestFilePath()).FullName;
 
         protected override string CreateSymlink(string path, string pathToTarget) => Directory.CreateSymbolicLink(path, pathToTarget).FullName;
 

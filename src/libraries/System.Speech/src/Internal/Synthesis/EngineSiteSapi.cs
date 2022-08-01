@@ -176,8 +176,9 @@ namespace System.Speech.Internal.Synthesis
         void CompleteSkip(int skipped);
         void LoadResource([MarshalAs(UnmanagedType.LPWStr)] string resource, ref string mediaType, out IStream stream);
     }
+
     [StructLayout(LayoutKind.Sequential)]
-    internal struct SpeechEventSapi
+    internal struct SpeechEventSapi : IEquatable<SpeechEventSapi>
     {
         public short EventId;
         public short ParameterType;
@@ -185,27 +186,22 @@ namespace System.Speech.Internal.Synthesis
         public long AudioStreamOffset;
         public IntPtr Param1;   // Always just a numeric type - contains no unmanaged resources so does not need special clean-up.
         public IntPtr Param2;   // Can be a numeric type, or pointer to string or object. Use SafeSapiLParamHandle to cleanup.
-        public static bool operator ==(SpeechEventSapi event1, SpeechEventSapi event2)
-        {
-            return event1.EventId == event2.EventId && event1.ParameterType == event2.ParameterType && event1.StreamNumber == event2.StreamNumber && event1.AudioStreamOffset == event2.AudioStreamOffset && event1.Param1 == event2.Param1 && event1.Param2 == event2.Param2;
-        }
-        public static bool operator !=(SpeechEventSapi event1, SpeechEventSapi event2)
-        {
-            return !(event1 == event2);
-        }
-        public override bool Equals(object obj)
-        {
-            if (!(obj is SpeechEventSapi))
-            {
-                return false;
-            }
 
-            return this == (SpeechEventSapi)obj;
-        }
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public static bool operator ==(SpeechEventSapi event1, SpeechEventSapi event2) => event1.Equals(event2);
+        public static bool operator !=(SpeechEventSapi event1, SpeechEventSapi event2) => !event1.Equals(event2);
+
+        public override bool Equals(object obj) =>
+            obj is SpeechEventSapi other && Equals(other);
+
+        public bool Equals(SpeechEventSapi other) =>
+            EventId == other.EventId &&
+            ParameterType == other.ParameterType &&
+            StreamNumber == other.StreamNumber &&
+            AudioStreamOffset == other.AudioStreamOffset &&
+            Param1 == other.Param1 &&
+            Param2 == other.Param2;
+
+        public override int GetHashCode() => base.GetHashCode();
     }
 
     #endregion

@@ -14,7 +14,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text
 {
-    internal readonly struct Rune
+    internal readonly struct Rune : IEquatable<Rune>
     {
         private const int MaxUtf16CharsPerRune = 2; // supplementary plane code points are encoded as 2 UTF-16 code units
 

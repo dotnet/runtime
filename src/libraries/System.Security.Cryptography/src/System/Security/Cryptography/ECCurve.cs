@@ -75,11 +75,10 @@ namespace System.Security.Cryptography
             get => _oid;
             private set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(Oid));
+                ArgumentNullException.ThrowIfNull(value, nameof(Oid));
 
                 if (string.IsNullOrEmpty(value.Value) && string.IsNullOrEmpty(value.FriendlyName))
-                    throw new ArgumentException(SR.Cryptography_InvalidCurveOid);
+                    throw new ArgumentException(SR.Format(SR.Cryptography_InvalidCurveOid, value.Value));
 
                 _oid = value;
             }
@@ -105,10 +104,8 @@ namespace System.Security.Cryptography
         /// <returns>An ECCurve representing a named curve.</returns>
         public static ECCurve CreateFromFriendlyName(string oidFriendlyName)
         {
-            if (oidFriendlyName == null)
-            {
-                throw new ArgumentNullException(nameof(oidFriendlyName));
-            }
+            ArgumentNullException.ThrowIfNull(oidFriendlyName);
+
             return ECCurve.CreateFromValueAndName(null, oidFriendlyName);
         }
 
@@ -119,10 +116,8 @@ namespace System.Security.Cryptography
         /// <returns>An ECCurve representing a named curve.</returns>
         public static ECCurve CreateFromValue(string oidValue)
         {
-            if (oidValue == null)
-            {
-                throw new ArgumentNullException(nameof(oidValue));
-            }
+            ArgumentNullException.ThrowIfNull(oidValue);
+
             return ECCurve.CreateFromValueAndName(oidValue, null);
         }
 
@@ -197,7 +192,7 @@ namespace System.Security.Cryptography
                 if (Oid == null ||
                     (string.IsNullOrEmpty(Oid.FriendlyName) && string.IsNullOrEmpty(Oid.Value)))
                 {
-                    throw new CryptographicException(SR.Cryptography_InvalidCurveOid);
+                    throw new CryptographicException(SR.Format(SR.Cryptography_InvalidCurveOid, Oid?.Value));
                 }
             }
             else if (IsExplicit)

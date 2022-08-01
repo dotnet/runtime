@@ -4,6 +4,7 @@
 #include "comwrappers.hpp"
 #include <interoplibimports.h>
 #include <corerror.h>
+#include <minipal/utils.h>
 
 #ifdef _WIN32
 #include <new> // placement new
@@ -398,8 +399,8 @@ HRESULT ManagedObjectWrapper::Create(
         curr.IID = IID_IReferenceTrackerTarget;
         curr.Vtable = &ManagedObjectWrapper_IReferenceTrackerTargetImpl;
     }
-    
-    _ASSERTE(runtimeDefinedCount <= (int) ARRAYSIZE(runtimeDefinedLocal));
+
+    _ASSERTE(runtimeDefinedCount <= (int) ARRAY_SIZE(runtimeDefinedLocal));
 
     // Compute size for ManagedObjectWrapper instance.
     const size_t totalRuntimeDefinedSize = runtimeDefinedCount * sizeof(ABI::ComInterfaceEntry);
@@ -438,7 +439,7 @@ HRESULT ManagedObjectWrapper::Create(
         { userDefined, userDefinedCount }
     };
 
-    ABI::ComInterfaceDispatch* dispSection = ABI::PopulateDispatchSection(wrapperMem, dispatchSectionOffset, ARRAYSIZE(AllEntries), AllEntries);
+    ABI::ComInterfaceDispatch* dispSection = ABI::PopulateDispatchSection(wrapperMem, dispatchSectionOffset, ARRAY_SIZE(AllEntries), AllEntries);
 
     ManagedObjectWrapper* wrapper = new (wrapperMem) ManagedObjectWrapper
         {
@@ -471,7 +472,7 @@ void ManagedObjectWrapper::Destroy(_In_ ManagedObjectWrapper* wrapper)
 
     // The destroy sentinel represents the bit that indicates the wrapper
     // should be destroyed. Since the reference count field (64-bit) holds
-    // two counters we rely on the singular sentinal value - no other bits
+    // two counters we rely on the singular sentinel value - no other bits
     // in the 64-bit counter are set. If there are outstanding bits set it
     // indicates there are still outstanding references.
     if (refCount == DestroySentinel)

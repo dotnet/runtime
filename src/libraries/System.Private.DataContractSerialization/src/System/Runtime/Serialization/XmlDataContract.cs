@@ -1,21 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Security;
+using System.Threading;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+
 namespace System.Runtime.Serialization
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Reflection;
-    using System.Threading;
-    using System.Xml;
-    using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
-    using System.Xml.Serialization;
-    using System.Xml.Schema;
-    using System.Security;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.Diagnostics.CodeAnalysis;
-
     internal delegate IXmlSerializable CreateXmlSerializableDelegate();
     internal sealed class XmlDataContract : DataContract
     {
@@ -135,16 +135,15 @@ namespace System.Runtime.Serialization
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveDataContract, DataContract.GetClrTypeFullName(type))));
                 if (type.IsDefined(Globals.TypeOfCollectionDataContractAttribute, false))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveCollectionDataContract, DataContract.GetClrTypeFullName(type))));
-                XmlSchemaType? xsdType;
                 bool hasRoot;
                 XmlQualifiedName stableName;
-                SchemaExporter.GetXmlTypeInfo(type, out stableName, out xsdType, out hasRoot);
+                SchemaExporter.GetXmlTypeInfo(type, out stableName, out _, out hasRoot);
                 this.StableName = stableName;
                 this.HasRoot = hasRoot;
                 XmlDictionary dictionary = new XmlDictionary();
                 this.Name = dictionary.Add(StableName.Name);
                 this.Namespace = dictionary.Add(StableName.Namespace);
-                object[]? xmlRootAttributes = (UnderlyingType == null) ? null : UnderlyingType.GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
+                object[]? xmlRootAttributes = UnderlyingType?.GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
                 if (xmlRootAttributes == null || xmlRootAttributes.Length == 0)
                 {
                     if (hasRoot)
@@ -356,7 +355,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                object? o = null;
+                object? o;
                 if (type == typeof(System.Xml.Linq.XElement))
                 {
                     o = new System.Xml.Linq.XElement("default");

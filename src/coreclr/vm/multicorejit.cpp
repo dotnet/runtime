@@ -5,7 +5,7 @@
 //
 
 // ===========================================================================
-// This file contains the implementation for MultiCore JIT (player in a seperate file MultiCoreJITPlayer.cpp)
+// This file contains the implementation for MultiCore JIT (player in a separate file MultiCoreJITPlayer.cpp)
 // ===========================================================================
 //
 
@@ -117,9 +117,9 @@ void _MulticoreJitTrace(const char * format, ...)
 
     int len;
 
-    len  =  sprintf_s(buffer,       _countof(buffer),       "Mcj TID %04x: ", GetCurrentThreadId());
-    len += _vsnprintf_s(buffer + len, _countof(buffer) - len, format, args);
-    len +=  sprintf_s(buffer + len, _countof(buffer) - len, ", (time=%d ms)\r\n", GetTickCount() - s_startTick);
+    len  =  sprintf_s(buffer,       ARRAY_SIZE(buffer),       "Mcj TID %04x: ", GetCurrentThreadId());
+    len += _vsnprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, format, args);
+    len +=  sprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, ", (time=%d ms)\r\n", GetTickCount() - s_startTick);
 
     OutputDebugStringA(buffer);
 #endif
@@ -234,11 +234,11 @@ FileLoadLevel MulticoreJitManager::GetModuleFileLoadLevel(Module * pModule)
 
     if (pModule != NULL)
     {
-        DomainFile * pDomainFile = pModule->GetDomainFile();
+        DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
 
-        if (pDomainFile != NULL)
+        if (pDomainAssembly != NULL)
         {
-            level = pDomainFile->GetLoadLevel();
+            level = pDomainAssembly->GetLoadLevel();
         }
     }
 
@@ -309,10 +309,9 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
     simpleName.Set((const BYTE *) pModuleName, lenModuleName); // SBuffer::Set copies over name
 
     SString sAssemblyName;
-    StackScratchBuffer scratch;
-    pMod->GetAssembly()->GetManifestFile()->GetDisplayName(sAssemblyName);
+    pMod->GetAssembly()->GetPEAssembly()->GetDisplayName(sAssemblyName);
 
-    LPCUTF8 pAssemblyName = sAssemblyName.GetUTF8(scratch);
+    LPCUTF8 pAssemblyName = sAssemblyName.GetUTF8();
     unsigned lenAssemblyName = sAssemblyName.GetCount();
     assemblyName.Set((const BYTE *) pAssemblyName, lenAssemblyName);
 
@@ -770,21 +769,8 @@ HRESULT MulticoreJitModuleEnumerator::HandleAssembly(DomainAssembly * pAssembly)
 {
     STANDARD_VM_CONTRACT;
 
-    DomainAssembly::ModuleIterator modIt = pAssembly->IterateModules(kModIterIncludeLoaded);
-
-    HRESULT hr = S_OK;
-
-    while (modIt.Next() && SUCCEEDED(hr))
-    {
-        Module * pModule = modIt.GetModule();
-
-        if (pModule != NULL)
-        {
-            hr = OnModule(pModule);
-        }
-    }
-
-    return hr;
+    Module * pModule = pAssembly->GetModule();
+    return OnModule(pModule);
 }
 
 
@@ -1006,12 +992,12 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
     {
         m_fullFileName = pRoot;
 
-        // Append seperator if root does not end with one
+        // Append separator if root does not end with one
         unsigned len = m_fullFileName.GetCount();
 
-        if ((len != 0) && (m_fullFileName[len - 1] != '\\'))
+        if ((len != 0) && (m_fullFileName[len - 1] != W('\\')))
         {
-            m_fullFileName.Append('\\');
+            m_fullFileName.Append(W('\\'));
         }
 
         m_fullFileName.Append(pFile);
@@ -1019,10 +1005,17 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
         // Suffix for AutoStartProfile, used for multiple appdomain
         if (suffix >= 0)
         {
-             m_fullFileName.AppendPrintf(W("_%s_%s_%d.prof"),
-                SystemDomain::System()->DefaultDomain()->GetFriendlyName(),
-                m_pDomain->GetFriendlyName(),
-                suffix);
+            m_fullFileName.Append(W('_'));
+            m_fullFileName.Append(SystemDomain::System()->DefaultDomain()->GetFriendlyName());
+            m_fullFileName.Append(W('_'));
+            m_fullFileName.Append(m_pDomain->GetFriendlyName());
+            m_fullFileName.Append(W('_'));
+
+            WCHAR buff[MaxSigned32BitDecString + 1];
+            FormatInteger(buff, ARRAY_SIZE(buff), "%d", suffix);
+            m_fullFileName.Append(buff);
+
+            m_fullFileName.Append(W(".prof"));
         }
 
         NewHolder<MulticoreJitProfilePlayer> player(new (nothrow) MulticoreJitProfilePlayer(
@@ -1192,16 +1185,13 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, AssemblyBinder *pBin
 
     if ((pProfile != NULL) && (pProfile[0] != 0)) // Ignore empty file name, just same as StopProfile
     {
-        bool gatherProfile = (int)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitNoProfileGather) == 0;
-
         MulticoreJitRecorder * pRecorder = new (nothrow) MulticoreJitRecorder(
             pDomain,
-            pBinder,
-            gatherProfile);
+            pBinder);
 
         if (pRecorder != NULL)
         {
-            gatherProfile = pRecorder->CanGatherProfile();
+            bool gatherProfile = (int)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitNoProfileGather) == 0;
 
             m_pMulticoreJitRecorder = pRecorder;
 
@@ -1211,9 +1201,11 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, AssemblyBinder *pBin
 
             MulticoreJitTrace(("MulticoreJitRecorder session %d created: %x", sessionID, hr));
 
-            if ((hr == COR_E_BADIMAGEFORMAT) || SUCCEEDED(hr)) // Ignore COR_E_BADIMAGEFORMAT, always record new profile
+            if ((hr == COR_E_BADIMAGEFORMAT) || (SUCCEEDED(hr) && gatherProfile)) // Ignore COR_E_BADIMAGEFORMAT, always record new profile
             {
-                m_fRecorderActive = gatherProfile;
+                m_pMulticoreJitRecorder->Activate();
+
+                m_fRecorderActive = m_pMulticoreJitRecorder->CanGatherProfile();
             }
 
             _FireEtwMulticoreJit(W("STARTPROFILE"), W("Recorder"), m_fRecorderActive, hr, 0);
@@ -1551,7 +1543,7 @@ DWORD MulticoreJitManager::EncodeModuleHelper(void * pModuleContext, Module * pR
 //    wszProfile  - profile name
 //    ptrNativeAssemblyBinder - the binding context
 //
-extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(__in_z LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_z_ LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder)
 {
     QCALL_CONTRACT;
 
@@ -1570,7 +1562,7 @@ extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(__in_z LPCWSTR wszPr
 }
 
 
-extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(__in_z LPCWSTR wszProfilePath)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(_In_z_ LPCWSTR wszProfilePath)
 {
     QCALL_CONTRACT;
 

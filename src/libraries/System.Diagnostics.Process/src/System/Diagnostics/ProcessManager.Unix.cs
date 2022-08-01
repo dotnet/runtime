@@ -47,6 +47,7 @@ namespace System.Diagnostics
         /// <returns>An array of process IDs from the specified machine.</returns>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static int[] GetProcessIds(string machineName)
         {
             ThrowIfRemoteMachine(machineName);

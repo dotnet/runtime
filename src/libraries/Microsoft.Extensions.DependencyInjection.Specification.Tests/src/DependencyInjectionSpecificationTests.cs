@@ -122,6 +122,47 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             }
         }
 
+        [Theory]
+        [InlineData(ServiceLifetime.Scoped)]
+        [InlineData(ServiceLifetime.Transient)]
+        public void NonSingletonService_WithInjectedProvider_ResolvesScopeProvider(ServiceLifetime lifetime)
+        {
+            // Arrange
+            var collection = new TestServiceCollection();
+            collection.AddScoped<IFakeService, FakeService>();
+            collection.Add(new ServiceDescriptor(typeof(ClassWithServiceProvider), typeof(ClassWithServiceProvider), lifetime));
+            var provider = CreateServiceProvider(collection);
+
+            // Act
+            IFakeService fakeServiceFromScope1 = null;
+            IFakeService otherFakeServiceFromScope1 = null;
+            IFakeService fakeServiceFromScope2 = null;
+            IFakeService otherFakeServiceFromScope2 = null;
+
+            using (var scope1 = provider.CreateScope())
+            {
+                var serviceWithProvider = scope1.ServiceProvider.GetRequiredService<ClassWithServiceProvider>();
+                fakeServiceFromScope1 = serviceWithProvider.ServiceProvider.GetRequiredService<IFakeService>();
+
+                serviceWithProvider = scope1.ServiceProvider.GetRequiredService<ClassWithServiceProvider>();
+                otherFakeServiceFromScope1 = serviceWithProvider.ServiceProvider.GetRequiredService<IFakeService>();
+            }
+
+            using (var scope2 = provider.CreateScope())
+            {
+                var serviceWithProvider = scope2.ServiceProvider.GetRequiredService<ClassWithServiceProvider>();
+                fakeServiceFromScope2 = serviceWithProvider.ServiceProvider.GetRequiredService<IFakeService>();
+
+                serviceWithProvider = scope2.ServiceProvider.GetRequiredService<ClassWithServiceProvider>();
+                otherFakeServiceFromScope2 = serviceWithProvider.ServiceProvider.GetRequiredService<IFakeService>();
+            }
+
+            // Assert
+            Assert.Same(fakeServiceFromScope1, otherFakeServiceFromScope1);
+            Assert.Same(fakeServiceFromScope2, otherFakeServiceFromScope2);
+            Assert.NotSame(fakeServiceFromScope1, fakeServiceFromScope2);
+        }
+
         [Fact]
         public void SingletonServiceCanBeResolvedFromScope()
         {
@@ -357,6 +398,26 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void ServiceScopeFactoryIsSingleton()
+        {
+            // Arrange
+            var collection = new TestServiceCollection();
+            var provider = CreateServiceProvider(collection);
+
+            // Act
+            var scopeFactory1 = provider.GetService<IServiceScopeFactory>();
+            var scopeFactory2 = provider.GetService<IServiceScopeFactory>();
+            using (var scope = provider.CreateScope())
+            {
+                var scopeFactory3 = scope.ServiceProvider.GetService<IServiceScopeFactory>();
+
+                // Assert
+                Assert.Same(scopeFactory1, scopeFactory2);
+                Assert.Same(scopeFactory1, scopeFactory3);
+            }
+        }
+
+        [Fact]
         public void ScopedServiceCanBeResolved()
         {
             // Arrange
@@ -432,6 +493,24 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
                 Assert.True(outerScopedService.Disposed);
             }
+        }
+
+        [Fact]
+        public void ScopesAreFlatNotHierarchical()
+        {
+            // Arrange
+            var collection = new TestServiceCollection();
+            collection.AddSingleton<IFakeSingletonService, FakeService>();
+            var provider = CreateServiceProvider(collection);
+
+            // Act
+            var outerScope = provider.CreateScope();
+            using var innerScope = outerScope.ServiceProvider.CreateScope();
+            outerScope.Dispose();
+            var innerScopedService = innerScope.ServiceProvider.GetService<IFakeSingletonService>();
+
+            // Assert
+            Assert.NotNull(innerScopedService);
         }
 
         [Fact]

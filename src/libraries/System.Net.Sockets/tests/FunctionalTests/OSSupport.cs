@@ -97,7 +97,7 @@ namespace System.Net.Sockets.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public void IOControl_SIOCATMARK_Unix_Success()
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -123,7 +123,7 @@ namespace System.Net.Sockets.Tests
                         server.Send(new byte[] { 42 }, SocketFlags.None);
                         server.Send(new byte[] { 43 }, SocketFlags.OutOfBand);
 
-                        // OOB data recieved, but read pointer not at mark.
+                        // OOB data received, but read pointer not at mark.
                         Assert.True(SpinWait.SpinUntil(() =>
                         {
                             Assert.Equal(4, client.IOControl(IOControlCode.OobDataRead, null, siocatmarkResult));
@@ -135,7 +135,7 @@ namespace System.Net.Sockets.Tests
                         Assert.Equal(1, client.Receive(received));
                         Assert.Equal(42, received[0]);
 
-                        // OOB data recieved, read pointer at mark.
+                        // OOB data received, read pointer at mark.
                         Assert.Equal(4, client.IOControl(IOControlCode.OobDataRead, null, siocatmarkResult));
                         Assert.Equal(1, BitConverter.ToInt32(siocatmarkResult, 0));
 
@@ -177,7 +177,7 @@ namespace System.Net.Sockets.Tests
                         server.Send(new byte[] { 42 }, SocketFlags.None);
                         server.Send(new byte[] { 43 }, SocketFlags.OutOfBand);
 
-                        // OOB data recieved, but read pointer not at mark
+                        // OOB data received, but read pointer not at mark
                         Assert.True(SpinWait.SpinUntil(() =>
                         {
                             Assert.Equal(4, client.IOControl(IOControlCode.OobDataRead, null, siocatmarkResult));
@@ -189,7 +189,7 @@ namespace System.Net.Sockets.Tests
                         Assert.Equal(1, client.Receive(received));
                         Assert.Equal(42, received[0]);
 
-                        // OOB data recieved, read pointer at mark.
+                        // OOB data received, read pointer at mark.
                         Assert.Equal(4, client.IOControl(IOControlCode.OobDataRead, null, siocatmarkResult));
                         Assert.Equal(0, BitConverter.ToInt32(siocatmarkResult, 0));
 

@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <!-- needs to be set early -->
+    <Scenario>BuildWasmApps</Scenario>
+  </PropertyGroup>
+
+  <Import Project="..\Directory.Build.props" />
+</Project>

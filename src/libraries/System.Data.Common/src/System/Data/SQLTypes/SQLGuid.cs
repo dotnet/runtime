@@ -16,13 +16,9 @@ namespace System.Data.SqlTypes
     [Serializable]
     [XmlSchemaProvider("GetXsdType")]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct SqlGuid : INullable, IComparable, IXmlSerializable
+    public struct SqlGuid : INullable, IComparable, IXmlSerializable, IEquatable<SqlGuid>
     {
         private const int SizeOfGuid = 16;
-
-        // Comparison orders.
-        private static readonly int[] s_rgiGuidOrder = new int[16]
-        {10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3};
 
         // NOTE: If any instance fields change, update SqlTypeWorkarounds type in System.Data.SqlClient.
         private byte[]? m_value; // the SqlGuid is null if m_value is null
@@ -125,16 +121,22 @@ namespace System.Data.SqlTypes
         // Comparison operators
         private static EComparison Compare(SqlGuid x, SqlGuid y)
         {
-            //Swap to the correct order to be compared
+            // Comparison orders.
+            ReadOnlySpan<byte> rgiGuidOrder = new byte[16] { 10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3 };
+
+            // Swap to the correct order to be compared
+            ReadOnlySpan<byte> xBytes = x.m_value;
+            ReadOnlySpan<byte> yBytes = y.m_value;
             for (int i = 0; i < SizeOfGuid; i++)
             {
-                byte b1, b2;
-
-                b1 = x.m_value![s_rgiGuidOrder[i]];
-                b2 = y.m_value![s_rgiGuidOrder[i]];
+                byte b1 = xBytes[rgiGuidOrder[i]];
+                byte b2 = yBytes[rgiGuidOrder[i]];
                 if (b1 != b2)
+                {
                     return (b1 < b2) ? EComparison.LT : EComparison.GT;
+                }
             }
+
             return EComparison.EQ;
         }
 
@@ -257,10 +259,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlGuid)
+            if (value is SqlGuid i)
             {
-                SqlGuid i = (SqlGuid)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlGuid));
@@ -281,26 +281,18 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals([NotNullWhen(true)] object? value)
-        {
-            if (!(value is SqlGuid))
-            {
-                return false;
-            }
+        public override bool Equals([NotNullWhen(true)] object? value) =>
+            value is SqlGuid other && Equals(other);
 
-            SqlGuid i = (SqlGuid)value;
-
-            if (i.IsNull || IsNull)
-                return (i.IsNull && IsNull);
-            else
-                return (this == i).Value;
-        }
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(SqlGuid other) =>
+            other.IsNull || IsNull ? other.IsNull && IsNull :
+            (this == other).Value;
 
         // For hashing purpose
-        public override int GetHashCode()
-        {
-            return IsNull ? 0 : Value.GetHashCode();
-        }
+        public override int GetHashCode() => IsNull ? 0 : Value.GetHashCode();
 
         XmlSchema? IXmlSerializable.GetSchema() { return null; }
 

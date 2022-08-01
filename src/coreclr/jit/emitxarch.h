@@ -50,6 +50,7 @@ UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code, int val);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code, int val);
 
+BYTE* emitOutputNOP(BYTE* dst, size_t nBytes);
 BYTE* emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst);
 BYTE* emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
 BYTE* emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
@@ -89,6 +90,7 @@ static bool IsAVXOnlyInstruction(instruction ins);
 static bool IsFMAInstruction(instruction ins);
 static bool IsAVXVNNIInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
+
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
 bool IsAVXInstruction(instruction ins) const;
@@ -190,7 +192,9 @@ void SetContains256bitAVX(bool value)
 
 bool IsDstDstSrcAVXInstruction(instruction ins);
 bool IsDstSrcSrcAVXInstruction(instruction ins);
-bool DoesWriteZeroFlag(instruction ins);
+bool HasRegularWideForm(instruction ins);
+bool HasRegularWideImmediateForm(instruction ins);
+static bool DoesWriteZeroFlag(instruction ins);
 bool DoesWriteSignFlag(instruction ins);
 bool DoesResetOverflowAndCarryFlags(instruction ins);
 bool IsFlagsAlwaysModified(instrDesc* id);
@@ -298,6 +302,12 @@ inline emitAttr emitDecodeScale(unsigned ensz)
 }
 
 /************************************************************************/
+/*                   Output target-independent instructions             */
+/************************************************************************/
+
+void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0, bool isRemovableJmpCandidate = false);
+
+/************************************************************************/
 /*           The public entry points to output instructions             */
 /************************************************************************/
 
@@ -318,7 +328,12 @@ void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
 void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int offs);
 
-void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+void emitIns_A(instruction ins, emitAttr attr, GenTreeIndir* indir);
+
+void emitIns_R_I(instruction ins,
+                 emitAttr    attr,
+                 regNumber   reg,
+                 ssize_t val DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip);
 
@@ -544,7 +559,7 @@ void emitIns_Call(EmitCallType          callType,
 // Is the last instruction emitted a call instruction?
 bool emitIsLastInsCall();
 
-// Insert a NOP at the end of the the current instruction group if the last emitted instruction was a 'call',
+// Insert a NOP at the end of the current instruction group if the last emitted instruction was a 'call',
 // because the next instruction group will be an epilog.
 void emitOutputPreEpilogNOP();
 #endif // TARGET_AMD64

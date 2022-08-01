@@ -20,7 +20,7 @@ jobs:
     - Linux_arm64
     - OSX_arm64
     - OSX_x64
-    - windows_x86    
+    - windows_x86
     - windows_x64
     - windows_arm64
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
@@ -67,7 +67,6 @@ jobs:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     jobParameters:
       testGroup: outerloop
-      liveLibrariesBuildConfig: Release
 
 # Test most platforms in composite mode as the expected mainline shipping mode
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -130,7 +129,7 @@ jobs:
 
 # test crossgen target Windows X86
 # This job verifies that 32-bit and 64 bit crossgen2 produces the same binaries,
-# and that cross-os targetting works
+# and that cross-os targeting works
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
@@ -147,7 +146,7 @@ jobs:
       targetarch: x86
 
 # test target Linux X64
-# verify that cross OS targetting works
+# verify that cross OS targeting works
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
@@ -163,7 +162,7 @@ jobs:
       targetarch: x64
 
 # test target Windows X64
-# verify that cross OS targetting works
+# verify that cross OS targeting works
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
@@ -179,7 +178,7 @@ jobs:
       targetarch: x64
 
 # test target Linux arm
-# verify that cross architecture targetting works
+# verify that cross architecture targeting works
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
@@ -195,7 +194,7 @@ jobs:
       targetarch: arm
 
 # test target Linux arm64
-# verify that cross architecture targetting works
+# verify that cross architecture targeting works
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
@@ -211,7 +210,7 @@ jobs:
       targetarch: arm64
 
 # test target osx-arm64
-# verify that cross architecture targetting works
+# verify that cross architecture targeting works
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml

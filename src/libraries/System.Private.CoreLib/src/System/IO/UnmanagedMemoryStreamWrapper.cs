@@ -121,8 +121,7 @@ namespace System.IO
         // Writes this MemoryStream to another stream.
         public override unsafe void WriteTo(Stream stream)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
+            ArgumentNullException.ThrowIfNull(stream);
 
             byte[] buffer = ToArray();
 
@@ -133,16 +132,14 @@ namespace System.IO
         {
             // This was probably meant to call _unmanagedStream.SetLength(value), but it was forgotten in V.4.0.
             // Now this results in a call to the base which touches the underlying array which is never actually used.
-            // We cannot fix it due to compat now, but we should fix this at the next SxS release oportunity.
+            // We cannot fix it due to compat now, but we should fix this at the next SxS release opportunity.
             base.SetLength(value);
         }
 
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            // The parameter checks must be in sync with the base version:
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
+            ArgumentNullException.ThrowIfNull(destination);
 
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);

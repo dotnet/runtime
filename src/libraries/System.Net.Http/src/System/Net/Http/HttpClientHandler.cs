@@ -76,10 +76,7 @@ namespace System.Net.Http
             get => _underlyingHandler.CookieContainer;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 _underlyingHandler.CookieContainer = value;
             }
@@ -225,7 +222,7 @@ namespace System.Net.Http
 #else
                         ThrowForModifiedManagedSslOptionsIfStarted();
                         _clientCertificateOptions = value;
-                        _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(ClientCertificates)!;
+                        _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(_underlyingHandler.SslOptions.ClientCertificates)!;
 #endif
                         break;
 

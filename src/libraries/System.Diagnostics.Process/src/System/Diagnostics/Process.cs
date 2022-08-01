@@ -193,6 +193,9 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public DateTime StartTime
         {
             get
@@ -262,14 +265,16 @@ namespace System.Diagnostics
         {
             [UnsupportedOSPlatform("ios")]
             [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
             get
             {
                 EnsureWorkingSetLimits();
                 return _maxWorkingSet;
             }
-            [SupportedOSPlatform("windows")]
-            [SupportedOSPlatform("macos")]
             [SupportedOSPlatform("freebsd")]
+            [SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("maccatalyst")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 SetWorkingSetLimits(null, value);
@@ -284,14 +289,16 @@ namespace System.Diagnostics
         {
             [UnsupportedOSPlatform("ios")]
             [UnsupportedOSPlatform("tvos")]
+            [SupportedOSPlatform("maccatalyst")]
             get
             {
                 EnsureWorkingSetLimits();
                 return _minWorkingSet;
             }
-            [SupportedOSPlatform("windows")]
-            [SupportedOSPlatform("macos")]
             [SupportedOSPlatform("freebsd")]
+            [SupportedOSPlatform("macos")]
+            [SupportedOSPlatform("maccatalyst")]
+            [SupportedOSPlatform("windows")]
             set
             {
                 SetWorkingSetLimits(value, null);
@@ -320,7 +327,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.NonpagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.")]
+        [Obsolete("Process.NonpagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.")]
         public int NonpagedSystemMemorySize
         {
             get
@@ -340,7 +347,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.PagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedMemorySize64 instead.")]
+        [Obsolete("Process.PagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedMemorySize64 instead.")]
         public int PagedMemorySize
         {
             get
@@ -360,7 +367,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.PagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedSystemMemorySize64 instead.")]
+        [Obsolete("Process.PagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedSystemMemorySize64 instead.")]
         public int PagedSystemMemorySize
         {
             get
@@ -380,7 +387,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.PeakPagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakPagedMemorySize64 instead.")]
+        [Obsolete("Process.PeakPagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakPagedMemorySize64 instead.")]
         public int PeakPagedMemorySize
         {
             get
@@ -399,7 +406,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.PeakWorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakWorkingSet64 instead.")]
+        [Obsolete("Process.PeakWorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakWorkingSet64 instead.")]
         public int PeakWorkingSet
         {
             get
@@ -418,7 +425,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.PeakVirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.")]
+        [Obsolete("Process.PeakVirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.")]
         public int PeakVirtualMemorySize
         {
             get
@@ -493,28 +500,13 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.PrivateMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PrivateMemorySize64 instead.")]
+        [Obsolete("Process.PrivateMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PrivateMemorySize64 instead.")]
         public int PrivateMemorySize
         {
             get
             {
                 EnsureState(State.HaveProcessInfo);
                 return unchecked((int)_processInfo!.PrivateBytes);
-            }
-        }
-
-        /// <devdoc>
-        ///    <para>
-        ///       Gets
-        ///       the friendly name of the process.
-        ///    </para>
-        /// </devdoc>
-        public string ProcessName
-        {
-            get
-            {
-                EnsureState(State.HaveProcessInfo);
-                return _processInfo!.ProcessName;
             }
         }
 
@@ -576,10 +568,7 @@ namespace System.Diagnostics
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (Associated)
                 {
@@ -638,7 +627,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.VirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.VirtualMemorySize64 instead.")]
+        [Obsolete("Process.VirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.VirtualMemorySize64 instead.")]
         public int VirtualMemorySize
         {
             get
@@ -761,7 +750,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.WorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.WorkingSet64 instead.")]
+        [Obsolete("Process.WorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.WorkingSet64 instead.")]
         public int WorkingSet
         {
             get
@@ -836,6 +825,39 @@ namespace System.Diagnostics
         {
             return WaitForInputIdleCore(milliseconds);
         }
+
+        /// <summary>
+        /// Causes the <see cref="Process"/> component to wait the specified <paramref name="timeout"/> for the associated process to enter an idle state.
+        /// This overload applies only to processes with a user interface and, therefore, a message loop.
+        /// </summary>
+        /// <param name="timeout">The amount of time, in milliseconds, to wait for the associated process to become idle.</param>
+        /// <returns><see langword="true"/> if the associated process has reached an idle state; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="InvalidOperationException">
+        /// The process does not have a graphical interface.
+        ///
+        /// -or-
+        ///
+        /// An unknown error occurred. The process failed to enter an idle state.
+        ///
+        /// -or-
+        ///
+        /// The process has already exited.
+        ///
+        /// -or-
+        ///
+        /// No process is associated with this <see cref="Process"/> object.
+        /// </exception>
+        /// <remarks>
+        /// Use <see cref="WaitForInputIdle(TimeSpan)"/> to force the processing of your application
+        /// to wait until the message loop has returned to the idle state.
+        /// When a process with a user interface is executing, its message loop executes every time
+        /// a Windows message is sent to the process by the operating system.
+        /// The process then returns to the message loop. A process is said to be in an idle state
+        /// when it is waiting for messages inside of a message loop.
+        /// This state is useful, for example, when your application needs to wait for a starting process
+        /// to finish creating its main window before the application communicates with that window.
+        /// </remarks>
+        public bool WaitForInputIdle(TimeSpan timeout) => WaitForInputIdle(ToTimeoutMilliseconds(timeout));
 
         public ISynchronizeInvoke? SynchronizingObject { get; set; }
 
@@ -1014,7 +1036,7 @@ namespace System.Diagnostics
         {
             if (!ProcessManager.IsProcessRunning(processId, machineName))
             {
-                throw new ArgumentException(SR.Format(SR.MissingProccess, processId.ToString()));
+                throw new ArgumentException(SR.Format(SR.MissingProcess, processId.ToString()));
             }
 
             return new Process(machineName, ProcessManager.IsRemoteMachine(machineName), processId, null);
@@ -1041,6 +1063,7 @@ namespace System.Diagnostics
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName)
         {
             return GetProcessesByName(processName, ".");
@@ -1054,6 +1077,7 @@ namespace System.Diagnostics
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcesses()
         {
             return GetProcesses(".");
@@ -1068,10 +1092,11 @@ namespace System.Diagnostics
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcesses(string machineName)
         {
             bool isRemoteMachine = ProcessManager.IsRemoteMachine(machineName);
-            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(machineName);
+            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processNameFilter: null, machineName);
             Process[] processes = new Process[processInfos.Length];
             for (int i = 0; i < processInfos.Length; i++)
             {
@@ -1211,6 +1236,7 @@ namespace System.Diagnostics
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public bool Start()
         {
             Close();
@@ -1265,6 +1291,7 @@ namespace System.Diagnostics
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process Start(string fileName)
         {
             // the underlying Start method can only return null on Windows platforms,
@@ -1283,6 +1310,7 @@ namespace System.Diagnostics
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process Start(string fileName, string arguments)
         {
             // the underlying Start method can only return null on Windows platforms,
@@ -1296,12 +1324,11 @@ namespace System.Diagnostics
         /// </summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process Start(string fileName, IEnumerable<string> arguments)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
-            if (arguments == null)
-                throw new ArgumentNullException(nameof(arguments));
+            ArgumentNullException.ThrowIfNull(fileName);
+            ArgumentNullException.ThrowIfNull(arguments);
 
             var startInfo = new ProcessStartInfo(fileName);
             foreach (string argument in arguments)
@@ -1322,12 +1349,12 @@ namespace System.Diagnostics
         /// </devdoc>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process? Start(ProcessStartInfo startInfo)
         {
-            Process process = new Process();
-            if (startInfo == null)
-                throw new ArgumentNullException(nameof(startInfo));
+            ArgumentNullException.ThrowIfNull(startInfo);
 
+            Process process = new Process();
             process.StartInfo = startInfo;
             return process.Start() ?
                 process :
@@ -1359,15 +1386,8 @@ namespace System.Diagnostics
                     }
                 }
 
-                if (rwh != null)
-                {
-                    rwh.Unregister(null);
-                }
-
-                if (wh != null)
-                {
-                    wh.Dispose();
-                }
+                rwh?.Unregister(null);
+                wh?.Dispose();
             }
         }
 
@@ -1426,6 +1446,22 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Instructs the Process component to wait the specified number of milliseconds for
+        /// the associated process to exit.
+        /// </summary>
+        public bool WaitForExit(TimeSpan timeout) => WaitForExit(ToTimeoutMilliseconds(timeout));
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+            return (int)totalMilliseconds;
+        }
+
+        /// <summary>
         /// Instructs the Process component to wait for the associated process to exit, or
         /// for the <paramref name="cancellationToken"/> to be canceled.
         /// </summary>
@@ -1450,7 +1486,7 @@ namespace System.Diagnostics
             // registering the handler and no special cases are needed.
             //
             // CASE 1.2: PROCESS EXITS BEFORE REGISTERING HANDLER
-            // It's possible that the process can exit after we enable events but before we reigster
+            // It's possible that the process can exit after we enable events but before we register
             // the handler. In that case we must check for exit after registering the handler.
             //
             //

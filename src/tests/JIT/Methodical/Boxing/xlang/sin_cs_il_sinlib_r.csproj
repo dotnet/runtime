@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->
+    <DebugType>None</DebugType>
+    <Optimize />
+    <NoWarn>$(NoWarn),8002</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="sin_il.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="sinlib_il.ilproj" />
+  </ItemGroup>
+</Project>

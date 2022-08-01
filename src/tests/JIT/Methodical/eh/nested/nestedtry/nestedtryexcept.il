@@ -6,19 +6,23 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern mscorlib {}
-.assembly extern common {}
-.assembly test {}
-
-.module nestedtryexcept.exe
+.assembly extern eh_common {}
+.assembly 'nestedtryexcept' {}
 
 
+
+.class public auto ansi Test_nestedtryexcept extends [mscorlib] System.Object {
 .method public static int32 main() {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  2
   .locals init (
     class [mscorlib]System.IO.StringWriter expectedOut,
-    class [common]TestUtil.TestLog testLog
+    class [eh_common]TestUtil.TestLog testLog
   )
 
   newobj     instance void [mscorlib]System.IO.StringWriter::.ctor()
@@ -179,11 +183,11 @@
   callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
 
   ldloc.s    expectedOut
-  newobj     instance void [common]TestUtil.TestLog::.ctor(object)
+  newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
   stloc.s    testLog
 
   ldloc.s    testLog
-  callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+  callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
 begin:
   .try {
@@ -992,10 +996,11 @@ begin:
 
   done:
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+    callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
   
     ldloc.s    testLog
-    callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+    callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
     
     ret
+}
 }

@@ -304,7 +304,7 @@ UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
 //     ContextRecord - Supplies the address of a context record.
 //
 //     HandlerData - Supplies a pointer to a variable that receives a pointer
-//         the the language handler data.
+//         the language handler data.
 //
 //     EstablisherFrame - Supplies a pointer to a variable that receives the
 //         the establisher frame pointer value.
@@ -321,13 +321,13 @@ UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
 //     returned.
 //
 PEXCEPTION_ROUTINE RtlVirtualUnwind_Unsafe(
-    __in ULONG HandlerType,
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
-    __in OUT PCONTEXT ContextRecord,
-    __out PVOID *HandlerData,
-    __out PULONG64 EstablisherFrame,
+    _In_ ULONG HandlerType,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ OUT PCONTEXT ContextRecord,
+    _Out_ PVOID *HandlerData,
+    _Out_ PULONG64 EstablisherFrame,
     __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers
     )
 {
@@ -395,10 +395,10 @@ PEXCEPTION_ROUTINE RtlVirtualUnwind_Unsafe(
 
 HRESULT
 OOPStackUnwinderAMD64::UnwindEpilogue(
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __in ULONG EpilogueOffset,
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _In_ ULONG EpilogueOffset,
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
     __inout PCONTEXT ContextRecord,
     __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers
 )
@@ -448,11 +448,11 @@ HRESULT.
     ULONG Index;
     PULONG64 IntegerAddress;
     PULONG64 IntegerRegister;
-    ULONG OpInfo;
+    ULONG OpInfo = 0;
     PULONG64 ReturnAddress;
     PULONG64 StackAddress;
     PUNWIND_INFO UnwindInfo;
-    UNWIND_CODE UnwindOp;
+    UNWIND_CODE UnwindOp = {};
 
     //
     // A canonical epilogue sequence consists of the following operations:
@@ -634,13 +634,13 @@ HRESULT.
 
 HRESULT
 OOPStackUnwinderAMD64::UnwindPrologue(
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __in ULONG64 FrameBase,
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _In_ ULONG64 FrameBase,
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
     __inout PCONTEXT ContextRecord,
     __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
-    __deref_out _PIMAGE_RUNTIME_FUNCTION_ENTRY *FinalFunctionEntry
+    _Outptr_ _PIMAGE_RUNTIME_FUNCTION_ENTRY *FinalFunctionEntry
     )
 
 /*++
@@ -794,7 +794,7 @@ Return Value:
                     break;
 
                     //
-                    // Establish the the frame pointer register.
+                    // Establish the frame pointer register.
                     //
                     // The operation information is not used.
                     //
@@ -807,7 +807,7 @@ Return Value:
 #ifdef TARGET_UNIX
 
                     //
-                    // Establish the the frame pointer register using a large size displacement.
+                    // Establish the frame pointer register using a large size displacement.
                     // UNWIND_INFO.FrameOffset must be 15 (the maximum value, corresponding to a scaled
                     // offset of 15 * 16 == 240). The next two codes contain a 32-bit offset, which
                     // is also scaled by 16, since the stack must remain 16-bit aligned.
@@ -1012,15 +1012,15 @@ Return Value:
 
 HRESULT
 OOPStackUnwinderAMD64::VirtualUnwind(
-    __in DWORD HandlerType,
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ DWORD HandlerType,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
     __inout PCONTEXT ContextRecord,
-    __out PVOID *HandlerData,
-    __out PULONG64 EstablisherFrame,
+    _Out_ PVOID *HandlerData,
+    _Out_ PULONG64 EstablisherFrame,
     __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
-    __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine
+    _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine
     )
 
 /*++
@@ -1054,7 +1054,7 @@ Arguments:
 
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     EstablisherFrame - Supplies a pointer to a variable that receives the
         the establisher frame pointer value.
@@ -1074,10 +1074,10 @@ Arguments:
 
     ULONG64 BranchTarget;
     LONG Displacement;
-    ULONG EpilogueOffset;
+    ULONG EpilogueOffset = 0;
     ULONG EpilogueSize;
     PEXCEPTION_ROUTINE FoundHandler;
-    ULONG FrameRegister;
+    ULONG FrameRegister = 0;
     ULONG FrameOffset;
     ULONG Index;
     BOOL InEpilogue;
@@ -1663,8 +1663,8 @@ ExitSetHandler:
 
 _PIMAGE_RUNTIME_FUNCTION_ENTRY
 OOPStackUnwinderAMD64::LookupPrimaryFunctionEntry(
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-    __in ULONG64 ImageBase
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase
 
     )
 
@@ -1732,9 +1732,9 @@ Return Value:
 
 _PIMAGE_RUNTIME_FUNCTION_ENTRY
 OOPStackUnwinderAMD64::SameFunction(
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc
     )
 
 /*++
@@ -1812,7 +1812,7 @@ Return Value:
     }
 }
 
-ULONG OOPStackUnwinderAMD64::UnwindOpSlots(__in UNWIND_CODE UnwindCode)
+ULONG OOPStackUnwinderAMD64::UnwindOpSlots(_In_ UNWIND_CODE UnwindCode)
 /*++
 
 Routine Description:

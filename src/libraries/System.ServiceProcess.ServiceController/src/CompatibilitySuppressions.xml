@@ -1,15 +1,30 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
-    <DiagnosticId>PKV006</DiagnosticId>
-    <Target>.NETStandard,Version=v1.4</Target>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceProcess.ServiceController.Stop(System.Boolean)</Target>
+    <Left>lib/netcoreapp3.1/System.ServiceProcess.ServiceController.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
-    <DiagnosticId>PKV006</DiagnosticId>
-    <Target>.NETStandard,Version=v1.5</Target>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceProcess.ServiceController.Stop(System.Boolean)</Target>
+    <Left>runtimes/win/lib/netcoreapp3.1/System.ServiceProcess.ServiceController.dll</Left>
+    <Right>lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
-    <DiagnosticId>PKV007</DiagnosticId>
-    <Target>.NETStandard,Version=v1.5-win</Target>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceProcess.ServiceController.Stop(System.Boolean)</Target>
+    <Left>runtimes/win/lib/netcoreapp3.1/System.ServiceProcess.ServiceController.dll</Left>
+    <Right>runtimes/win/lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceProcess.ServiceBase.ServiceMainCallback(System.Int32,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.ServiceProcess.ServiceController.dll</Left>
+    <Right>lib/net7.0/System.ServiceProcess.ServiceController.dll</Right>
   </Suppression>
 </Suppressions>

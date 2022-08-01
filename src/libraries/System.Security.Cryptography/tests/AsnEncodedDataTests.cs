@@ -101,11 +101,12 @@ namespace System.Security.Cryptography.Tests
                 sanExtension);
 
             string s = asnData.Format(false);
+            bool isOpenSsl3 = PlatformDetection.IsOpenSsl3;
 
             string expected = string.Join(
                 ", ",
                 // Choice[0]: OtherName
-                "othername:<unsupported>",
+                isOpenSsl3 ? "othername: UPN::subjectupn1@example.org" : "othername:<unsupported>",
                 // Choice[1]: Rfc822Name (EmailAddress)
                 "email:sanemail1@example.org",
                 // Choice[2]: DnsName
@@ -123,7 +124,7 @@ namespace System.Security.Cryptography.Tests
                 // Choice[7]: IPAddress (IPv6)
                 "IP Address:2001:DB8:AC10:FE01:0:0:0:0",
                 // Choice[7]: IPAddress (unknown type)
-                "IP Address:<invalid>",
+                isOpenSsl3 ? "IP Address:<invalid length=15>" : "IP Address:<invalid>",
                 // Choice[7]: IPAddress (IPv4, longer string)
                 "IP Address:255.255.255.255",
                 // Choice[7]: IPAddress (IPv4, medium string)

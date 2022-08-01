@@ -138,6 +138,52 @@
         "alpine.3.13-x64"
       ]
     },
+    "alpine.3.15": {
+      "#import": [
+        "alpine.3.14"
+      ]
+    },
+    "alpine.3.15-arm": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-arm"
+      ]
+    },
+    "alpine.3.15-arm64": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-arm64"
+      ]
+    },
+    "alpine.3.15-x64": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-x64"
+      ]
+    },
+    "alpine.3.16": {
+      "#import": [
+        "alpine.3.15"
+      ]
+    },
+    "alpine.3.16-arm": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-arm"
+      ]
+    },
+    "alpine.3.16-arm64": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-arm64"
+      ]
+    },
+    "alpine.3.16-x64": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-x64"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
@@ -232,31 +278,31 @@
     },
     "android": {
       "#import": [
-        "linux"
+        "linux-bionic"
       ]
     },
     "android-arm": {
       "#import": [
         "android",
-        "linux-arm"
+        "linux-bionic-arm"
       ]
     },
     "android-arm64": {
       "#import": [
         "android",
-        "linux-arm64"
+        "linux-bionic-arm64"
       ]
     },
     "android-x64": {
       "#import": [
         "android",
-        "linux-x64"
+        "linux-bionic-x64"
       ]
     },
     "android-x86": {
       "#import": [
         "android",
-        "linux-x86"
+        "linux-bionic-x86"
       ]
     },
     "android.21": {
@@ -576,6 +622,35 @@
       "#import": [
         "android.31",
         "android.30-x86"
+      ]
+    },
+    "android.32": {
+      "#import": [
+        "android.31"
+      ]
+    },
+    "android.32-arm": {
+      "#import": [
+        "android.32",
+        "android.31-arm"
+      ]
+    },
+    "android.32-arm64": {
+      "#import": [
+        "android.32",
+        "android.31-arm64"
+      ]
+    },
+    "android.32-x64": {
+      "#import": [
+        "android.32",
+        "android.31-x64"
+      ]
+    },
+    "android.32-x86": {
+      "#import": [
+        "android.32",
+        "android.31-x86"
       ]
     },
     "any": {
@@ -1123,6 +1198,23 @@
         "fedora-x64"
       ]
     },
+    "fedora.37": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.37-arm64": {
+      "#import": [
+        "fedora.37",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.37-x64": {
+      "#import": [
+        "fedora.37",
+        "fedora-x64"
+      ]
+    },
     "freebsd": {
       "#import": [
         "unix"
@@ -1475,6 +1567,47 @@
         "unix-armel"
       ]
     },
+    "linux-armv6": {
+      "#import": [
+        "linux",
+        "unix-armv6"
+      ]
+    },
+    "linux-bionic": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "linux-bionic-arm": {
+      "#import": [
+        "linux-bionic",
+        "linux-arm"
+      ]
+    },
+    "linux-bionic-arm64": {
+      "#import": [
+        "linux-bionic",
+        "linux-arm64"
+      ]
+    },
+    "linux-bionic-x64": {
+      "#import": [
+        "linux-bionic",
+        "linux-x64"
+      ]
+    },
+    "linux-bionic-x86": {
+      "#import": [
+        "linux-bionic",
+        "linux-x86"
+      ]
+    },
+    "linux-loongarch64": {
+      "#import": [
+        "linux",
+        "unix-loongarch64"
+      ]
+    },
     "linux-mips64": {
       "#import": [
         "linux",
@@ -1510,6 +1643,12 @@
         "linux-s390x"
       ]
     },
+    "linux-musl-ppc64le": {
+      "#import": [
+        "linux-musl",
+        "linux-ppc64le"
+      ]
+    },
     "linux-musl-x64": {
       "#import": [
         "linux-musl",
@@ -1526,6 +1665,12 @@
       "#import": [
         "linux",
         "unix-s390x"
+      ]
+    },
+    "linux-ppc64le": {
+      "#import": [
+        "linux",
+        "unix-ppc64le"
       ]
     },
     "linux-x64": {
@@ -1727,6 +1872,54 @@
       "#import": [
         "maccatalyst.15",
         "maccatalyst.14-x64"
+      ]
+    },
+    "manjaro": {
+      "#import": [
+        "arch"
+      ]
+    },
+    "manjaro-x64": {
+      "#import": [
+        "manjaro",
+        "arch-x64"
+      ]
+    },
+    "miraclelinux": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "miraclelinux-x64": {
+      "#import": [
+        "miraclelinux",
+        "rhel-x64"
+      ]
+    },
+    "miraclelinux.8": {
+      "#import": [
+        "miraclelinux",
+        "rhel.8"
+      ]
+    },
+    "miraclelinux.8-x64": {
+      "#import": [
+        "miraclelinux.8",
+        "miraclelinux-x64",
+        "rhel.8-x64"
+      ]
+    },
+    "miraclelinux.9": {
+      "#import": [
+        "miraclelinux",
+        "rhel.9"
+      ]
+    },
+    "miraclelinux.9-x64": {
+      "#import": [
+        "miraclelinux.9",
+        "miraclelinux-x64",
+        "rhel.9-x64"
       ]
     },
     "ol": {
@@ -3379,6 +3572,35 @@
         "ubuntu-x86"
       ]
     },
+    "ubuntu.22.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.22.04-arm": {
+      "#import": [
+        "ubuntu.22.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.22.04-arm64": {
+      "#import": [
+        "ubuntu.22.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.22.04-x64": {
+      "#import": [
+        "ubuntu.22.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.22.04-x86": {
+      "#import": [
+        "ubuntu.22.04",
+        "ubuntu-x86"
+      ]
+    },
     "unix": {
       "#import": [
         "any"
@@ -3399,12 +3621,27 @@
         "unix"
       ]
     },
+    "unix-armv6": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-loongarch64": {
+      "#import": [
+        "unix"
+      ]
+    },
     "unix-mips64": {
       "#import": [
         "unix"
       ]
     },
     "unix-s390x": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-ppc64le": {
       "#import": [
         "unix"
       ]

@@ -52,7 +52,6 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60584", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void AddUserSecrets_FindsAssemblyAttribute()
         {
@@ -68,7 +67,6 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60584", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void AddUserSecrets_FindsAssemblyAttributeFromType()
         {
@@ -87,23 +85,23 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         public void AddUserSecrets_ThrowsIfAssemblyAttributeFromType()
         {
             var ex = Assert.Throws<InvalidOperationException>(() =>
-                new ConfigurationBuilder().AddUserSecrets<string>());
+                new ConfigurationBuilder().AddUserSecrets<string>(optional: false));
             Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(string).Assembly.GetName().Name),
                 ex.Message);
 
             ex = Assert.Throws<InvalidOperationException>(() =>
-                new ConfigurationBuilder().AddUserSecrets(typeof(JObject).Assembly));
+                new ConfigurationBuilder().AddUserSecrets(typeof(JObject).Assembly, optional: false));
             Assert.Equal(SR.Format(SR.Error_Missing_UserSecretsIdAttribute, typeof(JObject).Assembly.GetName().Name),
                 ex.Message);
         }
 
 
         [Fact]
-        public void AddUserSecrets_DoesNotThrowsIfOptional()
+        public void AddUserSecrets_DoesNotThrowsIfOptionalByDefault()
         {
             var config = new ConfigurationBuilder()
-                .AddUserSecrets<string>(optional: true)
-                .AddUserSecrets(typeof(List<>).Assembly, optional: true)
+                .AddUserSecrets<string>()
+                .AddUserSecrets(typeof(List<>).Assembly)
                 .Build();
 
             Assert.Empty(config.AsEnumerable());
@@ -123,7 +121,6 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60584", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void AddUserSecrets_With_SecretsId_Passed_Explicitly()
         {

@@ -1,0 +1,7 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
+  </PropertyGroup>
+</Project>

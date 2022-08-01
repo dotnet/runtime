@@ -2,46 +2,57 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable @typescript-eslint/triple-slash-reference */
-/// <reference path="./types/emscripten.d.ts" />
 /// <reference path="./types/v8.d.ts" />
 
-import { EmscriptenModuleMono, MonoConfig, RuntimeHelpers } from "./types";
+import { BINDINGType, MONOType } from "./net6-legacy/exports-legacy";
+import { DotnetModule, EarlyExports, EarlyImports, MonoConfig, RuntimeHelpers } from "./types";
+import { EmscriptenModule } from "./types/emscripten";
 
 // these are our public API (except internal)
-export let Module: EmscriptenModule & EmscriptenModuleMono;
-export let MONO: any;
-export let BINDING: any;
+export let Module: EmscriptenModule & DotnetModule;
+export let MONO: MONOType;
+export let BINDING: BINDINGType;
 export let INTERNAL: any;
+export let EXPORTS: any;
+export let IMPORTS: any;
 
 // these are imported and re-exported from emscripten internals
-export let ENVIRONMENT_IS_GLOBAL: boolean;
 export let ENVIRONMENT_IS_NODE: boolean;
 export let ENVIRONMENT_IS_SHELL: boolean;
 export let ENVIRONMENT_IS_WEB: boolean;
-export let locateFile: Function;
+export let ENVIRONMENT_IS_WORKER: boolean;
+export let ENVIRONMENT_IS_PTHREAD: boolean;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function setImportsAndExports(
-    imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function },
-    exports: { mono: any, binding: any, internal: any, module: any },
-) {
+export function set_imports_exports(
+    imports: EarlyImports,
+    exports: EarlyExports,
+): void {
     MONO = exports.mono;
     BINDING = exports.binding;
     INTERNAL = exports.internal;
     Module = exports.module;
-    ENVIRONMENT_IS_GLOBAL = imports.isGlobal;
+
+    EXPORTS = exports.marshaled_exports; // [JSExport]
+    IMPORTS = exports.marshaled_imports; // [JSImport]
+
     ENVIRONMENT_IS_NODE = imports.isNode;
     ENVIRONMENT_IS_SHELL = imports.isShell;
     ENVIRONMENT_IS_WEB = imports.isWeb;
-    locateFile = imports.locateFile;
+    ENVIRONMENT_IS_WORKER = imports.isWorker;
+    ENVIRONMENT_IS_PTHREAD = imports.isPThread;
+    runtimeHelpers.quit = imports.quit_;
+    runtimeHelpers.ExitStatus = imports.ExitStatus;
+    runtimeHelpers.requirePromise = imports.requirePromise;
 }
 
-let monoConfig: MonoConfig;
+let monoConfig: MonoConfig = {} as any;
 let runtime_is_ready = false;
 
 export const runtimeHelpers: RuntimeHelpers = <any>{
-    namespace: "System.Runtime.InteropServices.JavaScript",
-    classname: "Runtime",
+    javaScriptExports: {},
+    mono_wasm_load_runtime_done: false,
+    mono_wasm_bindings_is_ready: false,
     get mono_wasm_runtime_is_ready() {
         return runtime_is_ready;
     },
@@ -57,4 +68,7 @@ export const runtimeHelpers: RuntimeHelpers = <any>{
         MONO.config = value;
         Module.config = value;
     },
+    diagnostic_tracing: false,
+    enable_debugging: false,
+    fetch: null
 };

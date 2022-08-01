@@ -42,7 +42,7 @@ namespace System
 
         /// <summary>Constructor used by <see cref="ThreadSafeRandom"/>.</summary>
         /// <param name="isThreadSafeRandom">Must be true.</param>
-        protected private Random(bool isThreadSafeRandom)
+        private protected Random(bool isThreadSafeRandom)
         {
             Debug.Assert(isThreadSafeRandom);
             _impl = null!; // base implementation isn't used at all
@@ -192,7 +192,7 @@ namespace System
         }
 
         private static void ThrowMaxValueMustBeNonNegative() =>
-            throw new ArgumentOutOfRangeException("maxValue", SR.Format(SR.ArgumentOutOfRange_NeedNonNegNum, "maxValue"));
+            throw new ArgumentOutOfRangeException("maxValue", SR.ArgumentOutOfRange_NeedNonNegNum);
 
         private static void ThrowMinMaxValueSwapped() =>
             throw new ArgumentOutOfRangeException("minValue", SR.Format(SR.Argument_MinMaxValue, "minValue", "maxValue"));

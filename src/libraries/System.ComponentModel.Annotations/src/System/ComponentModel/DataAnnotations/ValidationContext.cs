@@ -86,15 +86,12 @@ namespace System.ComponentModel.DataAnnotations
         [RequiresUnreferencedCode(InstanceTypeNotStaticallyDiscovered)]
         public ValidationContext(object instance, IServiceProvider? serviceProvider, IDictionary<object, object?>? items)
         {
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
+            ArgumentNullException.ThrowIfNull(instance);
 
             if (serviceProvider != null)
             {
                 IServiceProvider localServiceProvider = serviceProvider;
-                InitializeServiceProvider(serviceType => localServiceProvider.GetService(serviceType));
+                InitializeServiceProvider(localServiceProvider.GetService);
             }
 
             _items = items != null ? new Dictionary<object, object?>(items) : new Dictionary<object, object?>();

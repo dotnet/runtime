@@ -226,7 +226,7 @@ namespace System.Data.Odbc
                             parameter.Direction = ParameterDirection.ReturnValue;
                             break;
                         default:
-                            Debug.Fail("Unexpected Parametertype while DeriveParamters");
+                            Debug.Fail("Unexpected Parametertype while DeriveParameters");
                             break;
                     }
                     parameter.OdbcType = TypeMap.FromSqlType((ODBC32.SQL_TYPE)reader.GetInt16(ODBC32.DATA_TYPE - 1))._odbcType;
@@ -242,7 +242,7 @@ namespace System.Data.Odbc
                     rParams.Add(parameter);
                 }
             }
-            retcode = hstmt.CloseCursor();
+            hstmt.CloseCursor();
             return rParams.ToArray();
         }
 
@@ -255,7 +255,7 @@ namespace System.Data.Odbc
         {
             ADP.CheckArgumentNull(unquotedIdentifier, nameof(unquotedIdentifier));
 
-            // if the user has specificed a prefix use the user specified  prefix and suffix
+            // if the user has specified a prefix use the user specified  prefix and suffix
             // otherwise get them from the provider
             string quotePrefix = QuotePrefix;
             string quoteSuffix = QuoteSuffix;
@@ -330,20 +330,9 @@ namespace System.Data.Odbc
                 quoteSuffix = quotePrefix;
             }
 
+            // ignoring the return value because it is acceptable for the quotedString to not be quoted in this context.
             string? unquotedIdentifier;
-            // by the ODBC spec "If the data source does not support quoted identifiers, a blank is returned."
-            // So if a blank is returned the string is returned unchanged. Otherwise the returned string is used
-            // to unquote the string
-            if (!string.IsNullOrEmpty(quotePrefix) || quotePrefix != " ")
-            {
-                // ignoring the return value because it is acceptable for the quotedString to not be quoted in this
-                // context.
-                ADP.RemoveStringQuotes(quotePrefix, quoteSuffix, quotedIdentifier, out unquotedIdentifier);
-            }
-            else
-            {
-                unquotedIdentifier = quotedIdentifier;
-            }
+            ADP.RemoveStringQuotes(quotePrefix, quoteSuffix, quotedIdentifier, out unquotedIdentifier);
             return unquotedIdentifier!;
         }
     }

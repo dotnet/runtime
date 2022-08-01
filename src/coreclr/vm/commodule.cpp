@@ -24,7 +24,6 @@
 extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pModule,
                                           LPCWSTR wszFullName,
                                           QCall::ModuleHandle pRefedModule,
-                                          LPCWSTR wszRefedModuleFileName,
                                           INT32 tkResolutionArg)
 {
     QCALL_CONTRACT;
@@ -85,35 +84,25 @@ extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pMod
         else
         {
             // reference to top level type
-            if ( pThisAssembly != pRefedAssembly )
+
+            SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
+
+            // Generate AssemblyRef
+            IfFailThrow( pEmit->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
+            tkResolution = pThisAssembly->AddAssemblyRef(pRefedAssembly, pAssemblyEmit);
+
+            // Add the assembly ref token and the manifest module it is referring to this module's rid map.
+            // This is needed regardless of whether the dynamic assembly has run access. Even in Save-only
+            // or Refleciton-only mode, CreateType() of the referencing type may still need the referenced
+            // type to be resolved and loaded, e.g. if the referencing type is a subclass of the referenced type.
+            //
+            // Don't cache if there is assembly associated with the token already. The assembly ref resolution
+            // can be ambiguous because of reflection emit does not require unique assembly names.
+            // We always let the first association win. Ideally, we would disallow this situation by throwing
+            // exception, but that would be a breaking change.
+            if(pModule->LookupAssemblyRef(tkResolution) == NULL)
             {
-                SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
-
-                // Generate AssemblyRef
-                IfFailThrow( pEmit->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
-                tkResolution = pThisAssembly->AddAssemblyRef(pRefedAssembly, pAssemblyEmit);
-
-                // Add the assembly ref token and the manifest module it is referring to this module's rid map.
-                // This is needed regardless of whether the dynamic assembly has run access. Even in Save-only
-                // or Refleciton-only mode, CreateType() of the referencing type may still need the referenced
-                // type to be resolved and loaded, e.g. if the referencing type is a subclass of the referenced type.
-                //
-                // Don't cache if there is assembly associated with the token already. The assembly ref resolution
-                // can be ambiguous because of reflection emit does not require unique assembly names.
-                // We always let the first association win. Ideally, we would disallow this situation by throwing
-                // exception, but that would be a breaking change.
-                if(pModule->LookupAssemblyRef(tkResolution) == NULL)
-                {
-                    pModule->ForceStoreAssemblyRef(tkResolution, pRefedAssembly);
-                }
-            }
-            else
-            {
-                _ASSERTE(pModule != pRefedModule);
-                _ASSERTE(wszRefedModuleFileName != NULL);
-
-                // Generate ModuleRef
-                IfFailThrow(pEmit->DefineModuleRef(wszRefedModuleFileName, &tkResolution));
+                pModule->ForceStoreAssemblyRef(tkResolution, pRefedAssembly);
             }
         }
 
@@ -256,13 +245,13 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModul
     }
 
     SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
-    IfFailThrow( pRefingAssembly->GetManifestModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
+    IfFailThrow( pRefingAssembly->GetModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
 
     CQuickBytes             qbNewSig;
     ULONG                   cbNewSig;
 
     IfFailThrow( pRefedModule->GetMDImport()->TranslateSigWithScope(
-        pRefedAssembly->GetManifestImport(),
+        pRefedAssembly->GetMDImport(),
         NULL, 0,        // hash value
         pvComSig,
         cbComSig,
@@ -335,7 +324,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
         Assembly * pRefingAssembly = pModule->GetAssembly();
 
         SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
-        IfFailThrow( pRefingAssembly->GetManifestModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
+        IfFailThrow( pRefingAssembly->GetModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
 
         CQuickBytes     qbNewSig;
         ULONG           cbNewSig;
@@ -349,7 +338,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
         }
 
         IfFailThrow( pMeth->GetMDImport()->TranslateSigWithScope(
-            pRefedAssembly->GetManifestImport(),
+            pRefedAssembly->GetMDImport(),
             NULL, 0,        // hash blob value
             pvComSig,
             cbComSig,
@@ -421,14 +410,14 @@ extern "C" mdMemberRef QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(QCall::Mo
                 COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
         }
         SafeComHolderPreemp<IMetaDataAssemblyEmit> pAssemblyEmit;
-        IfFailThrow( pRefingAssembly->GetManifestModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
+        IfFailThrow( pRefingAssembly->GetModule()->GetEmitter()->QueryInterface(IID_IMetaDataAssemblyEmit, (void **) &pAssemblyEmit) );
 
         // Translate the field signature this scope
         CQuickBytes     qbNewSig;
         ULONG           cbNewSig;
 
         IfFailThrow( pRefedMDImport->TranslateSigWithScope(
-        pRefedAssembly->GetManifestImport(),
+        pRefedAssembly->GetMDImport(),
         NULL, 0,            // hash value
         pvComSig,
         cbComSig,
@@ -499,14 +488,20 @@ extern "C" void QCALLTYPE ModuleBuilder_SetFieldRVAContent(QCall::ModuleHandle p
     if (pReflectionModule->m_sdataSection == 0)
         IfFailThrow( pGen->GetSectionCreate (".sdata", sdReadWrite, &pReflectionModule->m_sdataSection) );
 
+    // Define the alignment that the rva will be set to. Since the CoreCLR runtime only has hard alignment requirements
+    // up to 8 bytes, the highest alignment we may need is 8 byte alignment. This hard alignment requirement is only needed
+    // by Runtime.Helpers.CreateSpan<T>. Since the previous alignment was 4 bytes before CreateSpan was implemented, if the
+    // data isn't itself of size divisible by 8, just align to 4 to the memory cost of excess alignment.
+    DWORD alignment = (length % 8 == 0) ? 8 : 4;
+
     // Get the size of current .sdata section. This will be the RVA for this field within the section
     DWORD dwRVA = 0;
     IfFailThrow( pGen->GetSectionDataLen(pReflectionModule->m_sdataSection, &dwRVA) );
-    dwRVA = (dwRVA + sizeof(DWORD)-1) & ~(sizeof(DWORD)-1);
+    dwRVA = (dwRVA + alignment-1) & ~(alignment-1);
 
     // allocate the space in .sdata section
     void * pvBlob;
-    IfFailThrow( pGen->GetSectionBlock(pReflectionModule->m_sdataSection, length, sizeof(DWORD), (void**) &pvBlob) );
+    IfFailThrow( pGen->GetSectionBlock(pReflectionModule->m_sdataSection, length, alignment, (void**) &pvBlob) );
 
     // copy over the initialized data if specified
     if (pContent != NULL)

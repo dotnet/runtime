@@ -114,11 +114,11 @@ namespace System.Text
                                 if (bytes >= 0xfa40 && bytes <= 0xfa5b)
                                 {
                                     if (bytes <= 0xfa49)
-                                        bytes = bytes - 0x0b51;
+                                        bytes -= 0x0b51;
                                     else if (bytes >= 0xfa4a && bytes <= 0xfa53)
-                                        bytes = bytes - 0x072f6;
+                                        bytes -= 0x072f6;
                                     else if (bytes >= 0xfa54 && bytes <= 0xfa57)
-                                        bytes = bytes - 0x0b5b;
+                                        bytes -= 0x0b5b;
                                     else if (bytes == 0xfa58)
                                         bytes = 0x878a;
                                     else if (bytes == 0xfa59)
@@ -132,11 +132,11 @@ namespace System.Text
                                 {
                                     byte tc = unchecked((byte)bytes);
                                     if (tc < 0x5c)
-                                        bytes = bytes - 0x0d5f;
+                                        bytes -= 0x0d5f;
                                     else if (tc >= 0x80 && tc <= 0x9B)
-                                        bytes = bytes - 0x0d1d;
+                                        bytes -= 0x0d1d;
                                     else
-                                        bytes = bytes - 0x0d1c;
+                                        bytes -= 0x0d1c;
                                 }
                             }
 
@@ -1031,7 +1031,7 @@ namespace System.Text
                     // escape, so use 0x8e00 as katakana lead byte and keep same trail byte.
                     // 0x2a lead byte range is normally unused in JIS 0208, so shouldn't have
                     // any weird compatibility issues.
-                    if ((b2Bytes == true) && ((iBytes & 0xff00) == 0x2a00))
+                    if (b2Bytes && ((iBytes & 0xff00) == 0x2a00))
                     {
                         iBytes = (ushort)(iBytes & 0xff);
                         iBytes |= (LEADBYTE_HALFWIDTH << 8);   // Put us in the halfwidth katakana range
@@ -1110,7 +1110,7 @@ namespace System.Text
         }
 
         // We know we have an escape sequence, so check it starting with the byte after the escape
-        private ISO2022Modes CheckEscapeSequenceJP(byte[] bytes, int escapeCount)
+        private static ISO2022Modes CheckEscapeSequenceJP(byte[] bytes, int escapeCount)
         {
             // Have an escape sequence
             if (bytes[0] != ESCAPE)
@@ -1175,7 +1175,7 @@ namespace System.Text
             return ISO2022Modes.ModeInvalidEscape;
         }
 
-        private byte DecrementEscapeBytes(ref byte[] bytes, ref int count)
+        private static byte DecrementEscapeBytes(ref byte[] bytes, ref int count)
         {
             Debug.Assert(count > 0, "[ISO2022Encoding.DecrementEscapeBytes]count > 0");
 
@@ -1407,7 +1407,7 @@ namespace System.Text
         }
 
         // We know we have an escape sequence, so check it starting with the byte after the escape
-        private ISO2022Modes CheckEscapeSequenceKR(byte[] bytes, int escapeCount)
+        private static ISO2022Modes CheckEscapeSequenceKR(byte[] bytes, int escapeCount)
         {
             // Have an escape sequence
             if (bytes[0] != ESCAPE)
@@ -1803,8 +1803,7 @@ namespace System.Text
                 currentMode = ISO2022Modes.ModeASCII;
                 shiftInOutMode = ISO2022Modes.ModeASCII;
                 charLeftOver = (char)0;
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                m_fallbackBuffer?.Reset();
             }
 
             // Anything left in our encoder?
@@ -1838,8 +1837,7 @@ namespace System.Text
                 bytesLeftOver = new byte[4];
                 currentMode = ISO2022Modes.ModeASCII;
                 shiftInOutMode = ISO2022Modes.ModeASCII;
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                m_fallbackBuffer?.Reset();
             }
 
             // Anything left in our decoder?

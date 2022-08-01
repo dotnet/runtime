@@ -34,19 +34,17 @@ namespace System.Security.Cryptography
 
         public AsnEncodedData(AsnEncodedData asnEncodedData)
         {
-            if (asnEncodedData == null)
-                throw new ArgumentNullException(nameof(asnEncodedData));
+            ArgumentNullException.ThrowIfNull(asnEncodedData);
+
             Reset(asnEncodedData._oid, asnEncodedData._rawData);
         }
 
-        public AsnEncodedData(Oid? oid, byte[] rawData)
+        public AsnEncodedData(Oid? oid, byte[] rawData) : this(oid, rawData, skipCopy: false)
         {
-            Reset(oid, rawData);
         }
 
-        public AsnEncodedData(string oid, byte[] rawData)
+        public AsnEncodedData(string oid, byte[] rawData) : this(new Oid(oid), rawData, skipCopy: false)
         {
-            Reset(new Oid(oid), rawData);
         }
 
         /// <summary>
@@ -79,6 +77,21 @@ namespace System.Security.Cryptography
             Reset(new Oid(oid), rawData);
         }
 
+        internal AsnEncodedData(Oid? oid, byte[] rawData, bool skipCopy)
+        {
+            if (skipCopy)
+            {
+                ArgumentNullException.ThrowIfNull(rawData);
+                Oid = oid;
+                _rawData = rawData;
+            }
+            else
+            {
+                Reset(oid, rawData);
+            }
+
+        }
+
         public Oid? Oid
         {
             get => _oid;
@@ -96,16 +109,15 @@ namespace System.Security.Cryptography
             [MemberNotNull(nameof(_rawData))]
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 _rawData = value.CloneByteArray();
             }
         }
 
         public virtual void CopyFrom(AsnEncodedData asnEncodedData)
         {
-            if (asnEncodedData == null)
-                throw new ArgumentNullException(nameof(asnEncodedData));
+            ArgumentNullException.ThrowIfNull(asnEncodedData);
+
             Reset(asnEncodedData._oid, asnEncodedData._rawData);
         }
 

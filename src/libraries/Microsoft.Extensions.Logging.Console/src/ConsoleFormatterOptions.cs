@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Microsoft.Extensions.Logging.Console
@@ -21,7 +22,8 @@ namespace Microsoft.Extensions.Logging.Console
         /// <summary>
         /// Gets or sets format string used to format timestamp in logging messages. Defaults to <c>null</c>.
         /// </summary>
-        public string TimestampFormat { get; set; }
+        [StringSyntax(StringSyntaxAttribute.DateTimeFormat)]
+        public string? TimestampFormat { get; set; }
 
         /// <summary>
         /// Gets or sets indication whether or not UTC timezone should be used to format timestamps in logging messages. Defaults to <c>false</c>.

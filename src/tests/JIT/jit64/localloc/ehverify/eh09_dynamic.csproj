@@ -12,6 +12,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="eh09.cs" />
-    <ProjectReference Include="..\common\common.ilproj" />
+    <ProjectReference Include="..\..\..\common\localloc_common.ilproj" />
   </ItemGroup>
 </Project>

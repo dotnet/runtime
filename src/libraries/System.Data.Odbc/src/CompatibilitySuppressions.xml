@@ -147,85 +147,222 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Data.Odbc.ODBC32</Target>
-    <Left>runtimes/freebsd/lib/netcoreapp2.0/System.Data.Odbc.dll</Left>
+    <Left>lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
     <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
-    <Left>runtimes/freebsd/lib/netcoreapp2.0/System.Data.Odbc.dll</Left>
+    <Left>runtimes/freebsd/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
+    <Left>runtimes/freebsd/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
+    <Left>runtimes/illumos/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
+    <Left>runtimes/illumos/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
+    <Left>runtimes/ios/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
+    <Left>runtimes/ios/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
+    <Left>runtimes/linux/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
+    <Left>runtimes/linux/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
+    <Left>runtimes/osx/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
+    <Left>runtimes/osx/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
+    <Left>runtimes/solaris/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
+    <Left>runtimes/solaris/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
+    <Left>runtimes/tvos/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
+    <Left>runtimes/tvos/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
+    <Left>runtimes/win/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
+    <Left>runtimes/win/lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net6.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Data.Odbc.ODBC32</Target>
+    <Left>runtimes/freebsd/lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
+    <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
+    <Left>runtimes/freebsd/lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
     <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
-    <Left>runtimes/freebsd/lib/netcoreapp2.0/System.Data.Odbc.dll</Left>
+    <Left>runtimes/freebsd/lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
     <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Data.Odbc.ODBC32</Target>
-    <Left>runtimes/linux/lib/netcoreapp2.0/System.Data.Odbc.dll</Left>
+    <Left>runtimes/linux/lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
     <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
-    <Left>runtimes/linux/lib/netcoreapp2.0/System.Data.Odbc.dll</Left>
+    <Left>runtimes/linux/lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
     <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
-    <Left>runtimes/linux/lib/netcoreapp2.0/System.Data.Odbc.dll</Left>
+    <Left>runtimes/linux/lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
     <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Data.Odbc.ODBC32</Target>
-    <Left>runtimes/osx/lib/netcoreapp2.0/System.Data.Odbc.dll</Left>
+    <Left>runtimes/osx/lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
     <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
-    <Left>runtimes/osx/lib/netcoreapp2.0/System.Data.Odbc.dll</Left>
+    <Left>runtimes/osx/lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
     <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
-    <Left>runtimes/osx/lib/netcoreapp2.0/System.Data.Odbc.dll</Left>
+    <Left>runtimes/osx/lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
     <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Data.Odbc.ODBC32</Target>
-    <Left>runtimes/win/lib/netcoreapp2.0/System.Data.Odbc.dll</Left>
+    <Left>runtimes/win/lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
     <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
-    <Left>runtimes/win/lib/netcoreapp2.0/System.Data.Odbc.dll</Left>
+    <Left>runtimes/win/lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
     <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
-    <Left>runtimes/win/lib/netcoreapp2.0/System.Data.Odbc.dll</Left>
+    <Left>runtimes/win/lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
     <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcInfoMessageEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net7.0/System.Data.Odbc.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcRowUpdatedEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net7.0/System.Data.Odbc.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcRowUpdatingEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net7.0/System.Data.Odbc.dll</Right>
   </Suppression>
 </Suppressions>

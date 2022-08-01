@@ -14,30 +14,6 @@
 #endif
 
 static RESULT
-test_spawn_sync (void)
-{
-#if HAVE_G_SPAWN
-	gchar *out;
-	gchar *err;
-	gint status = -1;
-	GError *gerror = NULL;
-
-	if (!g_spawn_command_line_sync ("ls", &out, &err, &status, &gerror))
-		return FAILED ("Error executing 'ls'");
-
-	if (status != 0)
-		return FAILED ("Status is %d", status);
-
-	if (out == NULL || strlen (out) == 0)
-		return FAILED ("Didn't get any output from ls!?");
-
-	g_free (out);
-	g_free (err);
-#endif
-	return OK;
-}
-
-static RESULT
 test_spawn_async (void)
 {
 #if HAVE_G_SPAWN
@@ -75,8 +51,7 @@ g_spawn_async_with_pipes (const gchar *working_directory,
 }
 
 static Test spawn_tests [] = {
-	{"g_shell_spawn_sync", test_spawn_sync},
-	{"g_shell_spawn_async_with_pipes", test_spawn_async},
+	{"g_spawn_async_with_pipes", test_spawn_async},
 	{NULL, NULL}
 };
 

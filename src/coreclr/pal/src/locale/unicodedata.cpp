@@ -5,6 +5,7 @@
 
 //
 // THIS FILE IS GENERATED. DO NOT HAND EDIT.
+// IF YOU NEED TO UPDATE UNICODE VERSION FOLLOW THE GUIDE AT src/libraries/System.Private.CoreLib/Tools/GenUnicodeProp/Updating-Unicode-Versions.md
 //
 
 CONST UnicodeDataRec UnicodeData[] = {
@@ -1783,6 +1784,7 @@ CONST UnicodeDataRec UnicodeData[] = {
   { 0x2C2C, UPPER_CASE, 0x2C5C },
   { 0x2C2D, UPPER_CASE, 0x2C5D },
   { 0x2C2E, UPPER_CASE, 0x2C5E },
+  { 0x2C2F, UPPER_CASE, 0x2C5F },
   { 0x2C30, LOWER_CASE, 0x2C00 },
   { 0x2C31, LOWER_CASE, 0x2C01 },
   { 0x2C32, LOWER_CASE, 0x2C02 },
@@ -1830,6 +1832,7 @@ CONST UnicodeDataRec UnicodeData[] = {
   { 0x2C5C, LOWER_CASE, 0x2C2C },
   { 0x2C5D, LOWER_CASE, 0x2C2D },
   { 0x2C5E, LOWER_CASE, 0x2C2E },
+  { 0x2C5F, LOWER_CASE, 0x2C2F },
   { 0x2C60, UPPER_CASE, 0x2C61 },
   { 0x2C61, LOWER_CASE, 0x2C60 },
   { 0x2C62, UPPER_CASE, 0x26B },
@@ -2213,6 +2216,8 @@ CONST UnicodeDataRec UnicodeData[] = {
   { 0xA7BD, LOWER_CASE, 0xA7BC },
   { 0xA7BE, UPPER_CASE, 0xA7BF },
   { 0xA7BF, LOWER_CASE, 0xA7BE },
+  { 0xA7C0, UPPER_CASE, 0xA7C1 },
+  { 0xA7C1, LOWER_CASE, 0xA7C0 },
   { 0xA7C2, UPPER_CASE, 0xA7C3 },
   { 0xA7C3, LOWER_CASE, 0xA7C2 },
   { 0xA7C4, UPPER_CASE, 0xA794 },
@@ -2222,6 +2227,12 @@ CONST UnicodeDataRec UnicodeData[] = {
   { 0xA7C8, LOWER_CASE, 0xA7C7 },
   { 0xA7C9, UPPER_CASE, 0xA7CA },
   { 0xA7CA, LOWER_CASE, 0xA7C9 },
+  { 0xA7D0, UPPER_CASE, 0xA7D1 },
+  { 0xA7D1, LOWER_CASE, 0xA7D0 },
+  { 0xA7D6, UPPER_CASE, 0xA7D7 },
+  { 0xA7D7, LOWER_CASE, 0xA7D6 },
+  { 0xA7D8, UPPER_CASE, 0xA7D9 },
+  { 0xA7D9, LOWER_CASE, 0xA7D8 },
   { 0xA7F5, UPPER_CASE, 0xA7F6 },
   { 0xA7F6, LOWER_CASE, 0xA7F5 },
   { 0xAB53, LOWER_CASE, 0xA7B3 },

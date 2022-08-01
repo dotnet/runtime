@@ -45,27 +45,9 @@ namespace System.Net
             }
         }
 
-        private static HeaderInfoTable HeaderInfo
-        {
-            get
-            {
-                if (_headerInfo == null)
-                {
-                    _headerInfo = new HeaderInfoTable();
-                }
-                return _headerInfo;
-            }
-        }
+        private static HeaderInfoTable HeaderInfo => _headerInfo ??= new HeaderInfoTable();
 
-        private NameValueCollection InnerCollection
-        {
-            get
-            {
-                if (_innerCollection == null)
-                    _innerCollection = new NameValueCollection(ApproxHighAvgNumHeaders, CaseInsensitiveAscii.StaticInstance);
-                return _innerCollection;
-            }
-        }
+        private NameValueCollection InnerCollection => _innerCollection ??= new NameValueCollection(ApproxHighAvgNumHeaders, CaseInsensitiveAscii.StaticInstance);
 
         private bool AllowHttpResponseHeader
         {
@@ -278,10 +260,7 @@ namespace System.Net
         public override void Clear()
         {
             InvalidateCachedArrays();
-            if (_innerCollection != null)
-            {
-                _innerCollection.Clear();
-            }
+            _innerCollection?.Clear();
         }
 
         public override string? Get(int index)
@@ -344,14 +323,7 @@ namespace System.Net
         public override void Add(string name, string? value)
 #pragma warning restore CS8765
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (name.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptyStringCall, nameof(name)), nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             name = HttpValidationHelpers.CheckBadHeaderNameChars(name);
             value = HttpValidationHelpers.CheckBadHeaderValueChars(value);

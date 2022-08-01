@@ -10,7 +10,9 @@
 #include "asmconstants.h"
 
 .syntax unified
+#ifndef __armv6__
 .thumb
+#endif
 
 #define CONTEXT_ARM     0x00200000
 

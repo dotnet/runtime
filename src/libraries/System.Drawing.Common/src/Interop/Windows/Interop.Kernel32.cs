@@ -3,23 +3,34 @@
 
 using System;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 
 internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        public static extern int GetSystemDefaultLCID();
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        public static partial int GetSystemDefaultLCID();
 
-        [DllImport(Libraries.Kernel32, SetLastError = true, ExactSpelling = true, EntryPoint = "GlobalAlloc", CharSet = CharSet.Auto)]
-        internal static extern IntPtr IntGlobalAlloc(int uFlags, UIntPtr dwBytes); // size should be 32/64bits compatible
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "GlobalAlloc", SetLastError = true)]
+        internal static partial IntPtr IntGlobalAlloc(int uFlags, UIntPtr dwBytes); // size should be 32/64bits compatible
 
         internal static IntPtr GlobalAlloc(int uFlags, uint dwBytes)
         {
             return IntGlobalAlloc(uFlags, new UIntPtr(dwBytes));
         }
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        internal static extern IntPtr SelectObject(HandleRef hdc, HandleRef obj);
+        [LibraryImport(Libraries.Gdi32, SetLastError = true)]
+        internal static partial IntPtr SelectObject(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hdc,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef obj);
     }
 }

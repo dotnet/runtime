@@ -3,6 +3,10 @@
 
 #include "createdump.h"
 
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)
+long g_pageSize = 0;
+#endif
+
 //
 // The Linux/MacOS create dump code
 //
@@ -14,16 +18,22 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     std::string dumpPath;
     bool result = false;
 
+    // Initialize PAGE_SIZE
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)
+    g_pageSize = sysconf(_SC_PAGESIZE);
+#endif
+    TRACE("PAGE_SIZE %d\n", PAGE_SIZE);
+
     // Initialize the crash info 
     if (!crashInfo->Initialize())
     {
         goto exit;
     }
-    printf("Gathering state for process %d %s\n", pid, crashInfo->Name().c_str());
+    printf_status("Gathering state for process %d %s\n", pid, crashInfo->Name().c_str());
 
     if (signal != 0 || crashThread != 0)
     {
-        printf("Crashing thread %08x signal %08x\n", crashThread, signal);
+        printf_status("Crashing thread %08x signal %08x\n", crashThread, signal);
     }
 
     // Suspend all the threads in the target process and build the list of threads
@@ -52,7 +62,10 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     {
         goto exit;
     }
-    fprintf(stdout, "Writing %s to file %s\n", dumpType, dumpPath.c_str());
+    // Join all adjacent memory regions
+    crashInfo->CombineMemoryRegions();
+
+    printf_status("Writing %s to file %s\n", dumpType, dumpPath.c_str());
 
     // Write the actual dump file
     if (!dumpWriter.OpenDump(dumpPath.c_str()))
@@ -61,7 +74,7 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     }
     if (!dumpWriter.WriteDump())
     {
-        fprintf(stderr, "Writing dump FAILED\n");
+        printf_error("Writing dump FAILED\n");
 
         // Delete the partial dump file on error
         remove(dumpPath.c_str());
@@ -69,6 +82,22 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     }
     result = true;
 exit:
+    if (kill(pid, 0) == 0)
+    {
+        printf_status("Target process is alive\n");
+    }
+    else
+    {
+        int err = errno;
+        if (err == ESRCH)
+        {
+            printf_error("Target process terminated\n");
+        }
+        else
+        {
+            printf_error("kill(%d, 0) FAILED %s (%d)\n", pid, strerror(err), err);
+        }
+    }
     crashInfo->CleanupAndResumeProcess();
     return result;
 }

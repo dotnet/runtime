@@ -20,17 +20,9 @@ namespace System.Net.Http
         private HttpMessageHandlerStage? _handler;
         private bool _disposed;
 
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(SocketsHttpHandler));
-            }
-        }
-
         private void CheckDisposedOrStarted()
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (_handler != null)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);
@@ -56,7 +48,7 @@ namespace System.Net.Http
         [AllowNull]
         public CookieContainer CookieContainer
         {
-            get => _settings._cookieContainer ?? (_settings._cookieContainer = new CookieContainer());
+            get => _settings._cookieContainer ??= new CookieContainer();
             set
             {
                 CheckDisposedOrStarted();
@@ -213,7 +205,7 @@ namespace System.Net.Http
         [AllowNull]
         public SslClientAuthenticationOptions SslOptions
         {
-            get => _settings._sslOptions ?? (_settings._sslOptions = new SslClientAuthenticationOptions());
+            get => _settings._sslOptions ??= new SslClientAuthenticationOptions();
             set
             {
                 CheckDisposedOrStarted();
@@ -422,7 +414,7 @@ namespace System.Net.Http
         /// Gets a writable dictionary (that is, a map) of custom properties for the HttpClient requests. The dictionary is initialized empty; you can insert and query key-value pairs for your custom handlers and special processing.
         /// </summary>
         public IDictionary<string, object?> Properties =>
-            _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
+            _settings._properties ??= new Dictionary<string, object?>();
 
         /// <summary>
         /// Gets or sets a callback that returns the <see cref="Encoding"/> to encode the value for the specified request header name,
@@ -534,10 +526,7 @@ namespace System.Net.Http
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
+            ArgumentNullException.ThrowIfNull(request);
 
             if (request.Version.Major >= 2)
             {
@@ -550,7 +539,7 @@ namespace System.Net.Http
                 throw new NotSupportedException(SR.Format(SR.net_http_upgrade_not_enabled_sync, nameof(Send), request.VersionPolicy));
             }
 
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -567,12 +556,9 @@ namespace System.Net.Http
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
+            ArgumentNullException.ThrowIfNull(request);
 
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -590,7 +576,7 @@ namespace System.Net.Http
             return handler.SendAsync(request, cancellationToken);
         }
 
-        private Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
+        private static Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
         {
             if (request.Version.Major == 0)
             {

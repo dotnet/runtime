@@ -2,8 +2,8 @@
  * \file
  * Routines for encoding SRE builders into a
  * MonoDynamicImage and generating tokens.
- *   
- * 
+ *
+ *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
  *
@@ -62,12 +62,12 @@ sigbuffer_init (SigBuffer *buf, int size)
 }
 
 static void
-sigbuffer_make_room (SigBuffer *buf, int size)
+sigbuffer_make_room (SigBuffer *buf, intptr_t size)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
 	if (buf->end - buf->p < size) {
-		int new_size = buf->end - buf->buf + size + 32;
+		intptr_t new_size = buf->end - buf->buf + size + 32;
 		char *p = (char *)g_realloc (buf->buf, new_size);
 		size = buf->p - buf->buf;
 		buf->buf = p;
@@ -120,11 +120,11 @@ sigbuffer_add_to_blob_cached (MonoDynamicImage *assembly, SigBuffer *buf)
 
 	char blob_size [8];
 	char *b = blob_size;
-	guint32 size = buf->p - buf->buf;
+	guint32 size = GPTRDIFF_TO_UINT32 (buf->p - buf->buf);
 	/* store length */
-	g_assert (size <= (buf->end - buf->buf));
+	g_assert (size <= GPTRDIFF_TO_UINT32 (buf->end - buf->buf));
 	mono_metadata_encode_value (size, b, &b);
-	return mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, buf->buf, size);
+	return mono_dynamic_image_add_to_blob_cached (assembly, blob_size, GPTRDIFF_TO_INT (b - blob_size), buf->buf, size);
 }
 
 
@@ -133,7 +133,6 @@ encode_generic_class (MonoDynamicImage *assembly, MonoGenericClass *gclass, SigB
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
 
-	int i;
 	MonoGenericInst *class_inst;
 	MonoClass *klass;
 
@@ -147,7 +146,7 @@ encode_generic_class (MonoDynamicImage *assembly, MonoGenericClass *gclass, SigB
 	sigbuffer_add_value (buf, mono_dynimage_encode_typedef_or_ref_full (assembly, m_class_get_byval_arg (klass), FALSE));
 
 	sigbuffer_add_value (buf, class_inst->type_argc);
-	for (i = 0; i < class_inst->type_argc; ++i)
+	for (guint i = 0; i < class_inst->type_argc; ++i)
 		encode_type (assembly, class_inst->type_argv [i], buf);
 
 }
@@ -161,7 +160,7 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 		g_assert_not_reached ();
 		return;
 	}
-		
+
 	if (m_type_is_byref (type))
 		sigbuffer_add_value (buf, MONO_TYPE_BYREF);
 
@@ -343,13 +342,13 @@ handle_enum:
 		break;
 	case MONO_TYPE_VALUETYPE: {
 		MonoClass *klass = val->vtable->klass;
-		
+
 		if (m_class_is_enumtype (klass)) {
 			*ret_type = mono_class_enum_basetype_internal (klass)->type;
 			goto handle_enum;
 		} else if (mono_is_corlib_image (m_class_get_image (klass)) && strcmp (m_class_get_name_space (klass), "System") == 0 && strcmp (m_class_get_name (klass), "DateTime") == 0) {
 			len = 8;
-		} else 
+		} else
 			g_error ("we can't encode valuetypes, we should have never reached this line");
 		break;
 	}
@@ -370,7 +369,7 @@ handle_enum:
 			g_free (swapped);
 		}
 #else
-		idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, mono_string_chars_internal (str), len);
+		idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, GPTRDIFF_TO_INT (b - blob_size), mono_string_chars_internal (str), len);
 #endif
 
 		g_free (buf);
@@ -390,7 +389,7 @@ handle_enum:
 	swap_with_size (blob_size, (const char*)box_val, len, 1);
 	mono_image_add_stream_data (&assembly->blob, blob_size, len);
 #else
-	idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, box_val, len);
+	idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, GPTRDIFF_TO_INT (b - blob_size), box_val, len);
 #endif
 
 	g_free (buf);
@@ -422,7 +421,7 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoDynamicTable *table;
-	guint32 token, enclosing;
+	guint32 token;
 	MonoClass *klass;
 
 	/* if the type requires a typespec, we must try that first*/
@@ -438,7 +437,7 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 	/*
 	 * If it's in the same module and not a generic type parameter:
 	 */
-	if ((m_class_get_image (klass) == &assembly->image) && (type->type != MONO_TYPE_VAR) && 
+	if ((m_class_get_image (klass) == &assembly->image) && (type->type != MONO_TYPE_VAR) &&
 			(type->type != MONO_TYPE_MVAR)) {
 		token = MONO_TYPEDEFORREF_TYPEDEF | (MONO_HANDLE_GETVAL (tb, table_idx) << MONO_TYPEDEFORREF_BITS);
 		/* This function is called multiple times from sre and sre-save, so same object is okay */
@@ -446,11 +445,8 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 		goto leave;
 	}
 
-	if (m_class_get_nested_in (klass)) {
-		enclosing = mono_dynimage_encode_typedef_or_ref_full (assembly, m_class_get_byval_arg (m_class_get_nested_in (klass)), FALSE);
-		/* get the typeref idx of the enclosing type */
-		enclosing >>= MONO_TYPEDEFORREF_BITS;
-	}
+	if (m_class_get_nested_in (klass))
+		mono_dynimage_encode_typedef_or_ref_full (assembly, m_class_get_byval_arg (m_class_get_nested_in (klass)), FALSE);
 	table = &assembly->tables [MONO_TABLE_TYPEREF];
 	token = MONO_TYPEDEFORREF_TYPEREF | (table->next_idx << MONO_TYPEDEFORREF_BITS); /* typeref */
 	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
@@ -491,8 +487,9 @@ reflection_sighelper_get_signature_local (MonoReflectionSigHelperHandle sig, Mon
 	MonoReflectionModuleBuilderHandle module = MONO_HANDLE_NEW_GET (MonoReflectionModuleBuilder, sig, module);
 	MonoDynamicImage *assembly = MONO_HANDLE_IS_NULL (module) ? NULL : MONO_HANDLE_GETVAL (module, dynamic_image);
 	MonoArrayHandle sig_arguments = MONO_HANDLE_NEW_GET (MonoArray, sig, arguments);
-	guint32 na = MONO_HANDLE_IS_NULL (sig_arguments) ? 0 : mono_array_handle_length (sig_arguments);
-	guint32 buflen, i;
+	guint32 na = MONO_HANDLE_IS_NULL (sig_arguments) ? 0 : GUINTPTR_TO_UINT32 (mono_array_handle_length (sig_arguments));
+	guint32 i;
+	size_t buflen;
 	SigBuffer buf;
 
 	error_init (error);
@@ -530,8 +527,9 @@ reflection_sighelper_get_signature_field (MonoReflectionSigHelperHandle sig, Mon
 	MonoReflectionModuleBuilderHandle module = MONO_HANDLE_NEW_GET (MonoReflectionModuleBuilder, sig, module);
 	MonoDynamicImage *assembly = MONO_HANDLE_GETVAL (module, dynamic_image);
 	MonoArrayHandle sig_arguments = MONO_HANDLE_NEW_GET (MonoArray, sig, arguments);
-	guint32 na = MONO_HANDLE_IS_NULL (sig_arguments) ? 0 : mono_array_handle_length (sig_arguments);
-	guint32 buflen, i;
+	guint32 na = MONO_HANDLE_IS_NULL (sig_arguments) ? 0 : GUINTPTR_TO_UINT32 (mono_array_handle_length (sig_arguments));
+	guint32 i;
+	size_t buflen;
 	SigBuffer buf;
 
 	error_init (error);

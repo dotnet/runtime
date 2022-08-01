@@ -95,10 +95,11 @@ namespace System.Security.Cryptography.Xml
         /// </exception>
         public override void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
+
             if (value.LocalName != KeyValueElementName
                 || value.NamespaceURI != SignedXml.XmlDsigNamespaceUrl)
             {

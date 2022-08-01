@@ -1,0 +1,1676 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+
+using Internal.IL;
+using Internal.Text;
+using Internal.TypeSystem;
+
+using ILCompiler.DependencyAnalysisFramework;
+
+namespace ILCompiler.DependencyAnalysis
+{
+    public enum GenericLookupResultReferenceType
+    {
+        Direct,             // The slot stores a direct pointer to the target
+        Indirect,           // The slot is an indirection cell which points to the direct pointer
+        ConditionalIndirect, // The slot may be a direct pointer or an indirection cell, depending on the last digit
+    }
+
+    // Represents a generic lookup within a canonical method body.
+    // TODO: unify with NativeFormat.FixupSignatureKind
+    public enum LookupResultType
+    {
+        Invalid,
+        MethodTable,             // a type
+        UnwrapNullable,     // a type (The type T described by a type spec that is generic over Nullable<T>)
+        NonGcStatic,        // the non-gc statics of a type
+        GcStatic,           // the gc statics of a type
+        Method,             // a method
+        InterfaceDispatchCell,  // the dispatch cell for calling an interface method
+        MethodDictionary,   // a dictionary for calling a generic method
+        UnboxingStub,       // the unboxing stub for a method
+        ArrayType,          // an array of type
+        DefaultCtor,        // default ctor of a type
+        AllocObject,        // the allocator of a type
+        GvmVtableOffset,    // vtable offset of a generic virtual method
+        ProfileCounter,     // profiling counter cell
+        MethodLdToken,      // a ldtoken result for a method
+        FieldLdToken,       // a ldtoken result for a field
+        Field,              // a field descriptor
+        IsInst,             // isinst helper
+        CastClass,          // castclass helper
+        AllocArray,         // the array allocator of a type
+        TypeSize,           // size of the type
+        FieldOffset,        // field offset
+        CallingConvention_NoInstParam,      // CallingConventionConverterThunk NO_INSTANTIATING_PARAM
+        CallingConvention_HasInstParam,     // CallingConventionConverterThunk HAS_INSTANTIATING_PARAM
+        CallingConvention_MaybeInstParam,   // CallingConventionConverterThunk MAYBE_INSTANTIATING_PARAM
+        VtableOffset,       // Offset of a virtual method into the type's vtable
+        Constrained,        // ConstrainedCallDesc
+        ConstrainedDirect,  // Direct ConstrainedCallDesc
+        Integer,            // Integer
+        UnboxingMethod,     // UnboxingMethod
+    }
+
+    public interface IGenericLookupResultTocWriter
+    {
+        void WriteData(GenericLookupResultReferenceType referenceType, LookupResultType slotType, TypeSystemEntity context);
+        void WriteIntegerSlot(int value);
+    }
+
+    public struct GenericLookupResultContext
+    {
+        private readonly TypeSystemEntity _canonicalOwner;
+
+        public readonly Instantiation TypeInstantiation;
+
+        public readonly Instantiation MethodInstantiation;
+
+        public TypeSystemEntity Context
+        {
+            get
+            {
+                if (_canonicalOwner is TypeDesc)
+                {
+                    var owningTypeDefinition = (MetadataType)((TypeDesc)_canonicalOwner).GetTypeDefinition();
+                    Debug.Assert(owningTypeDefinition.Instantiation.Length == TypeInstantiation.Length);
+                    Debug.Assert(MethodInstantiation.IsNull || MethodInstantiation.Length == 0);
+
+                    return owningTypeDefinition.MakeInstantiatedType(TypeInstantiation);
+                }
+
+                Debug.Assert(_canonicalOwner is MethodDesc);
+                MethodDesc owningMethodDefinition = ((MethodDesc)_canonicalOwner).GetTypicalMethodDefinition();
+                Debug.Assert(owningMethodDefinition.Instantiation.Length == MethodInstantiation.Length);
+
+                MethodDesc concreteMethod = owningMethodDefinition;
+                if (!TypeInstantiation.IsNull && TypeInstantiation.Length > 0)
+                {
+                    TypeDesc owningType = owningMethodDefinition.OwningType;
+                    Debug.Assert(owningType.Instantiation.Length == TypeInstantiation.Length);
+                    concreteMethod = owningType.Context.GetMethodForInstantiatedType(owningMethodDefinition, ((MetadataType)owningType).MakeInstantiatedType(TypeInstantiation));
+                }
+                else
+                {
+                    Debug.Assert(owningMethodDefinition.OwningType.Instantiation.IsNull
+                        || owningMethodDefinition.OwningType.Instantiation.Length == 0);
+                }
+
+                return concreteMethod.MakeInstantiatedMethod(MethodInstantiation);
+            }
+        }
+
+        public GenericLookupResultContext(TypeSystemEntity canonicalOwner, Instantiation typeInst, Instantiation methodInst)
+        {
+            _canonicalOwner = canonicalOwner;
+            TypeInstantiation = typeInst;
+            MethodInstantiation = methodInst;
+        }
+    }
+
+    /// <summary>
+    /// Represents the result of a generic lookup within a canonical method body.
+    /// The concrete artifact the generic lookup will result in can only be determined after substituting
+    /// runtime determined types with a concrete generic context. Use
+    /// <see cref="GetTarget(NodeFactory, Instantiation, Instantiation, GenericDictionaryNode)"/> to obtain the concrete
+    /// node the result points to.
+    /// </summary>
+    public abstract class GenericLookupResult
+    {
+        protected abstract int ClassCode { get; }
+        public abstract ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary);
+        public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
+        public abstract override string ToString();
+        protected abstract int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer);
+        protected abstract bool EqualsImpl(GenericLookupResult obj);
+        protected abstract int GetHashCodeImpl();
+
+        public sealed override bool Equals(object obj)
+        {
+            GenericLookupResult other = obj as GenericLookupResult;
+            if (obj == null)
+                return false;
+
+            return ClassCode == other.ClassCode && EqualsImpl(other);
+        }
+
+        public sealed override int GetHashCode()
+        {
+            return ClassCode * 31 + GetHashCodeImpl();
+        }
+
+        public virtual void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
+        {
+            ISymbolNode target;
+            try
+            {
+                target = GetTarget(factory, dictionary);
+            }
+            catch (TypeSystemException)
+            {
+                target = null;
+            }
+
+            if (target == null)
+            {
+                builder.EmitZeroPointer();
+            }
+            else if (LookupResultReferenceType(factory) == GenericLookupResultReferenceType.ConditionalIndirect)
+            {
+                builder.EmitPointerRelocOrIndirectionReference(target);
+            }
+            else
+            {
+                builder.EmitPointerReloc(target);
+            }
+        }
+
+        public virtual GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
+        {
+            return GenericLookupResultReferenceType.Direct;
+        }
+
+        public abstract NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory);
+
+        public abstract void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer);
+
+        // Call this api to get non-reloc dependencies that arise from use of a dictionary lookup
+        public virtual IEnumerable<DependencyNodeCore<NodeFactory>> NonRelocDependenciesFromUsage(NodeFactory factory)
+        {
+            return Array.Empty<DependencyNodeCore<NodeFactory>>();
+        }
+
+        public class Comparer : IComparer<GenericLookupResult>
+        {
+            private TypeSystemComparer _comparer;
+
+            public Comparer(TypeSystemComparer comparer)
+            {
+                _comparer = comparer;
+            }
+
+            public int Compare(GenericLookupResult x, GenericLookupResult y)
+            {
+                if (x == y)
+                {
+                    return 0;
+                }
+
+                int codeX = x.ClassCode;
+                int codeY = y.ClassCode;
+                if (codeX == codeY)
+                {
+                    Debug.Assert(x.GetType() == y.GetType());
+
+                    int result = x.CompareToImpl(y, _comparer);
+
+                    // We did a reference equality check above so an "Equal" result is not expected
+                    Debug.Assert(result != 0);
+
+                    return result;
+                }
+                else
+                {
+                    Debug.Assert(x.GetType() != y.GetType());
+                    return codeX > codeY ? -1 : 1;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to an MethodTable.
+    /// </summary>
+    public sealed class TypeHandleGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        protected override int ClassCode => 1623839081;
+
+        public TypeHandleGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            // We are getting a maximally constructable type symbol because this might be something passed to newobj.
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+
+            factory.TypeSystemContext.DetectGenericCycles(dictionary.Context, instantiatedType);
+
+            return factory.MaximallyConstructableType(instantiatedType);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("TypeHandle_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public TypeDesc Type => _type;
+        public override string ToString() => $"TypeHandle: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.TypeHandleDictionarySlot(_type);
+        }
+
+        public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
+        {
+            if (factory.CompilationModuleGroup.CanHaveReferenceThroughImportTable)
+            {
+                return GenericLookupResultReferenceType.ConditionalIndirect;
+            }
+            else
+            {
+                return GenericLookupResultReferenceType.Direct;
+            }
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.MethodTable, _type);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((TypeHandleGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((TypeHandleGenericLookupResult)obj)._type == _type;
+        }
+    }
+
+
+    /// <summary>
+    /// Generic lookup result that points to an MethodTable where if the type is Nullable&lt;X&gt; the MethodTable is X
+    /// </summary>
+    public sealed class UnwrapNullableTypeHandleGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        protected override int ClassCode => 53521918;
+
+        public UnwrapNullableTypeHandleGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+
+            // Unwrap the nullable type if necessary
+            if (instantiatedType.IsNullable)
+                instantiatedType = instantiatedType.Instantiation[0];
+
+            // We are getting a constructed type symbol because this might be something passed to newobj.
+            return factory.ConstructedTypeSymbol(instantiatedType);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("UnwrapNullable_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public TypeDesc Type => _type;
+        public override string ToString() => $"UnwrapNullable: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.UnwrapNullableTypeDictionarySlot(_type);
+        }
+
+        public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
+        {
+            if (factory.CompilationModuleGroup.CanHaveReferenceThroughImportTable)
+            {
+                return GenericLookupResultReferenceType.ConditionalIndirect;
+            }
+            else
+            {
+                return GenericLookupResultReferenceType.Direct;
+            }
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.UnwrapNullable, _type);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((UnwrapNullableTypeHandleGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((UnwrapNullableTypeHandleGenericLookupResult)obj)._type == _type;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that puts a field offset into the generic dictionary.
+    /// </summary>
+    internal sealed class FieldOffsetGenericLookupResult : GenericLookupResult
+    {
+        private FieldDesc _field;
+
+        protected override int ClassCode => -1670293557;
+
+        public FieldOffsetGenericLookupResult(FieldDesc field)
+        {
+            Debug.Assert(field.OwningType.IsRuntimeDeterminedSubtype, "Concrete field in a generic dictionary?");
+            _field = field;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            Debug.Fail("GetTarget for a FieldOffsetGenericLookupResult doesn't make sense. It isn't a pointer being emitted");
+            return null;
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
+        {
+            FieldDesc instantiatedField = _field.GetNonRuntimeDeterminedFieldFromRuntimeDeterminedFieldViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            int offset = instantiatedField.Offset.AsInt;
+            builder.EmitNaturalInt(offset);
+        }
+
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("FieldOffset_");
+            sb.Append(nameMangler.GetMangledFieldName(_field));
+        }
+
+        public override string ToString() => $"FieldOffset: {_field}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.FieldOffsetDictionarySlot(_field);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.FieldOffset, _field);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_field, ((FieldOffsetGenericLookupResult)other)._field);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _field.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((FieldOffsetGenericLookupResult)obj)._field == _field;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that puts a vtable offset into the generic dictionary.
+    /// </summary>
+    internal sealed class VTableOffsetGenericLookupResult : GenericLookupResult
+    {
+        private MethodDesc _method;
+
+        protected override int ClassCode => 386794182;
+
+        public VTableOffsetGenericLookupResult(MethodDesc method)
+        {
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod, "Concrete method in a generic dictionary?");
+            _method = method;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            Debug.Fail("GetTarget for a VTableOffsetGenericLookupResult doesn't make sense. It isn't a pointer being emitted");
+            return null;
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
+        {
+            Debug.Fail("VTableOffset contents should only be generated into generic dictionaries at runtime");
+            builder.EmitNaturalInt(0);
+        }
+
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("VTableOffset_");
+            sb.Append(nameMangler.GetMangledMethodName(_method));
+        }
+
+        public override string ToString() => $"VTableOffset: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.VTableOffsetDictionarySlot(_method);
+        }
+
+        public override IEnumerable<DependencyNodeCore<NodeFactory>> NonRelocDependenciesFromUsage(NodeFactory factory)
+        {
+            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Universal);
+
+            // If we're producing a full vtable for the type, we don't need to report virtual method use.
+            if (factory.VTable(canonMethod.OwningType).HasFixedSlots)
+                return Array.Empty<DependencyNodeCore<NodeFactory>>();
+
+            return new DependencyNodeCore<NodeFactory>[] {
+                factory.VirtualMethodUse(canonMethod)
+            };
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.VtableOffset, _method);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_method, ((VTableOffsetGenericLookupResult)other)._method);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _method.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((VTableOffsetGenericLookupResult)obj)._method == _method;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to a RuntimeMethodHandle.
+    /// </summary>
+    internal sealed class MethodHandleGenericLookupResult : GenericLookupResult
+    {
+        private MethodDesc _method;
+
+        protected override int ClassCode => 394272689;
+
+        public MethodHandleGenericLookupResult(MethodDesc method)
+        {
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod, "Concrete method in a generic dictionary?");
+            _method = method;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            return factory.RuntimeMethodHandle(instantiatedMethod);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("MethodHandle_");
+            sb.Append(nameMangler.GetMangledMethodName(_method));
+        }
+
+        public override string ToString() => $"MethodHandle: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.MethodLdTokenDictionarySlot(_method);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.MethodLdToken, _method);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_method, ((MethodHandleGenericLookupResult)other)._method);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _method.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((MethodHandleGenericLookupResult)obj)._method == _method;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to a RuntimeFieldHandle.
+    /// </summary>
+    internal sealed class FieldHandleGenericLookupResult : GenericLookupResult
+    {
+        private FieldDesc _field;
+
+        protected override int ClassCode => -196995964;
+
+        public FieldHandleGenericLookupResult(FieldDesc field)
+        {
+            Debug.Assert(field.OwningType.IsRuntimeDeterminedSubtype, "Concrete field in a generic dictionary?");
+            _field = field;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            FieldDesc instantiatedField = _field.GetNonRuntimeDeterminedFieldFromRuntimeDeterminedFieldViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            return factory.RuntimeFieldHandle(instantiatedField);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("FieldHandle_");
+            sb.Append(nameMangler.GetMangledFieldName(_field));
+        }
+
+        public override string ToString() => $"FieldHandle: {_field}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.FieldLdTokenDictionarySlot(_field);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.FieldLdToken, _field);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_field, ((FieldHandleGenericLookupResult)other)._field);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _field.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((FieldHandleGenericLookupResult)obj)._field == _field;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to a method dictionary.
+    /// </summary>
+    public sealed class MethodDictionaryGenericLookupResult : GenericLookupResult
+    {
+        private MethodDesc _method;
+
+        protected override int ClassCode => -467418176;
+
+        public MethodDictionaryGenericLookupResult(MethodDesc method)
+        {
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod, "Concrete method in a generic dictionary?");
+            _method = method;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+
+            factory.TypeSystemContext.DetectGenericCycles(dictionary.Context, instantiatedMethod);
+
+            return factory.MethodGenericDictionary(instantiatedMethod);
+        }
+
+        public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
+        {
+            if (factory.CompilationModuleGroup.CanHaveReferenceThroughImportTable)
+            {
+                return GenericLookupResultReferenceType.ConditionalIndirect;
+            }
+            else
+            {
+                return GenericLookupResultReferenceType.Direct;
+            }
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("MethodDictionary_");
+            sb.Append(nameMangler.GetMangledMethodName(_method));
+        }
+
+        public MethodDesc Method => _method;
+        public override string ToString() => $"MethodDictionary: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.MethodDictionaryDictionarySlot(_method);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.MethodDictionary, _method);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_method, ((MethodDictionaryGenericLookupResult)other)._method);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _method.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((MethodDictionaryGenericLookupResult)obj)._method == _method;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that is a function pointer.
+    /// </summary>
+    internal sealed class MethodEntryGenericLookupResult : GenericLookupResult
+    {
+        private MethodDesc _method;
+        private bool _isUnboxingThunk;
+
+        protected override int ClassCode => 1572293098;
+
+        public MethodEntryGenericLookupResult(MethodDesc method, bool isUnboxingThunk)
+        {
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod);
+            _method = method;
+            _isUnboxingThunk = isUnboxingThunk;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            return factory.FatFunctionPointer(instantiatedMethod, _isUnboxingThunk);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            if (!_isUnboxingThunk)
+                sb.Append("MethodEntry_");
+            else
+                sb.Append("UnboxMethodEntry_");
+
+            sb.Append(nameMangler.GetMangledMethodName(_method));
+        }
+
+        public override string ToString() => $"MethodEntry: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            //
+            // For universal canonical methods, we don't need the unboxing stub really, because
+            // the calling convention translation thunk will handle the unboxing (and we can avoid having a double thunk here)
+            // We just need the flag in the native layout info signature indicating that we needed an unboxing stub
+            //
+            bool getUnboxingStubNode = _isUnboxingThunk && !canonMethod.IsCanonicalMethod(CanonicalFormKind.Universal);
+
+            return factory.NativeLayout.MethodEntrypointDictionarySlot(
+                _method,
+                _isUnboxingThunk,
+                factory.MethodEntrypoint(canonMethod, getUnboxingStubNode));
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            LookupResultType lookupResult = LookupResultType.Method;
+            writer.WriteData(LookupResultReferenceType(factory), lookupResult, _method);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            var otherEntry = (MethodEntryGenericLookupResult)other;
+            int result = (_isUnboxingThunk ? 1 : 0) - (otherEntry._isUnboxingThunk ? 1 : 0);
+            if (result != 0)
+                return result;
+
+            return comparer.Compare(_method, otherEntry._method);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _method.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((MethodEntryGenericLookupResult)obj)._method == _method &&
+                ((MethodEntryGenericLookupResult)obj)._isUnboxingThunk == _isUnboxingThunk;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to a dispatch cell.
+    /// </summary>
+    internal sealed class VirtualDispatchCellGenericLookupResult : GenericLookupResult
+    {
+        private MethodDesc _method;
+
+        protected override int ClassCode => 643566930;
+
+        public VirtualDispatchCellGenericLookupResult(MethodDesc method)
+        {
+            Debug.Assert(method.IsRuntimeDeterminedExactMethod);
+            Debug.Assert(method.IsVirtual);
+            Debug.Assert(method.OwningType.IsInterface);
+
+            _method = method;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext context)
+        {
+            MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(context.TypeInstantiation, context.MethodInstantiation);
+
+            TypeSystemEntity contextOwner = context.Context;
+            GenericDictionaryNode dictionary =
+                contextOwner is TypeDesc ?
+                (GenericDictionaryNode)factory.TypeGenericDictionary((TypeDesc)contextOwner) :
+                (GenericDictionaryNode)factory.MethodGenericDictionary((MethodDesc)contextOwner);
+
+            return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName(factory.NameMangler));
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("DispatchCell_");
+            sb.Append(nameMangler.GetMangledMethodName(_method));
+        }
+
+        public override string ToString() => $"DispatchCell: {_method}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.InterfaceDispatchCell, _method);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_method, ((VirtualDispatchCellGenericLookupResult)other)._method);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _method.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((VirtualDispatchCellGenericLookupResult)obj)._method == _method;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to the non-GC static base of a type.
+    /// </summary>
+    internal sealed class TypeNonGCStaticBaseGenericLookupResult : GenericLookupResult
+    {
+        private MetadataType _type;
+
+        protected override int ClassCode => -328863267;
+
+        public TypeNonGCStaticBaseGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete static base in a generic dictionary?");
+            Debug.Assert(type is MetadataType);
+            _type = (MetadataType)type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            var instantiatedType = (MetadataType)_type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            return factory.TypeNonGCStaticsSymbol(instantiatedType);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("NonGCStaticBase_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"NonGCStaticBase: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.NonGcStaticDictionarySlot(_type);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.NonGcStatic, _type);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((TypeNonGCStaticBaseGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((TypeNonGCStaticBaseGenericLookupResult)obj)._type == _type;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to the threadstatic base index of a type.
+    /// </summary>
+    internal sealed class TypeThreadStaticBaseIndexGenericLookupResult : GenericLookupResult
+    {
+        private MetadataType _type;
+
+        protected override int ClassCode => -177446371;
+
+        public TypeThreadStaticBaseIndexGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete static base in a generic dictionary?");
+            Debug.Assert(type is MetadataType);
+            _type = (MetadataType)type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            var instantiatedType = (MetadataType)_type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            return factory.TypeThreadStaticIndex(instantiatedType);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("ThreadStaticBase_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"ThreadStaticBase: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.ThreadStaticBaseIndexDictionarySlotNode(_type);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            // TODO
+            throw new NotImplementedException();
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((TypeThreadStaticBaseIndexGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((TypeThreadStaticBaseIndexGenericLookupResult)obj)._type == _type;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to the GC static base of a type.
+    /// </summary>
+    public sealed class TypeGCStaticBaseGenericLookupResult : GenericLookupResult
+    {
+        private MetadataType _type;
+
+        protected override int ClassCode => 429225829;
+
+        public TypeGCStaticBaseGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete static base in a generic dictionary?");
+            Debug.Assert(type is MetadataType);
+            _type = (MetadataType)type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            var instantiatedType = (MetadataType)_type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            return factory.TypeGCStaticsSymbol(instantiatedType);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("GCStaticBase_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public MetadataType Type => _type;
+        public override string ToString() => $"GCStaticBase: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.GcStaticDictionarySlot(_type);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.GcStatic, _type);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((TypeGCStaticBaseGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((TypeGCStaticBaseGenericLookupResult)obj)._type == _type;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to an object allocator.
+    /// </summary>
+    internal sealed class ObjectAllocatorGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        protected override int ClassCode => -1671431655;
+
+        public ObjectAllocatorGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            return factory.ExternSymbol(JitHelper.GetNewObjectHelperForType(instantiatedType));
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("AllocObject_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"AllocObject: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.AllocateObjectDictionarySlot(_type);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.AllocObject, _type);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((ObjectAllocatorGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((ObjectAllocatorGenericLookupResult)obj)._type == _type;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to an array allocator.
+    /// </summary>
+    internal sealed class ArrayAllocatorGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        protected override int ClassCode => -927905284;
+
+        public ArrayAllocatorGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            Debug.Assert(instantiatedType.IsArray);
+            return factory.ExternSymbol(JitHelper.GetNewArrayHelperForType(instantiatedType));
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("AllocArray_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"AllocArray: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.AllocateArrayDictionarySlot(_type);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.AllocArray, _type);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((ArrayAllocatorGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((ArrayAllocatorGenericLookupResult)obj)._type == _type;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to an cast helper.
+    /// </summary>
+    internal sealed class CastClassGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        protected override int ClassCode => 1691016084;
+
+        public CastClassGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            return factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(instantiatedType, true));
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("CastClass_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"CastClass: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.CastClassDictionarySlot(_type);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.CastClass, _type);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((CastClassGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((CastClassGenericLookupResult)obj)._type == _type;
+        }
+    }
+
+    /// <summary>
+    /// Generic lookup result that points to an isInst helper.
+    /// </summary>
+    internal sealed class IsInstGenericLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        protected override int ClassCode => 1724059349;
+
+        public IsInstGenericLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            return factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(instantiatedType, false));
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("IsInst_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"IsInst: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.IsInstDictionarySlot(_type);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.IsInst, _type);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((IsInstGenericLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((IsInstGenericLookupResult)obj)._type == _type;
+        }
+    }
+
+    internal sealed class DefaultConstructorLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        protected override int ClassCode => -1391112482;
+
+        public DefaultConstructorLookupResult(TypeDesc type)
+        {
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+            _type = type;
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            MethodDesc defaultCtor = Compilation.GetConstructorForCreateInstanceIntrinsic(instantiatedType);
+            return factory.CanonicalEntrypoint(defaultCtor);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("DefaultCtor_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"DefaultConstructor: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.DefaultConstructorDictionarySlot(_type);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.DefaultCtor, _type);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((DefaultConstructorLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((DefaultConstructorLookupResult)obj)._type == _type;
+        }
+    }
+
+    internal sealed class CallingConventionConverterLookupResult : GenericLookupResult
+    {
+        private CallingConventionConverterKey _callingConventionConverter;
+
+        protected override int ClassCode => -581806472;
+
+        public CallingConventionConverterLookupResult(CallingConventionConverterKey callingConventionConverter)
+        {
+            _callingConventionConverter = callingConventionConverter;
+            Debug.Assert(Internal.Runtime.UniversalGenericParameterLayout.MethodSignatureHasVarsNeedingCallingConventionConverter(callingConventionConverter.Signature));
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            Debug.Fail("GetTarget for a CallingConventionConverterLookupResult doesn't make sense. It isn't a pointer being emitted");
+            return null;
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
+        {
+            Debug.Fail("CallingConventionConverterLookupResult contents should only be generated into generic dictionaries at runtime");
+            builder.EmitNaturalInt(0);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("CallingConventionConverterLookupResult_");
+            sb.Append(_callingConventionConverter.GetName());
+        }
+
+        public override string ToString() => "CallingConventionConverterLookupResult";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.CallingConventionConverter(_callingConventionConverter);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            // TODO
+            throw new NotImplementedException();
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            var otherEntry = (CallingConventionConverterLookupResult)other;
+            int result = (int)(_callingConventionConverter.ConverterKind - otherEntry._callingConventionConverter.ConverterKind);
+            if (result != 0)
+                return result;
+
+            return comparer.Compare(_callingConventionConverter.Signature, otherEntry._callingConventionConverter.Signature);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _callingConventionConverter.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((CallingConventionConverterLookupResult)obj)._callingConventionConverter.Equals(_callingConventionConverter);
+        }
+    }
+
+    internal sealed class TypeSizeLookupResult : GenericLookupResult
+    {
+        private TypeDesc _type;
+
+        protected override int ClassCode => -367755250;
+
+        public TypeSizeLookupResult(TypeDesc type)
+        {
+            _type = type;
+            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
+        }
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            Debug.Fail("GetTarget for a TypeSizeLookupResult doesn't make sense. It isn't a pointer being emitted");
+            return null;
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
+        {
+            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            int typeSize;
+
+            if (_type.IsDefType)
+            {
+                typeSize = ((DefType)_type).InstanceFieldSize.AsInt;
+            }
+            else
+            {
+                typeSize = factory.TypeSystemContext.Target.PointerSize;
+            }
+
+            builder.EmitNaturalInt(typeSize);
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("TypeSize_");
+            sb.Append(nameMangler.GetMangledTypeName(_type));
+        }
+
+        public override string ToString() => $"TypeSize: {_type}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.TypeSizeDictionarySlot(_type);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.TypeSize, _type);
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_type, ((TypeSizeLookupResult)other)._type);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _type.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            return ((TypeSizeLookupResult)obj)._type == _type;
+        }
+    }
+
+    internal sealed class ConstrainedMethodUseLookupResult : GenericLookupResult
+    {
+        MethodDesc _constrainedMethod;
+        TypeDesc _constraintType;
+        bool _directCall;
+
+        protected override int ClassCode => -1525377658;
+
+        public ConstrainedMethodUseLookupResult(MethodDesc constrainedMethod, TypeDesc constraintType, bool directCall)
+        {
+            _constrainedMethod = constrainedMethod;
+            _constraintType = constraintType;
+            _directCall = directCall;
+
+            Debug.Assert(_constraintType.IsRuntimeDeterminedSubtype || _constrainedMethod.IsRuntimeDeterminedExactMethod, "Concrete type in a generic dictionary?");
+            Debug.Assert(!_constrainedMethod.HasInstantiation || !_directCall, "Direct call to constrained generic method isn't supported");
+        }
+
+        public override IEnumerable<DependencyNodeCore<NodeFactory>> NonRelocDependenciesFromUsage(NodeFactory factory)
+        {
+            MethodDesc canonMethod = _constrainedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            // If we're producing a full vtable for the type, we don't need to report virtual method use.
+            // We also don't report virtual method use for generic virtual methods - tracking those is orthogonal.
+            if (!factory.VTable(canonMethod.OwningType).HasFixedSlots && !canonMethod.HasInstantiation)
+            {
+                // Report the method as virtually used so that types that could be used here at runtime
+                // have the appropriate implementations generated.
+                // This covers instantiations created at runtime (MakeGeneric*). The statically present generic dictionaries
+                // are already covered by the dependency analysis within the compiler because we call GetTarget for those.
+                yield return factory.VirtualMethodUse(canonMethod);
+            }
+        }
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            MethodDesc instantiatedConstrainedMethod = _constrainedMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            TypeDesc instantiatedConstraintType = _constraintType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            MethodDesc implMethod;
+
+            if (instantiatedConstrainedMethod.OwningType.IsInterface)
+            {
+                if (instantiatedConstrainedMethod.Signature.IsStatic)
+                {
+                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(instantiatedConstrainedMethod);
+                    if (implMethod == null)
+                    {
+                        DefaultInterfaceMethodResolution resolution =
+                            instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToDefaultImplementationOnType(instantiatedConstrainedMethod, out implMethod);
+                        if (resolution != DefaultInterfaceMethodResolution.DefaultImplementation)
+                        {
+                            // TODO: diamond/reabstraction
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+                    }
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+            }
+            else
+            {
+                implMethod = instantiatedConstraintType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(instantiatedConstrainedMethod);
+            }
+
+            // AOT use of this generic lookup is restricted to finding methods on valuetypes (runtime usage of this slot in universal generics is more flexible)
+            Debug.Assert(instantiatedConstraintType.IsValueType || (instantiatedConstrainedMethod.OwningType.IsInterface && instantiatedConstrainedMethod.Signature.IsStatic));
+
+            if (implMethod.Signature.IsStatic)
+            {
+                if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)
+                    return factory.ExactCallableAddress(implMethod);
+                else
+                    return factory.MethodEntrypoint(implMethod);
+            }
+            else if (implMethod.HasInstantiation)
+            {
+                return factory.ExactCallableAddress(implMethod);
+            }
+            else
+            {
+                return factory.CanonicalEntrypoint(implMethod);
+            }
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("ConstrainedMethodUseLookupResult_");
+            sb.Append(nameMangler.GetMangledTypeName(_constraintType));
+            sb.Append(nameMangler.GetMangledMethodName(_constrainedMethod));
+            if (_directCall)
+                sb.Append("Direct");
+        }
+
+        public override string ToString() => $"ConstrainedMethodUseLookupResult: {_constraintType} {_constrainedMethod} {_directCall}";
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.ConstrainedMethodUse(_constrainedMethod, _constraintType, _directCall);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            // TODO
+            throw new NotImplementedException();
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            var otherResult = (ConstrainedMethodUseLookupResult)other;
+            int result = (_directCall ? 1 : 0) - (otherResult._directCall ? 1 : 0);
+            if (result != 0)
+                return result;
+
+            result = comparer.Compare(_constraintType, otherResult._constraintType);
+            if (result != 0)
+                return result;
+
+            return comparer.Compare(_constrainedMethod, otherResult._constrainedMethod);
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _constrainedMethod.GetHashCode() * 13 + _constraintType.GetHashCode();
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult obj)
+        {
+            var other = (ConstrainedMethodUseLookupResult)obj;
+            return _constrainedMethod == other._constrainedMethod &&
+                _constraintType == other._constraintType &&
+                _directCall == other._directCall;
+        }
+    }
+
+    public sealed class IntegerLookupResult : GenericLookupResult
+    {
+        int _integerValue;
+
+        public IntegerLookupResult(int integer)
+        {
+            _integerValue = integer;
+        }
+
+        public int IntegerValue => _integerValue;
+
+        protected override int ClassCode => 385752509;
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            return null;
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("IntegerLookupResult_").Append(_integerValue.ToString("x"));
+        }
+
+        public override string ToString()
+        {
+            return "IntegerLookupResult_" + _integerValue.ToString("x");
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            IntegerLookupResult lookupResultOther = (IntegerLookupResult)other;
+            if (lookupResultOther._integerValue == _integerValue)
+                return 0;
+
+            return _integerValue > lookupResultOther._integerValue ? 1 : -1;
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult other)
+        {
+            IntegerLookupResult lookupResultOther = (IntegerLookupResult)other;
+            return lookupResultOther._integerValue == _integerValue;
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _integerValue;
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
+        {
+            builder.EmitNaturalInt(_integerValue);
+        }
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.IntegerSlot(_integerValue);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            writer.WriteIntegerSlot(_integerValue);
+        }
+    }
+
+    public sealed class PointerToSlotLookupResult : GenericLookupResult
+    {
+        int _slotIndex;
+
+        public PointerToSlotLookupResult(int slotIndex)
+        {
+            _slotIndex = slotIndex;
+        }
+
+        public int SlotIndex => _slotIndex;
+
+        protected override int ClassCode => 551050755;
+
+        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
+        {
+            return null;
+        }
+
+        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("PointerToSlotLookupResult_").Append(_slotIndex.ToString("x"));
+        }
+
+        public override string ToString()
+        {
+            return "PointerToSlotLookupResult_" + _slotIndex.ToString("x");
+        }
+
+        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
+        {
+            PointerToSlotLookupResult pointerToSlotResultOther = (PointerToSlotLookupResult)other;
+            if (pointerToSlotResultOther._slotIndex == _slotIndex)
+                return 0;
+
+            return _slotIndex > pointerToSlotResultOther._slotIndex ? 1 : -1;
+        }
+
+        protected override bool EqualsImpl(GenericLookupResult other)
+        {
+            PointerToSlotLookupResult pointerToSlotResultOther = (PointerToSlotLookupResult)other;
+            return pointerToSlotResultOther._slotIndex == _slotIndex;
+        }
+
+        protected override int GetHashCodeImpl()
+        {
+            return _slotIndex;
+        }
+
+        public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
+        {
+            builder.EmitPointerReloc(dictionaryNode, _slotIndex * factory.Target.PointerSize);
+        }
+
+        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
+        {
+            return factory.NativeLayout.PointerToOtherSlot(_slotIndex);
+        }
+
+        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
+        {
+            // Under no circumstance should we attempt to write out a pointer to slot result
+            throw new InvalidProgramException();
+        }
+    }
+}

@@ -14,7 +14,7 @@
 
 #include "mono-codeman.h"
 #include "mono-mmap.h"
-#include "mono-counters.h"
+#include <mono/utils/mono-counters.h>
 #if _WIN32
 static void* mono_code_manager_heap;
 #else
@@ -36,9 +36,9 @@ static size_t dynamic_code_frees_count;
 static const MonoCodeManagerCallbacks *code_manager_callbacks;
 
 /*
- * AMD64 processors maintain icache coherency only for pages which are 
+ * AMD64 processors maintain icache coherency only for pages which are
  * marked executable. Also, windows DEP requires us to obtain executable memory from
- * malloc when using dynamic code managers. The system malloc can't do this so we use a 
+ * malloc when using dynamic code managers. The system malloc can't do this so we use a
  * slighly modified version of Doug Lea's Malloc package for this purpose:
  * http://g.oswego.edu/dl/html/malloc.html
  *
@@ -51,7 +51,7 @@ static const MonoCodeManagerCallbacks *code_manager_callbacks;
 #define MIN_ALIGN MEMORY_ALLOCATION_ALIGNMENT
 #elif defined(__x86_64__)
 /*
- * We require 16 byte alignment on amd64 so the fp literals embedded in the code are 
+ * We require 16 byte alignment on amd64 so the fp literals embedded in the code are
  * properly aligned for SSE2.
  */
 #define MIN_ALIGN 16
@@ -157,7 +157,7 @@ codechunk_vfree (void *ptr, guint32 size)
 		mono_vfree (ptr, size, MONO_MEM_ACCOUNT_CODE);
 	}
 	mono_os_mutex_unlock (&valloc_mutex);
-}		
+}
 
 static void
 codechunk_cleanup (void)
@@ -303,7 +303,7 @@ mono_code_manager_new_internal (int codeman_type)
  *
  * Returns: the new code manager
  */
-MonoCodeManager* 
+MonoCodeManager*
 mono_code_manager_new (void)
 {
 	return mono_code_manager_new_internal (MONO_CODEMAN_TYPE_JIT);
@@ -318,7 +318,7 @@ mono_code_manager_new (void)
  *
  * Returns: the new code manager
  */
-MonoCodeManager* 
+MonoCodeManager*
 mono_code_manager_new_dynamic (void)
 {
 	return mono_code_manager_new_internal (MONO_CODEMAN_TYPE_DYNAMIC);
@@ -373,12 +373,12 @@ static void
 free_chunklist (MonoCodeManager *cman, CodeChunk *chunk)
 {
 	CodeChunk *dead;
-	
+
 #if defined(HAVE_VALGRIND_MEMCHECK_H) && defined (VALGRIND_JIT_UNREGISTER_MAP)
 	int valgrind_unregister = 0;
 	if (RUNNING_ON_VALGRIND)
 		valgrind_unregister = 1;
-#define valgrind_unregister(x) do { if (valgrind_unregister) { VALGRIND_JIT_UNREGISTER_MAP(NULL,x); } } while (0) 
+#define valgrind_unregister(x) do { if (valgrind_unregister) { VALGRIND_JIT_UNREGISTER_MAP(NULL,x); } } while (0)
 #else
 #define valgrind_unregister(x)
 #endif
@@ -627,12 +627,12 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 			/* Align the chunk->data we add to chunk->pos */
 			/* or we can't guarantee proper alignment     */
 			ptr = (void*)((((uintptr_t)chunk->data + align_mask) & ~(uintptr_t)align_mask) + chunk->pos);
-			chunk->pos = ((char*)ptr - chunk->data) + size;
+			chunk->pos = GPTRDIFF_TO_INT (((char*)ptr - chunk->data) + size);
 			return ptr;
 		}
 	}
-	/* 
-	 * no room found, move one filled chunk to cman->full 
+	/*
+	 * no room found, move one filled chunk to cman->full
 	 * to keep cman->current from growing too much
 	 */
 	prev = NULL;
@@ -658,7 +658,7 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	/* Align the chunk->data we add to chunk->pos */
 	/* or we can't guarantee proper alignment     */
 	ptr = (void*)((((uintptr_t)chunk->data + align_mask) & ~(uintptr_t)align_mask) + chunk->pos);
-	chunk->pos = ((char*)ptr - chunk->data) + size;
+	chunk->pos = GPTRDIFF_TO_INT (((char*)ptr - chunk->data) + size);
 	return ptr;
 }
 

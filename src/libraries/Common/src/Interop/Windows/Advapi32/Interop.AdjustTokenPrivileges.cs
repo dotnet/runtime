@@ -9,10 +9,11 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        [LibraryImport(Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool AdjustTokenPrivileges(
             SafeTokenHandle TokenHandle,
-            bool DisableAllPrivileges,
+            [MarshalAs(UnmanagedType.Bool)] bool DisableAllPrivileges,
             TOKEN_PRIVILEGE* NewState,
             uint BufferLength,
             TOKEN_PRIVILEGE* PreviousState,

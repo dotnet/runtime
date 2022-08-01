@@ -6,8 +6,8 @@
 ** Source: pal_registerlibraryw_unregisterlibraryw_neg.c
 **
 ** Purpose: Negative test the PAL_RegisterLibrary API.
-**          Call PAL_RegisterLibrary to map a non-existant module
-**          into the calling process address space. 
+**          Call PAL_RegisterLibrary to map a non-existent module
+**          into the calling process address space.
 **
 **
 **============================================================*/
@@ -29,7 +29,7 @@ PALTEST(pal_specific_PAL_RegisterLibraryW_UnregisterLibraryW_test2_neg_paltest_r
     }
 
     memset(ModuleName, 0, 64);
-    sprintf_s(ModuleName, _countof(ModuleName), "%s", "not_exist_module_name");
+    sprintf_s(ModuleName, ARRAY_SIZE(ModuleName), "%s", "not_exist_module_name");
 
     /*convert a normal string to a wide one*/
     wpModuleName = convert(ModuleName);

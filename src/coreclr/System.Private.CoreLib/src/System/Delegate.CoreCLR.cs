@@ -36,11 +36,8 @@ namespace System
         [RequiresUnreferencedCode("The target method might be removed")]
         protected Delegate(object target, string method)
         {
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
-
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(method);
 
             // This API existed in v1/v1.1 and only expected to create closed
             // instance delegates. Constrain the call to BindToMethodName to
@@ -59,15 +56,11 @@ namespace System
         // for the class defining the method.
         protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
         {
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(method);
 
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
-
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
-
             if (!(target is RuntimeType rtTarget))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
 
@@ -222,12 +215,9 @@ namespace System
         [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(method);
 
             if (!(type is RuntimeType rtType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -260,15 +250,12 @@ namespace System
         // V1 API.
         public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(method);
+
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
-
             if (!(type is RuntimeType rtType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
             if (!(target is RuntimeType rtTarget))
@@ -299,11 +286,8 @@ namespace System
         // V1 API.
         public static Delegate? CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure)
         {
-            // Validate the parameters.
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(method);
 
             if (!(type is RuntimeType rtType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -337,11 +321,8 @@ namespace System
         // V2 API.
         public static Delegate? CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure)
         {
-            // Validate the parameters.
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(method);
 
             if (!(type is RuntimeType rtType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
@@ -376,9 +357,7 @@ namespace System
         // V2 internal API.
         internal static Delegate CreateDelegateNoSecurityCheck(Type type, object? target, RuntimeMethodHandle method)
         {
-            // Validate the parameters.
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             if (method.IsNullHandle())
                 throw new ArgumentNullException(nameof(method));
@@ -432,8 +411,28 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern MulticastDelegate InternalAllocLike(Delegate d);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool InternalEqualTypes(object a, object b);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool InternalEqualTypes(object a, object b)
+        {
+            if (a.GetType() == b.GetType())
+                return true;
+
+            MethodTable* pMTa = RuntimeHelpers.GetMethodTable(a);
+            MethodTable* pMTb = RuntimeHelpers.GetMethodTable(b);
+
+            bool ret;
+
+            // only use QCall to check the type equivalence scenario
+            if (pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence)
+                ret = RuntimeHelpers.AreTypesEquivalent(pMTa, pMTb);
+            else
+                ret = false;
+
+            GC.KeepAlive(a);
+            GC.KeepAlive(b);
+
+            return ret;
+        }
 
         // Used by the ctor. Do not call directly.
         // The name of this function will appear in managed stacktraces as delegate constructor.
@@ -462,9 +461,6 @@ namespace System
         {
             return (_methodPtrAux == IntPtr.Zero) ? _target : null;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool CompareUnmanagedFunctionPtrs(Delegate d1, Delegate d2);
     }
 
     // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their

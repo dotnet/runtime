@@ -7,11 +7,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly test
+.assembly 'b89546'
 {
 }
 .assembly extern xunit.core {}
-.module test.exe
 // MVID: {611FA85E-B08F-4BA6-A5ED-1EFCE48EC6D9}
 
 

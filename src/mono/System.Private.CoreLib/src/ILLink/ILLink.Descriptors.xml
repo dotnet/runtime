@@ -412,11 +412,6 @@
 			<field name="_value"/>
 		</type>
 
-		<!-- object.c: create_unhandled_exception_eventargs (assert) -->
-		<type fullname="System.UnhandledExceptionEventArgs">
-			<method signature="System.Void .ctor(System.Object,System.Boolean)" />
-		</type>
-
 		<!-- class.c: make_generic_param_class -->
 		<type fullname="System.ValueType" preserve="nothing" />
 
@@ -424,7 +419,6 @@
 			* ves_icall_System_Reflection_Assembly_GetReferencedAssemblies
 			* fill_reflection_assembly_name
 				* ves_icall_System_Reflection_Assembly_FillName
-				* ves_icall_System_Reflection_Assembly_InternalGetAssemblyName
 				* ves_icall_System_Reflection_AssemblyName_ParseName
 			-->
 		<type fullname="System.Version">
@@ -459,7 +453,7 @@
 		</type>
 
 		<!-- appdomain.c (ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalGetLoadedAssemblies) -->
-		<type fullname="System.Reflection.Assembly" preserve="fields"/>
+		<type fullname="System.Reflection.Assembly" preserve="nothing"/>
 
 		<!-- reflection.c: mono_method_body_get_object -->
 		<type fullname="System.Reflection.RuntimeExceptionHandlingClause" preserve="fields" >
@@ -483,8 +477,9 @@
 			<method name=".ctor" />
 		</type>
 
-		<type fullname="System.Reflection.RuntimeAssembly" preserve="fields">
+		<type fullname="System.Reflection.RuntimeAssembly">
 			<method name=".ctor" />
+			<field name="_mono_assembly" />
 		</type>
 
 		<type fullname="System.Reflection.RuntimeConstructorInfo" preserve="fields" >
@@ -560,9 +555,9 @@
 			<method name="DangerousRelease" />
 		</type>
 
-		<!-- marshal.c: mono_mb_emit_exception_marshal_directive -->
+		<!-- marshal.c: mono_marshal_shared_mb_emit_exception_marshal_directive -->
 		<type fullname="System.Runtime.InteropServices.MarshalDirectiveException">
-			<!-- mono_mb_emit_exception_marshal_directive -->
+			<!-- mono_marshal_shared_mb_emit_exception_marshal_directive -->
 			<method signature="System.Void .ctor()" />
 		</type>
 
@@ -646,5 +641,8 @@
 			<!-- https://github.com/dotnet/runtime/issues/47909 -->
 			<method signature="System.Void .ctor()" />
 		</type>
+
+		<!-- FIXME: only if  feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="true" -->
+		<type fullname="Mono.HotReload.FieldStore" preserve="fields" />
 	</assembly>
 </linker>

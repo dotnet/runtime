@@ -92,6 +92,9 @@ namespace System.Security.Cryptography
 
         // X500 Names
         internal const string CommonName = "2.5.4.3";
+        internal const string CountryOrRegionName = "2.5.4.6";
+        internal const string LocalityName = "2.5.4.7";
+        internal const string StateOrProvinceName = "2.5.4.8";
         internal const string Organization = "2.5.4.10";
         internal const string OrganizationalUnit = "2.5.4.11";
         internal const string EmailAddress = "1.2.840.113549.1.9.1";
@@ -103,10 +106,13 @@ namespace System.Security.Cryptography
         internal const string SubjectAltName = "2.5.29.17";
         internal const string IssuerAltName = "2.5.29.18";
         internal const string BasicConstraints2 = "2.5.29.19";
+        internal const string CrlNumber = "2.5.29.20";
+        internal const string CrlReasons = "2.5.29.21";
         internal const string CrlDistributionPoints = "2.5.29.31";
         internal const string CertPolicies = "2.5.29.32";
         internal const string AnyCertPolicy = "2.5.29.32.0";
         internal const string CertPolicyMappings = "2.5.29.33";
+        internal const string AuthorityKeyIdentifier = "2.5.29.35";
         internal const string CertPolicyConstraints = "2.5.29.36";
         internal const string EnhancedKeyUsage = "2.5.29.37";
         internal const string InhibitAnyPolicyExtension = "2.5.29.54";
@@ -151,5 +157,8 @@ namespace System.Security.Cryptography
         internal const string secp256r1 = "1.2.840.10045.3.1.7";
         internal const string secp384r1 = "1.3.132.0.34";
         internal const string secp521r1 = "1.3.132.0.35";
+
+        // LDAP
+        internal const string DomainComponent = "0.9.2342.19200300.100.1.25";
     }
 }

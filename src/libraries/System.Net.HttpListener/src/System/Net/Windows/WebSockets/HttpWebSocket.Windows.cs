@@ -164,10 +164,7 @@ namespace System.Net.WebSockets
 
         internal static void ValidateInnerStream(Stream innerStream)
         {
-            if (innerStream == null)
-            {
-                throw new ArgumentNullException(nameof(innerStream));
-            }
+            ArgumentNullException.ThrowIfNull(innerStream);
 
             if (!innerStream.CanRead)
             {

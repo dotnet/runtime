@@ -16,7 +16,7 @@ if /i "%~1" == "wasm"  (set __VCBuildArch=x86_amd64)
 :: is no longer set as a global environment variable and is instead only set if the user
 :: has launched the Visual Studio Developer Command Prompt.
 ::
-:: Following this logic, we will default to the Visual Studio toolset assocated with the active
+:: Following this logic, we will default to the Visual Studio toolset associated with the active
 :: Developer Command Prompt. Otherwise, we will query VSWhere to locate the later version of
 :: Visual Studio available on the machine. Finally, we will fail the script if no supported
 :: instance can be found.
@@ -45,14 +45,9 @@ set "__VSCOMNTOOLS="
 set "VSCMD_START_DIR="
 
 :VSDetected
-if "%VisualStudioVersion%"=="16.0" (
-    set __VSVersion=vs2019
-    set __PlatformToolset=v142
-    goto :SetVCEnvironment
-)
 if "%VisualStudioVersion%"=="17.0" (
     set __VSVersion=vs2022
-    set __PlatformToolset=v142
+    set __PlatformToolset=v143
     goto :SetVCEnvironment
 )
 

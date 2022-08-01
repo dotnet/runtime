@@ -11,16 +11,11 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    [CollectionDefinition(nameof(NonParallelTestCollection), DisableParallelization = true)]
-    public class NonParallelTestCollection
-    {
-    }
-
     // This test class contains tests which are strongly timing-dependent.
     // There are two mitigations avoid flaky behavior on CI:
     // - Parallel test execution is disabled
     // - Using extreme parameters, and checks which are very unlikely to fail, if the implementation is correct
-    [Collection(nameof(NonParallelTestCollection))]
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(SocketsHttpHandler_Http2FlowControl_Test), nameof(IsSupported))]
     public sealed class SocketsHttpHandler_Http2FlowControl_Test : HttpClientHandlerTestBase
     {
@@ -102,7 +97,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DisableDynamicWindowScaling_HighBandwidthDelayProduct_WindowRemainsConstant()
         {
             static async Task RunTest()
@@ -122,7 +117,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MaxStreamWindowSize_WhenSet_WindowDoesNotScaleAboveMaximum()
         {
             const int MaxWindow = 654321;
@@ -145,7 +140,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StreamWindowScaleThresholdMultiplier_HighValue_WindowScalesSlower()
         {
             static async Task RunTest()
@@ -166,7 +161,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StreamWindowScaleThresholdMultiplier_LowValue_WindowScalesFaster()
         {
             static async Task RunTest()

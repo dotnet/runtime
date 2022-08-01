@@ -7,7 +7,6 @@ namespace System.Dynamic
 {
     internal static partial class UpdateDelegates
     {
-#if FEATURE_COMPILE
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
         internal static TRet UpdateAndExecute1<T0, TRet>(CallSite site, T0 arg0)
         {
@@ -2895,6 +2894,5 @@ namespace System.Dynamic
             site._match = false;
             return;
         }
-#endif
     }
 }

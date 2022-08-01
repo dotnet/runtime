@@ -23,7 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64)
 const regMaskSmall regMasks[] = {
 #define REGDEF(name, rnum, mask, xname, wname) mask,
 #include "register.h"
@@ -228,9 +228,9 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_r
 
     rsMaskResvd = RBM_NONE;
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     rsMaskCalleeSaved = RBM_NONE;
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
 #ifdef TARGET_ARM
     rsMaskPreSpillRegArg = RBM_NONE;
@@ -320,9 +320,8 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 #endif // TARGET_ARM
     else if (tree->IsMultiRegLclVar())
     {
-        GenTreeLclVar* lcl    = tree->AsLclVar();
-        LclVarDsc*     varDsc = m_rsCompiler->lvaGetDesc(lcl->GetLclNum());
-        treeType              = varDsc->TypeGet();
+        LclVarDsc* varDsc = m_rsCompiler->lvaGetDesc(tree->AsLclVar());
+        treeType          = varDsc->TypeGet();
     }
     else
     {
@@ -921,7 +920,7 @@ bool RegSet::tmpAllFree() const
         return false;
     }
 
-    for (unsigned i = 0; i < _countof(tmpUsed); i++)
+    for (unsigned i = 0; i < ArrLen(tmpUsed); i++)
     {
         if (tmpUsed[i] != nullptr)
         {

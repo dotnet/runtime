@@ -10,7 +10,7 @@ namespace System.CodeDom.Compiler
     {
         CompilerResults ICodeCompiler.CompileAssemblyFromDom(CompilerParameters options, CodeCompileUnit e)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -27,7 +27,7 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromFile(CompilerParameters options, string fileName)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -44,7 +44,7 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromSource(CompilerParameters options, string source)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -61,7 +61,7 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromSourceBatch(CompilerParameters options, string[] sources)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -78,11 +78,11 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromFileBatch(CompilerParameters options, string[] fileNames)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (fileNames == null)
+            if (fileNames is null)
             {
                 throw new ArgumentNullException(nameof(fileNames));
             }
@@ -105,7 +105,7 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromDomBatch(CompilerParameters options, CodeCompileUnit[] ea)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -126,7 +126,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromDom(CompilerParameters options, CodeCompileUnit e)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -136,11 +136,11 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromFile(CompilerParameters options, string fileName)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (fileName == null)
+            if (fileName is null)
             {
                 throw new ArgumentNullException(nameof(fileName));
             }
@@ -153,7 +153,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromSource(CompilerParameters options, string source)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -163,11 +163,11 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromDomBatch(CompilerParameters options, CodeCompileUnit[] ea)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (ea == null)
+            if (ea is null)
             {
                 throw new ArgumentNullException(nameof(ea));
             }
@@ -194,7 +194,7 @@ namespace System.CodeDom.Compiler
             return FromFileBatch(options, filenames);
         }
 
-        private void ResolveReferencedAssemblies(CompilerParameters options, CodeCompileUnit e)
+        private static void ResolveReferencedAssemblies(CompilerParameters options, CodeCompileUnit e)
         {
             if (e.ReferencedAssemblies.Count > 0)
             {
@@ -210,11 +210,11 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromFileBatch(CompilerParameters options, string[] fileNames)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (fileNames == null)
+            if (fileNames is null)
             {
                 throw new ArgumentNullException(nameof(fileNames));
             }
@@ -242,18 +242,17 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromSourceBatch(CompilerParameters options, string[] sources)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (sources == null)
+            if (sources is null)
             {
                 throw new ArgumentNullException(nameof(sources));
             }
 
             var filenames = new string[sources.Length];
 
-            CompilerResults results = null;
             for (int i = 0; i < sources.Length; i++)
             {
                 string name = options.TempFiles.AddExtension(i + FileExtension);
@@ -265,7 +264,7 @@ namespace System.CodeDom.Compiler
                 }
                 filenames[i] = name;
             }
-            return results = FromFileBatch(options, filenames);
+            return FromFileBatch(options, filenames);
         }
 
         protected static string JoinStringArray(string[] sa, string separator)

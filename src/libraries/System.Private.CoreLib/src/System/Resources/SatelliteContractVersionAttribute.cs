@@ -13,15 +13,18 @@
 **
 ===========================================================*/
 
+using System.ComponentModel;
+
 namespace System.Resources
 {
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class SatelliteContractVersionAttribute : Attribute
     {
         public SatelliteContractVersionAttribute(string version)
         {
-            if (version == null)
-                throw new ArgumentNullException(nameof(version));
+            ArgumentNullException.ThrowIfNull(version);
+
             Version = version;
         }
 

@@ -2,18 +2,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Speech.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.EventBasedAsync\ref\System.ComponentModel.EventBasedAsync.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Reference Include="System.ComponentModel.EventBasedAsync" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
 </Project>

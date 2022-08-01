@@ -443,6 +443,16 @@ namespace System.Web.Tests
             Assert.Equal(expected, HttpUtility.ParseQueryString(expected).ToString());
         }
 
+
+        [Fact]
+        public void ParseQueryString_nullValue_ToString()
+        {
+            var nameValueCollection = System.Web.HttpUtility.ParseQueryString(string.Empty);
+            nameValueCollection.Add("baz", null);
+            var s = nameValueCollection.ToString();
+            Assert.Equal(string.Empty, s);
+        }
+
         #endregion ParseQueryString
 
         #region UrlDecode(ToBytes)
@@ -563,7 +573,7 @@ namespace System.Web.Tests
 
         static bool IsUrlSafeChar(char c)
         {
-            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))
+            if (char.IsAsciiLetterOrDigit(c))
             {
                 return true;
             }

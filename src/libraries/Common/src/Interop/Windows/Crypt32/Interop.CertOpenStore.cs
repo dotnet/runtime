@@ -13,7 +13,7 @@ internal static partial class Interop
         internal const uint X509_ASN_ENCODING = 0x00000001;
         internal const uint CERT_STORE_PROV_MEMORY = 2;
 
-        [DllImport(Interop.Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern SafeCertStoreHandle CertOpenStore(IntPtr lpszStoreProvider, uint dwMsgAndCertEncodingType, IntPtr hCryptProv, uint dwFlags, string pvPara);
+        [LibraryImport(Interop.Libraries.Crypt32, SetLastError = true)]
+        internal static partial SafeCertStoreHandle CertOpenStore(IntPtr lpszStoreProvider, uint dwMsgAndCertEncodingType, IntPtr hCryptProv, uint dwFlags, IntPtr pvPara);
     }
 }

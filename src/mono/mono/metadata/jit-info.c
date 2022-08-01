@@ -24,7 +24,6 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-membar.h>
-#include <mono/utils/mono-counters.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-mmap.h>
@@ -335,7 +334,7 @@ mono_jit_info_table_find_internal (gpointer addr, gboolean try_aot, gboolean all
 
 	if (ji && ji->is_trampoline && !allow_trampolines)
 		return NULL;
-	
+
 	return ji;
 }
 
@@ -820,7 +819,7 @@ mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end)
 	ji = g_new0 (MonoJitInfo, 1);
 	ji->d.image = image;
 	ji->code_start = start;
-	ji->code_size = (guint8*)end - (guint8*)start;
+	ji->code_size = GPTRDIFF_TO_INT ((guint8*)end - (guint8*)start);
 	jit_info_table_add (&aot_modules, ji);
 
 	jit_info_unlock ();

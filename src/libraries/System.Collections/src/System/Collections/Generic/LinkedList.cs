@@ -30,10 +30,7 @@ namespace System.Collections.Generic
 
         public LinkedList(IEnumerable<T> collection)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
+            ArgumentNullException.ThrowIfNull(collection);
 
             foreach (T item in collection)
             {
@@ -58,7 +55,7 @@ namespace System.Collections.Generic
 
         public LinkedListNode<T>? Last
         {
-            get { return head == null ? null : head.prev; }
+            get { return head?.prev; }
         }
 
         bool ICollection<T>.IsReadOnly
@@ -193,10 +190,7 @@ namespace System.Collections.Generic
 
         public void CopyTo(T[] array, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (index < 0)
             {
@@ -333,13 +327,11 @@ namespace System.Collections.Generic
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             // Customized serialization for LinkedList.
             // We need to do this because it will be too expensive to Serialize each node.
             // This will give us the flexiblility to change internal implementation freely in future.
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
 
             info.AddValue(VersionName, version);
             info.AddValue(CountName, count); // this is the length of the bucket array.
@@ -427,12 +419,9 @@ namespace System.Collections.Generic
             version++;
         }
 
-        internal void ValidateNewNode(LinkedListNode<T> node)
+        internal static void ValidateNewNode(LinkedListNode<T> node)
         {
-            if (node == null)
-            {
-                throw new ArgumentNullException(nameof(node));
-            }
+            ArgumentNullException.ThrowIfNull(node);
 
             if (node.list != null)
             {
@@ -442,10 +431,7 @@ namespace System.Collections.Generic
 
         internal void ValidateNode(LinkedListNode<T> node)
         {
-            if (node == null)
-            {
-                throw new ArgumentNullException(nameof(node));
-            }
+            ArgumentNullException.ThrowIfNull(node);
 
             if (node.list != this)
             {
@@ -462,10 +448,7 @@ namespace System.Collections.Generic
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Rank != 1)
             {

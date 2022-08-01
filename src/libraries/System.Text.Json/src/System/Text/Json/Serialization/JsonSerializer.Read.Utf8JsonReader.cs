@@ -55,6 +55,7 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
         {
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
@@ -107,11 +108,12 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options = null)
         {
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
@@ -163,11 +165,12 @@ namespace System.Text.Json
         /// </remarks>
         public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            jsonTypeInfo.EnsureConfigured();
             return Read<TValue>(ref reader, jsonTypeInfo);
         }
 
@@ -222,14 +225,13 @@ namespace System.Text.Json
         /// </remarks>
         public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerContext context)
         {
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
-
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             return Read<object>(ref reader, GetTypeInfo(context, returnType));
@@ -237,6 +239,7 @@ namespace System.Text.Json
 
         private static TValue? Read<TValue>(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
         {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
             ReadStack state = default;
             state.Initialize(jsonTypeInfo);
 
@@ -420,8 +423,7 @@ namespace System.Text.Json
 
                 var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
 
-                JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
-                TValue? value = ReadCore<TValue>(jsonConverter, ref newReader, jsonTypeInfo.Options, ref state);
+                TValue? value = ReadCore<TValue>(ref newReader, jsonTypeInfo, ref state);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(newReader.BytesConsumed == length);

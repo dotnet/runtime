@@ -800,7 +800,7 @@ void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
 {
     _ASSERTE(m_pRemoteRegAddr != NULL);
     // Get the thread's context so we can update it.
-    DT_CONTEXT * cTemp;
+    DT_CONTEXT * cTemp = NULL;
     const CordbNativeFrame * frame = m_pRemoteRegAddr->GetFrame();
 
     // Can't set an enregistered value unless the frame the value was

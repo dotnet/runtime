@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -48,16 +49,14 @@ namespace System.IO
         private const int MaxShadowBufferSize = 81920;  // Make sure not to get to the Large Object Heap.
         private const int DefaultBufferSize = 4096;
 
-        private Stream? _stream;                            // Underlying stream.  Close sets _stream to null.
-        private byte[]? _buffer;                            // Shared read/write buffer.  Alloc on first use.
-        private readonly int _bufferSize;                   // Length of internal buffer (not counting the shadow buffer).
-        private int _readPos;                               // Read pointer within shared buffer.
-        private int _readLen;                               // Number of bytes read in buffer from _stream.
-        private int _writePos;                              // Write pointer within shared buffer.
-        private Task<int>? _lastSyncCompletedReadTask;      // The last successful Task returned from ReadAsync
-                                                            // (perf optimization for successive reads of the same size)
-                                                            // Removing a private default constructor is a breaking change for the DataDebugSerializer.
-                                                            // Because this ctor was here previously we need to keep it around.
+        private Stream? _stream;                                     // Underlying stream.  Close sets _stream to null.
+        private byte[]? _buffer;                                     // Shared read/write buffer.  Alloc on first use.
+        private readonly int _bufferSize;                            // Length of internal buffer (not counting the shadow buffer).
+        private int _readPos;                                        // Read pointer within shared buffer.
+        private int _readLen;                                        // Number of bytes read in buffer from _stream.
+        private int _writePos;                                       // Write pointer within shared buffer.
+        private CachedCompletedInt32Task _lastSyncCompletedReadTask; // The last successful Task returned from ReadAsync
+                                                                     // (perf optimization for successive reads of the same size)
 
         public BufferedStream(Stream stream)
             : this(stream, DefaultBufferSize)
@@ -127,13 +126,13 @@ namespace System.IO
             _buffer = shadowBuffer;
         }
 
+        [MemberNotNull(nameof(_buffer))]
         private void EnsureBufferAllocated()
         {
             Debug.Assert(_bufferSize > 0);
 
             // BufferedStream is not intended for multi-threaded use, so no worries about the get/set race on _buffer.
-            if (_buffer == null)
-                _buffer = new byte[_bufferSize];
+            _buffer ??= new byte[_bufferSize];
         }
 
         public Stream UnderlyingStream
@@ -512,7 +511,7 @@ namespace System.IO
 
             // Ok. We can fill the buffer:
             EnsureBufferAllocated();
-            _readLen = _stream.Read(_buffer!, 0, _bufferSize);
+            _readLen = _stream.Read(_buffer, 0, _bufferSize);
 
             bytesFromBuffer = ReadFromBuffer(buffer, offset, count);
 
@@ -566,22 +565,9 @@ namespace System.IO
             {
                 // Otherwise, fill the buffer, then read from that.
                 EnsureBufferAllocated();
-                _readLen = _stream.Read(_buffer!, 0, _bufferSize);
+                _readLen = _stream.Read(_buffer, 0, _bufferSize);
                 return ReadFromBuffer(destination) + bytesFromBuffer;
             }
-        }
-
-        private Task<int> LastSyncCompletedReadTask(int val)
-        {
-            Task<int>? t = _lastSyncCompletedReadTask;
-            Debug.Assert(t == null || t.IsCompletedSuccessfully);
-
-            if (t != null && t.Result == val)
-                return t;
-
-            t = Task.FromResult<int>(val);
-            _lastSyncCompletedReadTask = t;
-            return t;
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -622,7 +608,7 @@ namespace System.IO
                     {
 
                         return (error == null)
-                                    ? LastSyncCompletedReadTask(bytesFromBuffer)
+                                    ? _lastSyncCompletedReadTask.GetTask(bytesFromBuffer)
                                     : Task.FromException<int>(error);
                     }
                 }
@@ -768,13 +754,13 @@ namespace System.IO
                 FlushWrite();
 
             EnsureBufferAllocated();
-            _readLen = _stream.Read(_buffer!, 0, _bufferSize);
+            _readLen = _stream.Read(_buffer, 0, _bufferSize);
             _readPos = 0;
 
             if (_readLen == 0)
                 return -1;
 
-            return _buffer![_readPos++];
+            return _buffer[_readPos++];
         }
 
         private void WriteToBuffer(byte[] buffer, ref int offset, ref int count)
@@ -785,7 +771,7 @@ namespace System.IO
                 return;
 
             EnsureBufferAllocated();
-            Buffer.BlockCopy(buffer, offset, _buffer!, _writePos, bytesToWrite);
+            Buffer.BlockCopy(buffer, offset, _buffer, _writePos, bytesToWrite);
 
             _writePos += bytesToWrite;
             count -= bytesToWrite;

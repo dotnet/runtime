@@ -421,10 +421,236 @@ Module* PersistentInlineTrackingMapR2R2::GetModuleByIndex(DWORD index)
 
     // This "black magic spell" has in fact nothing to do with GenericInstantiationCompare per se, but just sets a thread flag
     // that later activates more thorough search inside Module::GetAssemblyIfLoaded, which is indirectly called from GetModuleFromIndexIfLoaded.
-    // This is useful when ngen image was compiler against a different assembly version than the one loaded now.
+    // This is useful when a R2R image was compiled against a different assembly version than the one loaded now.
     ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
 
-    return m_module->GetModuleFromIndexIfLoaded(index);
+    _ASSERTE(m_module->GetModuleFromIndexIfLoaded(index)->IsFullModule());
+    return static_cast<Module*>(m_module->GetModuleFromIndexIfLoaded(index));
+}
+
+BOOL CrossModulePersistentInlineTrackingMapR2R::TryLoad(Module* pModule, LoaderAllocator* pLoaderAllocator, const BYTE* pBuffer, DWORD cbBuffer,
+    AllocMemTracker* pamTracker, CrossModulePersistentInlineTrackingMapR2R** ppLoadedMap)
+{
+    LoaderHeap* pHeap = pLoaderAllocator->GetHighFrequencyHeap();
+    void* pMemory = pamTracker->Track(pHeap->AllocMem((S_SIZE_T)sizeof(CrossModulePersistentInlineTrackingMapR2R)));
+    CrossModulePersistentInlineTrackingMapR2R* pMap = new (pMemory) CrossModulePersistentInlineTrackingMapR2R();
+
+    pMap->m_module = pModule;
+
+    pMap->m_reader = NativeReader(pBuffer, cbBuffer);
+    NativeParser parser = NativeParser(&pMap->m_reader, 0);
+    pMap->m_hashtable = NativeHashtable(parser);
+    *ppLoadedMap = pMap;
+    return TRUE;
+}
+
+void CrossModulePersistentInlineTrackingMapR2R::GetILBodySection(MethodDesc*** pppMethods, COUNT_T* pcMethods)
+{
+    COUNT_T countImportSections;
+    auto pImportSections = m_module->GetImportSections(&countImportSections);
+
+    *pppMethods = NULL;
+    *pcMethods = 0;
+
+    for (COUNT_T iSection = 0; iSection < countImportSections; iSection++)
+    {
+        if (pImportSections[iSection].Type == ReadyToRunImportSectionType::ILBodyFixups)
+        {
+            COUNT_T cbData;
+            *pppMethods = (MethodDesc**)(m_module->GetReadyToRunImage()->GetDirectoryData(&pImportSections[iSection].Section, &cbData));
+            *pcMethods = cbData / sizeof(TADDR);
+            return;
+        }
+    }
+}
+
+static void GetILBodyTokenInfo(uint32_t ilBodyIndex, MethodDesc** ppMethods, COUNT_T cMethods,  Module **readModule, mdMethodDef *readToken)
+{
+    *readModule = NULL;
+    *readToken = 0;
+    if (ilBodyIndex < cMethods)
+    {
+        PTR_MethodDesc ilBody = VolatileLoad(ppMethods + ilBodyIndex);
+        if (ilBody != NULL)
+        {
+            *readModule = ilBody->GetModule();
+            *readToken = ilBody->GetMemberDef();
+        }
+    }
+}
+
+static void AddInliner(uint32_t inlinersSize, MethodInModule inliners[], uint32_t *pInlinerCount, Module* inlinerModule, mdMethodDef inlinerToken, BOOL *incompleteData)
+{
+    if (inlinerModule == nullptr && incompleteData)
+    {
+        // We can't find module for this inlineeModuleZapIndex, it means it hasn't been loaded yet
+        // (maybe it never will be), we just report it to the profiler.
+        // Profiler might want to try later when more modules are loaded.
+        *incompleteData = TRUE;
+        return;
+    }
+
+    if ((*pInlinerCount) < inlinersSize)
+    {
+        inliners[*pInlinerCount].m_methodDef = inlinerToken;
+        inliners[*pInlinerCount].m_module = inlinerModule;
+    }
+    (*pInlinerCount)++;
+}
+
+COUNT_T CrossModulePersistentInlineTrackingMapR2R::GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL* incompleteData)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(inlineeOwnerMod);
+    _ASSERTE(inliners != NULL || inlinersSize == 0);
+
+    // This api while it is capable of declaring its results incomplete, does not provide a reasonable
+    // way for the customer to detect additional inlines made visible by the resolution of ILBody fixups.
+    // Thus, once we have queried the set of inliners, it must not increase by the resolution of additional ILBody fixups.
+    m_module->GetReadyToRunInfo()->ForbidProcessMoreILBodyFixups();
+
+    if (incompleteData)
+    {
+        *incompleteData = FALSE;
+    }
+    uint32_t result = 0;
+
+    int hashCode;
+    if (!GetVersionResilientMethodDefHashCode(inlineeOwnerMod->GetMDImport(), inlineeTkn, &hashCode))
+    {
+        return result;
+    }
+
+    bool multiModuleFormat = m_module->GetReadyToRunInfo()->MultiModuleVersionBubble();
+
+    MethodDesc** ppMethods;
+    COUNT_T cMethods;
+    GetILBodySection(&ppMethods, &cMethods);
+
+    NativeHashtable::Enumerator lookup = m_hashtable.Lookup(hashCode);
+    NativeParser entryParser;
+    while (lookup.GetNext(entryParser))
+    {
+        uint32_t streamSize = entryParser.GetUnsigned();
+        _ASSERTE(streamSize > 1);
+
+        // First make sure this is the right inlinee and not just a hash collision
+        Module* inlineeModule;
+
+        uint32_t inlineeIndexAndFlags = entryParser.GetUnsigned();
+        streamSize--;
+
+        uint32_t inlineeIndex = inlineeIndexAndFlags >> (int)ReadyToRunCrossModuleInlineFlags::CrossModuleInlinerIndexShift;
+        bool hasCrossModuleInliners = ((ReadyToRunCrossModuleInlineFlags)inlineeIndexAndFlags & ReadyToRunCrossModuleInlineFlags::HasCrossModuleInliners) == ReadyToRunCrossModuleInlineFlags::HasCrossModuleInliners;
+        bool crossModuleInlinee = ((ReadyToRunCrossModuleInlineFlags)inlineeIndexAndFlags & ReadyToRunCrossModuleInlineFlags::CrossModuleInlinee) == ReadyToRunCrossModuleInlineFlags::CrossModuleInlinee;
+
+        if (crossModuleInlinee)
+        {
+            mdMethodDef inlineeToken;
+            GetILBodyTokenInfo(inlineeIndex, ppMethods, cMethods, &inlineeModule, &inlineeToken);
+            if (inlineeToken != inlineeTkn)
+                continue;
+        }
+        else
+        {
+            mdMethodDef inlineeToken = TokenFromRid(inlineeIndex, mdtMethodDef);
+            if (inlineeTkn != inlineeToken)
+                continue;
+
+            if (multiModuleFormat)
+            {
+                _ASSERTE(streamSize > 0);
+                uint32_t moduleIndex = entryParser.GetUnsigned();
+                streamSize--;
+                inlineeModule = GetModuleByIndex(moduleIndex);
+            }
+            else
+            {
+                inlineeModule = m_module;
+            }
+        }
+
+        if (inlineeModule != inlineeOwnerMod)
+        {
+            continue;
+        }
+
+        // We have the right inlinee, let's look at the inliners
+
+        // First chack for cross module inliners
+        if (hasCrossModuleInliners)
+        {
+            _ASSERTE(streamSize > 0);
+            uint32_t crossModuleInlinerCount = entryParser.GetUnsigned();
+            streamSize--;
+
+            for (uint32_t iInliner = 0; iInliner < crossModuleInlinerCount; iInliner++)
+            {
+                _ASSERTE(streamSize > 0);
+                uint32_t inlinerIndex = entryParser.GetUnsigned();
+                streamSize--;
+
+                Module* inlinerModule = NULL;
+                mdMethodDef inlinerToken = 0;
+                GetILBodyTokenInfo(inlinerIndex, ppMethods, cMethods, &inlinerModule, &inlinerToken);
+                AddInliner(inlinersSize, inliners, &result, inlinerModule, inlinerToken, incompleteData);
+            }
+        }
+
+        // Then handle the non-cross module ones
+        DWORD currentInlinerIndex = 0;
+        while (streamSize > 0)
+        {
+            uint32_t inlinerIndexDeltaAndFlag = entryParser.GetUnsigned();
+            streamSize--;
+
+            Module* inlinerModule = inlineeModule;
+
+            if (multiModuleFormat)
+            {
+                currentInlinerIndex += inlinerIndexDeltaAndFlag >> (int)ReadyToRunCrossModuleInlineFlags::InlinerRidShift;
+                if ((((ReadyToRunCrossModuleInlineFlags)inlinerIndexDeltaAndFlag) & ReadyToRunCrossModuleInlineFlags::InlinerRidHasModule) == ReadyToRunCrossModuleInlineFlags::InlinerRidHasModule)
+                {
+                    _ASSERTE(streamSize >= 0);
+                    uint32_t moduleIndex = entryParser.GetUnsigned();
+                    streamSize--;
+                    inlinerModule = GetModuleByIndex(moduleIndex);
+                }
+            }
+            mdMethodDef inlinerToken = TokenFromRid(currentInlinerIndex, mdtMethodDef);
+
+
+            AddInliner(inlinersSize, inliners, &result, inlinerModule, inlinerToken, incompleteData);
+        }
+    }
+
+    return result;
+}
+
+Module* CrossModulePersistentInlineTrackingMapR2R::GetModuleByIndex(DWORD index)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // This "black magic spell" has in fact nothing to do with GenericInstantiationCompare per se, but just sets a thread flag
+    // that later activates more thorough search inside Module::GetAssemblyIfLoaded, which is indirectly called from GetModuleFromIndexIfLoaded.
+    // This is useful when a R2R image was compiled against a different assembly version than the one loaded now.
+    ClrFlsThreadTypeSwitch genericInstantionCompareHolder(ThreadType_GenericInstantiationCompare);
+
+    _ASSERTE(m_module->GetModuleFromIndexIfLoaded(index)->IsFullModule());
+    return static_cast<Module*>(m_module->GetModuleFromIndexIfLoaded(index));
 }
 #endif //!DACCESS_COMPILE
 
@@ -432,9 +658,9 @@ Module* PersistentInlineTrackingMapR2R2::GetModuleByIndex(DWORD index)
 
 
 #if !defined(DACCESS_COMPILE)
-JITInlineTrackingMap::JITInlineTrackingMap(LoaderAllocator *pAssociatedLoaderAllocator) :
-    m_mapCrst(CrstJitInlineTrackingMap),
-    m_map()
+CrstStatic JITInlineTrackingMap::s_mapCrst;
+
+JITInlineTrackingMap::JITInlineTrackingMap(LoaderAllocator *pAssociatedLoaderAllocator) : m_map()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -445,12 +671,12 @@ BOOL JITInlineTrackingMap::InliningExistsDontTakeLock(MethodDesc *inliner, Metho
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(m_mapCrst.OwnedByCurrentThread());
+    _ASSERTE(s_mapCrst.OwnedByCurrentThread());
     _ASSERTE(inliner != NULL);
     _ASSERTE(inlinee != NULL);
 
     BOOL found = FALSE;
-    auto lambda = [&](OBJECTREF obj, MethodDesc *lambdaInlinee, MethodDesc *lambdaInliner)
+    auto lambda = [&](LoaderAllocator *loaderAllocatorOfInliner, MethodDesc *lambdaInlinee, MethodDesc *lambdaInliner)
     {
         _ASSERTE(inlinee == lambdaInlinee);
 
@@ -474,7 +700,7 @@ void JITInlineTrackingMap::AddInlining(MethodDesc *inliner, MethodDesc *inlinee)
 
     inlinee = inlinee->LoadTypicalMethodDefinition();
 
-    CrstHolder holder(&m_mapCrst);
+    CrstHolder holder(&s_mapCrst);
     AddInliningDontTakeLock(inliner, inlinee);
 }
 
@@ -482,11 +708,9 @@ void JITInlineTrackingMap::AddInliningDontTakeLock(MethodDesc *inliner, MethodDe
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(m_mapCrst.OwnedByCurrentThread());
+    _ASSERTE(s_mapCrst.OwnedByCurrentThread());
     _ASSERTE(inliner != NULL);
     _ASSERTE(inlinee != NULL);
-
-    GCX_COOP();
 
     if (!InliningExistsDontTakeLock(inliner, inlinee))
     {

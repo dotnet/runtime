@@ -15,7 +15,7 @@ parameters:
   scenarios: ''
 
 steps:
-  - script: $(_msbuildCommand) -restore
+  - script: $(_msbuildCommand) $(_warnAsErrorParamHelixOverride) -restore
             $(Build.SourcesDirectory)/src/libraries/sendtohelix.proj
             /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
             /p:TargetArchitecture=${{ parameters.archType }}
@@ -26,7 +26,6 @@ steps:
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
             /p:HelixBuild=$(Build.BuildNumber)
-            /p:Creator=${{ parameters.creator }}
             ${{ parameters.extraHelixArguments }}
             /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: Send to Helix
@@ -34,5 +33,12 @@ steps:
     continueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
-      HelixTargetQueues: ${{ join('+', parameters.helixQueues) }} # Pass queues to MSBuild as env var to avoid need of escaping them
       _Scenarios: ${{ join(',', parameters.scenarios) }} # Pass scenarios to MSBuild as env var to avoid need of escaping comma separated list
+
+      ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        HelixAccessToken: $(HelixApiAccessToken)
+        HelixTargetQueues: ${{ replace(lower(join('+', parameters.helixQueues)), '.open', '') }}
+        Creator: ''
+      ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        HelixTargetQueues: ${{ join('+', parameters.helixQueues) }}
+        Creator: ${{ parameters.creator }}

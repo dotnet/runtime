@@ -27,10 +27,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
 
         public IPattern Build(string pattern)
         {
-            if (pattern == null)
-            {
-                throw new ArgumentNullException(nameof(pattern));
-            }
+            ThrowHelper.ThrowIfNull(pattern);
 
             pattern = pattern.TrimStart(_slashes);
 
@@ -157,10 +154,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                         scanSegment = endLiteral + 1;
                     }
 
-                    if (segment == null)
-                    {
-                        segment = new WildcardPathSegment(beginsWith, contains, endsWith, ComparisonType);
-                    }
+                    segment ??= new WildcardPathSegment(beginsWith, contains, endsWith, ComparisonType);
                 }
 
                 if (segment is not ParentPathSegment)
@@ -188,9 +182,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                             segmentsPatternEndsWith = new List<IPathSegment>();
                         }
                     }
-                    else if (segmentsPatternEndsWith != null)
+                    else
                     {
-                        segmentsPatternEndsWith.Add(segment);
+                        segmentsPatternEndsWith?.Add(segment);
                     }
 
                     allSegments.Add(segment);

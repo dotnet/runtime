@@ -30,10 +30,7 @@ namespace System.Net.Http
         protected internal sealed override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
+            ArgumentNullException.ThrowIfNull(request);
 
             // Since most of the SendAsync code is just Task handling, there's no reason to share the code.
             HttpRequestMessage newRequestMessage = ProcessRequest(request, cancellationToken);
@@ -45,10 +42,7 @@ namespace System.Net.Http
         protected internal sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
+            ArgumentNullException.ThrowIfNull(request);
 
             // ProcessRequest() and ProcessResponse() are supposed to be fast, so we call ProcessRequest() on the same
             // thread SendAsync() was invoked to avoid context switches. However, if ProcessRequest() throws, we have

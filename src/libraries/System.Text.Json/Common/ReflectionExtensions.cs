@@ -42,15 +42,11 @@ namespace System.Text.Json.Reflection
         public static Type? GetCompatibleGenericBaseClass(
             this Type type,
             Type baseType,
-            Type? objectType = null,
             bool sourceGenType = false)
         {
             Debug.Assert(baseType.IsGenericType);
             Debug.Assert(!baseType.IsInterface);
             Debug.Assert(baseType == baseType.GetGenericTypeDefinition());
-
-            // Work around not being able to use typeof(object) directly during compile-time src gen type analysis.
-            objectType ??= typeof(object);
 
             Type? baseTypeToCheck = type;
 
@@ -79,8 +75,13 @@ namespace System.Text.Json.Reflection
                 "may return fewer results when trimmed but it will return the 'interfaceType' " +
                 "if the type implemented it, even after trimming.")]
 #endif
-        public static Type? GetCompatibleGenericInterface(this Type type, Type interfaceType)
+        public static Type? GetCompatibleGenericInterface(this Type type, Type? interfaceType)
         {
+            if (interfaceType is null)
+            {
+                return null;
+            }
+
             Debug.Assert(interfaceType.IsGenericType);
             Debug.Assert(interfaceType.IsInterface);
             Debug.Assert(interfaceType == interfaceType.GetGenericTypeDefinition());

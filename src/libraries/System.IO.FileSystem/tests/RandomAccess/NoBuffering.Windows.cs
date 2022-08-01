@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     [SkipOnPlatform(TestPlatforms.Browser, "async file IO is not supported on browser")]
     public class RandomAccess_NoBuffering : FileSystemTest
     {
@@ -38,15 +37,6 @@ namespace System.IO.Tests
                 int current = 0;
                 int total = 0;
 
-                // From https://docs.microsoft.com/en-us/windows/win32/fileio/file-buffering:
-                // "File access sizes, including the optional file offset in the OVERLAPPED structure,
-                // if specified, must be for a number of bytes that is an integer multiple of the volume sector size."
-                // So if buffer and physical sector size is 4096 and the file size is 4097:
-                // the read from offset=0 reads 4096 bytes
-                // the read from offset=4096 reads 1 byte
-                // the read from offset=4097 THROWS (Invalid argument, offset is not a multiple of sector size!)
-                // That is why we stop at the first incomplete read (the next one would throw).
-                // It's possible to get 0 if we are lucky and file size is a multiple of physical sector size.
                 do
                 {
                     current = asyncOperation
@@ -57,7 +47,7 @@ namespace System.IO.Tests
 
                     total += current;
                 }
-                while (current == buffer.Memory.Length);
+                while (current != 0);
 
                 Assert.Equal(fileSize, total);
             }
@@ -220,6 +210,36 @@ namespace System.IO.Tests
             long nRead = await RandomAccess.ReadAsync(handle, Array.Empty<Memory<byte>>(), 0);
             Assert.Equal(0, nRead);
             await RandomAccess.WriteAsync(handle, Array.Empty<ReadOnlyMemory<byte>>(), 0);
+        }
+
+        [Theory]
+        [MemberData(nameof(AllAsyncSyncCombinations))]
+        public async Task ReadShouldReturnZeroForEndOfFile(bool asyncOperation, bool asyncHandle)
+        {
+            int fileSize = Environment.SystemPageSize + 1; // it MUST NOT be a multiple of it (https://github.com/dotnet/runtime/issues/62851)
+            string filePath = GetTestFilePath();
+            byte[] expected = RandomNumberGenerator.GetBytes(fileSize);
+            File.WriteAllBytes(filePath, expected);
+
+            using FileStream fileStream = new (filePath, FileMode.Open, FileAccess.Read, FileShare.None, 0, GetFileOptions(asyncHandle));
+            using SectorAlignedMemory<byte> buffer = SectorAlignedMemory<byte>.Allocate(Environment.SystemPageSize);
+
+            int current = 0;
+            int total = 0;
+
+            do
+            {
+                current = asyncOperation
+                    ? await fileStream.ReadAsync(buffer.Memory)
+                    : fileStream.Read(buffer.GetSpan());
+
+                Assert.True(expected.AsSpan(total, current).SequenceEqual(buffer.GetSpan().Slice(0, current)));
+
+                total += current;
+            }
+            while (current != 0);
+
+            Assert.Equal(fileSize, total);
         }
 
         // when using FileOptions.Asynchronous we are testing Scatter&Gather APIs on Windows (FILE_FLAG_OVERLAPPED requirement)

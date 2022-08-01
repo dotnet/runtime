@@ -183,8 +183,7 @@ namespace System.IO.Compression
         /// </param>
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles)
         {
-            if (sourceArchiveFileName == null)
-                throw new ArgumentNullException(nameof(sourceArchiveFileName));
+            ArgumentNullException.ThrowIfNull(sourceArchiveFileName);
 
             using (ZipArchive archive = Open(sourceArchiveFileName, ZipArchiveMode.Read, entryNameEncoding))
             {

@@ -78,26 +78,12 @@ namespace System.Xml.Linq
         /// <summary>
         /// Gets a comparer that can compare the relative position of two nodes.
         /// </summary>
-        public static XNodeDocumentOrderComparer DocumentOrderComparer
-        {
-            get
-            {
-                if (s_documentOrderComparer == null) s_documentOrderComparer = new XNodeDocumentOrderComparer();
-                return s_documentOrderComparer;
-            }
-        }
+        public static XNodeDocumentOrderComparer DocumentOrderComparer => s_documentOrderComparer ??= new XNodeDocumentOrderComparer();
 
         /// <summary>
         /// Gets a comparer that can compare two nodes for value equality.
         /// </summary>
-        public static XNodeEqualityComparer EqualityComparer
-        {
-            get
-            {
-                if (s_equalityComparer == null) s_equalityComparer = new XNodeEqualityComparer();
-                return s_equalityComparer;
-            }
-        }
+        public static XNodeEqualityComparer EqualityComparer => s_equalityComparer ??= new XNodeEqualityComparer();
 
         /// <overloads>
         /// Adds the specified content immediately after this node. The
@@ -440,7 +426,8 @@ namespace System.Xml.Linq
         /// </exception>
         public static XNode ReadFrom(XmlReader reader)
         {
-            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
+
             if (reader.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
             switch (reader.NodeType)
             {
@@ -477,8 +464,8 @@ namespace System.Xml.Linq
         /// </exception>
         public static Task<XNode> ReadFromAsync(XmlReader reader, CancellationToken cancellationToken)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
+
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<XNode>(cancellationToken);
             return ReadFromAsyncInternal(reader, cancellationToken);

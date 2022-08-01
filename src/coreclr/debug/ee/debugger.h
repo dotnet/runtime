@@ -437,27 +437,6 @@ CONTEXT * GetManagedStoppedCtx(Thread * pThread);
 // Never NULL.
 CONTEXT * GetManagedLiveCtx(Thread * pThread);
 
-
-#undef UtilMessageBoxCatastrophic
-#undef UtilMessageBoxCatastrophicNonLocalized
-#undef UtilMessageBoxCatastrophicVA
-#undef UtilMessageBoxCatastrophicNonLocalizedVA
-#undef UtilMessageBox
-#undef UtilMessageBoxNonLocalized
-#undef UtilMessageBoxVA
-#undef UtilMessageBoxNonLocalizedVA
-#undef WszMessageBox
-#define UtilMessageBoxCatastrophic __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicNonLocalized __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicNonLocalizedVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBox __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxNonLocalized __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxNonLocalizedVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define WszMessageBox __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-
-
 /* ------------------------------------------------------------------------ *
  * Module classes
  * ------------------------------------------------------------------------ */
@@ -472,7 +451,7 @@ typedef DPTR(class DebuggerModule) PTR_DebuggerModule;
 class DebuggerModule
 {
   public:
-    DebuggerModule(Module * pRuntimeModule, DomainFile * pDomainFile, AppDomain * pAppDomain);
+    DebuggerModule(Module * pRuntimeModule, DomainAssembly * pDomainAssembly, AppDomain * pAppDomain);
 
     // Do we have any optimized code in the module?
     // JMC-probes aren't emitted in optimized code,
@@ -504,16 +483,16 @@ class DebuggerModule
     // If the Runtime module is shared, then this gives a common DM.
     // If the runtime module is not shared, then this is an identity function.
     //
-    // The runtime has the notion of "DomainFile", which is 1:1 with DebuggerModule
+    // The runtime has the notion of "DomainAssembly", which is 1:1 with DebuggerModule
     // and thus 1:1 with CordbModule.  The CordbModule hash table on the RS now uses
-    // the DomainFile as the key instead of DebuggerModule.  This is a temporary
+    // the DomainAssembly as the key instead of DebuggerModule.  This is a temporary
     // workaround to facilitate the removal of DebuggerModule.
     // </TODO>
     DebuggerModule * GetPrimaryModule();
-    DomainFile * GetDomainFile()
+    DomainAssembly * GetDomainAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pRuntimeDomainFile;
+        return m_pRuntimeDomainAssembly;
     }
 
     // Called by DebuggerModuleTable to set our primary module
@@ -528,7 +507,7 @@ class DebuggerModule
     DebuggerModule* m_pPrimaryModule;
 
     PTR_Module     m_pRuntimeModule;
-    PTR_DomainFile m_pRuntimeDomainFile;
+    PTR_DomainAssembly m_pRuntimeDomainAssembly;
 
     AppDomain*     m_pAppDomain;
 
@@ -650,7 +629,7 @@ protected:
     // The "debugger data lock" is a very small leaf lock used to protect debugger internal data structures (such
     // as DJIs, DMIs, module table). It is a GC-unsafe-anymode lock and so it can't trigger a GC while being held.
     // It also can't issue any callbacks into the EE or anycode that it does not directly control.
-    // This is a separate lock from the the larger Debugger-lock / Controller lock, which allows regions under those
+    // This is a separate lock from the larger Debugger-lock / Controller lock, which allows regions under those
     // locks to access debugger datastructures w/o blocking each other.
     Crst                  m_DebuggerDataLock;
     HANDLE                m_CtrlCMutex;
@@ -1177,7 +1156,7 @@ static_assert(sizeof(DebuggerHeapExecutableMemoryPage) == DEBUGGERHEAP_PAGESIZE,
 // Handles allocation and freeing (and all necessary bookkeeping) for
 // executable memory that the DebuggerHeap class needs. This is especially
 // useful on systems (like SELinux) where having executable code on the
-// heap is explicity disallowed for security reasons.
+// heap is explicitly disallowed for security reasons.
 // ------------------------------------------------------------------------ */
 
 class DebuggerHeapExecutableMemoryAllocator
@@ -1397,7 +1376,7 @@ private:
 //
 // DebuggerILToNativeMap* m_sequenceMap:   This is the sequence map, which
 //      is actually a collection of IL-Native pairs, where each IL corresponds
-//      to a line of source code.  Each pair is refered to as a sequence map point.
+//      to a line of source code.  Each pair is referred to as a sequence map point.
 //
 // SIZE_T m_lastIL:   last nonEPILOG instruction
 //
@@ -1603,10 +1582,6 @@ public:
                               CorDebugMappingResult *mapping,
                               DWORD *which,
                               BOOL skipPrologs=FALSE);
-
-    // If a method has multiple copies of code (because of EnC or code-pitching),
-    // this returns the DJI corresponding to 'pbAddr'
-    DebuggerJitInfo *GetJitInfoByAddress(const BYTE *pbAddr );
 
     void Init(TADDR newAddress);
 
@@ -1860,17 +1835,6 @@ public:
     // Send a raw managed debug event over the managed pipeline.
     void SendRawEvent(const DebuggerIPCEvent * pManagedEvent);
 
-    // Message box API for the left side of the debugger. This API handles calls from the
-    // debugger helper thread as well as from normal EE threads. It is the only one that
-    // should be used from inside the debugger left side.
-    int MessageBox(
-                UINT uText,       // Resource Identifier for Text message
-                UINT uCaption,    // Resource Identifier for Caption
-                UINT uType,       // Style of MessageBox
-                BOOL displayForNonInteractive,      // Display even if the process is running non interactive
-                BOOL showFileNameInTitle,           // Flag to show FileName in Caption
-                ...);             // Additional Arguments
-
     void SetEEInterface(EEDebugInterface* i);
     void StopDebugger(void);
     BOOL IsStopped(void)
@@ -1893,9 +1857,9 @@ public:
                     DWORD dwModuleName,
                     Assembly *pAssembly,
                     AppDomain *pAppDomain,
-                    DomainFile * pDomainFile,
+                    DomainAssembly * pDomainAssembly,
                     BOOL fAttaching);
-    DebuggerModule * AddDebuggerModule(DomainFile * pDomainFile);
+    DebuggerModule * AddDebuggerModule(DomainAssembly * pDomainAssembly);
 
 
     void UnloadModule(Module* pRuntimeModule,
@@ -2068,8 +2032,8 @@ public:
 
     bool HandleIPCEvent(DebuggerIPCEvent* event);
 
-    DebuggerModule * LookupOrCreateModule(VMPTR_DomainFile vmDomainFile);
-    DebuggerModule * LookupOrCreateModule(DomainFile * pDomainFile);
+    DebuggerModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
+    DebuggerModule * LookupOrCreateModule(DomainAssembly * pDomainAssembly);
     DebuggerModule * LookupOrCreateModule(Module * pModule, AppDomain * pAppDomain);
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
@@ -2201,7 +2165,7 @@ public:
     void SendInterceptExceptionComplete(Thread *thread);
 
     HRESULT AttachDebuggerForBreakpoint(Thread *thread,
-                                        __in_opt WCHAR *wszLaunchReason);
+                                        _In_opt_ WCHAR *wszLaunchReason);
 
 
     void ThreadIsSafe(Thread *thread);
@@ -2424,8 +2388,8 @@ public:
 
     void SendLogSwitchSetting (int iLevel,
                                int iReason,
-                               __in_z LPCWSTR pLogSwitchName,
-                               __in_z LPCWSTR pParentSwitchName);
+                               _In_z_ LPCWSTR pLogSwitchName,
+                               _In_z_ LPCWSTR pParentSwitchName);
 
     bool IsLoggingEnabled (void)
     {
@@ -2437,7 +2401,7 @@ public:
     }
 
     // send a custom debugger notification to the RS
-    void SendCustomDebuggerNotification(Thread * pThread, DomainFile * pDomain, mdTypeDef classToken);
+    void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomain, mdTypeDef classToken);
 
     // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
     void SendMDANotification(
@@ -2507,7 +2471,7 @@ public:
     BOOL IsThreadContextInvalid(Thread *pThread, T_CONTEXT *pCtx);
 
     // notification for SQL fiber debugging support
-    void CreateConnection(CONNID dwConnectionId, __in_z WCHAR *wzName);
+    void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName);
     void DestroyConnection(CONNID dwConnectionId);
     void ChangeConnection(CONNID dwConnectionId);
 
@@ -2974,7 +2938,7 @@ void RedirectedHandledJITCaseForDbgThreadControl_StubEnd();
 void RedirectedHandledJITCaseForUserSuspend_Stub();
 void RedirectedHandledJITCaseForUserSuspend_StubEnd();
 
-#if defined(HAVE_GCCOVER) && defined(TARGET_AMD64)
+#if defined(HAVE_GCCOVER) && defined(TARGET_AMD64) && defined(USE_REDIRECT_FOR_GCSTRESS)
 void RedirectedHandledJITCaseForGCStress_Stub();
 void RedirectedHandledJITCaseForGCStress_StubEnd();
 #endif // HAVE_GCCOVER && TARGET_AMD64
@@ -3276,7 +3240,7 @@ struct DebuggerMethodInfoEntry
 };
 
 // class DebuggerMethodInfoTable:   Hash table to hold all the non-JIT related
-// info for each method we see.  The JIT infos live in a seperate table
+// info for each method we see.  The JIT infos live in a separate table
 // keyed by MethodDescs - there may be multiple
 // JITted realizations of each MethodDef, e.g. under different generic
 // assumptions.  Hangs off of the Debugger object.
@@ -3704,9 +3668,6 @@ void DbgLogHelper(DebuggerIPCEventType event);
 // Helpers for cleanup
 // These are various utility functions, mainly where we factor out code.
 //-----------------------------------------------------------------------------
-void GetPidDecoratedName(__out_ecount(cBufSizeInChars) WCHAR * pBuf,
-                         int cBufSizeInChars,
-                         const WCHAR * pPrefix);
 
 // Specify type of Win32 event
 enum EEventResetType {

@@ -16,7 +16,7 @@ namespace System.Text.Json.Serialization.Converters
         where TDictionary : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : notnull
     {
-        internal override bool CanHaveIdMetadata => true;
+        internal override bool CanHaveMetadata => true;
 
         protected internal override bool OnWriteResume(
             Utf8JsonWriter writer,
@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
-                state.Current.EndDictionaryElement();
+                state.Current.EndDictionaryEntry();
             } while (enumerator.MoveNext());
 
             enumerator.Dispose();

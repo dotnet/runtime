@@ -9,22 +9,24 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        private static TValue? ReadCore<TValue>(JsonConverter jsonConverter, ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state)
+        private static TValue? ReadCore<TValue>(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, ref ReadStack state)
         {
-            if (jsonConverter is JsonConverter<TValue> converter)
+            if (jsonTypeInfo is JsonTypeInfo<TValue> typedInfo)
             {
                 // Call the strongly-typed ReadCore that will not box structs.
-                return converter.ReadCore(ref reader, options, ref state);
+                return typedInfo.EffectiveConverter.ReadCore(ref reader, typedInfo.Options, ref state);
             }
 
-            // The non-generic API was called or we have a polymorphic case where TValue is not equal to the T in JsonConverter<T>.
-            object? value = jsonConverter.ReadCoreAsObject(ref reader, options, ref state);
-            Debug.Assert(value == null || value is TValue);
+            // The non-generic API was called.
+            object? value = jsonTypeInfo.Converter.ReadCoreAsObject(ref reader, jsonTypeInfo.Options, ref state);
+            Debug.Assert(value is null or TValue);
             return (TValue?)value;
         }
 
         private static TValue? ReadFromSpan<TValue>(ReadOnlySpan<byte> utf8Json, JsonTypeInfo jsonTypeInfo, int? actualByteCount = null)
         {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+
             JsonSerializerOptions options = jsonTypeInfo.Options;
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
@@ -34,19 +36,18 @@ namespace System.Text.Json
             state.Initialize(jsonTypeInfo);
 
             TValue? value;
-            JsonConverter jsonConverter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
 
             // For performance, the code below is a lifted ReadCore() above.
-            if (jsonConverter is JsonConverter<TValue> converter)
+            if (jsonTypeInfo is JsonTypeInfo<TValue> typedInfo)
             {
                 // Call the strongly-typed ReadCore that will not box structs.
-                value = converter.ReadCore(ref reader, options, ref state);
+                value = typedInfo.EffectiveConverter.ReadCore(ref reader, options, ref state);
             }
             else
             {
-                // The non-generic API was called or we have a polymorphic case where TValue is not equal to the T in JsonConverter<T>.
-                object? objValue = jsonConverter.ReadCoreAsObject(ref reader, options, ref state);
-                Debug.Assert(objValue == null || objValue is TValue);
+                // The non-generic API was called.
+                object? objValue = jsonTypeInfo.Converter.ReadCoreAsObject(ref reader, options, ref state);
+                Debug.Assert(objValue is null or TValue);
                 value = (TValue?)objValue;
             }
 

@@ -12,7 +12,7 @@ internal static partial class Interop
         internal static NTSTATUS BCryptFinishHash(SafeBCryptHashHandle hHash, Span<byte> pbOutput, int cbOutput, int dwFlags) =>
             BCryptFinishHash(hHash, ref MemoryMarshal.GetReference(pbOutput), cbOutput, dwFlags);
 
-        [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+        [LibraryImport(Libraries.BCrypt)]
         private static partial NTSTATUS BCryptFinishHash(SafeBCryptHashHandle hHash, ref byte pbOutput, int cbOutput, int dwFlags);
     }
 }

@@ -50,7 +50,6 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/marshal-internals.h>
 #include <mono/metadata/monitor.h>
-#include <mono/metadata/w32file.h>
 #include <mono/metadata/lock-tracer.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/tokentype.h>
@@ -65,8 +64,6 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/metadata/w32handle.h>
-#include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
 #include <mono/metadata/components.h>
 
@@ -131,10 +128,10 @@ mono_install_runtime_load (MonoLoadFunc func)
 }
 
 MonoDomain*
-mono_runtime_load (const char *filename, const char *runtime_version)
+mono_runtime_load (const char *root_domain_name)
 {
 	g_assert (load_function);
-	return load_function (filename, runtime_version);
+	return load_function (root_domain_name);
 }
 
 /**
@@ -195,7 +192,7 @@ create_domain_objects (MonoDomain *domain)
 	domain->out_of_memory_ex = MONO_HANDLE_RAW (mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "OutOfMemoryException", arg, NULL_HANDLE_STRING, error));
 	mono_error_assert_ok (error);
 
-	/* 
+	/*
 	 * These two are needed because the signal handlers might be executing on
 	 * an alternate stack, and Boehm GC can't handle that.
 	 */
@@ -212,7 +209,7 @@ create_domain_objects (MonoDomain *domain)
 	domain->ephemeron_tombstone = MONO_HANDLE_RAW (mono_object_new_handle (mono_defaults.object_class, error));
 	mono_error_assert_ok (error);
 
-	/* 
+	/*
 	 * This class is used during exception handling, so initialize it here, to prevent
 	 * stack overflows while handling stack overflows.
 	 */
@@ -225,7 +222,7 @@ create_domain_objects (MonoDomain *domain)
  * \param domain domain returned by \c mono_init
  *
  * Initialize the core AppDomain: this function will run also some
- * IL initialization code, so it needs the execution engine to be fully 
+ * IL initialization code, so it needs the execution engine to be fully
  * operational.
  *
  * \c AppDomain.SetupInformation is set up in \c mono_runtime_exec_main, where
@@ -377,7 +374,7 @@ mono_runtime_quit (void)
 	(void) mono_threads_enter_gc_unsafe_region_unbalanced_internal (&dummy);
 	// after quit_function (in particular, mini_cleanup) everything is
 	// cleaned up so MONO_EXIT_GC_UNSAFE can't work and doesn't make sense.
-	
+
 	mono_runtime_quit_internal ();
 }
 
@@ -390,7 +387,7 @@ mono_runtime_quit_internal (void)
 	MONO_REQ_GC_UNSAFE_MODE;
 	// but note that when we return, we're not in GC Unsafe mode anymore.
 	// After clean up threads don't _have_ a thread state anymore.
-	
+
 	if (quit_function != NULL)
 		quit_function (mono_get_root_domain (), NULL);
 }
@@ -445,10 +442,12 @@ mono_domain_try_type_resolve_name (MonoAssembly *assembly, MonoStringHandle name
 	if (assembly) {
 		assembly_handle = mono_assembly_get_object_handle (assembly, error);
 		goto_if_nok (error, return_null);
+	} else {
+		assembly_handle = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	}
 
 	gpointer args [2];
-	args [0] = assembly ? MONO_HANDLE_RAW (assembly_handle) : NULL;
+	args [0] = MONO_HANDLE_RAW (assembly_handle);
 	args [1] = MONO_HANDLE_RAW (name);
 	ret = mono_runtime_try_invoke_handle (method, NULL_HANDLE, args, error);
 	goto_if_nok (error, return_null);
@@ -507,10 +506,12 @@ mono_try_assembly_resolve_handle (MonoAssemblyLoadContext *alc, MonoStringHandle
 	if (requesting) {
 		requesting_handle = mono_assembly_get_object_handle (requesting, error);
 		goto_if_nok (error, leave);
+	} else {
+		requesting_handle = MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE);
 	}
 
 	gpointer params [2];
-	params [0] = requesting ? MONO_HANDLE_RAW (requesting_handle) : NULL;
+	params [0] = MONO_HANDLE_RAW (requesting_handle);
 	params [1] = MONO_HANDLE_RAW (fname);
 	MonoReflectionAssemblyHandle result;
 	result = MONO_HANDLE_CAST (MonoReflectionAssembly, mono_runtime_try_invoke_handle (method, NULL_HANDLE, params, error));
@@ -613,12 +614,12 @@ try_load_from (MonoAssembly **assembly,
 {
 	gchar *fullpath;
 	gboolean found = FALSE;
-	
+
 	*assembly = NULL;
 	fullpath = g_build_filename (path1, path2, path3, path4, (const char*)NULL);
 
 	found = g_file_test (fullpath, G_FILE_TEST_IS_REGULAR);
-	
+
 	if (found) {
 		*assembly = mono_assembly_request_open (fullpath, req, NULL);
 	}
@@ -634,7 +635,7 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
 	gchar **path;
 	gchar *filename;
 	const gchar *local_culture;
-	gint len;
+	size_t len;
 
 	if (!culture || *culture == '\0') {
 		local_culture = "";
@@ -698,7 +699,7 @@ get_app_context_base_directory (MonoError *error)
 }
 
 /*
- * Try loading the assembly from ApplicationBase and PrivateBinPath 
+ * Try loading the assembly from ApplicationBase and PrivateBinPath
  * and then from assemblies_path if any.
  * LOCKING: This is called from the assembly loading code, which means the caller
  * might hold the loader lock. Thus, this function must not acquire the domain lock.
@@ -774,11 +775,17 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 	MonoAssembly *requesting_assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
 	MonoAssemblyLoadContext *alc = (MonoAssemblyLoadContext *)load_Context;
 
+#if HOST_WASI
+	// On WASI, mono_assembly_get_alc isn't yet supported. However it should be possible to make it work.
+	if (!alc)
+		alc = mono_alc_get_default ();
+#endif
+
 	if (!alc)
 		alc = mono_assembly_get_alc (requesting_assembly);
 	if (!alc)
 		g_assert_not_reached ();
-	
+
 	g_assert (alc);
 	mono_assembly_request_prepare_byname (&req, alc);
 	req.basedir = NULL;
@@ -932,7 +939,7 @@ runtimeconfig_json_get_buffer (MonovmRuntimeConfigArguments *arg, MonoFileMap **
 			g_assert (*file_map);
 			file_len = mono_file_map_size (*file_map);
 			g_assert (file_len > 0);
-			buffer = (char *)mono_file_map (file_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (*file_map), 0, buf_handle);
+			buffer = (char *)mono_file_map (GUINT64_TO_SIZE (file_len), MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (*file_map), 0, buf_handle);
 			g_assert (buffer);
 			return buffer;
 		}
@@ -948,7 +955,7 @@ runtimeconfig_json_get_buffer (MonovmRuntimeConfigArguments *arg, MonoFileMap **
 
 	*file_map = NULL;
 	*buf_handle = NULL;
-	return NULL;	
+	return NULL;
 }
 
 static void

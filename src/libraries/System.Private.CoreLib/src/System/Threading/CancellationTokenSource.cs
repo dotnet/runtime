@@ -756,10 +756,7 @@ namespace System.Threading
         /// <exception cref="System.ArgumentNullException"><paramref name="tokens"/> is null.</exception>
         public static CancellationTokenSource CreateLinkedTokenSource(params CancellationToken[] tokens)
         {
-            if (tokens == null)
-            {
-                throw new ArgumentNullException(nameof(tokens));
-            }
+            ArgumentNullException.ThrowIfNull(tokens);
 
             return tokens.Length switch
             {

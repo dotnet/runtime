@@ -53,6 +53,16 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
         uint64_t ip = 0, sp = 0;
         GetFrameLocation(pContext, &ip, &sp);
 
+#if defined(__aarch64__)
+        // ARM64 can have frames with the same SP but different IPs. Increment sp so it gets added to the stack
+        // frames in the correct order and to prevent the below loop termination on non-increasing sp. Since stack
+        // pointers are always 8 byte align, this increase is masked off in StackFrame::StackPointer() to get the
+        // original stack pointer.
+        if (sp == previousSp && ip != previousIp)
+        {
+            sp++;
+        }
+#endif
         if (ip == 0 || sp <= previousSp) {
             TRACE_VERBOSE("Unwind: sp not increasing or ip == 0 sp %p ip %p\n", (void*)sp, (void*)ip);
             break;
@@ -359,8 +369,8 @@ ThreadInfo::GetThreadStack()
     {
         MemoryRegion search(0, startAddress, startAddress + PAGE_SIZE);
         const MemoryRegion* region = CrashInfo::SearchMemoryRegions(m_crashInfo.OtherMappings(), search);
-        if (region != nullptr) {
-
+        if (region != nullptr)
+        {
             // Use the mapping found for the size of the thread's stack
             size = region->EndAddress() - startAddress;
 

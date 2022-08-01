@@ -12,6 +12,6 @@
       <Name>InjectedCode</Name>
     </ProjectReference>
     <!-- This is needed to make sure native binary gets installed in the right location -->
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

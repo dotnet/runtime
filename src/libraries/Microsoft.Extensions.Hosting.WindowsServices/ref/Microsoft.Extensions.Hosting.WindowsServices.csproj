@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
@@ -9,9 +9,8 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting\ref\Microsoft.Extensions.Hosting.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\ref\System.ServiceProcess.ServiceController.csproj" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
-
 </Project>

@@ -27,9 +27,11 @@ namespace System.IO
 
         private void Init(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
-            OriginalPath = originalPath ?? throw new ArgumentNullException(nameof(originalPath));
+            ArgumentNullException.ThrowIfNull(originalPath);
 
-            fullPath = fullPath ?? originalPath;
+            OriginalPath = originalPath;
+
+            fullPath ??= originalPath;
             fullPath = isNormalized ? fullPath : Path.GetFullPath(fullPath);
 
             _name = fileName ?? (PathInternal.IsRoot(fullPath.AsSpan()) ?
@@ -57,8 +59,8 @@ namespace System.IO
 
         public DirectoryInfo CreateSubdirectory(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            ArgumentNullException.ThrowIfNull(path);
+
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
             if (Path.IsPathRooted(path))
@@ -169,9 +171,9 @@ namespace System.IO
             SearchTarget searchTarget,
             EnumerationOptions options)
         {
+            ArgumentNullException.ThrowIfNull(searchPattern);
+
             Debug.Assert(path != null);
-            if (searchPattern == null)
-                throw new ArgumentNullException(nameof(searchPattern));
 
             _isNormalized &= FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
 
@@ -188,37 +190,14 @@ namespace System.IO
 
         public void MoveTo(string destDirName)
         {
-            if (destDirName == null)
-                throw new ArgumentNullException(nameof(destDirName));
-            if (destDirName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
+            ArgumentException.ThrowIfNullOrEmpty(destDirName);
 
             string destination = Path.GetFullPath(destDirName);
-
-            string destinationWithSeparator = PathInternal.EnsureTrailingSeparator(destination);
-            string sourceWithSeparator = PathInternal.EnsureTrailingSeparator(FullPath);
-
-            if (string.Equals(sourceWithSeparator, destinationWithSeparator, PathInternal.StringComparison))
-                throw new IOException(SR.IO_SourceDestMustBeDifferent);
-
-            string? sourceRoot = Path.GetPathRoot(sourceWithSeparator);
-            string? destinationRoot = Path.GetPathRoot(destinationWithSeparator);
-
-            if (!string.Equals(sourceRoot, destinationRoot, PathInternal.StringComparison))
-                throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
-
-            // Windows will throw if the source file/directory doesn't exist, we preemptively check
-            // to make sure our cross platform behavior matches .NET Framework behavior.
-            if (!Exists && !FileSystem.FileExists(FullPath))
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, FullPath));
-
-            if (FileSystem.DirectoryExists(destination))
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destinationWithSeparator));
 
             FileSystem.MoveDirectory(FullPath, destination);
 
             Init(originalPath: destDirName,
-                 fullPath: destinationWithSeparator,
+                 fullPath: PathInternal.EnsureTrailingSeparator(destination),
                  fileName: null,
                  isNormalized: true);
 

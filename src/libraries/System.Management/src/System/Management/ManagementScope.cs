@@ -32,7 +32,7 @@ namespace System.Management
                     {
                         if (s_allowManagementObjectQI == 0)
                         {
-                            s_allowManagementObjectQI = GetSwitchValueFromRegistry() == true ? 1 : -1;
+                            s_allowManagementObjectQI = GetSwitchValueFromRegistry() ? 1 : -1;
                         }
                     }
                 }
@@ -68,10 +68,7 @@ namespace System.Management
             finally
             {
                 // dispose of the key
-                if (s_switchesRegKey != null)
-                {
-                    s_switchesRegKey.Dispose();
-                }
+                s_switchesRegKey?.Dispose();
             }
 
             // if for any reason we cannot retrieve the value of the switch from the Registry,
@@ -494,8 +491,7 @@ namespace System.Management
         //Fires IdentifierChanged event
         private void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
-                IdentifierChanged(this, null);
+            IdentifierChanged?.Invoke(this, null);
         }
 
         //Called when IdentifierChanged() event fires
@@ -618,7 +614,7 @@ namespace System.Management
         }
 
         internal ManagementScope(ManagementPath path, ManagementScope scope)
-            : this(path, (null != scope) ? scope.options : null) { }
+            : this(path, scope?.options) { }
 
         internal static ManagementScope _Clone(ManagementScope scope)
         {
@@ -809,10 +805,7 @@ namespace System.Management
         {
             get
             {
-                if (options == null)
-                    return options = ConnectionOptions._Clone(null, new IdentifierChangedEventHandler(HandleIdentifierChange));
-                else
-                    return options;
+                return options ??= ConnectionOptions._Clone(null, new IdentifierChangedEventHandler(HandleIdentifierChange));
             }
             set
             {
@@ -850,10 +843,7 @@ namespace System.Management
         {
             get
             {
-                if (prvpath == null)
-                    return prvpath = ManagementPath._Clone(null);
-                else
-                    return prvpath;
+                return prvpath ??= ManagementPath._Clone(null);
             }
             set
             {
@@ -1510,7 +1500,7 @@ namespace System.Management
         ///      Converts the given object to another type.  The most common types to convert
         ///      are to and from a string object.  The default implementation will make a call
         ///      to ToString on the object if the object is valid and if the destination
-        ///      type is string.  If this cannot convert to the desitnation type, this will
+        ///      type is string.  If this cannot convert to the destination type, this will
         ///      throw a NotSupportedException.
         /// </summary>
         /// <param name='context'>An ITypeDescriptorContext that provides a format context.</param>

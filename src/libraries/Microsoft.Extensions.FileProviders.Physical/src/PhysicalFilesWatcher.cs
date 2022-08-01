@@ -133,10 +133,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <exception cref="ArgumentNullException">When <paramref name="filter" /> is null</exception>
         public IChangeToken CreateFileChangeToken(string filter)
         {
-            if (filter == null)
-            {
-                throw new ArgumentNullException(nameof(filter));
-            }
+            ThrowHelper.ThrowIfNull(filter);
 
             filter = NormalizePath(filter);
 
@@ -439,7 +436,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
-        private static string NormalizePath(string filter) => filter = filter.Replace('\\', '/');
+        private static string NormalizePath(string filter) => filter.Replace('\\', '/');
 
         private static bool IsDirectoryPath(string path)
         {

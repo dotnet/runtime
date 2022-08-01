@@ -296,8 +296,10 @@ namespace System
 
         private Lazy(Func<T>? valueFactory, LazyThreadSafetyMode mode, bool useDefaultConstructor)
         {
-            if (valueFactory == null && !useDefaultConstructor)
-                throw new ArgumentNullException(nameof(valueFactory));
+            if (!useDefaultConstructor)
+            {
+                ArgumentNullException.ThrowIfNull(valueFactory);
+            }
 
             _factory = valueFactory;
             _state = LazyHelper.Create(mode, useDefaultConstructor);

@@ -136,7 +136,7 @@ namespace System.Runtime.Serialization.Json
             return (contract is ClassDataContract);
         }
 
-        private void WriteTypeInfo(XmlWriterDelegator writer, string typeInformation)
+        private static void WriteTypeInfo(XmlWriterDelegator writer, string typeInformation)
         {
             writer.WriteAttributeString(null, JsonGlobals.serverTypeString, null, typeInformation);
         }
@@ -158,7 +158,7 @@ namespace System.Runtime.Serialization.Json
             DataContractJsonSerializer.WriteJsonNull(xmlWriter);
         }
 
-        internal XmlDictionaryString CollectionItemName
+        internal static XmlDictionaryString CollectionItemName
         {
             get { return JsonGlobals.itemDictionaryString; }
         }
@@ -337,7 +337,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        [return: NotNullIfNotNull("oldItemContract")]
+        [return: NotNullIfNotNull(nameof(oldItemContract))]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract? GetRevisedItemContract(DataContract oldItemContract)
         {

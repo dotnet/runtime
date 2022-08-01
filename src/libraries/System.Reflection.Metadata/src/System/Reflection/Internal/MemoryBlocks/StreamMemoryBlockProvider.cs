@@ -160,7 +160,13 @@ namespace System.Reflection.Internal
                 }
             }
 
-            MemoryMappedViewAccessor accessor = _lazyMemoryMap.CreateViewAccessor(start, size, MemoryMappedFileAccess.Read);
+            MemoryMappedViewAccessor accessor;
+
+            lock (_streamGuard)
+            {
+                accessor = _lazyMemoryMap.CreateViewAccessor(start, size, MemoryMappedFileAccess.Read);
+            }
+
             if (accessor == null)
             {
                 block = null;

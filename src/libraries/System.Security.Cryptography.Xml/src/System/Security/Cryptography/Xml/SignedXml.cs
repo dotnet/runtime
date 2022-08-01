@@ -92,21 +92,27 @@ namespace System.Security.Cryptography.Xml
 
         public SignedXml(XmlDocument document)
         {
-            if (document == null)
+            if (document is null)
+            {
                 throw new ArgumentNullException(nameof(document));
+            }
+
             Initialize(document.DocumentElement);
         }
 
         public SignedXml(XmlElement elem)
         {
-            if (elem == null)
+            if (elem is null)
+            {
                 throw new ArgumentNullException(nameof(elem));
+            }
+
             Initialize(elem);
         }
 
         private void Initialize(XmlElement element)
         {
-            _containingDocument = (element == null ? null : element.OwnerDocument);
+            _containingDocument = element?.OwnerDocument;
             _context = element;
             m_signature = new Signature();
             m_signature.SignedXml = this;
@@ -162,13 +168,8 @@ namespace System.Security.Cryptography.Xml
 
         public EncryptedXml EncryptedXml
         {
-            get
-            {
-                if (_exml == null)
-                    _exml = new EncryptedXml(_containingDocument); // default processing rules
-                return _exml;
-            }
-            set { _exml = value; }
+            get => _exml ??= new EncryptedXml(_containingDocument); // default processing rules
+            set => _exml = value;
         }
 
         public Signature Signature
@@ -213,15 +214,14 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
 
             m_signature.LoadXml(value);
 
-            if (_context == null)
-            {
-                _context = value;
-            }
+            _context ??= value;
 
             _bCacheValid = false;
         }
@@ -242,8 +242,7 @@ namespace System.Security.Cryptography.Xml
 
         public bool CheckSignature()
         {
-            AsymmetricAlgorithm signingKey;
-            return CheckSignatureReturningKey(out signingKey);
+            return CheckSignatureReturningKey(out _);
         }
 
         public bool CheckSignatureReturningKey(out AsymmetricAlgorithm signingKey)
@@ -252,7 +251,7 @@ namespace System.Security.Cryptography.Xml
 
             signingKey = null;
             bool bRet = false;
-            AsymmetricAlgorithm key = null;
+            AsymmetricAlgorithm key;
 
             if (!CheckSignatureFormat())
             {
@@ -392,8 +391,7 @@ namespace System.Security.Cryptography.Xml
                 else if (key is RSA)
                 {
                     // Default to RSA-SHA256
-                    if (SignedInfo.SignatureMethod == null)
-                        SignedInfo.SignatureMethod = XmlDsigRSASHA256Url;
+                    SignedInfo.SignatureMethod ??= XmlDsigRSASHA256Url;
                 }
                 else
                 {
@@ -421,8 +419,10 @@ namespace System.Security.Cryptography.Xml
 
         public void ComputeSignature(KeyedHashAlgorithm macAlg)
         {
-            if (macAlg == null)
+            if (macAlg is null)
+            {
                 throw new ArgumentNullException(nameof(macAlg));
+            }
 
             HMAC hash = macAlg as HMAC;
             if (hash == null)
@@ -473,31 +473,29 @@ namespace System.Security.Cryptography.Xml
                     return key;
             }
 
-            if (_keyInfoEnum == null)
-                _keyInfoEnum = KeyInfo.GetEnumerator();
+            _keyInfoEnum ??= KeyInfo.GetEnumerator();
 
             // In our implementation, we move to the next KeyInfo clause which is an RSAKeyValue, DSAKeyValue or KeyInfoX509Data
             while (_keyInfoEnum.MoveNext())
             {
-                RSAKeyValue rsaKeyValue = _keyInfoEnum.Current as RSAKeyValue;
-                if (rsaKeyValue != null)
-                    return rsaKeyValue.Key;
-
-                DSAKeyValue dsaKeyValue = _keyInfoEnum.Current as DSAKeyValue;
-                if (dsaKeyValue != null)
-                    return dsaKeyValue.Key;
-
-                KeyInfoX509Data x509Data = _keyInfoEnum.Current as KeyInfoX509Data;
-                if (x509Data != null)
+                switch (_keyInfoEnum.Current)
                 {
-                    _x509Collection = Utils.BuildBagOfCerts(x509Data, CertUsageType.Verification);
-                    if (_x509Collection.Count > 0)
-                    {
-                        _x509Enum = _x509Collection.GetEnumerator();
-                        AsymmetricAlgorithm key = GetNextCertificatePublicKey();
-                        if (key != null)
-                            return key;
-                    }
+                    case RSAKeyValue rsaKeyValue:
+                        return rsaKeyValue.Key;
+
+                    case DSAKeyValue dsaKeyValue:
+                        return dsaKeyValue.Key;
+
+                    case KeyInfoX509Data x509Data:
+                        _x509Collection = Utils.BuildBagOfCerts(x509Data, CertUsageType.Verification);
+                        if (_x509Collection.Count > 0)
+                        {
+                            _x509Enum = _x509Collection.GetEnumerator();
+                            AsymmetricAlgorithm key = GetNextCertificatePublicKey();
+                            if (key != null)
+                                return key;
+                        }
+                        break;
                 }
             }
 
@@ -511,9 +509,10 @@ namespace System.Security.Cryptography.Xml
             {
                 foreach (KeyInfoClause clause in KeyInfo)
                 {
-                    KeyInfoX509Data x509Data = clause as KeyInfoX509Data;
-                    if (x509Data != null)
+                    if (clause is KeyInfoX509Data x509Data)
+                    {
                         collection.AddRange(Utils.BuildBagOfCerts(x509Data, CertUsageType.Verification));
+                    }
                 }
             }
 
@@ -643,7 +642,7 @@ namespace System.Security.Cryptography.Xml
             }
 
             // Figure out how many bits the signature is using
-            int actualSignatureSize = 0;
+            int actualSignatureSize;
             if (!int.TryParse(SignedInfo.SignatureLength, out actualSignatureSize))
             {
                 // If the value wasn't a valid integer, then we'll conservatively reject it all together
@@ -775,7 +774,7 @@ namespace System.Security.Cryptography.Xml
             bool isKeyedHashAlgorithm = hash is KeyedHashAlgorithm;
             if (isKeyedHashAlgorithm || !_bCacheValid || !SignedInfo.CacheValid)
             {
-                string baseUri = (_containingDocument == null ? null : _containingDocument.BaseURI);
+                string baseUri = _containingDocument?.BaseURI;
                 XmlResolver resolver = (_bResolverSet ? _xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), baseUri));
                 XmlDocument doc = Utils.PreProcessElementInput(SignedInfo.GetXml(), resolver, baseUri);
 
@@ -892,8 +891,7 @@ namespace System.Security.Cryptography.Xml
             foreach (Reference reference in sortedReferences)
             {
                 // If no DigestMethod has yet been set, default it to sha1
-                if (reference.DigestMethod == null)
-                    reference.DigestMethod = Reference.DefaultDigestMethod;
+                reference.DigestMethod ??= Reference.DefaultDigestMethod;
 
                 SignedXmlDebugLog.LogSigningReference(this, reference);
 
@@ -917,7 +915,7 @@ namespace System.Security.Cryptography.Xml
                 }
 
                 SignedXmlDebugLog.LogVerifyReference(this, digestedReference);
-                byte[] calculatedHash = null;
+                byte[] calculatedHash;
                 try
                 {
                     calculatedHash = digestedReference.CalculateHashValue(_containingDocument, m_signature.ReferencedItems);
@@ -967,7 +965,7 @@ namespace System.Security.Cryptography.Xml
                     // This cannot overflow more than once (and back to 0) because bytes are 1 byte
                     // in length, and result is 4 bytes. The OR propagates all set bytes, so the differences
                     // can't add up and overflow a second time.
-                    result = result | (a[i] - b[i]);
+                    result |= (a[i] - b[i]);
             }
 
             return (0 == result);
@@ -994,8 +992,10 @@ namespace System.Security.Cryptography.Xml
 
         private bool CheckSignedInfo(AsymmetricAlgorithm key)
         {
-            if (key == null)
+            if (key is null)
+            {
                 throw new ArgumentNullException(nameof(key));
+            }
 
             SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo);
 
@@ -1026,8 +1026,10 @@ namespace System.Security.Cryptography.Xml
 
         private bool CheckSignedInfo(KeyedHashAlgorithm macAlg)
         {
-            if (macAlg == null)
+            if (macAlg is null)
+            {
                 throw new ArgumentNullException(nameof(macAlg));
+            }
 
             SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo);
 
@@ -1050,11 +1052,8 @@ namespace System.Security.Cryptography.Xml
             // Calculate the hash
             byte[] hashValue = GetC14NDigest(macAlg);
             SignedXmlDebugLog.LogVerifySignedInfo(this, macAlg, hashValue, m_signature.SignatureValue);
-            for (int i = 0; i < m_signature.SignatureValue.Length; i++)
-            {
-                if (m_signature.SignatureValue[i] != hashValue[i]) return false;
-            }
-            return true;
+
+            return m_signature.SignatureValue.AsSpan().SequenceEqual(hashValue.AsSpan(0, m_signature.SignatureValue.Length));
         }
 
         private static XmlElement GetSingleReferenceTarget(XmlDocument document, string idAttributeName, string idValue)

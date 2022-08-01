@@ -369,19 +369,13 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
 {
     CPalThread *pThread = InternalGetCurrentThread();
 
-    CONTEXT *contextRecord;
-    EXCEPTION_RECORD *exceptionRecord;
-    AllocateExceptionRecords(&exceptionRecord, &contextRecord);
+    CONTEXT *contextRecord = pContext;
+    g_hardware_exception_context_locvar_offset = (int)((char*)&contextRecord - (char*)__builtin_frame_address(0));
 
-    *contextRecord = *pContext;
-    *exceptionRecord = *pExRecord;
-
-    contextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     bool continueExecution;
-
     {
-        // The exception object takes ownership of the exceptionRecord and contextRecord
-        PAL_SEHException exception(exceptionRecord, contextRecord);
+        PAL_SEHException exception(pExRecord, pContext, true);
 
         TRACE("PAL_DispatchException(EC %08x EA %p)\n", pExRecord->ExceptionCode, pExRecord->ExceptionAddress);
 
@@ -389,8 +383,8 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
         if (continueExecution)
         {
             // Make a copy of the exception records so that we can free them before restoring the context
-            *pContext = *contextRecord;
-            *pExRecord = *exceptionRecord;
+            *pContext = *exception.ExceptionPointers.ContextRecord;
+            *pExRecord = *exception.ExceptionPointers.ExceptionRecord;
         }
 
         // The exception records are destroyed by the PAL_SEHException destructor now.

@@ -7,7 +7,6 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 
@@ -69,14 +68,21 @@ namespace System.ComponentModel
 
         // These are attributes that, when we discover them on interfaces, we do
         // not merge them into the attribute set for a class.
-        private static readonly Type[] s_skipInterfaceAttributeList = new Type[]
+        private static readonly Type[] s_skipInterfaceAttributeList = InitializeSkipInterfaceAttributeList();
+
+        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2045:AttributeRemoval",
+            Justification = "The ComVisibleAttribute is marked for removal and it's referenced here. Since this array" +
+                            "contains only attributes which are going to be ignored, removing such attribute" +
+                            "will not break the functionality in any way.")]
+        private static Type[] InitializeSkipInterfaceAttributeList()
         {
-#if FEATURE_SKIP_INTERFACE
-            typeof(System.Runtime.InteropServices.GuidAttribute),
-            typeof(System.Runtime.InteropServices.InterfaceTypeAttribute)
-#endif
-            typeof(System.Runtime.InteropServices.ComVisibleAttribute),
-        };
+            return new Type[]
+            {
+                typeof(System.Runtime.InteropServices.GuidAttribute),
+                typeof(System.Runtime.InteropServices.InterfaceTypeAttribute),
+                typeof(System.Runtime.InteropServices.ComVisibleAttribute),
+            };
+        }
 
 
         internal static Guid ExtenderProviderKey { get; } = Guid.NewGuid();
@@ -158,17 +164,22 @@ namespace System.ComponentModel
                     [typeof(double)] = new IntrinsicTypeConverterData((type) => new DoubleConverter()),
                     [typeof(string)] = new IntrinsicTypeConverterData((type) => new StringConverter()),
                     [typeof(int)] = new IntrinsicTypeConverterData((type) => new Int32Converter()),
+                    [typeof(Int128)] = new IntrinsicTypeConverterData((type) => new Int128Converter()),
                     [typeof(short)] = new IntrinsicTypeConverterData((type) => new Int16Converter()),
                     [typeof(long)] = new IntrinsicTypeConverterData((type) => new Int64Converter()),
                     [typeof(float)] = new IntrinsicTypeConverterData((type) => new SingleConverter()),
+                    [typeof(Half)] = new IntrinsicTypeConverterData((type) => new HalfConverter()),
+                    [typeof(UInt128)] = new IntrinsicTypeConverterData((type) => new UInt128Converter()),
                     [typeof(ushort)] = new IntrinsicTypeConverterData((type) => new UInt16Converter()),
                     [typeof(uint)] = new IntrinsicTypeConverterData((type) => new UInt32Converter()),
                     [typeof(ulong)] = new IntrinsicTypeConverterData((type) => new UInt64Converter()),
                     [typeof(object)] = new IntrinsicTypeConverterData((type) => new TypeConverter()),
                     [typeof(CultureInfo)] = new IntrinsicTypeConverterData((type) => new CultureInfoConverter()),
+                    [typeof(DateOnly)] = new IntrinsicTypeConverterData((type) => new DateOnlyConverter()),
                     [typeof(DateTime)] = new IntrinsicTypeConverterData((type) => new DateTimeConverter()),
                     [typeof(DateTimeOffset)] = new IntrinsicTypeConverterData((type) => new DateTimeOffsetConverter()),
                     [typeof(decimal)] = new IntrinsicTypeConverterData((type) => new DecimalConverter()),
+                    [typeof(TimeOnly)] = new IntrinsicTypeConverterData((type) => new TimeOnlyConverter()),
                     [typeof(TimeSpan)] = new IntrinsicTypeConverterData((type) => new TimeSpanConverter()),
                     [typeof(Guid)] = new IntrinsicTypeConverterData((type) => new GuidConverter()),
                     [typeof(Uri)] = new IntrinsicTypeConverterData((type) => new UriTypeConverter()),
@@ -223,16 +234,9 @@ namespace System.ComponentModel
         [RequiresUnreferencedCode("The Types specified in table may be trimmed, or have their static construtors trimmed.")]
         internal static void AddEditorTable(Type editorBaseType, Hashtable table)
         {
-            if (editorBaseType == null)
-            {
-                throw new ArgumentNullException(nameof(editorBaseType));
-            }
+            ArgumentNullException.ThrowIfNull(editorBaseType);
 
-            if (table == null)
-            {
-                Debug.Fail("COMPAT: Editor table should not be null");
-                // don't throw; RTM didn't so we can't do it either.
-            }
+            Debug.Assert(table != null, "COMPAT: Editor table should not be null"); // don't throw; RTM didn't so we can't do it either.
 
             lock (s_internalSyncObject)
             {
@@ -255,7 +259,7 @@ namespace System.ComponentModel
         {
             Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
 
-            object? obj = null;
+            object? obj;
 
             if (argTypes != null)
             {
@@ -348,10 +352,9 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the component name from the site.
         /// </summary>
-        internal string? GetComponentName([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, object? instance)
+        internal static string? GetComponentName(object? instance)
         {
-            ReflectedTypeData td = GetTypeData(type, true)!;
-            return td.GetComponentName(instance);
+            return ReflectedTypeData.GetComponentName(instance);
         }
 
         /// <summary>
@@ -457,7 +460,7 @@ namespace System.ComponentModel
         /// Retrieves custom extender attributes. We don't support
         /// extender attributes, so we always return an empty collection.
         /// </summary>
-        internal AttributeCollection GetExtendedAttributes(object instance)
+        internal static AttributeCollection GetExtendedAttributes(object instance)
         {
             return AttributeCollection.Empty;
         }
@@ -474,10 +477,9 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the component name from the site.
         /// </summary>
-        [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
-        internal string? GetExtendedComponentName(object instance)
+        internal static string? GetExtendedComponentName(object instance)
         {
-            return GetComponentName(instance.GetType(), instance);
+            return GetComponentName(instance);
         }
 
         /// <summary>
@@ -495,7 +497,7 @@ namespace System.ComponentModel
         /// Return the default event. The default event is determined by the
         /// presence of a DefaultEventAttribute on the class.
         /// </summary>
-        internal EventDescriptor? GetExtendedDefaultEvent(object instance)
+        internal static EventDescriptor? GetExtendedDefaultEvent()
         {
             return null; // we don't support extended events.
         }
@@ -503,7 +505,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Return the default property.
         /// </summary>
-        internal PropertyDescriptor? GetExtendedDefaultProperty(object instance)
+        internal static PropertyDescriptor? GetExtendedDefaultProperty(object instance)
         {
             return null; // extender properties are never the default.
         }
@@ -520,7 +522,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the events for this type.
         /// </summary>
-        internal EventDescriptorCollection GetExtendedEvents(object instance)
+        internal static EventDescriptorCollection GetExtendedEvents(object instance)
         {
             return EventDescriptorCollection.Empty;
         }
@@ -576,10 +578,7 @@ namespace System.ComponentModel
             {
                 PropertyDescriptor[] propertyArray = ReflectGetExtendedProperties(extenders[idx]);
 
-                if (propertyList == null)
-                {
-                    propertyList = new List<PropertyDescriptor>(propertyArray.Length * extenders.Length);
-                }
+                propertyList ??= new List<PropertyDescriptor>(propertyArray.Length * extenders.Length);
 
                 for (int propIdx = 0; propIdx < propertyArray.Length; propIdx++)
                 {
@@ -625,10 +624,7 @@ namespace System.ComponentModel
 
         protected internal override IExtenderProvider[] GetExtenderProviders(object instance)
         {
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
+            ArgumentNullException.ThrowIfNull(instance);
 
             IComponent? component = instance as IComponent;
             if (component != null && component.Site != null)
@@ -640,16 +636,14 @@ namespace System.ComponentModel
                 {
                     return GetExtenders(extenderList.GetExtenderProviders(), instance, cache);
                 }
-#if FEATURE_COMPONENT_COLLECTION
                 else
                 {
-                    IContainer cont = component.Site.Container;
+                    IContainer? cont = component.Site.Container;
                     if (cont != null)
                     {
                         return GetExtenders(cont.Components, instance, cache);
                     }
                 }
-#endif
             }
             return Array.Empty<IExtenderProvider>();
         }
@@ -791,7 +785,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the owner for a property.
         /// </summary>
-        internal object GetExtendedPropertyOwner(object instance, PropertyDescriptor? pd)
+        internal static object GetExtendedPropertyOwner(object instance, PropertyDescriptor? pd)
         {
             return GetPropertyOwner(instance.GetType(), instance, pd);
         }
@@ -873,7 +867,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the owner for a property.
         /// </summary>
-        internal object GetPropertyOwner(Type type, object instance, PropertyDescriptor? pd)
+        internal static object GetPropertyOwner(Type type, object instance, PropertyDescriptor? pd)
         {
             return TypeDescriptor.GetAssociation(type, instance);
         }
@@ -919,10 +913,7 @@ namespace System.ComponentModel
                 if (td == null && createIfNeeded)
                 {
                     td = new ReflectedTypeData(type);
-                    if (_typeData == null)
-                    {
-                        _typeData = new Hashtable();
-                    }
+                    _typeData ??= new Hashtable();
                     _typeData[type] = td;
                 }
             }
@@ -1017,7 +1008,7 @@ namespace System.ComponentModel
                 {
                     // Get the type's attributes.
                     //
-                    attrs = type.GetCustomAttributes(typeof(Attribute), false).OfType<Attribute>().ToArray();
+                    attrs = Attribute.GetCustomAttributes(type, typeof(Attribute), inherit: false);
                     attributeCache[type] = attrs;
                 }
             }
@@ -1045,7 +1036,7 @@ namespace System.ComponentModel
                 {
                     // Get the member's attributes.
                     //
-                    attrs = member.GetCustomAttributes(typeof(Attribute), false).OfType<Attribute>().ToArray();
+                    attrs = Attribute.GetCustomAttributes(member, typeof(Attribute), inherit: false);
                     attributeCache[member] = attrs;
                 }
             }
@@ -1303,7 +1294,7 @@ namespace System.ComponentModel
                         properties = newProperties;
                     }
 
-                    Debug.Assert(!properties.Any(dbgProp => dbgProp == null), $"Holes in property array for type {type}");
+                    Debug.Assert(Array.TrueForAll(properties, dbgProp => dbgProp is not null), $"Holes in property array for type {type}");
 
                     propertyCache[type] = properties;
                 }
@@ -1426,10 +1417,7 @@ namespace System.ComponentModel
                 // Interfaces do not derive from object, so we
                 // must handle the case of no hash entry here.
                 //
-                if (hashEntry == null)
-                {
-                    hashEntry = table[typeof(object)];
-                }
+                hashEntry ??= table[typeof(object)];
 
                 // If the entry is a type, create an instance of it and then
                 // replace the entry. This way we only need to create once.

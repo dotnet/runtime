@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -107,7 +107,7 @@ $SED -e "s/EXTRA_OPS/${TEST_EXTRA_OPS}/g" -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/VAL
 
 
 	ldc.i4.0
-	ret 
+	ret
 }
 
 //EOF

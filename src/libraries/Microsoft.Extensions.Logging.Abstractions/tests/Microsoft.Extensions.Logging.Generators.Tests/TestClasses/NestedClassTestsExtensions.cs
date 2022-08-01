@@ -3,6 +3,8 @@
 
 namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
+    using NamespaceForABC;
+
     internal static partial class NestedClassTestsExtensions<T> where T : ABC
     {
         internal static partial class NestedMiddleParentClass
@@ -26,7 +28,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             }
         }
     }
-    public class ABC {}
 
     public partial struct NestedStruct
     {
@@ -60,4 +61,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             }
         }
     }
+}
+
+namespace NamespaceForABC
+{
+    public class ABC {}
 }

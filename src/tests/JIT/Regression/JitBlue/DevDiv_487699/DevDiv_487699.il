@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly a {}
+.assembly 'DevDiv_487699' {}
 .assembly extern xunit.core {}
-.module a.exe
 
 // This test originally triggered an error, that we do not reload shift index, if it was spilled to rcx.
 

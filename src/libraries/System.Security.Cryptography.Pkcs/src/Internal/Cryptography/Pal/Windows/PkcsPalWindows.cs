@@ -86,7 +86,7 @@ namespace Internal.Cryptography.Pal.Windows
         {
             using (SafeCertContextHandle hCertContext = certificate.CreateCertContextHandle())
             {
-                byte[] ski = hCertContext.GetSubjectKeyIdentifer();
+                byte[] ski = hCertContext.GetSubjectKeyIdentifier();
                 return ski;
             }
         }
@@ -101,7 +101,7 @@ namespace Internal.Cryptography.Pal.Windows
             return GetPrivateKey<T>(certificate, silent, preferNCrypt: false);
         }
 
-        private T? GetPrivateKey<T>(X509Certificate2 certificate, bool silent, bool preferNCrypt) where T : AsymmetricAlgorithm
+        private static T? GetPrivateKey<T>(X509Certificate2 certificate, bool silent, bool preferNCrypt) where T : AsymmetricAlgorithm
         {
             if (!certificate.HasPrivateKey)
             {

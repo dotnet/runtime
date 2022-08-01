@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly attrib014_2{}
+.assembly 'test_08'{}
 .assembly extern xunit.core {}
-.module attrib014_2.exe
 
 .class private auto ansi import beforefieldinit ShellApplication
        extends [mscorlib]System.Object

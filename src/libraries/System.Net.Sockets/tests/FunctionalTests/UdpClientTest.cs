@@ -16,7 +16,7 @@ namespace System.Net.Sockets.Tests
 
         private const int DiscardPort = 9;
 
-        private ManualResetEvent _waitHandle = new ManualResetEvent(false);
+        private ManualResetEventSlim _waitHandle = new ManualResetEventSlim(false);
 
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
@@ -370,7 +370,7 @@ namespace System.Net.Sockets.Tests
                 _waitHandle.Reset();
                 udpClient.BeginSend(sendBytes, sendBytes.Length, remoteServer, new AsyncCallback(AsyncCompleted), udpClient);
 
-                Assert.True(_waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+                Assert.True(_waitHandle.Wait(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
             }
         }
 
@@ -439,7 +439,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61343", TestPlatforms.Android)]
         public async Task ConnectAsync_StringHost_Success()
         {
             using (var c = new UdpClient())
@@ -449,7 +448,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61343", TestPlatforms.Android)]
         public async Task ConnectAsync_IPAddressHost_Success()
         {
             using (var c = new UdpClient())
@@ -459,7 +457,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61343", TestPlatforms.Android)]
         public void Connect_StringHost_Success()
         {
             using (var c = new UdpClient())
@@ -469,7 +466,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61343", TestPlatforms.Android)]
         public void Connect_IPAddressHost_Success()
         {
             using (var c = new UdpClient())

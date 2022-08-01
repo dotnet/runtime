@@ -16,10 +16,6 @@
 
     <!-- coreclr doesn't currently use the index so don't force it to be in sync -->
     <SkipIndexCheck>true</SkipIndexCheck>
-
-    <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">7.0.0</PackageVersion>
-    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,9 +27,6 @@
     This is a legacy setting as we tend to use symbol packages for symbol indexing and we don't use
     transport packages to flow dependencies anymore -->
     <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">false</CreatePackedPackage>
-
-    <!-- indicates that lib prefix is not added to library names for Unix-like operating systems -->
-    <SkipLibraryPrefixFromUnix>true</SkipLibraryPrefixFromUnix>
 
     <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">windows;OSX;Android;Linux;FreeBSD;NetBSD;illumos;Solaris</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>

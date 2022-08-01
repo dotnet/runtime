@@ -4,10 +4,6 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 1.2.2204.0
-//  Copyright (C) Microsoft Corporation 1998-2002. All rights reserved.
-
-
 // This IL was generated from the following C# program on 10/7/02 using csc version
 // 8.00.2276 with CLR version 2.x86chk.  This tests functionality which currently compiles
 // and passes, but which we know will not be supported in a future version of the compiler.
@@ -86,7 +82,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module method014.exe
 // MVID: {5E79BC95-82C1-4B20-8867-C903C4ECBE7E}
 .imagebase 0x00400000
 .subsystem 0x00000003

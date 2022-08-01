@@ -2,8 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System.Xml</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />

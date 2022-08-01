@@ -9,6 +9,7 @@
 
     <!-- Ignore nullable warnings on net4* -->
     <NoWarn Condition="$(TargetFramework.StartsWith('net4'))">$(NoWarn),CS8604,CS8602</NoWarn>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
@@ -35,6 +36,10 @@
 
       <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
       <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).pdb" TargetPath="tasks\%(_PublishFramework.Identity)" />
+
+      <!-- for net472 we need all the dependent assemblies too, so copy from the publish folder -->
+      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETFrameworkTasks)\*.dll*"
+                      TargetPath="tasks\$(TargetFrameworkForNETFrameworkTasks)" />
     </ItemGroup>
   </Target>
 </Project>

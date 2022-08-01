@@ -34,10 +34,8 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key));
-                }
+                ArgumentNullException.ThrowIfNull(key);
+
                 DictionaryNode? node = head;
                 if (comparer == null)
                 {
@@ -67,10 +65,8 @@ namespace System.Collections.Specialized
             }
             set
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key));
-                }
+                ArgumentNullException.ThrowIfNull(key);
+
                 version++;
                 DictionaryNode? last = null;
                 DictionaryNode? node;
@@ -157,10 +153,8 @@ namespace System.Collections.Specialized
 
         public void Add(object key, object? value)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
+
             version++;
             DictionaryNode? last = null;
 
@@ -197,10 +191,8 @@ namespace System.Collections.Specialized
 
         public bool Contains(object key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
+
             for (DictionaryNode? node = head; node != null; node = node.next)
             {
                 object oldKey = node.key;
@@ -214,8 +206,8 @@ namespace System.Collections.Specialized
 
         public void CopyTo(Array array, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
 
@@ -241,10 +233,8 @@ namespace System.Collections.Specialized
 
         public void Remove(object key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
+
             version++;
             DictionaryNode? last = null;
             DictionaryNode? node;
@@ -375,8 +365,8 @@ namespace System.Collections.Specialized
 
             void ICollection.CopyTo(Array array, int index)
             {
-                if (array == null)
-                    throw new ArgumentNullException(nameof(array));
+                ArgumentNullException.ThrowIfNull(array);
+
                 if (index < 0)
                     throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
 

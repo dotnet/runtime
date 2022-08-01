@@ -4,7 +4,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <RootNamespace />
     <AssemblyVersion>9.9.9.9</AssemblyVersion>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Drawing\ColorConverterTests.cs" />
@@ -21,6 +21,7 @@
     <Compile Include="NestedContainerTests.cs" />
     <Compile Include="PasswordPropertyTextAttributeTests.cs" />
     <Compile Include="MarshalByValueComponentTests.cs" />
+    <Compile Include="ReflectTypeDescriptionProviderTests.cs" />
     <Compile Include="ToolboxItemAttributeTests.cs" />
     <Compile Include="ToolboxItemFilterAttributeTests.cs" />
     <Compile Include="WarningExceptionTests.cs" />
@@ -64,6 +65,7 @@
     <Compile Include="DataObjectMethodAttributeTests.cs" />
     <Compile Include="DataObjectFieldAttributeTests.cs" />
     <Compile Include="DataObjectAttributeTests.cs" />
+    <Compile Include="DateOnlyConverterTests.cs" />
     <Compile Include="DateTimeConverterTests.cs" />
     <Compile Include="DateTimeOffsetConverterTests.cs" />
     <Compile Include="DecimalConverterTests.cs" />
@@ -93,6 +95,7 @@
     <Compile Include="EventDescriptorCollectionTests.cs" />
     <Compile Include="EventDescriptorTests.cs" />
     <Compile Include="GuidConverterTests.cs" />
+    <Compile Include="Int128ConverterTests.cs" />
     <Compile Include="Int16ConverterTests.cs" />
     <Compile Include="Int32ConverterTests.cs" />
     <Compile Include="Int64ConverterTests.cs" />
@@ -116,8 +119,10 @@
     <Compile Include="SampleClasses.cs" />
     <Compile Include="SByteConverterTests.cs" />
     <Compile Include="SingleConverterTests.cs" />
+    <Compile Include="HalfConverterTests.cs" />
     <Compile Include="StringConverterTests.cs" />
     <Compile Include="Timers\TimersDescriptionAttributeTests.cs" />
+    <Compile Include="TimeOnlyConverterTests.cs" />
     <Compile Include="TimeSpanConverterTests.cs" />
     <Compile Include="TypeConverterAttributeTests.cs" />
     <Compile Include="TypeConverterTests.cs" />
@@ -126,6 +131,7 @@
     <Compile Include="TypeDescriptionProviderAttributeTests.cs" />
     <Compile Include="TypeDescriptorTests.cs" />
     <Compile Include="TypeListConverterTests.cs" />
+    <Compile Include="UInt128ConverterTests.cs" />
     <Compile Include="UInt16ConverterTests.cs" />
     <Compile Include="UInt32ConverterTests.cs" />
     <Compile Include="UInt64ConverterTests.cs" />
@@ -153,6 +159,8 @@
     <Compile Include="Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverterTests.cs" />
     <Compile Include="XTypeDescriptionProviderTests.cs" />
 
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
+        Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
   </ItemGroup>
   <ItemGroup>

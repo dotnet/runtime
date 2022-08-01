@@ -7,13 +7,14 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Metadata
 {
-    public static class MetadataUpdater
+    public static partial class MetadataUpdater
     {
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_ApplyUpdate")]
-        private static extern unsafe void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_ApplyUpdate")]
+        private static unsafe partial void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_IsApplyUpdateSupported")]
-        private static extern unsafe bool IsApplyUpdateSupported();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_IsApplyUpdateSupported")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static unsafe partial bool IsApplyUpdateSupported();
 
         /// <summary>
         /// Updates the specified assembly using the provided metadata, IL and PDB deltas.
@@ -36,7 +37,7 @@ namespace System.Reflection.Metadata
         {
             if (assembly is not RuntimeAssembly runtimeAssembly)
             {
-                if (assembly is null) throw new ArgumentNullException(nameof(assembly));
+                ArgumentNullException.ThrowIfNull(assembly);
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
             }
 

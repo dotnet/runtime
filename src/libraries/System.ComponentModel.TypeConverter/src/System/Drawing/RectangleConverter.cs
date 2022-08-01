@@ -17,7 +17,7 @@ namespace System.Drawing
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
@@ -33,10 +33,7 @@ namespace System.Drawing
                 }
 
                 // Parse 4 integer values.
-                if (culture == null)
-                {
-                    culture = CultureInfo.CurrentCulture;
-                }
+                culture ??= CultureInfo.CurrentCulture;
 
                 char sep = culture.TextInfo.ListSeparator[0];
                 string[] tokens = text.Split(sep);
@@ -50,7 +47,7 @@ namespace System.Drawing
 
                 if (values.Length != 4)
                 {
-                    throw new ArgumentException(SR.Format(SR.TextParseFailedFormat, "text", text, "x, y, width, height"));
+                    throw new ArgumentException(SR.Format(SR.TextParseFailedFormat, text, "x, y, width, height"));
                 }
 
                 return new Rectangle(values[0], values[1], values[2], values[3]);
@@ -61,19 +58,13 @@ namespace System.Drawing
 
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
+            ArgumentNullException.ThrowIfNull(destinationType);
 
             if (value is Rectangle rect)
             {
                 if (destinationType == typeof(string))
                 {
-                    if (culture == null)
-                    {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
 
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
@@ -106,10 +97,7 @@ namespace System.Drawing
 
         public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
-            if (propertyValues == null)
-            {
-                throw new ArgumentNullException(nameof(propertyValues));
-            }
+            ArgumentNullException.ThrowIfNull(propertyValues);
 
             object? x = propertyValues["X"];
             object? y = propertyValues["Y"];

@@ -8,21 +8,16 @@ using System.Threading;
 namespace System.Net.Security
 {
 #if DEBUG
-    internal sealed class SecurityContextTokenHandle : DebugCriticalHandleZeroOrMinusOneIsInvalid
+    internal sealed class SecurityContextTokenHandle : DebugSafeHandleZeroOrMinusOneIsInvalid
     {
 #else
-    internal sealed class SecurityContextTokenHandle : CriticalHandleZeroOrMinusOneIsInvalid
+    internal sealed class SecurityContextTokenHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
 #endif
         private int _disposed;
 
-        public SecurityContextTokenHandle() : base()
+        public SecurityContextTokenHandle() : base(true)
         {
-        }
-
-        internal IntPtr DangerousGetHandle()
-        {
-            return handle;
         }
 
         protected override bool ReleaseHandle()

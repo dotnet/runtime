@@ -4,6 +4,7 @@
 using System;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -41,15 +42,42 @@ internal static partial class Interop
             internal ushort CloseStatus;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [NativeMarshalling(typeof(Marshaller))]
         internal struct HttpHeader
         {
-            [MarshalAs(UnmanagedType.LPStr)]
             internal string Name;
             internal uint NameLength;
-            [MarshalAs(UnmanagedType.LPStr)]
             internal string Value;
             internal uint ValueLength;
+
+            [CustomMarshaller(typeof(HttpHeader), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
+            [CustomMarshaller(typeof(HttpHeader), MarshalMode.ElementIn, typeof(Marshaller))]
+            public static class Marshaller
+            {
+                public static Native ConvertToUnmanaged(HttpHeader managed)
+                {
+                    Native n;
+                    n.Name = Marshal.StringToCoTaskMemAnsi(managed.Name);
+                    n.NameLength = managed.NameLength;
+                    n.Value = Marshal.StringToCoTaskMemAnsi(managed.Value);
+                    n.ValueLength = managed.ValueLength;
+                    return n;
+                }
+
+                public static void Free(Native n)
+                {
+                    Marshal.FreeCoTaskMem(n.Name);
+                    Marshal.FreeCoTaskMem(n.Value);
+                }
+
+                internal struct Native
+                {
+                    public IntPtr Name;
+                    public uint NameLength;
+                    public IntPtr Value;
+                    public uint ValueLength;
+                }
+            }
         }
     }
 }

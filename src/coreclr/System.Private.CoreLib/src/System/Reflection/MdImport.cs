@@ -194,7 +194,9 @@ namespace System.Reflection
         }
     }
 
+#pragma warning disable CA1066 // IEquatable<MetadataImport> interface implementation isn't used
     internal readonly struct MetadataImport
+#pragma warning restore CA1067
     {
         private readonly IntPtr m_metadataImport2;
         private readonly object? m_keepalive;
@@ -204,7 +206,7 @@ namespace System.Reflection
 
         public override int GetHashCode()
         {
-            return ValueType.GetHashCodeOfPtr(m_metadataImport2);
+            return RuntimeHelpers.GetHashCodeOfPtr(m_metadataImport2);
         }
 
         public override bool Equals(object? obj)

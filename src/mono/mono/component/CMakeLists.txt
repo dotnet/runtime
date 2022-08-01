@@ -41,6 +41,7 @@ list(APPEND components
 )
 set(${MONO_HOT_RELOAD_COMPONENT_NAME}-sources
   ${MONO_COMPONENT_PATH}/hot_reload.c
+  ${MONO_COMPONENT_PATH}/hot_reload-internals.h
   ${MONO_COMPONENT_PATH}/hot_reload.h
   )
 set(${MONO_HOT_RELOAD_COMPONENT_NAME}-stub-sources
@@ -64,6 +65,7 @@ set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-sources
   ${diagnostic_server_sources}
   ${MONO_COMPONENT_PATH}/event_pipe.c
   ${MONO_COMPONENT_PATH}/event_pipe.h
+  ${MONO_COMPONENT_PATH}/event_pipe-wasm.h
   ${MONO_COMPONENT_PATH}/diagnostics_server.c
   ${MONO_COMPONENT_PATH}/diagnostics_server.h
   )
@@ -98,6 +100,7 @@ add_library(component_base INTERFACE)
 target_sources(component_base INTERFACE
   ${MONO_COMPONENT_PATH}/component.h
 )
+target_link_libraries(component_base INTERFACE monoapi)
 
 if(DISABLE_COMPONENTS OR DISABLE_LIBS)
   set(DISABLE_COMPONENT_OBJECTS 1)

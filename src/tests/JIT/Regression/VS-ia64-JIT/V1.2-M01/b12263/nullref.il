@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly field017{}
+.assembly 'nullref'{}
 .assembly extern xunit.core {}
-.module field017.exe
 
 .class private auto ansi beforefieldinit MyTest
        extends [mscorlib]System.Object

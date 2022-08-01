@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="zh-Hant" original="../Strings.resx">
+    <body>
+      <trans-unit id="ArraySizeMustBeSpecified">
+        <source>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</source>
+        <target state="translated">將數組從未受管理排列到受管理，需要在 'MarshalUsingAttribute' 上設定 'SizeParamIndex' 或 'SizeConst' 字段，或在 'MarshalUsingAttribute' 上設定 'ConstantElementCount' 或 'CountElementName' 屬性。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BidirectionalMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">指定的參數必須從受控封送處理到非受控，以及從非受控封送處理到受控，但封送處理程式類型 '{0}' 不支援。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
+        <source>The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</source>
+        <target state="translated">為集合指定的集合大小參數必須是整數類型。如果大小資訊套用至巢狀集合，大小參數必須是少於一層巢狀元素的集合。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConstantAndElementCountInfoDisallowed">
+        <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
+        <target state="translated">在指定的 'ElementIndirectionDepth' 的 'MarshalUsingAttribute' 中只能使用 'ConstantElementCount' 或 'ElementCountInfo' 其中之一</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CyclicalCountInfo">
+        <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
+        <target state="translated">此元素不需要建立相依性循環，就無法依存 '{0}' 集合大小資訊</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateCountInfo">
+        <source>Count information for a given element at a given indirection level can only be specified once</source>
+        <target state="translated">在指定的間接層級，指定元素的計數資訊只能指定一次。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateMarshallingInfo">
+        <source>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</source>
+        <target state="translated">不支援每個元素的每個間接層級有多個排列屬性，但為間接層級提供了重複的資訊{0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ExtraneousMarshallingInfo">
+        <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
+        <target state="translated">已為 'ElementIndirectionDepth' {0}指定封送處理資訊，但只有 {1}層級 (間接) 需要封送處理資訊</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GraphHasCycles">
+        <source>The provided graph has cycles and cannot be topologically sorted.</source>
+        <target state="translated">提供的圖表有週期，無法以拓撲排序。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeNotSupportedWithoutOut">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</source>
+        <target state="translated">除非一併使用'[Out]'屬性，否則不支援'[In]'屬性。沒有'[Out]'屬性的'[In]'屬性行為與默認行為相同。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeByRefNotSupported">
+        <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
+        <target state="translated">參考所傳遞的參數不支援'[In]'和'[Out]'屬性。請改用 'in'、'ref' 或 'out' 關鍵詞。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeMarshalerNotSupported">
+        <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
+        <target state="translated">此參數不支援在此參數上提供的 '[In]' 和 '[Out]' 屬性。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">指定的參數必須從受控封送處理到非受控，但封送處理程式類型 '{0}' 不支援。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
+        <source>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</source>
+        <target state="translated">受控類型 '{1}' 的封送處理器進入點類型 '{0}' 必須具有大於受控類型的 arity。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
+        <target state="translated">受控型別 '{1}' 的封送處理器類型 '{0}' 必須是靜態類別或結構。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
+        <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">不支援沒有明確排列資訊的封送處理布林值。指定 'MarshalUsingAttribute' 或 'MarshalAsAttribute'。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
+        <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
+        <target state="translated">不支援具有 'StringMarshalling.{0}' 的封送字元。請改為手動將字元類型轉換為想要的位元組表示法，並傳遞至來源產生的 P/Invoke。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
+        <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
+        <target state="translated">不支援具有 'StringMarshalling.Custom' 的封送處理字元。若要使用自訂類型封送處理器，請指定 'MarshalUsingAttribute'。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">不支援在未明確封送處理資訊的情況下封送處理字串或字元。請指定 'LibraryImportAttribute.StringMarshalling'、'LibraryImportAttribute.StringMarshallingCustomType'、'MarshalUsingAttribute' 或 'MarshalAsAttribute'。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeMarshallingMustBeDisabled">
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">必須將 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' 套用到組件，以停用此專案中的執行階段封送處理，以啟用此類型的封送處理。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SafeHandleByRefMustBeConcrete">
+        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
+        <target state="translated">衍生自 'SafeHandle' 的抽象類型無法依參考排列。提供的類型必須是實體。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">指定的參數必須從非受控封送處理到受控，但封送處理程式類型 '{0}' 不支援。</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

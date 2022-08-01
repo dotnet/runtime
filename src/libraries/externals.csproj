@@ -3,15 +3,25 @@
     <!-- Set the RuntimeIdentifier so that the DotNetHost and DotNetHostPolicy packages resolve for the corresponding runtime. -->
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- Binplace properties -->
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
     <BinPlaceNative>true</BinPlaceNative>
     <BinPlaceRuntime>false</BinPlaceRuntime>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <UseLiveBuiltDotNetHost Condition="'$(TargetArchitecture)' == 's390x'">true</UseLiveBuiltDotNetHost>
+    <UseLiveBuiltDotNetHost Condition="'$(DotNetBuildFromSource)' == 'true' or '$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'ppc64le' or '$(TargetArchitecture)' == 'armv6' or '$(TargetsLinuxBionic)' == 'true'">true</UseLiveBuiltDotNetHost>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GCStressDependsOnCoreDisTools>false</GCStressDependsOnCoreDisTools>
+    <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'Windows' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86')">true</GCStressDependsOnCoreDisTools>
+    <GCStressDependsOnCoreDisTools Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'x64'">true</GCStressDependsOnCoreDisTools>
+    <CopyCoreDisToolsToCoreRoot>false</CopyCoreDisToolsToCoreRoot>
+    <CopyCoreDisToolsToCoreRoot Condition="$(GCStressDependsOnCoreDisTools) And '$(DotNetBuildFromSource)' != 'true'">true</CopyCoreDisToolsToCoreRoot>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="$(CopyCoreDisToolsToCoreRoot)" />
+  
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
     <PackageReference Include="Microsoft.DiaSymReader.Native"
                       Version="$(MicrosoftDiaSymReaderNativeVersion)" />
@@ -26,11 +36,10 @@
 
   <!-- Setup the testing shared framework host -->
   <Target Name="SetupTestingHost"
-          AfterTargets="AfterResolveReferences">
+          AfterTargets="AfterResolveReferences"
+          Condition="'$(TestNativeAot)' != 'true'">
     <PropertyGroup>
       <UseHardlink>true</UseHardlink>
-      <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
-      <UseHardlink Condition="$(PackageRID.StartsWith('freebsd'))">false</UseHardlink>
     </PropertyGroup>
 
     <!-- We do not need apphost.exe.
@@ -69,13 +78,19 @@
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
+    <Copy Condition="$(CopyCoreDisToolsToCoreRoot)" 
+          SourceFiles="$(CoreDisToolsLibrary)"
+          DestinationFolder="$(NetCoreAppCurrentTestHostPath)shared\Microsoft.NETCore.App\$(ProductVersion)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)" />
+
     <Exec Command="chmod +x $(NetCoreAppCurrentTestHostPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'"/>
   </Target>
 
   <Target Name="OverrideRuntimeCoreCLR"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences"
-          Condition="'$(RuntimeFlavor)' != 'Mono'">
+          Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TestNativeAot)' != 'true'">
     <ItemGroup>
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />

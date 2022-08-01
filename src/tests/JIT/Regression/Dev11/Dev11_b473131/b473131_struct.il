@@ -273,7 +273,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module b473131_struct.exe
 // MVID: {A0B36922-A9AF-463E-9F32-9FBF144F14C7}
 .imagebase 0x00400000
 .file alignment 0x00000200

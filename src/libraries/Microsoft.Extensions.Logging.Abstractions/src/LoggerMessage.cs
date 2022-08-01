@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log scope.</returns>
-        public static Func<ILogger, IDisposable> DefineScope(string formatString)
+        public static Func<ILogger, IDisposable?> DefineScope(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 0);
 
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Logging
         /// <typeparam name="T1">The type of the first parameter passed to the named format string.</typeparam>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log scope.</returns>
-        public static Func<ILogger, T1, IDisposable> DefineScope<T1>(string formatString)
+        public static Func<ILogger, T1, IDisposable?> DefineScope<T1>(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 1);
 
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Logging
         /// <typeparam name="T2">The type of the second parameter passed to the named format string.</typeparam>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log scope.</returns>
-        public static Func<ILogger, T1, T2, IDisposable> DefineScope<T1, T2>(string formatString)
+        public static Func<ILogger, T1, T2, IDisposable?> DefineScope<T1, T2>(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
 
@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Logging
         /// <typeparam name="T3">The type of the third parameter passed to the named format string.</typeparam>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log scope.</returns>
-        public static Func<ILogger, T1, T2, T3, IDisposable> DefineScope<T1, T2, T3>(string formatString)
+        public static Func<ILogger, T1, T2, T3, IDisposable?> DefineScope<T1, T2, T3>(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 3);
 
@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Logging
         /// <typeparam name="T4">The type of the fourth parameter passed to the named format string.</typeparam>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log scope.</returns>
-        public static Func<ILogger, T1, T2, T3, T4, IDisposable> DefineScope<T1, T2, T3, T4>(string formatString)
+        public static Func<ILogger, T1, T2, T3, T4, IDisposable?> DefineScope<T1, T2, T3, T4>(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 4);
 
@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Logging
         /// <typeparam name="T5">The type of the fifth parameter passed to the named format string.</typeparam>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log scope.</returns>
-        public static Func<ILogger, T1, T2, T3, T4, T5, IDisposable> DefineScope<T1, T2, T3, T4, T5>(string formatString)
+        public static Func<ILogger, T1, T2, T3, T4, T5, IDisposable?> DefineScope<T1, T2, T3, T4, T5>(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 5);
 
@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Logging
         /// <typeparam name="T6">The type of the sixth parameter passed to the named format string.</typeparam>
         /// <param name="formatString">The named format string</param>
         /// <returns>A delegate which when invoked creates a log scope.</returns>
-        public static Func<ILogger, T1, T2, T3, T4, T5, T6, IDisposable> DefineScope<T1, T2, T3, T4, T5, T6>(string formatString)
+        public static Func<ILogger, T1, T2, T3, T4, T5, T6, IDisposable?> DefineScope<T1, T2, T3, T4, T5, T6>(string formatString)
         {
             LogValuesFormatter formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 6);
 

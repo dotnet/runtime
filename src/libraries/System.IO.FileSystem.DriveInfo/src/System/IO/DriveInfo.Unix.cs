@@ -43,7 +43,7 @@ namespace System.IO
         {
             get
             {
-                string format = string.Empty;
+                string format;
                 CheckStatfsResultAndThrowIfNecessary(Interop.Sys.GetFormatInfoForMountPoint(Name, out format));
                 return format;
             }
@@ -53,7 +53,7 @@ namespace System.IO
         {
             get
             {
-                Interop.Sys.MountPointInformation mpi = default(Interop.Sys.MountPointInformation);
+                Interop.Sys.MountPointInformation mpi;
                 CheckStatfsResultAndThrowIfNecessary(Interop.Sys.GetSpaceInfoForMountPoint(Name, out mpi));
                 return checked((long)mpi.AvailableFreeSpace);
             }
@@ -63,7 +63,7 @@ namespace System.IO
         {
             get
             {
-                Interop.Sys.MountPointInformation mpi = default(Interop.Sys.MountPointInformation);
+                Interop.Sys.MountPointInformation mpi;
                 CheckStatfsResultAndThrowIfNecessary(Interop.Sys.GetSpaceInfoForMountPoint(Name, out mpi));
                 return checked((long)mpi.TotalFreeSpace);
             }
@@ -73,7 +73,7 @@ namespace System.IO
         {
             get
             {
-                Interop.Sys.MountPointInformation mpi = default(Interop.Sys.MountPointInformation);
+                Interop.Sys.MountPointInformation mpi;
                 CheckStatfsResultAndThrowIfNecessary(Interop.Sys.GetSpaceInfoForMountPoint(Name, out mpi));
                 return checked((long)mpi.TotalSize);
             }

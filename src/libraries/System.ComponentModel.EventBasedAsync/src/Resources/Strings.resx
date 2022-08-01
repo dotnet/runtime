@@ -57,9 +57,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Async_NullDelegate" xml:space="preserve">
-    <value>A non-null SendOrPostCallback must be supplied.</value>
-  </data>
   <data name="Async_OperationAlreadyCompleted" xml:space="preserve">
     <value>This operation has already had OperationCompleted called on it and further calls are illegal.</value>
   </data>

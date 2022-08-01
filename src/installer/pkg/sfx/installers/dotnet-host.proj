@@ -4,11 +4,13 @@
     <GenerateInstallers>true</GenerateInstallers>
     <InstallerName>dotnet-host</InstallerName>
     <InstallerName Condition="'$(TargetOS)' == 'OSX'">dotnet-host-internal</InstallerName>
+    <LinuxInstallRoot Condition="'$(BuildRpmPackage)' == 'true'">/</LinuxInstallRoot>
     <PackageBrandNameSuffix>Host</PackageBrandNameSuffix>
     <VSInsertionShortComponentName>NetCore.SharedHost</VSInsertionShortComponentName>
     <UseCustomDirectoryHarvesting>true</UseCustomDirectoryHarvesting>
     <WixIncludeRegistryKeys>true</WixIncludeRegistryKeys>
     <RegKeyProductName>sharedhost</RegKeyProductName>
+    <!-- Contributes to DependencyKey which ensures stable provider key - do not change -->
     <WixDependencyKeyName>Dotnet_CLI_SharedHost</WixDependencyKeyName>
     <OutputFilesCandleVariable>HostSrc</OutputFilesCandleVariable>
     <MajorUpgradeSchedule>afterInstallExecute</MajorUpgradeSchedule>
@@ -18,15 +20,16 @@
     <IncludeVersionInMacOSComponentName>false</IncludeVersionInMacOSComponentName>
     <MacOSScriptsTemplateDirectory>osx_scripts/host</MacOSScriptsTemplateDirectory>
     <MacOSPackageDescription>The .NET Shared Host.</MacOSPackageDescription>
-    <RpmScriptsDirectory>$(MSBuildThisFileDirectory)rpm_scripts/host</RpmScriptsDirectory>
-    <RpmAfterInstallScript>$(RpmScriptsDirectory)/after_install.sh</RpmAfterInstallScript>
-    <RpmAfterRemoveScript>$(RpmScriptsDirectory)/after_remove.sh</RpmAfterRemoveScript>
+    <!-- Enables stable upgrade code - do not change -->
+    <MsiUpgradeCodeSeed>dotnet-host $(MajorVersion).$(MinorVersion) $(Platform)</MsiUpgradeCodeSeed>
   </PropertyGroup>
 
   <ItemGroup>
     <WixSrcFile Include="host.wxs" />
     <WixExtraComponentGroupRefId Include="InstallSharedHostandDetectionKeys" />
     <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion" />
+    <!-- Enables stable provider key - do not change -->
+    <CandleVariables Include="DependencyKey" Value="$(WixDependencyKeyName)_$(MajorVersion).$(MinorVersion)_$(TargetArchitecture)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,21 +39,37 @@
   <Target Name="PublishToDisk">
     <Error Condition="'$(OutputPath)' == ''" Text="Publishing to disk requires the OutputPath to be set to the root of the path to write to." />
 
+    <PropertyGroup>
+      <_DestinationPath>$(OutputPath)</_DestinationPath>
+      <_DestinationPath Condition="'$(BuildRpmPackage)' == 'true'">$(OutputPath)usr/share/dotnet/</_DestinationPath>
+      <_UsrBinPath>$(OutputPath)usr/bin/</_UsrBinPath>
+    </PropertyGroup>
+
+    <MakeDir Condition="'$(BuildRpmPackage)' == 'true'" Directories="$(_DestinationPath)" />
+    <MakeDir Condition="'$(BuildRpmPackage)' == 'true'" Directories="$(_UsrBinPath)" />
+
     <ItemGroup>
       <FilesToPublish Include="$(DotNetHostBinDir)\dotnet$(ExeSuffix)"
-            Destination="$(OutputPath)dotnet$(ExeSuffix)" />
+            Destination="$(_DestinationPath)dotnet$(ExeSuffix)" />
       <FilesToPublish Include="$(InstallerProjectRoot)pkg\THIRD-PARTY-NOTICES.TXT"
-            Destination="$(OutputPath)ThirdPartyNotices.txt" />
+            Destination="$(_DestinationPath)ThirdPartyNotices.txt" />
       <FilesToPublish Include="$(RepoRoot)LICENSE.TXT"
-            Destination="$(OutputPath)LICENSE.txt"
+            Destination="$(_DestinationPath)LICENSE.txt"
             Condition="'$(TargetsUnix)' == 'true'"/>
       <FilesToPublish Include="$(InstallerProjectRoot)pkg\LICENSE-MSFT.TXT"
-            Destination="$(OutputPath)LICENSE.txt"
+            Destination="$(_DestinationPath)LICENSE.txt"
             Condition="'$(TargetsUnix)' != 'true'"/>
     </ItemGroup>
 
     <Copy SourceFiles="@(FilesToPublish)"
           DestinationFiles="%(FilesToPublish.Destination)" />
+
+    <!--
+      Create symlink so the dotnet host is in PATH. It points to where dotnet will be installed, so
+      it may seem to point to the wrong place in the build machine's layout.
+    -->
+    <Exec Condition="'$(BuildRpmPackage)' == 'true'" Command="ln -sf &quot;/usr/share/dotnet/dotnet&quot; &quot;$(_UsrBinPath)dotnet&quot;" />
+
   </Target>
 
   <Target Name="PublishSymbolsToDisk">
@@ -72,8 +91,6 @@
     <ItemGroup>
       <DebJsonProperty Include="symlinks" Object="{ &quot;dotnet&quot;: &quot;/usr/bin/dotnet&quot; }" />
       <RpmJsonProperty Include="directories" Object="[ &quot;/usr/share/dotnet&quot;, &quot;/usr/share/doc/dotnet-host&quot; ]" />
-      <RpmJsonProperty Include="after_install_source" Object="&quot;$(RpmAfterInstallScript)&quot;" />
-      <RpmJsonProperty Include="after_remove_source" Object="&quot;$(RpmAfterRemoveScript)&quot;" />
       <PackageConflictsProperty Include="package_conflicts" Object="[ &quot;dotnet&quot;, &quot;dotnet-nightly&quot; ]" />
       <DebJsonProperty Include="@(PackageConflictsProperty)" />
       <RpmJsonProperty Include="@(PackageConflictsProperty)" />

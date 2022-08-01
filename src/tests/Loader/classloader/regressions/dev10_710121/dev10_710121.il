@@ -16,7 +16,7 @@ The bug related to populating MethodDesc slots in generic dictionaries at runtim
 */
 
 .assembly extern mscorlib {}
-.assembly Generated30 {}
+.assembly 'dev10_710121' {}
 
 .class public DerivedDerived
 		extends class Derived`2<string,string>

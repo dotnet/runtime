@@ -66,10 +66,7 @@ namespace System.ComponentModel.Composition.Hosting
                                 export = null;
                             }
                         }
-                        if (childContainer != null)
-                        {
-                            childContainer.Dispose();
-                        }
+                        childContainer?.Dispose();
                     }
 
                     return _export.Value;
@@ -78,7 +75,7 @@ namespace System.ComponentModel.Composition.Hosting
                 public void Dispose()
                 {
                     CompositionContainer? childContainer = null;
-                    Export? export = null;
+                    Export? export;
 
                     if (_export != null)
                     {
@@ -93,10 +90,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                     }
 
-                    if (childContainer != null)
-                    {
-                        childContainer.Dispose();
-                    }
+                    childContainer?.Dispose();
                 }
             }
         }

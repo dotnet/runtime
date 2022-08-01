@@ -154,7 +154,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the component name from the site.
             /// </summary>
-            internal string? GetComponentName(object? instance)
+            internal static string? GetComponentName(object? instance)
             {
                 IComponent? comp = instance as IComponent;
                 ISite? site = comp?.Site;
@@ -199,10 +199,7 @@ namespace System.ComponentModel
                 // If we got here, we return our type-based converter.
                 if (_converter == null)
                 {
-                    if (typeAttr == null)
-                    {
-                        typeAttr = (TypeConverterAttribute?)TypeDescriptor.GetAttributes(_type)[typeof(TypeConverterAttribute)];
-                    }
+                    typeAttr ??= (TypeConverterAttribute?)TypeDescriptor.GetAttributes(_type)[typeof(TypeConverterAttribute)];
 
                     if (typeAttr != null)
                     {
@@ -509,10 +506,7 @@ namespace System.ComponentModel
                     t = _type.Assembly.GetType(typeName);
                 }
 
-                if (t == null)
-                {
-                    t = Type.GetType(typeName);
-                }
+                t ??= Type.GetType(typeName);
 
                 if (t == null && commaIndex != -1)
                 {

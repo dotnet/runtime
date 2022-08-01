@@ -3,12 +3,6 @@
 
 .assembly extern System.Console { }
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 2.0.40922.00
-//  Copyright (C) Microsoft Corporation. All rights reserved.
-
-
-
-// Metadata version: v2.0.40922
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..

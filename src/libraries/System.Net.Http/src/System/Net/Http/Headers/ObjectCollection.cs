@@ -11,10 +11,7 @@ namespace System.Net.Http.Headers
     {
         public override void Validate(T item)
         {
-            if (item is null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
         }
     }
 
@@ -196,7 +193,11 @@ namespace System.Net.Http.Headers
         {
             private readonly ObjectCollection<T> _collection;
 
-            public DebugView(ObjectCollection<T> collection) => _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+            public DebugView(ObjectCollection<T> collection)
+            {
+                ArgumentNullException.ThrowIfNull(collection);
+                _collection = collection;
+            }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
             public T[] Items

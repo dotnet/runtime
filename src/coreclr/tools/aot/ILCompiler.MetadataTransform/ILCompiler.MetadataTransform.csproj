@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>ILCompiler.MetadataTransform</AssemblyName>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);NATIVEFORMAT_PUBLICWRITER;NETFX_45</DefineConstants>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Platforms>x64;x86</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+
+    <!-- We're binplacing these into an existing publish layout so that F5 build in VS updates
+         the same bits tests expect to see in artifacts/ilc. That way we never need to wonder which
+         binaries are up to date and which are stale. -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <Configurations>Debug;Release;Checked</Configurations>
+
+    <CommonSourcePath>$(MSBuildThisFileDirectory)..\..\Common\</CommonSourcePath>
+    <NativeFormatCommonPath>$(CommonSourcePath)Internal\NativeFormat</NativeFormatCommonPath>
+    <MetadataCommonPath>$(CommonSourcePath)\Internal\Metadata\NativeFormat</MetadataCommonPath>
+    <MetadataWriterPath>$(MSBuildThisFileDirectory)Internal\Metadata\NativeFormat\Writer</MetadataWriterPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonSourcePath)Internal\LowLevelLinq\LowLevelEnumerable.cs" />
+    <Compile Include="$(CommonSourcePath)Internal\LowLevelLinq\LowLevelEnumerable.ToList.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Primitives.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatWriter.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatWriter.Primitives.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatWriterExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MetadataCommonPath)\NativeFormatReaderCommonGen.cs" />
+    <Compile Include="$(MetadataCommonPath)\MdBinaryReader.cs" />
+    <Compile Include="$(MetadataCommonPath)\MdBinaryReaderGen.cs" />
+    <Compile Include="$(MetadataCommonPath)\NativeMetadataReader.cs" />
+    <Compile Include="$(MetadataCommonPath)\NativeFormatReaderGen.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MetadataWriterPath)\ConstantValues.cs" />
+    <Compile Include="$(MetadataWriterPath)\MdBinaryWriter.cs" />
+    <Compile Include="$(MetadataWriterPath)\MdBinaryWriterGen.cs" />
+    <Compile Include="$(MetadataWriterPath)\NativeFormatWriterGen.cs" />
+    <Compile Include="$(MetadataWriterPath)\NativeMetadataWriter.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ILCompiler\Metadata\EntityMap.cs" />
+    <Compile Include="ILCompiler\Metadata\IMetadataPolicy.cs" />
+    <Compile Include="ILCompiler\Metadata\MetadataTransform.cs" />
+    <Compile Include="ILCompiler\Metadata\MetadataTransformResult.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Constant.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.CustomAttribute.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Event.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Field.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Method.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Namespace.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Parameter.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Property.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Scope.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.String.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Type.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.TypeForwarders.cs" />
+  </ItemGroup>
+</Project>

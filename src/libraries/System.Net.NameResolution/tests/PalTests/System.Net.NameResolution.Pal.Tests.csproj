@@ -3,9 +3,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
-    <Nullable>annotations</Nullable>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
@@ -21,10 +20,12 @@
     <Compile Include="Fakes\IPAddressFakeExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.cs" />
-    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs" Condition="'$(TargetsWindows)' == 'true'"
+    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'"
              Link="Common\System\Net\Sockets\ProtocolType.cs" />
-    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs" Condition="'$(TargetsWindows)' == 'true'"
+    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'"
              Link="Common\System\Net\Sockets\SocketType.cs" />
+    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolFamily.cs"
+              Link="Common\System\Net\Sockets\ProtocolFamily.cs" />
     <Compile Include="$(CommonPath)System\Net\IPEndPointStatics.cs"
              Link="Common\System\Net\IPEndPointStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
@@ -36,7 +37,7 @@
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs"
              Link="Common\System\Net\Configuration.Http.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'windows' ">
     <Compile Include="..\..\src\System\Net\NameResolutionPal.Windows.cs"
              Link="ProductionCode\System\Net\NameResolutionPal.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
@@ -55,8 +56,6 @@
              Link="Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\AddressInfoHints.cs"
              Link="Common\Interop\Windows\WinSock\AddressInfoHints.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\WinSock\hostent.cs"
-             Link="Common\Interop\Windows\WinSock\hostent.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.closesocket.cs"
              Link="Common\Interop\Windows\WinSock\Interop.closesocket.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.gethostname.cs"
@@ -71,22 +70,16 @@
              Link="Common\Interop\Windows\WinSock\Interop.WSASocketW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs"
              Link="Common\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs" />
-    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolFamily.cs"
-             Link="Common\System\Net\Sockets\ProtocolFamily.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs"
              Link="Common\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
              Link="Common\System\Net\Internals\SocketAddressPal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Interop.CheckedAccess.cs"
              Link="Common\System\Net\Internals\Interop.CheckedAccess.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
-    <Compile Include="$(CommonPath)System\Net\Internals\SocketExceptionFactory.cs"
-             Link="ProductionCode\Common\System\Net\Internals\SocketExceptionFactory.cs" />
-    <Compile Include="$(CommonPath)System\Net\Internals\SocketExceptionFactory.Unix.cs"
-             Link="ProductionCode\Common\System\Net\Internals\SocketExceptionFactory.Unix.cs" />
     <Compile Include="..\..\src\System\Net\NameResolutionPal.Unix.cs"
              Link="ProductionCode\System\Net\NameResolutionPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Unix.cs"

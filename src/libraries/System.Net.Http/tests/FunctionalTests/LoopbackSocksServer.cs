@@ -82,7 +82,7 @@ namespace System.Net.Http.Functional.Tests
         private async Task ProcessSocks4Request(Socket clientSocket, NetworkStream ns)
         {
             byte[] buffer = new byte[7];
-            await ReadToFillAsync(ns, buffer).ConfigureAwait(false);
+            await ns.ReadExactlyAsync(buffer).ConfigureAwait(false);
 
             if (buffer[0] != 1)
                 throw new Exception("Only CONNECT is supported.");
@@ -148,7 +148,7 @@ namespace System.Net.Http.Functional.Tests
                 throw new Exception("Early EOF");
 
             byte[] buffer = new byte[1024];
-            await ReadToFillAsync(ns, buffer.AsMemory(0, nMethods)).ConfigureAwait(false);
+            await ns.ReadExactlyAsync(buffer.AsMemory(0, nMethods)).ConfigureAwait(false);
 
             byte expectedAuthMethod = _username == null ? (byte)0 : (byte)2;
             if (!buffer.AsSpan(0, nMethods).Contains(expectedAuthMethod))
@@ -165,11 +165,11 @@ namespace System.Net.Http.Functional.Tests
                     throw new Exception("Bad subnegotiation version.");
 
                 int usernameLength = await ns.ReadByteAsync().ConfigureAwait(false);
-                await ReadToFillAsync(ns, buffer.AsMemory(0, usernameLength)).ConfigureAwait(false);
+                await ns.ReadExactlyAsync(buffer.AsMemory(0, usernameLength)).ConfigureAwait(false);
                 string username = Encoding.UTF8.GetString(buffer.AsSpan(0, usernameLength));
 
                 int passwordLength = await ns.ReadByteAsync().ConfigureAwait(false);
-                await ReadToFillAsync(ns, buffer.AsMemory(0, passwordLength)).ConfigureAwait(false);
+                await ns.ReadExactlyAsync(buffer.AsMemory(0, passwordLength)).ConfigureAwait(false);
                 string password = Encoding.UTF8.GetString(buffer.AsSpan(0, passwordLength));
 
                 if (username != _username || password != _password)
@@ -181,7 +181,7 @@ namespace System.Net.Http.Functional.Tests
                 await ns.WriteAsync(new byte[] { 1, 0 }).ConfigureAwait(false);
             }
 
-            await ReadToFillAsync(ns, buffer.AsMemory(0, 4)).ConfigureAwait(false);
+            await ns.ReadExactlyAsync(buffer.AsMemory(0, 4)).ConfigureAwait(false);
             if (buffer[0] != 5)
                 throw new Exception("Bad protocol version.");
             if (buffer[1] != 1)
@@ -191,18 +191,18 @@ namespace System.Net.Http.Functional.Tests
             switch (buffer[3])
             {
                 case 1:
-                    await ReadToFillAsync(ns, buffer.AsMemory(0, 4)).ConfigureAwait(false);
+                    await ns.ReadExactlyAsync(buffer.AsMemory(0, 4)).ConfigureAwait(false);
                     remoteHost = new IPAddress(buffer.AsSpan(0, 4)).ToString();
                     break;
                 case 4:
-                    await ReadToFillAsync(ns, buffer.AsMemory(0, 16)).ConfigureAwait(false);
+                    await ns.ReadExactlyAsync(buffer.AsMemory(0, 16)).ConfigureAwait(false);
                     remoteHost = new IPAddress(buffer.AsSpan(0, 16)).ToString();
                     break;
                 case 3:
                     int length = await ns.ReadByteAsync().ConfigureAwait(false);
                     if (length == -1)
                         throw new Exception("Early EOF");
-                    await ReadToFillAsync(ns, buffer.AsMemory(0, length)).ConfigureAwait(false);
+                    await ns.ReadExactlyAsync(buffer.AsMemory(0, length)).ConfigureAwait(false);
                     remoteHost = Encoding.UTF8.GetString(buffer.AsSpan(0, length));
                     break;
 
@@ -210,7 +210,7 @@ namespace System.Net.Http.Functional.Tests
                     throw new Exception("Unknown address type.");
             }
 
-            await ReadToFillAsync(ns, buffer.AsMemory(0, 2)).ConfigureAwait(false);
+            await ns.ReadExactlyAsync(buffer.AsMemory(0, 2)).ConfigureAwait(false);
             int port = (buffer[0] << 8) + buffer[1];
 
             await ns.WriteAsync(new byte[] { 5, 0, 0, 1, 0, 0, 0, 0, 0, 0 }).ConfigureAwait(false);
@@ -287,18 +287,6 @@ namespace System.Net.Http.Functional.Tests
                 {
                     ExceptionDispatchInfo.Capture(ex).Throw();
                 }
-            }
-        }
-
-        private async ValueTask ReadToFillAsync(Stream stream, Memory<byte> buffer)
-        {
-            while (!buffer.IsEmpty)
-            {
-                int bytesRead = await stream.ReadAsync(buffer).ConfigureAwait(false);
-                if (bytesRead == 0)
-                    throw new Exception("Incomplete request");
-
-                buffer = buffer.Slice(bytesRead);
             }
         }
 

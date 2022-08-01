@@ -6,7 +6,7 @@
 // model revision #2
 // To compile: ilasm exec3.il
 
-.assembly exec {}
+.assembly 'exec3' {}
 .assembly extern mscorlib {}
 
 .assembly extern nesting3 {}

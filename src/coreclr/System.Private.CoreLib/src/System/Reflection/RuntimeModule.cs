@@ -9,19 +9,19 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
-    internal class RuntimeModule : Module
+    internal sealed partial class RuntimeModule : Module
     {
         internal RuntimeModule() { throw new NotSupportedException(); }
 
         #region FCalls
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetType", CharSet = CharSet.Unicode)]
-        private static extern void GetType(QCallModule module, string className, bool throwOnError, bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetType", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void GetType(QCallModule module, string className, [MarshalAs(UnmanagedType.Bool)] bool throwOnError, [MarshalAs(UnmanagedType.Bool)] bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetScopeName")]
-        private static extern void GetScopeName(QCallModule module, StringHandleOnStack retString);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetScopeName")]
+        private static partial void GetScopeName(QCallModule module, StringHandleOnStack retString);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetFullyQualifiedName")]
-        private static extern void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetFullyQualifiedName")]
+        private static partial void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern RuntimeType[] GetTypes(RuntimeModule module);
@@ -387,8 +387,7 @@ namespace System.Reflection
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
@@ -398,8 +397,7 @@ namespace System.Reflection
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
@@ -420,11 +418,11 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types might be removed")]
-        public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
+        public override Type? GetType(
+            string className, // throw on null strings regardless of the value of "throwOnError"
+            bool throwOnError, bool ignoreCase)
         {
-            // throw on null strings regardless of the value of "throwOnError"
-            if (className == null)
-                throw new ArgumentNullException(nameof(className));
+            ArgumentNullException.ThrowIfNull(className);
 
             RuntimeType? retType = null;
             object? keepAlive = null;
@@ -485,13 +483,9 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
-            if (RuntimeType == null)
-                return null;
-
-            return RuntimeType.GetField(name, bindingAttr);
+            return RuntimeType?.GetField(name, bindingAttr);
         }
 
         [RequiresUnreferencedCode("Methods might be removed")]
@@ -523,7 +517,7 @@ namespace System.Reflection
 
                 int i = s.LastIndexOf(System.IO.Path.DirectorySeparatorChar);
 
-                if (i == -1)
+                if (i < 0)
                     return s;
 
                 return s.Substring(i + 1);

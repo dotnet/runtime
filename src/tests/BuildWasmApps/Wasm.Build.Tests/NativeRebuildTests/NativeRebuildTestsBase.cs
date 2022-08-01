@@ -40,21 +40,22 @@ namespace Wasm.Build.NativeRebuild.Tests
             IEnumerable<object?[]> GetData(bool aot, bool nativeRelinking, bool invariant)
                 => ConfigWithAOTData(aot)
                         .Multiply(new object[] { nativeRelinking, invariant })
-                        .WithRunHosts(RunHost.V8)
-                        .UnwrapItemsAsArrays().ToList().Dump();
+                        .WithRunHosts(RunHost.Chrome)
+                        .UnwrapItemsAsArrays().ToList();
         }
 
         internal (BuildArgs BuildArgs, BuildPaths paths) FirstNativeBuild(string programText, bool nativeRelink, bool invariant, BuildArgs buildArgs, string id, string extraProperties="")
         {
             buildArgs = GenerateProjectContents(buildArgs, nativeRelink, invariant, extraProperties);
             BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                        dotnetWasmFromRuntimePack: false,
-                        hasIcudt: !invariant,
-                        id: id,
-                        createProject: true);
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                                DotnetWasmFromRuntimePack: false,
+                                HasIcudt: !invariant,
+                                CreateProject: true));
 
-            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.V8, id: id);
+            RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.Chrome, id: id);
             return (buildArgs, GetBuildPaths(buildArgs));
         }
 
@@ -77,14 +78,14 @@ namespace Wasm.Build.NativeRebuild.Tests
             buildArgs = newBuildArgs;
 
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
-            Console.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
             (_, string output) = BuildProject(buildArgs,
                                             id: id,
-                                            dotnetWasmFromRuntimePack: false,
-                                            hasIcudt: !invariant,
-                                            createProject: false,
-                                            useCache: false,
-                                            verbosity: verbosity);
+                                            new BuildProjectOptions(
+                                                DotnetWasmFromRuntimePack: false,
+                                                HasIcudt: !invariant,
+                                                CreateProject: false,
+                                                UseCache: false,
+                                                Verbosity: verbosity));
 
             return output;
         }

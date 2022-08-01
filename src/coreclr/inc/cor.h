@@ -1942,7 +1942,7 @@ inline ULONG CorSigUncompressData(      // return number of bytes of that compre
     ULONG dwSizeOfData = 0;
 
     // We don't know how big the signature is, so we'll just say that it's big enough
-    if (FAILED(CorSigUncompressData(pData, 0xff, pDataOut, &dwSizeOfData)))
+    if (FAILED(CorSigUncompressData(pData, 0xff, reinterpret_cast<uint32_t *>(pDataOut), reinterpret_cast<uint32_t *>(&dwSizeOfData))))
     {
         *pDataOut = 0;
         return (ULONG)-1;
@@ -2211,7 +2211,7 @@ inline ULONG CorSigCompressSignedInt(   // return number of bytes that compresse
         *(pBytes + 3) = BYTE(iData & 0xff);
         return 4;
     }
-    // Out of compressable range
+    // Out of compressible range
     return (ULONG)-1;
 } // CorSigCompressSignedInt
 

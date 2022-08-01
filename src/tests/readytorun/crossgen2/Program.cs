@@ -16,7 +16,7 @@ using System.Text;
 internal class ClassWithStatic
 {
     public const int StaticValue = 0x666;
-    
+
     [ThreadStatic]
     public static int Static = StaticValue;
 }
@@ -43,10 +43,10 @@ internal class Program
 
     private static bool WriteLine()
     {
-        Console.WriteLine("Hello CoreRT R2R running on CoreCLR!");
+        Console.WriteLine("Hello R2R running on CoreCLR!");
         return true;
     }
-    
+
     private static bool IsInstanceOf()
     {
         object obj = TextFileName;
@@ -76,7 +76,7 @@ internal class Program
             return false;
         }
     }
-    
+
     private unsafe static bool CheckNonGCThreadLocalStatic()
     {
         fixed (int *lineCountPtr = &LineCount)
@@ -110,7 +110,7 @@ internal class Program
         Console.WriteLine($@"Int: {objInt:X8}");
         return objInt == LineCount;
     }
-    
+
     private static bool BoxUnbox()
     {
         bool success = true;
@@ -230,7 +230,7 @@ internal class Program
         Console.WriteLine("BoxUnboxToNQ: {0}", o);
         return BoxUnboxToNQ1((ValueType)o);
     }
-    
+
     private static bool CastClassWithCharTest()
     {
         char? s = HelperCreateChar();
@@ -265,7 +265,7 @@ internal class Program
                 return false;
             }
         }
-        
+
         var testClass = new RuntimeMethodHandleMethods();
         {
             MethodInfo mi = GetMethodInfo<Func<object, string, object>>((object p1, string p2) => testClass.InstanceMethod(p1, p2));
@@ -275,8 +275,8 @@ internal class Program
                 return false;
             }
         }
-        
-        
+
+
         {
             MethodInfo mi = GetMethodInfo<Func<string, object, object>>((string p1, object p2) => testClass.GenericMethod<string>(p1, p2));
             if (mi.Name != "GenericMethod")
@@ -379,7 +379,7 @@ internal class Program
             return line2 != null;
         }
     }
-    
+
     private static bool ConstructListOfInt()
     {
         List<int> listOfInt = new List<int>();
@@ -394,7 +394,7 @@ internal class Program
             return false;
         }
     }
-    
+
     private static bool ManipulateListOfInt()
     {
         List<int> listOfInt = new List<int>();
@@ -516,19 +516,19 @@ internal class Program
     class DisposeClass : IDisposable
     {
         public static bool DisposedFlag = false;
-        
+
         public DisposeClass()
         {
             Console.WriteLine("DisposeClass created!");
         }
-    
+
         public void Dispose()
         {
             Console.WriteLine("DisposeClass disposed!");
             DisposedFlag = true;
         }
     }
-    
+
     struct DisposeStruct : IDisposable
     {
         public static bool DisposedFlag = false;
@@ -539,7 +539,7 @@ internal class Program
             DisposedFlag = true;
         }
     }
-    
+
     private static bool DisposeStructTest()
     {
         using (var disposeStruct = new DisposeStruct())
@@ -557,7 +557,7 @@ internal class Program
         }
         return DisposeClass.DisposedFlag;
     }
-    
+
     private static bool DisposeEnumeratorTest()
     {
         List<string> listOfString = new List<string>();
@@ -622,7 +622,7 @@ internal class Program
         Console.WriteLine("Array.Empty<string> enumeration passed");
         return true;
     }
-    
+
     private static bool CreateLocalClassInstance()
     {
         var testClass = new TestClass(1234);
@@ -656,7 +656,7 @@ internal class Program
     }
 
     private class GenException<T> : Exception {}
-    
+
     private static bool GenericTryCatch<T>()
     {
         Exception thrown = new GenException<T>();
@@ -729,7 +729,7 @@ internal class Program
         success = GenericTryCatch<ValX1<ValX2<int,string>>>() && success;
         success = GenericTryCatch<ValX2<ValX2<ValX1<int>,ValX3<int,string, ValX1<ValX2<int,string>>>>,ValX2<ValX1<int>,ValX3<int,string, ValX1<ValX2<int,string>>>>>>() && success;
         success = GenericTryCatch<ValX3<ValX1<int[][,,,]>,ValX2<object[,,,][][],Guid[][][]>,ValX3<double[,,,,,,,,,,],Guid[][][][,,,,][,,,,][][][],string[][][][][][][][][][][]>>>();
-        
+
         return success;
     }
 
@@ -757,7 +757,7 @@ internal class Program
             {
                 return -42;
             }
-    
+
             return t.CompareTo(o);
         }
     }
@@ -767,11 +767,11 @@ internal class Program
         int intResult = InstanceMethodCaller<int>.Compare(122, 123);
         const int ExpectedIntResult = -42;
         Console.WriteLine("Int result: {0}, expected: {1}", intResult, ExpectedIntResult);
-        
+
         int stringResult = InstanceMethodCaller<string>.Compare("hello", "world");
         const int ExpectedStringResult = -1;
         Console.WriteLine("String result: {0}, expected: {1}", stringResult, ExpectedStringResult);
-        
+
         return intResult == ExpectedIntResult && stringResult == ExpectedStringResult;
     }
 
@@ -800,7 +800,7 @@ internal class Program
         {
             return CompareArgName(GetTypeName<T>(), typeArgName);
         }
-        
+
         public bool CheckInstanceTypeArg(string typeArgName)
         {
             return CompareArgName(GetTypeName<T>(), typeArgName);
@@ -820,23 +820,23 @@ internal class Program
     struct GenericStruct<T>
     {
         public T FieldOfT;
-        
+
         public GenericStruct(T fieldOfT)
         {
             FieldOfT = fieldOfT;
         }
     }
-    
+
     class GenericClass<T>
     {
         public T FieldOfT;
-        
+
         public GenericClass(T fieldOfT)
         {
             FieldOfT = fieldOfT;
         }
     }
-    
+
     private static bool ThisObjGenericLookupTest()
     {
         Console.WriteLine("ThisObjGenericLookup:");
@@ -963,7 +963,7 @@ internal class Program
         Value2,
         Value3,
     }
-    
+
     public enum IntEnum : int
     {
         Value0,
@@ -976,7 +976,7 @@ internal class Program
     {
         Console.WriteLine("ByteEnum.Value1.GetHashCode: ", ByteEnum.Value1.GetHashCode());
         Console.WriteLine("IntEnum.Value3.GetHashCode: ", IntEnum.Value3.GetHashCode());
-        
+
         ByteEnum[] byteEnumValues = { ByteEnum.Value3, ByteEnum.Value1, ByteEnum.Value0, ByteEnum.Value2, };
         foreach (ByteEnum enumValue in byteEnumValues)
         {
@@ -986,7 +986,7 @@ internal class Program
                 return false;
             }
         }
-        
+
         IntEnum[] intEnumValues = { IntEnum.Value2, IntEnum.Value0, IntEnum.Value1, IntEnum.Value3, };
         foreach (IntEnum enumValue in intEnumValues)
         {
@@ -1154,7 +1154,7 @@ internal class Program
 
         success &= classWithVirtual.VirtualCalledFlag;
 
-        
+
         var bc = new BaseClass();
         success &= (bc.MyGvm<int>() == 100);
 
@@ -1486,7 +1486,7 @@ internal class Program
             Console.WriteLine($"sizeof(ExplicitlySizedStructSequential) != 0x14 {sizeof(ExplicitlySizedStructSequential)} != 0x14");
             if (sizeof(ExplicitlySizedStructSequential) != 0x14)
                 return false;
-            
+
             ExplicitlySizedStructSequential str = new ExplicitlySizedStructSequential();
             str.Set(100, 200, 300);
             Console.WriteLine(str.ToString());
@@ -1498,7 +1498,7 @@ internal class Program
             Console.WriteLine($"sizeof(ExplicitlySizedStructSequentialSizeTooSmall) != 0x14 {sizeof(ExplicitlySizedStructSequentialSizeTooSmall)} != 0x14");
             if (sizeof(ExplicitlySizedStructSequentialSizeTooSmall) != 0x14)
                 return false;
-            
+
             ExplicitlySizedStructSequentialSizeTooSmall str2 = new ExplicitlySizedStructSequentialSizeTooSmall();
             str2.Set(100, 200, 300);
             Console.WriteLine(str2.ToString());
@@ -1510,7 +1510,7 @@ internal class Program
             Console.WriteLine($"sizeof(ExplicitlySizedStructExplicit) != 0x15 {sizeof(ExplicitlySizedStructExplicit)} != 0x15");
             if (sizeof(ExplicitlySizedStructExplicit) != 0x15)
                 return false;
-            
+
             ExplicitlySizedStructExplicit str3 = new ExplicitlySizedStructExplicit();
             str3.Set(100, 200, 300);
             Console.WriteLine(str3.ToString());
@@ -1522,7 +1522,7 @@ internal class Program
             Console.WriteLine($"sizeof(ExplicitlySizedStructExplicitSizeTooSmall) != 0x15 {sizeof(ExplicitlySizedStructExplicitSizeTooSmall)} != 0x15");
             if (sizeof(ExplicitlySizedStructExplicitSizeTooSmall) != 0x15)
                 return false;
-            
+
             ExplicitlySizedStructExplicitSizeTooSmall str4 = new ExplicitlySizedStructExplicitSizeTooSmall();
             str4.Set(100, 200, 300);
             Console.WriteLine(str4.ToString());
@@ -1534,7 +1534,7 @@ internal class Program
             Console.WriteLine($"sizeof(ExplicitlySizedStructExplicitSizeZero) != sizeof(NormalStruct) {sizeof(ExplicitlySizedStructExplicitSizeZero)} != {sizeof(NormalStruct)}");
             if (sizeof(ExplicitlySizedStructExplicitSizeZero) != sizeof(NormalStruct))
                 return false;
-            
+
             ExplicitlySizedStructExplicitSizeZero str5 = new ExplicitlySizedStructExplicitSizeZero();
             str5.Set(100, 200, 300);
             Console.WriteLine(str5.ToString());
@@ -1546,7 +1546,7 @@ internal class Program
             Console.WriteLine($"sizeof(ExplicitlySizedStructAuto) != sizeof(NormalStruct) {sizeof(ExplicitlySizedStructAuto)} != {sizeof(NormalStruct)}");
             if ((sizeof(IntPtr) == 8) && sizeof(ExplicitlySizedStructAuto) != sizeof(NormalStruct)) // This test isn't right for 32 bit platforms
                 return false;
-            
+
             ExplicitlySizedStructAuto str6 = new ExplicitlySizedStructAuto();
             str6.Set(100, 200, 300);
             Console.WriteLine(str6.ToString());
@@ -1558,7 +1558,7 @@ internal class Program
             Console.WriteLine($"sizeof(ExplicitlySizedStructAutoSizeTooSmall) != sizeof(NormalStruct) {sizeof(ExplicitlySizedStructAutoSizeTooSmall)} != {sizeof(NormalStruct)}");
             if ((sizeof(IntPtr) == 8) && sizeof(ExplicitlySizedStructAutoSizeTooSmall) != sizeof(NormalStruct)) // This test isn't right for 32 bit platforms
                 return false;
-            
+
             ExplicitlySizedStructAutoSizeTooSmall str7 = new ExplicitlySizedStructAutoSizeTooSmall();
             str7.Set(100, 200, 300);
             Console.WriteLine(str7.ToString());
@@ -1611,7 +1611,7 @@ internal class Program
     {
         Type typeGenericStructString = typeof(GenericStructForLdtoken<string>);
         Type typeGenericStructObject = typeof(GenericStructForLdtoken<object>);
-        
+
         RuntimeMethodHandle rmh;
         rmh = HelperILCode.GetNonGenericFunctionMethodHandle();
         if (!CheckMethodHandle(rmh, typeGenericStructString, null))
@@ -1755,7 +1755,7 @@ internal class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool ArrayLdtokenTests()
     {
-        // We're testing that mapping from ldtoken to RuntimeMethodHandle works for various ways that 
+        // We're testing that mapping from ldtoken to RuntimeMethodHandle works for various ways that
         // ldtokens can be referenced (either via a generic token, or not.
         // (there are slightly different codepaths in crossgen for this)
         // Incorrect encoding will trigger a BadImageFormatException
@@ -1787,8 +1787,8 @@ internal class Program
     }
     struct BlittableStruct<T>
     {
-	public ExplicitLayoutStruct16 _explict;
-        public override string ToString() { return $"{_explict}"; }
+	public ExplicitLayoutStruct16 _explicit;
+        public override string ToString() { return $"{_explicit}"; }
     }
 
     struct StructWithGenericBlittableStruct
@@ -1798,14 +1798,14 @@ internal class Program
         public override string ToString() { return $"{_blittableGeneric}{_int}"; }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]    
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private static bool TestWithStructureNonBlittableFieldDueToGenerics_StringCompare(ref StructWithGenericBlittableStruct input)
     {
         StructWithGenericBlittableStruct s = new StructWithGenericBlittableStruct();
-        s._blittableGeneric._explict.x = 1;
-        s._blittableGeneric._explict.y = 2;
-        s._blittableGeneric._explict.z = 3;
-        s._blittableGeneric._explict.w = 4;
+        s._blittableGeneric._explicit.x = 1;
+        s._blittableGeneric._explicit.y = 2;
+        s._blittableGeneric._explicit.z = 3;
+        s._blittableGeneric._explicit.w = 4;
         s._int = 5;
 
         Console.WriteLine(input);
@@ -1818,10 +1818,10 @@ internal class Program
     private static bool TestWithStructureNonBlittableFieldDueToGenerics()
     {
         StructWithGenericBlittableStruct s = new StructWithGenericBlittableStruct();
-        s._blittableGeneric._explict.x = 1;
-        s._blittableGeneric._explict.y = 2;
-        s._blittableGeneric._explict.z = 3;
-        s._blittableGeneric._explict.w = 4;
+        s._blittableGeneric._explicit.x = 1;
+        s._blittableGeneric._explicit.y = 2;
+        s._blittableGeneric._explicit.z = 3;
+        s._blittableGeneric._explicit.w = 4;
         s._int = 5;
 
         return TestWithStructureNonBlittableFieldDueToGenerics_StringCompare(ref s);
@@ -2239,7 +2239,7 @@ internal class Program
         {
             Console.WriteLine($@"    {testName}");
         }
-        
+
         if (_failedTests.Count == 0)
         {
             Console.WriteLine($@"All {_passedTests.Count} tests pass!");

@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.Unicode;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -92,10 +91,7 @@ namespace System.Globalization
         /// </summary>
         public static TextInfo ReadOnly(TextInfo textInfo)
         {
-            if (textInfo == null)
-            {
-                throw new ArgumentNullException(nameof(textInfo));
-            }
+            ArgumentNullException.ThrowIfNull(textInfo);
 
             if (textInfo.IsReadOnly)
             {
@@ -128,10 +124,7 @@ namespace System.Globalization
             get => _listSeparator ??= _cultureData.ListSeparator;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _listSeparator = value;
@@ -174,10 +167,7 @@ namespace System.Globalization
 
         public string ToLower(string str)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (GlobalizationMode.Invariant)
             {
@@ -441,7 +431,7 @@ namespace System.Globalization
                 int i = 0;
                 while (i < s.Length)
                 {
-                    if ((uint)(pSource[i] - 'A') <= (uint)('Z' - 'A'))
+                    if (char.IsAsciiLetterUpper(pSource[i]))
                     {
                         break;
                     }
@@ -497,7 +487,7 @@ namespace System.Globalization
                 int i = 0;
                 while (i < s.Length)
                 {
-                    if ((uint)(pSource[i] - 'a') <= (uint)('z' - 'a'))
+                    if (char.IsAsciiLetterLower(pSource[i]))
                     {
                         break;
                     }
@@ -544,7 +534,7 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char ToLowerAsciiInvariant(char c)
         {
-            if (UnicodeUtility.IsInRangeInclusive(c, 'A', 'Z'))
+            if (char.IsAsciiLetterUpper(c))
             {
                 // on x86, extending BYTE -> DWORD is more efficient than WORD -> DWORD
                 c = (char)(byte)(c | 0x20);
@@ -588,10 +578,7 @@ namespace System.Globalization
 
         public string ToUpper(string str)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (GlobalizationMode.Invariant)
             {
@@ -604,7 +591,7 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static char ToUpperAsciiInvariant(char c)
         {
-            if (UnicodeUtility.IsInRangeInclusive(c, 'a', 'z'))
+            if (char.IsAsciiLetterLower(c))
             {
                 c = (char)(c & 0x5F); // = low 7 bits of ~0x20
             }
@@ -666,10 +653,7 @@ namespace System.Globalization
         /// </summary>
         public unsafe string ToTitleCase(string str)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (str.Length == 0)
             {
@@ -724,10 +708,7 @@ namespace System.Globalization
                             i++;
                             if (hasLowerCase)
                             {
-                                if (lowercaseData == null)
-                                {
-                                    lowercaseData = ToLower(str);
-                                }
+                                lowercaseData ??= ToLower(str);
                                 result.Append(lowercaseData, lowercaseStart, i - lowercaseStart);
                             }
                             else
@@ -740,7 +721,7 @@ namespace System.Globalization
                         else if (!IsWordSeparator(charType))
                         {
                             // This category is considered to be part of the word.
-                            // This is any category that is marked as false in wordSeprator array.
+                            // This is any category that is marked as false in wordSeparator array.
                             i += charLen;
                         }
                         else
@@ -756,10 +737,7 @@ namespace System.Globalization
                     {
                         if (hasLowerCase)
                         {
-                            if (lowercaseData == null)
-                            {
-                                lowercaseData = ToLower(str);
-                            }
+                            lowercaseData ??= ToLower(str);
                             result.Append(lowercaseData, lowercaseStart, count);
                         }
                         else
@@ -868,7 +846,7 @@ namespace System.Globalization
 
         // Used in ToTitleCase():
         // When we find a starting letter, the following array decides if a category should be
-        // considered as word seprator or not.
+        // considered as word separator or not.
         private const int c_wordSeparatorMask =
             /* false */ (0 <<  0) | // UppercaseLetter = 0,
             /* false */ (0 <<  1) | // LowercaseLetter = 1,

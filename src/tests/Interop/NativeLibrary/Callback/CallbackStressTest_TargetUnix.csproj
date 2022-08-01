@@ -10,6 +10,6 @@
     <Compile Include="../NativeLibraryToLoad/NativeLibraryToLoad.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../NativeLibraryToLoad/CMakeLists.txt" />
+    <CMakeProjectReference Include="../NativeLibraryToLoad/CMakeLists.txt" />
   </ItemGroup>
 </Project>

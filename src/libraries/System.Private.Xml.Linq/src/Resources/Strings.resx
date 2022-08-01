@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -74,9 +75,6 @@
   </data>
   <data name="Argument_InvalidPIName" xml:space="preserve">
     <value>'{0}' is an invalid name for a processing instruction.</value>
-  </data>
-  <data name="Argument_InvalidPrefix" xml:space="preserve">
-    <value>'{0}' is an invalid prefix.</value>
   </data>
   <data name="Argument_MustBeDerivedFrom" xml:space="preserve">
     <value>The argument must be derived from {0}.</value>

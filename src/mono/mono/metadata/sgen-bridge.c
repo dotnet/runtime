@@ -26,7 +26,6 @@
 
 typedef enum {
 	BRIDGE_PROCESSOR_INVALID,
-	BRIDGE_PROCESSOR_OLD,
 	BRIDGE_PROCESSOR_NEW,
 	BRIDGE_PROCESSOR_TARJAN,
 	BRIDGE_PROCESSOR_DEFAULT = BRIDGE_PROCESSOR_TARJAN
@@ -93,7 +92,8 @@ static BridgeProcessorSelection
 bridge_processor_name (const char *name)
 {
 	if (!strcmp ("old", name)) {
-		return BRIDGE_PROCESSOR_OLD;
+		g_warning ("The 'old' bridge processor implementation is no longer supported, falling back to the 'new' bridge.");
+		return BRIDGE_PROCESSOR_NEW;
 	} else if (!strcmp ("new", name)) {
 		return BRIDGE_PROCESSOR_NEW;
 	} else if (!strcmp ("tarjan", name)) {
@@ -116,9 +116,6 @@ init_bridge_processor (SgenBridgeProcessor *processor, BridgeProcessorSelection 
 	memset (processor, 0, sizeof (SgenBridgeProcessor));
 
 	switch (selection) {
-		case BRIDGE_PROCESSOR_OLD:
-			sgen_old_bridge_init (processor);
-			break;
 		case BRIDGE_PROCESSOR_NEW:
 			sgen_new_bridge_init (processor);
 			break;
@@ -179,7 +176,7 @@ sgen_set_bridge_implementation (const char *name)
 	BridgeProcessorSelection selection = bridge_processor_name (name);
 
 	if (selection == BRIDGE_PROCESSOR_INVALID)
-		g_warning ("Invalid value for bridge processor implementation, valid values are: 'new', 'old' and 'tarjan'.");
+		g_warning ("Invalid value for bridge processor implementation, valid values are: 'new' or 'tarjan'.");
 	else if (bridge_processor_started ())
 		g_warning ("Cannot set bridge processor implementation once bridge has already started");
 	else

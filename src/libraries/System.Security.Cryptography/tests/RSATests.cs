@@ -18,8 +18,6 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<NotImplementedException>(() => rsa.Encrypt(null, null));
             Assert.Throws<NotImplementedException>(() => rsa.SignHash(null, HashAlgorithmName.SHA256, null));
             Assert.Throws<NotImplementedException>(() => rsa.VerifyHash(null, null, HashAlgorithmName.SHA256, null));
-            Assert.Throws<NotImplementedException>(() => rsa.HashData(null, 0, 0, HashAlgorithmName.SHA256));
-            Assert.Throws<NotImplementedException>(() => rsa.HashData(null, HashAlgorithmName.SHA256));
         }
 
         [Fact]
@@ -145,7 +143,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => rsa.SignData(new byte[1], 0, -1, HashAlgorithmName.SHA256, null));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => rsa.SignData(new byte[1], 0, 2, HashAlgorithmName.SHA256, null));
 
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => rsa.SignData(new byte[1], 0, 1, new HashAlgorithmName(null), null));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => rsa.SignData(new byte[1], 0, 1, new HashAlgorithmName(null), null));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => rsa.SignData(new byte[1], 0, 1, new HashAlgorithmName(""), null));
 
             AssertExtensions.Throws<ArgumentNullException>("padding", () => rsa.SignData(new byte[1], 0, 1, new HashAlgorithmName("abc"), null));
@@ -163,7 +161,7 @@ namespace System.Security.Cryptography.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("data", () => rsa.SignData((Stream)null, HashAlgorithmName.SHA256, null));
 
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => rsa.SignData(Stream.Null, new HashAlgorithmName(null), null));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => rsa.SignData(Stream.Null, new HashAlgorithmName(null), null));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => rsa.SignData(Stream.Null, new HashAlgorithmName(""), null));
 
             AssertExtensions.Throws<ArgumentNullException>("padding", () => rsa.SignData(Stream.Null, new HashAlgorithmName("abc"), null));
@@ -182,7 +180,7 @@ namespace System.Security.Cryptography.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("signature", () => rsa.VerifyData(Stream.Null, null, HashAlgorithmName.SHA256, null));
 
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => rsa.VerifyData(Stream.Null, new byte[1], new HashAlgorithmName(null), null));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => rsa.VerifyData(Stream.Null, new byte[1], new HashAlgorithmName(null), null));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => rsa.VerifyData(Stream.Null, new byte[1], new HashAlgorithmName(""), null));
 
             AssertExtensions.Throws<ArgumentNullException>("padding", () => rsa.VerifyData(Stream.Null, new byte[1], new HashAlgorithmName("abc"), null));
@@ -230,6 +228,150 @@ namespace System.Security.Cryptography.Tests
             Assert.True(RSASignaturePadding.Pkcs1 != null);
         }
 
+        [Fact]
+        public static void ExportPem_ExportRSAPublicKey()
+        {
+            string expectedPem =
+                "-----BEGIN RSA PUBLIC KEY-----\n" +
+                "cGVubnk=\n" +
+                "-----END RSA PUBLIC KEY-----";
+
+            static byte[] ExportRSAPublicKey()
+            {
+                return new byte[] { 0x70, 0x65, 0x6e, 0x6e, 0x79 };
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.ExportRSAPublicKeyDelegate = ExportRSAPublicKey;
+                Assert.Equal(expectedPem, rsa.ExportRSAPublicKeyPem());
+            }
+        }
+
+        [Fact]
+        public static void ExportPem_TryExportRSAPublicKey()
+        {
+            string expectedPem =
+                "-----BEGIN RSA PUBLIC KEY-----\n" +
+                "cGVubnk=\n" +
+                "-----END RSA PUBLIC KEY-----";
+
+            static bool TryExportRSAPublicKey(Span<byte> destination, out int bytesWritten)
+            {
+                ReadOnlySpan<byte> result = new byte[] { 0x70, 0x65, 0x6e, 0x6e, 0x79 };
+                bytesWritten = result.Length;
+                result.CopyTo(destination);
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.TryExportRSAPublicKeyDelegate = TryExportRSAPublicKey;
+
+                int written;
+                bool result;
+                char[] buffer;
+
+                // buffer not enough
+                buffer = new char[expectedPem.Length - 1];
+                result = rsa.TryExportRSAPublicKeyPem(buffer, out written);
+                Assert.False(result, nameof(rsa.TryExportRSAPublicKeyPem));
+                Assert.Equal(0, written);
+
+                // buffer just enough
+                buffer = new char[expectedPem.Length];
+                result = rsa.TryExportRSAPublicKeyPem(buffer, out written);
+                Assert.True(result, nameof(rsa.TryExportRSAPublicKeyPem));
+                Assert.Equal(expectedPem.Length, written);
+                Assert.Equal(expectedPem, new string(buffer));
+
+                // buffer more than enough
+                buffer = new char[expectedPem.Length + 20];
+                buffer.AsSpan().Fill('!');
+                Span<char> bufferSpan = buffer.AsSpan(10);
+                result = rsa.TryExportRSAPublicKeyPem(bufferSpan, out written);
+                Assert.True(result, nameof(rsa.TryExportRSAPublicKeyPem));
+                Assert.Equal(expectedPem.Length, written);
+                Assert.Equal(expectedPem, new string(bufferSpan.Slice(0, written)));
+
+                // Ensure padding has not been touched.
+                AssertExtensions.FilledWith('!', buffer[0..10]);
+                AssertExtensions.FilledWith('!', buffer[^10..]);
+            }
+        }
+
+        [Fact]
+        public static void ExportPem_ExportRSAPrivateKey()
+        {
+            string expectedPem =
+                "-----BEGIN RSA PRIVATE KEY-----\n" +
+                "cGVubnk=\n" +
+                "-----END RSA PRIVATE KEY-----";
+
+            static byte[] ExportRSAPrivateKey()
+            {
+                return new byte[] { 0x70, 0x65, 0x6e, 0x6e, 0x79 };
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.ExportRSAPrivateKeyDelegate = ExportRSAPrivateKey;
+                Assert.Equal(expectedPem, rsa.ExportRSAPrivateKeyPem());
+            }
+        }
+
+        [Fact]
+        public static void ExportPem_TryExportRSAPrivateKey()
+        {
+            string expectedPem =
+                "-----BEGIN RSA PRIVATE KEY-----\n" +
+                "cGVubnk=\n" +
+                "-----END RSA PRIVATE KEY-----";
+
+            static bool TryExportRSAPrivateKey(Span<byte> destination, out int bytesWritten)
+            {
+                ReadOnlySpan<byte> result = new byte[] { 0x70, 0x65, 0x6e, 0x6e, 0x79 };
+                bytesWritten = result.Length;
+                result.CopyTo(destination);
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.TryExportRSAPrivateKeyDelegate = TryExportRSAPrivateKey;
+
+                int written;
+                bool result;
+                char[] buffer;
+
+                // buffer not enough
+                buffer = new char[expectedPem.Length - 1];
+                result = rsa.TryExportRSAPrivateKeyPem(buffer, out written);
+                Assert.False(result, nameof(rsa.TryExportRSAPrivateKeyPem));
+                Assert.Equal(0, written);
+
+                // buffer just enough
+                buffer = new char[expectedPem.Length];
+                result = rsa.TryExportRSAPrivateKeyPem(buffer, out written);
+                Assert.True(result, nameof(rsa.TryExportRSAPrivateKeyPem));
+                Assert.Equal(expectedPem.Length, written);
+                Assert.Equal(expectedPem, new string(buffer));
+
+                // buffer more than enough
+                buffer = new char[expectedPem.Length + 20];
+                buffer.AsSpan().Fill('!');
+                Span<char> bufferSpan = buffer.AsSpan(10);
+                result = rsa.TryExportRSAPrivateKeyPem(bufferSpan, out written);
+                Assert.True(result, nameof(rsa.TryExportRSAPrivateKeyPem));
+                Assert.Equal(expectedPem.Length, written);
+                Assert.Equal(expectedPem, new string(bufferSpan.Slice(0, written)));
+
+                // Ensure padding has not been touched.
+                AssertExtensions.FilledWith('!', buffer[0..10]);
+                AssertExtensions.FilledWith('!', buffer[^10..]);
+            }
+        }
+
         private sealed class EmptyRSA : RSA
         {
             public override RSAParameters ExportParameters(bool includePrivateParameters) => throw new NotImplementedException();
@@ -240,12 +382,17 @@ namespace System.Security.Cryptography.Tests
 
         private sealed class DelegateRSA : RSA
         {
+            public delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
             public Func<byte[], RSAEncryptionPadding, byte[]> DecryptDelegate;
             public Func<byte[], RSAEncryptionPadding, byte[]> EncryptDelegate;
             public Func<byte[], HashAlgorithmName, RSASignaturePadding, byte[]> SignHashDelegate = null;
             public Func<byte[], byte[], HashAlgorithmName, RSASignaturePadding, bool> VerifyHashDelegate = null;
             public Func<byte[], int, int, HashAlgorithmName, byte[]> HashDataArrayDelegate = null;
             public Func<Stream, HashAlgorithmName, byte[]> HashDataStreamDelegate = null;
+            public Func<byte[]> ExportRSAPublicKeyDelegate = null;
+            public TryExportFunc TryExportRSAPublicKeyDelegate = null;
+            public Func<byte[]> ExportRSAPrivateKeyDelegate = null;
+            public TryExportFunc TryExportRSAPrivateKeyDelegate = null;
 
             public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding) =>
                 EncryptDelegate(data, padding);
@@ -264,6 +411,15 @@ namespace System.Security.Cryptography.Tests
 
             protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
                 HashDataStreamDelegate(data, hashAlgorithm);
+
+            public override byte[] ExportRSAPublicKey() => ExportRSAPublicKeyDelegate();
+            public override byte[] ExportRSAPrivateKey() => ExportRSAPrivateKeyDelegate();
+
+            public override bool TryExportRSAPublicKey(Span<byte> destination, out int bytesWritten) =>
+                TryExportRSAPublicKeyDelegate(destination, out bytesWritten);
+
+            public override bool TryExportRSAPrivateKey(Span<byte> destination, out int bytesWritten) =>
+                TryExportRSAPrivateKeyDelegate(destination, out bytesWritten);
 
             public new bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
                 base.TryHashData(source, destination, hashAlgorithm, out bytesWritten);

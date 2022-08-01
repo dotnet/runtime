@@ -12,7 +12,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegDeleteKeyExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "RegDeleteKeyExW", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int RegDeleteKeyEx(
             SafeRegistryHandle hKey,
             string lpSubKey,

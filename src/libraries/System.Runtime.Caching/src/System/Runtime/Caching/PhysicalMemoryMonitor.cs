@@ -107,7 +107,7 @@ namespace System.Runtime.Caching
             }
             _pressureHigh = Math.Max(3, physicalMemoryLimitPercentage);
             _pressureLow = Math.Max(1, _pressureHigh - 9);
-            Dbg.Trace($"MemoryCacheStats", "PhysicalMemoryMonitor.SetLimit: _pressureHigh={_pressureHigh}, _pressureLow={_pressureLow}");
+            Dbg.Trace("MemoryCacheStats", $"PhysicalMemoryMonitor.SetLimit: _pressureHigh={_pressureHigh}, _pressureLow={_pressureLow}");
         }
     }
 }

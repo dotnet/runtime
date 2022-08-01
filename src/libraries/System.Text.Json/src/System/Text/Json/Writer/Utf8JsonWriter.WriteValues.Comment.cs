@@ -10,7 +10,7 @@ namespace System.Text.Json
     public sealed partial class Utf8JsonWriter
     {
         private static readonly char[] s_singleLineCommentDelimiter = new char[2] { '*', '/' };
-        private static ReadOnlySpan<byte> SingleLineCommentDelimiterUtf8 => new byte[2] { (byte)'*', (byte)'/' };
+        private static ReadOnlySpan<byte> SingleLineCommentDelimiterUtf8 => "*/"u8;
 
         /// <summary>
         /// Writes the string text value (as a JSON comment).
@@ -26,7 +26,13 @@ namespace System.Text.Json
         /// The comment value is not escaped before writing.
         /// </remarks>
         public void WriteCommentValue(string value)
-            => WriteCommentValue((value ?? throw new ArgumentNullException(nameof(value))).AsSpan());
+        {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+            WriteCommentValue(value.AsSpan());
+        }
 
         /// <summary>
         /// Writes the text value (as a JSON comment).
@@ -92,7 +98,7 @@ namespace System.Text.Json
         private void WriteCommentIndented(ReadOnlySpan<char> value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(value.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - indent - 4 - s_newLineLength);
 
@@ -187,7 +193,7 @@ namespace System.Text.Json
         private void WriteCommentIndented(ReadOnlySpan<byte> utf8Value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             Debug.Assert(utf8Value.Length < int.MaxValue - indent - 4 - s_newLineLength);
 

@@ -13,15 +13,18 @@ namespace System.Diagnostics
         public static int[] GetProcessIds() => new List<int>(EnumerateProcessIds()).ToArray();
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
         /// <param name="machineName">The target machine.</param>
         /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string machineName)
+        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
         {
+            Debug.Assert(processNameFilter is null, "Not used on Linux");
             ThrowIfRemoteMachine(machineName);
 
             // Iterate through all process IDs to load information about each process
-            var processes = new List<ProcessInfo>();
-            foreach (int pid in EnumerateProcessIds())
+            IEnumerable<int> pids = EnumerateProcessIds();
+            ArrayBuilder<ProcessInfo> processes = default;
+            foreach (int pid in pids)
             {
                 ProcessInfo? pi = CreateProcessInfo(pid);
                 if (pi != null)
@@ -41,18 +44,20 @@ namespace System.Diagnostics
             ProcessModuleCollection modules = Interop.procfs.ParseMapsModules(processId) ?? new(capacity: 0);
 
             // Move the main executable module to be the first in the list if it's not already
-            string? exePath = Process.GetExePath(processId);
-            for (int i = 0; i < modules.Count; i++)
+            if (Process.GetExePath(processId) is string exePath)
             {
-                ProcessModule module = modules[i];
-                if (module.FileName == exePath)
+                for (int i = 0; i < modules.Count; i++)
                 {
-                    if (i > 0)
+                    ProcessModule module = modules[i];
+                    if (module.FileName == exePath)
                     {
-                        modules.RemoveAt(i);
-                        modules.Insert(0, module);
+                        if (i > 0)
+                        {
+                            modules.RemoveAt(i);
+                            modules.Insert(0, module);
+                        }
+                        break;
                     }
-                    break;
                 }
             }
 

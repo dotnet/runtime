@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ja" original="../Strings.resx">
+    <body>
+      <trans-unit id="ArraySizeMustBeSpecified">
+        <source>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</source>
+        <target state="translated">アンマネージドからマネージドに配列をマーシャリングするには、'MarshalAsAttribute' に 'SizeParamIndex' または 'SizeConst' フィールドを設定するか、'MarshalUsingAttribute' に 'ConstantElementCount' プロパティまたは 'CountElementName' プロパティを設定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BidirectionalMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">指定されたパラメーターはマネージドからアンマネージドに、およびアンマネージドからマネージドにマーシャリングする必要がありますが、マーシャラー型 '{0}' ではそれはサポートされていません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
+        <source>The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</source>
+        <target state="translated">コレクション用のコレクション サイズ パラメーターは整数型にする必要があります。サイズ情報が入れ子になったコレクションに適用される場合、size パラメーターは、整数要素を持つ 1 つ下のレベルのコレクションである必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConstantAndElementCountInfoDisallowed">
+        <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
+        <target state="translated">指定された 'ElementIndirectionDepth' 向けに 'MarshalUsingAttribute' で使用できるのは、'ConstantElementCount' または 'ElementCountInfo' のいずれか 1 つだけです</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CyclicalCountInfo">
+        <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
+        <target state="translated">この要素は、依存関係サイクルを作成せずに、コレクション サイズ情報向けに '{0}' に依存することはできません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateCountInfo">
+        <source>Count information for a given element at a given indirection level can only be specified once</source>
+        <target state="translated">指定された間接参照レベルの特定の要素のカウント情報は、1 回のみ指定できます</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateMarshallingInfo">
+        <source>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</source>
+        <target state="translated">間接参照レベルごとに要素ごとに複数のマーシャリング属性はサポートされていませんが、間接参照レベル {0} に重複する情報が指定されました</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ExtraneousMarshallingInfo">
+        <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
+        <target state="translated">'ElementIndirectionDepth' {0} にマーシャリング情報が指定されましたが、マーシャリング情報は間接参照の {1} レベルにのみ必要です</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GraphHasCycles">
+        <source>The provided graph has cycles and cannot be topologically sorted.</source>
+        <target state="translated">指定されたグラフにはサイクルがあるため、位相的に並べ替えることはできません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeNotSupportedWithoutOut">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</source>
+        <target state="translated">'[In]' 属性は、'[Out]' 属性も使用しない限りサポートされません。'[Out]' 属性なしでの '[In]' 属性の動作は、既定の動作と同じです。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeByRefNotSupported">
+        <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
+        <target state="translated">'[In]' 属性と '[Out]' 属性は、参照渡しされたパラメーターではサポートされていません。代わりに 'in'、'ref'、または 'out' キーワードを使用します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeMarshalerNotSupported">
+        <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
+        <target state="translated">このパラメーターに指定された '[In]' 属性と '[Out]' 属性は、このパラメーターではサポートされていません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">指定されたパラメーターはマネージドからアンマネージドにマーシャリングする必要がありますが、マーシャラー型 '{0}' ではそれはサポートされていません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
+        <source>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</source>
+        <target state="translated">マネージド型 '{1}' のマーシャラー エントリ ポイント型 '{0}' には、マネージド型より 1 大きい引数が必要です。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
+        <target state="translated">マネージド型 '{1}' のマーシャラー型 '{0}' は、静的クラスまたは構造体である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
+        <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">明示的なマーシャリング情報を含まないブール値のマーシャリングはサポートされていません。'MarshalUsingAttribute' または 'MarshalAsAttribute' のいずれかを指定してください。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
+        <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
+        <target state="translated">'StringMarshalling.{0}' を使用した文字のマーシャリングはサポートされていません。代わりに、手動で char 型を必要なバイト表現に変換し、ソース生成済みの P/Invoke に渡します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
+        <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
+        <target state="translated">'StringMarshalling.Custom' を使用した文字のマーシャリングはサポートされていません。カスタム型のマーシャラーを使用するには、'MarshalUsingAttribute' を指定します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">明示的なマーシャリング情報を含まない文字列または文字のマーシャリングはサポートされていません。'LibraryImportAttribute.StringMarstailing'、'LibraryImportAttribute.StringMarshallingCustomType'、'MarshalUsingAttribute' または 'MarshalAsAttribute' を指定します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeMarshallingMustBeDisabled">
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">このプロジェクトでは、アセンブリに 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' を適用してランタイム マーシャリングを無効にし、この型のマーシャリングを有効にする必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SafeHandleByRefMustBeConcrete">
+        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
+        <target state="translated">'SafeHandle' から派生した抽象型は、参照でマーシャリングできません。指定される型は具象型である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">指定されたパラメーターはアンマネージドからマネージドにマーシャリングする必要がありますが、マーシャラー型 '{0}' ではそれはサポートされていません。</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

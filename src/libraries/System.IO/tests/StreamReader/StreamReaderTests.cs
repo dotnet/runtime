@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -111,6 +112,27 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public async Task ReadToEndAsync_WithCancellationToken()
+        {
+            using var sw = new StreamReader(GetLargeStream());
+            var result = await sw.ReadToEndAsync(default);
+
+            Assert.Equal(5000, result.Length);
+        }
+
+        [Fact]
+        public async Task ReadToEndAsync_WithCanceledCancellationToken()
+        {
+            using var sw = new StreamReader(GetLargeStream());
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            var token = cts.Token;
+
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await sw.ReadToEndAsync(token));
+            Assert.Equal(token, ex.CancellationToken);
+        }
+
+        [Fact]
         public void GetBaseStream()
         {
             var ms = GetSmallStream();
@@ -167,7 +189,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void ArgumentOutOfRangeOnNegativCount()
+        public void ArgumentOutOfRangeOnNegativeCount()
         {
             var sr = GetCharArrayStream().Item2;
             AssertExtensions.Throws<ArgumentException>(null, () => sr.Read(new char[0], 0, 1));
@@ -299,6 +321,27 @@ namespace System.IO.Tests
             sr.Read(temp, 0, 1);
             var data = sr.ReadLine();
             Assert.Equal(valueString.Substring(1, valueString.IndexOf('\r') - 1), data);
+        }
+
+        [Fact]
+        public async Task VanillaReadLineAsync()
+        {
+            var baseInfo = GetCharArrayStream();
+            var sr = baseInfo.Item2;
+
+            string valueString = new string(baseInfo.Item1);
+
+            var data = await sr.ReadLineAsync();
+            Assert.Equal(valueString.Substring(0, valueString.IndexOf('\r')), data);
+
+            data = await sr.ReadLineAsync(default);
+            Assert.Equal(valueString.Substring(valueString.IndexOf('\r') + 1, 3), data);
+
+            data = await sr.ReadLineAsync();
+            Assert.Equal(valueString.Substring(valueString.IndexOf('\n') + 1, 2), data);
+
+            data = await sr.ReadLineAsync(default);
+            Assert.Equal((valueString.Substring(valueString.LastIndexOf('\n') + 1)), data);
         }
 
         [Fact]
@@ -507,12 +550,12 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(0, false)]
         [InlineData(0, true)]
         [InlineData(1, false)]
         [InlineData(1, true)]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51390", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ReadAsync_Canceled_ThrowsException(int method, bool precanceled)
         {
@@ -614,7 +657,7 @@ namespace System.IO.Tests
                     Assert.Equal(Encoding.UTF8, sr.CurrentEncoding);
                 }
 
-                // check disabled BOM, default enconding and leaveOpen
+                // check disabled BOM, default encoding and leaveOpen
                 tempStream.Seek(0, SeekOrigin.Begin);
                 using (var sr = new StreamReader(tempStream, detectEncodingFromByteOrderMarks: false, leaveOpen: true))
                 {

@@ -191,7 +191,7 @@ inline /* static */ unsigned ArrayBase::GetLowerBoundsOffset(MethodTable* pMT)
         sizeof(INT32);
 }
 
-// Get the element type for the array, this works whether the the element
+// Get the element type for the array, this works whether the element
 // type is stored in the array or not
 inline TypeHandle ArrayBase::GetArrayElementTypeHandle() const
 {
@@ -270,40 +270,6 @@ inline TypeHandle Object::GetGCSafeTypeHandle() const
     _ASSERTE(pMT != NULL);
 
     return TypeHandle(pMT);
-}
-
-template<class F>
-inline void FindByRefPointerOffsetsInByRefLikeObject(PTR_MethodTable pMT, SIZE_T baseOffset, const F processPointerOffset)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(pMT != nullptr);
-    _ASSERTE(pMT->IsByRefLike());
-
-    if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
-    {
-        processPointerOffset(baseOffset);
-        return;
-    }
-
-    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
-    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
-    {
-        if (pFD->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
-        {
-            continue;
-        }
-
-        // TODO: GetApproxFieldTypeHandleThrowing may throw. This is a potential stress problem for fragile NGen of non-CoreLib
-        // assemblies. It won't ever throw for CoreCLR with R2R. Figure out if anything needs to be done to deal with the
-        // exception.
-        PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-        if (!pFieldMT->IsByRefLike())
-        {
-            continue;
-        }
-
-        FindByRefPointerOffsetsInByRefLikeObject(pFieldMT, baseOffset + pFD->GetOffset(), processPointerOffset);
-    }
 }
 
 #endif  // _OBJECT_INL_

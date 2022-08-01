@@ -56,9 +56,9 @@ bool Compiler::eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 FORCEINLINE
-bool Compiler::eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+bool Compiler::eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
-    return info.compCompHnd->isJitIntrinsic(ftn);
+    return info.compCompHnd->isIntrinsic(ftn);
 }
 
 FORCEINLINE
@@ -293,12 +293,4 @@ inline var_types JitType2PreciseVarType(CorInfoType type)
 inline CORINFO_CALLINFO_FLAGS combine(CORINFO_CALLINFO_FLAGS flag1, CORINFO_CALLINFO_FLAGS flag2)
 {
     return (CORINFO_CALLINFO_FLAGS)(flag1 | flag2);
-}
-inline CORINFO_CALLINFO_FLAGS Compiler::addVerifyFlag(CORINFO_CALLINFO_FLAGS flags)
-{
-    if (tiVerificationNeeded)
-    {
-        flags = combine(flags, CORINFO_CALLINFO_VERIFICATION);
-    }
-    return flags;
 }

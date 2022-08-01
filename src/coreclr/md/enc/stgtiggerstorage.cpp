@@ -47,7 +47,7 @@ TiggerStorage::~TiggerStorage()
 HRESULT
 TiggerStorage::Init(
     StgIO            *pStgIO,       // The I/O subsystem.
-    __in __in_z LPSTR pVersion)     // 'Compiled for' CLR version
+    _In_ _In_z_ LPSTR pVersion)     // 'Compiled for' CLR version
 {
     PSTORAGESIGNATURE pSig;         // Signature data for file.
     ULONG             cbData;       // Offset of header data.
@@ -182,6 +182,16 @@ TiggerStorage::GetExtraData(
     return S_OK;
 } // TiggerStorage::GetExtraData
 
+//*****************************************************************************
+// Debugging helpers.  #define __SAVESIZE_TRACE__ to enable.
+//*****************************************************************************
+
+// #define __SAVESIZE_TRACE__
+#ifdef __SAVESIZE_TRACE__
+#define SAVETRACE(func) DEBUG_STMT(func)
+#else
+#define SAVETRACE(func)
+#endif // __SAVESIZE_TRACE__
 
 //*****************************************************************************
 // Called when this stream is going away.
@@ -197,10 +207,10 @@ TiggerStorage::WriteHeader(
     HRESULT hr;
     SAVETRACE(ULONG cbDebugSize);   // Track debug size of header.
 
-    SAVETRACE(DbgWriteEx(W("PSS:  Header:\n")));
+    SAVETRACE(printf("PSS:  Header:\n"));
 
     // Save the count and set flags.
-    m_StgHdr.SetiStreams(pList->Count());
+    m_StgHdr.SetiStreams((USHORT)pList->Count());
     if (cbExtraData != 0)
         m_StgHdr.AddFlags(STGHDR_EXTRADATA);
 
@@ -218,7 +228,7 @@ TiggerStorage::WriteHeader(
 
         // And then the data.
         IfFailRet(m_pStgIO->Write(pbExtraData, cbExtraData, &cbWritten));
-        SAVETRACE(DbgWriteEx(W("PSS:    extra data size %d\n"), m_pStgIO->GetCurrentOffset() - cbDebugSize);cbDebugSize=m_pStgIO->GetCurrentOffset());
+        SAVETRACE(printf("PSS:    extra data size %d\n", m_pStgIO->GetCurrentOffset() - cbDebugSize);cbDebugSize=m_pStgIO->GetCurrentOffset());
     }
 
     // Save off each data stream.
@@ -238,9 +248,9 @@ TiggerStorage::WriteHeader(
         {
             IfFailRet(m_pStgIO->Write(&hr, ALIGN4BYTE(iLen) - iLen, 0));
         }
-        SAVETRACE(DbgWriteEx(W("PSS:    Table %hs header size %d\n"), pStream->rcName, m_pStgIO->GetCurrentOffset() - cbDebugSize);cbDebugSize=m_pStgIO->GetCurrentOffset());
+        SAVETRACE(printf("PSS:    Table %hs header size %d\n", pStream->rcName, m_pStgIO->GetCurrentOffset() - cbDebugSize);cbDebugSize=m_pStgIO->GetCurrentOffset());
     }
-    SAVETRACE(DbgWriteEx(W("PSS:  Total size of header data %d\n"), m_pStgIO->GetCurrentOffset()));
+    SAVETRACE(printf("PSS:  Total size of header data %d\n", m_pStgIO->GetCurrentOffset()));
     // Make sure the whole thing is 4 byte aligned.
     _ASSERTE((m_pStgIO->GetCurrentOffset() % 4) == 0);
     return S_OK;
@@ -508,7 +518,7 @@ TiggerStorage::OpenStorage(
     const OLECHAR * wcsName,
     IStorage *      pStgPriority,
     DWORD           dwMode,
-  __in
+  _In_
     SNB             snbExclude,
     DWORD           reserved,
     IStorage **     ppStg)
@@ -520,7 +530,7 @@ HRESULT STDMETHODCALLTYPE
 TiggerStorage::CopyTo(
     DWORD       cIidExclude,
     const IID * rgIidExclude,
-  __in
+  _In_
     SNB         snbExclude,
     IStorage *  pStgDest)
 {
@@ -706,7 +716,7 @@ TiggerStorage::Write(
 HRESULT
 TiggerStorage::FindStream(
     LPCSTR                szName,
-    __out PSTORAGESTREAM *stream)
+    _Out_ PSTORAGESTREAM *stream)
 {
     *stream = NULL;
     // In read mode, just walk the list and return one.

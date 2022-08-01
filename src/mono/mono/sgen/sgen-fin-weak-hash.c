@@ -34,7 +34,7 @@ typedef SgenGrayQueue GrayQueue;
 static int no_finalize = 0;
 
 /*
- * The finalizable hash has the object as the key, the 
+ * The finalizable hash has the object as the key, the
  * disappearing_link hash, has the link address as key.
  *
  * Copyright 2011 Xamarin Inc.
@@ -136,7 +136,7 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 		copy_func (&copy, queue);
 
 		sgen_client_bridge_register_finalized_object (copy);
-		
+
 		if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
 			/* remove from the list */
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
@@ -623,7 +623,7 @@ sgen_remove_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, i
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 			continue;
 		}
-	} SGEN_HASH_TABLE_FOREACH_END;	
+	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
 void

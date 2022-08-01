@@ -112,9 +112,29 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDwarfDebug { get; set; }
 
     /// <summary>
+    /// Path to Dotnet PGO binary (dotnet-pgo)
+    /// </summary>
+    public string? PgoBinaryPath { get; set; }
+
+    /// <summary>
+    /// NetTrace file to use when invoking dotnet-pgo for
+    /// </summary>
+    public string? NetTracePath { get; set; }
+
+    /// <summary>
+    /// Directory containing all assemblies referenced in a .nettrace collected from a separate device needed by dotnet-pgo. Necessary for mobile platforms.
+    /// </summary>
+    public ITaskItem[] ReferenceAssemblyPathsForPGO { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
     public string[]? AotProfilePath { get; set; }
+
+    /// <summary>
+    /// Mibc file to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
+    /// </summary>
+    public string[] MibcProfilePath { get; set; } = Array.Empty<string>();
 
     /// <summary>
     /// List of profilers to use.
@@ -191,11 +211,39 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? CacheFilePath { get; set; }
 
+    /// <summary>
+    /// Passes additional, custom arguments to --aot
+    /// </summary>
+    public string? AotArguments { get; set; }
+
+    /// <summary>
+    /// Passes temp-path to the AOT compiler
+    /// </summary>
+    public string? TempPath { get; set; }
+
+    /// <summary>
+    /// Passes ld-name to the AOT compiler, for use with UseLLVM=true
+    /// </summary>
+    public string? LdName { get; set; }
+
+    /// <summary>
+    /// Passes ld-flags to the AOT compiler, for use with UseLLVM=true
+    /// </summary>
+    public string? LdFlags { get; set; }
+
+    /// <summary>
+    /// Specify WorkingDirectory for the AOT compiler
+    /// </summary>
+    public string? WorkingDirectory { get; set; }
+
     [Required]
     public string IntermediateOutputPath { get; set; } = string.Empty;
 
     [Output]
     public string[]? FileWrites { get; private set; }
+
+    private static readonly Encoding s_utf8Encoding = new UTF8Encoding(false);
+    private const string s_originalFullPathMetadataName = "__OriginalFullPath";
 
     private List<string> _fileWrites = new();
 
@@ -225,7 +273,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             return false;
         }
 
-        if (!Path.IsPathRooted(OutputDir))
+        // A relative path might be used along with WorkingDirectory,
+        // only call Path.GetFullPath() if WorkingDirectory is blank.
+        if (string.IsNullOrEmpty(WorkingDirectory) && !Path.IsPathRooted(OutputDir))
             OutputDir = Path.GetFullPath(OutputDir);
 
         if (!Directory.Exists(OutputDir))
@@ -237,6 +287,31 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!Directory.Exists(IntermediateOutputPath))
             Directory.CreateDirectory(IntermediateOutputPath);
 
+        if (!string.IsNullOrEmpty(NetTracePath))
+        {
+            if (!File.Exists(NetTracePath))
+            {
+                Log.LogError($"{nameof(NetTracePath)}='{NetTracePath}' doesn't exist");
+                return false;
+            }
+            if (!File.Exists(PgoBinaryPath))
+            {
+                Log.LogError($"NetTracePath was provided, but {nameof(PgoBinaryPath)}='{PgoBinaryPath}' doesn't exist");
+                return false;
+            }
+            if (ReferenceAssemblyPathsForPGO.Length == 0)
+            {
+                Log.LogError($"NetTracePath was provided, but {nameof(ReferenceAssemblyPathsForPGO)} is empty");
+                return false;
+            }
+            foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
+            {
+                string? fullPath = refAsmItem.GetMetadata("FullPath");
+                if (!File.Exists(fullPath))
+                    throw new LogAsErrorException($"ReferenceAssembly '{fullPath}' doesn't exist");
+            }
+        }
+
         if (AotProfilePath != null)
         {
             foreach (var path in AotProfilePath)
@@ -246,6 +321,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     Log.LogError($"AotProfilePath '{path}' doesn't exist.");
                     return false;
                 }
+            }
+        }
+
+        foreach (var path in MibcProfilePath)
+        {
+            if (!File.Exists(path))
+            {
+                Log.LogError($"MibcProfilePath '{path}' doesn't exist.");
+                return false;
             }
         }
 
@@ -354,13 +438,56 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
+    private bool ProcessNettrace(string netTraceFile)
+    {
+        var outputMibcPath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(netTraceFile), ".mibc"));
+
+        if (_cache!.Enabled)
+        {
+            string hash = Utils.ComputeHash(netTraceFile);
+            if (!_cache!.UpdateAndCheckHasFileChanged($"-mibc-source-file-{Path.GetFileName(netTraceFile)}", hash))
+            {
+                Log.LogMessage(MessageImportance.Low, $"Skipping generating {outputMibcPath} from {netTraceFile} because source file hasn't changed");
+                return true;
+            }
+            else
+            {
+                Log.LogMessage(MessageImportance.Low, $"Generating {outputMibcPath} from {netTraceFile} because the source file's hash has changed.");
+            }
+        }
+
+        StringBuilder pgoArgsStr = new StringBuilder(string.Empty);
+        pgoArgsStr.Append($"create-mibc");
+        pgoArgsStr.Append($" --trace {netTraceFile} ");
+        foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
+        {
+            string? fullPath = refAsmItem.GetMetadata("FullPath");
+            pgoArgsStr.Append($" --reference \"{fullPath}\" ");
+        }
+        pgoArgsStr.Append($" --output {outputMibcPath} ");
+        (int exitCode, string output) = Utils.TryRunProcess(Log,
+                                                            PgoBinaryPath!,
+                                                            pgoArgsStr.ToString());
+
+        if (exitCode != 0)
+        {
+            Log.LogError($"dotnet-pgo({PgoBinaryPath}) failed for {netTraceFile}:{output}");
+            return false;
+        }
+
+        MibcProfilePath = MibcProfilePath.Append(outputMibcPath).ToArray();
+        Log.LogMessage(MessageImportance.Low, $"Generated {outputMibcPath} from {PgoBinaryPath}");
+        return true;
+    }
+
     private bool ExecuteInternal()
     {
         if (!ProcessAndValidateArguments())
             return false;
 
-        _assembliesToCompile = EnsureAndGetAssembliesInTheSameDir(Assemblies);
-        _assembliesToCompile = FilterAssemblies(_assembliesToCompile);
+        IEnumerable<ITaskItem> managedAssemblies = FilterOutUnmanagedAssemblies(Assemblies);
+        managedAssemblies = EnsureAllAssembliesInTheSameDir(managedAssemblies);
+        _assembliesToCompile = managedAssemblies.Where(f => !ShouldSkipForAOT(f)).ToList();
 
         if (!string.IsNullOrEmpty(AotModulesTablePath) && !GenerateAotModulesTable(_assembliesToCompile, Profilers, AotModulesTablePath))
             return false;
@@ -370,6 +497,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
         _cache = new FileCache(CacheFilePath, Log);
+
+        if (!string.IsNullOrEmpty(NetTracePath) && !ProcessNettrace(NetTracePath))
+            return false;
 
         List<PrecompileArguments> argsList = new();
         foreach (var assemblyItem in _assembliesToCompile)
@@ -390,10 +520,36 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (BuildEngine is IBuildEngine9 be9)
                 allowedParallelism = be9.RequestCores(allowedParallelism);
 
+            /*
+                From: https://github.com/dotnet/runtime/issues/46146#issuecomment-754021690
+
+                Stephen Toub:
+                "As such, by default ForEach works on a scheme whereby each
+                thread takes one item each time it goes back to the enumerator,
+                and then after a few times of this upgrades to taking two items
+                each time it goes back to the enumerator, and then four, and
+                then eight, and so on. This amortizes the cost of taking and
+                releasing the lock across multiple items, while still enabling
+                parallelization for enumerables containing just a few items. It
+                does, however, mean that if you've got a case where the body
+                takes a really long time and the work for every item is
+                heterogeneous, you can end up with an imbalance."
+
+                The time taken by individual compile jobs here can vary a
+                lot, depending on various factors like file size. This can
+                create an imbalance, like mentioned above, and we can end up
+                in a situation where one of the partitions has a job that
+                takes very long to execute, by which time other partitions
+                have completed, so some cores are idle.  But the idle
+                ones won't get any of the remaining jobs, because they are
+                all assigned to that one partition.
+
+                Instead, we want to use work-stealing so jobs can be run by any partition.
+            */
             ParallelLoopResult result = Parallel.ForEach(
-                                            argsList,
+                                            Partitioner.Create(argsList, EnumerablePartitionerOptions.NoBuffering),
                                             new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
-                                            (args, state) => PrecompileLibraryParallel(args, state));
+                                            PrecompileLibraryParallel);
 
             if (result.IsCompleted)
             {
@@ -411,7 +567,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return !Log.HasLoggedErrors;
     }
 
-    private bool CheckAllUpToDate(IList<PrecompileArguments> argsList)
+    private static bool CheckAllUpToDate(IList<PrecompileArguments> argsList)
     {
         foreach (var args in argsList)
         {
@@ -428,39 +584,40 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     (File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile));
     }
 
-    private IList<ITaskItem> FilterAssemblies(IEnumerable<ITaskItem> assemblies)
+    private IEnumerable<ITaskItem> FilterOutUnmanagedAssemblies(IEnumerable<ITaskItem> assemblies)
     {
         List<ITaskItem> filteredAssemblies = new();
         foreach (var asmItem in assemblies)
         {
-            if (ShouldSkip(asmItem))
+            if (ShouldSkipForAOT(asmItem))
             {
                 if (parsedAotMode == MonoAotMode.LLVMOnly)
                     throw new LogAsErrorException($"Building in AOTMode=LLVMonly is not compatible with excluding any assemblies for AOT. Excluded assembly: {asmItem.ItemSpec}");
 
                 Log.LogMessage(MessageImportance.Low, $"Skipping {asmItem.ItemSpec} because it has %(AOT_InternalForceToInterpret)=true");
-                continue;
             }
-
-            string assemblyPath = asmItem.GetMetadata("FullPath");
-            using var assemblyFile = File.OpenRead(assemblyPath);
-            using PEReader reader = new(assemblyFile, PEStreamOptions.Default);
-            if (!reader.HasMetadata)
+            else
             {
-                Log.LogWarning($"Skipping unmanaged {assemblyPath} for AOT");
-                continue;
+                string assemblyPath = asmItem.GetMetadata("FullPath");
+                using var assemblyFile = File.OpenRead(assemblyPath);
+                using PEReader reader = new(assemblyFile, PEStreamOptions.Default);
+                if (!reader.HasMetadata)
+                {
+                    Log.LogMessage(MessageImportance.Low, $"Skipping unmanaged {assemblyPath} for AOT");
+                    continue;
+                }
             }
 
             filteredAssemblies.Add(asmItem);
         }
 
         return filteredAssemblies;
-
-        static bool ShouldSkip(ITaskItem asmItem)
-            => bool.TryParse(asmItem.GetMetadata("AOT_InternalForceToInterpret"), out bool skip) && skip;
     }
 
-    private IList<ITaskItem> EnsureAndGetAssembliesInTheSameDir(IList<ITaskItem> assemblies)
+    private static bool ShouldSkipForAOT(ITaskItem asmItem)
+        => bool.TryParse(asmItem.GetMetadata("AOT_InternalForceToInterpret"), out bool skip) && skip;
+
+    private IEnumerable<ITaskItem> EnsureAllAssembliesInTheSameDir(IEnumerable<ITaskItem> assemblies)
     {
         string firstAsmDir = Path.GetDirectoryName(assemblies.First().GetMetadata("FullPath")) ?? string.Empty;
         bool allInSameDir = assemblies.All(asm => Path.GetDirectoryName(asm.GetMetadata("FullPath")) == firstAsmDir);
@@ -486,6 +643,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
             ITaskItem newAsm = new TaskItem(newPath);
             asmItem.CopyMetadataTo(newAsm);
+            asmItem.SetMetadata(s_originalFullPathMetadataName, asmPath);
             newAssemblies.Add(newAsm);
         }
 
@@ -669,8 +827,10 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (UseAotDataFile)
         {
             string aotDataFile = Path.ChangeExtension(assembly, ".aotdata");
-            aotArgs.Add($"data-outfile={aotDataFile}");
-            aotAssembly.SetMetadata("AotDataFile", aotDataFile);
+            ProxyFile proxyFile = _cache.NewFile(aotDataFile);
+            proxyFiles.Add(proxyFile);
+            aotArgs.Add($"data-outfile={proxyFile.TempFile}");
+            aotAssembly.SetMetadata("AotDataFile", proxyFile.TargetFile);
         }
 
         if (AotProfilePath?.Length > 0)
@@ -680,6 +840,35 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             {
                 aotArgs.Add($"profile={path}");
             }
+        }
+
+        if (MibcProfilePath.Length > 0)
+        {
+            aotArgs.Add("profile-only");
+            foreach (var path in MibcProfilePath)
+            {
+                aotArgs.Add($"mibc-profile={path}");
+            }
+        }
+
+        if (!string.IsNullOrEmpty(AotArguments))
+        {
+            aotArgs.Add(AotArguments);
+        }
+
+        if (!string.IsNullOrEmpty(TempPath))
+        {
+            aotArgs.Add($"temp-path={TempPath}");
+        }
+
+        if (!string.IsNullOrEmpty(LdName))
+        {
+            aotArgs.Add($"ld-name={LdName}");
+        }
+
+        if (!string.IsNullOrEmpty(LdFlags))
+        {
+            aotArgs.Add($"ld-flags={LdFlags}");
         }
 
         // we need to quote the entire --aot arguments here to make sure it is parsed
@@ -694,7 +883,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
         else
         {
-            processArgs.Add('"' + assemblyFilename + '"');
+            if (string.IsNullOrEmpty(WorkingDirectory))
+            {
+                processArgs.Add('"' + assemblyFilename + '"');
+            }
+            else
+            {
+                // If WorkingDirectory is supplied, the caller could be passing in a relative path
+                // Use the original ItemSpec that was passed in.
+                processArgs.Add('"' + assemblyItem.ItemSpec + '"');
+            }
         }
 
         monoPaths = $"{assemblyDir}{Path.PathSeparator}{monoPaths}";
@@ -706,14 +904,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         var responseFileContent = string.Join(" ", processArgs);
         var responseFilePath = Path.GetTempFileName();
-        using (var sw = new StreamWriter(responseFilePath, append: false, encoding: new UTF8Encoding(false)))
+        using (var sw = new StreamWriter(responseFilePath, append: false, encoding: s_utf8Encoding))
         {
             sw.WriteLine(responseFileContent);
         }
 
         return new PrecompileArguments(ResponseFilePath: responseFilePath,
                                         EnvironmentVariables: envVariables,
-                                        WorkingDir: assemblyDir,
+                                        WorkingDir: string.IsNullOrEmpty(WorkingDirectory) ? assemblyDir : WorkingDirectory,
                                         AOTAssembly: aotAssembly,
                                         ProxyFiles: proxyFiles);
     }
@@ -721,12 +919,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private bool PrecompileLibrary(PrecompileArguments args)
     {
         string assembly = args.AOTAssembly.GetMetadata("FullPath");
+        string output;
         try
         {
             string msgPrefix = $"[{Path.GetFileName(assembly)}] ";
 
             // run the AOT compiler
-            (int exitCode, string output) = Utils.TryRunProcess(Log,
+            (int exitCode, output) = Utils.TryRunProcess(Log,
                                                                 CompilerBinaryPath,
                                                                 $"--response=\"{args.ResponseFilePath}\"",
                                                                 args.EnvironmentVariables,
@@ -741,16 +940,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 StringBuilder envStr = new StringBuilder(string.Empty);
                 foreach (KeyValuePair<string, string> kvp in args.EnvironmentVariables)
                     envStr.Append($"{kvp.Key}={kvp.Value} ");
-                Log.LogMessage(importance, $"{msgPrefix}Exec (with response file contents expanded) in {args.WorkingDir}: {envStr}{CompilerBinaryPath} {File.ReadAllText(args.ResponseFilePath)}");
+                Log.LogMessage(importance, $"{msgPrefix}Exec (with response file contents expanded) in {args.WorkingDir}: {envStr}{CompilerBinaryPath} {File.ReadAllText(args.ResponseFilePath, s_utf8Encoding)}");
             }
-
-            Log.LogMessage(importance, output);
 
             if (exitCode != 0)
             {
-                Log.LogError($"Precompiling failed for {assembly}");
+                Log.LogError($"Precompiling failed for {assembly} with exit code {exitCode}.{Environment.NewLine}{output}");
                 return false;
             }
+
+            Log.LogMessage(importance, output);
         }
         catch (Exception ex)
         {
@@ -980,8 +1179,20 @@ internal sealed class FileCache
         _newCache = new(_oldCache.FileHashes);
     }
 
+    public bool UpdateAndCheckHasFileChanged(string filePath, string newHash)
+    {
+        if (!Enabled)
+            throw new InvalidOperationException("Cache is not enabled. Make sure the cache file path is set");
+
+        _newCache!.FileHashes[filePath] = newHash;
+        return !_oldCache!.FileHashes.TryGetValue(filePath, out string? oldHash) || oldHash != newHash;
+    }
+
     public bool ShouldCopy(ProxyFile proxyFile, [NotNullWhen(true)] out string? cause)
     {
+        if (!Enabled)
+            throw new InvalidOperationException("Cache is not enabled. Make sure the cache file path is set");
+
         cause = null;
 
         string newHash = Utils.ComputeHash(proxyFile.TempFile);
@@ -1037,6 +1248,9 @@ internal sealed class ProxyFile
         if (!_cache.Enabled)
             return true;
 
+        if (!File.Exists(TempFile))
+            throw new LogAsErrorException($"Could not find the temporary file {TempFile} for target file {TargetFile}. Look for any errors/warnings generated earlier in the build.");
+
         try
         {
             if (!_cache.ShouldCopy(this, out string? cause))
@@ -1055,6 +1269,7 @@ internal sealed class ProxyFile
         }
         finally
         {
+            _cache.Log.LogMessage(MessageImportance.Low, $"Deleting temp file {TempFile}");
             File.Delete(TempFile);
         }
     }

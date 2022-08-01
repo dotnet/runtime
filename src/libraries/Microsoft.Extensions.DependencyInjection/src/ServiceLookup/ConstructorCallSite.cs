@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public override Type ServiceType { get; }
 
-        public override Type ImplementationType => ConstructorInfo.DeclaringType;
+        public override Type? ImplementationType => ConstructorInfo.DeclaringType;
         public override CallSiteKind Kind { get; } = CallSiteKind.Constructor;
     }
 }

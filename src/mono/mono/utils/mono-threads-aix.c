@@ -12,7 +12,7 @@
 void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
-	/* see GC_push_all_stacks in libgc/aix_irix_threads.c 
+	/* see GC_push_all_stacks in libgc/aix_irix_threads.c
            for why we do this; pthread_getattr_np exists only
            on some versions of AIX and not on PASE, so use a
            legacy way to get the stack information */

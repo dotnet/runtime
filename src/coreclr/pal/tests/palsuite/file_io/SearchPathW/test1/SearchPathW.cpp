@@ -123,7 +123,7 @@ PALTEST(file_io_SearchPathW_test1_paltest_searchpathw_test1, "file_io/SearchPath
         return FAIL;
     }
 
-   /* Initalize the buffer.
+   /* Initialize the buffer.
      */
     memset(fullPath, 0, _MAX_DIR);
 
@@ -133,7 +133,7 @@ PALTEST(file_io_SearchPathW_test1_paltest_searchpathw_test1, "file_io/SearchPath
     }
 
     memset(fileloc_SearchPathW_test1, 0, _MAX_PATH);
-    sprintf_s(fileloc_SearchPathW_test1, _countof(fileloc_SearchPathW_test1), "%s%s", fullPath, szFileNameExistsWithExt);
+    sprintf_s(fileloc_SearchPathW_test1, ARRAY_SIZE(fileloc_SearchPathW_test1), "%s%s", fullPath, szFileNameExistsWithExt);
 
     RemoveAll_SearchPathW_test1();
 

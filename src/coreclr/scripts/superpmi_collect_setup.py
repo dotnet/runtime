@@ -22,12 +22,12 @@
 # 4.  Lastly, it sets the pipeline variables.
 #
 # Below are the helix queues it sets depending on the OS/architecture:
-# | Arch  | windows                 | Linux                                                                                                                                |
-# |-------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-# | x86   | Windows.10.Amd64.X86.Rt |                                                                                                                                      |
-# | x64   | Windows.10.Amd64.X86.Rt | Ubuntu.1804.Amd64                                                                                                                    |
-# | arm   | -                       | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
-# | arm64 | Windows.10.Arm64        | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 |
+# | Arch  | windows                 | Linux                                                                                                                                | macOS          |
+# |-------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------|----------------|
+# | x86   | Windows.10.Amd64.X86.Rt |                                                                                                                                      | -              |
+# | x64   | Windows.10.Amd64.X86.Rt | Ubuntu.1804.Amd64                                                                                                                    | OSX.1014.Amd64 |
+# | arm   | -                       | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 | -              |
+# | arm64 | Windows.10.Arm64        | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 | OSX.1100.ARM64 |
 #
 ################################################################################
 ################################################################################
@@ -47,6 +47,7 @@ parser = argparse.ArgumentParser(description="description")
 parser.add_argument("-source_directory", help="path to source directory")
 parser.add_argument("-core_root_directory", help="path to core_root directory")
 parser.add_argument("-arch", help="Architecture")
+parser.add_argument("-platform", help="OS platform")
 parser.add_argument("-mch_file_tag", help="Tag to be used to mch files")
 parser.add_argument("-collection_name", help="Name of the SPMI collection to be done (e.g., libraries, tests)")
 parser.add_argument("-collection_type", help="Type of the SPMI collection to be done (crossgen, crossgen2, pmi)")
@@ -154,12 +155,17 @@ native_binaries_to_ignore = [
     "mscordbi.dll",
     "mscorrc.dll",
     "msdia140.dll",
+    "msquic.dll",
+    "msvcp140.dll",
+    "vcruntime140.dll",
+    "vcruntime140_1.dll",
     "R2RDump.exe",
     "R2RTest.exe",
     "superpmi.exe",
     "superpmi-shim-collector.dll",
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
+    "System.CommandLine.resources.dll", # Managed, but uninteresting
     "System.IO.Compression.Native.dll",
     "ucrtbase.dll",
     "xunit.console.exe",
@@ -195,6 +201,11 @@ def setup_args(args):
                         "arch",
                         lambda unused: True,
                         "Unable to set arch")
+
+    coreclr_args.verify(args,
+                        "platform",
+                        lambda unused: True,
+                        "Unable to set platform")
 
     coreclr_args.verify(args,
                         "mch_file_tag",
@@ -246,13 +257,13 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
         return pair
 
     filename_with_size = []
+    exclude_files_lower = [filename.lower() for filename in exclude_files]
 
     for file_path, dirs, files in os.walk(src_directory, topdown=True):
         # Credit: https://stackoverflow.com/a/19859907
         dirs[:] = [d for d in dirs if d not in exclude_directories]
         for name in files:
             # Make the exclude check case-insensitive
-            exclude_files_lower = [filename.lower() for filename in exclude_files]
             if name.lower() in exclude_files_lower:
                 continue
             curr_file_path = os.path.join(file_path, name)
@@ -270,7 +281,8 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
 
 def first_fit(sorted_by_size, max_size):
     """ Given a list of file names along with size in descending order, divides the files
-    in number of buckets such that each bucket doesn't exceed max_size. Since this is a first-fit
+    in number of buckets such that each bucket doesn't exceed max_size (unless a single file exceeds
+    max_size, in which case it gets its own bucket). Since this is a first-fit
     approach, it doesn't guarantee to find the bucket with tighest spot available.
 
     Args:
@@ -295,8 +307,8 @@ def first_fit(sorted_by_size, max_size):
                     found_bucket = True
                     break
 
-            if not found_bucket:
-                partitions[len(partitions)] = [curr_file]
+        if not found_bucket:
+            partitions[len(partitions)] = [curr_file]
 
     total_size = 0
     for p_index in partitions:
@@ -383,28 +395,33 @@ def main(main_args):
     superpmi_src_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
     superpmi_dst_directory = os.path.join(correlation_payload_directory, "superpmi")
     arch = coreclr_args.arch
+    platform_name = coreclr_args.platform.lower()
     helix_source_prefix = "official"
     creator = ""
     ci = True
-    if is_windows:
+    if platform_name == "windows":
         helix_queue = "Windows.10.Arm64" if arch == "arm64" else "Windows.10.Amd64.X86.Rt"
-    else:
+    elif platform_name == "linux":
         if arch == "arm":
             helix_queue = "(Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440"
         elif arch == "arm64":
             helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652"
         else:
             helix_queue = "Ubuntu.1804.Amd64"
+    elif platform_name == "osx":
+        helix_queue = "OSX.1100.ARM64" if arch == "arm64" else "OSX.1014.Amd64"
 
     # create superpmi directory
     print('Copying {} -> {}'.format(superpmi_src_directory, superpmi_dst_directory))
     copy_directory(superpmi_src_directory, superpmi_dst_directory, verbose_output=True, match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
 
-    if is_windows:
+    if platform_name == "windows":
         acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
     else:
+        acceptable_extensions = [".py", ".dll", ".json"]
+        acceptable_extensions.append(".so" if platform_name == "linux" else ".dylib")
         # Need to accept files without any extension, which is how executable file's names look.
-        acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in [".py", ".dll", ".so", ".json"])
+        acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in acceptable_extensions)
 
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
     copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, verbose_output=True, match_func=acceptable_copy)

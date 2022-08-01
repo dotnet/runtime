@@ -37,7 +37,6 @@
 #include "runtimecallablewrapper.h"
 #include "comcache.h"
 #include "olevariant.h"
-#include "notifyexternals.h"
 #endif // FEATURE_COMINTEROP
 
 #if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
@@ -801,7 +800,7 @@ class X64LeaRIP : public InstructionFormat
 
             pOutBufferRW[0] = rex;
             pOutBufferRW[1] = 0x8D;
-            pOutBufferRW[2] = 0x05 | (reg << 3);
+            pOutBufferRW[2] = (BYTE)(0x05 | (reg << 3));
             // only support absolute pushimm32 of the label address. The fixedUpReference is
             // the offset to the label from the current point, so add to get address
             *((__int32*)(3+pOutBufferRW)) = (__int32)(fixedUpReference);
@@ -1765,7 +1764,7 @@ VOID StubLinkerCPU::X64EmitMovqWorker(BYTE opcode, X86Reg Xmmreg, X86Reg reg)
     BYTE modrm = static_cast<BYTE>((Xmmreg << 3) | reg);
     codeBuffer[nBytes++] = 0xC0|modrm;
 
-    _ASSERTE(nBytes <= _countof(codeBuffer));
+    _ASSERTE(nBytes <= ARRAY_SIZE(codeBuffer));
 
     // Lastly, emit the encoded bytes
     EmitBytes(codeBuffer, nBytes);
@@ -1836,7 +1835,7 @@ VOID StubLinkerCPU::X64EmitMovXmmWorker(BYTE prefix, BYTE opcode, X86Reg Xmmreg,
         nBytes += 4;
     }
 
-    _ASSERTE(nBytes <= _countof(codeBuffer));
+    _ASSERTE(nBytes <= ARRAY_SIZE(codeBuffer));
 
     // Lastly, emit the encoded bytes
     EmitBytes(codeBuffer, nBytes);
@@ -2446,44 +2445,21 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
 #endif // TARGET_UNIX
 }
 
-#if defined(TARGET_X86)
+#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 
-#if defined(PROFILING_SUPPORTED) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(PROFILING_SUPPORTED)
 VOID StubLinkerCPU::EmitProfilerComCallProlog(TADDR pFrameVptr, X86Reg regFrame)
 {
     STANDARD_VM_CONTRACT;
 
-    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
-    {
-        // Load the methoddesc into ECX (UMThkCallFrame->m_pvDatum->m_pMD)
-        X86EmitIndexRegLoad(kECX, regFrame, UMThkCallFrame::GetOffsetOfDatum());
-        X86EmitIndexRegLoad(kECX, kECX, UMEntryThunk::GetOffsetOfMethodDesc());
+    // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
+    X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
+    X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
 
-        // Push arguments and notify profiler
-        X86EmitPushImm32(COR_PRF_TRANSITION_CALL);      // Reason
-        X86EmitPushReg(kECX);                           // MethodDesc*
-        X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerUnmanagedToManagedTransitionMD), 2*sizeof(void*));
-    }
-
-#ifdef FEATURE_COMINTEROP
-    else if (pFrameVptr == ComMethodFrame::GetMethodFrameVPtr())
-    {
-        // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
-        X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
-        X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
-
-        // Push arguments and notify profiler
-        X86EmitPushImm32(COR_PRF_TRANSITION_CALL);      // Reason
-        X86EmitPushReg(kECX);                           // MethodDesc*
-        X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerUnmanagedToManagedTransitionMD), 2*sizeof(void*));
-    }
-#endif // FEATURE_COMINTEROP
-
-    // Unrecognized frame vtbl
-    else
-    {
-        _ASSERTE(!"Unrecognized vtble passed to EmitComMethodStubProlog with profiling turned on.");
-    }
+    // Push arguments and notify profiler
+    X86EmitPushImm32(COR_PRF_TRANSITION_CALL);      // Reason
+    X86EmitPushReg(kECX);                           // MethodDesc*
+    X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerUnmanagedToManagedTransitionMD), 2*sizeof(void*));
 }
 
 
@@ -2492,50 +2468,21 @@ VOID StubLinkerCPU::EmitProfilerComCallEpilog(TADDR pFrameVptr, X86Reg regFrame)
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-#ifdef FEATURE_COMINTEROP
-        PRECONDITION(pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr() || pFrameVptr == ComMethodFrame::GetMethodFrameVPtr());
-#else
-        PRECONDITION(pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr());
-#endif // FEATURE_COMINTEROP
+        PRECONDITION(pFrameVptr == ComMethodFrame::GetMethodFrameVPtr());
     }
     CONTRACTL_END;
 
-    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
-    {
-        // Load the methoddesc into ECX (UMThkCallFrame->m_pvDatum->m_pMD)
-        X86EmitIndexRegLoad(kECX, regFrame, UMThkCallFrame::GetOffsetOfDatum());
-        X86EmitIndexRegLoad(kECX, kECX, UMEntryThunk::GetOffsetOfMethodDesc());
+    // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
+    X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
+    X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
 
-        // Push arguments and notify profiler
-        X86EmitPushImm32(COR_PRF_TRANSITION_RETURN);    // Reason
-        X86EmitPushReg(kECX);                           // MethodDesc*
-        X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerManagedToUnmanagedTransitionMD), 2*sizeof(void*));
-    }
-
-#ifdef FEATURE_COMINTEROP
-    else if (pFrameVptr == ComMethodFrame::GetMethodFrameVPtr())
-    {
-        // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
-        X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
-        X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
-
-        // Push arguments and notify profiler
-        X86EmitPushImm32(COR_PRF_TRANSITION_RETURN);    // Reason
-        X86EmitPushReg(kECX);                           // MethodDesc*
-        X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerManagedToUnmanagedTransitionMD), 2*sizeof(void*));
-    }
-#endif // FEATURE_COMINTEROP
-
-    // Unrecognized frame vtbl
-    else
-    {
-        _ASSERTE(!"Unrecognized vtble passed to EmitComMethodStubEpilog with profiling turned on.");
-    }
+    // Push arguments and notify profiler
+    X86EmitPushImm32(COR_PRF_TRANSITION_RETURN);    // Reason
+    X86EmitPushReg(kECX);                           // MethodDesc*
+    X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerManagedToUnmanagedTransitionMD), 2*sizeof(void*));
 }
-#endif // PROFILING_SUPPORTED && !FEATURE_STUBS_AS_IL
+#endif // PROFILING_SUPPORTED
 
-
-#ifndef FEATURE_STUBS_AS_IL
 //========================================================================
 //  Prolog for entering managed code from COM
 //  pushes the appropriate frame ptr
@@ -2585,13 +2532,6 @@ void StubLinkerCPU::EmitComMethodStubProlog(TADDR pFrameVptr,
     // lea esi, [esp+4] ;; set ESI -> new frame
     X86EmitEspOffset(0x8d, kESI, 4);    // lea ESI, [ESP+4]
 
-    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
-    {
-        // Preserve argument registers for thiscall/fastcall
-        X86EmitPushReg(kECX);
-        X86EmitPushReg(kEDX);
-    }
-
     // Emit Setup thread
     EmitSetup(rgRareLabels[0]);  // rareLabel for rare setup
     EmitLabel(rgRejoinLabels[0]); // rejoin label for rare setup
@@ -2640,23 +2580,6 @@ void StubLinkerCPU::EmitComMethodStubProlog(TADDR pFrameVptr,
     // mov [ebx + Thread.GetFrame()], esi
     X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kESI);
 
-    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
-    {
-        // push UnmanagedToManagedExceptHandler
-        X86EmitPushImmPtr((LPVOID)UMThunkPrestubHandler);
-
-        // mov eax, fs:[0]
-        static const BYTE codeSEH1[] = { 0x64, 0xA1, 0x0, 0x0, 0x0, 0x0};
-        EmitBytes(codeSEH1, sizeof(codeSEH1));
-
-        // push eax
-        X86EmitPushReg(kEAX);
-
-        // mov dword ptr fs:[0], esp
-        static const BYTE codeSEH2[] = { 0x64, 0x89, 0x25, 0x0, 0x0, 0x0, 0x0};
-        EmitBytes(codeSEH2, sizeof(codeSEH2));
-    }
-
 #if _DEBUG
     if (Frame::ShouldLogTransitions())
     {
@@ -2693,19 +2616,6 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
 
     EmitCheckGSCookie(kESI, UnmanagedToManagedFrame::GetOffsetOfGSCookie());
 
-    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
-    {
-        // if we are using exceptions, unlink the SEH
-        // mov ecx,[esp]  ;;pointer to the next exception record
-        X86EmitEspOffset(0x8b, kECX, 0);
-
-        // mov dword ptr fs:[0], ecx
-        static const BYTE codeSEH[] = { 0x64, 0x89, 0x0D, 0x0, 0x0, 0x0, 0x0 };
-        EmitBytes(codeSEH, sizeof(codeSEH));
-
-        X86EmitAddEsp(sizeof(EXCEPTION_REGISTRATION_RECORD));
-    }
-
     // mov [ebx + Thread.GetFrame()], edi  ;; restore previous frame
     X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kEDI);
 
@@ -2714,13 +2624,6 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
     //-----------------------------------------------------------------------
     EmitEnable(rgRareLabels[2]); // rare gc
     EmitLabel(rgRejoinLabels[2]);        // rejoin for rare gc
-
-    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
-    {
-        // Restore argument registers for thiscall/fastcall
-        X86EmitPopReg(kEDX);
-        X86EmitPopReg(kECX);
-    }
 
     // add esp, popstack
     X86EmitAddEsp(sizeof(GSCookie) + UnmanagedToManagedFrame::GetOffsetOfCalleeSavedRegisters());
@@ -2762,7 +2665,6 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
     EmitLabel(rgRareLabels[0]);  // label for rare setup thread
     EmitRareSetup(rgRejoinLabels[0], /*fThrow*/ TRUE); // emit rare setup thread
 }
-#endif // !FEATURE_STUBS_AS_IL
 
 //---------------------------------------------------------------
 // Emit code to store the setup current Thread structure in eax.
@@ -2793,16 +2695,12 @@ VOID StubLinkerCPU::EmitRareSetup(CodeLabel *pRejoinPoint, BOOL fThrow)
 {
     STANDARD_VM_CONTRACT;
 
-#ifndef FEATURE_COMINTEROP
-    _ASSERTE(fThrow);
-#else // !FEATURE_COMINTEROP
     if (!fThrow)
     {
         X86EmitPushReg(kESI);
         X86EmitCall(NewExternalCodeLabel((LPVOID) CreateThreadBlockReturnHr), sizeof(void*));
     }
     else
-#endif // !FEATURE_COMINTEROP
     {
         X86EmitCall(NewExternalCodeLabel((LPVOID) CreateThreadBlockThrow), 0);
     }
@@ -2812,10 +2710,6 @@ VOID StubLinkerCPU::EmitRareSetup(CodeLabel *pRejoinPoint, BOOL fThrow)
     X86EmitNearJump(pRejoinPoint);
 }
 
-//========================================================================
-#endif // TARGET_X86
-//========================================================================
-#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 //========================================================================
 //  Epilog for stubs that enter managed code from COM
 //
@@ -2921,8 +2815,8 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
     EmitRareSetup(rgRejoinLabels[0],/*fThrow*/ FALSE); // emit rare setup thread
 }
 
-//========================================================================
 #endif // defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
+
 
 #if !defined(FEATURE_STUBS_AS_IL) && defined(TARGET_X86)
 /*==============================================================================
@@ -3166,6 +3060,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
     }
 
     EmitTailJumpToMethod(pSharedMD);
+    SetTargetMethod(pSharedMD);
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE) && defined(TARGET_AMD64)
 
@@ -3438,7 +3333,7 @@ VOID StubLinkerCPU::EmitUnwindInfoCheckSubfunction()
 #endif // defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
 
 
-#ifdef TARGET_X86
+#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 
 //-----------------------------------------------------------------------
 // Generates the inline portion of the code to enable preemptive GC. Hopefully,
@@ -3547,49 +3442,6 @@ VOID StubLinkerCPU::EmitDisable(CodeLabel *pForwardRef, BOOL fCallIn, X86Reg Thr
     // jnz RarePath
     X86EmitCondJump(pForwardRef, X86CondCode::kJNZ);
 
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORESYSTEM)
-    // If we are checking whether the current thread holds the loader lock, vector
-    // such cases to the rare disable pathway, where we can check again.
-    if (fCallIn && ShouldCheckLoaderLock())
-    {
-        X86EmitPushReg(kEAX);
-        X86EmitPushReg(kEDX);
-
-        if (ThreadReg == kECX)
-            X86EmitPushReg(kECX);
-
-        // BOOL AuxUlibIsDLLSynchronizationHeld(BOOL *IsHeld)
-        //
-        // So we need to be sure that both the return value and the passed BOOL are both TRUE.
-        // If either is FALSE, then the call failed or the lock is not held.  Either way, the
-        // probe should not fire.
-
-        X86EmitPushReg(kEDX);               // BOOL temp
-        Emit8(0x54);                        // push ESP because arg is &temp
-        X86EmitCall(NewExternalCodeLabel((LPVOID) AuxUlibIsDLLSynchronizationHeld), 0);
-
-        // callee has popped.
-        X86EmitPopReg(kEDX);                // recover temp
-
-        CodeLabel   *pPopLabel = NewCodeLabel();
-
-        Emit16(0xc085);                     // test eax, eax
-        X86EmitCondJump(pPopLabel, X86CondCode::kJZ);
-
-        Emit16(0xd285);                     // test edx, edx
-
-        EmitLabel(pPopLabel);               // retain the conditional flags across the pops
-
-        if (ThreadReg == kECX)
-            X86EmitPopReg(kECX);
-
-        X86EmitPopReg(kEDX);
-        X86EmitPopReg(kEAX);
-
-        X86EmitCondJump(pForwardRef, X86CondCode::kJNZ);
-    }
-#endif
-
 #ifdef _DEBUG
     if (ThreadReg != kECX)
         X86EmitDebugTrashReg(kECX);
@@ -3623,7 +3475,6 @@ VOID StubLinkerCPU::EmitRareDisable(CodeLabel *pRejoinPoint)
     X86EmitNearJump(pRejoinPoint);
 }
 
-#ifdef FEATURE_COMINTEROP
 //-----------------------------------------------------------------------
 // Generates the out-of-line portion of the code to disable preemptive GC.
 // After the work is done, the code normally jumps back to the "pRejoinPoint"
@@ -3655,10 +3506,8 @@ VOID StubLinkerCPU::EmitRareDisableHRESULT(CodeLabel *pRejoinPoint, CodeLabel *p
 
     X86EmitNearJump(pExitPoint);
 }
-#endif // FEATURE_COMINTEROP
 
-#endif // TARGET_X86
-
+#endif // defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 
 
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
@@ -5114,289 +4963,6 @@ Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
 
 #endif // !DACCESS_COMPILE
 
-#ifdef HAS_FIXUP_PRECODE
-
-#ifdef HAS_FIXUP_PRECODE_CHUNKS
-TADDR FixupPrecode::GetMethodDesc()
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-
-    // This lookup is also manually inlined in PrecodeFixupThunk assembly code
-    TADDR base = *PTR_TADDR(GetBase());
-    if (base == NULL)
-        return NULL;
-    return base + (m_MethodDescChunkIndex * MethodDesc::ALIGNMENT);
-}
-#endif
-
-#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
-PCODE FixupPrecode::GetDynamicMethodPrecodeFixupJumpStub()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(((PTR_MethodDesc)GetMethodDesc())->IsLCGMethod());
-
-    // The precode fixup jump stub is shared by all fixup precodes in a chunk, and immediately follows the MethodDesc. Jump
-    // stubs cannot be reused currently for the same method:
-    //   - The jump stub's target would change separately from the precode being updated from "call Func" to "jmp Func", both
-    //     changes would have to be done atomically with runtime suspension, which is not done currently
-    //   - When changing the entry point from one version of jitted code to another, the jump stub's target pointer is not
-    //     aligned to 8 bytes in order to be able to do an interlocked update of the target address
-    // So, when initially the precode intends to be of the form "call PrecodeFixupThunk", if the target address happens to be
-    // too far for a relative 32-bit jump, it will use the shared precode fixup jump stub. When changing the entry point to
-    // jitted code, the jump stub associated with the precode is patched, and the precode is updated to use that jump stub.
-    //
-    // Notes:
-    // - Dynamic method descs, and hence their precodes and preallocated jump stubs, may be reused for a different method
-    //   (along with reinitializing the precode), but only with a transition where the original method is no longer accessible
-    //   to user code
-    // - Concurrent calls to a dynamic method that has not yet been jitted may trigger multiple writes to the jump stub
-    //   associated with the precode, but only to the same target address (and while the precode is still pointing to
-    //   PrecodeFixupThunk)
-    return GetBase() + sizeof(PTR_MethodDesc);
-}
-
-PCODE FixupPrecode::GetDynamicMethodEntryJumpStub()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(((PTR_MethodDesc)GetMethodDesc())->IsLCGMethod());
-
-    // m_PrecodeChunkIndex has a value inverted to the order of precodes in memory (the precode at the lowest address has the
-    // highest index, and the precode at the highest address has the lowest index). To map a precode to its jump stub by memory
-    // order, invert the precode index to get the jump stub index. Also skip the precode fixup jump stub (see
-    // GetDynamicMethodPrecodeFixupJumpStub()).
-    UINT32 count = ((PTR_MethodDesc)GetMethodDesc())->GetMethodDescChunk()->GetCount();
-    _ASSERTE(m_PrecodeChunkIndex < count);
-    SIZE_T jumpStubIndex = count - m_PrecodeChunkIndex;
-
-    return GetBase() + sizeof(PTR_MethodDesc) + jumpStubIndex * BACK_TO_BACK_JUMP_ALLOCATE_SIZE;
-}
-#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
-
-#ifdef DACCESS_COMPILE
-void FixupPrecode::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-    DacEnumMemoryRegion(dac_cast<TADDR>(this), sizeof(FixupPrecode));
-
-    DacEnumMemoryRegion(GetBase(), sizeof(TADDR));
-}
-#endif // DACCESS_COMPILE
-
-#endif // HAS_FIXUP_PRECODE
-
-#ifndef DACCESS_COMPILE
-
-void rel32SetInterlocked(/*PINT32*/ PVOID pRel32, /*PINT32*/ PVOID pRel32RW, TADDR target, MethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        THROWS;         // Creating a JumpStub could throw OutOfMemory
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    INT32 targetRel32 = rel32UsingJumpStub((INT32*)pRel32, target, pMD);
-
-    _ASSERTE(IS_ALIGNED(pRel32RW, sizeof(INT32)));
-    FastInterlockExchange((LONG*)pRel32RW, (LONG)targetRel32);
-}
-
-BOOL rel32SetInterlocked(/*PINT32*/ PVOID pRel32, /*PINT32*/ PVOID pRel32RW, TADDR target, TADDR expected, MethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        THROWS;         // Creating a JumpStub could throw OutOfMemory
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    BYTE* callAddrAdj = (BYTE*)pRel32 + 4;
-    INT32 expectedRel32 = static_cast<INT32>((BYTE*)expected - callAddrAdj);
-
-    INT32 targetRel32 = rel32UsingJumpStub((INT32*)pRel32, target, pMD);
-
-    _ASSERTE(IS_ALIGNED(pRel32RW, sizeof(INT32)));
-    return FastInterlockCompareExchange((LONG*)pRel32RW, (LONG)targetRel32, (LONG)expectedRel32) == (LONG)expectedRel32;
-}
-
-void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator /* = NULL */,
-    BYTE type /* = StubPrecode::Type */, TADDR target /* = NULL */)
-{
-    WRAPPER_NO_CONTRACT;
-
-    IN_TARGET_64BIT(m_movR10 = X86_INSTR_MOV_R10_IMM64);   // mov r10, pMethodDesc
-    IN_TARGET_32BIT(m_movEAX = X86_INSTR_MOV_EAX_IMM32);   // mov eax, pMethodDesc
-    m_pMethodDesc = (TADDR)pMD;
-    IN_TARGET_32BIT(m_mov_rm_r = X86_INSTR_MOV_RM_R);      // mov reg,reg
-    m_type = type;
-    m_jmp = X86_INSTR_JMP_REL32;        // jmp rel32
-
-    if (pLoaderAllocator != NULL)
-    {
-        // Use pMD == NULL in all precode initialization methods to allocate the initial jump stub in non-dynamic heap
-        // that has the same lifetime like as the precode itself
-        if (target == NULL)
-            target = GetPreStubEntryPoint();
-        m_rel32 = rel32UsingJumpStub(&pPrecodeRX->m_rel32, target, NULL /* pMD */, pLoaderAllocator);
-    }
-}
-
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-
-void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-    StubPrecode::Init(pPrecodeRX, pMD, pLoaderAllocator, NDirectImportPrecode::Type, GetEEFuncEntryPoint(NDirectImportThunk));
-}
-
-#endif // HAS_NDIRECT_IMPORT_PRECODE
-
-
-#ifdef HAS_FIXUP_PRECODE
-void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
-{
-    WRAPPER_NO_CONTRACT;
-
-    m_op   = X86_INSTR_CALL_REL32;       // call PrecodeFixupThunk
-    m_type = FixupPrecode::TypePrestub;
-
-    // Initialize chunk indices only if they are not initialized yet. This is necessary to make MethodDesc::Reset work.
-    if (m_PrecodeChunkIndex == 0)
-    {
-        _ASSERTE(FitsInU1(iPrecodeChunkIndex));
-        m_PrecodeChunkIndex = static_cast<BYTE>(iPrecodeChunkIndex);
-    }
-
-    if (iMethodDescChunkIndex != -1)
-    {
-        if (m_MethodDescChunkIndex == 0)
-        {
-            _ASSERTE(FitsInU1(iMethodDescChunkIndex));
-            m_MethodDescChunkIndex = static_cast<BYTE>(iMethodDescChunkIndex);
-        }
-
-        if (*(void**)GetBase() == NULL)
-            *(void**)GetBase() = (BYTE*)pMD - (iMethodDescChunkIndex * MethodDesc::ALIGNMENT);
-    }
-
-    _ASSERTE(GetMethodDesc() == (TADDR)pMD);
-
-    PCODE target = (PCODE)GetEEFuncEntryPoint(PrecodeFixupThunk);
-#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
-    if (pMD->IsLCGMethod())
-    {
-        m_rel32 = rel32UsingPreallocatedJumpStub(&pPrecodeRX->m_rel32, target, pPrecodeRX->GetDynamicMethodPrecodeFixupJumpStub(), GetDynamicMethodPrecodeFixupJumpStub(), false /* emitJump */);
-        return;
-    }
-#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
-    if (pLoaderAllocator != NULL)
-    {
-        m_rel32 = rel32UsingJumpStub(&pPrecodeRX->m_rel32, target, NULL /* pMD */, pLoaderAllocator);
-    }
-}
-
-void FixupPrecode::ResetTargetInterlocked()
-{
-    CONTRACTL
-    {
-        THROWS;         // Creating a JumpStub could throw OutOfMemory
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    FixupPrecode newValue = *this;
-    newValue.m_op = X86_INSTR_CALL_REL32; // call PrecodeFixupThunk
-    newValue.m_type = FixupPrecode::TypePrestub;
-
-    PCODE target = (PCODE)GetEEFuncEntryPoint(PrecodeFixupThunk);
-    MethodDesc* pMD = (MethodDesc*)GetMethodDesc();
-#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
-    // The entry point of LCG methods cannot revert back to the original entry point, as their jump stubs would have to be
-    // reused, which is currently not supported. This method is intended for resetting the entry point while the method is
-    // callable, which implies that the entry point may later be changed again to something else. Currently, this is not done
-    // for LCG methods. See GetDynamicMethodPrecodeFixupJumpStub() for more.
-    _ASSERTE(!pMD->IsLCGMethod());
-#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
-
-    newValue.m_rel32 = rel32UsingJumpStub(&m_rel32, target, pMD);
-
-    _ASSERTE(IS_ALIGNED(this, sizeof(INT64)));
-
-    ExecutableWriterHolder<FixupPrecode> precodeWriterHolder(this, sizeof(FixupPrecode));
-    FastInterlockExchangeLong((INT64*)precodeWriterHolder.GetRW(), *(INT64*)&newValue);
-}
-
-BOOL FixupPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
-{
-    CONTRACTL
-    {
-        THROWS;         // Creating a JumpStub could throw OutOfMemory
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    INT64 oldValue = *(INT64*)this;
-    BYTE* pOldValue = (BYTE*)&oldValue;
-
-    MethodDesc * pMD = (MethodDesc*)GetMethodDesc();
-    g_IBCLogger.LogMethodPrecodeWriteAccess(pMD);
-
-#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
-    // A different jump stub is used for this case, see Init(). This call is unexpected for resetting the entry point.
-    _ASSERTE(!pMD->IsLCGMethod() || target != (TADDR)GetEEFuncEntryPoint(PrecodeFixupThunk));
-#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
-
-    INT64 newValue = oldValue;
-    BYTE* pNewValue = (BYTE*)&newValue;
-
-    if (pOldValue[OFFSETOF_PRECODE_TYPE_CALL_OR_JMP] == FixupPrecode::TypePrestub)
-    {
-        pNewValue[OFFSETOF_PRECODE_TYPE_CALL_OR_JMP] = FixupPrecode::Type;
-
-        pOldValue[offsetof(FixupPrecode, m_op)] = X86_INSTR_CALL_REL32;
-        pNewValue[offsetof(FixupPrecode, m_op)] = X86_INSTR_JMP_REL32;
-    }
-    else if (pOldValue[OFFSETOF_PRECODE_TYPE_CALL_OR_JMP] == FixupPrecode::Type)
-    {
-#ifdef FEATURE_CODE_VERSIONING
-        // No change needed, jmp is already in place
-#else
-        // Setting the target more than once is unexpected
-        return FALSE;
-#endif
-    }
-    else
-    {
-        // Pre-existing code doesn't conform to the expectations for a FixupPrecode
-        return FALSE;
-    }
-
-#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
-    ExecutableWriterHolder<void> dynamicMethodEntryJumpStubWriterHolder;
-    if (pMD->IsLCGMethod())
-    {
-        dynamicMethodEntryJumpStubWriterHolder = ExecutableWriterHolder<void>((void*)GetDynamicMethodEntryJumpStub(), 12);
-    }
-#endif
-    *(INT32*)(&pNewValue[offsetof(FixupPrecode, m_rel32)]) =
-#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
-        pMD->IsLCGMethod() ?
-            rel32UsingPreallocatedJumpStub(&m_rel32, target, GetDynamicMethodEntryJumpStub(), (PCODE)dynamicMethodEntryJumpStubWriterHolder.GetRW(), true /* emitJump */) :
-#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
-            rel32UsingJumpStub(&m_rel32, target, pMD);
-
-    _ASSERTE(IS_ALIGNED(this, sizeof(INT64)));
-
-    ExecutableWriterHolder<FixupPrecode> precodeWriterHolder(this, sizeof(FixupPrecode));
-    return FastInterlockCompareExchangeLong((INT64*)precodeWriterHolder.GetRW(), newValue, oldValue) == oldValue;
-}
-
-#endif // HAS_FIXUP_PRECODE
-
-#endif // !DACCESS_COMPILE
-
-
 #ifdef HAS_THISPTR_RETBUF_PRECODE
 
 // rel32 jmp target that points back to the jump (infinite loop).
@@ -5430,7 +4996,11 @@ void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
 
     // This precode is never patched lazily - avoid unnecessary jump stub allocation
     m_rel32 = REL32_JMP_SELF;
+
+    _ASSERTE(*((BYTE*)this + OFFSETOF_PRECODE_TYPE) == ThisPtrRetBufPrecode::Type);
 }
+
+IN_TARGET_32BIT(static_assert_no_msg(offsetof(ThisPtrRetBufPrecode, m_movScratchArg0) == OFFSETOF_PRECODE_TYPE);)
 
 BOOL ThisPtrRetBufPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
 {
@@ -5449,7 +5019,7 @@ BOOL ThisPtrRetBufPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
 
     _ASSERTE(IS_ALIGNED(&m_rel32, sizeof(INT32)));
     ExecutableWriterHolder<INT32> rel32WriterHolder(&m_rel32, sizeof(INT32));
-    FastInterlockExchange((LONG*)rel32WriterHolder.GetRW(), (LONG)newRel32);
+    InterlockedExchange((LONG*)rel32WriterHolder.GetRW(), (LONG)newRel32);
 
     return TRUE;
 }

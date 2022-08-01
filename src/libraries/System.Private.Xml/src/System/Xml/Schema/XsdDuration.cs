@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Globalization;
+using System;
+using System.Diagnostics;
+using System.Text;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Diagnostics;
-    using System.Text;
-
     /// <summary>
     /// This structure holds components of an Xsd Duration.  It is used internally to support Xsd durations without loss
     /// of fidelity.  XsdDuration structures are immutable once they've been created.
@@ -259,7 +260,7 @@ namespace System.Xml.Schema
 
         internal Exception? TryToTimeSpan(DurationType durationType, out TimeSpan result)
         {
-            Exception? exception = null;
+            Exception? exception;
             ulong ticks = 0;
 
             // Throw error if result cannot fit into a long
@@ -339,26 +340,26 @@ namespace System.Xml.Schema
         /// </summary>
         internal string ToString(DurationType durationType)
         {
-            StringBuilder sb = new StringBuilder(20);
+            var vsb = new ValueStringBuilder(stackalloc char[20]);
             int nanoseconds, digit, zeroIdx, len;
 
             if (IsNegative)
-                sb.Append('-');
+                vsb.Append('-');
 
-            sb.Append('P');
+            vsb.Append('P');
 
             if (durationType != DurationType.DayTimeDuration)
             {
                 if (_years != 0)
                 {
-                    sb.Append(XmlConvert.ToString(_years));
-                    sb.Append('Y');
+                    vsb.AppendSpanFormattable(_years, null, CultureInfo.InvariantCulture);
+                    vsb.Append('Y');
                 }
 
                 if (_months != 0)
                 {
-                    sb.Append(XmlConvert.ToString(_months));
-                    sb.Append('M');
+                    vsb.AppendSpanFormattable(_months, null, CultureInfo.InvariantCulture);
+                    vsb.Append('M');
                 }
             }
 
@@ -366,41 +367,41 @@ namespace System.Xml.Schema
             {
                 if (_days != 0)
                 {
-                    sb.Append(XmlConvert.ToString(_days));
-                    sb.Append('D');
+                    vsb.AppendSpanFormattable(_days, null, CultureInfo.InvariantCulture);
+                    vsb.Append('D');
                 }
 
                 if (_hours != 0 || _minutes != 0 || _seconds != 0 || Nanoseconds != 0)
                 {
-                    sb.Append('T');
+                    vsb.Append('T');
                     if (_hours != 0)
                     {
-                        sb.Append(XmlConvert.ToString(_hours));
-                        sb.Append('H');
+                        vsb.AppendSpanFormattable(_hours, null, CultureInfo.InvariantCulture);
+                        vsb.Append('H');
                     }
 
                     if (_minutes != 0)
                     {
-                        sb.Append(XmlConvert.ToString(_minutes));
-                        sb.Append('M');
+                        vsb.AppendSpanFormattable(_minutes, null, CultureInfo.InvariantCulture);
+                        vsb.Append('M');
                     }
 
                     nanoseconds = Nanoseconds;
                     if (_seconds != 0 || nanoseconds != 0)
                     {
-                        sb.Append(XmlConvert.ToString(_seconds));
+                        vsb.AppendSpanFormattable(_seconds, null, CultureInfo.InvariantCulture);
                         if (nanoseconds != 0)
                         {
-                            sb.Append('.');
+                            vsb.Append('.');
 
-                            len = sb.Length;
-                            sb.Length += 9;
-                            zeroIdx = sb.Length - 1;
+                            len = vsb.Length;
+                            Span<char> tmpSpan = stackalloc char[9];
+                            zeroIdx = len + 8;
 
                             for (int idx = zeroIdx; idx >= len; idx--)
                             {
                                 digit = nanoseconds % 10;
-                                sb[idx] = (char)(digit + '0');
+                                tmpSpan[idx - len] = (char)(digit + '0');
 
                                 if (zeroIdx == idx && digit == 0)
                                     zeroIdx--;
@@ -408,24 +409,25 @@ namespace System.Xml.Schema
                                 nanoseconds /= 10;
                             }
 
-                            sb.Length = zeroIdx + 1;
+                            vsb.EnsureCapacity(zeroIdx + 1);
+                            vsb.Append(tmpSpan.Slice(0, zeroIdx - len + 1));
                         }
-                        sb.Append('S');
+                        vsb.Append('S');
                     }
                 }
 
                 // Zero is represented as "PT0S"
-                if (sb[sb.Length - 1] == 'P')
-                    sb.Append("T0S");
+                if (vsb[vsb.Length - 1] == 'P')
+                    vsb.Append("T0S");
             }
             else
             {
                 // Zero is represented as "T0M"
-                if (sb[sb.Length - 1] == 'P')
-                    sb.Append("0M");
+                if (vsb[vsb.Length - 1] == 'P')
+                    vsb.Append("0M");
             }
 
-            return sb.ToString();
+            return vsb.ToString();
         }
 
         internal static Exception? TryParse(string s, out XsdDuration result)
@@ -446,7 +448,6 @@ namespace System.Xml.Schema
             length = s.Length;
 
             pos = 0;
-            numDigits = 0;
 
             if (pos >= length) goto InvalidFormat;
 
@@ -505,7 +506,7 @@ namespace System.Xml.Schema
                 result._days = value;
                 if (++pos == length) goto Done;
 
-                errorCode = TryParseDigits(s, ref pos, false, out value, out numDigits);
+                errorCode = TryParseDigits(s, ref pos, false, out _, out numDigits);
                 if (errorCode != null) goto Error;
 
                 if (pos >= length) goto InvalidFormat;
@@ -631,7 +632,7 @@ namespace System.Xml.Schema
             result = 0;
             numDigits = 0;
 
-            while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+            while (offset < offsetEnd && char.IsAsciiDigit(s[offset]))
             {
                 digit = s[offset] - '0';
 
@@ -645,7 +646,7 @@ namespace System.Xml.Schema
                     // Skip past any remaining digits
                     numDigits = offset - offsetStart;
 
-                    while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+                    while (offset < offsetEnd && char.IsAsciiDigit(s[offset]))
                     {
                         offset++;
                     }

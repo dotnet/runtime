@@ -105,9 +105,9 @@ namespace System.Text.Json
         /// </exception>
         public void WriteTo(Utf8JsonWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
             RootElement.WriteTo(writer);
@@ -290,8 +290,7 @@ namespace System.Text.Json
 
             if (row.HasComplexChildren)
             {
-                int backslash = segment.IndexOf(JsonConstants.BackSlash);
-                lastString = JsonReaderHelper.GetUnescapedString(segment, backslash);
+                lastString = JsonReaderHelper.GetUnescapedString(segment);
             }
             else
             {
@@ -409,9 +408,7 @@ namespace System.Text.Json
             // Segment needs to be unescaped
             if (row.HasComplexChildren)
             {
-                int idx = segment.IndexOf(JsonConstants.BackSlash);
-                Debug.Assert(idx != -1);
-                return JsonReaderHelper.TryGetUnescapedBase64Bytes(segment, idx, out value);
+                return JsonReaderHelper.TryGetUnescapedBase64Bytes(segment, out value);
             }
 
             Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
@@ -893,13 +890,8 @@ namespace System.Text.Json
                 return text;
             }
 
-            int idx = text.IndexOf(JsonConstants.BackSlash);
-            Debug.Assert(idx >= 0);
-
             byte[] rent = ArrayPool<byte>.Shared.Rent(length);
-            text.Slice(0, idx).CopyTo(rent);
-
-            JsonReaderHelper.Unescape(text, rent, idx, out int written);
+            JsonReaderHelper.Unescape(text, rent, out int written);
             rented = new ArraySegment<byte>(rent, 0, written);
             return rented.AsSpan();
         }
@@ -938,7 +930,6 @@ namespace System.Text.Json
             finally
             {
                 ClearAndReturn(rented);
-
             }
         }
 
@@ -1052,7 +1043,7 @@ namespace System.Text.Json
 
                     database.Append(tokenType, tokenStart + 1, reader.ValueSpan.Length);
 
-                    if (reader._stringHasEscaping)
+                    if (reader.ValueIsEscaped)
                     {
                         database.SetHasComplexChildren(database.Length - DbRow.Size);
                     }
@@ -1077,7 +1068,7 @@ namespace System.Text.Json
 
                         database.Append(tokenType, tokenStart + 1, reader.ValueSpan.Length);
 
-                        if (reader._stringHasEscaping)
+                        if (reader.ValueIsEscaped)
                         {
                             database.SetHasComplexChildren(database.Length - DbRow.Size);
                         }
@@ -1099,15 +1090,15 @@ namespace System.Text.Json
         {
             if (_utf8Json.IsEmpty)
             {
-                throw new ObjectDisposedException(nameof(JsonDocument));
+                ThrowHelper.ThrowObjectDisposedException_JsonDocument();
             }
         }
 
-        private void CheckExpectedType(JsonTokenType expected, JsonTokenType actual)
+        private static void CheckExpectedType(JsonTokenType expected, JsonTokenType actual)
         {
             if (expected != actual)
             {
-                throw ThrowHelper.GetJsonElementWrongTypeException(expected, actual);
+                ThrowHelper.ThrowJsonElementWrongTypeException(expected, actual);
             }
         }
 

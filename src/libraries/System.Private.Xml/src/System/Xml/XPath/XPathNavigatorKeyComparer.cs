@@ -22,15 +22,13 @@ namespace System.Xml.XPath
 
         int IEqualityComparer.GetHashCode(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             int hashCode;
             XPathNavigator? nav;
             XPathDocumentNavigator? xpdocNav;
 
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-            else if (null != (xpdocNav = obj as XPathDocumentNavigator))
+            if (null != (xpdocNav = obj as XPathDocumentNavigator))
             {
                 hashCode = xpdocNav.GetPositionHashCode();
             }

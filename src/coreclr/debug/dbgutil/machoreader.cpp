@@ -126,19 +126,41 @@ MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolValue)
         _ASSERTE(m_nlists != nullptr);
         _ASSERTE(m_strtabAddress != 0);
 
-        for (int i = 0; i < m_dysymtabCommand->nextdefsym; i++)
+        // First, search just the "external" export symbols 
+        if (TryLookupSymbol(m_dysymtabCommand->iextdefsym, m_dysymtabCommand->nextdefsym, symbolName, symbolValue))
         {
-            std::string name = GetSymbolName(i);
-            // Skip the leading underscores to match Linux externs
-            if (name[0] == '_')
-            {
-                name.erase(0, 1);
-            }
-            if (strcmp(name.c_str(), symbolName) == 0)
-            {
-                *symbolValue = m_loadBias + m_nlists[i].n_value;
-                return true;
-            }
+            m_reader.Trace("SYM: Found '%s' in external symbols\n", symbolName);
+            return true;
+        }
+        m_reader.Trace("SYM: Missed '%s' in external symbols\n", symbolName);
+
+        // If not found in external symbols, search all of them
+        if (TryLookupSymbol(0, m_symtabCommand->nsyms, symbolName, symbolValue))
+        {
+            m_reader.Trace("SYM: Found '%s' in all symbols\n", symbolName);
+            return true;
+        }
+        m_reader.Trace("SYM: Missed '%s' in all symbols\n", symbolName);
+    }
+    *symbolValue = 0;
+    return false;
+}
+
+bool
+MachOModule::TryLookupSymbol(int start, int nsyms, const char* symbolName, uint64_t* symbolValue)
+{
+    for (int i = 0; i < nsyms; i++)
+    {
+        std::string name = GetSymbolName(start + i);
+
+        // Skip the leading underscores to match Linux externs
+        const char* currentName = name.length() > 0 && name[0] == '_' ? name.c_str() + 1 : name.c_str();
+
+        // Does this symbol match?
+        if (strcmp(currentName, symbolName) == 0)
+        {
+            *symbolValue = m_loadBias + m_nlists[start + i].n_value;
+            return true;
         }
     }
     *symbolValue = 0;
@@ -207,9 +229,8 @@ MachOModule::ReadLoadCommands()
                 m_segments.push_back(segment);
 
                 // Calculate the load bias for the module. This is the value to add to the vmaddr of a
-                // segment to get the actual address. For shared modules, this is 0 since those segments
-                // are absolute address.
-                if (segment->fileoff == 0 && segment->filesize > 0)
+                // segment to get the actual address.
+                if (strcmp(segment->segname, SEG_TEXT) == 0)
                 {
                     m_loadBias = m_baseAddress - segment->vmaddr;
                 }
@@ -263,26 +284,30 @@ MachOModule::ReadSymbolTable()
         _ASSERTE(m_symtabCommand != nullptr);
         _ASSERTE(m_strtabAddress == 0);
 
-        m_reader.TraceVerbose("SYM: symoff %08x nsyms %d stroff %08x strsize %d iext %d next %d\n",
+        m_reader.TraceVerbose("SYM: symoff %08x nsyms %d stroff %08x strsize %d iext %d next %d iundef %d nundef %d extref %d nextref %d\n",
             m_symtabCommand->symoff,
             m_symtabCommand->nsyms,
             m_symtabCommand->stroff,
             m_symtabCommand->strsize,
             m_dysymtabCommand->iextdefsym,
-            m_dysymtabCommand->nextdefsym);
+            m_dysymtabCommand->nextdefsym,
+            m_dysymtabCommand->iundefsym,
+            m_dysymtabCommand->nundefsym,
+            m_dysymtabCommand->extrefsymoff,
+            m_dysymtabCommand->nextrefsyms);
 
-        // Read the external symbol part of symbol table. An array of "nlist" structs.
-        void* extSymbolTableAddress = (void*)(GetAddressFromFileOffset(m_symtabCommand->symoff) + (m_dysymtabCommand->iextdefsym * sizeof(nlist_64)));
-        size_t symtabSize = sizeof(nlist_64) * m_dysymtabCommand->nextdefsym;
+        // Read the entire symbol part of symbol table. An array of "nlist" structs.
+        void* symbolTableAddress = (void*)GetAddressFromFileOffset(m_symtabCommand->symoff);
+        size_t symtabSize = sizeof(nlist_64) * m_symtabCommand->nsyms;
         m_nlists = (nlist_64*)malloc(symtabSize);
         if (m_nlists == nullptr)
         {
-            m_reader.Trace("ERROR: Failed to allocate %zu byte external symbol table\n", symtabSize);
+            m_reader.Trace("ERROR: Failed to allocate %zu byte symtab\n", symtabSize);
             return false;
         }
-        if (!m_reader.ReadMemory(extSymbolTableAddress, m_nlists, symtabSize))
+        if (!m_reader.ReadMemory(symbolTableAddress, m_nlists, symtabSize))
         {
-            m_reader.Trace("ERROR: Failed to read external symtab at %p of %zu\n", extSymbolTableAddress, symtabSize);
+            m_reader.Trace("ERROR: Failed to read symtab at %p of %zu\n", symbolTableAddress, symtabSize);
             return false;
         }
 

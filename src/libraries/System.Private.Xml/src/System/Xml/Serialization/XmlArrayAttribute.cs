@@ -40,7 +40,7 @@ namespace System.Xml.Serialization
         [AllowNull]
         public string ElementName
         {
-            get { return _elementName == null ? string.Empty : _elementName; }
+            get { return _elementName ?? string.Empty; }
             set { _elementName = value; }
         }
 

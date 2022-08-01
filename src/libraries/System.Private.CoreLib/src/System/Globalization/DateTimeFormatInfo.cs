@@ -228,7 +228,7 @@ namespace System.Globalization
             return monthNames;
         }
 
-        // Invariant DateTimeFormatInfo doesn't have user-overriden values
+        // Invariant DateTimeFormatInfo doesn't have user-overridden values
         // Default calendar is gregorian
         public DateTimeFormatInfo()
             : this(CultureInfo.InvariantCulture._cultureData, GregorianCalendar.GetDefaultInstance())
@@ -249,7 +249,7 @@ namespace System.Globalization
         private void InitializeOverridableProperties(CultureData cultureData, CalendarId calendarId)
         {
             Debug.Assert(cultureData != null);
-            Debug.Assert(calendarId != CalendarId.UNINITIALIZED_VALUE, "[DateTimeFormatInfo.Populate] Expected initalized calendarId");
+            Debug.Assert(calendarId != CalendarId.UNINITIALIZED_VALUE, "[DateTimeFormatInfo.Populate] Expected initialized calendarId");
 
             if (firstDayOfWeek == -1)
             {
@@ -260,22 +260,10 @@ namespace System.Globalization
                 calendarWeekRule = cultureData.CalendarWeekRule;
             }
 
-            if (amDesignator == null)
-            {
-                amDesignator = cultureData.AMDesignator;
-            }
-            if (pmDesignator == null)
-            {
-                pmDesignator = cultureData.PMDesignator;
-            }
-            if (timeSeparator == null)
-            {
-                timeSeparator = cultureData.TimeSeparator;
-            }
-            if (dateSeparator == null)
-            {
-                dateSeparator = cultureData.DateSeparator(calendarId);
-            }
+            amDesignator ??= cultureData.AMDesignator;
+            pmDesignator ??= cultureData.PMDesignator;
+            timeSeparator ??= cultureData.TimeSeparator;
+            dateSeparator ??= cultureData.DateSeparator(calendarId);
 
             allLongTimePatterns = _cultureData.LongTimes;
             Debug.Assert(allLongTimePatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some long time patterns");
@@ -358,11 +346,7 @@ namespace System.Globalization
         {
             get
             {
-                if (amDesignator == null)
-                {
-                    amDesignator = _cultureData.AMDesignator;
-                }
-
+                amDesignator ??= _cultureData.AMDesignator;
                 Debug.Assert(amDesignator != null, "DateTimeFormatInfo.AMDesignator, amDesignator != null");
                 return amDesignator;
             }
@@ -372,10 +356,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 ClearTokenHashTable();
                 amDesignator = value;
@@ -396,10 +377,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (value == calendar)
                 {
@@ -484,10 +462,7 @@ namespace System.Globalization
         /// </summary>
         public int GetEra(string eraName)
         {
-            if (eraName == null)
-            {
-                throw new ArgumentNullException(nameof(eraName));
-            }
+            ArgumentNullException.ThrowIfNull(eraName);
 
             // The Era Name and Abbreviated Era Name
             // for Taiwan Calendar on non-Taiwan SKU returns empty string (which
@@ -608,10 +583,7 @@ namespace System.Globalization
         {
             get
             {
-                if (dateSeparator == null)
-                {
-                    dateSeparator = _cultureData.DateSeparator(Calendar.ID);
-                }
+                dateSeparator ??= _cultureData.DateSeparator(Calendar.ID);
                 Debug.Assert(dateSeparator != null, "DateTimeFormatInfo.DateSeparator, dateSeparator != null");
                 return dateSeparator;
             }
@@ -621,10 +593,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 ClearTokenHashTable();
                 dateSeparator = value;
@@ -701,10 +670,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 fullDateTimePattern = value;
             }
@@ -725,10 +691,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 // Remember the new string
                 longDatePattern = value;
@@ -762,10 +725,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 // Remember the new string
                 longTimePattern = value;
@@ -807,10 +767,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 monthDayPattern = value;
             }
@@ -820,11 +777,7 @@ namespace System.Globalization
         {
             get
             {
-                if (pmDesignator == null)
-                {
-                    pmDesignator = _cultureData.PMDesignator;
-                }
-
+                pmDesignator ??= _cultureData.PMDesignator;
                 Debug.Assert(pmDesignator != null, "DateTimeFormatInfo.PMDesignator, pmDesignator != null");
                 return pmDesignator;
             }
@@ -834,10 +787,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 ClearTokenHashTable();
                 pmDesignator = value;
@@ -865,10 +815,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 // Remember the new string
                 shortDatePattern = value;
@@ -904,10 +851,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 // Remember the new string
                 shortTimePattern = value;
@@ -1008,10 +952,7 @@ namespace System.Globalization
         {
             get
             {
-                if (timeSeparator == null)
-                {
-                    timeSeparator = _cultureData.TimeSeparator;
-                }
+                timeSeparator ??= _cultureData.TimeSeparator;
                 Debug.Assert(timeSeparator != null, "DateTimeFormatInfo.TimeSeparator, timeSeparator != null");
                 return timeSeparator;
             }
@@ -1021,10 +962,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 ClearTokenHashTable();
                 timeSeparator = value;
@@ -1049,10 +987,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 // Remember the new string
                 yearMonthPattern = value;
@@ -1092,10 +1027,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 7)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), nameof(value));
@@ -1120,10 +1052,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 7)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), nameof(value));
@@ -1143,10 +1072,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 7)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 7), nameof(value));
@@ -1168,10 +1094,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 13)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
@@ -1192,10 +1115,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 13)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
@@ -1346,14 +1266,14 @@ namespace System.Globalization
         {
             List<string> results = new List<string>(DEFAULT_ALL_DATETIMES_SIZE);
 
-            for (int i = 0; i < DateTimeFormat.allStandardFormats.Length; i++)
+            foreach (char standardFormat in DateTimeFormat.AllStandardFormats)
             {
-                string[] strings = GetAllDateTimePatterns(DateTimeFormat.allStandardFormats[i]);
-                for (int j = 0; j < strings.Length; j++)
+                foreach (string pattern in GetAllDateTimePatterns(standardFormat))
                 {
-                    results.Add(strings[j]);
+                    results.Add(pattern);
                 }
             }
+
             return results.ToArray();
         }
 
@@ -1641,10 +1561,7 @@ namespace System.Globalization
 
         public static DateTimeFormatInfo ReadOnly(DateTimeFormatInfo dtfi)
         {
-            if (dtfi == null)
-            {
-                throw new ArgumentNullException(nameof(dtfi));
-            }
+            ArgumentNullException.ThrowIfNull(dtfi);
 
             if (dtfi.IsReadOnly)
             {
@@ -1694,10 +1611,7 @@ namespace System.Globalization
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
             }
-            if (patterns == null)
-            {
-                throw new ArgumentNullException(nameof(patterns));
-            }
+            ArgumentNullException.ThrowIfNull(patterns);
 
             if (patterns.Length == 0)
             {
@@ -1760,10 +1674,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 13)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));
@@ -1784,10 +1695,7 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Length != 13)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidArrayLength, 13), nameof(value));

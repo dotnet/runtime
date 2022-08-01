@@ -220,7 +220,7 @@ namespace Microsoft.XmlSerializer.Generator
             return 0;
         }
 
-        private void GenerateFile(List<string> typeNames, string defaultNamespace, string assemblyName, bool proxyOnly, bool silent, bool verbose, bool force, string outputDirectory, bool parsableerrors)
+        private static void GenerateFile(List<string> typeNames, string defaultNamespace, string assemblyName, bool proxyOnly, bool silent, bool verbose, bool force, string outputDirectory, bool parsableerrors)
         {
             Assembly assembly = LoadAssembly(assemblyName, true);
             Type[] types;
@@ -319,7 +319,7 @@ namespace Microsoft.XmlSerializer.Generator
                 var allMappings = mappings.ToArray();
 
                 bool gac = assembly.GlobalAssemblyCache;
-                outputDirectory = outputDirectory == null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : outputDirectory;
+                outputDirectory ??= (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location));
 
                 if (!Directory.Exists(outputDirectory))
                 {
@@ -420,7 +420,7 @@ namespace Microsoft.XmlSerializer.Generator
         }
 
 
-        private bool ArgumentMatch(string arg, string formal)
+        private static bool ArgumentMatch(string arg, string formal)
         {
             // Full name format, eg: --assembly
             if (arg.Length < 3 || arg[0] != '-' || arg[1] != '-')
@@ -431,7 +431,7 @@ namespace Microsoft.XmlSerializer.Generator
             return arg.Equals(formal, StringComparison.InvariantCultureIgnoreCase);
         }
 
-        private bool ShortNameArgumentMatch(string arg, string shortName)
+        private static bool ShortNameArgumentMatch(string arg, string shortName)
         {
             // Short name format, eg: -a
             if (arg.Length < 2 || arg[0] != '-')
@@ -442,9 +442,9 @@ namespace Microsoft.XmlSerializer.Generator
             return arg.Equals(shortName, StringComparison.InvariantCultureIgnoreCase);
         }
 
-        private void ImportType(Type type, string defaultNamespace, List<XmlMapping> mappings, List<Type> importedTypes, bool verbose, XmlReflectionImporter importer, bool parsableerrors)
+        private static void ImportType(Type type, string defaultNamespace, List<XmlMapping> mappings, List<Type> importedTypes, bool verbose, XmlReflectionImporter importer, bool parsableerrors)
         {
-            XmlTypeMapping xmlTypeMapping = null;
+            XmlTypeMapping xmlTypeMapping;
             var localImporter = new XmlReflectionImporter(defaultNamespace);
             try
             {
@@ -475,7 +475,7 @@ namespace Microsoft.XmlSerializer.Generator
 
         private static Assembly LoadAssembly(string assemblyName, bool throwOnFail)
         {
-            Assembly assembly = null;
+            Assembly assembly;
             string path = Path.IsPathRooted(assemblyName) ? assemblyName : Path.GetFullPath(assemblyName);
             assembly = Assembly.LoadFile(path);
             if (assembly == null)
@@ -486,7 +486,7 @@ namespace Microsoft.XmlSerializer.Generator
             return assembly;
         }
 
-        private void WriteHeader()
+        private static void WriteHeader()
         {
             // do not localize Copyright header
             Console.WriteLine($".NET Xml Serialization Generation Utility, Version {ThisAssembly.InformationalVersion}]");
@@ -547,10 +547,11 @@ namespace Microsoft.XmlSerializer.Generator
 
         private static string GetXmlSerializerAssemblyName(Type type, string defaultNamespace)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
+
             return GetTempAssemblyName(type.Assembly.GetName(), defaultNamespace);
         }
 
@@ -617,10 +618,8 @@ namespace Microsoft.XmlSerializer.Generator
                     return null;
                 }
 
-                if (s_referencedic.ContainsKey(assemblyname))
+                if (s_referencedic.TryGetValue(assemblyname, out string reference))
                 {
-                    string reference = s_referencedic[assemblyname];
-
                     // For System.ServiceModel.Primitives, we need to load its runtime assembly rather than reference assembly
                     if (assemblyname.Equals("System.ServiceModel.Primitives"))
                     {
@@ -666,7 +665,7 @@ namespace Microsoft.XmlSerializer.Generator
             return null;
         }
 
-        private string[] ParseResponseFile(string[] args)
+        private static string[] ParseResponseFile(string[] args)
         {
             var parsedArgs = new List<string>();
             foreach (string arg in args)

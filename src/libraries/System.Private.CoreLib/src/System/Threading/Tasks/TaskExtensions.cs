@@ -11,10 +11,7 @@ namespace System.Threading.Tasks
         /// <returns>A <see cref="Task"/> that represents the asynchronous operation of the provided <see cref="Task{Task}"/>.</returns>
         public static Task Unwrap(this Task<Task> task)
         {
-            if (task == null)
-            {
-                throw new ArgumentNullException(nameof(task));
-            }
+            ArgumentNullException.ThrowIfNull(task);
 
             // If the task hasn't completed or was faulted/canceled, wrap it in an unwrap promise. Otherwise,
             // it completed successfully.  Return its inner task to avoid unnecessary wrapping, or if the inner
@@ -30,10 +27,7 @@ namespace System.Threading.Tasks
         /// <returns>A <see cref="Task{TResult}"/> that represents the asynchronous operation of the provided wrapped <see cref="Task{TResult}"/>.</returns>
         public static Task<TResult> Unwrap<TResult>(this Task<Task<TResult>> task)
         {
-            if (task == null)
-            {
-                throw new ArgumentNullException(nameof(task));
-            }
+            ArgumentNullException.ThrowIfNull(task);
 
             // If the task hasn't completed or was faulted/canceled, wrap it in an unwrap promise. Otherwise,
             // it completed successfully.  Return its inner task to avoid unnecessary wrapping, or if the inner

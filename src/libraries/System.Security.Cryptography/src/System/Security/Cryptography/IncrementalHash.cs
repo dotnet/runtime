@@ -58,8 +58,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void AppendData(byte[] data)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
 
             AppendData(new ReadOnlySpan<byte>(data));
         }
@@ -86,26 +85,22 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void AppendData(byte[] data, int offset, int count)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
+
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0 || (count > data.Length))
                 throw new ArgumentOutOfRangeException(nameof(count));
             if ((data.Length - count) < offset)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             AppendData(new ReadOnlySpan<byte>(data, offset, count));
         }
 
         public void AppendData(ReadOnlySpan<byte> data)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(IncrementalHash));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             Debug.Assert((_hash != null) ^ (_hmac != null));
             if (_hash != null)
@@ -127,8 +122,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] GetHashAndReset()
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             byte[] ret = new byte[HashLengthInBytes];
 
@@ -157,8 +151,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public int GetHashAndReset(Span<byte> destination)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (destination.Length < HashLengthInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
@@ -167,8 +160,7 @@ namespace System.Security.Cryptography
 
         public bool TryGetHashAndReset(Span<byte> destination, out int bytesWritten)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (destination.Length < HashLengthInBytes)
             {
@@ -202,8 +194,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] GetCurrentHash()
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             byte[] ret = new byte[HashLengthInBytes];
 
@@ -232,8 +223,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public int GetCurrentHash(Span<byte> destination)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (destination.Length < HashLengthInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
@@ -260,8 +250,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten)
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(IncrementalHash));
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (destination.Length < HashLengthInBytes)
             {
@@ -319,8 +308,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException"><paramref name="hashAlgorithm"/> is not a known hash algorithm.</exception>
         public static IncrementalHash CreateHash(HashAlgorithmName hashAlgorithm)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             return new IncrementalHash(hashAlgorithm, HashProviderDispenser.CreateHashProvider(hashAlgorithm.Name));
         }
@@ -347,11 +335,9 @@ namespace System.Security.Cryptography
         ///     the empty string.
         /// </exception>
         /// <exception cref="CryptographicException"><paramref name="hashAlgorithm"/> is not a known hash algorithm.</exception>
-        [UnsupportedOSPlatform("browser")]
         public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, byte[] key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             return CreateHMAC(hashAlgorithm, (ReadOnlySpan<byte>)key);
         }
@@ -378,11 +364,9 @@ namespace System.Security.Cryptography
         ///     the empty string.
         /// </exception>
         /// <exception cref="CryptographicException"><paramref name="hashAlgorithm"/> is not a known hash algorithm.</exception>
-        [UnsupportedOSPlatform("browser")]
         public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> key)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             return new IncrementalHash(hashAlgorithm, new HMACCommon(hashAlgorithm.Name, key, -1));
         }

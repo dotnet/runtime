@@ -31,13 +31,8 @@ namespace System.Xml
     ///    Encodes and decodes XML names according to
     ///    the "Encoding of arbitrary Unicode Characters in XML Names" specification.
     /// </devdoc>
-    public class XmlConvert
+    public partial class XmlConvert
     {
-        //
-        // Static fields with implicit initialization
-        //
-        private static readonly CultureInfo s_invariantCultureInfo = CultureInfo.InvariantCulture;
-
         internal static char[] crt = new char[] { '\n', '\r', '\t' };
 
         /// <devdoc>
@@ -47,7 +42,7 @@ namespace System.Xml
         ///       DataColumn names, that contain characters that are not permitted in
         ///       XML names to valid names.</para>
         /// </devdoc>
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         public static string? EncodeName(string? name)
         {
             return EncodeName(name, true/*Name_not_NmToken*/, false/*Local?*/);
@@ -57,7 +52,7 @@ namespace System.Xml
         ///    <para> Verifies the name is valid
         ///       according to production [7] in the XML spec.</para>
         /// </devdoc>
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         public static string? EncodeNmToken(string? name)
         {
             return EncodeName(name, false/*Name_not_NmToken*/, false/*Local?*/);
@@ -67,7 +62,7 @@ namespace System.Xml
         ///    <para>Converts names, such as DataTable or DataColumn names, that contain
         ///       characters that are not permitted in XML names to valid names.</para>
         /// </devdoc>
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         public static string? EncodeLocalName(string? name)
         {
             return EncodeName(name, true/*Name_not_NmToken*/, true/*Local?*/);
@@ -77,55 +72,40 @@ namespace System.Xml
         ///    <para>
         ///       Transforms an XML name into an object name (such as DataTable or DataColumn).</para>
         /// </devdoc>
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         public static string? DecodeName(string? name)
         {
             if (string.IsNullOrEmpty(name))
+            {
                 return name;
-
-            StringBuilder? bufBld = null;
-
-            int length = name.Length;
-            int copyPosition = 0;
+            }
 
             int underscorePos = name.IndexOf('_');
-            MatchCollection? mc = null;
-            IEnumerator? en = null;
-            if (underscorePos >= 0)
-            {
-                if (s_decodeCharPattern == null)
-                {
-                    s_decodeCharPattern = new Regex("_[Xx]([0-9a-fA-F]{4}|[0-9a-fA-F]{8})_");
-                }
-
-                mc = s_decodeCharPattern.Matches(name, underscorePos);
-                en = mc.GetEnumerator();
-            }
-            else
+            if (underscorePos < 0)
             {
                 return name;
             }
+
+            Regex.ValueMatchEnumerator en = DecodeCharRegex().EnumerateMatches(name.AsSpan(underscorePos));
             int matchPos = -1;
-            if (en != null && en.MoveNext())
+            if (en.MoveNext())
             {
-                Match m = (Match)en.Current!;
-                matchPos = m.Index;
+                matchPos = underscorePos + en.Current.Index;
             }
 
+            StringBuilder? bufBld = null;
+            int length = name.Length;
+            int copyPosition = 0;
             for (int position = 0; position < length - EncodedCharLength + 1; position++)
             {
                 if (position == matchPos)
                 {
-                    if (en!.MoveNext())
+                    if (en.MoveNext())
                     {
-                        Match m = (Match)en.Current!;
-                        matchPos = m.Index;
+                        matchPos = underscorePos + en.Current.Index;
                     }
 
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
                     bufBld.Append(name, copyPosition, position - copyPosition);
 
                     if (name[position + 6] != '_')
@@ -187,7 +167,7 @@ namespace System.Xml
             }
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         private static string? EncodeName(string? name, /*Name_not_NmToken*/ bool first, bool local)
         {
             if (string.IsNullOrEmpty(name))
@@ -201,16 +181,11 @@ namespace System.Xml
             int position = 0;
 
             int underscorePos = name.IndexOf('_');
-            MatchCollection? mc = null;
+            MatchCollection? mc;
             IEnumerator? en = null;
             if (underscorePos >= 0)
             {
-                if (s_encodeCharPattern == null)
-                {
-                    s_encodeCharPattern = new Regex("(?<=_)[Xx]([0-9a-fA-F]{4}|[0-9a-fA-F]{8})_");
-                }
-
-                mc = s_encodeCharPattern.Matches(name, underscorePos);
+                mc = EncodeCharRegex().Matches(name, underscorePos);
                 en = mc.GetEnumerator();
             }
 
@@ -223,13 +198,10 @@ namespace System.Xml
 
             if (first)
             {
-                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || (!local && name[0] != ':'))) ||
+                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || name[0] != ':')) ||
                      matchPos == 0)
                 {
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
 
                     bufBld.Append("_x");
                     if (length > 1 && XmlCharType.IsHighSurrogate(name[0]) && XmlCharType.IsLowSurrogate(name[1]))
@@ -264,10 +236,7 @@ namespace System.Xml
                     (!local && !XmlCharType.IsNameCharXml4e(name[position])) ||
                     (matchPos == position))
                 {
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
                     if (matchPos == position)
                         if (en!.MoveNext())
                         {
@@ -310,8 +279,13 @@ namespace System.Xml
         }
 
         private const int EncodedCharLength = 7; // ("_xFFFF_".Length);
-        private static volatile Regex? s_encodeCharPattern;
-        private static volatile Regex? s_decodeCharPattern;
+
+        [GeneratedRegex("_[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
+        private static partial Regex DecodeCharRegex();
+
+        [GeneratedRegex("(?<=_)[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
+        private static partial Regex EncodeCharRegex();
+
         private static int FromHex(char digit)
         {
             return HexConverter.FromChar(digit);
@@ -324,20 +298,14 @@ namespace System.Xml
 
         internal static byte[] FromBinHexString(string s, bool allowOddCount)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
+            ArgumentNullException.ThrowIfNull(s);
 
-            return BinHexDecoder.Decode(s.ToCharArray(), allowOddCount);
+            return BinHexDecoder.Decode(s.AsSpan(), allowOddCount);
         }
 
         internal static string ToBinHexString(byte[] inArray)
         {
-            if (inArray == null)
-            {
-                throw new ArgumentNullException(nameof(inArray));
-            }
+            ArgumentNullException.ThrowIfNull(inArray);
 
             return BinHexEncoder.Encode(inArray, 0, inArray.Length);
         }
@@ -350,10 +318,7 @@ namespace System.Xml
         /// </devdoc>
         public static string VerifyName(string name)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0)
             {
@@ -396,9 +361,7 @@ namespace System.Xml
                 throw new ArgumentNullException(nameof(name));
             }
 
-            int colonPosition = -1;
-
-            int endPos = ValidateNames.ParseQName(name, 0, out colonPosition);
+            int endPos = ValidateNames.ParseQName(name, 0, out _);
             if (endPos != name.Length)
             {
                 throw CreateException(SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(name, endPos), exceptionType, 0, endPos + 1);
@@ -418,10 +381,7 @@ namespace System.Xml
 
         internal static string VerifyNCName(string name, ExceptionType exceptionType)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0)
             {
@@ -455,7 +415,7 @@ namespace System.Xml
         ///    <para>
         ///    </para>
         /// </devdoc>
-        [return: NotNullIfNotNull("token")]
+        [return: NotNullIfNotNull(nameof(token))]
         public static string? VerifyTOKEN(string? token)
         {
             if (string.IsNullOrEmpty(token))
@@ -463,7 +423,10 @@ namespace System.Xml
                 return token;
             }
 
-            if (token[0] == ' ' || token[token.Length - 1] == ' ' || token.IndexOfAny(crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
+            if (token.StartsWith(' ') ||
+                token.EndsWith(' ') ||
+                token.IndexOfAny(crt) >= 0 ||
+                token.Contains("  "))
             {
                 throw new XmlException(SR.Sch_NotTokenString, token);
             }
@@ -472,12 +435,15 @@ namespace System.Xml
 
         internal static Exception? TryVerifyTOKEN(string token)
         {
-            if (token == null || token.Length == 0)
+            if (string.IsNullOrEmpty(token))
             {
                 return null;
             }
 
-            if (token[0] == ' ' || token[token.Length - 1] == ' ' || token.IndexOfAny(crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
+            if (token.StartsWith(' ') ||
+                token.EndsWith(' ') ||
+                token.IndexOfAny(crt) >= 0 ||
+                token.Contains("  "))
             {
                 return new XmlException(SR.Sch_NotTokenString, token);
             }
@@ -496,10 +462,7 @@ namespace System.Xml
 
         internal static string VerifyNMTOKEN(string name, ExceptionType exceptionType)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0)
             {
@@ -546,10 +509,7 @@ namespace System.Xml
         // Throws XmlException if invalid character is found, otherwise returns the input string.
         public static string VerifyXmlChars(string content)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
 
             VerifyCharData(content, ExceptionType.XmlException);
             return content;
@@ -559,10 +519,7 @@ namespace System.Xml
         // Throws XmlException if invalid character is found, otherwise returns the input string.
         public static string VerifyPublicId(string publicId)
         {
-            if (publicId == null)
-            {
-                throw new ArgumentNullException(nameof(publicId));
-            }
+            ArgumentNullException.ThrowIfNull(publicId);
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsPublicId(publicId);
@@ -578,10 +535,7 @@ namespace System.Xml
         // Throws XmlException if invalid character is found, otherwise returns the input string.
         public static string VerifyWhitespace(string content)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsOnlyWhitespaceWithPos(content);
@@ -682,45 +636,45 @@ namespace System.Xml
         [CLSCompliant(false)]
         public static string ToString(sbyte value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(short value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(int value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(long value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(byte value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         [CLSCompliant(false)]
         public static string ToString(ushort value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         [CLSCompliant(false)]
         public static string ToString(uint value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         [CLSCompliant(false)]
         public static string ToString(ulong value)
         {
-            return value.ToString(null, s_invariantCultureInfo);
+            return value.ToString(null, CultureInfo.InvariantCulture);
         }
 
         public static string ToString(float value)
@@ -757,7 +711,7 @@ namespace System.Xml
             return ToString(value, "yyyy-MM-ddTHH:mm:ss.fffffffzzzzzz");
         }
 
-        public static string ToString(DateTime value, string format)
+        public static string ToString(DateTime value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
             return value.ToString(format, DateTimeFormatInfo.InvariantInfo);
         }
@@ -795,7 +749,7 @@ namespace System.Xml
             return xsdDateTime.ToString();
         }
 
-        public static string ToString(DateTimeOffset value, string format)
+        public static string ToString(DateTimeOffset value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
             return value.ToString(format, DateTimeFormatInfo.InvariantInfo);
         }
@@ -833,10 +787,7 @@ namespace System.Xml
 
         public static char ToChar(string s)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
+            ArgumentNullException.ThrowIfNull(s);
 
             if (s.Length != 1)
             {
@@ -1214,36 +1165,33 @@ namespace System.Xml
 
         private static void CreateAllDateTimeFormats()
         {
-            if (s_allDateTimeFormats == null)
-            {
-                // no locking; the array is immutable so it's not a problem that it may get initialized more than once
-                s_allDateTimeFormats = new string[] {
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzzzzz", //dateTime
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFFZ",
-                    "HH:mm:ss.FFFFFFF",                  //time
-                    "HH:mm:ss.FFFFFFFZ",
-                    "HH:mm:ss.FFFFFFFzzzzzz",
-                    "yyyy-MM-dd",                   // date
-                    "yyyy-MM-ddZ",
-                    "yyyy-MM-ddzzzzzz",
-                    "yyyy-MM",                      // yearMonth
-                    "yyyy-MMZ",
-                    "yyyy-MMzzzzzz",
-                    "yyyy",                         // year
-                    "yyyyZ",
-                    "yyyyzzzzzz",
-                    "--MM-dd",                      // monthDay
-                    "--MM-ddZ",
-                    "--MM-ddzzzzzz",
-                    "---dd",                        // day
-                    "---ddZ",
-                    "---ddzzzzzz",
-                    "--MM--",                       // month
-                    "--MM--Z",
-                    "--MM--zzzzzz",
-                };
-            }
+            // no locking; the array is immutable so it's not a problem that it may get initialized more than once
+            s_allDateTimeFormats ??= new string[] {
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzzzzz", //dateTime
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFFZ",
+                "HH:mm:ss.FFFFFFF",                  //time
+                "HH:mm:ss.FFFFFFFZ",
+                "HH:mm:ss.FFFFFFFzzzzzz",
+                "yyyy-MM-dd",                   // date
+                "yyyy-MM-ddZ",
+                "yyyy-MM-ddzzzzzz",
+                "yyyy-MM",                      // yearMonth
+                "yyyy-MMZ",
+                "yyyy-MMzzzzzz",
+                "yyyy",                         // year
+                "yyyyZ",
+                "yyyyzzzzzz",
+                "--MM-dd",                      // monthDay
+                "--MM-ddZ",
+                "--MM-ddzzzzzz",
+                "---dd",                        // day
+                "---ddZ",
+                "---ddzzzzzz",
+                "--MM--",                       // month
+                "--MM--Z",
+                "--MM--zzzzzz",
+            };
         }
 
         [Obsolete("Use XmlConvert.ToDateTime() that accepts an XmlDateTimeSerializationMode instead.")]
@@ -1252,12 +1200,12 @@ namespace System.Xml
             return ToDateTime(s, AllDateTimeFormats);
         }
 
-        public static DateTime ToDateTime(string s, string format)
+        public static DateTime ToDateTime(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
             return DateTime.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        public static DateTime ToDateTime(string s, string[] formats)
+        public static DateTime ToDateTime(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats)
         {
             return DateTime.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
@@ -1292,30 +1240,24 @@ namespace System.Xml
 
         public static DateTimeOffset ToDateTimeOffset(string s)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
+            ArgumentNullException.ThrowIfNull(s);
+
             XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateTimeFlags.AllXsd);
             DateTimeOffset dateTimeOffset = (DateTimeOffset)xsdDateTime;
             return dateTimeOffset;
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s, string format)
+        public static DateTimeOffset ToDateTimeOffset(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
+            ArgumentNullException.ThrowIfNull(s);
+
             return DateTimeOffset.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s, string[] formats)
+        public static DateTimeOffset ToDateTimeOffset(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
+            ArgumentNullException.ThrowIfNull(s);
+
             return DateTimeOffset.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
@@ -1565,10 +1507,7 @@ namespace System.Xml
                 char ch = value[i];
                 if ((int)ch < 0x20 || ch == '"')
                 {
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder(value.Length + 4);
-                    }
+                    sb ??= new StringBuilder(value.Length + 4);
                     if (i - start > 0)
                     {
                         sb.Append(value, start, i - start);
@@ -1717,11 +1656,6 @@ namespace System.Xml
         internal static Exception CreateInvalidNameCharException(string name, int index, ExceptionType exceptionType)
         {
             return CreateException(index == 0 ? SR.Xml_BadStartNameChar : SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(name, index), exceptionType, 0, index + 1);
-        }
-
-        internal static ArgumentException CreateInvalidNameArgumentException(string? name, string? argumentName)
-        {
-            return (name == null) ? new ArgumentNullException(argumentName) : new ArgumentException(SR.Xml_EmptyName, argumentName);
         }
     }
 }

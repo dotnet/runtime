@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.Build.Traversal">
+  <PropertyGroup>
+    <!-- Hardcode version paths in a global location. -->
+    <NativeVersionFile Condition="'$(TargetOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    <NativeVersionFile Condition="'$(TargetOS)' != 'windows'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <AssemblyName>.NET Runtime</AssemblyName>
+    <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
+    <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
+    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(_BuildNativeTargetOS)</_BuildNativeArgs>
+    <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)native-binplace.proj" />
+  </ItemGroup>
+
+  <Target Name="BuildNativeUnix"
+          DependsOnTargets="GenerateNativeVersionFile"
+          BeforeTargets="Build"
+          Condition="!$([MSBuild]::IsOsPlatform(Windows))">
+    <PropertyGroup>
+      <_BuildNativeArgs Condition="'$(Ninja)' == 'true'">$(_BuildNativeArgs) ninja</_BuildNativeArgs>
+      <!--
+        MSBuildNodeCount should a good approximation for how many procs to use for native build, if we find that doesn't work
+        then we should consider calling Environment.ProcessorCount
+      -->
+      <_ProcessorCountArg> -numproc $(MSBuildNodeCount)</_ProcessorCountArg>
+      <_PortableBuildArg Condition="'$(PortableBuild)' != 'true'"> -portablebuild=false</_PortableBuildArg>
+      <_CrossBuildArg Condition="'$(CrossBuild)' == 'true'"> -cross</_CrossBuildArg>
+      <_KeepNativeSymbolsBuildArg Condition="'$(KeepNativeSymbols)' != 'false'"> -keepnativesymbols</_KeepNativeSymbolsBuildArg>
+      <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> $(CMakeArgs)</_CMakeArgs>
+
+      <!--
+        BuildNativeCompiler is a pass-through argument, to pass an argument to build-native.sh. It is intended to be
+        used to force a specific compiler toolset.
+      -->
+      <_BuildNativeCompilerArg Condition="'$(BuildNativeCompiler)' != ''"> $(BuildNativeCompiler)</_BuildNativeCompilerArg>
+      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg)$(_CMakeArgs) $(Compiler)</_BuildNativeUnixArgs>
+    </PropertyGroup>
+
+    <Message Text="$(MSBuildThisFileDirectory)build-native.sh $(_BuildNativeUnixArgs)" Importance="High"/>
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)" />
+  </Target>
+
+  <Target Name="BuildNativeWindows"
+          DependsOnTargets="GenerateNativeVersionFile"
+          BeforeTargets="Build"
+          Condition="$([MSBuild]::IsOsPlatform(Windows))">
+    <PropertyGroup>
+        <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
+    </PropertyGroup>
+    <!-- Run script that uses CMake to generate and build the native files. -->
+    <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
+    <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" />
+  </Target>
+</Project>

@@ -9,13 +9,6 @@
 // instruction with no actual type parameters.
 // This call is in the method GenTest<T>.InternalTest().
 
-
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 1.1.2019.0
-//  Copyright (C) Microsoft Corporation 1998-2002. All rights reserved.
-
-
-
-// Metadata version: v1.1.2019
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
@@ -23,7 +16,7 @@
            42 87 88 29 )                                     // B..)
   .ver 1:1:3300:0
 }
-.assembly Negative001
+.assembly 'param03'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -33,7 +26,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Negative001.exe
 // MVID: {B86C7C7A-5711-4AC7-8792-3E7302C1FCD0}
 .imagebase 0x00400000
 .subsystem 0x00000003

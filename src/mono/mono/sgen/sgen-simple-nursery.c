@@ -66,7 +66,7 @@ prepare_to_space (char *to_space_bitmap, size_t space_bitmap_size)
 
 static void
 clear_fragments (void)
-{	
+{
 }
 
 static void
@@ -154,7 +154,7 @@ sgen_simple_nursery_init (SgenMinorCollector *collector, gboolean parallel)
 #ifdef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 	g_assert (parallel == FALSE);
 #endif
-	
+
 	collector->is_split = FALSE;
 	collector->is_parallel = parallel;
 

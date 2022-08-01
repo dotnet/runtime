@@ -21,7 +21,7 @@
 #include "metadata/marshal.h"
 #include "metadata/abi-details.h"
 #include "metadata/class-abi-details.h"
-#include "metadata/mono-gc.h"
+#include <mono/metadata/mono-gc.h>
 #include "metadata/runtime.h"
 #include "metadata/sgen-bridge-internals.h"
 #include "metadata/sgen-mono.h"
@@ -32,7 +32,6 @@
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-threads-coop.h"
 #include "utils/mono-threads.h"
-#include "metadata/w32handle.h"
 #include "icall-decl.h"
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
@@ -180,7 +179,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 #ifdef MANAGED_ALLOCATION
 	int p_var, size_var, real_size_var, thread_var G_GNUC_UNUSED;
 	int tlab_next_addr_var, new_next_var;
-	guint32 fastpath_branch, max_size_branch, no_oom_branch;
+	guint32 fastpath_branch, max_size_branch = 0, no_oom_branch;
 
 	if (slowpath) {
 		switch (atype) {
@@ -225,7 +224,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icon (mb, m_class_offsetof_instance_size ());
+		mono_mb_emit_icon (mb, GINTPTR_TO_INT32 (m_class_offsetof_instance_size ()));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		/* FIXME: assert instance_size stays a 4 byte integer */
 		mono_mb_emit_no_nullcheck (mb);
@@ -233,11 +232,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		mono_mb_emit_byte (mb, CEE_CONV_I);
 		mono_mb_emit_stloc (mb, size_var);
 	} else if (atype == ATYPE_VECTOR) {
-		ERROR_DECL (error);
-		MonoExceptionClause *clause;
-		int pos, pos_leave, pos_error;
-		MonoClass *oom_exc_class;
-		MonoMethod *ctor;
+		int pos, pos_error;
 
 		/*
 		 * n > MONO_ARRAY_MAX_INDEX => OutOfMemoryException
@@ -262,16 +257,13 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 
 		mono_mb_patch_short_branch (mb, pos);
 
-		clause = (MonoExceptionClause *)mono_image_alloc0 (mono_defaults.corlib, sizeof (MonoExceptionClause));
-		clause->try_offset = mono_mb_get_label (mb);
-
 		/* vtable->klass->sizes.element_size */
 		mono_mb_emit_ldarg (mb, 0);
 		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icon (mb, m_class_offsetof_sizes ());
+		mono_mb_emit_icon (mb, GINTPTR_TO_INT32 (m_class_offsetof_sizes ()));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_U4);
@@ -279,35 +271,15 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 
 		/* * n */
 		mono_mb_emit_ldarg (mb, 1);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_op (mb, CEE_MONO_REMAP_OVF_EXC, (gpointer)"OutOfMemoryException");
 		mono_mb_emit_byte (mb, CEE_MUL_OVF_UN);
 		/* + sizeof (MonoArray) */
 		mono_mb_emit_icon (mb, MONO_SIZEOF_MONO_ARRAY);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_op (mb, CEE_MONO_REMAP_OVF_EXC, (gpointer)"OutOfMemoryException");
 		mono_mb_emit_byte (mb, CEE_ADD_OVF_UN);
 		mono_mb_emit_stloc (mb, size_var);
-
-		pos_leave = mono_mb_emit_branch (mb, CEE_LEAVE);
-
-		/* catch */
-		clause->flags = MONO_EXCEPTION_CLAUSE_NONE;
-		clause->try_len = mono_mb_get_pos (mb) - clause->try_offset;
-		clause->data.catch_class = mono_class_load_from_name (mono_defaults.corlib,
-				"System", "OverflowException");
-		clause->handler_offset = mono_mb_get_label (mb);
-
-		oom_exc_class = mono_class_load_from_name (mono_defaults.corlib,
-				"System", "OutOfMemoryException");
-		ctor = mono_class_get_method_from_name_checked (oom_exc_class, ".ctor", 0, 0, error);
-		mono_error_assert_ok (error);
-		g_assert (ctor);
-
-		mono_mb_emit_byte (mb, CEE_POP);
-		mono_mb_emit_op (mb, CEE_NEWOBJ, ctor);
-		mono_mb_emit_byte (mb, CEE_THROW);
-
-		clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
-		mono_mb_set_clauses (mb, 1, clause);
-		mono_mb_patch_branch (mb, pos_leave);
-		/* end catch */
 	} else if (atype == ATYPE_STRING) {
 		/*
 		 * a string allocator method takes the args: (vtable, len)
@@ -322,7 +294,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		 *
 		 * offsetof (MonoString, chars) + ((len + 1) * 2) <= INT32_MAX - (SGEN_ALLOC_ALIGN - 1)
 		 * len <= (SIZE_MAX - (SGEN_ALLOC_ALIGN - 1) - offsetof (MonoString, chars)) / 2 - 1
-		 * 
+		 *
 		 * On 64-bit platforms SIZE_MAX is so big that the 32-bit string length can
 		 * never reach the maximum size.
 		 */
@@ -399,7 +371,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 	mono_mb_emit_no_nullcheck (mb);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, p_var);
-	
+
 	/* new_next = (char*)p + size; */
 	new_next_var = mono_mb_add_local (mb, int_type);
 	mono_mb_emit_ldloc (mb, p_var);
@@ -491,11 +463,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		mono_mb_emit_ldloc (mb, p_var);
 		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoArray, max_length));
 		mono_mb_emit_ldarg (mb, 1);
-#ifdef MONO_BIG_ARRAYS
-		mono_mb_emit_byte (mb, CEE_STIND_I);
-#else
 		mono_mb_emit_byte (mb, CEE_STIND_I4);
-#endif
 	} else 	if (atype == ATYPE_STRING) {
 		/* need to set length and clear the last char */
 		/* s->length = len; */

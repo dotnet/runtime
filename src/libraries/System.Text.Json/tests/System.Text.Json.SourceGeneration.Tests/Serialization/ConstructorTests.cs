@@ -8,17 +8,26 @@ using System.Text.Json.Serialization.Tests;
 
 namespace System.Text.Json.SourceGeneration.Tests
 {
-    public partial class ConstructorTests_Metadata : ConstructorTests
+    public sealed class ConstructorTests_Metadata_String : ConstructorTests_Metadata
     {
-        public ConstructorTests_Metadata()
-            : this(
-                  new StringSerializerWrapper(ConstructorTestsContext_Metadata.Default, (options) => new ConstructorTestsContext_Metadata(options)),
-                  new StreamSerializerWrapper(ConstructorTestsContext_Metadata.Default, (options) => new ConstructorTestsContext_Metadata(options)))
+        public ConstructorTests_Metadata_String()
+            : base(new StringSerializerWrapper(ConstructorTestsContext_Metadata.Default, (options) => new ConstructorTestsContext_Metadata(options)))
         {
         }
+    }
 
-        protected ConstructorTests_Metadata(JsonSerializerWrapperForString stringWrapper, JsonSerializerWrapperForStream streamWrapper)
-            : base(stringWrapper, streamWrapper)
+    public sealed class ConstructorTests_Metadata_AsyncStream : ConstructorTests_Metadata
+    {
+        public ConstructorTests_Metadata_AsyncStream()
+            : base(new AsyncStreamSerializerWrapper(ConstructorTestsContext_Metadata.Default, (options) => new ConstructorTestsContext_Metadata(options)))
+        {
+        }
+    }
+
+    public abstract partial class ConstructorTests_Metadata : ConstructorTests
+    {
+        protected ConstructorTests_Metadata(JsonSerializerWrapper stringWrapper)
+            : base(stringWrapper)
         {
         }
 
@@ -130,17 +139,31 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_ParamWithDefaultValue))]
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_Param))]
         [JsonSerializable(typeof(ClassWithIgnoredSameType))]
+        [JsonSerializable(typeof(ClassWithDefaultCtorParams))]
         internal sealed partial class ConstructorTestsContext_Metadata : JsonSerializerContext
         {
         }
     }
 
-    public partial class ConstructorTests_Default : ConstructorTests_Metadata
+    public sealed class ConstructorTests_Default_String : ConstructorTests_Default
     {
-        public ConstructorTests_Default()
-            : base(
-                  new StringSerializerWrapper(ConstructorTestsContext_Default.Default, (options) => new ConstructorTestsContext_Default(options)),
-                  new StreamSerializerWrapper(ConstructorTestsContext_Default.Default, (options) => new ConstructorTestsContext_Default(options)))
+        public ConstructorTests_Default_String()
+            : base(new StringSerializerWrapper(ConstructorTestsContext_Default.Default, (options) => new ConstructorTestsContext_Default(options)))
+        {
+        }
+    }
+
+    public sealed class ConstructorTests_Default_AsyncStream : ConstructorTests_Default
+    {
+        public ConstructorTests_Default_AsyncStream()
+            : base(new AsyncStreamSerializerWrapper(ConstructorTestsContext_Default.Default, (options) => new ConstructorTestsContext_Default(options)))
+        {
+        }
+    }
+
+    public abstract partial class ConstructorTests_Default : ConstructorTests_Metadata
+    {
+        public ConstructorTests_Default(JsonSerializerWrapper jsonSerializer) : base(jsonSerializer)
         {
         }
 
@@ -251,6 +274,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_ParamWithDefaultValue))]
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_Param))]
         [JsonSerializable(typeof(ClassWithIgnoredSameType))]
+        [JsonSerializable(typeof(ClassWithDefaultCtorParams))]
         internal sealed partial class ConstructorTestsContext_Default : JsonSerializerContext
         {
         }

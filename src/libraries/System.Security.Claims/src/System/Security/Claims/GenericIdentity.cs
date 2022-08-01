@@ -13,8 +13,7 @@ namespace System.Security.Principal
 
         public GenericIdentity(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             m_name = name;
             m_type = "";
@@ -24,10 +23,8 @@ namespace System.Security.Principal
 
         public GenericIdentity(string name, string type)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(type);
 
             m_name = name;
             m_type = type;

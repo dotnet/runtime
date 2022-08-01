@@ -13,14 +13,8 @@ namespace System.Runtime.Serialization
 
         public virtual void AddSurrogate(Type type, StreamingContext context, ISerializationSurrogate surrogate)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-            if (surrogate == null)
-            {
-                throw new ArgumentNullException(nameof(surrogate));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(surrogate);
 
             var key = new SurrogateKey(type, context);
             _surrogates.Add(key, surrogate); // Hashtable does duplicate checking.
@@ -58,10 +52,7 @@ namespace System.Runtime.Serialization
         // The logic is:"Add this onto the list as the first thing that you check after yourself."
         public virtual void ChainSelector(ISurrogateSelector selector)
         {
-            if (selector == null)
-            {
-                throw new ArgumentNullException(nameof(selector));
-            }
+            ArgumentNullException.ThrowIfNull(selector);
 
             // Verify that we don't try and add ourself twice.
             if (selector == this)
@@ -152,10 +143,7 @@ namespace System.Runtime.Serialization
         // provide a surrogate, it checks with all of it's children before returning null.
         public virtual ISerializationSurrogate? GetSurrogate(Type type, StreamingContext context, out ISurrogateSelector selector)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             selector = this;
 
@@ -176,10 +164,7 @@ namespace System.Runtime.Serialization
         // check chained surrogates.
         public virtual void RemoveSurrogate(Type type, StreamingContext context)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             SurrogateKey key = new SurrogateKey(type, context);
             _surrogates.Remove(key);

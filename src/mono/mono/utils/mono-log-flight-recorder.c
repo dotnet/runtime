@@ -63,7 +63,7 @@ handle_command (gpointer state, gpointer payload, gboolean at_shutdown)
 
 #if 0
 		// Dump all messages on each append. This is an aggressive, slow
-		// debugging method. 
+		// debugging method.
 
 		LogMessage messages [MAX_RECORDER_LOG_LEN];
 		LogQueueDumpRequest dump;
@@ -100,8 +100,8 @@ static MonoUtilityThread *logger_thread;
  * mono_log_open_recorder:
  * \param path Unused
  * \param userData Unused
- * Open access to recorder 
- */   
+ * Open access to recorder
+ */
 void
 mono_log_open_recorder (const char *path, void *userData)
 {
@@ -131,7 +131,7 @@ mono_log_write_recorder (const char *log_domain, GLogLevelFlags level, mono_bool
 #endif
 		return;
 	} else if (level & G_LOG_LEVEL_ERROR) {
-		fprintf (stderr, "\nFatal Error Occured: %s\n\nHistory:\n", message);
+		fprintf (stderr, "\nFatal Error Occurred: %s\n\nHistory:\n", message);
 		mono_log_dump_recorder ();
 		abort();
 	} else if (!logger_thread->run_thread) {
@@ -150,7 +150,7 @@ mono_log_write_recorder (const char *log_domain, GLogLevelFlags level, mono_bool
 /**
  * mono_log_close_recorder
  *
- * 	Close access to recorder 
+ * 	Close access to recorder
  */
 void
 mono_log_close_recorder (void)
@@ -201,8 +201,8 @@ mono_log_dump_recorder (void)
 		fprintf (stderr, "Recent Logs Inserted\n");
 		fprintf (stderr, "%" G_GSIZE_FORMAT "u messages\n", dump.num_messages);
 
-		for (int i=0; i < dump.num_messages; i++)
-			fprintf (stderr, "\t(%d): %s\n", i, dump.messages [i].message);
+		for (gsize i=0; i < dump.num_messages; i++)
+			fprintf (stderr, "\t(%zu): %s\n", i, dump.messages [i].message);
 	}
 }
 

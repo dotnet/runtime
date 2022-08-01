@@ -107,7 +107,7 @@ namespace System.Xml
 
         // Outer XmlReader exposed to the user - either XmlValidatingReader or XmlValidatingReaderImpl (when created via XmlReader.Create).
         // Virtual methods called from within XmlValidatingReaderImpl must be called on the outer reader so in case the user overrides
-        // some of the XmlValidatingReader methods we will call the overriden version.
+        // some of the XmlValidatingReader methods we will call the overridden version.
         private XmlReader _outerReader;
 
         //
@@ -1082,9 +1082,7 @@ namespace System.Xml
             if (tempResolver == null && !_coreReaderImpl.IsResolverSet)
             {
                 // it is safe to return valid resolver as it'll be used in the schema validation
-                if (s_tempResolver == null)
-                    s_tempResolver = new XmlUrlResolver();
-                return s_tempResolver;
+                return s_tempResolver ??= new XmlUrlResolver();
             }
 
             return tempResolver;

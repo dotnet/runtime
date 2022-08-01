@@ -80,7 +80,7 @@ constexpr CorDebugRegister g_JITToCorDbgReg[] =
 inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum reg)
 {
     _ASSERTE(reg >= 0);
-    _ASSERTE(static_cast<size_t>(reg) < _countof(g_JITToCorDbgReg));
+    _ASSERTE(static_cast<size_t>(reg) < ARRAY_SIZE(g_JITToCorDbgReg));
     return g_JITToCorDbgReg[reg];
 }
 
@@ -217,10 +217,6 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE *address)
     LIMITED_METHOD_CONTRACT;
 
     return *address == CORDbg_BREAK_INSTRUCTION;
-}
-
-inline BOOL IsRunningOnWin95() {
-    return false;
 }
 
 inline void SetSSFlag(DT_CONTEXT *pContext)

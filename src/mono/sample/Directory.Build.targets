@@ -1,8 +1,41 @@
 <Project>
+  <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
+
+  <PropertyGroup>
+    <RunScriptOutputName Condition="'$(TargetOS)' != 'windows'">RunTests.sh</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
+  </PropertyGroup>
+
+  <!--
+     This needs to be triggered manually, like:
+
+     <Target Name="TriggerGenerateRunScript" BeforeTargets="CopyAppZipToHelixTestDir" DependsOnTargets="GenerateRunScriptForRunningSampleOnHelix" />
+  -->
+  <Target Name="GenerateRunScriptForRunningSampleOnHelix" Condition="'$(GenerateRunScriptForSample)' == 'true'">
+    <PropertyGroup>
+      <RunScriptInputPath Condition="'$(RunScriptInputPath)' == ''">$(RepositoryEngineeringDir)testing\$(RunScriptInputName)</RunScriptInputPath>
+      <RunScriptOutputPath Condition="'$(RunScriptOutputPath)' == ''">$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <RunScriptCommands Include="$(RunScriptCommand)" />
+
+      <RunScriptCommands Include="@(PostRunScriptCommands)" />
+    </ItemGroup>
+
+    <GenerateRunScript RunCommands="@(RunScriptCommands)"
+                       SetCommands="@(SetScriptCommands)"
+                       TemplatePath="$(RunScriptInputPath)"
+                       OutputPath="$(RunScriptOutputPath)" />
+
+    <Exec Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
+  </Target>
+
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
   <Import Project="..\Directory.Build.targets"/>
 
   <Target Name="PrintRuntimePackLocation" AfterTargets="UpdateTargetingAndRuntimePack">
     <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
   </Target>
+
 </Project>

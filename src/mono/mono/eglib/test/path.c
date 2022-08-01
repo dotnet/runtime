@@ -22,7 +22,7 @@ test_buildpath (void)
 	char *s;
 	const char *buffer = "var/private";
 	const char *dir = "/";
-	
+
 	s = g_build_path ("/", "hola///", "//mundo", (const char*)NULL);
 	if (strcmp (s, "hola/mundo") != 0)
 		return FAILED ("1 Got wrong result, got: %s", s);
@@ -47,7 +47,7 @@ test_buildpath (void)
 	if (strcmp (s, "/hello/world/") != 0)
 		return FAILED ("5 Got wrong result, got: %s", s);
 	g_free (s);
-	
+
 	/* Now test multi-char-separators */
 	s = g_build_path ("**", "hello", "world", (const char*)NULL);
 	if (strcmp (s, "hello**world") != 0)
@@ -63,7 +63,7 @@ test_buildpath (void)
 	if (strcmp (s, "hello**world") != 0)
 		return FAILED ("8 Got wrong result, got: %s", s);
 	g_free (s);
-	
+
 	s = g_build_path ("**", "hello**", "**world", (const char*)NULL);
 	if (strcmp (s, "hello**world") != 0)
 		return FAILED ("9 Got wrong result, got: %s", s);
@@ -119,7 +119,7 @@ static RESULT
 test_buildfname (void)
 {
 	char *s;
-	
+
 	s = g_build_filename ("a", "b", "c", "d", (const char*)NULL);
 #ifdef G_OS_WIN32
 	if (strcmp (s, "a\\b\\c\\d") != 0)
@@ -143,7 +143,7 @@ test_buildfname (void)
 	if (strcmp (s, "/foo/bar/tolo/meo/") != 0)
 		return FAILED ("1 Got wrong result, got: %s", s);
 #endif
-	
+
 	return OK;
 }
 
@@ -195,7 +195,7 @@ test_dirname (void)
 	s = g_path_get_dirname ("/index.html");
 	if (strcmp (s, "/") != 0)
 		return FAILED ("Expected [/], got [%s]", s);
-#endif	
+#endif
 	return OK;
 }
 
@@ -274,7 +274,7 @@ test_ppath2 (void)
 #else
 	const gchar *searchfor = "test-eglib";
 #endif
-	
+
 	g_setenv ("PATH", "", TRUE);
 	s = g_find_program_in_path ("ls");
 	if (s != NULL) {
@@ -310,15 +310,15 @@ test_cwd (void)
 	if (dir == NULL)
 		return FAILED ("No current directory?");
 	g_free (dir);
-	
+
 	if (chdir (newdir) == -1)
 		return FAILED ("No %s?", newdir);
-	
+
 	dir = g_get_current_dir ();
 	if (strcmp (dir, newdir) != 0)
 		return FAILED("Did not go to %s? Instead in %s", newdir, dir);
 	g_free (dir);
-	
+
 	return OK;
 }
 #else
@@ -332,11 +332,7 @@ test_cwd (void)
 static gchar *
 test_misc (void)
 {
-	const char *home = g_get_home_dir ();
 	const char *tmp = g_get_tmp_dir ();
-	
-	if (home == NULL)
-		return FAILED ("Where did my home go?");
 
 	if (tmp == NULL)
 		return FAILED ("Where did my /tmp go?");

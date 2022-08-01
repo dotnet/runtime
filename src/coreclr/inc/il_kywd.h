@@ -39,6 +39,7 @@
     KYWD( "value",          VALUE_,             NO_VALUE )
     KYWD( "valuetype",      VALUETYPE_,         NO_VALUE )
     KYWD( "class",          CLASS_,             NO_VALUE )
+    KYWD( "byreflike",      BYREFLIKE_,         NO_VALUE )
     KYWD( "vararg",         VARARG_,            NO_VALUE )
     KYWD( "default",        DEFAULT_,           NO_VALUE )
     KYWD( "stdcall",        STDCALL_,           NO_VALUE )

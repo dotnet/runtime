@@ -1,16 +1,37 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, MONO, runtimeHelpers } from "./imports";
+import Configuration from "consts:configuration";
+import { INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
-import { VoidPtr } from "./types";
-
-let commands_received: CommandResponse;
+import { VoidPtr, CharPtr } from "./types/emscripten";
+const commands_received: any = new Map<number, CommandResponse>();
+const wasm_func_map = new Map<number, string>();
+commands_received.remove = function (key: number): CommandResponse { const value = this.get(key); this.delete(key); return value; };
 let _call_function_res_cache: any = {};
 let _next_call_function_res_id = 0;
 let _debugger_buffer_len = -1;
 let _debugger_buffer: VoidPtr;
+let _assembly_name_str: string; //keep this variable, it's used by BrowserDebugProxy
+let _entrypoint_method_token: number; //keep this variable, it's used by BrowserDebugProxy
+
+const regexes: any[] = [];
+
+// V8
+//   at <anonymous>:wasm-function[1900]:0x83f63
+//   at dlfree (<anonymous>:wasm-function[18739]:0x2328ef)
+regexes.push(/at (?<replaceSection>[^:()]+:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)((?![^)a-fA-F\d])|$)/);
+
+//# 5: WASM [009712b2], function #111 (''), pc=0x7c16595c973 (+0x53), pos=38740 (+11)
+regexes.push(/(?:WASM \[[\da-zA-Z]+\], (?<replaceSection>function #(?<funcNum>[\d]+) \(''\)))/);
+
+//# chrome
+//# at http://127.0.0.1:63817/dotnet.wasm:wasm-function[8963]:0x1e23f4
+regexes.push(/(?<replaceSection>[a-z]+:\/\/[^ )]*:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)/);
+
+//# <?>.wasm-function[8962]
+regexes.push(/(?<replaceSection><[^ >]+>[.:]wasm-function\[(?<funcNum>[0-9]+)\])/);
 
 export function mono_wasm_runtime_ready(): void {
     runtimeHelpers.mono_wasm_runtime_is_ready = true;
@@ -26,6 +47,8 @@ export function mono_wasm_runtime_ready(): void {
         debugger;
     else
         console.debug("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
+
+    _readSymbolMapFile("dotnet.js.symbols");
 }
 
 export function mono_wasm_fire_debugger_agent_message(): void {
@@ -43,8 +66,11 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
             value: base64String
         }
     };
-    commands_received = buffer_obj;
+    if (commands_received.has(id))
+        console.warn(`MONO_WASM: Adding an id (${id}) that already exists in commands_received`);
+    commands_received.set(id, buffer_obj);
 }
+
 function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
     if (command_parameters.length > _debugger_buffer_len) {
         if (_debugger_buffer)
@@ -62,7 +88,7 @@ export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: n
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
     cwraps.mono_wasm_send_dbg_command_with_parms(id, command_set, command, _debugger_buffer, length, valtype, newvalue.toString());
 
-    const { res_ok, res } = commands_received;
+    const { res_ok, res } = commands_received.remove(id);
     if (!res_ok)
         throw new Error("Failed on mono_wasm_invoke_method_debugger_agent_with_parms");
     return res;
@@ -72,7 +98,8 @@ export function mono_wasm_send_dbg_command(id: number, command_set: number, comm
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
     cwraps.mono_wasm_send_dbg_command(id, command_set, command, _debugger_buffer, command_parameters.length);
 
-    const { res_ok, res } = commands_received;
+    const { res_ok, res } = commands_received.remove(id);
+
     if (!res_ok)
         throw new Error("Failed on mono_wasm_send_dbg_command");
     return res;
@@ -80,7 +107,8 @@ export function mono_wasm_send_dbg_command(id: number, command_set: number, comm
 }
 
 export function mono_wasm_get_dbg_command_info(): CommandResponseResult {
-    const { res_ok, res } = commands_received;
+    const { res_ok, res } = commands_received.remove(0);
+
     if (!res_ok)
         throw new Error("Failed on mono_wasm_get_dbg_command_info");
     return res;
@@ -92,6 +120,10 @@ export function mono_wasm_debugger_resume(): void {
 
 export function mono_wasm_detach_debugger(): void {
     cwraps.mono_wasm_set_is_debugger_attached(false);
+}
+
+export function mono_wasm_change_debugger_log_level(level: number): void {
+    cwraps.mono_wasm_change_debugger_log_level(level);
 }
 
 /**
@@ -112,15 +144,45 @@ export function mono_wasm_raise_debug_event(event: WasmEvent, args = {}): void {
 
 // Used by the debugger to enumerate loaded dlls and pdbs
 export function mono_wasm_get_loaded_files(): string[] {
-    cwraps.mono_wasm_set_is_debugger_attached(true);
     return MONO.loaded_files;
+}
+
+export function mono_wasm_wait_for_debugger(): Promise<void> {
+    return new Promise<void>((resolve) => {
+        const interval = setInterval(() => {
+            if (runtimeHelpers.wait_for_debugger != 1) {
+                return;
+            }
+            clearInterval(interval);
+            resolve();
+        }, 100);
+    });
+}
+
+export function mono_wasm_debugger_attached(): void {
+    if (runtimeHelpers.wait_for_debugger == -1)
+        runtimeHelpers.wait_for_debugger = 1;
+    cwraps.mono_wasm_set_is_debugger_attached(true);
+}
+
+export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entrypoint_method_token: number): void {
+    //keep these assignments, these values are used by BrowserDebugProxy
+    _assembly_name_str = Module.UTF8ToString(assembly_name).concat(".dll");
+    _entrypoint_method_token = entrypoint_method_token;
+    //keep this console.assert, otherwise optimization will remove the assignments
+    console.assert(true, `Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
+    // eslint-disable-next-line no-debugger
+    debugger;
 }
 
 function _create_proxy_from_object_id(objectId: string, details: any) {
     if (objectId.startsWith("dotnet:array:")) {
-        let ret : Array<any>;
-        if (details.dimensionsDetails == undefined || details.dimensionsDetails.length == 1)
-        {
+        let ret: Array<any>;
+        if (details.items === undefined) {
+            ret = details.map((p: any) => p.value);
+            return ret;
+        }
+        if (details.dimensionsDetails === undefined || details.dimensionsDetails.length === 1) {
             ret = details.items.map((p: any) => p.value);
             return ret;
         }
@@ -134,10 +196,10 @@ function _create_proxy_from_object_id(objectId: string, details: any) {
                 prop.name,
                 {
                     get() {
-                        return mono_wasm_send_dbg_command(-1, prop.get.commandSet, prop.get.command, prop.get.buffer);
+                        return mono_wasm_send_dbg_command(prop.get.id, prop.get.commandSet, prop.get.command, prop.get.buffer);
                     },
                     set: function (newValue) {
-                        mono_wasm_send_dbg_command_with_parms(-1, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return commands_received.res_ok;
+                        mono_wasm_send_dbg_command_with_parms(prop.set.id, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return true;
                     }
                 }
             );
@@ -149,7 +211,7 @@ function _create_proxy_from_object_id(objectId: string, details: any) {
                         return prop.value;
                     },
                     set: function (newValue) {
-                        mono_wasm_send_dbg_command_with_parms(-1, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return commands_received.res_ok;
+                        mono_wasm_send_dbg_command_with_parms(prop.set.id, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return true;
                     }
                 }
             );
@@ -179,7 +241,7 @@ export function mono_wasm_call_function_on(request: CallRequest): CFOResponse {
 
     const fn_args = request.arguments != undefined ? request.arguments.map(a => JSON.stringify(a.value)) : [];
 
-    const fn_body_template = `var fn = ${request.functionDeclaration}; return fn.apply(proxy, [${fn_args}]);`;
+    const fn_body_template = `const fn = ${request.functionDeclaration}; return fn.apply(proxy, [${fn_args}]);`;
     const fn_defn = new Function("proxy", fn_body_template);
     const fn_res = fn_defn(proxy);
 
@@ -292,6 +354,198 @@ function _cache_call_function_res(obj: any) {
 export function mono_wasm_release_object(objectId: string): void {
     if (objectId in _call_function_res_cache)
         delete _call_function_res_cache[objectId];
+}
+
+export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): void {
+    const message = Module.UTF8ToString(message_ptr);
+
+    if (INTERNAL["logging"] && typeof INTERNAL.logging["debugger"] === "function") {
+        INTERNAL.logging.debugger(level, message);
+        return;
+    }
+
+    if (Configuration === "Debug") {
+        console.debug(`MONO_WASM: Debugger.Debug: ${message}`);
+    }
+}
+
+function _readSymbolMapFile(filename: string): void {
+    try {
+        const res = Module.FS_readFile(filename, { flags: "r", encoding: "utf8" });
+        res.split(/[\r\n]/).forEach((line: string) => {
+            const parts: string[] = line.split(/:/);
+            if (parts.length < 2)
+                return;
+
+            parts[1] = parts.splice(1).join(":");
+            wasm_func_map.set(Number(parts[0]), parts[1]);
+        });
+        if (Configuration === "Debug") {
+            console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
+        }
+    } catch (error: any) {
+        if (error.errno == 44) {// NOENT
+            if (Configuration === "Debug") {
+                console.debug(`MONO_WASM: Could not find symbols file ${filename}. Ignoring.`);
+            }
+        }
+        else {
+            console.log(`MONO_WASM: Error loading symbol file ${filename}: ${JSON.stringify(error)}`);
+        }
+        return;
+    }
+}
+
+export function mono_wasm_symbolicate_string(message: string): string {
+    try {
+        if (wasm_func_map.size == 0)
+            return message;
+
+        const origMessage = message;
+
+        for (let i = 0; i < regexes.length; i++) {
+            const newRaw = message.replace(new RegExp(regexes[i], "g"), (substring, ...args) => {
+                const groups = args.find(arg => {
+                    return typeof (arg) == "object" && arg.replaceSection !== undefined;
+                });
+
+                if (groups === undefined)
+                    return substring;
+
+                const funcNum = groups.funcNum;
+                const replaceSection = groups.replaceSection;
+                const name = wasm_func_map.get(Number(funcNum));
+
+                if (name === undefined)
+                    return substring;
+
+                return substring.replace(replaceSection, `${name} (${replaceSection})`);
+            });
+
+            if (newRaw !== origMessage)
+                return newRaw;
+        }
+
+        return origMessage;
+    } catch (error) {
+        console.debug(`MONO_WASM: failed to symbolicate: ${error}`);
+        return message;
+    }
+}
+
+export function mono_wasm_stringify_as_error_with_stack(err: Error | string): string {
+    let errObj: any = err;
+    if (!(err instanceof Error))
+        errObj = new Error(err);
+
+    // Error
+    return mono_wasm_symbolicate_string(errObj.stack);
+}
+
+export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
+    const origMessage = Module.UTF8ToString(message_ptr);
+    const isFatal = !!fatal;
+    const domain = Module.UTF8ToString(log_domain_ptr);
+    const dataPtr = user_data;
+    const log_level = Module.UTF8ToString(log_level_ptr);
+
+    const message = `[MONO] ${origMessage}`;
+
+    if (INTERNAL["logging"] && typeof INTERNAL.logging["trace"] === "function") {
+        INTERNAL.logging.trace(domain, log_level, message, isFatal, dataPtr);
+        return;
+    }
+
+    switch (log_level) {
+        case "critical":
+        case "error":
+            console.error(mono_wasm_stringify_as_error_with_stack(message));
+            break;
+        case "warning":
+            console.warn(message);
+            break;
+        case "message":
+            console.log(message);
+            break;
+        case "info":
+            console.info(message);
+            break;
+        case "debug":
+            console.debug(message);
+            break;
+        default:
+            console.log(message);
+            break;
+    }
+}
+
+export function setup_proxy_console(id: string, originalConsole: Console, origin: string): void {
+    function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
+        return function (...args: any[]) {
+            try {
+                let payload = args[0];
+                if (payload === undefined) payload = "undefined";
+                else if (payload === null) payload = "null";
+                else if (typeof payload === "function") payload = payload.toString();
+                else if (typeof payload !== "string") {
+                    try {
+                        payload = JSON.stringify(payload);
+                    } catch (e) {
+                        payload = payload.toString();
+                    }
+                }
+
+                if (typeof payload === "string")
+                    payload = `[${id}] ${payload}`;
+
+                if (asJson) {
+                    func(JSON.stringify({
+                        method: prefix,
+                        payload: payload,
+                        arguments: args
+                    }));
+                } else {
+                    func([prefix + payload, ...args.slice(1)]);
+                }
+            } catch (err) {
+                originalConsole.error(`proxyConsole failed: ${err}`);
+            }
+        };
+    }
+
+    const originalConsoleObj: any = originalConsole;
+    const methods = ["debug", "trace", "warn", "info", "error"];
+    for (const m of methods) {
+        if (typeof (originalConsoleObj[m]) !== "function") {
+            originalConsoleObj[m] = proxyConsoleMethod(`console.${m}: `, originalConsole.log, false);
+        }
+    }
+
+    const consoleUrl = `${origin}/console`.replace("https://", "wss://").replace("http://", "ws://");
+
+    const consoleWebSocket = new WebSocket(consoleUrl);
+    consoleWebSocket.onopen = function () {
+        originalConsole.log(`browser: [${id}] Console websocket connected.`);
+    };
+    consoleWebSocket.onerror = function (event) {
+        originalConsole.error(`[${id}] websocket error: ${event}`, event);
+    };
+    consoleWebSocket.onclose = function (event) {
+        originalConsole.error(`[${id}] websocket closed: ${event}`, event);
+    };
+
+    const send = (msg: string) => {
+        if (consoleWebSocket.readyState === WebSocket.OPEN) {
+            consoleWebSocket.send(msg);
+        }
+        else {
+            originalConsole.log(msg);
+        }
+    };
+
+    // redirect output early, so that when emscripten starts it's already redirected
+    for (const m of ["log", ...methods])
+        originalConsoleObj[m] = proxyConsoleMethod(`console.${m}`, send, true);
 }
 
 type CallDetails = {

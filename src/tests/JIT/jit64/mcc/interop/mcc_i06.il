@@ -6,8 +6,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib { auto }
 
-.assembly MCCTest {}
-.module mcc_i06.exe
+.assembly 'mcc_i06' {}
 
 
 .namespace MCCTest

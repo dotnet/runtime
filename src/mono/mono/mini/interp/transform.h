@@ -34,6 +34,8 @@ typedef struct
 	 * the stack a new local is created.
 	 */
 	int local;
+	/* The offset from the execution stack start where this is stored. Used by the fast offset allocator */
+	int offset;
 	/* Saves how much stack this is using. It is a multiple of MINT_VT_ALIGNMENT */
 	int size;
 } StackInfo;
@@ -126,6 +128,11 @@ struct _InterpBasicBlock {
 	// This block has special semantics and it shouldn't be optimized away
 	int eh_block : 1;
 	int dead: 1;
+	// If patchpoint is set we will store mapping information between native offset and bblock index within
+	// InterpMethod. In the unoptimized method we will map from native offset to the bb_index while in the
+	// optimized method we will map the bb_index to the corresponding native offset.
+	int patchpoint_data: 1;
+	int emit_patchpoint: 1;
 };
 
 typedef enum {
@@ -150,7 +157,13 @@ typedef struct {
 	int indirects;
 	int offset;
 	int size;
-	int live_start, live_end;
+	union {
+		// live_start and live_end are used by the offset allocator for optimized code
+		int live_start;
+		// used only by the fast offset allocator, which only works for unoptimized code
+		int stack_offset;
+	};
+	int live_end;
 	// index of first basic block where this var is used
 	int bb_index;
 	union {
@@ -172,7 +185,7 @@ typedef struct
 	const unsigned char *il_code;
 	const unsigned char *ip;
 	const unsigned char *in_start;
-	InterpInst *last_ins, *first_ins;
+	InterpInst *last_ins;
 	int code_size;
 	int *in_offsets;
 	int current_il_offset;
@@ -185,6 +198,7 @@ typedef struct
 	unsigned int stack_capacity;
 	gint32 param_area_offset;
 	gint32 total_locals_size;
+	gint32 max_stack_size;
 	InterpLocal *locals;
 	int *local_ref_count;
 	unsigned int il_locals_offset;
@@ -195,6 +209,7 @@ typedef struct
 	int max_data_items;
 	void **data_items;
 	GHashTable *data_hash;
+	GSList *imethod_items;
 #ifdef ENABLE_EXPERIMENT_TIERED
 	GHashTable *patchsite_hash;
 #endif
@@ -216,6 +231,8 @@ typedef struct
 	MonoProfilerCoverageInfo *coverage_info;
 	GList *dont_inline;
 	int inline_depth;
+	int patchpoint_data_n;
+	int *patchpoint_data;
 	int has_localloc : 1;
 	// If method compilation fails due to certain limits being exceeded, we disable inlining
 	// and retry compilation.
@@ -223,6 +240,7 @@ typedef struct
 	// If the current method (inlined_method) has the aggressive inlining attribute, we no longer
 	// bail out of inlining when having to generate certain opcodes (like call, throw).
 	int aggressive_inlining : 1;
+	int optimized : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0

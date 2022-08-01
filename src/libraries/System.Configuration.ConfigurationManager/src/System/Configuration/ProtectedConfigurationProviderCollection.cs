@@ -11,8 +11,10 @@ namespace System.Configuration
 
         public override void Add(ProviderBase provider)
         {
-            if (provider == null)
+            if (provider is null)
+            {
                 throw new ArgumentNullException(nameof(provider));
+            }
 
             if (!(provider is ProtectedConfigurationProvider))
             {

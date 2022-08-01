@@ -198,8 +198,8 @@ DEFINE_CA_NAMED_ARGS(DllImportAttribute)
 DEFINE_CA_NAMED_ARGS_END()
 
 const KnownCaProp DllImportAttributeProps         = {"System.Runtime.InteropServices", "DllImportAttribute", DllImportTargets, bDONTKEEPCA,
-                                                rDllImportAttributeArgs, lengthof(rDllImportAttributeArgs),
-                                                rDllImportAttributeNamedArgs, lengthof(rDllImportAttributeNamedArgs)};
+                                                rDllImportAttributeArgs, ARRAY_SIZE(rDllImportAttributeArgs),
+                                                rDllImportAttributeNamedArgs, ARRAY_SIZE(rDllImportAttributeNamedArgs)};
 
 //-----------------------------------------------------------------------------
 // GUID args, named args (none), and known attribute properties.
@@ -208,7 +208,7 @@ DEFINE_CA_CTOR_ARGS(GuidAttribute)
 DEFINE_CA_CTOR_ARGS_END()
 
 const KnownCaProp GuidAttributeProps              = {"System.Runtime.InteropServices", "GuidAttribute", GuidTargets, bKEEPCA,
-                                                rGuidAttributeArgs, lengthof(rGuidAttributeArgs)};
+                                                rGuidAttributeArgs, ARRAY_SIZE(rGuidAttributeArgs)};
 
 //-----------------------------------------------------------------------------
 // ComImport args (none), named args (none), and known attribute properties.
@@ -221,7 +221,7 @@ DEFINE_CA_CTOR_ARGS(InterfaceTypeAttribute)
 DEFINE_CA_CTOR_ARGS_END()
 
 const KnownCaProp InterfaceTypeAttributeProps     = {"System.Runtime.InteropServices", "InterfaceTypeAttribute", InterfaceTypeTargets, bKEEPCA,
-                                                rInterfaceTypeAttributeArgs, lengthof(rInterfaceTypeAttributeArgs)};
+                                                rInterfaceTypeAttributeArgs, ARRAY_SIZE(rInterfaceTypeAttributeArgs)};
 
 //-----------------------------------------------------------------------------
 // Class interface type args, named args (none), and known attribute properties.
@@ -230,7 +230,7 @@ DEFINE_CA_CTOR_ARGS(ClassInterfaceAttribute)
 DEFINE_CA_CTOR_ARGS_END()
 
 const KnownCaProp ClassInterfaceAttributeProps     = {"System.Runtime.InteropServices", "ClassInterfaceAttribute", ClassInterfaceTargets, bKEEPCA,
-                                                rClassInterfaceAttributeArgs, lengthof(rClassInterfaceAttributeArgs)};
+                                                rClassInterfaceAttributeArgs, ARRAY_SIZE(rClassInterfaceAttributeArgs)};
 
 //-----------------------------------------------------------------------------
 // Serializable args (none), named args (none), and known attribute properties.
@@ -275,15 +275,15 @@ DEFINE_CA_NAMED_ARGS_END()
 
 const KnownCaProp MethodImplAttribute1Props        = {"System.Runtime.CompilerServices", "MethodImplAttribute", MethodImplTargets, bDONTKEEPCA,
                                                 0, 0,
-                                                rMethodImplAttributeNamedArgs, lengthof(rMethodImplAttributeNamedArgs),
+                                                rMethodImplAttributeNamedArgs, ARRAY_SIZE(rMethodImplAttributeNamedArgs),
                                                 bMATCHBYSIG};
 const KnownCaProp MethodImplAttribute2Props        = {"System.Runtime.CompilerServices", "MethodImplAttribute", MethodImplTargets, bDONTKEEPCA,
-                                                rMethodImplAttribute2Args, lengthof(rMethodImplAttribute2Args),
-                                                rMethodImplAttributeNamedArgs, lengthof(rMethodImplAttributeNamedArgs),
+                                                rMethodImplAttribute2Args, ARRAY_SIZE(rMethodImplAttribute2Args),
+                                                rMethodImplAttributeNamedArgs, ARRAY_SIZE(rMethodImplAttributeNamedArgs),
                                                 bMATCHBYSIG};
 const KnownCaProp MethodImplAttribute3Props        = {"System.Runtime.CompilerServices", "MethodImplAttribute", MethodImplTargets, bDONTKEEPCA,
-                                                rMethodImplAttribute3Args, lengthof(rMethodImplAttribute3Args),
-                                                rMethodImplAttributeNamedArgs, lengthof(rMethodImplAttributeNamedArgs),
+                                                rMethodImplAttribute3Args, ARRAY_SIZE(rMethodImplAttribute3Args),
+                                                rMethodImplAttributeNamedArgs, ARRAY_SIZE(rMethodImplAttributeNamedArgs),
                                                 bMATCHBYNAME};
 
 //-----------------------------------------------------------------------------
@@ -324,13 +324,13 @@ DEFINE_CA_NAMED_ARGS(MarshalAsAttribute)
 DEFINE_CA_NAMED_ARGS_END()
 
 const KnownCaProp MarshalAsAttribute1Props        = {"System.Runtime.InteropServices", "MarshalAsAttribute", MarshalTargets, bDONTKEEPCA,
-                                              rMarshalAsAttribute1Args, lengthof(rMarshalAsAttribute1Args),
-                                              rMarshalAsAttributeNamedArgs, lengthof(rMarshalAsAttributeNamedArgs),
+                                              rMarshalAsAttribute1Args, ARRAY_SIZE(rMarshalAsAttribute1Args),
+                                              rMarshalAsAttributeNamedArgs, ARRAY_SIZE(rMarshalAsAttributeNamedArgs),
                                               bMATCHBYSIG};
 
 const KnownCaProp MarshalAsAttribute2Props        = {"System.Runtime.InteropServices", "MarshalAsAttribute", MarshalTargets, bDONTKEEPCA,
-                                              rMarshalAsAttribute2Args, lengthof(rMarshalAsAttribute2Args),
-                                              rMarshalAsAttributeNamedArgs, lengthof(rMarshalAsAttributeNamedArgs),
+                                              rMarshalAsAttribute2Args, ARRAY_SIZE(rMarshalAsAttribute2Args),
+                                              rMarshalAsAttributeNamedArgs, ARRAY_SIZE(rMarshalAsAttributeNamedArgs),
                                               bMATCHBYNAME};
 
 //-----------------------------------------------------------------------------
@@ -375,12 +375,12 @@ DEFINE_CA_NAMED_ARGS(StructLayoutAttribute)
 DEFINE_CA_NAMED_ARGS_END()
 
 const KnownCaProp StructLayoutAttribute1Props       = {"System.Runtime.InteropServices", "StructLayoutAttribute", StructLayoutTargets, bDONTKEEPCA,
-                                                rStructLayoutAttribute1Args, lengthof(rStructLayoutAttribute1Args),
-                                                rStructLayoutAttributeNamedArgs, lengthof(rStructLayoutAttributeNamedArgs),
+                                                rStructLayoutAttribute1Args, ARRAY_SIZE(rStructLayoutAttribute1Args),
+                                                rStructLayoutAttributeNamedArgs, ARRAY_SIZE(rStructLayoutAttributeNamedArgs),
                                                 bMATCHBYSIG};
 const KnownCaProp StructLayoutAttribute2Props       = {"System.Runtime.InteropServices", "StructLayoutAttribute", StructLayoutTargets, bDONTKEEPCA,
-                                                rStructLayoutAttribute2Args, lengthof(rStructLayoutAttribute2Args),
-                                                rStructLayoutAttributeNamedArgs, lengthof(rStructLayoutAttributeNamedArgs),
+                                                rStructLayoutAttribute2Args, ARRAY_SIZE(rStructLayoutAttribute2Args),
+                                                rStructLayoutAttributeNamedArgs, ARRAY_SIZE(rStructLayoutAttributeNamedArgs),
                                                 bMATCHBYNAME};
 
 //-----------------------------------------------------------------------------
@@ -390,7 +390,7 @@ DEFINE_CA_CTOR_ARGS(FieldOffsetAttribute)
 DEFINE_CA_CTOR_ARGS_END()
 
 const KnownCaProp FieldOffsetAttributeProps        = {"System.Runtime.InteropServices", "FieldOffsetAttribute", FieldOffsetTargets, bDONTKEEPCA,
-                                                rFieldOffsetAttributeArgs, lengthof(rFieldOffsetAttributeArgs)};
+                                                rFieldOffsetAttributeArgs, ARRAY_SIZE(rFieldOffsetAttributeArgs)};
 
 DEFINE_CA_CTOR_ARGS(TypeLibVersionAttribute)
     DEFINE_CA_CTOR_ARG(SERIALIZATION_TYPE_I4)
@@ -398,7 +398,7 @@ DEFINE_CA_CTOR_ARGS(TypeLibVersionAttribute)
 DEFINE_CA_CTOR_ARGS_END()
 
 const KnownCaProp TypeLibVersionAttributeProps = {"System.Runtime.InteropServices", "TypeLibVersionAttribute", TypeLibVersionTargets, bKEEPCA,
-                                            rTypeLibVersionAttributeArgs, lengthof(rTypeLibVersionAttributeArgs)};
+                                            rTypeLibVersionAttributeArgs, ARRAY_SIZE(rTypeLibVersionAttributeArgs)};
 
 
 DEFINE_CA_CTOR_ARGS(ComCompatibleVersionAttribute)
@@ -409,7 +409,7 @@ DEFINE_CA_CTOR_ARGS(ComCompatibleVersionAttribute)
 DEFINE_CA_CTOR_ARGS_END()
 
 const KnownCaProp ComCompatibleVersionAttributeProps = {"System.Runtime.InteropServices", "ComCompatibleVersionAttribute", ComCompatibleVersionTargets, bKEEPCA,
-                                                  rComCompatibleVersionAttributeArgs, lengthof(rComCompatibleVersionAttributeArgs)};
+                                                  rComCompatibleVersionAttributeArgs, ARRAY_SIZE(rComCompatibleVersionAttributeArgs)};
 
 
 //-----------------------------------------------------------------------------
@@ -638,15 +638,13 @@ HRESULT ParseKnownCaNamedArgs(
         // Better have found an argument.
         if (ixParam == cNamedParams)
         {
-            MAKE_WIDEPTR_FROMUTF8N(pWideStr, namedArg.szName, namedArg.cName)
-            IfFailGo(PostError(META_E_CA_UNKNOWN_ARGUMENT, wcslen(pWideStr), pWideStr));
+            IfFailGo(PostError(META_E_CA_UNKNOWN_ARGUMENT, namedArg.cName, namedArg.szName));
         }
 
         // Argument had better not have been seen already.
         if (pNamedParams[ixParam].val.type.tag != SERIALIZATION_TYPE_UNDEFINED)
         {
-            MAKE_WIDEPTR_FROMUTF8N(pWideStr, namedArg.szName, namedArg.cName)
-            IfFailGo(PostError(META_E_CA_REPEATED_ARG, wcslen(pWideStr), pWideStr));
+            IfFailGo(PostError(META_E_CA_REPEATED_ARG, namedArg.cName, namedArg.szName));
         }
 
         IfFailGo(ParseKnownCaValue(ca, &pNamedParams[ixParam].val, &namedArg.type));
@@ -1114,7 +1112,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         if (qNamedArgs[DI_CallingConvention].val.type.tag)
         {   // Calling convention makes no sense on a field.
             if (TypeFromToken(tkObj) == mdtFieldDef)
+            {
                 IfFailGo(PostError(META_E_CA_INVALID_ARG_FOR_TYPE, qNamedArgs[DI_CallingConvention].szName));
+            }
             // Turn off all callconv bits, then turn on specified value.
             dwFlags &= ~pmCallConvMask;
             switch (qNamedArgs[DI_CallingConvention].val.u4)
@@ -1157,7 +1157,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         if (qNamedArgs[DI_SetLastError].val.type.tag)
         {   // SetLastError makes no sense on a field.
             if (TypeFromToken(tkObj) == mdtFieldDef)
+            {
                 IfFailGo(PostError(META_E_CA_INVALID_ARG_FOR_TYPE, qNamedArgs[DI_SetLastError].szName));
+            }
             if (qNamedArgs[DI_SetLastError].val.u1)
                 dwFlags |= pmSupportsLastError;
         }
@@ -1318,9 +1320,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         FALLTHROUGH;
     case CA_MethodImplAttribute3:
         // Validate bits.
-        if (qArgs[0].val.u4 & ~(miUserMask))
+        if (qArgs[0].val.u2 & ~(miUserMask))
             IfFailGo(PostError(META_E_CA_INVALID_VALUE));
-        reinterpret_cast<MethodRec*>(pRow)->AddImplFlags(qArgs[0].val.u4);
+        reinterpret_cast<MethodRec*>(pRow)->AddImplFlags(qArgs[0].val.u2);
         if (!qNamedArgs[MI_CodeType].val.type.tag)
             break;
         // fall through to set the code type.
@@ -1328,10 +1330,10 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
     case CA_MethodImplAttribute1:
         {
         USHORT usFlags = reinterpret_cast<MethodRec*>(pRow)->GetImplFlags();
-        if (qNamedArgs[MI_CodeType].val.i4 & ~(miCodeTypeMask))
+        if (qNamedArgs[MI_CodeType].val.u2 & ~(miCodeTypeMask))
             IfFailGo(PostError(META_E_CA_INVALID_VALUE));
         // Mask out old value, put in new one.
-        usFlags = (usFlags & ~miCodeTypeMask) | qNamedArgs[MI_CodeType].val.i4;
+        usFlags = (usFlags & ~miCodeTypeMask) | qNamedArgs[MI_CodeType].val.u2;
         reinterpret_cast<MethodRec*>(pRow)->SetImplFlags(usFlags);
         }
         break;

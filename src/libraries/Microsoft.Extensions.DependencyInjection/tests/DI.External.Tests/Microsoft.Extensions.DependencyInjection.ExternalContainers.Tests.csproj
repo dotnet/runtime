@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
@@ -14,28 +14,17 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" SkipUseReferenceAssembly="true" />
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj"/>
-    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="6.0.0" />
-    <PackageReference Include="DryIoc.Microsoft.DependencyInjection" Version="4.0.0" />
-    <PackageReference Include="Lamar.Microsoft.DependencyInjection" Version="2.1.0" />
-    <PackageReference Include="LightInject.Microsoft.DependencyInjection" Version="3.3.1" />
-    <PackageReference Include="StructureMap.Microsoft.DependencyInjection" Version="2.0.0" />
-    <PackageReference Include="Grace.DependencyInjection.Extensions" Version="7.0.1" />
-    <PackageReference Include="Stashbox.Extensions.Dependencyinjection" Version="2.9.3" />
-    <PackageReference Include="Unity.Microsoft.DependencyInjection" Version="2.1.3" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj" />
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="7.2.0" />
+    <PackageReference Include="DryIoc.Microsoft.DependencyInjection" Version="5.1.0" />
+    <PackageReference Include="LightInject.Microsoft.DependencyInjection" Version="3.4.1" />
+    <PackageReference Include="Grace.DependencyInjection.Extensions" Version="7.1.0" />
+    <PackageReference Include="Stashbox.Extensions.Dependencyinjection" Version="3.2.1" />
   </ItemGroup>
 
-  <!-- Include these transitive dependencies to overrule NuGet's ProjectReference over PackageReferene behavior: https://github.com/NuGet/Home/issues/9354. -->
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="Microsoft.Win32.Primitives" Version="$(MicrosoftWin32PrimitivesVersion)" />
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <PackageReference Include="System.Runtime" Version="$(SystemRuntimeVersion)" />
-    <PackageReference Include="System.Runtime.Extensions" Version="$(SystemRuntimeExtensionsVersion)" />
-    <PackageReference Include="System.Net.Primitives" Version="$(SystemNetPrimitivesVersion)" />
-    <PackageReference Include="System.Collections" Version="$(SystemCollectionsVersion)" />
-    <PackageReference Include="System.Runtime.InteropServices" Version="$(SystemRuntimeInteropServicesVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+  <!-- These packages don't support .NETFramework -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <PackageReference Include="Lamar.Microsoft.DependencyInjection" Version="8.0.0" />
   </ItemGroup>
 
 </Project>

@@ -36,10 +36,7 @@ namespace System.ComponentModel.DataAnnotations
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type associatedMetadataType)
             : this(type)
         {
-            if (associatedMetadataType == null)
-            {
-                throw new ArgumentNullException(nameof(associatedMetadataType));
-            }
+            ArgumentNullException.ThrowIfNull(associatedMetadataType);
 
             _associatedMetadataType = associatedMetadataType;
         }

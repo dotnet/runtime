@@ -3,26 +3,26 @@
 
 namespace System.Security.Cryptography
 {
-    public abstract partial class ECDiffieHellman : AsymmetricAlgorithm
+    public abstract partial class ECDiffieHellman : ECAlgorithm
     {
         public static new partial ECDiffieHellman Create()
         {
-            return new ECDiffieHellmanImplementation.ECDiffieHellmanCng();
+            return new ECDiffieHellmanWrapper(new ECDiffieHellmanCng());
         }
 
         public static partial ECDiffieHellman Create(ECCurve curve)
         {
-            return new ECDiffieHellmanImplementation.ECDiffieHellmanCng(curve);
+            return new ECDiffieHellmanWrapper(new ECDiffieHellmanCng(curve));
         }
 
         public static partial ECDiffieHellman Create(ECParameters parameters)
         {
-            ECDiffieHellman ecdh = new ECDiffieHellmanImplementation.ECDiffieHellmanCng();
+            ECDiffieHellman ecdh = new ECDiffieHellmanCng();
 
             try
             {
                 ecdh.ImportParameters(parameters);
-                return ecdh;
+                return new ECDiffieHellmanWrapper(ecdh);
             }
             catch
             {

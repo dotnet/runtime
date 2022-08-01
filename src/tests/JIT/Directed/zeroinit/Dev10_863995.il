@@ -19,7 +19,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Dev10_863995.exe
 // MVID: {264E6DC2-22B6-4B9F-A4E7-582E65FCAB22}
 .imagebase 0x00400000
 .file alignment 0x00000200

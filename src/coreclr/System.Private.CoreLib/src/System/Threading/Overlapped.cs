@@ -27,28 +27,8 @@ namespace System.Threading
 {
     #region class _IOCompletionCallback
 
-    internal unsafe class _IOCompletionCallback
+    internal sealed unsafe partial class _IOCompletionCallback
     {
-        private readonly IOCompletionCallback _ioCompletionCallback;
-        private readonly ExecutionContext _executionContext;
-        private uint _errorCode; // Error code
-        private uint _numBytes; // No. of bytes transferred
-        private NativeOverlapped* _pNativeOverlapped;
-
-        internal _IOCompletionCallback(IOCompletionCallback ioCompletionCallback, ExecutionContext executionContext)
-        {
-            _ioCompletionCallback = ioCompletionCallback;
-            _executionContext = executionContext;
-        }
-        // Context callback: same sig for SendOrPostCallback and ContextCallback
-        internal static ContextCallback _ccb = new ContextCallback(IOCompletionCallback_Context);
-        internal static void IOCompletionCallback_Context(object? state)
-        {
-            _IOCompletionCallback? helper = (_IOCompletionCallback?)state;
-            Debug.Assert(helper != null, "_IOCompletionCallback cannot be null");
-            helper._ioCompletionCallback(helper._errorCode, helper._numBytes, helper._pNativeOverlapped);
-        }
-
         // call back helper
         internal static void PerformIOCompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* pNativeOverlapped)
         {
@@ -69,7 +49,7 @@ namespace System.Threading
                     helper._errorCode = errorCode;
                     helper._numBytes = numBytes;
                     helper._pNativeOverlapped = pNativeOverlapped;
-                    ExecutionContext.RunInternal(helper._executionContext, _ccb, helper);
+                    ExecutionContext.RunInternal(helper._executionContext, IOCompletionCallback_Context_Delegate, helper);
                 }
 
                 // Quickly check the VM again, to see if a packet has arrived.
@@ -131,8 +111,6 @@ namespace System.Threading
             _callback = iocb;
             return AllocateNativeOverlapped();
         }
-
-        internal bool IsUserObject(byte[]? buffer) => ReferenceEquals(_userObject, buffer);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern NativeOverlapped* AllocateNativeOverlapped();
@@ -245,8 +223,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe Overlapped Unpack(NativeOverlapped* nativeOverlappedPtr)
         {
-            if (nativeOverlappedPtr == null)
-                throw new ArgumentNullException(nameof(nativeOverlappedPtr));
+            ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
 
             return OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped;
         }
@@ -254,14 +231,11 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe void Free(NativeOverlapped* nativeOverlappedPtr)
         {
-            if (nativeOverlappedPtr == null)
-                throw new ArgumentNullException(nameof(nativeOverlappedPtr));
+            ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
 
             OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped._overlappedData = null;
             OverlappedData.FreeNativeOverlapped(nativeOverlappedPtr);
         }
-
-        internal bool IsUserObject(byte[]? buffer) => _overlappedData!.IsUserObject(buffer);
     }
 
     #endregion class Overlapped

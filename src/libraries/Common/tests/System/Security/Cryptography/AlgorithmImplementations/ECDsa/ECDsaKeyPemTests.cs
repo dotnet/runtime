@@ -10,7 +10,5 @@ namespace System.Security.Cryptography.EcDsa.Tests
     public sealed class ECDsaKeyPemTests : ECKeyPemTests<ECDsa>
     {
         protected override ECDsa CreateKey() => ECDsa.Create();
-        protected override ECParameters ExportParameters(ECDsa key, bool includePrivateParameters) =>
-            key.ExportParameters(includePrivateParameters);
     }
 }

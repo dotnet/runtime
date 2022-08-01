@@ -84,12 +84,7 @@ endif()
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
     set(STATIC_LIBS_ONLY 1)
-
-    if(CLR_CMAKE_TARGET_WIN32)
-        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Windows Native.Windows)
-    else()
-        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix Native.Unix)
-    endif()
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 #-----------------------------------------
@@ -112,15 +107,18 @@ if(CLR_CMAKE_HOST_UNIX)
 
     add_subdirectory(pal)
     add_subdirectory(hosts)
-else(CLR_CMAKE_HOST_UNIX)
+else()
     if(CLR_CMAKE_TARGET_UNIX)
-        add_subdirectory(pal/src/libunwind)
-    endif(CLR_CMAKE_TARGET_UNIX)
-endif(CLR_CMAKE_HOST_UNIX)
+        add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
+    endif()
+endif()
 
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(pal/prebuilt/inc)
 
+# These need to happen before the VM and debug-pal includes.
+set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
+include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
 add_subdirectory(debug/debug-pal)
 
 add_subdirectory(minipal)
@@ -138,6 +136,13 @@ include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
 add_subdirectory(tools/aot/jitinterface)
 
+
+if(NOT CLR_CROSS_COMPONENTS_BUILD)
+  # NativeAOT only buildable for a subset of CoreCLR-supported configurations
+  if((CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_WIN32) AND (CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_AMD64) AND NOT (CLR_CMAKE_HOST_OSX AND CLR_CMAKE_HOST_ARCH_ARM64))
+    add_subdirectory(nativeaot)
+  endif()
+endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake
@@ -245,7 +250,6 @@ add_subdirectory(debug)
 add_subdirectory(binder)
 add_subdirectory(classlibnative)
 add_subdirectory(dlls)
-add_subdirectory(ToolBox)
 add_subdirectory(tools)
 add_subdirectory(unwinder)
 add_subdirectory(interop)

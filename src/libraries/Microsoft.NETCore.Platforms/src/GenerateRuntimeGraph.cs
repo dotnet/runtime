@@ -63,7 +63,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         }
 
         /// <summary>
-        /// Parent RID to use for any unknown AdditionalRuntimeIdentifer.
+        /// Parent RID to use for any unknown AdditionalRuntimeIdentifier.
         /// </summary>
         public string AdditionalRuntimeIdentifierParent
         {
@@ -240,7 +240,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             return !Log.HasLoggedErrors;
         }
 
-        private void EnsureWritable(string file)
+        private static void EnsureWritable(string file)
         {
             if (File.Exists(file))
             {
@@ -344,7 +344,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         {
             var serializer = new JsonSerializer();
             using (var file = File.OpenText(mapFile))
-            using (var jsonTextReader = new JsonTextReader(file))
+            using (var jsonTextReader = new JsonTextReader(file) { MaxDepth = null })
             {
                 return serializer.Deserialize<IDictionary<string, IEnumerable<string>>>(jsonTextReader);
             }
@@ -404,8 +404,6 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             var linksElement = new XElement(s_dgmlns + "Links");
             doc.Root.Add(nodesElement);
             doc.Root.Add(linksElement);
-
-            var nodeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var runtimeDescription in graph.Runtimes.Values)
             {

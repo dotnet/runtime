@@ -86,7 +86,7 @@ namespace System.Speech.Internal.Synthesis
         {
             get
             {
-                return Marshal.SizeOf<WAVEHDR>();
+                return Marshal.SizeOf<Interop.WinMM.WAVEHDR>();
             }
         }
 
@@ -142,7 +142,7 @@ namespace System.Speech.Internal.Synthesis
 
         private GCHandle _gcHandleWaveHdr;
 
-        private WAVEHDR _waveHdr;
+        private Interop.WinMM.WAVEHDR _waveHdr;
 
         /// <summary>
         /// Specifies the length, in bytes, of the buffer.

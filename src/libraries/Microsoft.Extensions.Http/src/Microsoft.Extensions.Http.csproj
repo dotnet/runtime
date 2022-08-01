@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <Nullable>Annotations</Nullable>
+    <IsPackable>true</IsPackable>
     <PackageDescription>The HttpClient factory is a pattern for configuring and retrieving named HttpClients in a composable way. The HttpClient factory provides extensibility to plug in DelegatingHandlers that address cross-cutting concerns such as service location, load balancing, and reliability. The default HttpClient factory provides built-in diagnostics and logging and manages the lifetimes of connections in a performant way.
 
 Commonly Used Types:
@@ -15,8 +15,11 @@ System.Net.Http.IHttpClientFactory</PackageDescription>
              Link="Common\src\Extensions\NonCapturingTimer\NonCapturingTimer.cs" />
     <Compile Include="$(CommonPath)Extensions\TypeNameHelper\TypeNameHelper.cs"
              Link="Common\src\Extensions\TypeNameHelper\TypeNameHelper.cs" />
-    <Compile Include="$(CommonPath)Extensions\ValueStopwatch\ValueStopwatch.cs"
-             Link="Common\src\Extensions\ValueStopwatch\ValueStopwatch.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
+             Link="Common\System\ThrowHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />

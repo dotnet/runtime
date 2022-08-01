@@ -58,36 +58,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-        public void ReadFileOver2GB()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(int.MaxValue + 1L);
-            }
-
-            // File is too large for ReadAllBytes at once
-            Assert.Throws<IOException>(() => File.ReadAllBytes(path));
-        }
-
-        [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-        public void ReadFileOverMaxArrayLength()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(Array.MaxLength + 1L);
-            }
-
-            // File is too large for ReadAllBytes at once
-            Assert.Throws<IOException>(() => File.ReadAllBytes(path));
-        }
-
-        [Fact]
         public void Overwrite()
         {
             string path = GetTestFilePath();
@@ -116,7 +86,6 @@ namespace System.IO.Tests
         /// file is allowed.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public void WriteToReadOnlyFile()
         {
             string path = GetTestFilePath();
@@ -127,11 +96,11 @@ namespace System.IO.Tests
                 // Operation succeeds when being run by the Unix superuser
                 if (PlatformDetection.IsSuperUser)
                 {
-                    File.WriteAllBytes(path, Encoding.UTF8.GetBytes("text"));
-                    Assert.Equal(Encoding.UTF8.GetBytes("text"), File.ReadAllBytes(path));
+                    File.WriteAllBytes(path, "text"u8.ToArray());
+                    Assert.Equal("text"u8.ToArray(), File.ReadAllBytes(path));
                 }
                 else
-                    Assert.Throws<UnauthorizedAccessException>(() => File.WriteAllBytes(path, Encoding.UTF8.GetBytes("text")));
+                    Assert.Throws<UnauthorizedAccessException>(() => File.WriteAllBytes(path, "text"u8.ToArray()));
             }
             finally
             {
@@ -196,7 +165,7 @@ namespace System.IO.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60427")]
         public async Task ReadAllBytes_NonSeekableFileStream_InWindows()
         {
-            string pipeName = FileSystemTest.GetNamedPipeServerStreamName();
+            string pipeName = GetNamedPipeServerStreamName();
             string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
 
             var namedPipeWriterStream = new NamedPipeServerStream(pipeName, PipeDirection.Out);
@@ -225,6 +194,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         public async Task ReadAllBytes_NonSeekableFileStream_InUnix()
         {
             string fifoPath = GetTestFilePath();

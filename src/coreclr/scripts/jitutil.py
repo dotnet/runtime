@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import logging
+import time
 import urllib
 import urllib.request
 import zipfile
@@ -36,20 +37,36 @@ class TempDir:
         directory and its contents (if skip_cleanup is False).
     """
 
-    def __init__(self, path=None, skip_cleanup=False):
+    def __init__(self, path=None, skip_cleanup=False, change_dir=True):
         self.mydir = tempfile.mkdtemp() if path is None else path
         self.cwd = None
+        self.change_dir = change_dir
         self._skip_cleanup = skip_cleanup
 
     def __enter__(self):
         self.cwd = os.getcwd()
-        os.chdir(self.mydir)
+        if self.change_dir:
+            os.chdir(self.mydir)
         return self.mydir
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        os.chdir(self.cwd)
+        if self.change_dir:
+            os.chdir(self.cwd)
         if not self._skip_cleanup:
-            shutil.rmtree(self.mydir)
+            try:
+                shutil.rmtree(self.mydir)
+            except Exception as ex:
+                logging.warning("Warning: failed to remove directory \"%s\": %s", self.mydir, ex)
+                # Print out all the remaining files and directories, in case that provides useful information
+                # for diagnosing the failure. If there is an exception doing this, ignore it.
+                try:
+                    for dirpath, dirnames, filenames in os.walk(self.mydir):
+                        for dir_name in dirnames:
+                            logging.warning("  Remaining directory: \"%s\"", os.path.join(dirpath, dir_name))
+                        for file_name in filenames:
+                            logging.warning("  Remaining file: \"%s\"", os.path.join(dirpath, file_name))
+                except Exception:
+                    pass
 
 class ChangeDir:
     """ Class to temporarily change to a given directory. Use with "with".
@@ -85,13 +102,31 @@ def set_pipeline_variable(name, value):
     print(define_variable_format.format(name, value))  # set variable
 
 
+
 ################################################################################
 ##
 ## Helper functions
 ##
 ################################################################################
 
-def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=None):
+def decode_and_print(str_to_decode):
+    """Decode a UTF-8 encoded bytes to string.
+
+    Args:
+        str_to_decode (byte stream): Byte stream to decode
+
+    Returns:
+        String output. If there any encoding/decoding errors, it will not print anything
+        and return an empty string.
+    """
+    output = ''
+    try:
+        output = str_to_decode.decode("utf-8", errors='replace')
+        print(output)
+    finally:
+        return output
+
+def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=None, _env=None):
     """ Runs the command.
 
     Args:
@@ -99,6 +134,7 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
         _cwd (string): Current working directory.
         _exit_on_fail (bool): If it should exit on failure.
         _output_file (): 
+        _env: environment for sub-process, passed to subprocess.Popen()
     Returns:
         (string, string, int): Returns a tuple of stdout, stderr, and command return code if _output_file= None
         Otherwise stdout, stderr are empty.
@@ -106,10 +142,16 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
     print("Running: " + " ".join(command_to_run))
     command_stdout = ""
     command_stderr = ""
+
+    if _env:
+        print("  with environment:")
+        for name, value in _env.items():
+            print("    {0}={1}".format(name,value))
+
     return_code = 1
 
     output_type = subprocess.STDOUT if _output_file else subprocess.PIPE
-    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=output_type, cwd=_cwd) as proc:
+    with subprocess.Popen(command_to_run, env=_env, stdout=subprocess.PIPE, stderr=output_type, cwd=_cwd) as proc:
 
         # For long running command, continuously print the output
         if _output_file:
@@ -119,15 +161,14 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
                     if proc.poll() is not None:
                         break
                     if output:
-                        output_str = output.strip().decode("utf-8")
-                        print(output_str)
+                        output_str = decode_and_print(output.strip())
                         of.write(output_str + "\n")
         else:
             command_stdout, command_stderr = proc.communicate()
             if len(command_stdout) > 0:
-                print(command_stdout.decode("utf-8"))
+                decode_and_print(command_stdout)
             if len(command_stderr) > 0:
-                print(command_stderr.decode("utf-8"))
+                decode_and_print(command_stderr)
 
         return_code = proc.returncode
         if _exit_on_fail and return_code != 0:
@@ -237,6 +278,8 @@ def is_nonzero_length_file(fpath):
 
 def make_safe_filename(s):
     """ Turn a string into a string usable as a single file name component; replace illegal characters with underscores.
+        Also, limit the length of the file name to avoid creating illegally long file names. This is done by taking a
+        suffix of the name no longer than the maximum allowed file name length.
 
     Args:
         s (str) : string to convert to a file name
@@ -249,7 +292,12 @@ def make_safe_filename(s):
             return c
         else:
             return "_"
-    return "".join(safe_char(c) for c in s)
+    # Typically, a max filename length is 256, but let's limit it far below that, because callers typically add additional
+    # strings to this.
+    max_allowed_file_name_length = 150
+    s = "".join(safe_char(c) for c in s)
+    s = s[-max_allowed_file_name_length:]
+    return s
 
 
 def find_in_path(name, pathlist, match_func=os.path.isfile):
@@ -533,6 +581,7 @@ def download_progress_hook(count, block_size, total_size):
 
 def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=True, display_progress=True):
     """ Do an URI download using urllib.request.urlretrieve with a progress hook.
+        Retries the download up to 5 times unless the URL returns 404.
 
         Outputs messages using the `logging` package.
 
@@ -547,15 +596,32 @@ def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=T
     """
     logging.info("Download: %s -> %s", uri, target_location)
 
-    ok = True
-    try:
-        progress_display_method = download_progress_hook if display_progress else None
-        urllib.request.urlretrieve(uri, target_location, reporthook=progress_display_method)
-    except urllib.error.HTTPError as httperror:
-        if (httperror == 404) and fail_if_not_found:
-            logging.error("HTTP 404 error")
-            raise httperror
-        ok = False
+    ok = False
+    num_tries = 5
+    for try_num in range(num_tries):
+        try:
+            progress_display_method = download_progress_hook if display_progress else None
+            urllib.request.urlretrieve(uri, target_location, reporthook=progress_display_method)
+            ok = True
+            break
+        except Exception as ex:
+            if try_num == num_tries - 1:
+                raise ex
+
+            if isinstance(ex, urllib.error.HTTPError) and ex.code == 404:
+                if fail_if_not_found:
+                    logging.error("HTTP 404 error")
+                    raise ex
+                # Do not retry; assume we won't progress
+                break
+
+            if display_progress:
+                sys.stdout.write("\n")
+
+            logging.error("Try {}/{} got error: {}".format(try_num + 1, num_tries, ex))
+            sleep_time = (try_num + 1) * 2.0
+            logging.info("Sleeping for {} seconds before next try".format(sleep_time))
+            time.sleep(sleep_time)
 
     if display_progress:
         sys.stdout.write("\n") # Add newline after progress hook

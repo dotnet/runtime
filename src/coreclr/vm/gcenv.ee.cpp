@@ -927,7 +927,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         //     On architectures with strong ordering, we only need to prevent compiler reordering.
         //     Otherwise we put a process-wide fence here (so that we could use an ordinary read in the barrier)
 
-#if defined(HOST_ARM64) || defined(HOST_ARM)
+#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
@@ -939,7 +939,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
 
-#if defined(HOST_ARM64) || defined(HOST_ARM)
+#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64)
         // Need to reupdate for changes to g_highest_address g_lowest_address
         stompWBCompleteActions |= ::StompWriteBarrierResize(is_runtime_suspended, args->requires_upper_bounds_check);
 
@@ -979,7 +979,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         //       (we care only about managed threads and suspend/resume will do full fences - good enough for us).
         //
 
-#if defined(HOST_ARM64) || defined(HOST_ARM)
+#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64)
         is_runtime_suspended = (stompWBCompleteActions & SWB_EE_RESTART) || is_runtime_suspended;
         if (!is_runtime_suspended)
         {
@@ -1695,7 +1695,7 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
             {
                 EX_TRY
                 {
-                    GenerateDump (GENAWARE_DUMP_FILE_NAME, 2, GenerateDumpFlagsNone);
+                    GenerateDump (GENAWARE_DUMP_FILE_NAME, 2, GenerateDumpFlagsNone, nullptr, 0);
                 }
                 EX_CATCH {}
                 EX_END_CATCH(SwallowAllExceptions);
@@ -1738,7 +1738,8 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     BOOL prv_gcprv_informational = EventXplatEnabledBGCBegin() || EventPipeEventEnabledBGCBegin();
     BOOL prv_gcprv_verbose = EventXplatEnabledPinPlugAtGCTime() || EventPipeEventEnabledPinPlugAtGCTime();
 
-    int publicProviderLevel = keyword_gc_verbose ? GCEventLevel_Verbose : (keyword_gc_informational ? GCEventLevel_Information : GCEventLevel_None);
+    int publicProviderLevel = keyword_gc_verbose ? GCEventLevel_Verbose : 
+                                 ((keyword_gc_informational || keyword_gc_heapsurvival_and_movement_informational) ? GCEventLevel_Information : GCEventLevel_None);
     int publicProviderKeywords = (keyword_gc_informational ? GCEventKeyword_GC : GCEventKeyword_None) |
                                  (keyword_gchandle_informational ? GCEventKeyword_GCHandle : GCEventKeyword_None) |
                                  (keyword_gc_heapsurvival_and_movement_informational ? GCEventKeyword_GCHeapSurvivalAndMovement : GCEventKeyword_None);

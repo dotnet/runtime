@@ -54,7 +54,9 @@ namespace System.ComponentModel.Design
         {
             IFormatter formatter = new BinaryFormatter();
 #pragma warning disable SYSLIB0011
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             formatter.Serialize(o, new object[] { cryptoKey, context._savedLicenseKeys });
+#pragma warning restore IL2026
 #pragma warning restore SYSLIB0011
         }
 
@@ -82,17 +84,20 @@ namespace System.ComponentModel.Design
 
             public override void Flush() => _stream.Flush();
 
-            public override int Read(byte[] buffer, int offset, int count)
+            public override int Read(byte[] buffer, int offset, int count) =>
+                Read(new Span<byte>(buffer, offset, count));
+
+            public override int Read(Span<byte> buffer)
             {
                 Debug.Assert(_stream.Position != 0, "Expected the first byte to be read first");
                 if (_stream.Position == 1)
                 {
-                    Debug.Assert(_readFirstByte == true);
+                    Debug.Assert(_readFirstByte);
                     // Add the first byte read by ReadByte into buffer here
-                    buffer[offset] = _firstByte;
-                    return _stream.Read(buffer, offset + 1, count - 1) + 1;
+                    buffer[0] = _firstByte;
+                    return _stream.Read(buffer.Slice(1)) + 1;
                 }
-                return _stream.Read(buffer, offset, count);
+                return _stream.Read(buffer);
             }
 
             public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
@@ -132,7 +137,9 @@ namespace System.ComponentModel.Design
 #pragma warning disable SYSLIB0011
                 IFormatter formatter = new BinaryFormatter();
 
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                 object obj = formatter.Deserialize(wrappedStream);
+#pragma warning restore IL2026
 #pragma warning restore SYSLIB0011
 
                 if (obj is object[] value)
@@ -160,8 +167,8 @@ namespace System.ComponentModel.Design
             {
                 using (BinaryReader reader = new BinaryReader(wrappedStream, encoding: Text.Encoding.UTF8, leaveOpen: true))
                 {
-                    byte binaryWriterIdentifer = wrappedStream._firstByte;
-                    Debug.Assert(binaryWriterIdentifer == BinaryWriterMagic, $"Expected the first byte to be {BinaryWriterMagic}");
+                    byte binaryWriterIdentifier = wrappedStream._firstByte;
+                    Debug.Assert(binaryWriterIdentifier == BinaryWriterMagic, $"Expected the first byte to be {BinaryWriterMagic}");
                     string streamCryptoKey = reader.ReadString();
                     int numEntries = reader.ReadInt32();
                     if (streamCryptoKey == cryptoKey)

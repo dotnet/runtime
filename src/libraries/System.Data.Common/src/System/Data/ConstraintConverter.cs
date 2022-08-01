@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Data
@@ -16,7 +17,7 @@ namespace System.Data
         /// Gets a value indicating whether this converter can
         /// convert an object to the given destination type using the context.
         /// </summary>
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) =>
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType) =>
             destinationType == typeof(InstanceDescriptor) ||
             base.CanConvertTo(context, destinationType);
 
@@ -29,10 +30,7 @@ namespace System.Data
         /// </summary>
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
+            ArgumentNullException.ThrowIfNull(destinationType);
 
             if (destinationType == typeof(InstanceDescriptor) && value is Constraint)
             {

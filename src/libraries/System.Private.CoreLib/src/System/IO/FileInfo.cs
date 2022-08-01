@@ -20,10 +20,12 @@ namespace System.IO
 
         internal FileInfo(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
-            // Want to throw the original argument name
-            OriginalPath = originalPath ?? throw new ArgumentNullException(nameof(fileName));
+            ArgumentNullException.ThrowIfNull(originalPath);
 
-            fullPath = fullPath ?? originalPath;
+            // Want to throw the original argument name
+            OriginalPath = originalPath;
+
+            fullPath ??= originalPath;
             Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath.AsSpan()), "should be fully qualified if normalized");
 
             FullPath = isNormalized ? fullPath ?? originalPath : Path.GetFullPath(fullPath);
@@ -89,10 +91,7 @@ namespace System.IO
 
         public FileInfo CopyTo(string destFileName, bool overwrite)
         {
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             string destinationPath = Path.GetFullPath(destFileName);
             FileSystem.CopyFile(FullPath, destinationPath, overwrite);
@@ -139,10 +138,7 @@ namespace System.IO
         // This method does work across volumes.
         public void MoveTo(string destFileName, bool overwrite)
         {
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName));
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            ArgumentException.ThrowIfNullOrEmpty(destFileName);
 
             string fullDestFileName = Path.GetFullPath(destFileName);
 
@@ -171,8 +167,7 @@ namespace System.IO
 
         public FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
+            ArgumentNullException.ThrowIfNull(destinationFileName);
 
             FileSystem.ReplaceFile(
                 FullPath,

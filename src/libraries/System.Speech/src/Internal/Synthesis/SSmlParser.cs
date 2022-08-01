@@ -1156,10 +1156,7 @@ namespace System.Speech.Internal.Synthesis
                         {
                             if (reader.Value != xmlNamespaceSsml)
                             {
-                                if (localUnknownNamespaces == null)
-                                {
-                                    localUnknownNamespaces = new List<SsmlXmlAttribute>();
-                                }
+                                localUnknownNamespaces ??= new List<SsmlXmlAttribute>();
 
                                 SsmlXmlAttribute ns = new(reader.Prefix, reader.LocalName, reader.Value, reader.NamespaceURI);
                                 localUnknownNamespaces.Add(ns);
@@ -1168,10 +1165,7 @@ namespace System.Speech.Internal.Synthesis
                         }
                         else
                         {
-                            if (extraAttributesVoice == null)
-                            {
-                                extraAttributesVoice = new List<SsmlXmlAttribute>();
-                            }
+                            extraAttributesVoice ??= new List<SsmlXmlAttribute>();
                             extraAttributesVoice.Add(new SsmlXmlAttribute(reader.Prefix, reader.LocalName, reader.Value, reader.NamespaceURI));
                         }
                     }
@@ -1197,7 +1191,7 @@ namespace System.Speech.Internal.Synthesis
             }
 
             // Try to change the voice
-            culture = culture == null ? new CultureInfo(ssmlAttributes._fragmentState.LangId) : culture;
+            culture ??= new CultureInfo(ssmlAttributes._fragmentState.LangId);
             bool fNewCulture = culture.LCID != ssmlAttributes._fragmentState.LangId;
             ssmlAttributes._voice = engine.ProcessVoice(sName, culture, ssmlAttributes._gender, ssmlAttributes._age, variant, fNewCulture, localUnknownNamespaces);
             ssmlAttributes._fragmentState.LangId = culture.LCID;
@@ -1701,7 +1695,7 @@ namespace System.Speech.Internal.Synthesis
                             float percent = (float)value / 100f;
                             if (sNumber[0] != '+' && sNumber[0] != '-')
                             {
-                                number.Number = number.Number * percent;
+                                number.Number *= percent;
                             }
                             else
                             {
@@ -1840,10 +1834,7 @@ namespace System.Speech.Internal.Synthesis
                 {
                     if (ns._name == attribute._prefix)
                     {
-                        if (extraAttributes == null)
-                        {
-                            extraAttributes = new List<SsmlXmlAttribute>();
-                        }
+                        extraAttributes ??= new List<SsmlXmlAttribute>();
                         extraAttributes.Add(attribute);
                         return true;
                     }
@@ -1857,10 +1848,7 @@ namespace System.Speech.Internal.Synthesis
                 {
                     if (ns._name == reader.Prefix)
                     {
-                        if (extraAttributes == null)
-                        {
-                            extraAttributes = new List<SsmlXmlAttribute>();
-                        }
+                        extraAttributes ??= new List<SsmlXmlAttribute>();
                         extraAttributes.Add(new SsmlXmlAttribute(reader.Prefix, reader.LocalName, reader.Value, reader.NamespaceURI));
                         return true;
                     }

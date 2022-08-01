@@ -15,13 +15,6 @@ for %%i in ("%__RepoRootDir%") do SET "__RepoRootDir=%%~fi"
 
 set "__TestDir=%__RepoRootDir%\src\tests"
 
-call %__RepoRootDir%\eng\native\init-vs-env.cmd
-if NOT '%ERRORLEVEL%' == '0' exit /b 1
-
-if defined VCINSTALLDIR (
-    set "__VCToolsRoot=%VCINSTALLDIR%Auxiliary\Build"
-)
-
 :: Set the default arguments for build
 set __BuildArch=x64
 set __BuildType=Debug
@@ -108,7 +101,7 @@ if /i "%1" == "tree"                  (set __BuildTestTree=!__BuildTestTree!%2%%
 
 if /i "%1" == "log"                   (set __BuildLogRootName=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
-if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set __SkipCrossgenFramework=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildtestwrappersonly" (set __SkipNative=1&set __SkipManaged=1&set __BuildTestWrappersOnly=1&set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-cmakeargs"            (set __CMakeArgs="%2=%3" %__CMakeArgs%&set "processedArgs=!processedArgs! %1 %2=%3"&shift&shift&goto Arg_Loop)
@@ -117,11 +110,14 @@ if /i "%1" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages 
 if /i "%1" == "crossgen2"             (set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "composite"             (set __CompositeBuildMode=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pdb"                   (set __CreatePdb=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "nativeaot"             (set __TestBuildMode=nativeaot&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "perfmap"               (set __CreatePerfmap=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
 if /i "%1" == "allTargets"            (set "__BuildNeedTargetArg=/p:CLRTestBuildAllTargets=%1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-excludemonofailures"  (set __Mono=1&set processedArgs=!processedArgs!&shift&goto Arg_Loop)
+if /i "%1" == "-excludemonofailures"  (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-mono"                 (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "mono"                  (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "--"                    (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
@@ -146,8 +142,10 @@ set "__TestBinDir=%__TestRootDir%\%__OSPlatformConfig%"
 set "__TestIntermediatesDir=%__TestRootDir%\obj\%__OSPlatformConfig%"
 
 if "%__RebuildTests%" == "1" (
-    echo Removing tests build dir^: !__TestBinDir!
+    echo Removing test build dir^: !__TestBinDir!
     rmdir /s /q !__TestBinDir!
+    echo Removing test intermediate dir^: !__TestIntermediatesDir!
+    rmdir /s /q !__TestIntermediatesDir!
 )
 
 REM We have different managed and native intermediate dirs because the managed bits will include
@@ -192,6 +190,9 @@ set __msbuildArgs=%__CommonMSBuildArgs% /nologo /verbosity:minimal /clp:Summary 
 
 echo Common MSBuild args: %__msbuildArgs%
 
+call %__RepoRootDir%\eng\native\init-vs-env.cmd %__BuildArch%
+if NOT '%ERRORLEVEL%' == '0' exit /b 1
+
 REM =========================================================================================
 REM ===
 REM === Native test build section
@@ -207,10 +208,6 @@ echo %__MsgPrefix%Commencing build of native test components for %__BuildArch%/%
 
 REM Set the environment for the native build
 
-REM Eval the output from set-cmake-path.ps1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__RepoRootDir%\eng\native\set-cmake-path.ps1"""') do %%a
-echo %__MsgPrefix%Using CMake from !CMakePath!
-
 REM NumberOfCores is an WMI property providing number of physical cores on machine
 REM processor(s). It is used to set optimal level of CL parallelism during native build step
 if not defined NumberOfCores (
@@ -223,13 +220,6 @@ if not defined NumberOfCores (
 )
 echo %__MsgPrefix%Number of processor cores %NumberOfCores%
 
-set __VCBuildArch=x86_amd64
-if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
-if /i "%__BuildArch%" == "arm" ( set __VCBuildArch=x86_arm )
-if /i "%__BuildArch%" == "arm64" ( set __VCBuildArch=x86_arm64 )
-
-echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
-call                                 "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
 @if defined _echo @echo on
 
 set __ExtraCmakeArgs=
@@ -255,21 +245,13 @@ if not exist "%__NativeTestIntermediatesDir%\CMakeCache.txt" (
 
 echo Environment setup
 
-set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
-set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn"
-set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.err"
-set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
-set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
-set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
-
 set __CmakeBuildToolArgs=
 
 if %__Ninja% EQU 1 (
     set __CmakeBuildToolArgs=
 ) else (
     REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    set __CmakeBuildToolArgs=/nologo /m !__Logging!
+    set __CmakeBuildToolArgs=/nologo /m
 )
 
 "%CMakePath%" --build %__NativeTestIntermediatesDir% --target install --config %__BuildType% -- !__CmakeBuildToolArgs!
@@ -287,11 +269,24 @@ REM === Restore packages, build managed tests, generate layout and test wrappers
 REM ===
 REM =========================================================================================
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.log"
+set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.wrn"
+set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.err"
+set __BuildBinLog="%__LogsDir%\!__BuildLogRootName!_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog"
+set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
+set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
+set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
+set __MsbuildBinLog=/bl:!__BuildBinLog!
+set __Logging='!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' '!__MsbuildBinLog!'
+
+set BuildCommand=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
   %__RepoRootDir%\src\tests\build.proj -warnAsError:0 /t:TestBuild /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
-  /p:UsePartialNGENOptimization=false /maxcpucount^
+  /p:UsePartialNGENOptimization=false /maxcpucount %__Logging%^
   %__msbuildArgs%
+
+echo %BuildCommand%
+%BuildCommand%
 
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Test build failed. Refer to the build log files for details:

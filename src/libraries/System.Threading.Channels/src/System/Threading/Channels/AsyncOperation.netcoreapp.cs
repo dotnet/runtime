@@ -10,7 +10,7 @@ namespace System.Threading.Channels
         private void UnsafeQueueSetCompletionAndInvokeContinuation() =>
             ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
 
-        private void UnsafeQueueUserWorkItem(Action<object?> action, object? state) =>
+        private static void UnsafeQueueUserWorkItem(Action<object?> action, object? state) =>
             ThreadPool.UnsafeQueueUserWorkItem(action, state, preferLocal: false);
 
         private static void QueueUserWorkItem(Action<object?> action, object? state) =>

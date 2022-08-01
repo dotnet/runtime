@@ -3,7 +3,6 @@
 
 using System.Runtime.CompilerServices;
 using System.Text;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -26,20 +25,14 @@ namespace System
 
         public static string Intern(string str)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             return str.Intern();
         }
 
         public static string? IsInterned(string str)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             return str.IsInterned();
         }

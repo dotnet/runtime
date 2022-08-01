@@ -26,7 +26,6 @@
   .ver 4:0:30513:0
 }
 .assembly extern xunit.core {}
-.module ReflectOnField.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000

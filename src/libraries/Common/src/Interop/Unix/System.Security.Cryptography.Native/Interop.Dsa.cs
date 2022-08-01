@@ -11,18 +11,18 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaUpRef")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaUpRef")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DsaUpRef(IntPtr dsa);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaDestroy")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaDestroy")]
         internal static partial void DsaDestroy(IntPtr dsa);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaGenerateKey")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaGenerateKey")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DsaGenerateKey(out SafeDsaHandle dsa, int bits);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeSignature")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeSignature")]
         private static partial int DsaSizeSignature(SafeDsaHandle dsa);
 
         /// <summary>
@@ -34,7 +34,7 @@ internal static partial class Interop
             return size;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeQ")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeQ")]
         private static partial int DsaSizeQ(SafeDsaHandle dsa);
 
         /// <summary>
@@ -47,7 +47,7 @@ internal static partial class Interop
             return size;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeP")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSizeP")]
         private static partial int DsaSizeP(SafeDsaHandle dsa);
 
         /// <summary>
@@ -65,7 +65,7 @@ internal static partial class Interop
         internal static bool DsaSign(SafeDsaHandle dsa, ReadOnlySpan<byte> hash, Span<byte> refSignature, out int outSignatureLength) =>
             DsaSign(dsa, ref MemoryMarshal.GetReference(hash), hash.Length, ref MemoryMarshal.GetReference(refSignature), out outSignatureLength);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSign")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool DsaSign(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte refSignature, out int outSignatureLength);
 
@@ -83,7 +83,7 @@ internal static partial class Interop
             return ret;
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaVerify")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaVerify")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool DsaVerify(SafeDsaHandle dsa, ref byte hash, int hashLength, ref byte signature, int signatureLength);
 
@@ -144,7 +144,7 @@ internal static partial class Interop
             }
         }
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetDsaParameters")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetDsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetDsaParameters(
             SafeDsaHandle key,
@@ -154,7 +154,7 @@ internal static partial class Interop
             out IntPtr y, out int y_cb,
             out IntPtr x, out int x_cb);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaKeyCreateByExplicitParameters")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaKeyCreateByExplicitParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DsaKeyCreateByExplicitParameters(
             out SafeDsaHandle dsa,

@@ -295,7 +295,7 @@ HRESULT CordbFunction::GetILCode(ICorDebugCode ** ppCode)
 // Use EnumerateNativeCode instead in that case.
 //
 // Parameters:
-//   ppCode - out parameter yeilding the native code object.
+//   ppCode - out parameter yielding the native code object.
 //
 // Returns:
 //   S_OK iff *ppCode is set.
@@ -705,7 +705,7 @@ HRESULT CordbFunction::GetILCodeAndSigToken()
                 // and we also fallback on creating an empty ILCode object.
                 // See issue DD 273199 for cases where IL and NGEN metadata mismatch (different RVAs).
                 ALLOW_DATATARGET_MISSING_OR_INCONSISTENT_MEMORY(
-                    pProcess->GetDAC()->GetILCodeAndSig(m_pModule->GetRuntimeDomainFile(),
+                    pProcess->GetDAC()->GetILCodeAndSig(m_pModule->GetRuntimeDomainAssembly(),
                                                             m_MDToken,
                                                             &codeInfo,
                                                             &localVarSigToken);
@@ -782,7 +782,7 @@ HRESULT CordbFunction::InitParentClassOfFunction()
         }
 
         mdTypeDef classMetadataToken;
-        VMPTR_DomainFile vmDomainFile = m_pModule->GetRuntimeDomainFile();
+        VMPTR_DomainAssembly vmDomainAssembly = m_pModule->GetRuntimeDomainAssembly();
 
         classMetadataToken = InitParentClassOfFunctionHelper(m_MDToken);
 
@@ -795,7 +795,7 @@ HRESULT CordbFunction::InitParentClassOfFunction()
             CordbAssembly *pAssembly = m_pModule->GetCordbAssembly();
             PREFIX_ASSUME(pAssembly != NULL);
 
-            CordbModule* pClassModule = pAssembly->GetAppDomain()->LookupOrCreateModule(vmDomainFile);
+            CordbModule* pClassModule = pAssembly->GetAppDomain()->LookupOrCreateModule(vmDomainAssembly);
             PREFIX_ASSUME(pClassModule != NULL);
 
             CordbClass *pClass;
@@ -850,7 +850,7 @@ HRESULT CordbFunction::InitNativeCodeInfo()
             // All we actually need is the start address and method desc which are cheap to get relative
             // to some of the other members. So far this doesn't appear to be a perf hotspot, but if it
             // shows up in some scenario it wouldn't be too hard to improve it
-            pProcess->GetDAC()->GetNativeCodeInfo(m_pModule->GetRuntimeDomainFile(), m_MDToken, &codeInfo);
+            pProcess->GetDAC()->GetNativeCodeInfo(m_pModule->GetRuntimeDomainAssembly(), m_MDToken, &codeInfo);
         }
 
         // populate the m_nativeCode pointer with the code info we found
@@ -904,7 +904,7 @@ HRESULT CordbFunction::SetJMCStatus(BOOL fIsUserCode)
 
     DebuggerIPCEvent event;
     pProcess->InitIPCEvent(&event, DB_IPCE_SET_METHOD_JMC_STATUS, true, m_pModule->GetAppDomain()->GetADToken());
-    event.SetJMCFunctionStatus.vmDomainFile = m_pModule->GetRuntimeDomainFile();
+    event.SetJMCFunctionStatus.vmDomainAssembly = m_pModule->GetRuntimeDomainAssembly();
     event.SetJMCFunctionStatus.funcMetadataToken   = m_MDToken;
     event.SetJMCFunctionStatus.dwStatus            = fIsUserCode;
 
@@ -956,7 +956,7 @@ HRESULT CordbFunction::GetJMCStatus(BOOL * pfIsUserCode)
     // Ask the left-side if a method is user code or not.
     DebuggerIPCEvent event;
     pProcess->InitIPCEvent(&event, DB_IPCE_GET_METHOD_JMC_STATUS, true, m_pModule->GetAppDomain()->GetADToken());
-    event.SetJMCFunctionStatus.vmDomainFile = m_pModule->GetRuntimeDomainFile();
+    event.SetJMCFunctionStatus.vmDomainAssembly = m_pModule->GetRuntimeDomainAssembly();
     event.SetJMCFunctionStatus.funcMetadataToken   = m_MDToken;
 
 
@@ -1010,8 +1010,8 @@ HRESULT CordbFunction::GetSig(SigParser *pMethodSigParser,
     // may change and the cached value will not match.
     if (!m_fCachedMethodValuesValid)
     {
-        PCCOR_SIGNATURE functionSignature;
-        ULONG size;
+        PCCOR_SIGNATURE functionSignature = NULL;
+        ULONG size = 0;
         DWORD methodAttr = 0;
         uint32_t argCount;
 
@@ -1169,10 +1169,10 @@ HRESULT CordbFunction::GetArgumentType(DWORD dwIndex,
 // that they will return when asked for native code. The 1:1 mapping between
 // function and code was invalidated by generics but debuggers continue to use
 // the old API. When they do we need to have some code to hand them back even
-// though it is an arbitrary instantiation. Note that that the cannonical code
+// though it is an arbitrary instantiation. Note that the canonical code
 // here is merely the first one that a user inspects... it is not guaranteed to
 // be the same in each debugging session but once set it will never change. It is
-// also definately NOT guaranteed to be the instantation over the runtime type
+// also definately NOT guaranteed to be the instantiation over the runtime type
 // __Canon.
 //
 // Parameters:
@@ -1208,7 +1208,7 @@ HRESULT CordbFunction::LookupOrCreateReJitILCode(VMPTR_ILCodeVersionNode vmILCod
 
     CordbReJitILCode * pILCode = m_reJitILCodes.GetBase(VmPtrToCookie(vmILCodeVersionNode));
 
-    // special case non-existance as need to add to the hash table too
+    // special case non-existence as need to add to the hash table too
     if (pILCode == NULL)
     {
         // we don't yet support ENC and ReJIT together, so the version should be 1

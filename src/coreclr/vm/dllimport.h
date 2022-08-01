@@ -23,7 +23,15 @@ public:
     MethodDesc        *m_pMD;
     MethodTable       *m_pMT;
     Signature          m_sig;
+    // Module to use for signature reading.
     Module            *m_pModule;
+    // Module that owns any metadata that influences interop behavior.
+    // This is usually the same as m_pModule, but can differ with vararg
+    // P/Invokes, where the calling assembly's module is assigned to m_pModule
+    // since the specific caller signature is defined in that assembly, not the
+    // assembly that defined the P/Invoke.
+    Module            *m_pMetadataModule;
+    // Used for ILStubCache selection and MethodTable creation.
     Module            *m_pLoaderModule;
     mdMethodDef        m_tkMethodDef;
     SigTypeContext     m_typeContext;
@@ -317,7 +325,7 @@ public:
     PInvokeStaticSigInfo(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8* pLibName, _Outptr_opt_ LPCUTF8* pEntryPointName);
 
 private:
-    void ThrowError(_In_ WORD errorResourceID);
+    void ThrowError(_In_ UINT errorResourceID);
     void InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ MethodDesc* pMD);
     void InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ BOOL bIsVarArg);
     void DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8* pLibName, _Outptr_opt_ LPCUTF8* pEntryPointName);

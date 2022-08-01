@@ -32,6 +32,7 @@
     <Compile Include="Samples\SigningVerifyingX509Cert.cs" />
     <Compile Include="Samples\SigningVerifying.cs" />
     <Compile Include="Samples\EncryptingDecryptingSymmetric.cs" />
+    <Compile Include="SignatureSupport.cs" />
     <Compile Include="SignatureTest.cs" />
     <Compile Include="SignedInfoTest.cs" />
     <Compile Include="SignedXmlTest.cs" />
@@ -71,7 +72,5 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />
-    <!-- Manually reference the transitive dependency to make NuGet pick the package over the transitive project: https://github.com/NuGet/Home/issues/10368 -->
-    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>

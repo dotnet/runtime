@@ -22,7 +22,7 @@ namespace System.SpanTests
             Array.Fill<byte>(array, 0x42);
             ref TestHelpers.TestStructExplicit asStruct = ref MemoryMarshal.AsRef<TestHelpers.TestStructExplicit>(new Span<byte>(array));
 
-            Assert.Equal(asStruct.UI1, (uint)0x42424242);
+            Assert.Equal((uint)0x42424242, asStruct.UI1);
         }
 
         [Fact]

@@ -34,6 +34,10 @@ namespace System.IO.Hashing.Tests
         private const string DotNetHashesThis3 = DotNetHashesThis + DotNetHashesThis + DotNetHashesThis;
         private const string DotNetNCHashing = ".NET now has non-crypto hashing";
         private const string DotNetNCHashing3 = DotNetNCHashing + DotNetNCHashing + DotNetNCHashing;
+        private const string SixteenBytes = ".NET Hashes This";
+        private const string SixteenBytes3 = SixteenBytes + SixteenBytes + SixteenBytes;
+        private const string EightBytes = "Hashing!";
+        private const string EightBytes3 = EightBytes + EightBytes + EightBytes;
 
         protected static IEnumerable<TestCase> TestCaseDefinitions { get; } =
             new[]
@@ -41,17 +45,17 @@ namespace System.IO.Hashing.Tests
                 //https://asecuritysite.com/encryption/xxHash, Example 1
                 new TestCase(
                     "Nobody inspects the spammish repetition",
-                    Encoding.ASCII.GetBytes("Nobody inspects the spammish repetition"),
+                    "Nobody inspects the spammish repetition"u8.ToArray(),
                     "E2293B2F"),
                 //https://asecuritysite.com/encryption/xxHash, Example 2
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog"),
+                    "The quick brown fox jumps over the lazy dog"u8.ToArray(),
                     "E85EA4DE"),
                 //https://asecuritysite.com/encryption/xxHash, Example 3
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog.",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog."),
+                    "The quick brown fox jumps over the lazy dog."u8.ToArray(),
                     "68D039C8"),
 
                 // Manual exploration to force boundary conditions in code coverage.
@@ -60,7 +64,7 @@ namespace System.IO.Hashing.Tests
                 // The "in three pieces" test causes this to build up in the accumulator every time.
                 new TestCase(
                     "abc",
-                    Encoding.ASCII.GetBytes("abc"),
+                    "abc"u8.ToArray(),
                     "32D153FF"),
                 // Accumulates every time.
                 new TestCase(
@@ -90,6 +94,16 @@ namespace System.IO.Hashing.Tests
                     $"{DotNetNCHashing} (x3)",
                     Encoding.ASCII.GetBytes(DotNetNCHashing3),
                     "65242024"),
+                // stripe size
+                new TestCase(
+                    $"{SixteenBytes} (x3)",
+                    Encoding.ASCII.GetBytes(SixteenBytes3),
+                    "29DA7472"),
+                // 8 * 3 bytes, filling the holdback buffer exactly on the second Append call.
+                new TestCase(
+                    $"{EightBytes} (x3)",
+                    Encoding.ASCII.GetBytes(EightBytes3),
+                    "5DF7D6C0"),
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new XxHash32();

@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_catchfinally_SEH_cs
 {
-    internal class Test
+    public class Test
     {
         private static bool s_globalFlag = false;
 
@@ -83,7 +84,8 @@ namespace JitTest
             return recurseLevel == 0;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

@@ -9,7 +9,6 @@
 }
 .assembly helper {}
 .assembly extern xunit.core {}
-.module helper.exe
 
 
 .class private auto ansi beforefieldinit Helper

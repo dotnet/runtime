@@ -97,7 +97,7 @@ namespace System.Runtime.Caching
                 }
                 if (fcn == null)
                 {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
                     if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
                     {
                         throw new PlatformNotSupportedException();
@@ -157,10 +157,11 @@ namespace System.Runtime.Caching
 
         public HostFileChangeMonitor(IList<string> filePaths)
         {
-            if (filePaths == null)
+            if (filePaths is null)
             {
                 throw new ArgumentNullException(nameof(filePaths));
             }
+
             if (filePaths.Count == 0)
             {
                 throw new ArgumentException(RH.Format(SR.Empty_collection, nameof(filePaths)));

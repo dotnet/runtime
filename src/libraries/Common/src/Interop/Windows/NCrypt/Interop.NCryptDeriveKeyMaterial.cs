@@ -15,7 +15,7 @@ internal static partial class Interop
         /// <summary>
         ///     Generate a key from a secret agreement
         /// </summary>
-        [GeneratedDllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
+        [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
         private static partial ErrorCode NCryptDeriveKey(
             SafeNCryptSecretHandle hSharedSecret,
             string pwszKDF,

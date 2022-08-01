@@ -732,10 +732,7 @@ namespace System.Runtime.Serialization.Json
         {
             if (IsAttributeValue)
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
+                ArgumentNullException.ThrowIfNull(buffer);
                 if (offset < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
@@ -763,10 +760,7 @@ namespace System.Runtime.Serialization.Json
         {
             if (IsAttributeValue)
             {
-                if (chars == null)
-                {
-                    throw new ArgumentNullException(nameof(chars));
-                }
+                ArgumentNullException.ThrowIfNull(chars);
                 if (offset < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
@@ -808,10 +802,8 @@ namespace System.Runtime.Serialization.Json
         public void SetInput(byte[] buffer, int offset, int count, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
             OnXmlDictionaryReaderClose? onClose)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
@@ -839,10 +831,8 @@ namespace System.Runtime.Serialization.Json
         public void SetInput(Stream stream, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
             OnXmlDictionaryReaderClose? onClose)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
+
             MoveToInitial(quotas, onClose);
 
             stream = new JsonEncodingStreamWrapper(stream, encoding, true);
@@ -859,10 +849,8 @@ namespace System.Runtime.Serialization.Json
 
         internal static void CheckArray(Array array, int offset, int count)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
+
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative);
@@ -1507,7 +1495,7 @@ namespace System.Runtime.Serialization.Json
                     SkipWhitespaceInBufferReader();
                     SkipExpectedByteInBufferReader(JsonGlobals.QuoteByte);
 
-                    buffer = BufferReader.GetBuffer(out offset, out offsetMax);
+                    BufferReader.GetBuffer(out offset, out _);
 
                     do
                     {
@@ -1610,7 +1598,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        [return: NotNullIfNotNull("val")]
+        [return: NotNullIfNotNull(nameof(val))]
         private string? UnescapeJsonString(string? val)
         {
             if (val == null)
@@ -1625,10 +1613,7 @@ namespace System.Runtime.Serialization.Json
                 if (val[i] == '\\')
                 {
                     i++;
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder();
-                    }
+                    sb ??= new StringBuilder();
                     sb.Append(val, startIndex, count);
                     Fx.Assert(i < val.Length, "Found that an '\' was the last character in a string. ReadServerTypeAttriute validates that the escape sequence is valid when it calls ReadQuotedText and ReadEscapedCharacter");
                     if (i >= val.Length)

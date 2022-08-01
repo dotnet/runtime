@@ -72,6 +72,7 @@ if /i "%1" == "gcstresslevel"                           (set COMPlus_GCStress=%2
 
 if /i "%1" == "runincontext"                            (set RunInUnloadableContext=1&shift&goto Arg_Loop)
 if /i "%1" == "tieringtest"                             (set TieringTest=1&shift&goto Arg_Loop)
+if /i "%1" == "runnativeaottests"                       (set RunNativeAot=1&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -151,6 +152,10 @@ if defined TieringTest (
     set __RuntestPyArgs=%__RuntestPyArgs% --tiering_test
 )
 
+if defined RunNativeAot (
+    set __RuntestPyArgs=%__RuntestPyArgs% --run_nativeaot_tests
+)
+
 REM Find python and set it to the variable PYTHON
 set _C=-c "import sys; sys.stdout.write(sys.executable)"
 (py -3 %_C% || py -2 %_C% || python3 %_C% || python2 %_C% || python %_C%) > %TEMP%\pythonlocation.txt 2> NUL
@@ -172,7 +177,7 @@ exit /b %ERRORLEVEL%
 
 :: Note: We've disabled node reuse because it causes file locking issues.
 ::       The issue is that we extend the build with our own targets which
-::       means that that rebuilding cannot successfully delete the task
+::       means that rebuilding cannot successfully delete the task
 ::       assembly.
 set __msbuildCommonArgs=/nologo /nodeReuse:false %__msbuildExtraArgs% /p:Platform=%__MSBuildBuildArch%
 

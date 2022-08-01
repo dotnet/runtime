@@ -8,7 +8,7 @@
 }
 .assembly extern xunit.core {}
 
-.assembly ILGEN_0xc60e022c {}
+.assembly 'implicitConv' {}
 .assembly extern mscorlib{auto}
 
 .class ILGEN_0xc60e022c {

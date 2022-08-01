@@ -84,10 +84,8 @@ namespace System.Globalization
 
         public static Calendar ReadOnly(Calendar calendar)
         {
-            if (calendar == null)
-            {
-                throw new ArgumentNullException(nameof(calendar));
-            }
+            ArgumentNullException.ThrowIfNull(calendar);
+
             if (calendar.IsReadOnly)
             {
                 return calendar;
@@ -356,7 +354,7 @@ namespace System.Globalization
         /// </summary>
         /// <remarks>
         ///  The CalendarWeekRule.FirstDay rule: Week 1 begins on the first day of the year.
-        ///  Assume f is the specifed firstDayOfWeek,
+        ///  Assume f is the specified firstDayOfWeek,
         ///  and n is the day of week for January 1 of the specified year.
         ///  Assign offset = n - f;
         ///  Case 1: offset = 0
@@ -713,7 +711,7 @@ namespace System.Globalization
 
         internal static int GetSystemTwoDigitYearSetting(CalendarId CalID, int defaultYearValue)
         {
-            int twoDigitYearMax = GlobalizationMode.UseNls ? CalendarData.NlsGetTwoDigitYearMax(CalID) : CalendarData.IcuGetTwoDigitYearMax(CalID);
+            int twoDigitYearMax = GlobalizationMode.UseNls ? CalendarData.NlsGetTwoDigitYearMax(CalID) : CalendarData.IcuGetTwoDigitYearMax();
             return twoDigitYearMax >= 0 ? twoDigitYearMax : defaultYearValue;
         }
     }

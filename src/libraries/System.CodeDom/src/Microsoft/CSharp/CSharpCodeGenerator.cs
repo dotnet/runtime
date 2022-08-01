@@ -62,9 +62,9 @@ namespace Microsoft.CSharp
 
         private bool _generatingForLoop;
 
-        private string FileExtension => ".cs";
+        private static string FileExtension => ".cs";
 
-        private string CompilerName => "csc.exe";
+        private static string CompilerName => "csc.exe";
 
         private string CurrentTypeName => _currentClass != null ? _currentClass.Name : "<% unknown %>";
 
@@ -84,7 +84,7 @@ namespace Microsoft.CSharp
 
         private bool IsCurrentDelegate => _currentClass != null && _currentClass is CodeTypeDelegate;
 
-        private string NullToken => "null";
+        private static string NullToken => "null";
 
         private TextWriter Output => _output;
 
@@ -157,7 +157,7 @@ namespace Microsoft.CSharp
             return b.ToString();
         }
 
-        private string QuoteSnippetStringVerbatimStyle(string value)
+        private static string QuoteSnippetStringVerbatimStyle(string value)
         {
             var b = new StringBuilder(value.Length + 5);
 
@@ -490,7 +490,7 @@ namespace Microsoft.CSharp
             }
         }
 
-        private bool GetUserData(CodeObject e, string property, bool defaultValue)
+        private static bool GetUserData(CodeObject e, string property, bool defaultValue)
         {
             object o = e.UserData[property];
             if (o != null && o is bool)
@@ -518,7 +518,7 @@ namespace Microsoft.CSharp
 
         private void GenerateStatement(CodeStatement e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -2682,7 +2682,7 @@ namespace Microsoft.CSharp
 
         public string CreateValidIdentifier(string name)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -2702,7 +2702,7 @@ namespace Microsoft.CSharp
 
         public string CreateEscapedIdentifier(string name)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -2889,7 +2889,7 @@ namespace Microsoft.CSharp
 
         CompilerResults ICodeCompiler.CompileAssemblyFromDom(CompilerParameters options, CodeCompileUnit e)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -2906,7 +2906,7 @@ namespace Microsoft.CSharp
 
         CompilerResults ICodeCompiler.CompileAssemblyFromFile(CompilerParameters options, string fileName)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -2923,7 +2923,7 @@ namespace Microsoft.CSharp
 
         CompilerResults ICodeCompiler.CompileAssemblyFromSource(CompilerParameters options, string source)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -2940,7 +2940,7 @@ namespace Microsoft.CSharp
 
         CompilerResults ICodeCompiler.CompileAssemblyFromSourceBatch(CompilerParameters options, string[] sources)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -2957,11 +2957,11 @@ namespace Microsoft.CSharp
 
         CompilerResults ICodeCompiler.CompileAssemblyFromFileBatch(CompilerParameters options, string[] fileNames)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (fileNames == null)
+            if (fileNames is null)
             {
                 throw new ArgumentNullException(nameof(fileNames));
             }
@@ -2985,7 +2985,7 @@ namespace Microsoft.CSharp
 
         CompilerResults ICodeCompiler.CompileAssemblyFromDomBatch(CompilerParameters options, CodeCompileUnit[] ea)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -3002,7 +3002,7 @@ namespace Microsoft.CSharp
 
         private CompilerResults FromDom(CompilerParameters options, CodeCompileUnit e)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -3011,13 +3011,13 @@ namespace Microsoft.CSharp
         }
 
 
-        private CompilerResults FromFile(CompilerParameters options, string fileName)
+        private static CompilerResults FromFile(CompilerParameters options, string fileName)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (fileName == null)
+            if (fileName is null)
             {
                 throw new ArgumentNullException(nameof(fileName));
             }
@@ -3029,9 +3029,9 @@ namespace Microsoft.CSharp
             return FromFileBatch(options, new string[1] { fileName });
         }
 
-        private CompilerResults FromSource(CompilerParameters options, string source)
+        private static CompilerResults FromSource(CompilerParameters options, string source)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -3041,11 +3041,11 @@ namespace Microsoft.CSharp
 
         private CompilerResults FromDomBatch(CompilerParameters options, CodeCompileUnit[] ea)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (ea == null)
+            if (ea is null)
             {
                 throw new ArgumentNullException(nameof(ea));
             }
@@ -3072,7 +3072,7 @@ namespace Microsoft.CSharp
             return FromFileBatch(options, filenames);
         }
 
-        private void ResolveReferencedAssemblies(CompilerParameters options, CodeCompileUnit e)
+        private static void ResolveReferencedAssemblies(CompilerParameters options, CodeCompileUnit e)
         {
             if (e.ReferencedAssemblies.Count > 0)
             {
@@ -3086,13 +3086,13 @@ namespace Microsoft.CSharp
             }
         }
 
-        private CompilerResults FromSourceBatch(CompilerParameters options, string[] sources)
+        private static CompilerResults FromSourceBatch(CompilerParameters options, string[] sources)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (sources == null)
+            if (sources is null)
             {
                 throw new ArgumentNullException(nameof(sources));
             }

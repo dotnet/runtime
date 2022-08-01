@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Microsoft",
+  "classifications": [ "Web", "WebAssembly", "Console" ],
+  "identity": "WebAssembly.Console",
+  "name": "WebAssembly Console App",
+  "shortName": "wasmconsole",
+  "sourceName": "console.0",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

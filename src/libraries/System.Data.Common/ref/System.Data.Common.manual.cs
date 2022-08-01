@@ -20,6 +20,7 @@ namespace System.Data
         [System.ComponentModel.DefaultValueAttribute(typeof(string))]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         [System.ComponentModel.TypeConverter(typeof(ColumnTypeConverter))]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public System.Type DataType { get { throw null; } set { } }
 

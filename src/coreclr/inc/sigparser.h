@@ -13,6 +13,7 @@
 #include "corhdr.h"
 #include "corinfo.h"
 #include "corpriv.h"
+#include <minipal/utils.h>
 
 //---------------------------------------------------------------------------------------
 // These macros define how arguments are mapped to the stack in the managed calling convention.
@@ -26,7 +27,6 @@
 #else
 #define STACK_GROWS_UP_ON_ARGS_WALK
 #endif
-
 
 //------------------------------------------------------------------------
 // Encapsulates how compressed integers and typeref tokens are encoded into
@@ -488,7 +488,7 @@ class SigParser
         }
 
         //------------------------------------------------------------------------
-        // Is this at the Sentinal (the ... in a varargs signature) that marks
+        // Is this at the Sentinel (the ... in a varargs signature) that marks
         // the beginning of varguments that are not decared at the target
 
         bool AtSentinel() const
@@ -793,7 +793,7 @@ protected:
         }
         CONTRACTL_END;
 
-        if (type >= (CorElementType)_countof(info))
+        if (type >= (CorElementType)ARRAY_SIZE(info))
         {
             ThrowHR(COR_E_BADIMAGEFORMAT);
         }
@@ -803,7 +803,7 @@ protected:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        if (type >= (CorElementType)_countof(info))
+        if (type >= (CorElementType)ARRAY_SIZE(info))
         {
             return info[ELEMENT_TYPE_END];
         }
@@ -830,7 +830,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        for (int i = 0; i < (int)_countof(info); i++)
+        for (int i = 0; i < (int)ARRAY_SIZE(info); i++)
         {
             _ASSERTE(info[i].type == i);
         }
@@ -862,6 +862,21 @@ public:
         SUPPORTS_DAC;
 
         return (GetGCType_NoThrow(type) == TYPE_GC_REF);
+    }
+
+    static BOOL IsByRef(CorElementType type)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        return (GetGCType(type) == TYPE_GC_BYREF);
+    }
+    static BOOL IsByRef_NoThrow(CorElementType type)
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        return (GetGCType_NoThrow(type) == TYPE_GC_BYREF);
     }
 
     FORCEINLINE static BOOL IsGenericVariable(CorElementType type)
@@ -951,7 +966,7 @@ protected:
 
 
 // Returns the address of the payload inside the stackelem
-inline void* StackElemEndianessFixup(void* pStackElem, UINT cbSize) {
+inline void* StackElemEndiannessFixup(void* pStackElem, UINT cbSize) {
     LIMITED_METHOD_CONTRACT;
 
     BYTE *pRetVal = (BYTE*)pStackElem;

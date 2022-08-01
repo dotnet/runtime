@@ -17,7 +17,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module GitHub_11804.exe
 // MVID: {9CC2AC15-DDA3-4ADF-9566-89AB25A8CF63}
 .imagebase 0x00400000
 .file alignment 0x00000200

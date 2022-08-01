@@ -3,6 +3,7 @@
     <OutputType>Library</OutputType>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <GenerateRunScript>false</GenerateRunScript>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

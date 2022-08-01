@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.IO;
+using System.Text;
 using Xunit;
 
 namespace System
@@ -42,6 +43,23 @@ namespace System
             using StreamReader reader = new StreamReader(inputStream);
             result = reader.ReadLine();
             Assert.Equal(expectedLine, result);
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ReadFromOpenStandardInput()
+        {
+            // The implementation in StdInReader uses a StringBuilder for caching. We want this builder to use
+            // multiple chunks. So the expectedLine is longer than 16 characters (StringBuilder.DefaultCapacity).
+            string expectedLine = $"This is a test for ReadFromOpenStandardInput.";
+            Assert.True(expectedLine.Length > new StringBuilder().Capacity);
+            Console.WriteLine($"Please type the sentence (without the quotes): \"{expectedLine}\"");
+            using Stream inputStream = Console.OpenStandardInput();
+            for (int i = 0; i < expectedLine.Length; i++)
+            {
+                Assert.Equal((byte)expectedLine[i], inputStream.ReadByte());
+            }
+            Assert.Equal((byte)'\n', inputStream.ReadByte());
             AssertUserExpectedResults("the characters you typed properly echoed as you typed");
         }
 
@@ -101,6 +119,17 @@ namespace System
                 Assert.Equal(k, Console.ReadKey(intercept: true).Key);
             }
             AssertUserExpectedResults("\"console\" correctly not echoed as you typed it");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ReadKeyNoIntercept()
+        {
+            Console.WriteLine("Please type \"console\" (without the quotes). You should see it as you type:");
+            foreach (ConsoleKey k in new[] { ConsoleKey.C, ConsoleKey.O, ConsoleKey.N, ConsoleKey.S, ConsoleKey.O, ConsoleKey.L, ConsoleKey.E })
+            {
+                Assert.Equal(k, Console.ReadKey(intercept: false).Key);
+            }
+            AssertUserExpectedResults("\"console\" correctly echoed as you typed it");
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
@@ -289,7 +318,7 @@ namespace System
         {
             Console.WriteLine(Console.OutputEncoding);
             Console.WriteLine("'\u03A0\u03A3'.");
-            AssertUserExpectedResults("Pi and Segma or question marks");
+            AssertUserExpectedResults("Pi and Sigma or question marks");
         }
 
         private static void AssertUserExpectedResults(string expected)

@@ -10,21 +10,21 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameStackFieldCount")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameStackFieldCount")]
         internal static partial int GetX509NameStackFieldCount(SafeSharedX509NameStackHandle sk);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameStackField")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameStackField")]
         private static partial SafeSharedX509NameHandle GetX509NameStackField_private(SafeSharedX509NameStackHandle sk,
             int loc);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameRawBytes")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameRawBytes")]
         private static partial int GetX509NameRawBytes(SafeSharedX509NameHandle x509Name, byte[]? buf, int cBuf);
 
         internal static X500DistinguishedName LoadX500Name(SafeSharedX509NameHandle namePtr)
         {
             CheckValidOpenSslHandle(namePtr);
 
-            byte[] buf = GetDynamicBuffer((ptr, buf1, i) => GetX509NameRawBytes(ptr, buf1, i), namePtr);
+            byte[] buf = GetDynamicBuffer(GetX509NameRawBytes, namePtr);
             return new X500DistinguishedName(buf);
         }
 
@@ -33,7 +33,7 @@ internal static partial class Interop
             CheckValidOpenSslHandle(sk);
 
             return SafeInteriorHandle.OpenInteriorHandle(
-                (handle, i) => GetX509NameStackField_private(handle, i),
+                GetX509NameStackField_private,
                 sk,
                 loc);
         }

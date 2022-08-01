@@ -249,7 +249,7 @@ typedef struct IMAGE_COR20_HEADER
 #else // !__IMAGE_COR20_HEADER_DEFINED__
 
 // <TODO>@TODO: This is required because we pull in the COM+ 2.0 PE header
-// definition from WinNT.h, and these constants have not yet propogated to there.</TODO>
+// definition from WinNT.h, and these constants have not yet propagated to there.</TODO>
 //
 #define COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN 0x08
 #define COMIMAGE_FLAGS_32BITPREFERRED              0x00020000
@@ -842,11 +842,12 @@ typedef enum CorGenericParamAttr
     gpContravariant         =   0x0002,
 
     // Special constraints, applicable to any type parameters
-    gpSpecialConstraintMask =  0x001C,
+    gpSpecialConstraintMask =  0x003C,
     gpNoSpecialConstraint   =   0x0000,
     gpReferenceTypeConstraint = 0x0004,      // type argument must be a reference type
     gpNotNullableValueTypeConstraint   =   0x0008,      // type argument must be a value type but not Nullable
     gpDefaultConstructorConstraint = 0x0010, // type argument must have a public default constructor
+    gpAcceptByRefLike = 0x0020, // type argument can be ByRefLike
 } CorGenericParamAttr;
 
 // structures and enums moved from COR.H
@@ -1235,7 +1236,7 @@ typedef struct IMAGE_COR_ILMETHOD_TINY
 } IMAGE_COR_ILMETHOD_TINY;
 
 /************************************/
-// This strucuture is the 'fat' layout, where no compression is attempted.
+// This structure is the 'fat' layout, where no compression is attempted.
 // Note that this structure can be added on at the end, thus making it extensible
 typedef struct IMAGE_COR_ILMETHOD_FAT
 {
@@ -1681,17 +1682,6 @@ typedef enum CorAttributeTargets
 #define DEBUGGABLE_ATTRIBUTE_TYPE               "System.Diagnostics.DebuggableAttribute"
 #define DEBUGGABLE_ATTRIBUTE_TYPE_NAMESPACE     "System.Diagnostics"
 #define DEBUGGABLE_ATTRIBUTE_TYPE_NAME          "DebuggableAttribute"
-
-
-// Keep in sync with CompilationRelaxations.cs
-typedef enum CompilationRelaxationsEnum
-{
-    CompilationRelaxations_NoStringInterning       = 0x0008,
-
-} CompilationRelaxationEnum;
-
-#define COMPILATIONRELAXATIONS_TYPE_W           W("System.Runtime.CompilerServices.CompilationRelaxationsAttribute")
-#define COMPILATIONRELAXATIONS_TYPE             "System.Runtime.CompilerServices.CompilationRelaxationsAttribute"
 
 
 // Keep in sync with RuntimeCompatibilityAttribute.cs

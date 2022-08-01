@@ -4,12 +4,10 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
-
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics
 {
@@ -44,7 +42,9 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        internal static bool IsTypeSupported
+        /// <summary>Gets <c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</summary>
+        /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
+        public static bool IsSupported
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (typeof(T) == typeof(byte)) ||
@@ -52,6 +52,8 @@ namespace System.Runtime.Intrinsics
                    (typeof(T) == typeof(short)) ||
                    (typeof(T) == typeof(int)) ||
                    (typeof(T) == typeof(long)) ||
+                   (typeof(T) == typeof(nint)) ||
+                   (typeof(T) == typeof(nuint)) ||
                    (typeof(T) == typeof(sbyte)) ||
                    (typeof(T) == typeof(float)) ||
                    (typeof(T) == typeof(ushort)) ||
@@ -75,7 +77,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                if (IsTypeSupported)
+                if (IsSupported)
                 {
                     return ToString();
                 }
@@ -99,7 +101,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -147,7 +149,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -206,7 +208,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -224,7 +226,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right);
+                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right);
                 result.SetElementUnsafe(index, value);
             }
 
@@ -258,7 +260,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -290,17 +292,38 @@ namespace System.Runtime.Intrinsics
         /// <param name="other">The <see cref="Vector64{T}" /> to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="other" /> is equal to the current instance; otherwise, <c>false</c>.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector64<T> other)
         {
-            for (int i = 0; i < Count; i++)
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            if (Vector64.IsHardwareAccelerated)
             {
-                if (!((IEquatable<T>)(this.GetElement(i))).Equals(other.GetElement(i)))
+                if ((typeof(T) == typeof(double)) || (typeof(T) == typeof(float)))
                 {
-                    return false;
+                    Vector64<T> result = Vector64.Equals(this, other) | ~(Vector64.Equals(this, this) | Vector64.Equals(other, other));
+                    return result.AsInt32() == Vector64<int>.AllBitsSet;
+                }
+                else
+                {
+                    return this == other;
                 }
             }
 
-            return true;
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Vector64<T> self, Vector64<T> other)
+            {
+                for (int index = 0; index < Count; index++)
+                {
+                    if (!Scalar<T>.ObjectEquals(self.GetElementUnsafe(index), other.GetElementUnsafe(index)))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
 
         /// <summary>Gets the hash code for the instance.</summary>
@@ -312,7 +335,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Count; i++)
             {
-                var value = this.GetElement(i);
+                T value = this.GetElement(i);
                 hashCode.Add(value);
             }
 
@@ -325,7 +348,7 @@ namespace System.Runtime.Intrinsics
         public override string ToString()
             => ToString("G", CultureInfo.InvariantCulture);
 
-        private string ToString(string? format, IFormatProvider? formatProvider)
+        private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 

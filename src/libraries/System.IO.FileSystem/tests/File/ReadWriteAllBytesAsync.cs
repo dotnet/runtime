@@ -6,11 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using System.IO.Pipes;
-using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class File_ReadWriteAllBytesAsync : FileSystemTest
     {
         [Fact]
@@ -71,36 +69,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-        public async Task ReadFileOver2GBAsync()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(int.MaxValue + 1L);
-            }
-
-            // File is too large for ReadAllBytesAsync at once
-            await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
-        }
-
-        [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-        public async Task ReadFileOverMaxArrayLengthAsync()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(Array.MaxLength + 1L);
-            }
-
-            // File is too large for ReadAllBytesAsync at once
-            await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
-        }
-
-        [Fact]
         public async Task OverwriteAsync()
         {
             string path = GetTestFilePath();
@@ -129,7 +97,6 @@ namespace System.IO.Tests
         /// file is allowed.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public async Task WriteToReadOnlyFileAsync()
         {
             string path = GetTestFilePath();
@@ -140,11 +107,11 @@ namespace System.IO.Tests
                 // Operation succeeds when being run by the Unix superuser
                 if (PlatformDetection.IsSuperUser)
                 {
-                    await File.WriteAllBytesAsync(path, Encoding.UTF8.GetBytes("text"));
-                    Assert.Equal(Encoding.UTF8.GetBytes("text"), await File.ReadAllBytesAsync(path));
+                    await File.WriteAllBytesAsync(path, "text"u8.ToArray());
+                    Assert.Equal("text"u8.ToArray(), await File.ReadAllBytesAsync(path));
                 }
                 else
-                    await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await File.WriteAllBytesAsync(path, Encoding.UTF8.GetBytes("text")));
+                    await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await File.WriteAllBytesAsync(path, "text"u8.ToArray()));
             }
             finally
             {
@@ -208,7 +175,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
         public async Task ReadAllBytesAsync_NonSeekableFileStream_InWindows()
         {
-            string pipeName = FileSystemTest.GetNamedPipeServerStreamName();
+            string pipeName = GetNamedPipeServerStreamName();
             string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
 
             var namedPipeWriterStream = new NamedPipeServerStream(pipeName, PipeDirection.Out);
@@ -237,6 +204,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         public async Task ReadAllBytesAsync_NonSeekableFileStream_InUnix()
         {
             string fifoPath = GetTestFilePath();

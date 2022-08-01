@@ -20,10 +20,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
         public static ILoggingBuilder AddEventLog(this ILoggingBuilder builder)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
+            ThrowHelper.ThrowIfNull(builder);
 
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, EventLogLoggerProvider>());
 
@@ -38,15 +35,8 @@ namespace Microsoft.Extensions.Logging
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
         public static ILoggingBuilder AddEventLog(this ILoggingBuilder builder, EventLogSettings settings)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
-
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(settings);
 
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider>(new EventLogLoggerProvider(settings)));
 
@@ -61,10 +51,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
         public static ILoggingBuilder AddEventLog(this ILoggingBuilder builder, Action<EventLogSettings> configure)
         {
-            if (configure == null)
-            {
-                throw new ArgumentNullException(nameof(configure));
-            }
+            ThrowHelper.ThrowIfNull(configure);
 
             builder.AddEventLog();
             builder.Services.Configure(configure);

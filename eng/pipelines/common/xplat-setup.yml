@@ -9,21 +9,16 @@ parameters:
   platform: ''
   targetRid: ''
   jobParameters: {}
+  shouldContinueOnError: false
   variables: []
 
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
-    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
-      runtimeFlavorDisplayName: 'CoreCLR'
-    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
-      runtimeFlavorDisplayName: 'Mono'
-
-    shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
+    shouldContinueOnError: ${{ or(eq(parameters.shouldContinueOnError, true), and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest'))) }}
 
     # keep in sync with /eng/pipelines/common/variables.yml
-    nonPRBuild: ${{ and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
-    dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community')) }}
+    dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms')) }}
 
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
@@ -50,8 +45,18 @@ jobs:
         value: $(buildConfigUpper)
 
       - name: _runSmokeTestsOnlyArg
-        value: '/p:RunSmokeTestsOnly=$(isNotManualAndIsPR)'
-      - ${{ if or(eq(parameters.osGroup, 'windows'), eq(parameters.hostedOs, 'windows')) }}:
+        value: '/p:RunSmokeTestsOnly=$(isRunSmokeTestsOnly)'
+
+      - name: _overrideTestScriptWindowsCmdParameter
+        ${{ if eq(parameters.jobParameters.runScriptWindowsCmd, true) }}:
+          value: '/p:RunScriptWindowsCmd=true'
+        ${{ if ne(parameters.jobParameters.runScriptWindowsCmd, true) }}:
+          value: ''
+
+      - name: _hostedOs
+        value: ${{ parameters.jobParameters.hostedOs }}
+
+      - ${{ if or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')) }}:
         - name: archiveExtension
           value: '.zip'
         - name: archiveType
@@ -64,12 +69,14 @@ jobs:
           value: '\'
         - name: _msbuildCommand
           value: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -ci
+        - name: _warnAsErrorParamHelixOverride
+          value: -warnaserror 0
         - name: setScriptToEchoAndFailOnNonZero
           value: ''
         - name: logRootNameArg
           value: 'log '
 
-      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.hostedOs, 'windows')) }}:
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.jobParameters.hostedOs, 'windows')) }}:
         - name: archiveExtension
           value: '.tar.gz'
         - name: archiveType
@@ -82,6 +89,8 @@ jobs:
           value: '/'
         - name: _msbuildCommand
           value: ./eng/common/msbuild.sh --ci
+        - name: _warnAsErrorParamHelixOverride
+          value: --warnaserror false
         # Set the bash script to display each command, and stop if any command exits nonzero.
         - name: setScriptToEchoAndFailOnNonZero
           value: 'set -xe'
@@ -117,28 +126,28 @@ jobs:
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:
         # Public Linux Build Pool
-        ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Android', 'Tizen'), eq(parameters.hostedOs, 'Linux')), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Android', 'Tizen'), eq(parameters.jobParameters.hostedOs, 'Linux')), eq(variables['System.TeamProject'], 'public')) }}:
           name:  NetCore1ESPool-Public
           demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
         # Official Build Linux Pool
-        ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android', 'Tizen'), eq(parameters.hostedOs, 'Linux')), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android', 'Tizen'), eq(parameters.jobParameters.hostedOs, 'Linux')), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCore1ESPool-Internal
           demands: ImageOverride -equals Build.Ubuntu.1804.Amd64
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool
         ${{ if in(parameters.osGroup, 'OSX', 'MacCatalyst', 'iOS', 'iOSSimulator', 'tvOS', 'tvOSSimulator') }}:
-          vmImage: 'macOS-10.15'
+          vmImage: 'macOS-11'
 
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCore1ESPool-Internal
-          demands: ImageOverride -equals Build.Windows.10.Amd64.VS2019
+          demands: ImageOverride -equals Build.Windows.Amd64.VS2022.Pre
 
         # Public Windows Build Pool
-        ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
           name: NetCore1ESPool-Public
-          demands: ImageOverride -equals Build.Windows.10.Amd64.VS2019.Open
+          demands: ImageOverride -equals Build.Windows.Amd64.VS2022.Pre.Open
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:

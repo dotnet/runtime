@@ -201,12 +201,9 @@ namespace System.Data.Odbc
             {
                 if (IsOpen)
                 {
-                    if (ProviderInfo.DriverName == null)
-                    {
-                        ProviderInfo.DriverName = GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME)!;
-                    }
-                    return ProviderInfo.DriverName;
+                    return ProviderInfo.DriverName ??= GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME)!;
                 }
+
                 return string.Empty;
             }
         }
@@ -373,14 +370,10 @@ namespace System.Data.Odbc
             }
         }
 
-        private void DisposeMe(bool disposing)
-        { // MDAC 65459
-        }
-
         internal string GetConnectAttrString(ODBC32.SQL_ATTR attribute)
         {
             string value = "";
-            int cbActual = 0;
+            int cbActual;
             byte[] buffer = new byte[100];
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
@@ -413,12 +406,11 @@ namespace System.Data.Odbc
         internal int GetConnectAttr(ODBC32.SQL_ATTR attribute, ODBC32.HANDLER handler)
         {
             int retval = -1;
-            int cbActual = 0;
             byte[] buffer = new byte[4];
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
             {
-                ODBC32.SQLRETURN retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out cbActual);
+                ODBC32.SQLRETURN retcode = connectionHandle.GetConnectionAttribute(attribute, buffer, out _);
 
                 if ((ODBC32.SQLRETURN.SUCCESS == retcode) || (ODBC32.SQLRETURN.SUCCESS_WITH_INFO == retcode))
                 {
@@ -483,7 +475,7 @@ namespace System.Data.Odbc
         {
             //SQLGetInfo
             string? value = null;
-            short cbActual = 0;
+            short cbActual;
             byte[] buffer = new byte[100];
             OdbcConnectionHandle? connectionHandle = ConnectionHandle;
             if (null != connectionHandle)
@@ -524,7 +516,7 @@ namespace System.Data.Odbc
                 case ODBC32.SQLRETURN.SUCCESS_WITH_INFO:
                     {
                         //Optimize to only create the event objects and obtain error info if
-                        //the user is really interested in retriveing the events...
+                        //the user is really interested in retrieveing the events...
                         if (_infoMessageEventHandler != null)
                         {
                             OdbcErrorCollection errors = ODBC32.GetDiagErrors(null, hrHandle, retcode);
@@ -535,10 +527,7 @@ namespace System.Data.Odbc
                     }
                 default:
                     OdbcException e = OdbcException.CreateException(ODBC32.GetDiagErrors(null, hrHandle, retcode), retcode);
-                    if (e != null)
-                    {
-                        e.Errors.SetSource(this.Driver);
-                    }
+                    e?.Errors.SetSource(this.Driver);
                     ConnectionIsAlive(e);        // this will close and throw if the connection is dead
                     return e;
             }
@@ -849,7 +838,7 @@ namespace System.Data.Odbc
                 int flags;
 
                 flags = GetInfoInt32Unhandled((ODBC32.SQL_INFO)sqlconvert);
-                flags = flags & (int)sqlcvt;
+                flags &= (int)sqlcvt;
 
                 ProviderInfo.TestedSQLTypes |= (int)sqlcvt;
                 ProviderInfo.SupportedSQLTypes |= flags;

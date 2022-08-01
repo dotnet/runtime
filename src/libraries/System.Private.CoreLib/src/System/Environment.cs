@@ -23,8 +23,7 @@ namespace System
 
         public static string? GetEnvironmentVariable(string variable)
         {
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
+            ArgumentNullException.ThrowIfNull(variable);
 
             return GetEnvironmentVariableCore(variable);
         }
@@ -34,8 +33,7 @@ namespace System
             if (target == EnvironmentVariableTarget.Process)
                 return GetEnvironmentVariable(variable);
 
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
+            ArgumentNullException.ThrowIfNull(variable);
 
             bool fromMachine = ValidateAndConvertRegistryTarget(target);
             return GetEnvironmentVariableFromRegistry(variable, fromMachine);
@@ -77,32 +75,19 @@ namespace System
             get => CurrentDirectoryCore;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                if (value.Length == 0)
-                    throw new ArgumentException(SR.Argument_PathEmpty, nameof(value));
-
+                ArgumentException.ThrowIfNullOrEmpty(value);
                 CurrentDirectoryCore = value;
             }
         }
 
         public static string ExpandEnvironmentVariables(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0)
                 return name;
 
             return ExpandEnvironmentVariablesCore(name);
-        }
-
-        private static string[]? s_commandLineArgs;
-
-        internal static void SetCommandLineArgs(string[] cmdLineArgs) // invoked from VM
-        {
-            s_commandLineArgs = cmdLineArgs;
         }
 
         public static string GetFolderPath(SpecialFolder folder) => GetFolderPath(folder, SpecialFolderOption.None);
@@ -195,7 +180,7 @@ namespace System
 
                 // Strip optional suffixes
                 int separatorIndex = versionSpan.IndexOfAny('-', '+', ' ');
-                if (separatorIndex != -1)
+                if (separatorIndex >= 0)
                     versionSpan = versionSpan.Slice(0, separatorIndex);
 
                 // Return zeros rather then failing if the version string fails to parse
@@ -239,11 +224,7 @@ namespace System
 
         private static void ValidateVariableAndValue(string variable, ref string? value)
         {
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
-
-            if (variable.Length == 0)
-                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(variable));
+            ArgumentException.ThrowIfNullOrEmpty(variable);
 
             if (variable[0] == '\0')
                 throw new ArgumentException(SR.Argument_StringFirstCharIsZero, nameof(variable));

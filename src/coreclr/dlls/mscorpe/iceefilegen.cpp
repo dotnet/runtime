@@ -183,7 +183,7 @@ HRESULT ICeeFileGen::AddSectionReloc (HCEESECTION section, ULONG offset, HCEESEC
     }
 }
 
-HRESULT ICeeFileGen::SetOutputFileName (HCEEFILE ceeFile, __in LPWSTR outputFileName)
+HRESULT ICeeFileGen::SetOutputFileName (HCEEFILE ceeFile, _In_ LPWSTR outputFileName)
 {
     TESTANDRETURNPOINTER(ceeFile);
     TESTANDRETURNPOINTER(outputFileName);
@@ -192,7 +192,7 @@ HRESULT ICeeFileGen::SetOutputFileName (HCEEFILE ceeFile, __in LPWSTR outputFile
     return(gen->setOutputFileName(outputFileName));
 }
 
-__success(return == S_OK) HRESULT ICeeFileGen::GetOutputFileName (HCEEFILE ceeFile, __out LPWSTR *outputFileName)
+__success(return == S_OK) HRESULT ICeeFileGen::GetOutputFileName (HCEEFILE ceeFile, _Out_ LPWSTR *outputFileName)
 {
     TESTANDRETURNPOINTER(ceeFile);
     TESTANDRETURNPOINTER(outputFileName);
@@ -204,7 +204,7 @@ __success(return == S_OK) HRESULT ICeeFileGen::GetOutputFileName (HCEEFILE ceeFi
 }
 
 
-HRESULT ICeeFileGen::SetResourceFileName (HCEEFILE ceeFile, __in LPWSTR resourceFileName)
+HRESULT ICeeFileGen::SetResourceFileName (HCEEFILE ceeFile, _In_ LPWSTR resourceFileName)
 {
     TESTANDRETURNPOINTER(ceeFile);
     TESTANDRETURNPOINTER(resourceFileName);
@@ -214,7 +214,7 @@ HRESULT ICeeFileGen::SetResourceFileName (HCEEFILE ceeFile, __in LPWSTR resource
 }
 
 __success(return == S_OK)
-HRESULT ICeeFileGen::GetResourceFileName (HCEEFILE ceeFile, __out LPWSTR *resourceFileName)
+HRESULT ICeeFileGen::GetResourceFileName (HCEEFILE ceeFile, _Out_ LPWSTR *resourceFileName)
 {
     TESTANDRETURNPOINTER(ceeFile);
     TESTANDRETURNPOINTER(resourceFileName);
@@ -277,7 +277,7 @@ HRESULT ICeeFileGen::GetMethodRVA(HCEEFILE ceeFile, ULONG codeOffset, ULONG *cod
     return S_OK;
 }
 
-HRESULT ICeeFileGen::EmitString(HCEEFILE ceeFile, __in LPWSTR strValue, ULONG *strRef)
+HRESULT ICeeFileGen::EmitString(HCEEFILE ceeFile, _In_ LPWSTR strValue, ULONG *strRef)
 {
     TESTANDRETURNPOINTER(ceeFile);
 
@@ -429,7 +429,7 @@ HRESULT ICeeFileGen::SetStrongNameEntry(HCEEFILE ceeFile, ULONG size, ULONG offs
     return gen->setStrongNameEntry(size, offset);
 }
 
-HRESULT ICeeFileGen::ComputeSectionOffset(HCEESECTION section, __in char *ptr,
+HRESULT ICeeFileGen::ComputeSectionOffset(HCEESECTION section, _In_ char *ptr,
 										  unsigned *offset)
 {
     TESTANDRETURNPOINTER(section);
@@ -443,7 +443,7 @@ HRESULT ICeeFileGen::ComputeSectionOffset(HCEESECTION section, __in char *ptr,
 
 __success(return == S_OK)
 HRESULT ICeeFileGen::ComputeSectionPointer(HCEESECTION section, ULONG offset,
-										  __out char **ptr)
+										  _Out_ char **ptr)
 {
     TESTANDRETURNPOINTER(section);
 
@@ -454,7 +454,7 @@ HRESULT ICeeFileGen::ComputeSectionPointer(HCEESECTION section, ULONG offset,
 	return S_OK;
 }
 
-HRESULT ICeeFileGen::ComputeOffset(HCEEFILE ceeFile, __in char *ptr,
+HRESULT ICeeFileGen::ComputeOffset(HCEEFILE ceeFile, _In_ char *ptr,
 								   HCEESECTION *pSection, unsigned *offset)
 {
     TESTANDRETURNPOINTER(pSection);

@@ -174,11 +174,13 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for HttpWebRequest.")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for HttpWebRequest.")]
         protected override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
@@ -361,10 +363,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_writestarted);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 Uri? hostUri;
                 if ((value.Contains('/')) || (!TryGetHostUri(value, out hostUri)))
@@ -784,7 +783,11 @@ namespace System.Net
         public X509CertificateCollection ClientCertificates
         {
             get => _clientCertificates ??= new X509CertificateCollection();
-            set => _clientCertificates = value ?? throw new ArgumentNullException(nameof(value));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _clientCertificates = value;
+            }
         }
 
         // HTTP Version
@@ -1163,11 +1166,8 @@ namespace System.Net
                     // are only allowed in the request headers collection and not in the request content headers collection.
                     if (IsWellKnownContentHeader(headerName))
                     {
-                        if (request.Content == null)
-                        {
-                            // Create empty content so that we can send the entity-body header.
-                            request.Content = new ByteArrayContent(Array.Empty<byte>());
-                        }
+                        // Create empty content so that we can send the entity-body header.
+                        request.Content ??= new ByteArrayContent(Array.Empty<byte>());
 
                         request.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                     }
@@ -1429,14 +1429,8 @@ namespace System.Net
 
         public void AddRange(string rangeSpecifier, long from, long to)
         {
-            //
-            // Do some range checking before assembling the header
-            //
+            ArgumentNullException.ThrowIfNull(rangeSpecifier);
 
-            if (rangeSpecifier == null)
-            {
-                throw new ArgumentNullException(nameof(rangeSpecifier));
-            }
             if ((from < 0) || (to < 0))
             {
                 throw new ArgumentOutOfRangeException(from < 0 ? nameof(from) : nameof(to), SR.net_rangetoosmall);
@@ -1462,10 +1456,8 @@ namespace System.Net
 
         public void AddRange(string rangeSpecifier, long range)
         {
-            if (rangeSpecifier == null)
-            {
-                throw new ArgumentNullException(nameof(rangeSpecifier));
-            }
+            ArgumentNullException.ThrowIfNull(rangeSpecifier);
+
             if (!HttpValidationHelpers.IsValidToken(rangeSpecifier))
             {
                 throw new ArgumentException(SR.net_nottoken, nameof(rangeSpecifier));
@@ -1530,7 +1522,7 @@ namespace System.Net
             HttpKnownHeaderNames.LastModified
         };
 
-        private bool IsWellKnownContentHeader(string header)
+        private static bool IsWellKnownContentHeader(string header)
         {
             foreach (string contentHeaderName in s_wellKnownContentHeaders)
             {
@@ -1563,10 +1555,9 @@ namespace System.Net
 
         private void SetDateHeaderHelper(string headerName, DateTime dateTime)
         {
-            if (dateTime == DateTime.MinValue)
-                SetSpecialHeaders(headerName, null); // remove header
-            else
-                SetSpecialHeaders(headerName, HttpDateParser.DateToString(dateTime.ToUniversalTime()));
+            SetSpecialHeaders(headerName, dateTime == DateTime.MinValue ?
+                null : // remove header
+                dateTime.ToUniversalTime().ToString("r"));
         }
 
         private bool TryGetHostUri(string hostName, [NotNullWhen(true)] out Uri? hostUri)

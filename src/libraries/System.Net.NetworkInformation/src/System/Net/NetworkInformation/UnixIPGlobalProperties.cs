@@ -13,6 +13,7 @@ namespace System.Net.NetworkInformation
     internal abstract class UnixIPGlobalProperties : IPGlobalProperties
     {
         [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("osx")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
@@ -26,6 +27,7 @@ namespace System.Net.NetworkInformation
         public override string HostName { get { return HostInformation.HostName; } }
 
         [UnsupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("osx")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
@@ -60,10 +62,7 @@ namespace System.Net.NetworkInformation
 
             internal void AddException(Exception e)
             {
-                if (_exceptions == null)
-                {
-                    _exceptions = new List<Exception>();
-                }
+                _exceptions ??= new List<Exception>();
                 _exceptions.Add(e);
             }
         }
@@ -104,7 +103,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        public unsafe override UnicastIPAddressInformationCollection GetUnicastAddresses()
+        public override unsafe UnicastIPAddressInformationCollection GetUnicastAddresses()
         {
             Context context;
             context._collection = new UnicastIPAddressInformationCollection();

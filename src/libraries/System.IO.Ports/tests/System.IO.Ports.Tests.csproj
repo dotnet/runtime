@@ -109,7 +109,7 @@
     <Compile Include="Support\PortsTest.cs" />
     <Compile Include="Support\TestEventHandler.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(TargetFrameworkIdentifier)' == '.NETFramework'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' or '$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="SerialPort\DosDevices.cs" />
     <Compile Include="SerialPort\PortName.cs" />
     <Compile Include="SerialPort\OpenDevices.cs" />

@@ -59,7 +59,7 @@ namespace System.IO.MemoryMappedFiles
             // VirtualQueryEx: https://msdn.microsoft.com/en-us/library/windows/desktop/aa366907(v=vs.85).aspx
             if (((viewInfo.State & Interop.Kernel32.MemOptions.MEM_RESERVE) != 0) || ((ulong)viewSize < (ulong)nativeSize))
             {
-                IntPtr tempHandle = Interop.VirtualAlloc(
+                Interop.VirtualAlloc(
                     viewHandle, (UIntPtr)(nativeSize != MemoryMappedFile.DefaultSize ? nativeSize : viewSize),
                     Interop.Kernel32.MemOptions.MEM_COMMIT, MemoryMappedFile.GetPageAccess(access));
                 int lastError = Marshal.GetLastPInvokeError();

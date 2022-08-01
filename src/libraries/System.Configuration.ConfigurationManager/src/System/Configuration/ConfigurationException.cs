@@ -100,7 +100,7 @@ namespace System.Configuration
         [Obsolete("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException.GetFilename instead.")]
         public static string GetXmlNodeFilename(XmlNode node) => (node as IConfigErrorInfo)?.Filename ?? string.Empty;
 
-        [Obsolete("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException.GetFilename instead.")]
+        [Obsolete("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException.GetLinenumber instead.")]
         public static int GetXmlNodeLineNumber(XmlNode node) => (node as IConfigErrorInfo)?.LineNumber ?? 0;
     }
 }

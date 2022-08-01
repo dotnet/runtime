@@ -34,11 +34,11 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
-        public virtual TOptions Get(string name)
+        public virtual TOptions Get(string? name)
         {
-            name = name ?? Options.DefaultName;
+            name ??= Options.DefaultName;
 
-            if (!_cache.TryGetValue(name, out TOptions options))
+            if (!_cache.TryGetValue(name, out TOptions? options))
             {
                 // Store the options in our instance cache. Avoid closure on fast path by storing state into scoped locals.
                 IOptionsFactory<TOptions> localFactory = _factory;

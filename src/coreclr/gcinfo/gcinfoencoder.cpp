@@ -344,7 +344,7 @@ GcInfoSize& GcInfoSize::operator+=(const GcInfoSize& other)
     NumUntracked += other.NumUntracked;
     NumTransitions += other.NumTransitions;
     SizeOfCode += other.SizeOfCode;
-    EncPreservedSlots += other.EncPreservedSlots;
+    EncInfoSize += other.EncInfoSize;
 
     UntrackedSlotSize += other.UntrackedSlotSize;
     NumUntrackedSize += other.NumUntrackedSize;
@@ -392,7 +392,7 @@ void GcInfoSize::Log(DWORD level, const char * header)
         LogSpew(LF_GCINFO, level, "NumUntracked: %Iu\n", NumUntracked);
         LogSpew(LF_GCINFO, level, "NumTransitions: %Iu\n", NumTransitions);
         LogSpew(LF_GCINFO, level, "SizeOfCode: %Iu\n", SizeOfCode);
-        LogSpew(LF_GCINFO, level, "EncPreservedSlots: %Iu\n", EncPreservedSlots);
+        LogSpew(LF_GCINFO, level, "EncInfoSize: %Iu\n", EncInfoSize);
 
         LogSpew(LF_GCINFO, level, "---SIZES(bits)---\n");
         LogSpew(LF_GCINFO, level, "Total: %Iu\n", TotalSize);
@@ -484,10 +484,13 @@ GcInfoEncoder::GcInfoEncoder(
 
     m_StackBaseRegister = NO_STACK_BASE_REGISTER;
     m_SizeOfEditAndContinuePreservedArea = NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA;
+#ifdef TARGET_ARM64
+    m_SizeOfEditAndContinueFixedStackFrame = 0;
+#endif
     m_ReversePInvokeFrameSlot = NO_REVERSE_PINVOKE_FRAME;
 #ifdef TARGET_AMD64
     m_WantsReportOnlyLeaf = false;
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     m_HasTailCalls = false;
 #endif // TARGET_AMD64
     m_IsVarArg = false;
@@ -747,6 +750,9 @@ void GcInfoEncoder::SetStackBaseRegister( UINT32 regNum )
     _ASSERTE( regNum != NO_STACK_BASE_REGISTER );
     _ASSERTE(DENORMALIZE_STACK_BASE_REGISTER(NORMALIZE_STACK_BASE_REGISTER(regNum)) == regNum);
     _ASSERTE( m_StackBaseRegister == NO_STACK_BASE_REGISTER || m_StackBaseRegister == regNum );
+#if defined(TARGET_LOONGARCH64)
+    assert(regNum == 3 || 22 == regNum);
+#endif
     m_StackBaseRegister = regNum;
 }
 
@@ -757,12 +763,19 @@ void GcInfoEncoder::SetSizeOfEditAndContinuePreservedArea( UINT32 slots )
     m_SizeOfEditAndContinuePreservedArea = slots;
 }
 
+#ifdef TARGET_ARM64
+void GcInfoEncoder::SetSizeOfEditAndContinueFixedStackFrame( UINT32 size )
+{
+    m_SizeOfEditAndContinueFixedStackFrame = size;
+}
+#endif
+
 #ifdef TARGET_AMD64
 void GcInfoEncoder::SetWantsReportOnlyLeaf()
 {
     m_WantsReportOnlyLeaf = true;
 }
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 void GcInfoEncoder::SetHasTailCalls()
 {
     m_HasTailCalls = true;
@@ -1017,7 +1030,7 @@ void GcInfoEncoder::Build()
         (m_SizeOfEditAndContinuePreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) &&
 #ifdef TARGET_AMD64
         !m_WantsReportOnlyLeaf &&
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         !m_HasTailCalls &&
 #endif // TARGET_AMD64
         !IsStructReturnKind(m_ReturnKind);
@@ -1028,6 +1041,9 @@ void GcInfoEncoder::Build()
     {
         // Slim encoding means nothing special, partially interruptible, maybe a default frame register
         GCINFO_WRITE(m_Info1, 0, 1, FlagsSize); // Slim encoding
+#if defined(TARGET_LOONGARCH64)
+        assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
+#endif
         GCINFO_WRITE(m_Info1, (m_StackBaseRegister == NO_STACK_BASE_REGISTER) ? 0 : 1, 1, FlagsSize);
 
         GCINFO_WRITE(m_Info1, m_ReturnKind, SIZE_OF_RETURN_KIND_IN_SLIM_HEADER, RetKindSize);
@@ -1040,10 +1056,13 @@ void GcInfoEncoder::Build()
         GCINFO_WRITE(m_Info1, (hasGSCookie ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, ((m_PSPSymStackSlot != NO_PSP_SYM) ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, m_contextParamType, 2, FlagsSize);
+#if defined(TARGET_LOONGARCH64)
+        assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
+#endif
         GCINFO_WRITE(m_Info1, ((m_StackBaseRegister != NO_STACK_BASE_REGISTER) ? 1 : 0), 1, FlagsSize);
 #ifdef TARGET_AMD64
         GCINFO_WRITE(m_Info1, (m_WantsReportOnlyLeaf ? 1 : 0), 1, FlagsSize);
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         GCINFO_WRITE(m_Info1, (m_HasTailCalls ? 1 : 0), 1, FlagsSize);
 #endif // TARGET_AMD64
         GCINFO_WRITE(m_Info1, ((m_SizeOfEditAndContinuePreservedArea != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) ? 1 : 0), 1, FlagsSize);
@@ -1140,12 +1159,18 @@ void GcInfoEncoder::Build()
 
     if(!slimHeader && (m_StackBaseRegister != NO_STACK_BASE_REGISTER))
     {
+#if defined(TARGET_LOONGARCH64)
+        assert(m_StackBaseRegister == 22 || 3 == m_StackBaseRegister);
+#endif
         GCINFO_WRITE_VARL_U(m_Info1, NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister), STACK_BASE_REGISTER_ENCBASE, StackBaseSize);
     }
 
     if (m_SizeOfEditAndContinuePreservedArea != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA)
     {
-        GCINFO_WRITE_VARL_U(m_Info1, m_SizeOfEditAndContinuePreservedArea, SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, EncPreservedSlots);
+        GCINFO_WRITE_VARL_U(m_Info1, m_SizeOfEditAndContinuePreservedArea, SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, EncInfoSize);
+#ifdef TARGET_ARM64
+        GCINFO_WRITE_VARL_U(m_Info1, m_SizeOfEditAndContinueFixedStackFrame, SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE, EncInfoSize);
+#endif
     }
 
     if (hasReversePInvokeFrame)

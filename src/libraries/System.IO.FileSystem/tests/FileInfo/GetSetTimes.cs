@@ -10,10 +10,18 @@ namespace System.IO.Tests
 {
     public class FileInfo_GetSetTimes : InfoGetSetTimes<FileInfo>
     {
-        protected override FileInfo GetExistingItem()
+        protected override bool CanBeReadOnly => true;
+
+        protected override FileInfo GetExistingItem(bool readOnly = false)
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
+
+            if (readOnly)
+            {
+                File.SetAttributes(path, FileAttributes.ReadOnly);
+            }
+
             return new FileInfo(path);
         }
 

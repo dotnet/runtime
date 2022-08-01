@@ -47,7 +47,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_FLTROUND,
         CORINFO_HELP_DBLROUND,
 
-        /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide 
+        /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide
            which is the right helper to use to allocate an object of a given type. */
 
         CORINFO_HELP_NEWFAST,
@@ -56,8 +56,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned
         CORINFO_HELP_NEWSFAST_ALIGN8_VC,// allocator for small, value class, 8 byte aligned
         CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE, // allocator for small, finalizable, non-array object, 8 byte aligned
-        CORINFO_HELP_NEW_MDARR,         // multi-dim array helper (with or without lower bounds - dimensions passed in as vararg)
-        CORINFO_HELP_NEW_MDARR_NONVARARG,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
+        CORINFO_HELP_NEW_MDARR,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
         CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
         CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
         CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
@@ -82,17 +81,19 @@ namespace Internal.JitInterface
         CORINFO_HELP_CHKCASTARRAY,
         CORINFO_HELP_CHKCASTCLASS,
         CORINFO_HELP_CHKCASTANY,
-        CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases 
+        CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases
                                            // has been taken care of by the inlined check
 
-        CORINFO_HELP_BOX,
+        CORINFO_HELP_ISINSTANCEOF_EXCEPTION,
+
+        CORINFO_HELP_BOX,               // Fast box helper. Only possible exception is OutOfMemory
         CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>
         CORINFO_HELP_UNBOX,
         CORINFO_HELP_UNBOX_NULLABLE,    // special form of unboxing for Nullable<T>
         CORINFO_HELP_GETREFANY,         // Extract the byref from a TypedReference, checking that it is the expected type
 
         CORINFO_HELP_ARRADDR_ST,        // assign to element of object array with type-checking
-        CORINFO_HELP_LDELEMA_REF,       // does a precise type comparision and returns address
+        CORINFO_HELP_LDELEMA_REF,       // does a precise type comparison and returns address
 
         /* Exceptions */
 
@@ -121,7 +122,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_MON_EXIT_STATIC,
 
         CORINFO_HELP_GETCLASSFROMMETHODPARAM, // Given a generics method handle, returns a class handle
-        CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor 
+        CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor
                                               // in its ManagedClassObject
 
         /* GC support */
@@ -165,10 +166,9 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_GETFIELDADDR,
 
-        CORINFO_HELP_GETSTATICFIELDADDR_CONTEXT,    // Helper for context-static fields
         CORINFO_HELP_GETSTATICFIELDADDR_TLS,        // Helper for PE TLS fields
 
-        // There are a variety of specialized helpers for accessing static fields. The JIT should use 
+        // There are a variety of specialized helpers for accessing static fields. The JIT should use
         // ICorClassInfo::getSharedStaticsOrCCtorHelper to determine which helper to use
 
         // Helpers for regular statics
@@ -231,7 +231,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_ARE_TYPES_EQUIVALENT, // Check whether two TypeHandles (native structure pointers) are equivalent
 
         CORINFO_HELP_VIRTUAL_FUNC_PTR,      // look up a virtual method at run-time
-                                            //CORINFO_HELP_VIRTUAL_FUNC_PTR_LOG,  // look up a virtual method at run-time, with IBC logging
 
         // Not a real helpers. Instead of taking handle arguments, these helpers point to a small stub that loads the handle argument and calls the static helper.
         CORINFO_HELP_READYTORUN_NEW,
@@ -243,16 +242,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
         CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
         CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE,
-
-        CORINFO_HELP_EE_PRESTUB,            // Not real JIT helper. Used in native images.
-
-        CORINFO_HELP_EE_PRECODE_FIXUP,      // Not real JIT helper. Used for Precode fixup in native images.
-        CORINFO_HELP_EE_PINVOKE_FIXUP,      // Not real JIT helper. Used for PInvoke target fixup in native images.
-        CORINFO_HELP_EE_VSD_FIXUP,          // Not real JIT helper. Used for VSD cell fixup in native images.
-        CORINFO_HELP_EE_EXTERNAL_FIXUP,     // Not real JIT helper. Used for to fixup external method thunks in native images.
-        CORINFO_HELP_EE_VTABLE_FIXUP,       // Not real JIT helper. Used for inherited vtable slot fixup in native images.
-
-        CORINFO_HELP_EE_REMOTING_THUNK,     // Not real JIT helper. Used for remoting precode in native images.
 
         CORINFO_HELP_EE_PERSONALITY_ROUTINE,// Not real JIT helper. Used in native images.
         CORINFO_HELP_EE_PERSONALITY_ROUTINE_FILTER_FUNCLET,// Not real JIT helper. Used in native images to detect filter funclets.
@@ -284,11 +273,12 @@ namespace Internal.JitInterface
         CORINFO_HELP_THROW_NOT_IMPLEMENTED,             // throw NotImplementedException
         CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED,      // throw PlatformNotSupportedException
         CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED,          // throw TypeNotSupportedException
+        CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION, // throw AmbiguousResolutionException for failed static virtual method resolution
 
         CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
         CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
 
-        CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument    
+        CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument
         CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS, // Transition to cooperative mode and track transitions in reverse P/Invoke prolog.
         CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,  // Transition to preemptive mode in reverse P/Invoke epilog, frame is the first argument
         CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS, // Transition to preemptive mode and track transitions in reverse P/Invoke prolog.
@@ -296,6 +286,19 @@ namespace Internal.JitInterface
         CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
 
         CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
+
+        CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
+        CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
+
+        CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
+        CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
+        CORINFO_HELP_DELEGATEPROFILE32,         // Update 32-bit method profile for a delegate call site
+        CORINFO_HELP_DELEGATEPROFILE64,         // Update 64-bit method profile for a delegate call site
+        CORINFO_HELP_VTABLEPROFILE32,           // Update 32-bit method profile for a vtable call site
+        CORINFO_HELP_VTABLEPROFILE64,           // Update 64-bit method profile for a vtable call site
+
+        CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
+        CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
         CORINFO_HELP_COUNT,
     }

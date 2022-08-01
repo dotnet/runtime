@@ -290,7 +290,7 @@ namespace System.Runtime.Serialization
 
                 // Read space-delimited values
                 int startIndex = i;
-                int count = 0;
+                int count;
                 for (; i < stringValue.Length; i++)
                 {
                     if (stringValue[i] == ' ')
@@ -369,8 +369,7 @@ namespace System.Runtime.Serialization
         public override object ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             object obj = ReadEnumValue(xmlReader);
-            if (context != null)
-                context.AddNewObject(obj);
+            context?.AddNewObject(obj);
             return obj;
         }
     }

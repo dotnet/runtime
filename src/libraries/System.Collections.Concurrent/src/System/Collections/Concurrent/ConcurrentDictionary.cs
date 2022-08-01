@@ -142,10 +142,7 @@ namespace System.Collections.Concurrent
         public ConcurrentDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer)
             : this(comparer)
         {
-            if (collection is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(collection));
-            }
+            ArgumentNullException.ThrowIfNull(collection);
 
             InitializeFromCollection(collection);
         }
@@ -168,10 +165,7 @@ namespace System.Collections.Concurrent
         public ConcurrentDictionary(int concurrencyLevel, IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer)
             : this(concurrencyLevel, DefaultCapacity, growLockArray: false, comparer)
         {
-            if (collection is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(collection));
-            }
+            ArgumentNullException.ThrowIfNull(collection);
 
             InitializeFromCollection(collection);
         }
@@ -317,7 +311,7 @@ namespace System.Collections.Concurrent
         /// found and removed; otherwise, false.
         /// </returns>
         /// <remarks>
-        /// Both the specifed key and value must match the entry in the dictionary for it to be removed.
+        /// Both the specified key and value must match the entry in the dictionary for it to be removed.
         /// The key is compared using the dictionary's comparer (or the default comparer for <typeparamref name="TKey"/>
         /// if no comparer was provided to the dictionary when it was constructed).  The value is compared using the
         /// default comparer for <typeparamref name="TValue"/>.
@@ -678,10 +672,7 @@ namespace System.Collections.Concurrent
         /// </exception>
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int index)
         {
-            if (array is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (index < 0)
             {
@@ -1806,10 +1797,7 @@ namespace System.Collections.Concurrent
         /// <paramref name="array"/>.</exception>
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (index < 0)
             {
@@ -1886,20 +1874,8 @@ namespace System.Collections.Concurrent
         #endregion
 
 
-        private bool AreAllBucketsEmpty()
-        {
-            int[] countPerLock = _tables._countPerLock;
-
-            for (int i = 0; i < countPerLock.Length; i++)
-            {
-                if (countPerLock[i] != 0)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        private bool AreAllBucketsEmpty() =>
+            _tables._countPerLock.AsSpan().IndexOfAnyExcept(0) < 0;
 
         /// <summary>
         /// Replaces the bucket table with a larger one. To prevent multiple threads from resizing the

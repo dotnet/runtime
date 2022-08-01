@@ -117,41 +117,41 @@ g_file_set_contents (const gchar *filename, const gchar *contents, gssize length
 	const char *name;
 	char *path;
 	FILE *fp;
-	
+
 	if (!(name = strrchr (filename, G_DIR_SEPARATOR)))
 		name = filename;
 	else
 		name++;
-	
+
 	path = g_strdup_printf (TMP_FILE_FORMAT, (int)(name - filename), filename, name);
 	if (!(fp = fopen (path, "wb"))) {
 		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (errno), "%s", g_strerror (errno));
 		g_free (path);
 		return FALSE;
 	}
-	
+
 	if (length < 0)
 		length = strlen (contents);
-	
-	if (fwrite (contents, 1, length, fp) < length) {
+
+	if (fwrite (contents, 1, length, fp) < GSSIZE_TO_SIZE(length)) {
 		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (ferror (fp)), "%s", g_strerror (ferror (fp)));
 		g_unlink (path);
 		g_free (path);
 		fclose (fp);
-		
+
 		return FALSE;
 	}
-	
+
 	fclose (fp);
-	
+
 	if (g_rename (path, filename) != 0) {
 		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (errno), "%s", g_strerror (errno));
 		g_unlink (path);
 		g_free (path);
 		return FALSE;
 	}
-	
+
 	g_free (path);
-	
+
 	return TRUE;
 }

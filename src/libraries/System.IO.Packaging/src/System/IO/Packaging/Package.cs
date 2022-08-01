@@ -69,9 +69,7 @@ namespace System.IO.Packaging
             {
                 ThrowIfObjectDisposed();
 
-                if (_packageProperties == null)
-                    _packageProperties = new PartBasedPackageProperties(this);
-                return _packageProperties;
+                return _packageProperties ??= new PartBasedPackageProperties(this);
             }
         }
 
@@ -316,12 +314,12 @@ namespace System.IO.Packaging
 
             PackUriHelper.ValidatedPartUri validatedPartUri = (PackUriHelper.ValidatedPartUri)PackUriHelper.ValidatePartUri(partUri);
 
-            if (_partList.ContainsKey(validatedPartUri))
+            if (_partList.TryGetValue(validatedPartUri, out PackagePart? value))
             {
                 //This will get the actual casing of the part that
                 //is stored in the partList which is equivalent to the
                 //partUri provided by the user
-                validatedPartUri = (PackUriHelper.ValidatedPartUri)_partList[validatedPartUri].Uri;
+                validatedPartUri = (PackUriHelper.ValidatedPartUri)value.Uri;
                 _partList[validatedPartUri].IsDeleted = true;
                 _partList[validatedPartUri].Close();
 
@@ -455,8 +453,7 @@ namespace System.IO.Packaging
                     // close core properties
                     // This method will write out the core properties to the stream
                     // These will get flushed to the disk as a part of the DoFlush operation
-                    if (_packageProperties != null)
-                        _packageProperties.Close();
+                    _packageProperties?.Close();
 
                     // flush relationships
                     FlushRelationships();
@@ -509,8 +506,7 @@ namespace System.IO.Packaging
             // Write core properties.
             // This call will write out the xml for the core properties to the stream
             // These properties will get flushed to disk as a part of the DoFlush operation
-            if (_packageProperties != null)
-                _packageProperties.Flush();
+            _packageProperties?.Flush();
 
             // Write package relationships XML to the relationship part stream.
             // These will get flushed to disk as a part of the DoFlush operation
@@ -739,10 +735,7 @@ namespace System.IO.Packaging
         {
             if (!_disposed && disposing)
             {
-                if (_partList != null)
-                {
-                    _partList.Clear();
-                }
+                _partList?.Clear();
 
                 if (_packageProperties != null)
                 {
@@ -828,9 +821,10 @@ namespace System.IO.Packaging
             FileAccess packageAccess,
             FileShare packageShare)
         {
-            Package? package = null;
-            if (path == null)
+            if (path is null)
+            {
                 throw new ArgumentNullException(nameof(path));
+            }
 
             ThrowIfFileModeInvalid(packageMode);
             ThrowIfFileAccessInvalid(packageAccess);
@@ -854,6 +848,7 @@ namespace System.IO.Packaging
             //Verify if this is valid for filenames
             FileInfo packageFileInfo = new FileInfo(path);
 
+            Package? package = null;
             try
             {
                 package = new ZipPackage(packageFileInfo.FullName, packageMode, packageAccess, packageShare);
@@ -870,10 +865,7 @@ namespace System.IO.Packaging
             }
             catch
             {
-                if (package != null)
-                {
-                    package.Close();
-                }
+                package?.Close();
 
                 throw;
             }
@@ -893,10 +885,12 @@ namespace System.IO.Packaging
         /// <exception cref="IOException">If package to be created should have readwrite/write access and underlying stream is read only</exception>
         public static Package Open(Stream stream, FileMode packageMode, FileAccess packageAccess)
         {
-            Package? package = null;
-            if (stream == null)
+            if (stream is null)
+            {
                 throw new ArgumentNullException(nameof(stream));
+            }
 
+            Package? package = null;
             try
             {
                 // Today the Open(Stream) method is purely used for streams of Zip file format as
@@ -915,10 +909,7 @@ namespace System.IO.Packaging
             }
             catch
             {
-                if (package != null)
-                {
-                    package.Close();
-                }
+                package?.Close();
 
                 throw;
             }
@@ -995,7 +986,7 @@ namespace System.IO.Packaging
         //Throw if the object is in a disposed state
         private void ThrowIfObjectDisposed()
         {
-            if (_disposed == true)
+            if (_disposed)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed);
         }
 
@@ -1003,17 +994,13 @@ namespace System.IO.Packaging
         private void EnsureRelationships()
         {
             // once per package
-            if (_relationships == null)
-            {
-                _relationships = new InternalRelationshipCollection(this);
-            }
+            _relationships ??= new InternalRelationshipCollection(this);
         }
 
         //Delete All Package-level Relationships
         private void ClearRelationships()
         {
-            if (_relationships != null)
-                _relationships.Clear();
+            _relationships?.Clear();
         }
 
         //Flush the relationships at package level
@@ -1127,9 +1114,9 @@ namespace System.IO.Packaging
 
             PackUriHelper.ValidatedPartUri validatePartUri = PackUriHelper.ValidatePartUri(partUri);
 
-            if (_partList.ContainsKey(validatePartUri))
+            if (_partList.TryGetValue(validatePartUri, out PackagePart? value))
             {
-                return _partList[validatePartUri];
+                return value;
             }
             else
             {

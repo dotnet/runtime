@@ -22,7 +22,7 @@
 #define ASMCONSTANTS_RUNTIME_ASSERT(cond)
 #endif
 
-// Some contants are different in _DEBUG builds.  This macro factors out ifdefs from below.
+// Some constants are different in _DEBUG builds.  This macro factors out ifdefs from below.
 #ifdef _DEBUG
 #define DBG_FRE(dbg,fre) dbg
 #else
@@ -76,9 +76,6 @@ ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSiz
 #define MethodTable__m_dwFlags         0x0
 ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
 
-#define MethodTable__m_pWriteableData   DBG_FRE(0x1c, 0x18)
-ASMCONSTANTS_C_ASSERT(MethodTable__m_pWriteableData == offsetof(MethodTable, m_pWriteableData));
-
 #define MethodTable__enum_flag_ContainsPointers 0x01000000
 ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers == MethodTable::enum_flag_ContainsPointers);
 
@@ -87,12 +84,6 @@ ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_pMul
 
 #define SIZEOF__MethodTable             DBG_FRE(0x2c, 0x28)
 ASMCONSTANTS_C_ASSERT(SIZEOF__MethodTable == sizeof(MethodTable));
-
-#define MethodTableWriteableData__m_dwFlags 0x00
-ASMCONSTANTS_C_ASSERT(MethodTableWriteableData__m_dwFlags == offsetof(MethodTableWriteableData, m_dwFlags));
-
-#define MethodTableWriteableData__enum_flag_Unrestored 0x04
-ASMCONSTANTS_C_ASSERT(MethodTableWriteableData__enum_flag_Unrestored == MethodTableWriteableData::enum_flag_Unrestored);
 
 #define ArrayBase__m_NumComponents     0x4
 ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumComponents));
@@ -222,6 +213,30 @@ ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pThread == offsetof(InlinedCallFrame, 
 
 #define               InlinedCallFrame__m_pSPAfterProlog 0x1C
 ASMCONSTANTS_C_ASSERT(InlinedCallFrame__m_pSPAfterProlog == offsetof(InlinedCallFrame, m_pSPAfterProlog))
+
+#define FixupPrecodeData__Target 0x00
+ASMCONSTANTS_C_ASSERT(FixupPrecodeData__Target == offsetof(FixupPrecodeData, Target))
+
+#define FixupPrecodeData__MethodDesc 0x04
+ASMCONSTANTS_C_ASSERT(FixupPrecodeData__MethodDesc == offsetof(FixupPrecodeData, MethodDesc))
+
+#define FixupPrecodeData__PrecodeFixupThunk 0x08
+ASMCONSTANTS_C_ASSERT(FixupPrecodeData__PrecodeFixupThunk == offsetof(FixupPrecodeData, PrecodeFixupThunk))
+
+#define StubPrecodeData__MethodDesc 0x00
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__MethodDesc == offsetof(StubPrecodeData, MethodDesc))
+
+#define StubPrecodeData__Target 0x04
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target == offsetof(StubPrecodeData, Target))
+
+#define CallCountingStubData__RemainingCallCountCell 0x00
+ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))
+
+#define CallCountingStubData__TargetForMethod 0x04
+ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCountingStubData, TargetForMethod))
+
+#define CallCountingStubData__TargetForThresholdReached 0x08
+ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
 
 #undef ASMCONSTANTS_RUNTIME_ASSERT
 #undef ASMCONSTANTS_C_ASSERT

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -22,11 +22,11 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static JsonDocument SerializeToDocument<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
-            Type runtimeType = GetRuntimeType(value);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
-            return WriteDocumentUsingSerializer(value, jsonTypeInfo);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            return WriteDocument(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -47,11 +47,12 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static JsonDocument SerializeToDocument(object? value, Type inputType, JsonSerializerOptions? options = null)
         {
-            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
-            return WriteDocumentUsingSerializer(value, jsonTypeInfo);
+            ValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
+            return WriteDocumentAsObject(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -70,12 +71,13 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument SerializeToDocument<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return WriteDocumentUsingGeneratedSerializer(value, jsonTypeInfo);
+            jsonTypeInfo.EnsureConfigured();
+            return WriteDocument(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -98,44 +100,40 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument SerializeToDocument(object? value, Type inputType, JsonSerializerContext context)
         {
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
-            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            return WriteDocumentUsingGeneratedSerializer(value, GetTypeInfo(context, runtimeType));
+            ValidateInputType(value, inputType);
+            return WriteDocumentAsObject(value, GetTypeInfo(context, inputType));
         }
 
-        private static JsonDocument WriteDocumentUsingGeneratedSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
+        private static JsonDocument WriteDocument<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
             JsonSerializerOptions options = jsonTypeInfo.Options;
-            Debug.Assert(options != null);
 
             // For performance, share the same buffer across serialization and deserialization.
             // The PooledByteBufferWriter is cleared and returned when JsonDocument.Dispose() is called.
             PooledByteBufferWriter output = new(options.DefaultBufferSize);
-            using (Utf8JsonWriter writer = new(output, options.GetWriterOptions()))
-            {
-                WriteUsingGeneratedSerializer(writer, value, jsonTypeInfo);
-            }
+            using Utf8JsonWriter writer = new(output, options.GetWriterOptions());
 
+            WriteCore(writer, value, jsonTypeInfo);
             return JsonDocument.ParseRented(output, options.GetDocumentOptions());
         }
 
-        private static JsonDocument WriteDocumentUsingSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
+        private static JsonDocument WriteDocumentAsObject(object? value, JsonTypeInfo jsonTypeInfo)
         {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
             JsonSerializerOptions options = jsonTypeInfo.Options;
-            Debug.Assert(options != null);
 
             // For performance, share the same buffer across serialization and deserialization.
             // The PooledByteBufferWriter is cleared and returned when JsonDocument.Dispose() is called.
             PooledByteBufferWriter output = new(options.DefaultBufferSize);
-            using (Utf8JsonWriter writer = new(output, options.GetWriterOptions()))
-            {
-                WriteUsingSerializer(writer, value, jsonTypeInfo);
-            }
+            using Utf8JsonWriter writer = new(output, options.GetWriterOptions());
 
+            WriteCoreAsObject(writer, value, jsonTypeInfo);
             return JsonDocument.ParseRented(output, options.GetDocumentOptions());
         }
     }

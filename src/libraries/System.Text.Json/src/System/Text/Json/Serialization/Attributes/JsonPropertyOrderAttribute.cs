@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization
     public sealed class JsonPropertyOrderAttribute : JsonAttribute
     {
         /// <summary>
-        /// Initializes a new instance of <see cref="JsonPropertyNameAttribute"/> with the specified order.
+        /// Initializes a new instance of <see cref="JsonPropertyOrderAttribute"/> with the specified order.
         /// </summary>
         /// <param name="order">The order of the property.</param>
         public JsonPropertyOrderAttribute(int order)

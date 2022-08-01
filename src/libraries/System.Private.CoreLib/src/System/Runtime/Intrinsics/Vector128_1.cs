@@ -4,13 +4,10 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
-
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics
 {
@@ -61,7 +58,9 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        internal static bool IsTypeSupported
+        /// <summary>Gets <c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</summary>
+        /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
+        public static bool IsSupported
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (typeof(T) == typeof(byte)) ||
@@ -69,6 +68,8 @@ namespace System.Runtime.Intrinsics
                    (typeof(T) == typeof(short)) ||
                    (typeof(T) == typeof(int)) ||
                    (typeof(T) == typeof(long)) ||
+                   (typeof(T) == typeof(nint)) ||
+                   (typeof(T) == typeof(nuint)) ||
                    (typeof(T) == typeof(sbyte)) ||
                    (typeof(T) == typeof(float)) ||
                    (typeof(T) == typeof(ushort)) ||
@@ -92,7 +93,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                if (IsTypeSupported)
+                if (IsSupported)
                 {
                     return ToString();
                 }
@@ -116,7 +117,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -166,7 +167,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -226,7 +227,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -244,7 +245,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right);
+                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right);
                 result.SetElementUnsafe(index, value);
             }
 
@@ -278,7 +279,7 @@ namespace System.Runtime.Intrinsics
 
             for (int index = 0; index < Count; index++)
             {
-                var value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -313,51 +314,33 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector128<T> other)
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
 
-            if (Sse.IsSupported && (typeof(T) == typeof(float)))
+            if (Vector128.IsHardwareAccelerated)
             {
-                Vector128<float> result = Sse.CompareEqual(this.AsSingle(), other.AsSingle());
-                return Sse.MoveMask(result) == 0b1111; // We have one bit per element
-            }
-
-            if (Sse2.IsSupported)
-            {
-                if (typeof(T) == typeof(double))
+                if ((typeof(T) == typeof(double)) || (typeof(T) == typeof(float)))
                 {
-                    Vector128<double> result = Sse2.CompareEqual(this.AsDouble(), other.AsDouble());
-                    return Sse2.MoveMask(result) == 0b11; // We have one bit per element
-                }
-                else if (Sse41.IsSupported)
-                {
-                    // xor + testz is slightly better for integer types
-                    Vector128<byte> xored = Sse2.Xor(this.AsByte(), other.AsByte());
-                    return Sse41.TestZ(xored, xored);
+                    Vector128<T> result = Vector128.Equals(this, other) | ~(Vector128.Equals(this, this) | Vector128.Equals(other, other));
+                    return result.AsInt32() == Vector128<int>.AllBitsSet;
                 }
                 else
                 {
-                    // Unlike float/double, there are no special values to consider
-                    // for integral types and we can just do a comparison that all
-                    // bytes are exactly the same.
-
-                    Debug.Assert((typeof(T) != typeof(float)) && (typeof(T) != typeof(double)));
-                    Vector128<byte> result = Sse2.CompareEqual(this.AsByte(), other.AsByte());
-                    return Sse2.MoveMask(result) == 0b1111_1111_1111_1111; // We have one bit per element
+                    return this == other;
                 }
             }
 
             return SoftwareFallback(in this, other);
 
-            static bool SoftwareFallback(in Vector128<T> vector, Vector128<T> other)
+            static bool SoftwareFallback(in Vector128<T> self, Vector128<T> other)
             {
-                for (int i = 0; i < Count; i++)
+                for (int index = 0; index < Count; index++)
                 {
-                    if (!((IEquatable<T>)(vector.GetElement(i))).Equals(other.GetElement(i)))
+                    if (!Scalar<T>.ObjectEquals(self.GetElementUnsafe(index), other.GetElementUnsafe(index)))
                     {
                         return false;
                     }
                 }
-
                 return true;
             }
         }
@@ -371,7 +354,7 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Count; i++)
             {
-                var value = this.GetElement(i);
+                T value = this.GetElement(i);
                 hashCode.Add(value);
             }
 
@@ -384,7 +367,7 @@ namespace System.Runtime.Intrinsics
         public override string ToString()
             => ToString("G", CultureInfo.InvariantCulture);
 
-        private string ToString(string? format, IFormatProvider? formatProvider)
+        private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
 

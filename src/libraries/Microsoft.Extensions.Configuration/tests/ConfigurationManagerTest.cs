@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.Primitives;
 using Moq;
@@ -169,6 +171,91 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.True(provider2.IsDisposed);
             Assert.True(provider4.IsDisposed);
             Assert.True(provider5.IsDisposed);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task ProviderCanBlockLoadWaitingOnConcurrentRead()
+        {
+            using var mre = new ManualResetEventSlim(false);
+            var provider = new BlockLoadOnMREProvider(mre, timeout: TimeSpan.FromSeconds(30));
+
+            var config = new ConfigurationManager();
+            IConfigurationBuilder builder = config;
+
+            // builder.Add(source) will block on provider.Load().
+            var loadTask = Task.Run(() => builder.Add(new TestConfigurationSource(provider)));
+            await provider.LoadStartedTask;
+
+            // Read configuration while provider.Load() is blocked waiting on us.
+            _ = config["key"];
+
+            // Unblock provider.Load()
+            mre.Set();
+
+            // This will throw if provider.Load() timed out instead of unblocking gracefully after the read.
+            await loadTask;
+        }
+
+        public static TheoryData ConcurrentReadActions
+        {
+            get
+            {
+                return new TheoryData<Action<IConfiguration>>
+                {
+                    config => _ = config["key"],
+                    config => config.GetChildren(),
+                    config => config.GetSection("key").GetChildren(),
+                };
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(ConcurrentReadActions))]
+        public async Task ProviderDisposeDelayedWaitingOnConcurrentRead(Action<IConfiguration> concurrentReadAction)
+        {
+            using var mre = new ManualResetEventSlim(false);
+            var provider = new BlockReadOnMREProvider(mre, timeout: TimeSpan.FromSeconds(30));
+
+            var config = new ConfigurationManager();
+            IConfigurationBuilder builder = config;
+
+            builder.Add(new TestConfigurationSource(provider));
+
+            // Reading configuration will block on provider.TryRead() or provider.GetChildKeys().
+            var readTask = Task.Run(() => concurrentReadAction(config));
+            await provider.ReadStartedTask;
+
+            // Removing the source normally disposes the provider except when there provider is in use as is the case here.
+            builder.Sources.Clear();
+
+            Assert.False(provider.IsDisposed);
+
+            // Unblock TryRead() or GetChildKeys()
+            mre.Set();
+
+            // This will throw if TryRead() or GetChildKeys() timed out instead of unblocking gracefully after setting the MRE.
+            await readTask;
+
+            // The provider should be disposed when the concurrentReadAction releases the last reference to the provider.
+            Assert.True(provider.IsDisposed);
+        }
+
+        [Fact]
+        public void DisposingConfigurationManagerCausesOnlySourceChangesToThrow()
+        {
+            var config = new ConfigurationManager
+            {
+                ["TestKey"] = "TestValue",
+            };
+
+            config.Dispose();
+
+            Assert.Equal("TestValue", config["TestKey"]);
+            config["TestKey"] = "TestValue2";
+            Assert.Equal("TestValue2", config["TestKey"]);
+
+            Assert.Throws<ObjectDisposedException>(() => config.AddInMemoryCollection());
+            Assert.Throws<ObjectDisposedException>(() => ((IConfigurationBuilder)config).Sources.Clear());
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
@@ -1097,6 +1184,38 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Same(config, ((IConfigurationBuilder)config).Build());
         }
 
+        [Fact]
+        public void ClearConfigurationSources()
+        {
+            // Arrange
+            var dic1 = new Dictionary<string, string>()
+            {
+                {"Mem1:KeyInMem1", "ValueInMem1"},
+            };
+            var dic2 = new Dictionary<string, string>()
+            {
+                {"Mem2:KeyInMem2", "ValueInMem2"},
+            };
+
+            var memConfigSrc1 = new MemoryConfigurationSource { InitialData = dic1 };
+            var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dic2 };
+
+            var config = new ConfigurationManager();
+            IConfigurationBuilder configurationBuilder = config;
+
+            configurationBuilder.Add(memConfigSrc1);
+            configurationBuilder.Add(memConfigSrc2);
+
+            // Act
+            config.Sources.Clear();
+
+            // Assert
+            Assert.DoesNotContain(memConfigSrc1, config.Sources);
+            Assert.DoesNotContain(memConfigSrc2, config.Sources);
+            Assert.Null(config["Mem1:KeyInMem1"]);
+            Assert.Null(config["Mem2:KeyInMem2"]);
+        }
+
         private static string Get(IConfigurationProvider provider, string key)
         {
             string value;
@@ -1128,6 +1247,62 @@ namespace Microsoft.Extensions.Configuration.Test
         {
             public TestConfigurationProvider(string key, string value)
                 => Data.Add(key, value);
+        }
+
+        private class BlockLoadOnMREProvider : ConfigurationProvider
+        {
+            private readonly ManualResetEventSlim _mre;
+            private readonly TimeSpan _timeout;
+
+            private readonly TaskCompletionSource<object> _loadStartedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public BlockLoadOnMREProvider(ManualResetEventSlim mre, TimeSpan timeout)
+            {
+                _mre = mre;
+                _timeout = timeout;
+            }
+
+            public Task LoadStartedTask => _loadStartedTcs.Task;
+
+            public override void Load()
+            {
+                _loadStartedTcs.SetResult(null);
+                Assert.True(_mre.Wait(_timeout), "BlockLoadOnMREProvider.Load() timed out.");
+            }
+        }
+
+        private class BlockReadOnMREProvider : ConfigurationProvider, IDisposable
+        {
+            private readonly ManualResetEventSlim _mre;
+            private readonly TimeSpan _timeout;
+
+            private readonly TaskCompletionSource<object> _readStartedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public BlockReadOnMREProvider(ManualResetEventSlim mre, TimeSpan timeout)
+            {
+                _mre = mre;
+                _timeout = timeout;
+            }
+
+            public Task ReadStartedTask => _readStartedTcs.Task;
+
+            public bool IsDisposed { get; set; }
+
+            public override bool TryGet(string key, out string? value)
+            {
+                _readStartedTcs.SetResult(null);
+                Assert.True(_mre.Wait(_timeout), "BlockReadOnMREProvider.TryGet() timed out.");
+                return base.TryGet(key, out value);
+            }
+
+            public override IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath)
+            {
+                _readStartedTcs.SetResult(null);
+                Assert.True(_mre.Wait(_timeout), "BlockReadOnMREProvider.GetChildKeys() timed out.");
+                return base.GetChildKeys(earlierKeys, parentPath);
+            }
+
+            public void Dispose() => IsDisposed = true;
         }
 
         private class DisposableTestConfigurationProvider : ConfigurationProvider, IDisposable

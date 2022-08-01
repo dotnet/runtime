@@ -2,7 +2,7 @@
 #define _MONO_MINI_MONOVM_H_
 
 #include <mono/utils/mono-publib.h>
-#include <mono/mini/mono-private-unstable.h>
+#include <mono/jit/mono-private-unstable.h>
 
 // MonoVM equivalents of the CoreCLR hosting API and helpers
 // Only functional on netcore builds

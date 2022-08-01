@@ -13,8 +13,7 @@ namespace System.Reflection
 
         public virtual TypeInfo GetTypeForObject(object value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             return MapType(value.GetType().GetTypeInfo());
         }

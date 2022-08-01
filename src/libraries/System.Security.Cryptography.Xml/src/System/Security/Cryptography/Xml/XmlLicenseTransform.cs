@@ -39,12 +39,12 @@ namespace System.Security.Cryptography.Xml
 
         private void DecryptEncryptedGrants(XmlNodeList encryptedGrantList, IRelDecryptor decryptor)
         {
-            XmlElement encryptionMethod = null;
-            XmlElement keyInfo = null;
-            XmlElement cipherData = null;
-            EncryptionMethod encryptionMethodObj = null;
-            KeyInfo keyInfoObj = null;
-            CipherData cipherDataObj = null;
+            XmlElement encryptionMethod;
+            XmlElement keyInfo;
+            XmlElement cipherData;
+            EncryptionMethod encryptionMethodObj;
+            KeyInfo keyInfoObj;
+            CipherData cipherDataObj;
 
             for (int i = 0, count = encryptedGrantList.Count; i < count; i++)
             {
@@ -83,24 +83,11 @@ namespace System.Security.Cryptography.Xml
                     }
                     finally
                     {
-                        if (toDecrypt != null)
-                            toDecrypt.Close();
-
-                        if (decryptedContent != null)
-                            decryptedContent.Close();
-
-                        if (streamReader != null)
-                            streamReader.Close();
+                        toDecrypt?.Close();
+                        decryptedContent?.Close();
+                        streamReader?.Close();
                     }
-
-                    encryptionMethodObj = null;
-                    keyInfoObj = null;
-                    cipherDataObj = null;
                 }
-
-                encryptionMethod = null;
-                keyInfo = null;
-                cipherData = null;
             }
         }
 
@@ -143,9 +130,9 @@ namespace System.Security.Cryptography.Xml
             _namespaceManager.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
             _namespaceManager.AddNamespace("r", NamespaceUriCore);
 
-            XmlElement currentIssuerContext = null;
-            XmlElement currentLicenseContext = null;
-            XmlNode signatureNode = null;
+            XmlElement currentIssuerContext;
+            XmlElement currentLicenseContext;
+            XmlNode signatureNode;
 
             // Get the nearest issuer node
             currentIssuerContext = Context.SelectSingleNode("ancestor-or-self::r:issuer[1]", _namespaceManager) as XmlElement;
@@ -153,8 +140,7 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_XrmlMissingIssuer);
 
             signatureNode = currentIssuerContext.SelectSingleNode("descendant-or-self::dsig:Signature[1]", _namespaceManager) as XmlElement;
-            if (signatureNode != null)
-                signatureNode.ParentNode.RemoveChild(signatureNode);
+            signatureNode?.ParentNode.RemoveChild(signatureNode);
 
             // Get the nearest license node
             currentLicenseContext = currentIssuerContext.SelectSingleNode("ancestor-or-self::r:license[1]", _namespaceManager) as XmlElement;

@@ -72,6 +72,26 @@ namespace System.ServiceProcess
             }
         }
 
+#if NETCOREAPP
+        /// <summary>
+        /// When this method is called from OnStart, OnStop, OnPause or OnContinue,
+        /// the specified wait hint is passed to the
+        /// Service Control Manager to avoid having the service marked as not responding.
+        /// </summary>
+        /// <param name="time">The requested additional time</param>
+        public void RequestAdditionalTime(TimeSpan time) => RequestAdditionalTime(ToIntMilliseconds(time));
+
+        private static int ToIntMilliseconds(TimeSpan time)
+        {
+            long totalMilliseconds = (long)time.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(time));
+            }
+            return (int)totalMilliseconds;
+        }
+#endif
+
         /// <summary>
         /// Indicates whether to report Start, Stop, Pause, and Continue commands in the event.
         /// </summary>
@@ -229,21 +249,11 @@ namespace System.ServiceProcess
         /// can be used to write notification of service command calls, such as Start and Stop, to the Application event log. This property is read-only.
         /// </summary>
         [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public virtual EventLog EventLog
-        {
-            get
+        public virtual EventLog EventLog =>
+            _eventLog ??= new EventLog("Application")
             {
-                if (_eventLog == null)
-                {
-                    _eventLog = new EventLog("Application")
-                    {
-                        Source = ServiceName
-                    };
-                }
-
-                return _eventLog;
-            }
-        }
+                Source = ServiceName
+            };
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         protected IntPtr ServiceHandle
@@ -277,24 +287,10 @@ namespace System.ServiceProcess
             }
         }
 
-        internal static bool ValidServiceName(string serviceName)
-        {
-            if (serviceName == null)
-                return false;
-
-            // not too long and check for empty name as well.
-            if (serviceName.Length > ServiceBase.MaxNameLength || serviceName.Length == 0)
-                return false;
-
-            // no slashes or backslash allowed
-            foreach (char c in serviceName)
-            {
-                if (c == '\\' || c == '/')
-                    return false;
-            }
-
-            return true;
-        }
+        internal static bool ValidServiceName(string serviceName) =>
+            !string.IsNullOrEmpty(serviceName) &&
+            serviceName.Length <= ServiceBase.MaxNameLength && // not too long
+            serviceName.AsSpan().IndexOfAny('\\', '/') < 0; // no slashes or backslash allowed
 
         /// <summary>
         ///    <para>Disposes of the resources (other than memory ) used by
@@ -557,22 +553,8 @@ namespace System.ServiceProcess
 
         /// <summary>
         /// <para>When implemented in a derived class, <see cref='System.ServiceProcess.ServiceBase.OnCustomCommand'/>
-        /// executes when a custom command is passed to
-        /// the service. Specifies the actions to take when
+        /// executes when a custom command is passed to the service. Specifies the actions to take when
         /// a command with the specified parameter value occurs.</para>
-        /// <note type="rnotes">
-        ///    Previously had "Passed to the
-        ///    service by
-        ///    the SCM", but the SCM doesn't pass custom commands. Do we want to indicate an
-        ///    agent here? Would it be the ServiceController, or is there another way to pass
-        ///    the int into the service? I thought that the SCM did pass it in, but
-        ///    otherwise ignored it since it was an int it doesn't recognize. I was under the
-        ///    impression that the difference was that the SCM didn't have default processing, so
-        ///    it transmitted it without examining it or trying to performs its own
-        ///    default behavior on it. Please correct where my understanding is wrong in the
-        ///    second paragraph below--what, if any, contact does the SCM have with a
-        ///    custom command?
-        /// </note>
         /// </summary>
         protected virtual void OnCustomCommand(int command)
         {
@@ -678,11 +660,11 @@ namespace System.ServiceProcess
 
                 if (!multipleServices)
                 {
-                    _status.serviceType = ServiceTypeOptions.SERVICE_TYPE_WIN32_OWN_PROCESS;
+                    _status.serviceType = ServiceTypeOptions.SERVICE_WIN32_OWN_PROCESS;
                 }
                 else
                 {
-                    _status.serviceType = ServiceTypeOptions.SERVICE_TYPE_WIN32_SHARE_PROCESS;
+                    _status.serviceType = ServiceTypeOptions.SERVICE_WIN32_SHARE_PROCESS;
                 }
 
                 _status.currentState = ServiceControlStatus.STATE_START_PENDING;
@@ -865,10 +847,15 @@ namespace System.ServiceProcess
 
                 if (argCount > 0)
                 {
-                    char** argsAsPtr = (char**)argPointer.ToPointer();
+                    char** argsAsPtr = (char**)argPointer;
 
-                    //Lets read the arguments
-                    // the first arg is always the service name. We don't want to pass that in.
+                    // The first arg is always the service name. We don't want to pass that in,
+                    // but we can use it to set the service name on ourselves if we don't already know it.
+                    if (string.IsNullOrEmpty(_serviceName))
+                    {
+                         _serviceName = Marshal.PtrToStringUni((IntPtr)(*argsAsPtr))!;
+                    }
+
                     args = new string[argCount - 1];
 
                     for (int index = 0; index < args.Length; ++index)
@@ -898,7 +885,7 @@ namespace System.ServiceProcess
                 _commandPropsFrozen = true;
                 if ((_status.controlsAccepted & AcceptOptions.ACCEPT_STOP) != 0)
                 {
-                    _status.controlsAccepted = _status.controlsAccepted | AcceptOptions.ACCEPT_SHUTDOWN;
+                    _status.controlsAccepted |= AcceptOptions.ACCEPT_SHUTDOWN;
                 }
 
                 _status.currentState = ServiceControlStatus.STATE_START_PENDING;
@@ -934,7 +921,8 @@ namespace System.ServiceProcess
                 statusOK = SetServiceStatus(_statusHandle, pStatus);
                 if (!statusOK)
                 {
-                    WriteLogEntry(SR.Format(SR.StartFailed, new Win32Exception().Message), EventLogEntryType.Error);
+                    string errorMessage = new Win32Exception().Message;
+                    WriteLogEntry(SR.Format(SR.StartFailed, errorMessage), EventLogEntryType.Error);
                     _status.currentState = ServiceControlStatus.STATE_STOPPED;
                     SetServiceStatus(_statusHandle, pStatus);
                 }

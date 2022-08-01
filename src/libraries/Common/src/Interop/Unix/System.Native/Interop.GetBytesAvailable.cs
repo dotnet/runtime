@@ -8,10 +8,10 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetBytesAvailable")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetBytesAvailable")]
         internal static unsafe partial Error GetBytesAvailable(SafeHandle socket, int* available);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAtOutOfBandMark")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAtOutOfBandMark")]
         internal static unsafe partial Error GetAtOutOfBandMark(SafeHandle socket, int* atMark);
     }
 }

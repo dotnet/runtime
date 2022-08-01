@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <NoWarn>$(NoWarn);SYSLIB0038</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.Common.TypeForwards.cs" />
@@ -210,6 +210,7 @@
     <Compile Include="System\Data\Common\DbDataReader.cs" />
     <Compile Include="System\Data\Common\DbDataReaderExtensions.cs" />
     <Compile Include="System\Data\Common\DbDataRecord.cs" />
+    <Compile Include="System\Data\Common\DbDataSource.cs" />
     <Compile Include="System\Data\Common\DbDataSourceEnumerator.cs" />
     <Compile Include="System\Data\Common\DbEnumerator.cs" />
     <Compile Include="System\Data\Common\DbException.cs" />
@@ -224,6 +225,7 @@
     <Compile Include="System\Data\Common\DBSchemaTable.cs" />
     <Compile Include="System\Data\Common\DbTransaction.cs" />
     <Compile Include="System\Data\Common\DecimalStorage.cs" />
+    <Compile Include="System\Data\Common\DefaultDataSource.cs" />
     <Compile Include="System\Data\Common\DoubleStorage.cs" />
     <Compile Include="System\Data\Common\FieldNameLookup.cs" />
     <Compile Include="System\Data\Common\Groupbybehavior.cs" />
@@ -301,6 +303,8 @@
     <Compile Include="System\Data\SQLTypes\SQLBytes.cs" />
     <Compile Include="System\Data\ProviderBase\DataReaderContainer.cs" />
     <Compile Include="System\Data\ProviderBase\SchemaMapping.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
@@ -308,7 +312,6 @@
     <ProjectReference Include="..\..\System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel.TypeConverter\src\System.ComponentModel.TypeConverter.csproj" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.ComponentModel" />

@@ -13,6 +13,6 @@
     <ProjectReference Include="..\dll\common.csproj" />
     <ProjectReference Include="..\dll\hfa_simple_f32_common.csproj" />
     <ProjectReference Include="..\dll\hfa_simple_f32_managed.csproj" />
-    <ProjectReference Include="..\dll\CMakelists.txt" />
+    <CMakeProjectReference Include="..\dll\CMakelists.txt" />
   </ItemGroup>
 </Project>

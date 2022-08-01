@@ -12,7 +12,7 @@
 // entries in the dictionary are prepopulated).  However at
 // earlier stages in the NGEN, code may have been compiled
 // under the assumption that ComputeNeedsRestore was
-// FALSE for the assocaited method table, and indeed this result
+// FALSE for the associated method table, and indeed this result
 // may have been cached in the ComputeNeedsRestore
 // for the MethodTable.  Thus the combination of populating
 // the dictionary and saving further dictionary slots could lead
@@ -530,7 +530,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
             *pNewDictionary->GetBackPointerSlot(numGenericArgs) = pDictionary;
 
             // Publish the new dictionary slots to the type.
-            FastInterlockExchangePointer(&pIMD->m_pPerInstInfo, pNewDictionary);
+            InterlockedExchangeT(&pIMD->m_pPerInstInfo, pNewDictionary);
 
             pDictionary = pNewDictionary;
         }
@@ -590,7 +590,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
             // Publish the new dictionary slots to the type.
             ULONG dictionaryIndex = pMT->GetNumDicts() - 1;
             Dictionary** pPerInstInfo = pMT->GetPerInstInfo();
-            FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, pNewDictionary);
+            InterlockedExchangeT(pPerInstInfo + dictionaryIndex, pNewDictionary);
 
             pDictionary = pNewDictionary;
         }
@@ -634,7 +634,7 @@ Dictionary::PopulateEntry(
 
         BYTE fixupKind = *pBlob++;
 
-        Module * pInfoModule = pModule;
+        ModuleBase * pInfoModule = pModule;
         if (fixupKind & ENCODE_MODULE_OVERRIDE)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
@@ -657,7 +657,7 @@ Dictionary::PopulateEntry(
         if (signatureKind & ENCODE_MODULE_OVERRIDE)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
-            Module * pSignatureModule = pModule->GetModuleFromIndex(moduleIndex);
+            ModuleBase * pSignatureModule = pModule->GetModuleFromIndex(moduleIndex);
             if (pInfoModule == pModule)
             {
                 pInfoModule = pSignatureModule;
@@ -696,7 +696,7 @@ Dictionary::PopulateEntry(
         pZapSigContext = (pContainingZapModule != NULL) ? &zapSigContext : NULL;
     }
 
-    Module * pLookupModule = (isReadyToRunModule) ? pZapSigContext->pInfoModule : CoreLibBinder::GetModule();
+    ModuleBase * pLookupModule = (isReadyToRunModule) ? pZapSigContext->pInfoModule : CoreLibBinder::GetModule();
 
     if (pMT != NULL)
     {
@@ -887,7 +887,8 @@ Dictionary::PopulateEntry(
                     }
                     else
                     {
-                        pMethod = MemberLoader::GetMethodDescFromMethodDef(pZapSigContext->pInfoModule, TokenFromRid(rid, mdtMethodDef), FALSE);
+                        _ASSERTE(pZapSigContext->pInfoModule->IsFullModule());
+                        pMethod = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pZapSigContext->pInfoModule), TokenFromRid(rid, mdtMethodDef), FALSE);
                     }
                 }
 
@@ -1081,10 +1082,11 @@ Dictionary::PopulateEntry(
 #if FEATURE_DEFAULT_INTERFACES
                 // If we resolved the constrained call on a value type into a method on a reference type, this is a
                 // default interface method implementation.
+                // If the method is a static method, this is ok, but for instance methods there are boxing issues.
                 // In such case we would need to box the value type before we can dispatch to the implementation.
                 // This would require us to make a "boxing stub". For now we leave the boxing stubs unimplemented.
                 // It's not clear if anyone would need them and the implementation complexity is not worth it at this time.
-                if (!pResolvedMD->GetMethodTable()->IsValueType() && constraintType.GetMethodTable()->IsValueType())
+                if (!pResolvedMD->IsStatic() && !pResolvedMD->GetMethodTable()->IsValueType() && constraintType.GetMethodTable()->IsValueType())
                 {
                     SString assemblyName;
 

@@ -5,28 +5,19 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
-  liveRuntimeBuildConfig: ''
-
-  # Determines librariesbuild configuration to use for the tests. Setting this property implies
-  # a dependency of this job on the appropriate libraries build and is used
-  # to construct the name of the Azure artifact representing libraries build
-  # to use for building the tests.
-  liveLibrariesBuildConfig: ''
-
   displayNameArgs: ''
   condition: true
   stagedBuild: false
   variables: {}
   pool: ''
   runtimeFlavor: 'coreclr'
-  runtimeFlavorDisplayName: 'CoreCLR'
   runtimeVariant: ''
   dependsOn: []
   dependOnEvaluatePaths: false
   pgoType: ''
 
 ### Build managed test components (native components are getting built as part
-### of the the product build job).
+### of the product build job).
 
 ### TODO: As of today, build of managed test components requires the product build
 ### as a prerequisite due to dependency on System.Private.Corelib. After switching
@@ -45,13 +36,8 @@ jobs:
     runtimeVariant: ${{ parameters.runtimeVariant }}
     testGroup: ${{ parameters.testGroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
-    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-    ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-      liveRuntimeBuildParams: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
-    ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      liveRuntimeBuildParams: ${{ format('mono.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
 
     ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc'), not(and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64'))), not(eq(parameters.osGroup, 'OSX'))) }}:
       compilerArg: '-clang9'
@@ -65,10 +51,10 @@ jobs:
     # Compute job name from template parameters
     ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavor }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
     ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavor }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
     # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
@@ -86,12 +72,8 @@ jobs:
     variables:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
-      - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-        - name: liveRuntimeBuildParams
-          value: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
-      - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-        - name: liveRuntimeBuildParams
-          value: ${{ format('mono.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
+      - name: liveRuntimeBuildParams
+        value: 'libs.sfx+libs.oob+clr.iltools /p:RefOnly=true -c Release -ci'
       - name: compilerArg
         value: ''
       - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
@@ -101,7 +83,7 @@ jobs:
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: compilerArg
           value: ''
-      # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
+      # AppleClang has different version scheme, so we let compiler introspection pick up the available clang from PATH
       - ${{ if eq(parameters.osGroup, 'OSX') }}:
         - name: compilerArg
           value: ''
@@ -111,17 +93,25 @@ jobs:
 
       - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
         - name: runtimeFlavorArgs
-          value: '-excludemonofailures'
+          value: '-mono'
+
+      - name: testTreeFilterArg
+        value: ''
+
+      # Only build GCSimulator tests when the gc-simulator group is specified.
+      - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
+        - ${{ if eq(parameters.osGroup, 'windows') }}:
+          - name: testTreeFilterArg
+            value: 'tree GC/Scenarios/GCSimulator'
+        - ${{ if ne(parameters.osGroup, 'windows') }}:
+          - name: testTreeFilterArg
+            value: '-tree:GC/Scenarios/GCSimulator'
 
     steps:
 
     # Install test build dependencies
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup) ${{ parameters.archType }} azDO
-        displayName: Install native dependencies
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      # Necessary to install correct cmake version
-      - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
     # Build core/libraries dependencies of test build
@@ -135,7 +125,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build managed test components
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) ci $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) $(testTreeFilterArg) ci /p:TargetOS=AnyOS
       displayName: Build managed test components
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
@@ -147,7 +137,7 @@ jobs:
     # Zip and publish managed test components
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
-        rootFolder: $(managedTestArtifactRootFolderPath)
+        rootFolder: '$(binTestsPath)/AnyOS.$(archType).$(buildConfigUpper)'
         includeRootFolder: false
         archiveExtension: '.tar.gz'
         archiveType: tar
@@ -174,6 +164,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_AnyOS_AnyCPU_$(buildConfig)_Lib${{ parameters.liveLibrariesBuildConfig }}_${{ parameters.testGroup }}'
+        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()

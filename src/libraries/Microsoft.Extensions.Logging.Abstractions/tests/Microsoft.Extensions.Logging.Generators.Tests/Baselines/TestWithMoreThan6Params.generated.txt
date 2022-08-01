@@ -3,9 +3,11 @@
 
 namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 {
-    partial class TestWithMoreThan6Params 
+    partial class TestWithMoreThan6Params
     {
+        /// <summary> This API supports the logging infrastructure and is not intended to be used directly from your code. It is subject to change in the future. </summary>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "%VERSION%")]
+        [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Never)]
         private readonly struct __Method9Struct : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>
         {
             private readonly global::System.Int32 _p1;
@@ -41,7 +43,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
                 return $"M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}";
             }
 
-            public static string Format(__Method9Struct state, global::System.Exception? ex) => state.ToString();
+            public static readonly global::System.Func<__Method9Struct, global::System.Exception?, string> Format = (state, ex) => state.ToString();
 
             public int Count => 8;
 
@@ -88,7 +90,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         }
     }
 }
+/// <summary> This API supports the logging infrastructure and is not intended to be used directly from your code. It is subject to change in the future. </summary>
 [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "%VERSION%")]
+[global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Never)]
 internal static class __LoggerMessageGenerator
 {
     public static string Enumerate(global::System.Collections.IEnumerable? enumerable)

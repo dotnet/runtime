@@ -16,12 +16,11 @@
 
   <PropertyGroup>
     <BuildTargetFramework Condition="'$(BuildTargetFramework)' == ''">$(NetCoreAppCurrent)</BuildTargetFramework>
-    <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
 
     <!-- Set the name of the scenario file. Note that this is only used in invocations where $(Scenario) is set
          (which is when this project is invoked to call the "CreateOneScenarioTestEnvFile" target). -->
-    <TestEnvFileName Condition=" '$(TargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
-    <TestEnvFileName Condition=" '$(TargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(TargetOS)' == 'windows' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(TargetOS)' != 'windows' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
   </PropertyGroup>
   
@@ -49,9 +48,11 @@
         HelixTargetQueues=$(HelixTargetQueues);
         BuildTargetFramework=$(BuildTargetFramework)
       </_PropertiesToPass>
+      <_DebuggerHosts Condition="'$(_DebuggerHosts)' == ''">chrome</_DebuggerHosts>
     </PropertyGroup>
 
     <Message Condition="'$(_Scenarios)' != ''" Importance="High" Text="Using _Scenarios: $(_Scenarios)" />
+    <Message Condition="'$(_DebuggerHosts)' != ''" Importance="High" Text="Using _DebuggerHosts: $(_DebuggerHosts)" />
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
     <Message Importance="High" Text="BuildTargetFramework: $(BuildTargetFramework)" />
     <Message Importance="High" Text="TestArchiveTestsRoot: $(TestArchiveTestsRoot)" />
@@ -70,7 +71,7 @@
       <_Scenarios Include="$(_Scenarios.Split(','))" />
 
       <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
-      <_BaseProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'buildwasmapps' and '%(_Scenarios.Identity)' != 'buildiosapps'">
+      <_BaseProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'buildwasmapps' and '%(_Scenarios.Identity)' != 'buildiosapps' and '%(_Scenarios.Identity)' != 'wasmdebuggertests'">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BaseProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BaseProjectsToBuild>
@@ -86,6 +87,14 @@
       </_BuildWasmAppsProjectsToBuild>
     </ItemGroup>
 
+    <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'wasmdebuggertests'))' == 'true'">
+      <_DebuggerHostsItem Include="$(_DebuggerHosts.Split('/'))" />
+
+      <_WasmDebuggerTestsProjectsToBuild Include="$(PerScenarioProjectFile)">
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=WasmDebuggerTests;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);DebuggerHost=%(_DebuggerHostsItem.Identity)</AdditionalProperties>
+      </_WasmDebuggerTestsProjectsToBuild>
+    </ItemGroup>
+
     <!-- For BuildWasmApps we want to build the project twice, with: TestUsingWorkloads=true, and TestUsingWorkloads=false -->
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildiosapps'))' == 'true'">
       <_TestUsingWorkloadsValues Include="false" />
@@ -97,7 +106,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <_ProjectsToBuild Include="@(_BuildWasmAppsProjectsToBuild);@(_BuildiOSAppsProjectsToBuild);@(_BaseProjectsToBuild)" />
+      <_ProjectsToBuild Include="@(_BuildWasmAppsProjectsToBuild);@(_WasmDebuggerTestsProjectsToBuild);@(_BuildiOSAppsProjectsToBuild);@(_BaseProjectsToBuild)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -117,11 +126,12 @@
 
     <PropertyGroup>
       <TestEnvFilePath>$(NetCoreAppCurrentTestHostPath)$(TestEnvFileName)</TestEnvFilePath>
+      <_targetsWindows Condition="'$(TargetOS)' == 'windows'">true</_targetsWindows>
     </PropertyGroup>
 
     <ItemGroup>
       <_ProjectsToBuild Include="$(RepoRoot)\src\tests\Common\testenvironment.proj">
-        <Properties>Scenario=$(Scenario);TestEnvFileName=$(TestEnvFilePath);TargetsWindows=$(TargetsWindows)</Properties>
+        <Properties>Scenario=$(Scenario);TestEnvFileName=$(TestEnvFilePath);TargetsWindows=$(_targetsWindows)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -156,8 +166,8 @@
       <_RuntimeInput Include="$(NetCoreAppCurrentTestHostPath)**\*.dll" />
 
       <!-- Add the scenario TestEnv batch files -->
-      <_RuntimeInput Condition=" '$(Scenarios)' != '' and '$(TargetsWindows)' == 'true' " Include="$(NetCoreAppCurrentTestHostPath)**\*.cmd" />
-      <_RuntimeInput Condition=" '$(Scenarios)' != '' and '$(TargetsWindows)' != 'true' " Include="$(NetCoreAppCurrentTestHostPath)**\*.sh" />
+      <_RuntimeInput Condition="'$(Scenarios)' != '' and '$(TargetOS)' == 'windows'" Include="$(NetCoreAppCurrentTestHostPath)**\*.cmd" />
+      <_RuntimeInput Condition="'$(Scenarios)' != '' and '$(TargetOS)' != 'windows'" Include="$(NetCoreAppCurrentTestHostPath)**\*.sh" />
     </ItemGroup>
   </Target>
 

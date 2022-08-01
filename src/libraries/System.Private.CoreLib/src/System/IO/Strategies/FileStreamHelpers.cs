@@ -19,10 +19,10 @@ namespace System.IO.Strategies
             return WrapIfDerivedType(fileStream, strategy);
         }
 
-        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
+        internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode)
         {
             FileStreamStrategy strategy =
-                EnableBufferingIfNeeded(ChooseStrategyCore(path, mode, access, share, options, preallocationSize), bufferSize);
+                EnableBufferingIfNeeded(ChooseStrategyCore(path, mode, access, share, options, preallocationSize, unixCreateMode), bufferSize);
 
             return WrapIfDerivedType(fileStream, strategy);
         }
@@ -53,14 +53,7 @@ namespace System.IO.Strategies
 
         internal static void ValidateArguments(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
-            if (path == null)
-            {
-                throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
-            }
-            else if (path.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             // don't include inheritable in our bounds check for share
             FileShare tempshare = share & ~FileShare.Inheritable;

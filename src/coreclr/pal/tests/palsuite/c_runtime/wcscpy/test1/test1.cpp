@@ -25,7 +25,7 @@ PALTEST(c_runtime_wcscpy_test1_paltest_wcscpy_test1, "c_runtime/wcscpy/test1/pal
     WCHAR *ret;
     char buffer[256];
 
-    
+
     if (PAL_Initialize(argc, argv))
     {
         return FAIL;
@@ -33,10 +33,10 @@ PALTEST(c_runtime_wcscpy_test1_paltest_wcscpy_test1, "c_runtime/wcscpy/test1/pal
 
 
     ret = wcscpy(dest, str);
-    
+
     if (ret != dest || memcmp(dest, result, sizeof(result)) != 0)
     {
-        sprintf_s(buffer, _countof(buffer), "%S", dest);
+        sprintf_s(buffer, ARRAY_SIZE(buffer), "%S", dest);
         Fail("Expected wcscpy to give \"%s\" with a return value of %p, got \"%s\" "
             "with a return value of %p.\n", "foo", dest, buffer, ret);
     }

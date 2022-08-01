@@ -5,7 +5,7 @@
 **
 ** Source:  test1.c (CreatePipe)
 **
-** Purpose: Tests the PAL implementation of the CreatePipe function. 
+** Purpose: Tests the PAL implementation of the CreatePipe function.
 **          This test will create two pipes, a read and a write. Once
 **          the pipes have been created, they will be tested by writing
 **          and then reading, then comparing the results.
@@ -40,9 +40,9 @@ PALTEST(miscellaneous_CreatePipe_test1_paltest_createpipe_test1, "miscellaneous/
     }
 
     /*Setup SECURITY_ATTRIBUTES structure for CreatePipe*/
-    lpPipeAttributes.nLength              = sizeof(lpPipeAttributes); 
-    lpPipeAttributes.lpSecurityDescriptor = NULL; 
-    lpPipeAttributes.bInheritHandle       = TRUE; 
+    lpPipeAttributes.nLength              = sizeof(lpPipeAttributes);
+    lpPipeAttributes.lpSecurityDescriptor = NULL;
+    lpPipeAttributes.bInheritHandle       = TRUE;
 
     /*Create a Pipe*/
     bRetVal = CreatePipe(&hReadPipe,      /* read handle*/
@@ -53,7 +53,7 @@ PALTEST(miscellaneous_CreatePipe_test1_paltest_createpipe_test1, "miscellaneous/
     {
         Fail("ERROR: %ld :Unable to create pipe\n", GetLastError());
     }
-    
+
     /*Write to the write pipe handle*/
     bRetVal = WriteFile(hWritePipe,         /* handle to write pipe*/
                         cTestString,        /* buffer to write*/
@@ -68,7 +68,7 @@ PALTEST(miscellaneous_CreatePipe_test1_paltest_createpipe_test1, "miscellaneous/
 
     /*Read, 256 bytes, more bytes then actually written.
      This will give allow us to use the value that ReadFile
-     returns for comparision.*/
+     returns for comparison.*/
     bRetVal = ReadFile(hReadPipe,          /* handle to read pipe*/
                        buffer,             /* buffer to write to*/
                        256,                /* number of bytes to read*/

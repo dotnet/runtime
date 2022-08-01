@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -23,7 +22,7 @@ namespace System.Runtime.InteropServices
     /// Pinned - same as Normal, but allows the address of the actual object to be taken.
     /// </remarks>
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct GCHandle
+    public partial struct GCHandle : IEquatable<GCHandle>
     {
         // The actual integer handle value that the EE uses internally.
         private IntPtr _handle;
@@ -163,7 +162,12 @@ namespace System.Runtime.InteropServices
 
         public override int GetHashCode() => _handle.GetHashCode();
 
-        public override bool Equals([NotNullWhen(true)] object? o) => o is GCHandle && _handle == ((GCHandle)o)._handle;
+        public override bool Equals([NotNullWhen(true)] object? o) => o is GCHandle other && Equals(other);
+
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(GCHandle other) => _handle == other._handle;
 
         public static bool operator ==(GCHandle a, GCHandle b) => (nint)a._handle == (nint)b._handle;
 

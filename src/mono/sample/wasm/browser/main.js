@@ -1,19 +1,54 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+import createDotnetRuntime from './dotnet.js'
 
-"use strict";
+function wasm_exit(exit_code, reason) {
+    /* Set result in a tests_done element, to be read by xharness in runonly CI test */
+    const tests_done_elem = document.createElement("label");
+    tests_done_elem.id = "tests_done";
+    tests_done_elem.innerHTML = exit_code.toString();
+    if (exit_code) tests_done_elem.style.background = "red";
+    document.body.appendChild(tests_done_elem);
 
-var Module = {
-    configSrc: "./mono-config.json",
-    onDotNetReady: () => {
-        try {
-            App.init();
-        } catch (error) {
-            set_exit_code(1, error);
-            throw (error);
+    if (reason) console.error(reason);
+    console.log(`WASM EXIT ${exit_code}`);
+}
+
+function add(a, b) {
+    return a + b;
+}
+
+function sub(a, b) {
+    return a - b;
+}
+
+try {
+    const { MONO, RuntimeBuildInfo, IMPORTS } = await createDotnetRuntime(() => {
+        console.log('user code in createDotnetRuntime callback');
+        return {
+            configSrc: "./mono-config.json",
+            preInit: () => { console.log('user code Module.preInit'); },
+            preRun: () => { console.log('user code Module.preRun'); },
+            onRuntimeInitialized: () => { console.log('user code Module.onRuntimeInitialized'); },
+            postRun: () => { console.log('user code Module.postRun'); },
         }
-    },
-    onAbort: (error) => {
-        set_exit_code(1, error);
-    },
-};
+    });
+    console.log('user code after createDotnetRuntime()');
+    IMPORTS.Sample = {
+        Test: {
+            add,
+            sub
+        }
+    };
+
+    const exports = await MONO.mono_wasm_get_assembly_exports("Wasm.Browser.Sample.dll");
+    const meaning = exports.Sample.Test.TestMeaning();
+    console.debug(`meaning: ${meaning}`);
+    if (!exports.Sample.Test.IsPrime(meaning)) {
+        document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
+        console.debug(`ret: ${meaning}`);
+    }
+
+    let exit_code = await MONO.mono_run_main("Wasm.Browser.Sample.dll", []);
+    wasm_exit(exit_code);
+} catch (err) {
+    wasm_exit(2, err);
+}

@@ -21,19 +21,21 @@ namespace System.Runtime.InteropServices.ObjectiveC
             System.StubHelpers.StubHelpers.SetPendingExceptionObject(exception);
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TrySetGlobalMessageSendCallback")]
-        private static extern bool TrySetGlobalMessageSendCallback(
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TrySetGlobalMessageSendCallback")]
+        [return:MarshalAs(UnmanagedType.Bool)]
+        private static partial bool TrySetGlobalMessageSendCallback(
             MessageSendFunction msgSendFunction,
             IntPtr func);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TryInitializeReferenceTracker")]
-        private static unsafe extern bool TryInitializeReferenceTracker(
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TryInitializeReferenceTracker")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static unsafe partial bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_CreateReferenceTrackingHandle")]
-        private static extern IntPtr CreateReferenceTrackingHandleInternal(
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_CreateReferenceTrackingHandle")]
+        private static partial IntPtr CreateReferenceTrackingHandleInternal(
             ObjectHandleOnStack obj,
             out int memInSizeT,
             out IntPtr mem);

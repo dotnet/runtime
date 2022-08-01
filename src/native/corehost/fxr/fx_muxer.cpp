@@ -234,7 +234,7 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
     else
     {
         // Check if we can extrapolate |arch|<DIR_SEPARATOR>|tfm| for probing stores
-        // Check for for both forward and back slashes
+        // Check for both forward and back slashes
         pal::string_t placeholder = _X("|arch|\\|tfm|");
         auto pos_placeholder = probe_path.find(placeholder);
         if (pos_placeholder == pal::string_t::npos)
@@ -245,7 +245,7 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
 
         if (pos_placeholder != pal::string_t::npos)
         {
-            pal::string_t segment = get_arch();
+            pal::string_t segment = get_current_arch_name();
             segment.push_back(DIR_SEPARATOR);
             segment.append(tfm);
             probe_path.replace(pos_placeholder, placeholder.length(), segment);
@@ -466,7 +466,7 @@ namespace
             }
             else
             {
-                rc = fx_resolver_t::resolve_frameworks_for_app(host_info, override_settings, app_config, fx_definitions);
+                rc = fx_resolver_t::resolve_frameworks_for_app(host_info, app_config.get_is_multilevel_lookup_disabled(), override_settings, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : nullptr);
                 if (rc != StatusCode::Success)
                 {
                     return rc;
@@ -620,7 +620,7 @@ namespace
             return StatusCode::InvalidConfigFile;
         }
 
-        rc = fx_resolver_t::resolve_frameworks_for_app(host_info, override_settings, app_config, fx_definitions);
+        rc = fx_resolver_t::resolve_frameworks_for_app(host_info, app_config.get_is_multilevel_lookup_disabled(), override_settings, app_config, fx_definitions);
         if (rc != StatusCode::Success)
             return rc;
 
@@ -941,7 +941,7 @@ const host_context_t* fx_muxer_t::get_active_host_context()
     const hostpolicy_contract_t &hostpolicy_contract = g_active_host_context->hostpolicy_contract;
     if (hostpolicy_contract.initialize == nullptr)
     {
-        trace::warning(_X("Getting the contract for the initialized hostpolicy is only supprted for .NET Core 3.0 or a higher version."));
+        trace::warning(_X("Getting the contract for the initialized hostpolicy is only supported for .NET Core 3.0 or a higher version."));
         return nullptr;
     }
 
@@ -1066,15 +1066,16 @@ int fx_muxer_t::handle_cli(
         }
         else if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
         {
-            command_line::print_muxer_info(host_info.dotnet_root);
+            command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path());
             return StatusCode::Success;
         }
 
-        trace::error(_X("Could not execute because the application was not found or a compatible .NET SDK is not installed."));
-        trace::error(_X("Possible reasons for this include:"));
-        trace::error(_X("  * You intended to execute a .NET program:"));
-        trace::error(_X("      The application '%s' does not exist."), app_candidate.c_str());
-        trace::error(_X("  * You intended to execute a .NET SDK command:"));
+        trace::error(
+            _X("The command could not be loaded, possibly because:\n")
+            _X("  * You intended to execute a .NET application:\n")
+            _X("      The application '%s' does not exist.\n")
+            _X("  * You intended to execute a .NET SDK command:"),
+            app_candidate.c_str());
         resolver.print_resolution_error(host_info.dotnet_root, _X("      "));
 
         return StatusCode::LibHostSdkFindFailure;
@@ -1122,7 +1123,7 @@ int fx_muxer_t::handle_cli(
 
     if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
     {
-        command_line::print_muxer_info(host_info.dotnet_root);
+        command_line::print_muxer_info(host_info.dotnet_root, resolver.global_file_path());
     }
 
     return result;

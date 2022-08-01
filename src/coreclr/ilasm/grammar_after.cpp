@@ -60,14 +60,14 @@ static Keywords keywords[] = {
 #define NEW_INLINE_NAMES
                 // The volatile instruction collides with the volatile keyword, so
                 // we treat it as a keyword everywhere and modify the grammar accordingly (Yuck!)
-#define OPDEF(c,s,pop,push,args,type,l,s1,s2,ctrl) { s, args, c, lengthof(s)-1 },
-#define OPALIAS(alias_c, s, c) { s, NO_VALUE, c, lengthof(s)-1 },
+#define OPDEF(c,s,pop,push,args,type,l,s1,s2,ctrl) { s, args, c, STRING_LENGTH(s) },
+#define OPALIAS(alias_c, s, c) { s, NO_VALUE, c, STRING_LENGTH(s) },
 #include "opcode.def"
 #undef OPALIAS
 #undef OPDEF
 
                 /* keywords */
-#define KYWD(name, sym, val)    { name, sym, val, lengthof(name)-1 },
+#define KYWD(name, sym, val)    { name, sym, val, STRING_LENGTH(name) },
 #include "il_kywd.h"
 #undef KYWD
 
@@ -76,27 +76,27 @@ static Keywords keywords[] = {
 /********************************************************************************/
 /* File encoding-dependent functions */
 /*--------------------------------------------------------------------------*/
-char* nextcharU(__in __nullterminated char* pos)
+char* nextcharU(_In_ __nullterminated char* pos)
 {
     return ++pos;
 }
 
-char* nextcharW(__in __nullterminated char* pos)
+char* nextcharW(_In_ __nullterminated char* pos)
 {
     return (pos+2);
 }
 /*--------------------------------------------------------------------------*/
-unsigned SymAU(__in __nullterminated char* curPos)
+unsigned SymAU(_In_ __nullterminated char* curPos)
 {
     return (unsigned)*curPos;
 }
 
-unsigned SymW(__in __nullterminated char* curPos)
+unsigned SymW(_In_ __nullterminated char* curPos)
 {
     return (unsigned)*((WCHAR*)curPos);
 }
 /*--------------------------------------------------------------------------*/
-char* NewStrFromTokenAU(__in_ecount(tokLen) char* curTok, size_t tokLen)
+char* NewStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen)
 {
     char *nb = new char[tokLen+1];
     if(nb != NULL)
@@ -106,7 +106,7 @@ char* NewStrFromTokenAU(__in_ecount(tokLen) char* curTok, size_t tokLen)
     }
     return nb;
 }
-char* NewStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen)
+char* NewStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen)
 {
     WCHAR* wcurTok = (WCHAR*)curTok;
     char *nb = new char[(tokLen<<1) + 2];
@@ -118,14 +118,14 @@ char* NewStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen)
     return nb;
 }
 /*--------------------------------------------------------------------------*/
-char* NewStaticStrFromTokenAU(__in_ecount(tokLen) char* curTok, size_t tokLen, __out_ecount(bufSize) char* staticBuf, size_t bufSize)
+char* NewStaticStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen, _Out_writes_(bufSize) char* staticBuf, size_t bufSize)
 {
     if(tokLen >= bufSize) return NULL;
     memcpy(staticBuf, curTok, tokLen);
     staticBuf[tokLen] = 0;
     return staticBuf;
 }
-char* NewStaticStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen, __out_ecount(bufSize) char* staticBuf, size_t bufSize)
+char* NewStaticStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen, _Out_writes_(bufSize) char* staticBuf, size_t bufSize)
 {
     WCHAR* wcurTok = (WCHAR*)curTok;
     if(tokLen >= bufSize/2) return NULL;
@@ -134,10 +134,10 @@ char* NewStaticStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen, __
     return staticBuf;
 }
 /*--------------------------------------------------------------------------*/
-unsigned GetDoubleAU(__in __nullterminated char* begNum, unsigned L, double** ppRes)
+unsigned GetDoubleAU(_In_ __nullterminated char* begNum, unsigned L, double** ppRes)
 {
     static char dbuff[128];
-    char* pdummy;
+    char* pdummy = NULL;
     if(L > 127) L = 127;
     memcpy(dbuff,begNum,L);
     dbuff[L] = 0;
@@ -145,10 +145,10 @@ unsigned GetDoubleAU(__in __nullterminated char* begNum, unsigned L, double** pp
     return ((unsigned)(pdummy - dbuff));
 }
 
-unsigned GetDoubleW(__in __nullterminated char* begNum, unsigned L, double** ppRes)
+unsigned GetDoubleW(_In_ __nullterminated char* begNum, unsigned L, double** ppRes)
 {
     static char dbuff[256];
-    char* pdummy;
+    char* pdummy = NULL;
     if(L > 254) L = 254;
     memcpy(dbuff,begNum,L);
     dbuff[L] = 0;
@@ -198,7 +198,7 @@ char* yygetline(int Line)
     return buff;
 }
 
-void yyerror(__in __nullterminated const char* str) {
+void yyerror(_In_ __nullterminated const char* str) {
     char tokBuff[64];
     WCHAR *wzfile = (WCHAR*)(PENV->in->namew());
     int iline = PENV->curLine;
@@ -225,7 +225,7 @@ void yyerror(__in __nullterminated const char* str) {
 /********************************************************************************/
 /* looks up the typedef 'name' of length 'nameLen' (name does not need to be
    null terminated)   Returns 0 on failure */
-TypeDefDescr* findTypedef(__in_ecount(NameLen) char* name, size_t NameLen)
+TypeDefDescr* findTypedef(_In_reads_(NameLen) char* name, size_t NameLen)
 {
     TypeDefDescr* pRet = NULL;
     static char Name[4096];
@@ -354,7 +354,7 @@ static unsigned __int64 str2uint64(const char* str, const char** endStr, unsigne
 }
 /********************************************************************************/
 /* Append an UTF-8 string preceded by compressed length, no zero terminator, to a BinStr */
-static void AppendStringWithLength(BinStr* pbs, __in __nullterminated char* sz)
+static void AppendStringWithLength(BinStr* pbs, _In_ __nullterminated char* sz)
 {
     if((pbs != NULL) && (sz != NULL))
     {
@@ -466,7 +466,7 @@ static int ByteSwapCustomBlob(BYTE *ptr, int length, int type, bool isSZArray)
 }
 #endif
 
-static void AppendFieldToCustomBlob(BinStr* pBlob, __in BinStr* pField)
+static void AppendFieldToCustomBlob(BinStr* pBlob, _In_ BinStr* pField)
 {
     pBlob->appendFrom(pField, (*(pField->ptr()) == ELEMENT_TYPE_SZARRAY) ? 2 : 1);
 
@@ -550,7 +550,7 @@ BOOL IsValidStartingSymbol(unsigned x) { return (x < 128)&&_ValidSS[x]; }
 BOOL IsValidContinuingSymbol(unsigned x) { return (x < 128)&&_ValidCS[x]; }
 
 
-char* nextBlank(__in __nullterminated char* curPos)
+char* nextBlank(_In_ __nullterminated char* curPos)
 {
     for(;;)
     {
@@ -578,7 +578,7 @@ char* nextBlank(__in __nullterminated char* curPos)
     }
 }
 
-char* skipBlanks(__in __nullterminated char* curPos, unsigned* pstate)
+char* skipBlanks(_In_ __nullterminated char* curPos, unsigned* pstate)
 {
     const unsigned eolComment = 1;
     const unsigned multiComment = 2;
@@ -658,7 +658,7 @@ PAST_WHITESPACE:
     return curPos;
 }
 
-char* FullFileName(__in __nullterminated WCHAR* wzFileName, unsigned uCodePage);
+char* FullFileName(_In_ __nullterminated WCHAR* wzFileName, unsigned uCodePage);
 
 int ProcessEOF()
 {
@@ -1232,7 +1232,7 @@ Its_An_Id:
             if (Sym(nextchar(curPos))=='.' && Sym(nextchar(nextchar(curPos)))=='.')
             {
                 curPos = nextchar(nextchar(nextchar(curPos)));
-                tok = ELIPSIS;
+                tok = ELLIPSIS;
             }
             else
             {
@@ -1280,7 +1280,7 @@ Just_A_Character:
 #endif
 
 /**************************************************************************/
-static char* newString(__in __nullterminated const char* str1)
+static char* newString(_In_ __nullterminated const char* str1)
 {
     char* ret = new char[strlen(str1)+1];
     if(ret) strcpy_s(ret, strlen(str1)+1, str1);
@@ -1290,7 +1290,7 @@ static char* newString(__in __nullterminated const char* str1)
 /**************************************************************************/
 /* concatenate strings and release them */
 
-static char* newStringWDel(__in __nullterminated char* str1, char delimiter, __in __nullterminated char* str3)
+static char* newStringWDel(_In_ __nullterminated char* str1, char delimiter, _In_ __nullterminated char* str3)
 {
     size_t len1 = strlen(str1);
     size_t len = len1+2;
@@ -1414,7 +1414,7 @@ AGAIN:
                             TyParFixupList.PEEK(n));
                         m = 0;
                     }
-                    *pb = (*pb == ELEMENT_TYPE_MVARFIXUP)? ELEMENT_TYPE_MVAR : ELEMENT_TYPE_VAR;
+                    *pb = (BYTE)((*pb == ELEMENT_TYPE_MVARFIXUP) ? ELEMENT_TYPE_MVAR : ELEMENT_TYPE_VAR);
                     int compressed_size_m = (int)CorSigCompressData(m,pb+1);
 
                     // Note that CorSigCompressData() (and hence, CorSigUncompressData()) store a number
@@ -1630,7 +1630,7 @@ void AsmParse::ParseFile(ReadStream* stream)
 };
 
 /**************************************************************************/
-char* AsmParse::fillBuff(__in_opt __nullterminated char* pos)
+char* AsmParse::fillBuff(_In_opt_z_ char* pos)
 {
     int iPutToBuffer;
     g_uCodePage = CP_UTF8;
@@ -1764,7 +1764,7 @@ BinStr* AsmParse::MakeTypeClass(CorElementType kind, mdToken tk)
     return(ret);
 }
 /**************************************************************************/
-void PrintANSILine(FILE* pF, __in __nullterminated char* sz)
+void PrintANSILine(FILE* pF, _In_ __nullterminated char* sz)
 {
         WCHAR *wz = &wzUniBuf[0];
         if(g_uCodePage != CP_ACP)

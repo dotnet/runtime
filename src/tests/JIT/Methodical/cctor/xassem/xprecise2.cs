@@ -3,11 +3,13 @@
 
 // instance method
 using System;
+using Xunit;
 namespace Precise
 {
-    class Driver
+    public class Driver_xprecise2
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

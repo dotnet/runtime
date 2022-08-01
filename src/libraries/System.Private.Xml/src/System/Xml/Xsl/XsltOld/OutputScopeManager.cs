@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Globalization;
+using System.Diagnostics;
+using System.Xml;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Globalization;
-    using System.Diagnostics;
-    using System.Xml;
-
     internal sealed class OutputScopeManager
     {
         private const int STACK_INCREMENT = 10;
@@ -97,7 +97,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             OutputScope? elementScope = (OutputScope?)_elementScopesStack.Pop();
 
-            Debug.Assert(elementScope != null); // We're adding rootElementScope to gurantee this
+            Debug.Assert(elementScope != null); // We're adding rootElementScope to guarantee this
 
             for (NamespaceDecl? scope = elementScope.Scopes; scope != null; scope = scope.Next)
             {
@@ -107,8 +107,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal string? ResolveNamespace(string prefix)
         {
-            bool thisScope;
-            return ResolveNamespace(prefix, out thisScope);
+            return ResolveNamespace(prefix, out _);
         }
 
         internal string? ResolveNamespace(string prefix, out bool thisScope)
@@ -156,7 +155,7 @@ namespace System.Xml.Xsl.XsltOld
                 Debug.Assert(_elementScopesStack[i] is OutputScope);
 
                 OutputScope elementScope = (OutputScope)_elementScopesStack[i];
-                string? pfx = null;
+                string? pfx;
                 if (elementScope.FindPrefix(nspace, out pfx))
                 {
                     string? testNspace = ResolveNamespace(pfx);

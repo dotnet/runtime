@@ -159,7 +159,7 @@ struct _MonoMemoryManager {
 	// Hashtables for Reflection handles
 	MonoGHashTable *type_hash;
 	MonoConcGHashTable *refobject_hash;
-	// Maps class -> type initializaiton exception object
+	// Maps class -> type initialization exception object
 	MonoGHashTable *type_init_exception_hash;
 	// Maps delegate trampoline addr -> delegate object
 	//MonoGHashTable *delegate_hash_table;
@@ -355,6 +355,18 @@ mono_mem_manager_get_generic (MonoImage **images, int nimages);
 
 MonoMemoryManager*
 mono_mem_manager_merge (MonoMemoryManager *mm1, MonoMemoryManager *mm2);
+
+static inline GSList*
+g_slist_prepend_mem_manager (MonoMemoryManager *memory_manager, GSList *list, gpointer data)
+{
+	GSList *new_list;
+
+	new_list = (GSList *) mono_mem_manager_alloc (memory_manager, sizeof (GSList));
+	new_list->data = data;
+	new_list->next = list;
+
+	return new_list;
+}
 
 G_END_DECLS
 

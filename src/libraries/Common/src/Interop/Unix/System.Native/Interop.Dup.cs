@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Dup", SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Dup", SetLastError = true)]
         internal static partial SafeFileHandle Dup(SafeFileHandle oldfd);
     }
 }

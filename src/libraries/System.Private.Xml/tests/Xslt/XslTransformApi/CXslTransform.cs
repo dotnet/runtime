@@ -1234,7 +1234,7 @@ namespace System.Xml.Tests
                     }
                     catch (System.InvalidOperationException e2)
                     {
-                        CheckExpectedError(e2, "system.xml", "Xslt_NoStylesheetLoaded", new string[] { "IDontExist.xsl" });
+                        CheckExpectedError(e2, "system.xml", "Xslt_NoStylesheetLoaded", new string[] { "" });
                         return;
                     }
                 }
@@ -2470,7 +2470,7 @@ namespace System.Xml.Tests
 
             if (iCount.Equals(2))
                 return;
-            _output.WriteLine("Exception not generated for invalid ouput destinations");
+            _output.WriteLine("Exception not generated for invalid output destinations");
             Assert.True(false);
         }
 
@@ -2490,7 +2490,7 @@ namespace System.Xml.Tests
                 return;
             }
 
-            _output.WriteLine("Exception not generated for invalid ouput destination");
+            _output.WriteLine("Exception not generated for invalid output destination");
             Assert.True(false);
         }
 

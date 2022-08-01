@@ -10,7 +10,7 @@
 // or a MyBar reference.
 
 .assembly extern mscorlib{}
-.assembly self_override1{}
+.assembly 'override'{}
 
 .class public abstract auto ansi beforefieldinit MyBar
        extends [mscorlib]System.Object

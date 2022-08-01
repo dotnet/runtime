@@ -27,6 +27,8 @@
 #include "mini-amd64.h"
 #include "mini-amd64-gsharedvt.h"
 
+MONO_PRAGMA_WARNING_DISABLE(4127) /* conditional expression is constant */
+
 #if defined (MONO_ARCH_GSHAREDVT_SUPPORTED)
 
 #define SRC_REG_SHIFT 0
@@ -179,10 +181,10 @@ mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
 
 	g_assertf ((code - start) <= buf_len, "%d %d", (int)(code - start), buf_len);
 
-	mono_arch_flush_icache (start, code - start);
+	mono_arch_flush_icache (start, GPTRDIFF_TO_INT (code - start));
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, GPTRDIFF_TO_UINT32 (code - start), NULL, NULL), NULL);
 
 	return start;
 }
@@ -252,7 +254,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	/* setup the frame */
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
-	
+
 	/* save stuff */
 
 	/* save info */
@@ -294,7 +296,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	/* arg1 == info */
 	amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG1, AMD64_RAX, sizeof (target_mgreg_t));
 	/* arg2 = caller stack area */
-	amd64_lea_membase (code, MONO_AMD64_ARG_REG2, AMD64_RBP, -(framesize - caller_reg_area_offset)); 
+	amd64_lea_membase (code, MONO_AMD64_ARG_REG2, AMD64_RBP, -(framesize - caller_reg_area_offset));
 
 	/* arg3 == callee stack area */
 	amd64_lea_membase (code, MONO_AMD64_ARG_REG3, AMD64_RSP, callee_reg_area_offset);
@@ -497,9 +499,9 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE));
 
 	if (info)
-		*info = mono_tramp_info_create ("gsharedvt_trampoline", buf, code - buf, ji, unwind_ops);
+		*info = mono_tramp_info_create ("gsharedvt_trampoline", buf, GPTRDIFF_TO_UINT32 (code - buf), ji, unwind_ops);
 
-	mono_arch_flush_icache (buf, code - buf);
+	mono_arch_flush_icache (buf, GPTRDIFF_TO_INT (code - buf));
 	return buf;
 }
 

@@ -20,12 +20,12 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException();
         }
 
-        internal static string QueryContextAssociatedName(SafeDeleteContext? securityContext)
+        internal static void ValidateImpersonationLevel(TokenImpersonationLevel impersonationLevel)
         {
-            throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
+            throw new PlatformNotSupportedException();
         }
 
-        internal static void ValidateImpersonationLevel(TokenImpersonationLevel impersonationLevel)
+        internal static Win32Exception CreateExceptionFromError(SecurityStatusPal statusCode)
         {
             throw new PlatformNotSupportedException();
         }

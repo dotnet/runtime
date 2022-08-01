@@ -53,38 +53,22 @@ namespace System.Net.NetworkInformation
     {
         public static IPStatus MapV4TypeToIPStatus(int type, int code)
         {
-            switch ((IcmpV4MessageType)type)
+            return (IcmpV4MessageType)type switch
             {
-                case IcmpV4MessageType.EchoReply:
-                    return IPStatus.Success;
-
-                case IcmpV4MessageType.DestinationUnreachable:
-                    switch ((IcmpV4DestinationUnreachableCode)code)
-                    {
-                        case IcmpV4DestinationUnreachableCode.DestinationNetworkUnreachable:
-                            return IPStatus.DestinationNetworkUnreachable;
-                        case IcmpV4DestinationUnreachableCode.DestinationHostUnreachable:
-                            return IPStatus.DestinationHostUnreachable;
-                        case IcmpV4DestinationUnreachableCode.DestinationProtocolUnreachable:
-                            return IPStatus.DestinationProtocolUnreachable;
-                        case IcmpV4DestinationUnreachableCode.DestinationPortUnreachable:
-                            return IPStatus.DestinationPortUnreachable;
-                        default:
-                            return IPStatus.DestinationUnreachable;
-                    }
-
-                case IcmpV4MessageType.SourceQuench:
-                    return IPStatus.SourceQuench;
-
-                case IcmpV4MessageType.TimeExceeded:
-                    return IPStatus.TimeExceeded;
-
-                case IcmpV4MessageType.ParameterProblemBadIPHeader:
-                    return IPStatus.BadHeader;
-
-                default:
-                    return IPStatus.Unknown;
-            }
+                IcmpV4MessageType.EchoReply => IPStatus.Success,
+                IcmpV4MessageType.DestinationUnreachable => (IcmpV4DestinationUnreachableCode)code switch
+                {
+                    IcmpV4DestinationUnreachableCode.DestinationNetworkUnreachable => IPStatus.DestinationNetworkUnreachable,
+                    IcmpV4DestinationUnreachableCode.DestinationHostUnreachable => IPStatus.DestinationHostUnreachable,
+                    IcmpV4DestinationUnreachableCode.DestinationProtocolUnreachable => IPStatus.DestinationProtocolUnreachable,
+                    IcmpV4DestinationUnreachableCode.DestinationPortUnreachable => IPStatus.DestinationPortUnreachable,
+                    _ => IPStatus.DestinationUnreachable,
+                },
+                IcmpV4MessageType.SourceQuench => IPStatus.SourceQuench,
+                IcmpV4MessageType.TimeExceeded => IPStatus.TtlExpired,
+                IcmpV4MessageType.ParameterProblemBadIPHeader => IPStatus.BadHeader,
+                _ => IPStatus.Unknown,
+            };
         }
     }
 }

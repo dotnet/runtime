@@ -11,7 +11,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// RuntimeDeterminedFieldLayoutAlgorithm algorithm which can be used to compute field layout
     /// for any RuntimeDeterminedType
-    /// Only useable for accessing the instance field size
+    /// Only usable for accessing the instance field size
     /// </summary>
     public class RuntimeDeterminedFieldLayoutAlgorithm : FieldLayoutAlgorithm
     {

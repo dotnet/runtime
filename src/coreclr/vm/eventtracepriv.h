@@ -18,10 +18,6 @@
 #ifndef __EVENTTRACEPRIV_H__
 #define __EVENTTRACEPRIV_H__
 
-#ifndef _countof
-#define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
-#endif
-
 // ETW has a limitation of 64K for TOTAL event Size, however there is overhead associated with
 // the event headers.   It is unclear exactly how much that is, but 1K should be sufficiently
 // far away to avoid problems without sacrificing the perf of bulk processing.
@@ -209,7 +205,7 @@ public:
         return
             sizeof(fixedSizedData) +
             sizeof(cTypeParameters) +
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
             sizeof(WCHAR) +                                 // No name in event, so just the null terminator
             cTypeParameters * sizeof(ULONGLONG);            // Type parameters
 #else
@@ -227,21 +223,20 @@ public:
     // This is really a denorm of the size already stored in rgTypeParameters, but we
     // need a persistent place to stash this away so EventDataDescCreate & EventWrite
     // have a reliable place to copy it from.  This is filled in at the last minute,
-    // when sending the event.  (On ProjectN, which doesn't have StackSArray, this is
-    // filled in earlier and used in more places.)
+    // when sending the event.
     ULONG cTypeParameters;
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
     // If > 1 type parameter, this is an array of their EEType*'s
     NewArrayHolder<ULONGLONG> rgTypeParameters;
 
     // If exactly one type parameter, this is its EEType*.  (If != 1 type parameter,
     // this is 0.)
     ULONGLONG ullSingleTypeParameter;
-#else   // FEATURE_REDHAWK
+#else   // FEATURE_NATIVEAOT
     StackSString sName;
     StackSArray<ULONGLONG> rgTypeParameters;
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 };
 
 // Encapsulates all the type event batching we need to do. This is used by
@@ -298,7 +293,7 @@ private:
 
     BYTE *m_pBulkTypeEventBuffer;
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
     int LogSingleType(EEType * pEEType);
 #else
     int LogSingleType(TypeHandle th);

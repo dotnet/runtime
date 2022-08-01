@@ -67,16 +67,14 @@ namespace System.IO.Tests
             Assert.False(info.Exists);
         }
 
-        [Fact]
-        [PlatformSpecific(CaseInsensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseInsensitiveOS))]
         public void CaseInsensitivity()
         {
             Assert.True(new DirectoryInfo(TestDirectory.ToUpperInvariant()).Exists);
             Assert.True(new DirectoryInfo(TestDirectory.ToLowerInvariant()).Exists);
         }
 
-        [Fact]
-        [PlatformSpecific(CaseSensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
         public void CaseSensitivity()
         {
             Assert.False(new DirectoryInfo(TestDirectory.ToUpperInvariant()).Exists);
@@ -111,6 +109,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Uses P/Invokes
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         public void FalseForNonRegularFile()
         {
             string fileName = GetTestFilePath();
@@ -119,24 +118,24 @@ namespace System.IO.Tests
             Assert.False(di.Exists);
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymlinkToNewDirectoryInfo()
         {
             string path = GetTestFilePath();
             new DirectoryInfo(path).Create();
 
-            string linkPath = GetTestFilePath();
+            string linkPath = GetRandomLinkPath();
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
 
             Assert.True(new DirectoryInfo(path).Exists);
             Assert.True(new DirectoryInfo(linkPath).Exists);
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = GetTestFilePath();
+            var linkPath = GetRandomLinkPath();
 
             var pathFI = new DirectoryInfo(path);
             var linkPathFI = new DirectoryInfo(linkPath);

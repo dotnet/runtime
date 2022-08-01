@@ -112,7 +112,7 @@ namespace System.Runtime.Serialization.Json
             return dataNode;
         }
 
-        private IDataNode ReadNumericalPrimitiveExtensionDataValue(XmlReaderDelegator xmlReader)
+        private static IDataNode ReadNumericalPrimitiveExtensionDataValue(XmlReaderDelegator xmlReader)
         {
             TypeCode type;
             object numericalValue = JsonObjectDataContract.ParseJsonNumber(xmlReader.ReadContentAsString(), out type);
@@ -140,8 +140,7 @@ namespace System.Runtime.Serialization.Json
 
         internal override void ReadAttributes(XmlReaderDelegator xmlReader)
         {
-            if (attributes == null)
-                attributes = new Attributes();
+            attributes ??= new Attributes();
             attributes.Reset();
 
             if (xmlReader.MoveToAttribute(JsonGlobals.typeString) && xmlReader.Value == JsonGlobals.nullString)
@@ -186,7 +185,7 @@ namespace System.Runtime.Serialization.Json
             xmlReader.MoveToElement();
         }
 
-        internal string TrimNamespace(string serverTypeNamespace)
+        internal static string TrimNamespace(string serverTypeNamespace)
         {
             if (!string.IsNullOrEmpty(serverTypeNamespace))
             {

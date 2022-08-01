@@ -36,10 +36,6 @@ namespace System.Net.Http
         private const string Response = "response";
         private const string Stale = "stale";
 
-        // Define alphanumeric characters for cnonce
-        // 48='0', 65='A', 97='a'
-        private static readonly int[] s_alphaNumChooser = new int[] { 48, 65, 97 };
-
         public static async Task<string?> GetDigestTokenForCredential(NetworkCredential credential, HttpRequestMessage request, DigestResponse digestResponse)
         {
             StringBuilder sb = StringBuilderCache.Acquire();
@@ -210,34 +206,38 @@ namespace System.Net.Http
         private static string GetRandomAlphaNumericString()
         {
             const int Length = 16;
-            Span<byte> randomNumbers = stackalloc byte[Length * 2];
-            RandomNumberGenerator.Fill(randomNumbers);
+            const string CharacterSet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-            StringBuilder sb = StringBuilderCache.Acquire(Length);
-            for (int i = 0; i < randomNumbers.Length;)
+            return string.Create<object?>(Length, null, static (destination, _) =>
             {
-                // Get a random digit 0-9, a random alphabet in a-z, or a random alphabeta in A-Z
-                int rangeIndex = randomNumbers[i++] % 3;
-                int value = randomNumbers[i++] % (rangeIndex == 0 ? 10 : 26);
-                sb.Append((char)(s_alphaNumChooser[rangeIndex] + value));
-            }
-
-            return StringBuilderCache.GetStringAndRelease(sb);
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = CharacterSet[RandomNumberGenerator.GetInt32(CharacterSet.Length)];
+                }
+            });
         }
 
         private static string ComputeHash(string data, string algorithm)
         {
-            // Disable MD5 insecure warning.
-#pragma warning disable CA5351
-            using (HashAlgorithm hash = algorithm.StartsWith(Sha256, StringComparison.OrdinalIgnoreCase) ? SHA256.Create() : (HashAlgorithm)MD5.Create())
-#pragma warning restore CA5351
-            {
-                Span<byte> result = stackalloc byte[hash.HashSize / 8]; // HashSize is in bits
-                bool hashComputed = hash.TryComputeHash(Encoding.UTF8.GetBytes(data), result, out int bytesWritten);
-                Debug.Assert(hashComputed && bytesWritten == result.Length);
+            Span<byte> hashBuffer = stackalloc byte[SHA256.HashSizeInBytes]; // SHA256 is the largest hash produced
+            byte[] dataBytes = Encoding.UTF8.GetBytes(data);
+            int written;
 
-                return HexConverter.ToString(result, HexConverter.Casing.Lower);
+            if (algorithm.StartsWith(Sha256, StringComparison.OrdinalIgnoreCase))
+            {
+                written = SHA256.HashData(dataBytes, hashBuffer);
+                Debug.Assert(written == SHA256.HashSizeInBytes);
             }
+            else
+            {
+                // Disable MD5 insecure warning.
+#pragma warning disable CA5351
+                written = MD5.HashData(dataBytes, hashBuffer);
+                Debug.Assert(written == MD5.HashSizeInBytes);
+#pragma warning restore CA5351
+            }
+
+            return HexConverter.ToString(hashBuffer.Slice(0, written), HexConverter.Casing.Lower);
         }
 
         internal sealed class DigestResponse
@@ -263,7 +263,7 @@ namespace System.Net.Http
                     key.Equals(Opaque, StringComparison.OrdinalIgnoreCase) || key.Equals(Qop, StringComparison.OrdinalIgnoreCase);
             }
 
-            private string? GetNextKey(string data, int currentIndex, out int parsedIndex)
+            private static string? GetNextKey(string data, int currentIndex, out int parsedIndex)
             {
                 // Skip leading space or tab.
                 while (currentIndex < data.Length && CharIsSpaceOrTab(data[currentIndex]))
@@ -318,7 +318,7 @@ namespace System.Net.Http
                 return data.Substring(start, length);
             }
 
-            private string? GetNextValue(string data, int currentIndex, bool expectQuotes, out int parsedIndex)
+            private static string? GetNextValue(string data, int currentIndex, bool expectQuotes, out int parsedIndex)
             {
                 Debug.Assert(currentIndex < data.Length && !CharIsSpaceOrTab(data[currentIndex]));
 
@@ -422,31 +422,25 @@ namespace System.Net.Http
 
     internal static class StringBuilderExtensions
     {
-        // Characters that require escaping in quoted string
-        private static readonly char[] SpecialCharacters = new[] { '"', '\\' };
-
         public static void AppendKeyValue(this StringBuilder sb, string key, string value, bool includeQuotes = true, bool includeComma = true)
         {
-            sb.Append(key);
-            sb.Append('=');
+            sb.Append(key).Append('=');
+
             if (includeQuotes)
             {
+                ReadOnlySpan<char> valueSpan = value;
                 sb.Append('"');
-                int lastSpecialIndex = 0;
-                int specialIndex;
                 while (true)
                 {
-                    specialIndex = value.IndexOfAny(SpecialCharacters, lastSpecialIndex);
-                    if (specialIndex >= 0)
+                    int i = valueSpan.IndexOfAny('"', '\\'); // Characters that require escaping in quoted string
+                    if (i >= 0)
                     {
-                        sb.Append(value, lastSpecialIndex, specialIndex - lastSpecialIndex);
-                        sb.Append('\\');
-                        sb.Append(value[specialIndex]);
-                        lastSpecialIndex = specialIndex + 1;
+                        sb.Append(valueSpan.Slice(0, i)).Append('\\').Append(valueSpan[i]);
+                        valueSpan = valueSpan.Slice(i + 1);
                     }
                     else
                     {
-                        sb.Append(value, lastSpecialIndex, value.Length - lastSpecialIndex);
+                        sb.Append(valueSpan);
                         break;
                     }
                 }
@@ -459,8 +453,7 @@ namespace System.Net.Http
 
             if (includeComma)
             {
-                sb.Append(',');
-                sb.Append(' ');
+                sb.Append(',').Append(' ');
             }
         }
     }

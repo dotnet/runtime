@@ -64,8 +64,10 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
         public BroadcastBlock(Func<T, T>? cloningFunction, DataflowBlockOptions dataflowBlockOptions)
         {
-            // Validate arguments
-            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            if (dataflowBlockOptions is null)
+            {
+                throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            }
 
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
@@ -112,7 +114,10 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
         void IDataflowBlock.Fault(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
 
             CompleteCore(exception, storeExceptionEvenIfAlreadyCompleting: false);
         }
@@ -754,7 +759,7 @@ namespace System.Threading.Tasks.Dataflow
                 if (header.IsValid)
                 {
                     // Notify the owner block that our count has decreased
-                    if (_itemsRemovedAction != null) _itemsRemovedAction(numDequeuedMessages);
+                    _itemsRemovedAction?.Invoke(numDequeuedMessages);
 
                     // Offer it to each target, unless a soleTarget was provided, which case just offer it to that one.
                     TargetRegistry<TOutput>.LinkedTargetInfo? cur = _targetRegistry.FirstTargetNode;
@@ -1003,9 +1008,14 @@ namespace System.Threading.Tasks.Dataflow
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
             internal IDisposable LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions)
             {
-                // Validate arguments
-                if (target == null) throw new ArgumentNullException(nameof(target));
-                if (linkOptions == null) throw new ArgumentNullException(nameof(linkOptions));
+                if (target is null)
+                {
+                    throw new ArgumentNullException(nameof(target));
+                }
+                if (linkOptions is null)
+                {
+                    throw new ArgumentNullException(nameof(linkOptions));
+                }
 
                 lock (OutgoingLock)
                 {

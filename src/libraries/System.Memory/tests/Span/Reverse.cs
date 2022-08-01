@@ -1,6 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using Xunit;
 using static System.TestHelpers;
 
@@ -43,14 +48,12 @@ namespace System.SpanTests
         {
             for (int length = 0; length < byte.MaxValue; length++)
             {
-                var actual = new byte[length];
+                byte[] actual = new byte[length];
+                byte[] expected = new byte[length];
                 for (int i = 0; i < length; i++)
                 {
-                    actual[i] = (byte)i;
+                    actual[i] = expected[length - 1 - i] = (byte)i;
                 }
-                byte[] expected = new byte[length];
-                Array.Copy(actual, expected, length);
-                Array.Reverse(expected);
 
                 var span = new Span<byte>(actual);
                 span.Reverse();
@@ -70,11 +73,24 @@ namespace System.SpanTests
             Assert.Equal<byte>(expected, actual);
         }
 
-        [Fact]
-        public static void ReverseByteUnaligned()
+        public static IEnumerable<object[]> GetReverseByteUnalignedArguments()
         {
-            const int length = 32;
             const int offset = 1;
+
+            yield return new object[] { offset, 4 };
+            yield return new object[] { offset, 5 };
+
+            // vectorized execution paths for AVX2
+            yield return new object[] { offset, offset + Vector256<byte>.Count * 2 }; // even
+            yield return new object[] { offset, offset + Vector256<byte>.Count * 2 + 1 }; // odd
+            // vectorized execution paths for SSE2
+            yield return new object[] { offset, offset + Vector128<byte>.Count * 2 }; // even
+            yield return new object[] { offset, offset + Vector128<byte>.Count * 2 + 1 }; // odd
+        }
+
+        [Theory, MemberData(nameof(GetReverseByteUnalignedArguments))]
+        public static void ReverseByteUnaligned(int offset, int length)
+        {
             var actualFull = new byte[length];
             for (int i = 0; i < length; i++)
             {
@@ -82,7 +98,7 @@ namespace System.SpanTests
             }
             byte[] expectedFull = new byte[length];
             Array.Copy(actualFull, expectedFull, length);
-            Array.Reverse(expectedFull, offset, length - offset - 1);
+            ArrayReverse(expectedFull, offset, length - offset - 1);
 
             var expectedSpan = new Span<byte>(expectedFull, offset, length - offset - 1);
             var actualSpan = new Span<byte>(actualFull, offset, length - offset - 1);
@@ -95,11 +111,56 @@ namespace System.SpanTests
             Assert.Equal(expectedFull[length - 1], actualFull[length - 1]);
         }
 
-        [Fact]
-        public static void ReverseIntPtrOffset()
+        [Theory]
+        [InlineData(3)] // non-vectorized, odd
+        [InlineData(4)] // non-vectorized, even
+        [InlineData(127)] // vectorized, odd
+        [InlineData(128)] // vectorized, even
+        public static void ReverseChar(int length)
         {
-            const int length = 32;
+            char[] actual = new char[length];
+            char[] expected = new char[length];
+            for (int i = 0; i < length; i++)
+            {
+                actual[i] = expected[length - 1 - i] = (char)i;
+            }
+
+            var span = new Span<char>(actual);
+            span.Reverse();
+            Assert.Equal<char>(expected, actual);
+        }
+
+        [Fact]
+        public static void ReverseCharTwiceReturnsOriginal()
+        {
+            char[] actual = { 'a', 'b', 'c', 'd' };
+            char[] expected = { 'a', 'b', 'c', 'd' };
+
+            Span<char> span = actual;
+            span.Reverse();
+            span.Reverse();
+            Assert.Equal<char>(expected, actual);
+        }
+
+        public static IEnumerable<object[]> GetReverseIntPtrOffsetArguments()
+        {
             const int offset = 2;
+
+            yield return new object[] { offset, 2 };
+
+            // vectorized execution paths for AVX2
+            int avx2VectorSize = IntPtr.Size == 4 ? Vector256<int>.Count : Vector256<long>.Count;
+            yield return new object[] { offset, offset + avx2VectorSize * 2 }; // even
+            yield return new object[] { offset, offset + avx2VectorSize * 2 + 1 }; // odd
+            // vectorized execution paths for SSE
+            int ss2VectorSize = IntPtr.Size == 4 ? Vector128<int>.Count : Vector128<long>.Count;
+            yield return new object[] { offset, offset + ss2VectorSize * 2 }; // even
+            yield return new object[] { offset, offset + ss2VectorSize * 2 + 1 }; // odd
+        }
+
+        [Theory, MemberData(nameof(GetReverseIntPtrOffsetArguments))]
+        public static void ReverseIntPtrOffset(int offset, int length)
+        {
             var actualFull = new IntPtr[length];
             for (int i = 0; i < length; i++)
             {
@@ -107,7 +168,7 @@ namespace System.SpanTests
             }
             IntPtr[] expectedFull = new IntPtr[length];
             Array.Copy(actualFull, expectedFull, length);
-            Array.Reverse(expectedFull, offset, length - offset);
+            ArrayReverse(expectedFull, offset, length - offset);
 
             var expectedSpan = new Span<IntPtr>(expectedFull, offset, length - offset);
             var actualSpan = new Span<IntPtr>(actualFull, offset, length - offset);
@@ -120,40 +181,38 @@ namespace System.SpanTests
             Assert.Equal(expectedFull[1], actualFull[1]);
         }
 
-        [Fact]
-        public static void ReverseValueTypeWithoutReferences()
+        [Theory]
+        [InlineData(2048)] // even
+        [InlineData(2049)] // odd
+        public static void ReverseValueTypeWithoutReferencesFourBytesSize(int length)
         {
-            const int length = 2048;
-            int[] actual = new int[length];
+            (short, short)[] actual = new (short, short)[length];
+            (short, short)[] expected = new (short, short)[length];
             for (int i = 0; i < length; i++)
             {
-                actual[i] = i;
+                actual[i] = expected[length - 1 - i] = ((short)i, (short)(i >> 16));
             }
-            int[] expected = new int[length];
-            Array.Copy(actual, expected, length);
-            Array.Reverse(expected);
 
-            var span = new Span<int>(actual);
+            var span = new Span<(short, short)>(actual);
             span.Reverse();
-            Assert.Equal<int>(expected, actual);
+            Assert.Equal<(short, short)>(expected, actual);
         }
 
-        [Fact]
-        public static void ReverseValueTypeWithoutReferencesPointerSize()
+        [Theory]
+        [InlineData(16)] // even
+        [InlineData(15)] // odd
+        public static void ReverseValueTypeWithoutReferencesEightByteSize(int length)
         {
-            const int length = 15;
-            long[] actual = new long[length];
+            (int, int)[] actual = new (int, int)[length];
+            (int, int)[] expected = new (int, int)[length];
             for (int i = 0; i < length; i++)
             {
-                actual[i] = i;
+                actual[i] = expected[length - 1 - i] = (-i, i);
             }
-            long[] expected = new long[length];
-            Array.Copy(actual, expected, length);
-            Array.Reverse(expected);
 
-            var span = new Span<long>(actual);
+            var span = new Span<(int, int)>(actual);
             span.Reverse();
-            Assert.Equal<long>(expected, actual);
+            Assert.Equal<(int, int)>(expected, actual);
         }
 
         [Fact]
@@ -161,13 +220,11 @@ namespace System.SpanTests
         {
             const int length = 2048;
             string[] actual = new string[length];
+            string[] expected = new string[length];
             for (int i = 0; i < length; i++)
             {
-                actual[i] = i.ToString();
+                actual[i] = expected[length - 1 - i] = i.ToString();
             }
-            string[] expected = new string[length];
-            Array.Copy(actual, expected, length);
-            Array.Reverse(expected);
 
             var span = new Span<string>(actual);
             span.Reverse();
@@ -212,6 +269,25 @@ namespace System.SpanTests
             var span = new Span<TestValueTypeWithReference>(actual);
             span.Reverse();
             Assert.Equal<TestValueTypeWithReference>(expected, actual);
+        }
+
+        // this copy of the old Array.Reverse implementation allows us to test new,
+        // vectorized logic used by both Array.Reverse and Span.Reverse
+        static void ArrayReverse<T>(T[] array, int index, int length)
+        {
+            if (length <= 1)
+            {
+                return;
+            }
+
+            int firstIndex = index;
+            int lastIndex = firstIndex + length - 1;
+            do
+            {
+                (array[firstIndex], array[lastIndex]) = (array[lastIndex], array[firstIndex]);
+                firstIndex++;
+                lastIndex--;
+            } while (firstIndex < lastIndex);
         }
     }
 }

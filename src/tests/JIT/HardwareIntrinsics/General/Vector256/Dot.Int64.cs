@@ -292,11 +292,19 @@ namespace JIT.HardwareIntrinsics.General
             bool succeeded = true;
 
             Int64 actualResult = default;
+            Int64 intermResult = default;
 
             for (var i = 0; i < Op1ElementCount; i++)
             {
-                actualResult += (Int64)(left[i] * right[i]);
+                if ((i % Vector128<Int64>.Count) == 0)
+                {
+                    actualResult += intermResult;
+                    intermResult = default;
+                }
+                intermResult += (Int64)(left[i] * right[i]);
             }
+
+            actualResult += intermResult;
 
             if (actualResult != result)
             {

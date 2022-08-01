@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -18,6 +19,53 @@ namespace Microsoft.Interop
         Core,
         Standard,
         Net
+    }
+
+    /// <summary>
+    /// An enumeration describing how a <see cref="TypePositionInfo"/> should be represented in its corresponding native signature element (parameter, field, or return value).
+    /// </summary>
+    public enum SignatureBehavior
+    {
+        /// <summary>
+        /// The native type should match the managed type, including rehydrating marshalling attributes and by-ref syntax (pure forwarding).
+        /// </summary>
+        ManagedTypeAndAttributes,
+
+        /// <summary>
+        /// The native signature should be the type returned by <see cref="IMarshallingGenerator.AsNativeType(TypePositionInfo)"/> passed by value.
+        /// </summary>
+        NativeType,
+
+        /// <summary>
+        /// The native signature should be a pointer to the type returned by <see cref="IMarshallingGenerator.AsNativeType(TypePositionInfo)"/> passed by value.
+        /// </summary>
+        PointerToNativeType
+    }
+
+    /// <summary>
+    /// An enumeration describing how a <see cref="TypePositionInfo"/> should be represented in its corresponding native signature element (parameter, field, or return value).
+    /// </summary>
+    public enum ValueBoundaryBehavior
+    {
+        /// <summary>
+        /// The managed value should be passed as-is, including any managed by-ref syntax used in the managed declaration.
+        /// </summary>
+        ManagedIdentifier,
+
+        /// <summary>
+        /// The native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be passed by value.
+        /// </summary>
+        NativeIdentifier,
+
+        /// <summary>
+        /// The address of the native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be passed by value.
+        /// </summary>
+        AddressOfNativeIdentifier,
+
+        /// <summary>
+        /// The native identifier provided by <see cref="StubCodeContext.GetIdentifiers(TypePositionInfo)"/> should be cast to the native type.
+        /// </summary>
+        CastNativeIdentifier
     }
 
     /// <summary>
@@ -41,19 +89,19 @@ namespace Microsoft.Interop
         TypeSyntax AsNativeType(TypePositionInfo info);
 
         /// <summary>
-        /// Get the <paramref name="info"/> as a parameter of the P/Invoke declaration
+        /// Get shape that represents the provided <paramref name="info"/> in the native signature
         /// </summary>
         /// <param name="info">Object to marshal</param>
         /// <returns>Parameter syntax for <paramref name="info"/></returns>
-        ParameterSyntax AsParameter(TypePositionInfo info);
+        SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info);
 
         /// <summary>
-        /// Get the <paramref name="info"/> as an argument to be passed to the P/Invoke
+        /// Get shape of how the value represented by <paramref name="info"/> should be passed at the managed/native boundary in the provided <paramref name="context"/>
         /// </summary>
         /// <param name="info">Object to marshal</param>
         /// <param name="context">Code generation context</param>
         /// <returns>Argument syntax for <paramref name="info"/></returns>
-        ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context);
+        ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context);
 
         /// <summary>
         /// Generate code for marshalling
@@ -71,7 +119,7 @@ namespace Microsoft.Interop
 
         /// <summary>
         /// Returns whether or not this marshaller uses an identifier for the native value in addition
-        /// to an identifer for the managed value.
+        /// to an identifier for the managed value.
         /// </summary>
         /// <param name="info">Object to marshal</param>
         /// <param name="context">Code generation context</param>
@@ -89,19 +137,6 @@ namespace Microsoft.Interop
         /// <param name="context">The marshalling context.</param>
         /// <returns></returns>
         bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context);
-    }
-
-    /// <summary>
-    /// Interface for generating attributes for native return types.
-    /// </summary>
-    public interface IAttributedReturnTypeMarshallingGenerator : IMarshallingGenerator
-    {
-        /// <summary>
-        /// Gets any attributes that should be applied to the return type for this <paramref name="info"/>.
-        /// </summary>
-        /// <param name="info">Object to marshal</param>
-        /// <returns>Attributes for the return type for this <paramref name="info"/>, or <c>null</c> if no attributes should be added.</returns>
-        AttributeListSyntax? GenerateAttributesForReturnType(TypePositionInfo info);
     }
 
 
@@ -135,5 +170,10 @@ namespace Microsoft.Interop
         /// [Optional] Specific reason marshalling of the supplied type isn't supported.
         /// </summary>
         public string? NotSupportedDetails { get; init; }
+
+        /// <summary>
+        /// [Optional] Properties to attach to any diagnostic emitted due to this exception.
+        /// </summary>
+        public ImmutableDictionary<string, string>? DiagnosticProperties { get; init; }
     }
 }

@@ -11,7 +11,7 @@
 .assembly extern mscorlib {}
 .assembly test {}
 .module test.exe
-.assembly extern common {}
+.assembly extern eh_common {}
 
 
 .method public static int32 Main()
@@ -20,7 +20,7 @@
   .maxstack  2
   .locals init (
     class [mscorlib]System.IO.StringWriter expectedOut,
-    class [common]TestUtil.TestLog testLog
+    class [eh_common]TestUtil.TestLog testLog
   )
 
     
@@ -48,11 +48,11 @@
   ldstr      "caught an exception!"
   callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
   ldloc.s    expectedOut
-  newobj     instance void [common]TestUtil.TestLog::.ctor(object)
+  newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
   stloc.s    testLog
 
   ldloc.s    testLog
-  callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+  callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
   .try
   {
@@ -71,10 +71,10 @@
   DONE:
   
   ldloc.s    testLog
-  callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+  callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
   
   ldloc.s    testLog
-  callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+  callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
   
   ret
 }

@@ -336,10 +336,7 @@ namespace System.Transactions
                 fo = tx._finalizedObject;
             }
 
-            if (null != fo)
-            {
-                fo.Dispose();
-            }
+            fo?.Dispose();
         }
 
         #region Outcome Events
@@ -347,10 +344,7 @@ namespace System.Transactions
         // Signal Waiters anyone waiting for transaction outcome.
         internal void SignalAsyncCompletion()
         {
-            if (_asyncResultEvent != null)
-            {
-                _asyncResultEvent.Set();
-            }
+            _asyncResultEvent?.Set();
 
             if (_asyncCallback != null)
             {
@@ -389,11 +383,6 @@ namespace System.Transactions
 
         public void Dispose()
         {
-            if (_promotedTransaction != null)
-            {
-                // If there is a promoted transaction dispose it.
-                _promotedTransaction.Dispose();
-            }
         }
 
         #endregion

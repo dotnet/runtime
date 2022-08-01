@@ -53,6 +53,28 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void Test_CustomAttributeTypedArgument_Equals()
+        {
+            Type t = typeof(MyClass);
+            foreach (CustomAttributeData cad in CustomAttributeData.GetCustomAttributes(t))
+            {
+                foreach (CustomAttributeTypedArgument cata in cad.ConstructorArguments)
+                {
+                    Assert.True(cata.Equals(cata));
+                    Assert.True(cata.Equals((object)cata));
+
+                    var notEqualArgument = new CustomAttributeTypedArgument(new [] { new CustomAttributeTypedArgument(0) });
+                    Assert.False(cata.Equals(notEqualArgument));
+                    Assert.False(cata.Equals((object)notEqualArgument));
+
+                    return;
+                }
+            }
+
+            Assert.True(false, "Expected to find MyAttr Attribute");
+        }
+
+        [Fact]
         public static void Test_CustomAttributeTypedArgument_ToString()
         {
             var argument = new CustomAttributeTypedArgument(new [] { new CustomAttributeTypedArgument(0) });

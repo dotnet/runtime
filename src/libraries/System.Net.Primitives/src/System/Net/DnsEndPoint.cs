@@ -16,15 +16,7 @@ namespace System.Net
 
         public DnsEndPoint(string host, int port, AddressFamily addressFamily)
         {
-            if (host == null)
-            {
-                throw new ArgumentNullException(nameof(host));
-            }
-
-            if (string.IsNullOrEmpty(host))
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(host)));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(host);
 
             if (port < IPEndPoint.MinPort || port > IPEndPoint.MaxPort)
             {

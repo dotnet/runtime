@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -42,11 +43,12 @@ namespace System.Text.Json
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static TValue? Deserialize<TValue>(string json, JsonSerializerOptions? options = null)
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        public static TValue? Deserialize<TValue>([StringSyntax(StringSyntaxAttribute.Json)] string json, JsonSerializerOptions? options = null)
         {
-            if (json == null)
+            if (json is null)
             {
-                throw new ArgumentNullException(nameof(json));
+                ThrowHelper.ThrowArgumentNullException(nameof(json));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
@@ -78,7 +80,8 @@ namespace System.Text.Json
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static TValue? Deserialize<TValue>(ReadOnlySpan<char> json, JsonSerializerOptions? options = null)
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        public static TValue? Deserialize<TValue>([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlySpan<char> json, JsonSerializerOptions? options = null)
         {
             // default/null span is treated as empty
 
@@ -114,16 +117,16 @@ namespace System.Text.Json
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static object? Deserialize(string json, Type returnType, JsonSerializerOptions? options = null)
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] string json, Type returnType, JsonSerializerOptions? options = null)
         {
-            if (json == null)
+            if (json is null)
             {
-                throw new ArgumentNullException(nameof(json));
+                ThrowHelper.ThrowArgumentNullException(nameof(json));
             }
-
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
@@ -158,19 +161,15 @@ namespace System.Text.Json
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static object? Deserialize(ReadOnlySpan<char> json, Type returnType, JsonSerializerOptions? options = null)
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlySpan<char> json, Type returnType, JsonSerializerOptions? options = null)
         {
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
+
             // default/null span is treated as empty
-
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
-
-            if (returnType == null)
-            {
-                throw new ArgumentNullException(nameof(returnType));
-            }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return ReadFromSpan<object?>(json, jsonTypeInfo)!;
@@ -207,20 +206,18 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
-        public static TValue? Deserialize<TValue>(string json, JsonTypeInfo<TValue> jsonTypeInfo)
+        public static TValue? Deserialize<TValue>([StringSyntax(StringSyntaxAttribute.Json)] string json, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            // default/null span is treated as empty
-
-            if (json == null)
+            if (json is null)
             {
-                throw new ArgumentNullException(nameof(json));
+                ThrowHelper.ThrowArgumentNullException(nameof(json));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            if (jsonTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
+            jsonTypeInfo.EnsureConfigured();
             return ReadFromSpan<TValue?>(json.AsSpan(), jsonTypeInfo);
         }
 
@@ -255,15 +252,14 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
-        public static TValue? Deserialize<TValue>(ReadOnlySpan<char> json, JsonTypeInfo<TValue> jsonTypeInfo)
+        public static TValue? Deserialize<TValue>([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlySpan<char> json, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            // default/null span is treated as empty
-
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            jsonTypeInfo.EnsureConfigured();
             return ReadFromSpan<TValue?>(json, jsonTypeInfo);
         }
 
@@ -302,21 +298,19 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
-        public static object? Deserialize(string json, Type returnType, JsonSerializerContext context)
+        public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] string json, Type returnType, JsonSerializerContext context)
         {
-            if (json == null)
+            if (json is null)
             {
-                throw new ArgumentNullException(nameof(json));
+                ThrowHelper.ThrowArgumentNullException(nameof(json));
             }
-
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
-
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
@@ -358,16 +352,15 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="string"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
-        public static object? Deserialize(ReadOnlySpan<char> json, Type returnType, JsonSerializerContext context)
+        public static object? Deserialize([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlySpan<char> json, Type returnType, JsonSerializerContext context)
         {
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
-
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
@@ -376,6 +369,7 @@ namespace System.Text.Json
 
         private static TValue? ReadFromSpan<TValue>(ReadOnlySpan<char> json, JsonTypeInfo jsonTypeInfo)
         {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
             byte[]? tempArray = null;
 
             // For performance, avoid obtaining actual byte count unless memory usage is higher than the threshold.

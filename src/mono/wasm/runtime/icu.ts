@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
-import { GlobalizationMode, VoidPtr } from "./types";
+import { Module, runtimeHelpers } from "./imports";
+import { MonoConfig } from "./types";
+import { VoidPtr } from "./types/emscripten";
 
 let num_icu_assets_loaded_successfully = 0;
 
@@ -27,21 +29,27 @@ export function mono_wasm_get_icudt_name(culture: string): string {
 // @globalization_mode is one of "icu", "invariant", or "auto".
 // "auto" will use "icu" if any ICU data archives have been loaded,
 //  otherwise "invariant".
-export function mono_wasm_globalization_init(globalization_mode: GlobalizationMode): void {
+export function mono_wasm_globalization_init(): void {
+    const config = Module.config as MonoConfig;
     let invariantMode = false;
-
-    if (globalization_mode === "invariant")
+    if (!config.globalization_mode)
+        config.globalization_mode = "auto";
+    if (config.globalization_mode === "invariant")
         invariantMode = true;
 
     if (!invariantMode) {
         if (num_icu_assets_loaded_successfully > 0) {
-            console.debug("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
-        } else if (globalization_mode !== "icu") {
-            console.debug("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
+            if (runtimeHelpers.diagnostic_tracing) {
+                console.debug("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
+            }
+        } else if (config.globalization_mode !== "icu") {
+            if (runtimeHelpers.diagnostic_tracing) {
+                console.debug("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
+            }
             invariantMode = true;
         } else {
             const msg = "invariant globalization mode is inactive and no ICU data archives were loaded";
-            console.error(`MONO_WASM: ERROR: ${msg}`);
+            Module.printErr(`MONO_WASM: ERROR: ${msg}`);
             throw new Error(msg);
         }
     }

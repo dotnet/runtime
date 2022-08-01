@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     // We expect the chain to build in at least 16 seconds (2 * delay) since each fetch
                     // should take `delay` number of seconds, and there are two fetchs that need to be
                     // performed. We allow a small amount of leeway to account for differences between
-                    // how long the the delay is performed and the stopwatch.
+                    // how long the delay is performed and the stopwatch.
                     Assert.True(watch.Elapsed >= delay * 2 - TimeSpan.FromSeconds(1), $"watch.Elapsed: {watch.Elapsed}");
                 }
             });

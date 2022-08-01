@@ -219,10 +219,7 @@ namespace System.ComponentModel
         [RequiresUnreferencedCode("The Type of components in the container cannot be statically discovered.")]
         protected virtual void ValidateName(IComponent component, string? name)
         {
-            if (component == null)
-            {
-                throw new ArgumentNullException(nameof(component));
-            }
+            ArgumentNullException.ThrowIfNull(component);
 
             if (name != null)
             {

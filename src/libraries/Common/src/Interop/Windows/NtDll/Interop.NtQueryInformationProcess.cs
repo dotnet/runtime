@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class NtDll
     {
-        [GeneratedDllImport(Libraries.NtDll, ExactSpelling = true)]
+        [LibraryImport(Libraries.NtDll)]
         internal static unsafe partial uint NtQueryInformationProcess(SafeProcessHandle ProcessHandle, int ProcessInformationClass, void* ProcessInformation, uint ProcessInformationLength, out uint ReturnLength);
     }
 }

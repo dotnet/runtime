@@ -9,7 +9,6 @@
 .assembly extern mscorlib { }
 .assembly DevDiv_815941 { }
 .assembly extern xunit.core {}
-.module DevDiv_815941.exe
 
 .class Repro
 {

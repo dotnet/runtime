@@ -40,6 +40,18 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        public unsafe void AcquirePointer_Disposed_ThrowsObjectDisposedException()
+        {
+            var buffer = new SubBuffer(true);
+            buffer.Initialize(4);
+            buffer.Dispose();
+
+            byte* pointer = (byte*)12345;
+            Assert.Throws<ObjectDisposedException>(() => buffer.AcquirePointer(ref pointer));
+            Assert.True(pointer is null);
+        }
+
+        [Fact]
         public void ReleasePointer_NotInitialized_ThrowsInvalidOperationException()
         {
             var wrapper = new SubBuffer(true);
@@ -64,8 +76,8 @@ namespace System.Runtime.InteropServices.Tests
             var buffer = new SubBuffer(true);
             buffer.Initialize(4);
 
-            Assert.Throws<ArgumentException>(null, () => buffer.Read<int>(byteOffset));
-            Assert.Throws<ArgumentException>(null, () => buffer.Write<int>(byteOffset, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => buffer.Read<int>(byteOffset));
+            AssertExtensions.Throws<ArgumentException>(null, () => buffer.Write<int>(byteOffset, 2));
         }
 
         [Fact]

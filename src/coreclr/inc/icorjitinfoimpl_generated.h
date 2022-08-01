@@ -21,7 +21,7 @@
 
 public:
 
-bool isJitIntrinsic(
+bool isIntrinsic(
           CORINFO_METHOD_HANDLE ftn) override;
 
 uint32_t getMethodAttribs(
@@ -42,8 +42,11 @@ bool getMethodInfo(
 
 CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
-          CORINFO_METHOD_HANDLE calleeHnd,
-          uint32_t* pRestrictions) override;
+          CORINFO_METHOD_HANDLE calleeHnd) override;
+
+void beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd) override;
 
 void reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
@@ -97,10 +100,6 @@ CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
 void expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_GENERICHANDLE_RESULT* pResult) override;
-
-CorInfoIntrinsics getIntrinsicID(
-          CORINFO_METHOD_HANDLE method,
-          bool* pMustExpand) override;
 
 bool isIntrinsicType(
           CORINFO_CLASS_HANDLE classHnd) override;
@@ -170,10 +169,11 @@ bool isValidStringRef(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK) override;
 
-const char16_t* getStringLiteral(
+int getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
-          int* length) override;
+          char16_t* buffer,
+          int bufferSize) override;
 
 CorInfoType asCorInfoType(
           CORINFO_CLASS_HANDLE cls) override;
@@ -205,9 +205,6 @@ CorInfoInlineTypeCheck canInlineTypeCheck(
           CorInfoInlineTypeCheckSource source) override;
 
 uint32_t getClassAttribs(
-          CORINFO_CLASS_HANDLE cls) override;
-
-bool isStructRequiringStackAllocRetBuf(
           CORINFO_CLASS_HANDLE cls) override;
 
 CORINFO_MODULE_HANDLE getClassModule(
@@ -291,6 +288,7 @@ bool getReadyToRunHelper(
 
 void getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
+          mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
           CORINFO_LOOKUP* pLookup) override;
 
@@ -354,6 +352,9 @@ bool isSDArray(
 unsigned getArrayRank(
           CORINFO_CLASS_HANDLE cls) override;
 
+CorInfoArrayIntrinsic getArrayIntrinsicID(
+          CORINFO_METHOD_HANDLE ftn) override;
+
 void* getArrayInitializationData(
           CORINFO_FIELD_HANDLE field,
           uint32_t size) override;
@@ -408,6 +409,12 @@ void setVars(
           CORINFO_METHOD_HANDLE ftn,
           uint32_t cVars,
           ICorDebugInfo::NativeVarInfo* vars) override;
+
+void reportRichMappings(
+          ICorDebugInfo::InlineTreeNode* inlineTreeNodes,
+          uint32_t numInlineTreeNodes,
+          ICorDebugInfo::RichOffsetMapping* mappings,
+          uint32_t numMappings) override;
 
 void* allocateArray(
           size_t cBytes) override;
@@ -485,6 +492,9 @@ bool getSystemVAmd64PassStructInRegisterDescriptor(
           CORINFO_CLASS_HANDLE structHnd,
           SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr) override;
 
+uint32_t getLoongArch64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd) override;
+
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
 
@@ -505,6 +515,7 @@ void getFunctionEntryPoint(
 
 void getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
+          bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
 
 void* getMethodSync(
@@ -603,10 +614,6 @@ InfoAccessType emptyStringLiteral(
 uint32_t getFieldThreadLocalStoreID(
           CORINFO_FIELD_HANDLE field,
           void** ppIndirection) override;
-
-void setOverride(
-          ICorDynamicInfo* pOverride,
-          CORINFO_METHOD_HANDLE currentMethod) override;
 
 void addActiveDependency(
           CORINFO_MODULE_HANDLE moduleFrom,
@@ -712,10 +719,6 @@ uint32_t getExpectedTargetArchitecture() override;
 uint32_t getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes) override;
-
-bool doesFieldBelongToClass(
-          CORINFO_FIELD_HANDLE fldHnd,
-          CORINFO_CLASS_HANDLE cls) override;
 
 /**********************************************************************************/
 // clang-format on

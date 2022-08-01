@@ -342,14 +342,14 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             var serialized = mdBuilder.GetSerializedMetadata(MetadataRootBuilder.EmptyRowCounts, 12, isStandaloneDebugMetadata: false);
 
-            Assert.Equal(0, mdBuilder.SerializeHandle(g0));
-            Assert.Equal(1, mdBuilder.SerializeHandle(g1));
-            Assert.Equal(0, mdBuilder.SerializeHandle(serialized.StringMap, s0));
-            Assert.Equal(1, mdBuilder.SerializeHandle(serialized.StringMap, s1));
-            Assert.Equal(1, mdBuilder.SerializeHandle(us0));
-            Assert.Equal(3, mdBuilder.SerializeHandle(us1));
-            Assert.Equal(0, mdBuilder.SerializeHandle(b0));
-            Assert.Equal(1, mdBuilder.SerializeHandle(b1));
+            Assert.Equal(0, MetadataBuilder.SerializeHandle(g0));
+            Assert.Equal(1, MetadataBuilder.SerializeHandle(g1));
+            Assert.Equal(0, MetadataBuilder.SerializeHandle(serialized.StringMap, s0));
+            Assert.Equal(1, MetadataBuilder.SerializeHandle(serialized.StringMap, s1));
+            Assert.Equal(1, MetadataBuilder.SerializeHandle(us0));
+            Assert.Equal(3, MetadataBuilder.SerializeHandle(us1));
+            Assert.Equal(0, MetadataBuilder.SerializeHandle(b0));
+            Assert.Equal(1, MetadataBuilder.SerializeHandle(b1));
 
             var heaps = new BlobBuilder();
             mdBuilder.WriteHeapsTo(heaps, serialized.StringHeap);
@@ -539,13 +539,13 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             var serialized = mdBuilder.GetSerializedMetadata(MetadataRootBuilder.EmptyRowCounts, 12, isStandaloneDebugMetadata: false);
 
-            Assert.Equal(5, mdBuilder.SerializeHandle(g));
-            Assert.Equal(0, mdBuilder.SerializeHandle(serialized.StringMap, s0));
-            Assert.Equal(0x21, mdBuilder.SerializeHandle(serialized.StringMap, s1));
-            Assert.Equal(0x11, mdBuilder.SerializeHandle(us0));
-            Assert.Equal(0x13, mdBuilder.SerializeHandle(us1));
-            Assert.Equal(0, mdBuilder.SerializeHandle(b0));
-            Assert.Equal(0x31, mdBuilder.SerializeHandle(b1));
+            Assert.Equal(5, MetadataBuilder.SerializeHandle(g));
+            Assert.Equal(0, MetadataBuilder.SerializeHandle(serialized.StringMap, s0));
+            Assert.Equal(0x21, MetadataBuilder.SerializeHandle(serialized.StringMap, s1));
+            Assert.Equal(0x11, MetadataBuilder.SerializeHandle(us0));
+            Assert.Equal(0x13, MetadataBuilder.SerializeHandle(us1));
+            Assert.Equal(0, MetadataBuilder.SerializeHandle(b0));
+            Assert.Equal(0x31, MetadataBuilder.SerializeHandle(b1));
 
             var heaps = new BlobBuilder();
             mdBuilder.WriteHeapsTo(heaps, serialized.StringHeap);

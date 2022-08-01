@@ -10,7 +10,6 @@
 
 #include "w32event.h"
 
-#include "w32error.h"
 #include "mono/utils/mono-error-internals.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/metadata/handle.h"
@@ -108,17 +107,7 @@ mono_w32event_init (void)
 gpointer
 mono_w32event_create (gboolean manual, gboolean initial)
 {
-	/* Need to blow away any old errors here, because code tests
-	 * for ERROR_ALREADY_EXISTS on success (!) to see if an event
-	 * was freshly created */
-	mono_w32error_set_last (ERROR_SUCCESS);
-
-	gpointer handle = event_create (manual, initial);
-
-	gint32 win32error = mono_w32error_get_last ();
-	g_assert ((win32error != ERROR_SUCCESS) == !handle);
-
-	return handle;
+	return event_create (manual, initial);
 
 }
 
@@ -140,12 +129,11 @@ static gpointer event_handle_create (MonoW32HandleEvent *event_handle, MonoW32Ty
 	if (handle == INVALID_HANDLE_VALUE) {
 		g_warning ("%s: error creating %s handle",
 			__func__, mono_w32handle_get_typename (type));
-		mono_w32error_set_last (ERROR_GEN_FAILURE);
 		return NULL;
 	}
 
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data))
-		g_error ("%s: unkown handle %p", __func__, handle);
+		g_error ("%s: unknown handle %p", __func__, handle);
 
 	if (handle_data->type != type)
 		g_error ("%s: unknown event handle %p", __func__, handle);
@@ -180,14 +168,12 @@ mono_w32event_set (gpointer handle)
 	MonoW32HandleEvent *event_handle;
 
 	if (!mono_w32handle_lookup_and_ref (handle, &handle_data)) {
-		g_warning ("%s: unkown handle %p", __func__, handle);
-		mono_w32error_set_last (ERROR_INVALID_HANDLE);
+		g_warning ("%s: unknown handle %p", __func__, handle);
 		return;
 	}
 
 	if (handle_data->type != MONO_W32TYPE_EVENT) {
-		g_warning ("%s: unkown event handle %p", __func__, handle);
-		mono_w32error_set_last (ERROR_INVALID_HANDLE);
+		g_warning ("%s: unknown event handle %p", __func__, handle);
 		mono_w32handle_unref (handle_data);
 		return;
 	}

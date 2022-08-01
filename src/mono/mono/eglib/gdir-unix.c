@@ -112,21 +112,21 @@ g_mkdir_with_parents (const gchar *pathname, int mode)
 {
 	char *path, *d;
 	int rv;
-	
+
 	if (!pathname || *pathname == '\0') {
 		mono_set_errno (EINVAL);
 		return -1;
 	}
-	
+
 	d = path = g_strdup (pathname);
 	if (*d == '/')
 		d++;
-	
+
 	while (TRUE) {
 		if (*d == '/' || *d == '\0') {
 		  char orig = *d;
 		  *d = '\0';
-		  rv = mkdir (path, mode);
+		  rv = mkdir (path, (mode_t)mode);
 		  if (rv == -1 && errno != EEXIST) {
 		  	g_free (path);
 			return -1;
@@ -141,8 +141,8 @@ g_mkdir_with_parents (const gchar *pathname, int mode)
 			d++;
 		}
 	}
-	
+
 	g_free (path);
-	
+
 	return 0;
 }

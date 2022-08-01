@@ -175,7 +175,7 @@ namespace System.Drawing.Printing
             }
         }
 
-        private void CheckMargin(int margin, string name)
+        private static void CheckMargin(int margin, string name)
         {
             if (margin < 0)
             {

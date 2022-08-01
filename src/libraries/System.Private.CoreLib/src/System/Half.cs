@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 
 namespace System
 {
@@ -17,36 +17,41 @@ namespace System
     /// An IEEE 754 compliant float16 type.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct Half : IComparable, ISpanFormattable, IComparable<Half>, IEquatable<Half>
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IBinaryFloatingPoint<Half>,
+    public readonly struct Half
+        : IComparable,
+          ISpanFormattable,
+          IComparable<Half>,
+          IEquatable<Half>,
+          IBinaryFloatingPointIeee754<Half>,
           IMinMaxValue<Half>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
     {
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands;
 
         // Constants for manipulating the private bit-representation
 
-        private const ushort SignMask = 0x8000;
-        private const ushort SignShift = 15;
+        internal const ushort SignMask = 0x8000;
+        internal const int SignShift = 15;
+        internal const byte ShiftedSignMask = SignMask >> SignShift;
 
-        private const ushort ExponentMask = 0x7C00;
-        private const ushort ExponentShift = 10;
-        private const ushort ShiftedExponentMask = ExponentMask >> ExponentShift;
+        internal const ushort BiasedExponentMask = 0x7C00;
+        internal const int BiasedExponentShift = 10;
+        internal const byte ShiftedBiasedExponentMask = BiasedExponentMask >> BiasedExponentShift;
 
-        private const ushort SignificandMask = 0x03FF;
-        private const ushort SignificandShift = 0;
+        internal const ushort TrailingSignificandMask = 0x03FF;
 
-        private const ushort MinSign = 0;
-        private const ushort MaxSign = 1;
+        internal const byte MinSign = 0;
+        internal const byte MaxSign = 1;
 
-        private const ushort MinExponent = 0x00;
-        private const ushort MaxExponent = 0x1F;
+        internal const byte MinBiasedExponent = 0x00;
+        internal const byte MaxBiasedExponent = 0x1F;
 
-        private const ushort MinSignificand = 0x0000;
-        private const ushort MaxSignificand = 0x03FF;
+        internal const byte ExponentBias = 15;
+
+        internal const sbyte MinExponent = -14;
+        internal const sbyte MaxExponent = +15;
+
+        internal const ushort MinTrailingSignificand = 0x0000;
+        internal const ushort MaxTrailingSignificand = 0x03FF;
 
         // Constants representing the private bit-representation for various default values
 
@@ -64,6 +69,13 @@ namespace System
         private const ushort MinValueBits = 0xFBFF;
         private const ushort MaxValueBits = 0x7BFF;
 
+        private const ushort PositiveOneBits = 0x3C00;
+        private const ushort NegativeOneBits = 0xBC00;
+
+        private const ushort EBits = 0x4170;
+        private const ushort PiBits = 0x4248;
+        private const ushort TauBits = 0x4648;
+
         // Well-defined and commonly used values
 
         public static Half Epsilon => new Half(EpsilonBits);                        //  5.9604645E-08
@@ -74,40 +86,66 @@ namespace System
 
         public static Half NaN => new Half(NegativeQNaNBits);                       //  0.0 / 0.0
 
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         public static Half MinValue => new Half(MinValueBits);                      // -65504
 
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         public static Half MaxValue => new Half(MaxValueBits);                      //  65504
 
-        // We use these explicit definitions to avoid the confusion between 0.0 and -0.0.
-        private static readonly Half PositiveZero = new Half(PositiveZeroBits);            //  0.0
-        private static readonly Half NegativeZero = new Half(NegativeZeroBits);            // -0.0
-
-        private readonly ushort _value;
+        internal readonly ushort _value;
 
         internal Half(ushort value)
         {
             _value = value;
         }
 
-        private Half(bool sign, ushort exp, ushort sig)
-            => _value = (ushort)(((sign ? 1 : 0) << SignShift) + (exp << ExponentShift) + sig);
+        private Half(bool sign, ushort exp, ushort sig) => _value = (ushort)(((sign ? 1 : 0) << SignShift) + (exp << BiasedExponentShift) + sig);
 
-        private sbyte Exponent
+        internal byte BiasedExponent
         {
             get
             {
-                return (sbyte)((_value & ExponentMask) >> ExponentShift);
+                ushort bits = _value;
+                return ExtractBiasedExponentFromBits(bits);
             }
         }
 
-        private ushort Significand
+        internal sbyte Exponent
         {
             get
             {
-                return (ushort)((_value & SignificandMask) >> SignificandShift);
+                return (sbyte)(BiasedExponent - ExponentBias);
             }
         }
 
+        internal ushort Significand
+        {
+            get
+            {
+                return (ushort)(TrailingSignificand | ((BiasedExponent != 0) ? (1U << BiasedExponentShift) : 0U));
+            }
+        }
+
+        internal ushort TrailingSignificand
+        {
+            get
+            {
+                ushort bits = _value;
+                return ExtractTrailingSignificandFromBits(bits);
+            }
+        }
+
+        internal static byte ExtractBiasedExponentFromBits(ushort bits)
+        {
+            return (byte)((bits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
+        }
+
+        internal static ushort ExtractTrailingSignificandFromBits(ushort bits)
+        {
+            return (ushort)(bits & TrailingSignificandMask);
+        }
+
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -129,11 +167,13 @@ namespace System
             return (left._value != right._value) && ((left._value < right._value) ^ leftIsNegative);
         }
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(Half left, Half right)
         {
             return right < left;
         }
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -155,11 +195,13 @@ namespace System
             return (left._value == right._value) || ((left._value < right._value) ^ leftIsNegative);
         }
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(Half left, Half right)
         {
             return right <= left;
         }
 
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -172,6 +214,7 @@ namespace System
             return (left._value == right._value) || AreZero(left, right);
         }
 
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(Half left, Half right)
         {
             return !(left == right);
@@ -214,7 +257,7 @@ namespace System
             uint absValue = StripSign(value);
             return (absValue < PositiveInfinityBits)    // is finite
                 && (absValue != 0)                      // is not zero
-                && ((absValue & ExponentMask) != 0);    // is not subnormal (has a non-zero exponent)
+                && ((absValue & BiasedExponentMask) != 0);    // is not subnormal (has a non-zero exponent)
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
@@ -230,7 +273,7 @@ namespace System
             uint absValue = StripSign(value);
             return (absValue < PositiveInfinityBits)    // is finite
                 && (absValue != 0)                      // is not zero
-                && ((absValue & ExponentMask) == 0);    // is subnormal (has a zero exponent)
+                && ((absValue & BiasedExponentMask) == 0);    // is subnormal (has a zero exponent)
         }
 
         /// <summary>
@@ -462,7 +505,7 @@ namespace System
         /// <summary>
         /// Returns a string representation of the current value using the specified <paramref name="format"/>.
         /// </summary>
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatHalf(this, format, NumberFormatInfo.CurrentInfo);
         }
@@ -478,7 +521,7 @@ namespace System
         /// <summary>
         /// Returns a string representation of the current value using the specified <paramref name="format"/> and <paramref name="provider"/>.
         /// </summary>
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatHalf(this, format, NumberFormatInfo.GetInstance(provider));
         }
@@ -491,21 +534,85 @@ namespace System
         /// <param name="format">A span containing the characters that represent a standard or custom format string that defines the acceptable format for <paramref name="destination"/>.</param>
         /// <param name="provider">An optional object that supplies culture-specific formatting information for <paramref name="destination"/>.</param>
         /// <returns></returns>
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatHalf(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
-        // -----------------------Start of to-half conversions-------------------------
+        //
+        // Explicit Convert To Half
+        //
 
+        /// <summary>Explicitly converts a <see cref="char" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        public static explicit operator Half(char value) => (Half)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="decimal" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        public static explicit operator Half(decimal value) => (Half)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        public static explicit operator Half(double value)
+        {
+            const int DoubleMaxExponent = 0x7FF;
+
+            ulong doubleInt = BitConverter.DoubleToUInt64Bits(value);
+            bool sign = (doubleInt & double.SignMask) >> double.SignShift != 0;
+            int exp = (int)((doubleInt & double.BiasedExponentMask) >> double.BiasedExponentShift);
+            ulong sig = doubleInt & double.TrailingSignificandMask;
+
+            if (exp == DoubleMaxExponent)
+            {
+                if (sig != 0) // NaN
+                {
+                    return CreateHalfNaN(sign, sig << 12); // Shift the significand bits to the left end
+                }
+                return sign ? NegativeInfinity : PositiveInfinity;
+            }
+
+            uint sigHalf = (uint)ShiftRightJam(sig, 38);
+            if ((exp | (int)sigHalf) == 0)
+            {
+                return new Half(sign, 0, 0);
+            }
+            return new Half(RoundPackToHalf(sign, (short)(exp - 0x3F1), (ushort)(sigHalf | 0x4000)));
+        }
+
+        /// <summary>Explicitly converts a <see cref="short" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        public static explicit operator Half(short value) => (Half)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="int" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        public static explicit operator Half(int value) => (Half)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="long" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        public static explicit operator Half(long value) => (Half)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="System.IntPtr" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        public static explicit operator Half(nint value) => (Half)(float)value;
+
+        /// <summary>Explicitly converts a <see cref="float" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         public static explicit operator Half(float value)
         {
             const int SingleMaxExponent = 0xFF;
 
             uint floatInt = BitConverter.SingleToUInt32Bits(value);
             bool sign = (floatInt & float.SignMask) >> float.SignShift != 0;
-            int exp = (int)(floatInt & float.ExponentMask) >> float.ExponentShift;
-            uint sig = floatInt & float.SignificandMask;
+            int exp = (int)(floatInt & float.BiasedExponentMask) >> float.BiasedExponentShift;
+            uint sig = floatInt & float.TrailingSignificandMask;
 
             if (exp == SingleMaxExponent)
             {
@@ -526,68 +633,223 @@ namespace System
             return new Half(RoundPackToHalf(sign, (short)(exp - 0x71), (ushort)(sigHalf | 0x4000)));
         }
 
-        public static explicit operator Half(double value)
-        {
-            const int DoubleMaxExponent = 0x7FF;
+        /// <summary>Explicitly converts a <see cref="ushort" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator Half(ushort value) => (Half)(float)value;
 
-            ulong doubleInt = BitConverter.DoubleToUInt64Bits(value);
-            bool sign = (doubleInt & double.SignMask) >> double.SignShift != 0;
-            int exp = (int)((doubleInt & double.ExponentMask) >> double.ExponentShift);
-            ulong sig = doubleInt & double.SignificandMask;
+        /// <summary>Explicitly converts a <see cref="uint" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator Half(uint value) => (Half)(float)value;
 
-            if (exp == DoubleMaxExponent)
-            {
-                if (sig != 0) // NaN
-                {
-                    return CreateHalfNaN(sign, sig << 12); // Shift the significand bits to the left end
-                }
-                return sign ? NegativeInfinity : PositiveInfinity;
-            }
+        /// <summary>Explicitly converts a <see cref="ulong" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator Half(ulong value) => (Half)(float)value;
 
-            uint sigHalf = (uint)ShiftRightJam(sig, 38);
-            if ((exp | (int)sigHalf) == 0)
-            {
-                return new Half(sign, 0, 0);
-            }
-            return new Half(RoundPackToHalf(sign, (short)(exp - 0x3F1), (ushort)(sigHalf | 0x4000)));
-        }
+        /// <summary>Explicitly converts a <see cref="System.UIntPtr" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator Half(nuint value) => (Half)(float)value;
 
-        // -----------------------Start of from-half conversions-------------------------
-        public static explicit operator float(Half value)
-        {
-            bool sign = IsNegative(value);
-            int exp = value.Exponent;
-            uint sig = value.Significand;
+        //
+        // Explicit Convert From Half
+        //
 
-            if (exp == MaxExponent)
-            {
-                if (sig != 0)
-                {
-                    return CreateSingleNaN(sign, (ulong)sig << 54);
-                }
-                return sign ? float.NegativeInfinity : float.PositiveInfinity;
-            }
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="byte" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="byte" /> value.</returns>
+        public static explicit operator byte(Half value) => (byte)(float)value;
 
-            if (exp == 0)
-            {
-                if (sig == 0)
-                {
-                    return BitConverter.UInt32BitsToSingle(sign ? float.SignMask : 0); // Positive / Negative zero
-                }
-                (exp, sig) = NormSubnormalF16Sig(sig);
-                exp -= 1;
-            }
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="byte" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="byte" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="byte" />.</exception>
+        public static explicit operator checked byte(Half value) => checked((byte)(float)value);
 
-            return CreateSingle(sign, (byte)(exp + 0x70), sig << 13);
-        }
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="char" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="char" /> value.</returns>
+        public static explicit operator char(Half value) => (char)(float)value;
 
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="char" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="char" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="char" />.</exception>
+        public static explicit operator checked char(Half value) => checked((char)(float)value);
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="decimal" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="decimal" /> value.</returns>
+        public static explicit operator decimal(Half value) => (decimal)(float)value;
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="short" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="short" /> value.</returns>
+        public static explicit operator short(Half value) => (short)(float)value;
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="short" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="short" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="short" />.</exception>
+        public static explicit operator checked short(Half value) => checked((short)(float)value);
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="int" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="int" /> value.</returns>
+        public static explicit operator int(Half value) => (int)(float)value;
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="int" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="int" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="int" />.</exception>
+        public static explicit operator checked int(Half value) => checked((int)(float)value);
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="long" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="long" /> value.</returns>
+        public static explicit operator long(Half value) => (long)(float)value;
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="long" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="long" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="long" />.</exception>
+        public static explicit operator checked long(Half value) => checked((long)(float)value);
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="Int128"/>.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        public static explicit operator Int128(Half value) => (Int128)(double)(value);
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="Int128"/>, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
+        public static explicit operator checked Int128(Half value) => checked((Int128)(double)(value));
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="IntPtr" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="IntPtr" /> value.</returns>
+        public static explicit operator nint(Half value) => (nint)(float)value;
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="IntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="IntPtr" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="IntPtr" />.</exception>
+        public static explicit operator checked nint(Half value) => checked((nint)(float)value);
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="sbyte" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="sbyte" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator sbyte(Half value) => (sbyte)(float)value;
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="sbyte" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="sbyte" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="sbyte" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked sbyte(Half value) => checked((sbyte)(float)value);
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="ushort" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ushort" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator ushort(Half value) => (ushort)(float)value;
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="ushort" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ushort" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="ushort" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked ushort(Half value) => checked((ushort)(float)value);
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="uint" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="uint" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator uint(Half value) => (uint)(float)value;
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="uint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="uint" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="uint" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked uint(Half value) => checked((uint)(float)value);
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="ulong" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ulong" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator ulong(Half value) => (ulong)(float)value;
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="ulong" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ulong" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="ulong" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked ulong(Half value) => checked((ulong)(float)value);
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="UInt128"/>.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator UInt128(Half value) => (UInt128)(double)(value);
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="UInt128"/>, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked UInt128(Half value) => checked((UInt128)(double)(value));
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="UIntPtr" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="UIntPtr" /> value.</returns>
+        [CLSCompliant(false)]
+        public static explicit operator nuint(Half value) => (nuint)(float)value;
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="UIntPtr" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="UIntPtr" /> value.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UIntPtr" />.</exception>
+        [CLSCompliant(false)]
+        public static explicit operator checked nuint(Half value) => checked((nuint)(float)value);
+
+        //
+        // Implicit Convert To Half
+        //
+
+        /// <summary>Implicitly converts a <see cref="byte" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        public static implicit operator Half(byte value) => (Half)(float)value;
+
+        /// <summary>Implicitly converts a <see cref="sbyte" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [CLSCompliant(false)]
+        public static implicit operator Half(sbyte value) => (Half)(float)value;
+
+        //
+        // Implicit Convert From Half (actually explicit due to back-compat)
+        //
+
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="double" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="double" /> value.</returns>
         public static explicit operator double(Half value)
         {
             bool sign = IsNegative(value);
-            int exp = value.Exponent;
-            uint sig = value.Significand;
+            int exp = value.BiasedExponent;
+            uint sig = value.TrailingSignificand;
 
-            if (exp == MaxExponent)
+            if (exp == MaxBiasedExponent)
             {
                 if (sig != 0)
                 {
@@ -609,6 +871,37 @@ namespace System
             return CreateDouble(sign, (ushort)(exp + 0x3F0), (ulong)sig << 42);
         }
 
+        /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="float" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to its nearest representable <see cref="float" /> value.</returns>
+        public static explicit operator float(Half value)
+        {
+            bool sign = IsNegative(value);
+            int exp = value.BiasedExponent;
+            uint sig = value.TrailingSignificand;
+
+            if (exp == MaxBiasedExponent)
+            {
+                if (sig != 0)
+                {
+                    return CreateSingleNaN(sign, (ulong)sig << 54);
+                }
+                return sign ? float.NegativeInfinity : float.PositiveInfinity;
+            }
+
+            if (exp == 0)
+            {
+                if (sig == 0)
+                {
+                    return BitConverter.UInt32BitsToSingle(sign ? float.SignMask : 0); // Positive / Negative zero
+                }
+                (exp, sig) = NormSubnormalF16Sig(sig);
+                exp -= 1;
+            }
+
+            return CreateSingle(sign, (byte)(exp + 0x70), sig << 13);
+        }
+
         // IEEE 754 specifies NaNs to be propagated
         internal static Half Negate(Half value)
         {
@@ -627,7 +920,7 @@ namespace System
         // Creates Quiet NaN if significand == 0
         private static Half CreateHalfNaN(bool sign, ulong significand)
         {
-            const uint NaNBits = ExponentMask | 0x200; // Most significant significand bit
+            const uint NaNBits = BiasedExponentMask | 0x200; // Most significant significand bit
 
             uint signInt = (sign ? 1U : 0U) << SignShift;
             uint sigInt = (uint)(significand >> 54);
@@ -668,15 +961,13 @@ namespace System
         // If any bits are lost by shifting, "jam" them into the LSB.
         // if dist > bit count, Will be 1 or 0 depending on i
         // (unlike bitwise operators that masks the lower 5 bits)
-        private static uint ShiftRightJam(uint i, int dist)
-            => dist < 31 ? (i >> dist) | (i << (-dist & 31) != 0 ? 1U : 0U) : (i != 0 ? 1U : 0U);
+        private static uint ShiftRightJam(uint i, int dist) => dist < 31 ? (i >> dist) | (i << (-dist & 31) != 0 ? 1U : 0U) : (i != 0 ? 1U : 0U);
 
-        private static ulong ShiftRightJam(ulong l, int dist)
-            => dist < 63 ? (l >> dist) | (l << (-dist & 63) != 0 ? 1UL : 0UL) : (l != 0 ? 1UL : 0UL);
+        private static ulong ShiftRightJam(ulong l, int dist) => dist < 63 ? (l >> dist) | (l << (-dist & 63) != 0 ? 1UL : 0UL) : (l != 0 ? 1UL : 0UL);
 
         private static float CreateSingleNaN(bool sign, ulong significand)
         {
-            const uint NaNBits = float.ExponentMask | 0x400000; // Most significant significand bit
+            const uint NaNBits = float.BiasedExponentMask | 0x400000; // Most significant significand bit
 
             uint signInt = (sign ? 1U : 0U) << float.SignShift;
             uint sigInt = (uint)(significand >> 41);
@@ -686,7 +977,7 @@ namespace System
 
         private static double CreateDoubleNaN(bool sign, ulong significand)
         {
-            const ulong NaNBits = double.ExponentMask | 0x80000_00000000; // Most significant significand bit
+            const ulong NaNBits = double.BiasedExponentMask | 0x80000_00000000; // Most significant significand bit
 
             ulong signInt = (sign ? 1UL : 0UL) << double.SignShift;
             ulong sigInt = significand >> 12;
@@ -694,81 +985,75 @@ namespace System
             return BitConverter.UInt64BitsToDouble(signInt | NaNBits | sigInt);
         }
 
-        private static float CreateSingle(bool sign, byte exp, uint sig)
-            => BitConverter.UInt32BitsToSingle(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.ExponentShift) + sig);
+        private static float CreateSingle(bool sign, byte exp, uint sig) => BitConverter.UInt32BitsToSingle(((sign ? 1U : 0U) << float.SignShift) + ((uint)exp << float.BiasedExponentShift) + sig);
 
-        private static double CreateDouble(bool sign, ushort exp, ulong sig)
-            => BitConverter.UInt64BitsToDouble(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.ExponentShift) + sig);
+        private static double CreateDouble(bool sign, ushort exp, ulong sig) => BitConverter.UInt64BitsToDouble(((sign ? 1UL : 0UL) << double.SignShift) + ((ulong)exp << double.BiasedExponentShift) + sig);
 
         #endregion
 
-#if FEATURE_GENERIC_MATH
         //
         // IAdditionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IAdditionOperators<Half, Half, Half>.operator +(Half left, Half right)
-            => (Half)((float)left + (float)right);
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked Half IAdditionOperators<Half, Half, Half>.operator +(Half left, Half right)
-        //     => checked((Half)((float)left + (float)right));
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        public static Half operator +(Half left, Half right) => (Half)((float)left + (float)right);
 
         //
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IAdditiveIdentity<Half, Half>.AdditiveIdentity => PositiveZero;
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        static Half IAdditiveIdentity<Half, Half>.AdditiveIdentity => new Half(PositiveZeroBits);
 
         //
         // IBinaryNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IBinaryNumber<Half>.IsPow2(Half value)
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static Half IBinaryNumber<Half>.AllBitsSet => BitConverter.UInt16BitsToHalf(0xFFFF);
+
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
+        public static bool IsPow2(Half value)
         {
-            uint bits = BitConverter.HalfToUInt16Bits(value);
+            ushort bits = BitConverter.HalfToUInt16Bits(value);
 
-            uint exponent = (bits >> ExponentShift) & ShiftedExponentMask;
-            uint significand = bits & SignificandMask;
+            byte biasedExponent = ExtractBiasedExponentFromBits(bits);
+            ushort trailingSignificand = ExtractTrailingSignificandFromBits(bits);
 
-            return (value > PositiveZero)
-                && (exponent != MinExponent) && (exponent != MaxExponent)
-                && (significand == MinSignificand);
+            return (value > Zero)
+                && (biasedExponent != MinBiasedExponent) && (biasedExponent != MaxBiasedExponent)
+                && (trailingSignificand == MinTrailingSignificand);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IBinaryNumber<Half>.Log2(Half value)
-            => (Half)MathF.Log2((float)value);
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        public static Half Log2(Half value) => (Half)MathF.Log2((float)value);
 
         //
         // IBitwiseOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseAnd(TSelf, TOther)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator &(Half left, Half right)
         {
             ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) & BitConverter.HalfToUInt16Bits(right));
             return BitConverter.UInt16BitsToHalf(bits);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseOr(TSelf, TOther)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator |(Half left, Half right)
         {
             ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) | BitConverter.HalfToUInt16Bits(right));
             return BitConverter.UInt16BitsToHalf(bits);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_ExclusiveOr(TSelf, TOther)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator ^(Half left, Half right)
         {
             ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) ^ BitConverter.HalfToUInt16Bits(right));
             return BitConverter.UInt16BitsToHalf(bits);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_OnesComplement(TSelf)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator ~(Half value)
         {
             ushort bits = (ushort)(~BitConverter.HalfToUInt16Bits(value));
@@ -776,840 +1061,902 @@ namespace System
         }
 
         //
-        // IComparisonOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<Half, Half>.operator <(Half left, Half right)
-            => left < right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<Half, Half>.operator <=(Half left, Half right)
-            => left <= right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<Half, Half>.operator >(Half left, Half right)
-            => left > right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<Half, Half>.operator >=(Half left, Half right)
-            => left >= right;
-
-        //
         // IDecrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IDecrementOperators<Half>.operator --(Half value)
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        public static Half operator --(Half value)
         {
             var tmp = (float)value;
             --tmp;
             return (Half)tmp;
         }
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked Half IDecrementOperators<Half>.operator --(Half value)
-        // {
-        //     var tmp = (float)value;
-        //     --tmp;
-        //     return (Half)tmp;
-        // }
-
-        //
-        // IEqualityOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<Half, Half>.operator ==(Half left, Half right)
-            => left == right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<Half, Half>.operator !=(Half left, Half right)
-            => left != right;
-
         //
         // IDivisionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IDivisionOperators<Half, Half, Half>.operator /(Half left, Half right)
-            => (Half)((float)left / (float)right);
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
+        public static Half operator /(Half left, Half right) => (Half)((float)left / (float)right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked Half IDivisionOperators<Half, Half, Half>.operator /(Half left, Half right)
-        //     => checked((Half)((float)left / (float)right));
+        //
+        // IExponentialFunctions
+        //
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
+        public static Half Exp(Half x) => (Half)MathF.Exp((float)x);
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static Half ExpM1(Half x) => (Half)float.ExpM1((float)x);
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static Half Exp2(Half x) => (Half)float.Exp2((float)x);
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static Half Exp2M1(Half x) => (Half)float.Exp2M1((float)x);
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static Half Exp10(Half x) => (Half)float.Exp10((float)x);
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static Half Exp10M1(Half x) => (Half)float.Exp10M1((float)x);
 
         //
         // IFloatingPoint
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.E => (Half)MathF.E;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
+        public static Half Ceiling(Half x) => (Half)MathF.Ceiling((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Epsilon => Epsilon;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
+        public static Half Floor(Half x) => (Half)MathF.Floor((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.NaN => NaN;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
+        public static Half Round(Half x) => (Half)MathF.Round((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.NegativeInfinity => NegativeInfinity;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
+        public static Half Round(Half x, int digits) => (Half)MathF.Round((float)x, digits);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.NegativeZero => NegativeZero;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, MidpointRounding)" />
+        public static Half Round(Half x, MidpointRounding mode) => (Half)MathF.Round((float)x, mode);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Pi => (Half)MathF.PI;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int, MidpointRounding)" />
+        public static Half Round(Half x, int digits, MidpointRounding mode) => (Half)MathF.Round((float)x, digits, mode);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.PositiveInfinity => PositiveInfinity;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
+        public static Half Truncate(Half x) => (Half)MathF.Truncate((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Tau => (Half)MathF.Tau;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<Half>.GetExponentByteCount() => sizeof(sbyte);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Acos(Half x)
-            => (Half)MathF.Acos((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Acosh(Half x)
-            => (Half)MathF.Acosh((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Asin(Half x)
-            => (Half)MathF.Asin((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Asinh(Half x)
-            => (Half)MathF.Asinh((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Atan(Half x)
-            => (Half)MathF.Atan((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Atan2(Half y, Half x)
-            => (Half)MathF.Atan2((float)y, (float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Atanh(Half x)
-            => (Half)MathF.Atanh((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.BitIncrement(Half x)
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        int IFloatingPoint<Half>.GetExponentShortestBitLength()
         {
-            ushort bits = BitConverter.HalfToUInt16Bits(x);
+            sbyte exponent = Exponent;
 
-            if ((bits & ExponentMask) >= ExponentMask)
+            if (exponent >= 0)
             {
-                // NaN returns NaN
-                // -Infinity returns float.MinValue
-                // +Infinity returns +Infinity
-                return (bits == (ExponentMask | SignMask)) ? MinValue : x;
+                return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
             }
-
-            if (bits == NegativeZeroBits)
+            else
             {
-                // -0.0 returns float.Epsilon
-                return Epsilon;
+                return (sizeof(sbyte) * 8) + 1 - sbyte.LeadingZeroCount((sbyte)(~exponent));
             }
-
-            // Negative values need to be decremented
-            // Positive values need to be incremented
-
-            bits += unchecked((ushort)((bits < 0) ? -1 : +1));
-            return BitConverter.UInt16BitsToHalf(bits);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.BitDecrement(Half x)
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<Half>.GetSignificandByteCount() => sizeof(ushort);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        int IFloatingPoint<Half>.GetSignificandBitLength() => 11;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Half>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            ushort bits = BitConverter.HalfToUInt16Bits(x);
-
-            if ((bits & ExponentMask) >= ExponentMask)
+            if (destination.Length >= sizeof(sbyte))
             {
-                // NaN returns NaN
-                // -Infinity returns -Infinity
-                // +Infinity returns float.MaxValue
-                return (bits == ExponentMask) ? MaxValue : x;
-            }
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
 
-            if (bits == PositiveZeroBits)
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
             {
-                // +0.0 returns -float.Epsilon
-                return new Half(EpsilonBits | SignMask);
+                bytesWritten = 0;
+                return false;
             }
-
-            // Negative values need to be incremented
-            // Positive values need to be decremented
-
-            bits += (ushort)((bits < 0) ? +1 : -1);
-            return BitConverter.UInt16BitsToHalf(bits);
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Cbrt(Half x)
-            => (Half)MathF.Cbrt((float)x);
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Half>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Ceiling(Half x)
-            => (Half)MathF.Ceiling((float)x);
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.CopySign(Half x, Half y)
-            => (Half)MathF.CopySign((float)x, (float)y);
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Half>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(ushort))
+            {
+                ushort significand = Significand;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Cos(Half x)
-            => (Half)MathF.Cos((float)x);
+                if (BitConverter.IsLittleEndian)
+                {
+                    significand = BinaryPrimitives.ReverseEndianness(significand);
+                }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Cosh(Half x)
-            => (Half)MathF.Cosh((float)x);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Exp(Half x)
-            => (Half)MathF.Exp((float)x);
+                bytesWritten = sizeof(ushort);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Floor(Half x)
-            => (Half)MathF.Floor((float)x);
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Half>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(ushort))
+            {
+                ushort significand = Significand;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.FusedMultiplyAdd(Half left, Half right, Half addend)
-            => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
+                if (!BitConverter.IsLittleEndian)
+                {
+                    significand = BinaryPrimitives.ReverseEndianness(significand);
+                }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.IEEERemainder(Half left, Half right)
-            => (Half)MathF.IEEERemainder((float)left, (float)right);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static TInteger IFloatingPoint<Half>.ILogB<TInteger>(Half x)
-            => TInteger.Create(MathF.ILogB((float)x));
+                bytesWritten = sizeof(ushort);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Log(Half x)
-            => (Half)MathF.Log((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Log(Half x, Half newBase)
-            => (Half)MathF.Log((float)x, (float)newBase);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Log2(Half x)
-            => (Half)MathF.Log2((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Log10(Half x)
-            => (Half)MathF.Log10((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.MaxMagnitude(Half x, Half y)
-            => (Half)MathF.MaxMagnitude((float)x, (float)y);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.MinMagnitude(Half x, Half y)
-            => (Half)MathF.MinMagnitude((float)x, (float)y);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Pow(Half x, Half y)
-            => (Half)MathF.Pow((float)x, (float)y);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Round(Half x)
-            => (Half)MathF.Round((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Round<TInteger>(Half x, TInteger digits)
-            => (Half)MathF.Round((float)x, int.Create(digits));
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Round(Half x, MidpointRounding mode)
-            => (Half)MathF.Round((float)x, mode);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Round<TInteger>(Half x, TInteger digits, MidpointRounding mode)
-            => (Half)MathF.Round((float)x, int.Create(digits), mode);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.ScaleB<TInteger>(Half x, TInteger n)
-            => (Half)MathF.ScaleB((float)x, int.Create(n));
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Sin(Half x)
-            => (Half)MathF.Sin((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Sinh(Half x)
-            => (Half)MathF.Sinh((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Sqrt(Half x)
-            => (Half)MathF.Sqrt((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Tan(Half x)
-            => (Half)MathF.Tan((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Tanh(Half x)
-            => (Half)MathF.Tanh((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IFloatingPoint<Half>.Truncate(Half x)
-            => (Half)MathF.Truncate((float)x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsFinite(Half x) => IsFinite(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsInfinity(Half x) => IsInfinity(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsNaN(Half x) => IsNaN(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsNegative(Half x) => IsNegative(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsNegativeInfinity(Half x) => IsNegativeInfinity(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsNormal(Half x) => IsNormal(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsPositiveInfinity(Half x) => IsPositiveInfinity(x);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IFloatingPoint<Half>.IsSubnormal(Half x) => IsSubnormal(x);
-
-
-        // static Half IFloatingPoint<Half>.AcosPi(Half x)
-        //     => (Half)MathF.AcosPi((float)x);
         //
-        // static Half IFloatingPoint<Half>.AsinPi(Half x)
-        //     => (Half)MathF.AsinPi((float)x);
+        // IFloatingPointConstants
         //
-        // static Half IFloatingPoint<Half>.AtanPi(Half x)
-        //     => (Half)MathF.AtanPi((float)x);
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.E" />
+        public static Half E => new Half(EBits);
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Pi" />
+        public static Half Pi => new Half(PiBits);
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Tau" />
+        public static Half Tau => new Half(TauBits);
+
         //
-        // static Half IFloatingPoint<Half>.Atan2Pi(Half y, Half x)
-        //     => (Half)MathF.Atan2Pi((float)y, (float)x);
+        // IFloatingPointIeee754
         //
-        // static Half IFloatingPoint<Half>.Compound(Half x, Half n)
-        //     => (Half)MathF.Compound((float)x, (float)n);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeZero" />
+        public static Half NegativeZero => new Half(NegativeZeroBits);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        public static Half Atan2(Half y, Half x) => (Half)MathF.Atan2((float)y, (float)x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static Half Atan2Pi(Half y, Half x) => (Half)float.Atan2Pi((float)y, (float)x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
+        public static Half BitDecrement(Half x) => (Half)MathF.BitDecrement((float)x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
+        public static Half BitIncrement(Half x) => (Half)MathF.BitIncrement((float)x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        public static Half FusedMultiplyAdd(Half left, Half right, Half addend) => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
+        public static Half Ieee754Remainder(Half left, Half right) => (Half)MathF.IEEERemainder((float)left, (float)right);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
+        public static int ILogB(Half x) => MathF.ILogB((float)x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        public static Half ReciprocalEstimate(Half x) => (Half)MathF.ReciprocalEstimate((float)x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        public static Half ReciprocalSqrtEstimate(Half x) => (Half)MathF.ReciprocalSqrtEstimate((float)x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
+        public static Half ScaleB(Half x, int n) => (Half)MathF.ScaleB((float)x, n);
+
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
+        // public static Half Compound(Half x, Half n) => (Half)MathF.Compound((float)x, (float)n);
+
         //
-        // static Half IFloatingPoint<Half>.CosPi(Half x)
-        //     => (Half)MathF.CosPi((float)x);
+        // IHyperbolicFunctions
         //
-        // static Half IFloatingPoint<Half>.ExpM1(Half x)
-        //     => (Half)MathF.ExpM1((float)x);
-        //
-        // static Half IFloatingPoint<Half>.Exp2(Half x)
-        //     => (Half)MathF.Exp2((float)x);
-        //
-        // static Half IFloatingPoint<Half>.Exp2M1(Half x)
-        //     => (Half)MathF.Exp2M1((float)x);
-        //
-        // static Half IFloatingPoint<Half>.Exp10(Half x)
-        //     => (Half)MathF.Exp10((float)x);
-        //
-        // static Half IFloatingPoint<Half>.Exp10M1(Half x)
-        //     => (Half)MathF.Exp10M1((float)x);
-        //
-        // static Half IFloatingPoint<Half>.Hypot(Half x, Half y)
-        //     => (Half)MathF.Hypot((float)x, (float)y);
-        //
-        // static Half IFloatingPoint<Half>.LogP1(Half x)
-        //     => (Half)MathF.LogP1((float)x);
-        //
-        // static Half IFloatingPoint<Half>.Log2P1(Half x)
-        //     => (Half)MathF.Log2P1((float)x);
-        //
-        // static Half IFloatingPoint<Half>.Log10P1(Half x)
-        //     => (Half)MathF.Log10P1((float)x);
-        //
-        // static Half IFloatingPoint<Half>.MaxMagnitudeNumber(Half x, Half y)
-        //     => (Half)MathF.MaxMagnitudeNumber((float)x, (float)y);
-        //
-        // static Half IFloatingPoint<Half>.MaxNumber(Half x, Half y)
-        //     => (Half)MathF.MaxNumber((float)x, (float)y);
-        //
-        // static Half IFloatingPoint<Half>.MinMagnitudeNumber(Half x, Half y)
-        //     => (Half)MathF.MinMagnitudeNumber((float)x, (float)y);
-        //
-        // static Half IFloatingPoint<Half>.MinNumber(Half x, Half y)
-        //     => (Half)MathF.MinNumber((float)x, (float)y);
-        //
-        // static Half IFloatingPoint<Half>.Root(Half x, Half n)
-        //     => (Half)MathF.Root((float)x, (float)n);
-        //
-        // static Half IFloatingPoint<Half>.SinPi(Half x)
-        //     => (Half)MathF.SinPi((float)x, (float)y);
-        //
-        // static Half TanPi(Half x)
-        //     => (Half)MathF.TanPi((float)x, (float)y);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        public static Half Acosh(Half x) => (Half)MathF.Acosh((float)x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        public static Half Asinh(Half x) => (Half)MathF.Asinh((float)x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        public static Half Atanh(Half x) => (Half)MathF.Atanh((float)x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        public static Half Cosh(Half x) => (Half)MathF.Cosh((float)x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        public static Half Sinh(Half x) => (Half)MathF.Sinh((float)x);
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        public static Half Tanh(Half x) => (Half)MathF.Tanh((float)x);
 
         //
         // IIncrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IIncrementOperators<Half>.operator ++(Half value)
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
+        public static Half operator ++(Half value)
         {
             var tmp = (float)value;
             ++tmp;
             return (Half)tmp;
         }
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked Half IIncrementOperators<Half>.operator ++(Half value)
-        // {
-        //     var tmp = (float)value;
-        //     ++tmp;
-        //     return (Half)tmp;
-        // }
-
         //
-        // IMinMaxValue
+        // ILogarithmicFunctions
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IMinMaxValue<Half>.MinValue => MinValue;
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        public static Half Log(Half x) => (Half)MathF.Log((float)x);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IMinMaxValue<Half>.MaxValue => MaxValue;
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
+        public static Half Log(Half x, Half newBase) => (Half)MathF.Log((float)x, (float)newBase);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        public static Half Log10(Half x) => (Half)MathF.Log10((float)x);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static Half LogP1(Half x) => (Half)float.LogP1((float)x);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static Half Log2P1(Half x) => (Half)float.Log2P1((float)x);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static Half Log10P1(Half x) => (Half)float.Log10P1((float)x);
 
         //
         // IModulusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IModulusOperators<Half, Half, Half>.operator %(Half left, Half right)
-            => (Half)((float)left % (float)right);
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked Half IModulusOperators<Half, Half, Half>.operator %(Half left, Half right)
-        //     => checked((Half)((float)left % (float)right));
+        /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
+        public static Half operator %(Half left, Half right) => (Half)((float)left % (float)right);
 
         //
         // IMultiplicativeIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IMultiplicativeIdentity<Half, Half>.MultiplicativeIdentity => (Half)1.0f;
+        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        public static Half MultiplicativeIdentity => new Half(PositiveOneBits);
 
         //
         // IMultiplyOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IMultiplyOperators<Half, Half, Half>.operator *(Half left, Half right)
-            => (Half)((float)left * (float)right);
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked Half IMultiplyOperators<Half, Half, Half>.operator *(Half left, Half right)
-        //     => checked((Half)((float)left * (float)right));
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
+        public static Half operator *(Half left, Half right) => (Half)((float)left * (float)right);
 
         //
         // INumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.One => (Half)1.0f;
+        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        public static Half Clamp(Half value, Half min, Half max) => (Half)Math.Clamp((float)value, (float)min, (float)max);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Zero => PositiveZero;
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static Half CopySign(Half value, Half sign) => (Half)MathF.CopySign((float)value, (float)sign);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Abs(Half value)
-            => (Half)MathF.Abs((float)value);
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static Half Max(Half x, Half y) => (Half)MathF.Max((float)x, (float)y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Clamp(Half value, Half min, Half max)
-            => (Half)Math.Clamp((float)value, (float)min, (float)max);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static Half INumber<Half>.Create<TOther>(TOther value)
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        public static Half MaxNumber(Half x, Half y)
         {
-            if (typeof(TOther) == typeof(byte))
+            // This matches the IEEE 754:2019 `maximumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
             {
-                return (Half)(byte)(object)value;
+                if (!IsNaN(y))
+                {
+                    return y < x ? x : y;
+                }
+
+                return x;
             }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (Half)(char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (Half)(float)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (Half)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (Half)(short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (Half)(int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (Half)(long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (Half)(long)(nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (Half)(sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (Half)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (Half)(ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (Half)(uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (Half)(ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (Half)(ulong)(nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
+
+            return IsNegative(y) ? x : y;
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static Half INumber<Half>.CreateSaturating<TOther>(TOther value)
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static Half Min(Half x, Half y) => (Half)MathF.Min((float)x, (float)y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        public static Half MinNumber(Half x, Half y)
         {
-            if (typeof(TOther) == typeof(byte))
+            // This matches the IEEE 754:2019 `minimumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
             {
-                return (Half)(byte)(object)value;
+                if (!IsNaN(y))
+                {
+                    return x < y ? x : y;
+                }
+
+                return x;
             }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (Half)(char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (Half)(float)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (Half)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (Half)(short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (Half)(int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (Half)(long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (Half)(long)(nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (Half)(sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (Half)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (Half)(ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (Half)(uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (Half)(ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (Half)(ulong)(nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
+
+            return IsNegative(x) ? x : y;
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(Half value) => MathF.Sign((float)value);
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        public static Half One => new Half(PositiveOneBits);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<Half>.Radix => 2;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        public static Half Zero => new Half(PositiveZeroBits);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static Half Abs(Half value) => (Half)MathF.Abs((float)value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static Half INumber<Half>.CreateTruncating<TOther>(TOther value)
+        public static Half CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
         {
-            if (typeof(TOther) == typeof(byte))
+            Half result;
+
+            if (typeof(TOther) == typeof(Half))
             {
-                return (Half)(byte)(object)value;
+                result = (Half)(object)value;
             }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (Half)(char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (Half)(float)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (Half)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (Half)(short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (Half)(int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (Half)(long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (Half)(long)(nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (Half)(sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (Half)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (Half)(ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (Half)(uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (Half)(ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (Half)(ulong)(nuint)(object)value;
-            }
-            else
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToChecked(value, out result))
             {
                 ThrowHelper.ThrowNotSupportedException();
-                return default;
             }
+
+            return result;
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (Half Quotient, Half Remainder) INumber<Half>.DivRem(Half left, Half right)
-            => ((Half, Half))((float)left / (float)right, (float)left % (float)right);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Max(Half x, Half y)
-            => (Half)MathF.Max((float)x, (float)y);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Min(Half x, Half y)
-            => (Half)MathF.Min((float)x, (float)y);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Parse(string s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half INumber<Half>.Sign(Half value)
-            => (Half)MathF.Sign((float)value);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<Half>.TryCreate<TOther>(TOther value, out Half result)
+        public static Half CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
         {
-            if (typeof(TOther) == typeof(byte))
+            Half result;
+
+            if (typeof(TOther) == typeof(Half))
             {
-                result = (Half)(byte)(object)value;
-                return true;
+                result = (Half)(object)value;
             }
-            else if (typeof(TOther) == typeof(char))
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToSaturating(value, out result))
             {
-                result = (Half)(char)(object)value;
-                return true;
+                ThrowHelper.ThrowNotSupportedException();
             }
-            else if (typeof(TOther) == typeof(decimal))
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Half result;
+
+            if (typeof(TOther) == typeof(Half))
             {
-                result = (Half)(float)(decimal)(object)value;
-                return true;
+                result = (Half)(object)value;
             }
-            else if (typeof(TOther) == typeof(double))
+            else if (!TryConvertFrom(value, out result) && !TOther.TryConvertToTruncating(value, out result))
             {
-                result = (Half)(double)(object)value;
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<Half>.IsCanonical(Half value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<Half>.IsComplexNumber(Half value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(Half value) => float.IsEvenInteger((float)value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<Half>.IsImaginaryNumber(Half value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(Half value) => float.IsInteger((float)value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(Half value) => float.IsOddInteger((float)value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(Half value) => (short)(value._value) >= 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        public static bool IsRealNumber(Half value)
+        {
+            // A NaN will never equal itself so this is an
+            // easy and efficient way to check for a real number.
+
+#pragma warning disable CS1718
+            return value == value;
+#pragma warning restore CS1718
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<Half>.IsZero(Half value) => (value == Zero);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static Half MaxMagnitude(Half x, Half y) => (Half)MathF.MaxMagnitude((float)x, (float)y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        public static Half MaxMagnitudeNumber(Half x, Half y)
+        {
+            // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            Half ax = Abs(x);
+            Half ay = Abs(y);
+
+            if ((ax > ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static Half MinMagnitude(Half x, Half y) => (Half)MathF.MinMagnitude((float)x, (float)y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        public static Half MinMagnitudeNumber(Half x, Half y)
+        {
+            // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            Half ax = Abs(x);
+            Half ay = Abs(y);
+
+            if ((ax < ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Half>.TryConvertFromChecked<TOther>(TOther value, out Half result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Half>.TryConvertFromSaturating<TOther>(TOther value, out Half result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Half>.TryConvertFromTruncating<TOther>(TOther value, out Half result)
+        {
+            return TryConvertFrom<TOther>(value, out result);
+        }
+
+        private static bool TryConvertFrom<TOther>(TOther value, out Half result)
+            where TOther : INumberBase<TOther>
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `Half` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types
+
+            if (typeof(TOther) == typeof(double))
+            {
+                double actualValue = (double)(object)value;
+                result = (Half)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
             {
-                result = (Half)(short)(object)value;
+                short actualValue = (short)(object)value;
+                result = (Half)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(int))
             {
-                result = (Half)(int)(object)value;
+                int actualValue = (int)(object)value;
+                result = (Half)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(long))
             {
-                result = (Half)(long)(object)value;
+                long actualValue = (long)(object)value;
+                result = (Half)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                Int128 actualValue = (Int128)(object)value;
+                result = (Half)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nint))
             {
-                result = (Half)(long)(nint)(object)value;
+                nint actualValue = (nint)(object)value;
+                result = (Half)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(sbyte))
             {
-                result = (Half)(sbyte)(object)value;
+                sbyte actualValue = (sbyte)(object)value;
+                result = actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(float))
             {
-                result = (Half)(float)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                result = (Half)(ushort)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                result = (Half)(uint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                result = (Half)(ulong)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                result = (Half)(ulong)(nuint)(object)value;
+                float actualValue = (float)(object)value;
+                result = (Half)actualValue;
                 return true;
             }
             else
             {
-                ThrowHelper.ThrowNotSupportedException();
                 result = default;
                 return false;
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool INumber<Half>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Half result)
-            => TryParse(s, style, provider, out result);
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Half>.TryConvertToChecked<TOther>(Half value, [NotNullWhen(true)] out TOther result)
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `Half` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types.
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool INumber<Half>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Half result)
-            => TryParse(s, style, provider, out result);
+            if (typeof(TOther) == typeof(byte))
+            {
+                byte actualResult = checked((byte)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = checked((char)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = checked((decimal)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = checked((ushort)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = checked((uint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = checked((ulong)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = checked((UInt128)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = checked((nuint)value);
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Half>.TryConvertToSaturating<TOther>(Half value, [NotNullWhen(true)] out TOther result)
+        {
+            return TryConvertTo<TOther>(value, out result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumberBase<Half>.TryConvertToTruncating<TOther>(Half value, [NotNullWhen(true)] out TOther result)
+        {
+            return TryConvertTo<TOther>(value, out result);
+        }
+
+        private static bool TryConvertTo<TOther>(Half value, [NotNullWhen(true)] out TOther result)
+            where TOther : INumberBase<TOther>
+        {
+            // In order to reduce overall code duplication and improve the inlinabilty of these
+            // methods for the corelib types we have `ConvertFrom` handle the same sign and
+            // `ConvertTo` handle the opposite sign. However, since there is an uneven split
+            // between signed and unsigned types, the one that handles unsigned will also
+            // handle `Decimal`.
+            //
+            // That is, `ConvertFrom` for `Half` will handle the other signed types and
+            // `ConvertTo` will handle the unsigned types
+
+            if (typeof(TOther) == typeof(byte))
+            {
+                var actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
+                                   (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                char actualResult = (value == PositiveInfinity) ? char.MaxValue :
+                                    (value <= Zero) ? char.MinValue : (char)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                decimal actualResult = (value == PositiveInfinity) ? decimal.MaxValue :
+                                       (value == NegativeInfinity) ? decimal.MinValue :
+                                       IsNaN(value) ? 0.0m : (decimal)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                ushort actualResult = (value == PositiveInfinity) ? ushort.MaxValue :
+                                      (value <= Zero) ? ushort.MinValue : (ushort)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                uint actualResult = (value == PositiveInfinity) ? uint.MaxValue :
+                                    (value <= Zero) ? uint.MinValue : (uint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                ulong actualResult = (value == PositiveInfinity) ? ulong.MaxValue :
+                                     (value <= Zero) ? ulong.MinValue :
+                                     IsNaN(value) ? 0 : (ulong)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                UInt128 actualResult = (value == PositiveInfinity) ? UInt128.MaxValue :
+                                       (value <= Zero) ? UInt128.MinValue : (UInt128)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                nuint actualResult = (value == PositiveInfinity) ? nuint.MaxValue :
+                                     (value <= Zero) ? nuint.MinValue : (nuint)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else
+            {
+                result = default!;
+                return false;
+            }
+        }
 
         //
-        // IParseable
+        // IParsable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IParseable<Half>.Parse(string s, IFormatProvider? provider)
-            => Parse(s, provider);
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Half result) => TryParse(s, DefaultParseStyle, provider, out result);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IParseable<Half>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Half result)
-            => TryParse(s, DefaultParseStyle, provider, out result);
+        //
+        // IPowerFunctions
+        //
+
+        /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        public static Half Pow(Half x, Half y) => (Half)MathF.Pow((float)x, (float)y);
+
+        //
+        // IRootFunctions
+        //
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        public static Half Cbrt(Half x) => (Half)MathF.Cbrt((float)x);
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static Half Hypot(Half x, Half y) => (Half)float.Hypot((float)x, (float)y);
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
+        public static Half RootN(Half x, int n) => (Half)float.RootN((float)x, n);
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        public static Half Sqrt(Half x) => (Half)MathF.Sqrt((float)x);
 
         //
         // ISignedNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half ISignedNumber<Half>.NegativeOne => (Half)(-1.0f);
+        /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
+        public static Half NegativeOne => new Half(NegativeOneBits);
 
         //
-        // ISpanParseable
+        // ISpanParsable
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half ISpanParseable<Half>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, DefaultParseStyle, provider);
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static Half Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, DefaultParseStyle, provider);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool ISpanParseable<Half>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Half result)
-            => TryParse(s, DefaultParseStyle, provider, out result);
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Half result) => TryParse(s, DefaultParseStyle, provider, out result);
 
         //
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half ISubtractionOperators<Half, Half, Half>.operator -(Half left, Half right)
-            => (Half)((float)left - (float)right);
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
+        public static Half operator -(Half left, Half right) => (Half)((float)left - (float)right);
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked Half ISubtractionOperators<Half, Half, Half>.operator -(Half left, Half right)
-        //     => checked((Half)((float)left - (float)right));
+        //
+        // ITrigonometricFunctions
+        //
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        public static Half Acos(Half x) => (Half)MathF.Acos((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static Half AcosPi(Half x) => (Half)float.AcosPi((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        public static Half Asin(Half x) => (Half)MathF.Asin((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static Half AsinPi(Half x) => (Half)float.AsinPi((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        public static Half Atan(Half x) => (Half)MathF.Atan((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static Half AtanPi(Half x) => (Half)float.AtanPi((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        public static Half Cos(Half x) => (Half)MathF.Cos((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static Half CosPi(Half x) => (Half)float.CosPi((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        public static Half Sin(Half x) => (Half)MathF.Sin((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (Half Sin, Half Cos) SinCos(Half x)
+        {
+            var (sin, cos) = MathF.SinCos((float)x);
+            return ((Half)sin, (Half)cos);
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
+        public static (Half SinPi, Half CosPi) SinCosPi(Half x)
+        {
+            var (sinPi, cosPi) = float.SinCosPi((float)x);
+            return ((Half)sinPi, (Half)cosPi);
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static Half SinPi(Half x) => (Half)float.SinPi((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        public static Half Tan(Half x) => (Half)MathF.Tan((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static Half TanPi(Half x) => (Half)float.TanPi((float)x);
 
         //
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IUnaryNegationOperators<Half, Half>.operator -(Half value)
-            => (Half)(-(float)value);
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked Half IUnaryNegationOperators<Half, Half>.operator -(Half value)
-        //     => checked((Half)(-(float)value));
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
+        public static Half operator -(Half value) => (Half)(-(float)value);
 
         //
-        // IUnaryNegationOperators
+        // IUnaryPlusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static Half IUnaryPlusOperators<Half, Half>.operator +(Half value)
-            => value;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked Half IUnaryPlusOperators<Half, Half>.operator +(Half value)
-        //     => checked(value);
-#endif // FEATURE_GENERIC_MATH
+        /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
+        public static Half operator +(Half value) => value;
     }
 }

@@ -77,7 +77,7 @@ where it would be useful to describe types in the data section (such as for devi
 but there are also plausible cases for gathering each kind of data in both section, so the format will
 be made general to support both. Instrumentation Data shall have a version number independent of the
 general R2R versioning scheme. The intention is for this form of `InstrumentationData` to become
-useable for both out of line instrumentation as described in this document, as well as only tiered
+usable for both out of line instrumentation as described in this document, as well as only tiered
 compilation rejit scenarios with in process profiling.
 
 ## Trace data format

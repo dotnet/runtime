@@ -1,22 +1,17 @@
 <Project>
+  <!-- Define before the import so that ResolvedMatchingContract is set before resolveContract.targets is imported. -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'netstandard'">
+    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net48"
+                     Version="[$(MicrosoftNETFrameworkReferenceAssembliesLatestPackageVersion)]" />
+    <ResolvedMatchingContract Include="$([MSBuild]::NormalizePath('$(NuGetPackageRoot)', 'microsoft.netframework.referenceassemblies.net48', '$(MicrosoftNETFrameworkReferenceAssembliesLatestPackageVersion)', 'build', '.NETFramework', 'v4.8', '$(MSBuildProjectName).dll'))" />
+  </ItemGroup>
+
   <Import Project="..\Directory.Build.targets" />
 
-  <PropertyGroup>
-    <NETFrameworkReferenceAssemblyTFM>net48</NETFrameworkReferenceAssemblyTFM>
-    <NetFxRefPath>$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.$(NETFrameworkReferenceAssemblyTFM)\$(MicrosoftNETFrameworkReferenceAssembliesLatestPackageVersion)\build\.NETFramework\v4.8\</NetFxRefPath>
-    <NETStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library.ref', '$(NETStandardLibraryRefVersion)', 'ref', 'netstandard2.1'))</NETStandard21RefPath>
+  <!-- Tell GenFacades to use reference assemblies instead of the implementation assemblies (for most of the shims). -->
+  <PropertyGroup Condition="'$(CompileUsingReferenceAssemblies)' != 'false'">
+    <TrimOutPrivateAssembliesFromReferencePath>true</TrimOutPrivateAssembliesFromReferencePath>
+    <GeneratePartialFacadeSourceDependsOn>$(GeneratePartialFacadeSourceDependsOn);FindReferenceAssembliesForReferences</GeneratePartialFacadeSourceDependsOn>
+    <GenFacadesReferencePathItemName>ReferencePathWithRefAssemblies</GenFacadesReferencePathItemName>
   </PropertyGroup>
-
-  <!-- Download the corresponding targeting pack to build against the contract. -->
-  <ItemGroup Condition="'$(IsFrameworkSupportFacade)' == 'true' and '$(MSBuildProjectName)' == 'netstandard'">
-    <PackageDownload Include="NETStandard.Library.Ref"
-                     Version="[$(NETStandardLibraryRefVersion)]" />
-    <ResolvedMatchingContract Include="$(NETStandard21RefPath)$(MSBuildProjectName).dll" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(IsFrameworkSupportFacade)' == 'true' and '$(MSBuildProjectName)' != 'netstandard'">
-    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.$(NETFrameworkReferenceAssemblyTFM)"
-                     Version="[$(MicrosoftNETFrameworkReferenceAssembliesLatestPackageVersion)]" />
-    <ResolvedMatchingContract Include="$(NetFxRefPath)$(MSBuildProjectName).dll" />
-  </ItemGroup>
 </Project>

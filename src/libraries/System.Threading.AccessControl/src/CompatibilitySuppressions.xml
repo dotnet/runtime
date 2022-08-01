@@ -72,20 +72,4 @@
     <Left>lib/netstandard2.0/System.Threading.AccessControl.dll</Left>
     <Right>lib/net462/System.Threading.AccessControl.dll</Right>
   </Suppression>
-  <Suppression>
-    <DiagnosticId>PKV006</DiagnosticId>
-    <Target>.NETFramework,Version=v4.6</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>PKV006</DiagnosticId>
-    <Target>.NETStandard,Version=v1.3</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>PKV007</DiagnosticId>
-    <Target>.NETFramework,Version=v4.6-win</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>PKV007</DiagnosticId>
-    <Target>.NETStandard,Version=v1.3-win</Target>
-  </Suppression>
 </Suppressions>

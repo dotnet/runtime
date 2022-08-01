@@ -67,11 +67,8 @@ namespace System.IO.Compression
         /// <param name="overwriteFiles">True to indicate overwrite.</param>
         public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName, bool overwriteFiles)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            if (destinationDirectoryName == null)
-                throw new ArgumentNullException(nameof(destinationDirectoryName));
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(destinationDirectoryName);
 
             foreach (ZipArchiveEntry entry in source.Entries)
             {

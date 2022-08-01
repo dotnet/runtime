@@ -12,7 +12,7 @@
 #ifdef FEATURE_PERFTRACING
 
 extern "C" UINT64 QCALLTYPE EventPipeInternal_Enable(
-    __in_z LPCWSTR outputFile,
+    _In_z_ LPCWSTR outputFile,
     EventPipeSerializationFormat format,
     UINT32 circularBufferSizeInMB,
     /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ LPCVOID pProviders,
@@ -84,7 +84,7 @@ extern "C" bool QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, Eve
 }
 
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
-    __in_z LPCWSTR providerName,
+    _In_z_ LPCWSTR providerName,
     EventPipeCallback pCallbackFunc)
 {
     QCALL_CONTRACT;
@@ -125,7 +125,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
     return reinterpret_cast<INT_PTR>(pEvent);
 }
 
-extern "C" INT_PTR QCALLTYPE EventPipeInternal_GetProvider(__in_z LPCWSTR providerName)
+extern "C" INT_PTR QCALLTYPE EventPipeInternal_GetProvider(_In_z_ LPCWSTR providerName)
 {
     QCALL_CONTRACT;
 
@@ -255,17 +255,30 @@ extern "C" bool QCALLTYPE EventPipeInternal_GetNextEvent(UINT64 sessionID, Event
     return pNextInstance != NULL;
 }
 
-extern "C" HANDLE QCALLTYPE EventPipeInternal_GetWaitHandle(UINT64 sessionID)
+extern "C" bool QCALLTYPE EventPipeInternal_SignalSession(UINT64 sessionID)
 {
     QCALL_CONTRACT;
 
-    HANDLE waitHandle;
+    bool result = false;
     BEGIN_QCALL;
 
-    waitHandle = EventPipeAdapter::GetWaitHandle(sessionID);
+    result = EventPipeAdapter::SignalSession(sessionID);
 
     END_QCALL;
-    return waitHandle;
+    return result;
+}
+
+extern "C" bool QCALLTYPE EventPipeInternal_WaitForSessionSignal(UINT64 sessionID, INT32 timeoutMs)
+{
+    QCALL_CONTRACT;
+
+    bool result = false;
+    BEGIN_QCALL;
+
+    result = EventPipeAdapter::WaitForSessionSignal(sessionID, timeoutMs);
+
+    END_QCALL;
+    return result;
 }
 
 #endif // FEATURE_PERFTRACING

@@ -20,11 +20,10 @@
   
 }
 .assembly extern xunit.core {}
-.module 'test3.exe'
 // MVID: {D9CB467A-BD94-4D87-BB6B-ABB1D4B12E50}
 .namespace Test
 {
-  .class private auto ansi Base extends ['mscorlib']System.Object
+  .class public auto ansi Base extends ['mscorlib']System.Object
   {
     .field public float64 m
     .method public hidebysig specialname rtspecialname 
@@ -77,7 +76,7 @@
       IL_0021:  
     } // end of method 'Base::Clone'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

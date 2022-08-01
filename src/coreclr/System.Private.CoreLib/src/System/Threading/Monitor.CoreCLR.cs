@@ -127,8 +127,7 @@ namespace System.Threading
 
         public static bool IsEntered(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             return IsEnteredNative(obj);
         }
@@ -169,10 +168,7 @@ namespace System.Threading
 
         public static void Pulse(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             ObjPulse(obj);
         }
@@ -184,10 +180,7 @@ namespace System.Threading
 
         public static void PulseAll(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             ObjPulseAll(obj);
         }
@@ -197,7 +190,7 @@ namespace System.Threading
         /// </summary>
         public static long LockContentionCount => GetLockContentionCount();
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ObjectNative_GetMonitorLockContentionCount")]
-        private static extern long GetLockContentionCount();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectNative_GetMonitorLockContentionCount")]
+        private static partial long GetLockContentionCount();
     }
 }

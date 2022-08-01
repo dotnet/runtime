@@ -50,7 +50,7 @@ namespace System.ServiceModel.Syndication
 
         protected SyndicationItem(SyndicationItem source)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -58,7 +58,7 @@ namespace System.ServiceModel.Syndication
             _extensions = source._extensions.Clone();
             _authors = FeedUtils.ClonePersons(source._authors);
             _categories = FeedUtils.CloneCategories(source._categories);
-            Content = (source.Content != null) ? source.Content.Clone() : null;
+            Content = source.Content?.Clone();
             _contributors = FeedUtils.ClonePersons(source._contributors);
             Copyright = FeedUtils.CloneTextContent(source.Copyright);
             Id = source.Id;
@@ -79,21 +79,21 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationPerson> Authors
         {
-            get => _authors ?? (_authors = new NullNotAllowedCollection<SyndicationPerson>());
+            get => _authors ??= new NullNotAllowedCollection<SyndicationPerson>();
         }
 
         public Uri BaseUri { get; set; }
 
         public Collection<SyndicationCategory> Categories
         {
-            get => _categories ?? (_categories = new NullNotAllowedCollection<SyndicationCategory>());
+            get => _categories ??= new NullNotAllowedCollection<SyndicationCategory>();
         }
 
         public SyndicationContent Content { get; set; }
 
         public Collection<SyndicationPerson> Contributors
         {
-            get => _contributors ?? (_contributors = new NullNotAllowedCollection<SyndicationPerson>());
+            get => _contributors ??= new NullNotAllowedCollection<SyndicationPerson>();
         }
 
         public TextSyndicationContent Copyright { get; set; }
@@ -124,7 +124,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<SyndicationLink> Links
         {
-            get => _links ?? (_links = new NullNotAllowedCollection<SyndicationLink>());
+            get => _links ??= new NullNotAllowedCollection<SyndicationLink>();
         }
 
         internal Exception PublishDateException { get; set; }
@@ -157,7 +157,7 @@ namespace System.ServiceModel.Syndication
 
         public static TSyndicationItem Load<TSyndicationItem>(XmlReader reader) where TSyndicationItem : SyndicationItem, new()
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -181,7 +181,7 @@ namespace System.ServiceModel.Syndication
 
         public void AddPermalink(Uri permalink)
         {
-            if (permalink == null)
+            if (permalink is null)
             {
                 throw new ArgumentNullException(nameof(permalink));
             }

@@ -73,9 +73,9 @@ namespace System.Diagnostics.Tracing
         }
 
         // Get or set the per-thread activity ID.
-        int IEventProvider.EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
+        int IEventProvider.EventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
         {
-            return EventActivityIdControl(ControlCode, ref ActivityId);
+            return EventActivityIdControl(controlCode, ref activityId);
         }
 
         // Define an EventPipeEvent handle.
@@ -87,9 +87,9 @@ namespace System.Diagnostics.Tracing
         }
 
         // Get or set the per-thread activity ID.
-        internal static int EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
+        internal static int EventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
         {
-            return EventPipeInternal.EventActivityIdControl((uint)ControlCode, ref ActivityId);
+            return EventPipeInternal.EventActivityIdControl((uint)controlCode, ref activityId);
         }
     }
 }

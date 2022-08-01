@@ -200,24 +200,6 @@
   <data name="InvalidOperation_EndWriteCalledMultiple" xml:space="preserve">
     <value>EndWrite can only be called once for each asynchronous operation.</value>
   </data>
-  <data name="IO_PortNotFound" xml:space="preserve">
-    <value>The specified port does not exist.</value>
-  </data>
-  <data name="IO_PortNotFoundFileName" xml:space="preserve">
-    <value>The port '{0}' does not exist.</value>
-  </data>
-  <data name="UnauthorizedAccess_IODenied_NoPortName" xml:space="preserve">
-    <value>Access to the port is denied.</value>
-  </data>
-  <data name="IO_PathTooLong_PortName" xml:space="preserve">
-    <value>The specified port name is too long.  The port name must be less than 260 characters.</value>
-  </data>
-  <data name="IO_SharingViolation_NoPortName" xml:space="preserve">
-    <value>The process cannot access the port because it is being used by another process.</value>
-  </data>
-  <data name="IO_SharingViolation_Port" xml:space="preserve">
-    <value>The process cannot access the port '{0}' because it is being used by another process.</value>
-  </data>
   <data name="UnauthorizedAccess_IODenied_Port" xml:space="preserve">
     <value>Access to the port '{0}' is denied.</value>
   </data>
@@ -226,9 +208,6 @@
   </data>
   <data name="PlatformNotSupported_SerialPort_GetPortNames" xml:space="preserve">
     <value>Enumeration of serial port names is not supported on the current platform.</value>
-  </data>
-  <data name="IO_PathTooLong_Path_PortName" xml:space="preserve">
-    <value>The specified port name '{0}' is too long.  The port name must be less than 260 characters.</value>
   </data>
   <!-- used by shared file IOErrors.cs -->
   <data name="IO_PathTooLong" xml:space="preserve">

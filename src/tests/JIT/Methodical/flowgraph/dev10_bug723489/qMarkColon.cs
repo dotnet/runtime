@@ -7,22 +7,21 @@
  */
 
 using System;
-internal class Repro
+using Xunit;
+namespace Test_qMarkColon_cs
+{
+public class Repro
 {
     public static bool MyEquals(object obj1, object obj2)
     {
         return ((obj1 as Version) == (obj2 as Version));
     }
 
-    public static int Main(String[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         Version ver0 = null;
         Version ver1 = null;
-        if (args.Length >= 2)
-        {
-            ver0 = new Version(args[0]);
-            ver1 = new Version(args[1]);
-        }
 
         bool result = MyEquals(ver0, ver1);
         if (result)
@@ -30,4 +29,5 @@ internal class Repro
         else
             return 101;
     }
+}
 }

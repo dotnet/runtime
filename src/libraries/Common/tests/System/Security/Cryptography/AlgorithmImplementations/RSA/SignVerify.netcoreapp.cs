@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 byte[] signature = new byte[2048 / 8];
 
                 Assert.False(
-                    rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1));
+                    rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
 
                 if (RSAFactory.SupportsPss)
                 {

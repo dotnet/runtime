@@ -9,7 +9,7 @@
 
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' AND '$(UsingBrowserRuntimeWorkload)' == ''">
         <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
-        <UsingBrowserRuntimeWorkload Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmBuildNative)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</UsingBrowserRuntimeWorkload>
+        <UsingBrowserRuntimeWorkload Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmBuildNative)' == 'true' or '$(WasmGenerateAppBundle)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</UsingBrowserRuntimeWorkload>
         <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == ''" >$(WasmNativeWorkload)</UsingBrowserRuntimeWorkload>
     </PropertyGroup>
 
@@ -40,12 +40,6 @@
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
         <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
     </ImportGroup>
-    <!--
-    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'macOS' and $([MSBuild]::IsOSPlatform('osx'))">
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.osx-arm64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.osx-x64" />
-    </ImportGroup>
-    -->
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'ios'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
@@ -80,6 +74,7 @@
 
     <ImportGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk" />
         <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm" />
         <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
@@ -90,38 +85,13 @@
       <_MonoWorkloadRuntimePackPackageVersion>$(RuntimePackInWorkloadVersion)</_MonoWorkloadRuntimePackPackageVersion>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(_MonoWorkloadTargetsMobile)' == 'true' and '$(TargetFramework)' == '${NetCoreAppCurrent}'">
-      <MonoRuntimePackRids Include="
-        linux-x64;
-        win-x64;
-        osx-x64;
-        osx-arm64;
-        maccatalyst-x64;
-        maccatalyst-arm64;
-        browser-wasm;
-        ios-arm64;
-        ios-arm;
-        iossimulator-arm64;
-        iossimulator-x64;
-        iossimulator-x86;
-        tvos-arm64;
-        tvossimulator-arm64;
-        tvossimulator-x64;
-        android-arm64;
-        android-arm;
-        android-x64;
-        android-x86;
-        " />
-
-      <KnownRuntimePack Remove="Microsoft.NETCore.App" />
-      <KnownRuntimePack Include="Microsoft.NETCore.App"
-                        TargetFramework="${NetCoreAppCurrent}"
-                        RuntimeFrameworkName="Microsoft.NETCore.App"
-                        LatestRuntimeFrameworkVersion="**FromWorkload**"
-                        RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.Mono.**RID**"
-                        RuntimePackRuntimeIdentifiers="@(MonoRuntimePackRids, '%3B')"
-                        RuntimePackLabels="Mono"
-                        />
+    <ItemGroup Condition="'$(_MonoWorkloadTargetsMobile)' == 'true'">
+      <KnownRuntimePack Update="@(KnownRuntimePack)">
+        <LatestRuntimeFrameworkVersion Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetCoreAppCurrent}' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">**FromWorkload**</LatestRuntimeFrameworkVersion>
+        <!-- Overrides for wasm threading support -->
+        <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreading)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
+        <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablePerfTrace)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.perftrace.**RID**</RuntimePackNamePatterns>
+      </KnownRuntimePack>
     </ItemGroup>
 
     <!-- we can't condition sdk imports on the item @(NativeFileReference). Instead, explicitly check before the build
@@ -140,5 +110,11 @@
 
       <Error Condition="@(NativeFileReference->Count()) > 0"
              Text="WebAssembly workloads, required for linking native files (from %40(NativeFileReference)), are only supported for projects targeting net6.0+ ." />
+    </Target>
+
+    <Target Name="_ErrorDualWasmThreadProps"
+            Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(BrowserWorkloadDisabled)' != 'true' and '$(WasmEnableThreading)' == 'true' and '$(WasmEnablePerfTrace)' == 'true'"
+            BeforeTargets="Build">
+        <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreading or WasmEnablePerfTrace to true, but not both." />
     </Target>
 </Project>

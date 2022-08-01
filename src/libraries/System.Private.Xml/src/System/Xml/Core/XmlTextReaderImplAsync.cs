@@ -387,11 +387,7 @@ namespace System.Xml
         public override Task<int> ReadContentAsBase64Async(byte[] buffer, int index, int count)
         {
             CheckAsyncCall();
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -456,11 +452,7 @@ namespace System.Xml
         public override async Task<int> ReadContentAsBinHexAsync(byte[] buffer, int index, int count)
         {
             CheckAsyncCall();
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -534,11 +526,7 @@ namespace System.Xml
         public override Task<int> ReadElementContentAsBase64Async(byte[] buffer, int index, int count)
         {
             CheckAsyncCall();
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -603,11 +591,7 @@ namespace System.Xml
         public override async Task<int> ReadElementContentAsBinHexAsync(byte[] buffer, int index, int count)
         {
             CheckAsyncCall();
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -668,11 +652,7 @@ namespace System.Xml
             {
                 throw new InvalidOperationException(SR.Format(SR.Xml_InvalidReadValueChunk, _curNode.type));
             }
-            // check arguments
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -749,7 +729,6 @@ namespace System.Xml
                     var tuple_0 = await ParseTextAsync(orChars).ConfigureAwait(false);
                     startPos = tuple_0.Item1;
                     endPos = tuple_0.Item2;
-                    orChars = tuple_0.Item3;
 
                     endOfValue = tuple_0.Item4;
 
@@ -974,22 +953,19 @@ namespace System.Xml
 
             // make sure we have at least 4 bytes to detect the encoding (no preamble of System.Text supported encoding is longer than 4 bytes)
             _ps.bytePos = 0;
-            while (_ps.bytesUsed < 4 && _ps.bytes.Length - _ps.bytesUsed > 0)
+            if (_ps.bytesUsed < 4 && _ps.bytes.Length - _ps.bytesUsed > 0)
             {
-                int read = await stream.ReadAsync(_ps.bytes.AsMemory(_ps.bytesUsed)).ConfigureAwait(false);
-                if (read == 0)
+                int bytesToRead = Math.Min(4, _ps.bytes.Length - _ps.bytesUsed);
+                int read = await stream.ReadAtLeastAsync(_ps.bytes.AsMemory(_ps.bytesUsed), bytesToRead, throwOnEndOfStream: false).ConfigureAwait(false);
+                if (read < bytesToRead)
                 {
                     _ps.isStreamEof = true;
-                    break;
                 }
                 _ps.bytesUsed += read;
             }
 
             // detect & setup encoding
-            if (encoding == null)
-            {
-                encoding = DetectEncoding();
-            }
+            encoding ??= DetectEncoding();
             SetupEncoding(encoding);
 
             // eat preamble
@@ -1149,7 +1125,7 @@ namespace System.Xml
                     int copyCharsCount = _ps.charsUsed - _ps.charPos;
                     if (copyCharsCount < charsLen - 1)
                     {
-                        _ps.lineStartPos = _ps.lineStartPos - _ps.charPos;
+                        _ps.lineStartPos -= _ps.charPos;
                         if (copyCharsCount > 0)
                         {
                             BlockCopyChars(_ps.chars, _ps.charPos, _ps.chars, 0, copyCharsCount);
@@ -1258,7 +1234,7 @@ namespace System.Xml
             }
             _ps.charPos += 5;
 
-            // parsing of text declarations cannot change global stringBuidler or curNode as we may be in the middle of a text node
+            // parsing of text declarations cannot change global stringBuilder or curNode as we may be in the middle of a text node
             Debug.Assert(_stringBuilder.Length == 0 || isTextDecl);
             StringBuilder sb = isTextDecl ? new StringBuilder() : _stringBuilder;
 
@@ -1370,10 +1346,7 @@ namespace System.Xml
                         if (XmlConvert.StrEqual(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos, "standalone") &&
                              (xmlDeclState == 1 || xmlDeclState == 2) && !isTextDecl)
                         {
-                            if (!isTextDecl)
-                            {
-                                attr = AddAttributeNoChecks("standalone", 1);
-                            }
+                            attr = AddAttributeNoChecks("standalone", 1);
                             xmlDeclState = 2;
                             break;
                         }
@@ -2356,10 +2329,8 @@ namespace System.Xml
             if (startTag.type == XmlNodeType.Element)
             {
                 // parse the bad name
-                int colonPos;
 
                 var tuple_5 = await ParseQNameAsync().ConfigureAwait(false);
-                colonPos = tuple_5.Item1;
 
                 int endPos = tuple_5.Item2;
 
@@ -2977,7 +2948,7 @@ namespace System.Xml
             // the whole value is in buffer
 
             ValueTask<(int, int, int, bool)> parseTextTask = ParseTextAsync(orChars).Preserve();
-            bool fullValue = false;
+            bool fullValue;
             if (!parseTextTask.IsCompletedSuccessfully)
             {
                 return _ParseTextAsync(parseTextTask.AsTask());
@@ -3033,8 +3004,6 @@ namespace System.Xml
                 do
                 {
                     tuple_9 = await ParseTextAsync(orChars).ConfigureAwait(false);
-                    startPos = tuple_9.Item1;
-                    endPos = tuple_9.Item2;
                     orChars = tuple_9.Item3;
                 } while (!tuple_9.Item4);
 
@@ -3109,7 +3078,7 @@ namespace System.Xml
                 // V2 reader -> do not cache the whole value yet, read only up to 4kB to decide whether the value is a whitespace
                 else
                 {
-                    bool fullValue = false;
+                    bool fullValue;
 
                     // if it's a partial text value, not a whitespace -> return
                     if (orChars > 0x20)
@@ -3153,8 +3122,6 @@ namespace System.Xml
                             do
                             {
                                 tuple_13 = await ParseTextAsync(orChars).ConfigureAwait(false);
-                                startPos = tuple_13.Item1;
-                                endPos = tuple_13.Item2;
                                 orChars = tuple_13.Item3;
                             } while (!tuple_13.Item4);
                         }
@@ -3582,7 +3549,7 @@ namespace System.Xml
             return _parseText_dummyTask.Result;
         }
 
-        private (int, int, int, bool) ParseText_NoValue(int outOrChars, int pos)
+        private static (int, int, int, bool) ParseText_NoValue(int outOrChars, int pos)
         {
             return (pos, pos, outOrChars, true);
         }
@@ -3953,7 +3920,7 @@ namespace System.Xml
                 {
                     await PushExternalEntityAsync(entity).ConfigureAwait(false);
                     _curNode.entityId = _ps.entityId;
-                    return (isInAttributeValue && _validatingReaderCompatFlag) ? EntityType.ExpandedInAttribute : EntityType.Expanded;
+                    return EntityType.Expanded;
                 }
             }
             else
@@ -4059,8 +4026,6 @@ namespace System.Xml
                         do
                         {
                             tuple_19 = await ParsePIValueAsync().ConfigureAwait(false);
-                            startPos = tuple_19.Item1;
-                            endPos = tuple_19.Item2;
                         } while (!tuple_19.Item3);
 
                         return false;
@@ -4314,8 +4279,6 @@ namespace System.Xml
                 do
                 {
                     tuple_23 = await ParseCDataOrCommentTupleAsync(type).ConfigureAwait(false);
-                    startPos = tuple_23.Item1;
-                    endPos = tuple_23.Item2;
                 } while (!tuple_23.Item3);
             }
         }
@@ -4564,12 +4527,10 @@ namespace System.Xml
 
         private async Task SkipDtdAsync()
         {
-            int colonPos;
 
             // parse dtd name
 
             var tuple_24 = await ParseQNameAsync().ConfigureAwait(false);
-            colonPos = tuple_24.Item1;
 
             int pos = tuple_24.Item2;
 
@@ -4944,10 +4905,7 @@ namespace System.Xml
                                 int tmp2 = pos - _ps.charPos;
                                 if (tmp2 > 0)
                                 {
-                                    if (sb != null)
-                                    {
-                                        sb.Append(_ps.chars, _ps.charPos, tmp2);
-                                    }
+                                    sb?.Append(_ps.chars, _ps.charPos, tmp2);
                                     _ps.charPos = pos;
                                     wsCount += tmp2;
                                 }
@@ -4960,10 +4918,7 @@ namespace System.Xml
                 int tmp3 = pos - _ps.charPos;
                 if (tmp3 > 0)
                 {
-                    if (sb != null)
-                    {
-                        sb.Append(_ps.chars, _ps.charPos, tmp3);
-                    }
+                    sb?.Append(_ps.chars, _ps.charPos, tmp3);
                     _ps.charPos = pos;
                     wsCount += tmp3;
                 }
@@ -5232,7 +5187,7 @@ namespace System.Xml
 
             if (entityName == null)
             {
-                ThrowWithoutLineInfo(SR.Xml_CannotResolveExternalSubset, new string?[] { (publicId != null ? publicId : string.Empty), systemId }, null);
+                ThrowWithoutLineInfo(SR.Xml_CannotResolveExternalSubset, new string?[] { publicId ?? string.Empty, systemId }, null);
             }
             else
             {
@@ -5496,7 +5451,6 @@ namespace System.Xml
                         var tuple_36 = await ParseTextAsync(orChars).ConfigureAwait(false);
                         startPos = tuple_36.Item1;
                         endPos = tuple_36.Item2;
-                        orChars = tuple_36.Item3;
 
                         endOfValue = tuple_36.Item4;
 

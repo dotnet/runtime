@@ -94,8 +94,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public EventLogSession(string server, string domain, string user, SecureString password, SessionAuthentication logOnType)
         {
-            if (server == null)
-                server = "localhost";
+            server ??= "localhost";
 
             _syncObject = new object();
 
@@ -205,8 +204,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public EventLogInformation GetLogInformation(string logName, PathType pathType)
         {
-            if (logName == null)
-                throw new ArgumentNullException(nameof(logName));
+            ArgumentNullException.ThrowIfNull(logName);
 
             return new EventLogInformation(this, logName, pathType);
         }
@@ -218,11 +216,9 @@ namespace System.Diagnostics.Eventing.Reader
 
         public void ExportLog(string path, PathType pathType, string query, string targetFilePath, bool tolerateQueryErrors)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            ArgumentNullException.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(targetFilePath);
 
-            if (targetFilePath == null)
-                throw new ArgumentNullException(nameof(targetFilePath));
             UnsafeNativeMethods.EvtExportLogFlags flag = pathType switch
             {
                 PathType.LogName => UnsafeNativeMethods.EvtExportLogFlags.EvtExportLogChannelPath,
@@ -242,8 +238,6 @@ namespace System.Diagnostics.Eventing.Reader
 
         public void ExportLogAndMessages(string path, PathType pathType, string query, string targetFilePath, bool tolerateQueryErrors, CultureInfo targetCultureInfo)
         {
-            if (targetCultureInfo == null)
-                targetCultureInfo = CultureInfo.CurrentCulture;
             ExportLog(path, pathType, query, targetFilePath, tolerateQueryErrors);
             // Ignore the CultureInfo, pass 0 to use the calling thread's locale
             NativeWrapper.EvtArchiveExportedLog(this.Handle, targetFilePath, 0, 0);
@@ -256,8 +250,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public void ClearLog(string logName, string backupPath)
         {
-            if (logName == null)
-                throw new ArgumentNullException(nameof(logName));
+            ArgumentNullException.ThrowIfNull(logName);
 
             NativeWrapper.EvtClearLog(this.Handle, logName, backupPath, 0);
         }

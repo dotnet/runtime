@@ -66,7 +66,7 @@ void CALLBACK VariableTraceDispatcher(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *
     }
 }
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_REDHAWK)
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
 /*
  * Scan callback for tracing ref-counted handles.
  *
@@ -102,7 +102,7 @@ void CALLBACK PromoteRefCounted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtra
     // Assert this object wasn't relocated since we are passing a temporary object's address.
     _ASSERTE(pOldObj == pObj);
 }
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_REDHAWK
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
 
 
 // Only used by profiling/ETW.
@@ -440,7 +440,7 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
         break;
 
     case    HNDTYPE_VARIABLE:
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
     {
         // Set the appropriate ETW flags for the current strength of this variable handle
         uint32_t nVarHandleType = GetVariableHandleType(handle);
@@ -461,7 +461,7 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
 #endif
         break;
 
-#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)) && !defined(FEATURE_REDHAWK)
+#if (defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)) && !defined(FEATURE_NATIVEAOT)
     case    HNDTYPE_REFCOUNTED:
         rootFlags |= kEtwGCRootFlagsRefCounted;
         if (*pRef != NULL)
@@ -470,7 +470,7 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
                 rootFlags |= kEtwGCRootFlagsWeakRef;
         }
         break;
-#endif // (FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL) && !FEATURE_REDHAWK
+#endif // (FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL) && !FEATURE_NATIVEAOT
     }
 
     _UNCHECKED_OBJECTREF pSec = NULL;
@@ -622,7 +622,7 @@ bool Ref_Initialize()
         n_slots * sizeof(HHANDLETABLE));
     for (int uCPUindex = 0; uCPUindex < n_slots; uCPUindex++)
     {
-        pBucket->pTable[uCPUindex] = HndCreateHandleTable(s_rgTypeFlags, _countof(s_rgTypeFlags));
+        pBucket->pTable[uCPUindex] = HndCreateHandleTable(s_rgTypeFlags, ARRAY_SIZE(s_rgTypeFlags));
         if (pBucket->pTable[uCPUindex] == NULL)
             goto CleanupAndFail;
 
@@ -686,7 +686,7 @@ void Ref_Shutdown()
     }
 }
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket)
 {
     CONTRACTL
@@ -719,7 +719,7 @@ bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket)
     ZeroMemory(result->pTable, n_slots * sizeof(HHANDLETABLE));
 
     for (int uCPUindex=0; uCPUindex < n_slots; uCPUindex++) {
-        result->pTable[uCPUindex] = HndCreateHandleTable(s_rgTypeFlags, _countof(s_rgTypeFlags));
+        result->pTable[uCPUindex] = HndCreateHandleTable(s_rgTypeFlags, ARRAY_SIZE(s_rgTypeFlags));
         if (!result->pTable[uCPUindex])
             return false;
     }
@@ -775,7 +775,7 @@ bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket)
         offset = last->dwMaxIndex;
     }
 }
-#endif // !FEATURE_REDHAWK
+#endif // !FEATURE_NATIVEAOT
 
 void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket)
 {
@@ -1045,7 +1045,7 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
     // promote objects pointed to by strong handles
     // during ephemeral GCs we also want to promote the ones pointed to by sizedref handles.
     uint32_t types[2] = {HNDTYPE_STRONG, HNDTYPE_SIZEDREF};
-    uint32_t uTypeCount = (((condemned >= maxgen) && !g_theGCHeap->IsConcurrentGCInProgress()) ? 1 : _countof(types));
+    uint32_t uTypeCount = (((condemned >= maxgen) && !g_theGCHeap->IsConcurrentGCInProgress()) ? 1 : ARRAY_SIZE(types));
     uint32_t flags = (sc->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
 
     HandleTableMap *walk = &g_HandleTableMap;
@@ -1066,7 +1066,7 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
     TraceVariableHandles(PromoteObject, uintptr_t(sc), uintptr_t(fn), VHT_STRONG, condemned, maxgen, flags);
 
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_REDHAWK)
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
     // don't scan ref-counted handles during concurrent phase as the clean-up of CCWs can race with AD unload and cause AV's
     if (!sc->concurrent)
     {
@@ -1085,7 +1085,7 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
             walk = walk->pNext;
         }
     }
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_REDHAWK
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
 }
 
 
@@ -1132,9 +1132,9 @@ void Ref_CheckReachable(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
     uint32_t types[] =
     {
         HNDTYPE_WEAK_LONG,
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_REDHAWK)
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
         HNDTYPE_REFCOUNTED,
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_REDHAWK
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
     };
 
     // check objects pointed to by short weak handles
@@ -1149,7 +1149,7 @@ void Ref_CheckReachable(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
            {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                 if (hTable)
-                    HndScanHandlesForGC(hTable, CheckPromoted, lp1, 0, types, _countof(types), condemned, maxgen, flags);
+                    HndScanHandlesForGC(hTable, CheckPromoted, lp1, 0, types, ARRAY_SIZE(types), condemned, maxgen, flags);
         }
         }
         walk = walk->pNext;
@@ -1395,7 +1395,7 @@ void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                 if (hTable)
-                    HndScanHandlesForGC(hTable, CheckPromoted, lp1, 0, types, _countof(types), condemned, maxgen, flags);
+                    HndScanHandlesForGC(hTable, CheckPromoted, lp1, 0, types, ARRAY_SIZE(types), condemned, maxgen, flags);
             }
         }
         walk = walk->pNext;
@@ -1435,9 +1435,9 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
         HNDTYPE_WEAK_SHORT,
         HNDTYPE_WEAK_LONG,
         HNDTYPE_STRONG,
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_REDHAWK)
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
         HNDTYPE_REFCOUNTED,
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_REDHAWK
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
         HNDTYPE_WEAK_NATIVE_COM,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
@@ -1454,7 +1454,7 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
                 if (hTable)
-                    HndScanHandlesForGC(hTable, UpdatePointer, uintptr_t(sc), uintptr_t(fn), types, _countof(types), condemned, maxgen, flags);
+                    HndScanHandlesForGC(hTable, UpdatePointer, uintptr_t(sc), uintptr_t(fn), types, ARRAY_SIZE(types), condemned, maxgen, flags);
             }
         walk = walk->pNext;
     }
@@ -1481,9 +1481,9 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
         HNDTYPE_WEAK_SHORT,
         HNDTYPE_WEAK_LONG,
         HNDTYPE_STRONG,
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_REDHAWK)
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
         HNDTYPE_REFCOUNTED,
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_REDHAWK
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
         HNDTYPE_WEAK_NATIVE_COM,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
@@ -1505,7 +1505,7 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
                 {
                     HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                     if (hTable)
-                        HndScanHandlesForGC(hTable, &ScanPointerForProfilerAndETW, lp1, (uintptr_t)fn, types, _countof(types), maxgen, maxgen, flags);
+                        HndScanHandlesForGC(hTable, &ScanPointerForProfilerAndETW, lp1, (uintptr_t)fn, types, ARRAY_SIZE(types), maxgen, maxgen, flags);
                 }
         walk = walk->pNext;
     }
@@ -1550,9 +1550,9 @@ void Ref_ScanPointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_
         HNDTYPE_WEAK_SHORT,
         HNDTYPE_WEAK_LONG,
         HNDTYPE_STRONG,
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_REDHAWK)
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
         HNDTYPE_REFCOUNTED,
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_REDHAWK
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
         HNDTYPE_PINNED,
         HNDTYPE_ASYNCPINNED,
         HNDTYPE_SIZEDREF,
@@ -1574,7 +1574,7 @@ void Ref_ScanPointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_
                 {
                     HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                     if (hTable)
-                        HndScanHandlesForGC(hTable, &ScanPointer, uintptr_t(sc), uintptr_t(fn), types, _countof(types), condemned, maxgen, flags);
+                        HndScanHandlesForGC(hTable, &ScanPointer, uintptr_t(sc), uintptr_t(fn), types, ARRAY_SIZE(types), condemned, maxgen, flags);
                 }
             }
         }
@@ -1601,7 +1601,7 @@ void Ref_UpdatePinnedPointers(uint32_t condemned, uint32_t maxgen, ScanContext* 
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
                 if (hTable)
-                    HndScanHandlesForGC(hTable, UpdatePointerPinned, uintptr_t(sc), uintptr_t(fn), types, _countof(types), condemned, maxgen, flags);
+                    HndScanHandlesForGC(hTable, UpdatePointerPinned, uintptr_t(sc), uintptr_t(fn), types, ARRAY_SIZE(types), condemned, maxgen, flags);
             }
         walk = walk->pNext;
     }
@@ -1627,9 +1627,9 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
 
         HNDTYPE_PINNED,
         HNDTYPE_VARIABLE,
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_REDHAWK)
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
         HNDTYPE_REFCOUNTED,
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_REDHAWK
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
         HNDTYPE_WEAK_NATIVE_COM,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
@@ -1646,7 +1646,7 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                 if (hTable)
-                    HndScanHandlesForGC(hTable, NULL, 0, 0, types, _countof(types), condemned, maxgen, HNDGCF_AGE);
+                    HndScanHandlesForGC(hTable, NULL, 0, 0, types, ARRAY_SIZE(types), condemned, maxgen, HNDGCF_AGE);
             }
         walk = walk->pNext;
     }
@@ -1670,9 +1670,9 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
 
         HNDTYPE_PINNED,
         HNDTYPE_VARIABLE,
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_REDHAWK)
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
         HNDTYPE_REFCOUNTED,
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_REDHAWK
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
         HNDTYPE_WEAK_NATIVE_COM,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
@@ -1689,7 +1689,7 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                 if (hTable)
-                    HndResetAgeMap(hTable, types, _countof(types), condemned, maxgen, HNDGCF_NORMAL);
+                    HndResetAgeMap(hTable, types, ARRAY_SIZE(types), condemned, maxgen, HNDGCF_NORMAL);
             }
         walk = walk->pNext;
     }
@@ -1712,9 +1712,9 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 
         HNDTYPE_PINNED,
         HNDTYPE_VARIABLE,
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_REDHAWK)
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
         HNDTYPE_REFCOUNTED,
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_REDHAWK
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
         HNDTYPE_WEAK_NATIVE_COM,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
@@ -1733,7 +1733,7 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
             {
                 HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
                 if (hTable)
-                    HndVerifyTable(hTable, types, _countof(types), condemned, maxgen, HNDGCF_NORMAL);
+                    HndVerifyTable(hTable, types, ARRAY_SIZE(types), condemned, maxgen, HNDGCF_NORMAL);
             }
         }
         walk = walk->pNext;

@@ -13,9 +13,9 @@
 
 struct _MonoClass {
 	/* element class for arrays and enum basetype for enums */
-	MonoClass *element_class; 
+	MonoClass *element_class;
 	/* used for subtype checks */
-	MonoClass *cast_class; 
+	MonoClass *cast_class;
 
 	/* for fast subtype checks */
 	MonoClass **supertypes;
@@ -33,10 +33,10 @@ struct _MonoClass {
 
 	/* A class contains static and non static data. Static data can be
 	 * of the same type as the class itselfs, but it does not influence
-	 * the instance size of the class. To avoid cyclic calls to 
+	 * the instance size of the class. To avoid cyclic calls to
 	 * mono_class_init_internal (from mono_class_instance_size ()) we first
-	 * initialise all non static fields. After that we set size_inited 
-	 * to 1, because we know the instance size now. After that we 
+	 * initialise all non static fields. After that we set size_inited
+	 * to 1, because we know the instance size now. After that we
 	 * initialise all static fields.
 	 */
 
@@ -55,13 +55,14 @@ struct _MonoClass {
 
 	/* next byte */
 	guint packing_size    : 4;
-	guint ghcimpl         : 1; /* class has its own GetHashCode impl */ 
-	guint has_finalize    : 1; /* class has its own Finalize impl */ 
-	/* next byte */
+	guint ghcimpl         : 1; /* class has its own GetHashCode impl */
+	guint has_finalize    : 1; /* class has its own Finalize impl */
 	guint delegate        : 1; /* class is a Delegate */
+	/* next byte */
 	guint gc_descr_inited : 1; /* gc_descr is initialized */
 	guint has_cctor       : 1; /* class has a cctor */
 	guint has_references  : 1; /* it has GC-tracked references in the instance */
+	guint has_ref_fields  : 1; /* it has byref fields */
 	guint has_static_refs : 1; /* it has static fields that are GC-tracked */
 	guint no_special_static_fields : 1; /* has no thread/context static fields */
 	/* directly or indirectly derives from ComImport attributed class.
@@ -69,7 +70,7 @@ struct _MonoClass {
 	 * for COM Interop. set this flag on loading so all we need is a quick check
 	 * during object creation rather than having to traverse supertypes
 	 */
-	guint is_com_object : 1; 
+	guint is_com_object : 1;
 	guint nested_classes_inited : 1; /* Whenever nested_class is initialized */
 
 	/* next byte*/
@@ -80,6 +81,7 @@ struct _MonoClass {
 	guint has_failure : 1; /* See mono_class_get_exception_data () for a MonoErrorBoxed with the details */
 	guint has_weak_fields : 1; /* class has weak reference fields */
 	guint has_dim_conflicts : 1; /* Class has conflicting default interface methods */
+	guint any_field_has_auto_layout : 1; /* a field in this type's layout uses auto-layout */
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
@@ -94,7 +96,7 @@ struct _MonoClass {
 	guint16     interface_count;
 	guint32     interface_id;        /* unique inderface id (for interfaces) */
 	guint32     max_interface_id;
-	
+
 	guint16     interface_offsets_count;
 	MonoClass **interfaces_packed;
 	guint16    *interface_offsets_packed;

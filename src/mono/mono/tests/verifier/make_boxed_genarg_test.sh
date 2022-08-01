@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -37,7 +37,7 @@ $SED  -e "s/TYPE/${TEST_TYPE}/g" -e "s/OPCODE/${TEST_OP}/g"  -e "s/BEFORE_OP/${T
 
 .class interface public auto ansi abstract IFace
 {
-	.method public virtual hidebysig newslot abstract instance default void Tst ()  cil managed 
+	.method public virtual hidebysig newslot abstract instance default void Tst ()  cil managed
 	{
 	}
 }
@@ -46,48 +46,48 @@ $SED  -e "s/TYPE/${TEST_TYPE}/g" -e "s/OPCODE/${TEST_OP}/g"  -e "s/BEFORE_OP/${T
 {
 	.field public int32 fld
 
-	.method public hidebysig specialname rtspecialname instance default void '.ctor' () cil managed 
+	.method public hidebysig specialname rtspecialname instance default void '.ctor' () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::'.ctor'()
-		ret 
+		ret
 	}
 }
 
 .class public auto ansi beforefieldinit IFaceImpl extends BaseClass implements IFace
 {
-	.method public hidebysig specialname rtspecialname instance default void '.ctor' () cil managed 
+	.method public hidebysig specialname rtspecialname instance default void '.ctor' () cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void BaseClass::'.ctor'()
-		ret 
+		ret
 	}
 
-	.method public final virtual hidebysig newslot instance default void Tst () cil managed 
+	.method public final virtual hidebysig newslot instance default void Tst () cil managed
 	{
 		.maxstack 8
-		ret 
+		ret
 	}
 }
 
 .class public auto ansi sealed TstDelegate extends [mscorlib]System.MulticastDelegate
 {
-	.method public hidebysig  specialname  rtspecialname  instance default void '.ctor' (object 'object', native int 'method')  runtime managed 
+	.method public hidebysig  specialname  rtspecialname  instance default void '.ctor' (object 'object', native int 'method')  runtime managed
 	{
 	}
 
-	.method public virtual  hidebysig  newslot instance default void Invoke ()  runtime managed 
+	.method public virtual  hidebysig  newslot instance default void Invoke ()  runtime managed
 	{
 	}
 
-	.method public virtual  hidebysig  newslot instance default class [mscorlib]System.IAsyncResult BeginInvoke (class [mscorlib]System.AsyncCallback callback, object 'object')  runtime managed 
+	.method public virtual  hidebysig  newslot instance default class [mscorlib]System.IAsyncResult BeginInvoke (class [mscorlib]System.AsyncCallback callback, object 'object')  runtime managed
 	{
 	}
 
-	.method public virtual  hidebysig  newslot 
-	instance default void EndInvoke (class [mscorlib]System.IAsyncResult result)  runtime managed 
+	.method public virtual  hidebysig  newslot
+	instance default void EndInvoke (class [mscorlib]System.IAsyncResult result)  runtime managed
 	{
 	}
 }
@@ -97,16 +97,16 @@ $SED  -e "s/TYPE/${TEST_TYPE}/g" -e "s/OPCODE/${TEST_OP}/g"  -e "s/BEFORE_OP/${T
 	.field !T t
 	.field ${TEST_CONSTRAINT_TYPE} ifField
 
-	.method public hidebysig  specialname  rtspecialname instance default void .ctor (!T A_0)  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void .ctor (!T A_0)  cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
 
 		ldarg.0
 		ldarg.1
 		stfld !0 class DriverClass<!0>::t
-		ret 
+		ret
 	}
 
 	.method public void Driver ()
@@ -134,7 +134,7 @@ $SED  -e "s/TYPE/${TEST_TYPE}/g" -e "s/OPCODE/${TEST_OP}/g"  -e "s/BEFORE_OP/${T
 TARGET:
 		leave END
 END:
-		ret 
+		ret
 	}
 
 }
@@ -152,7 +152,7 @@ END:
 	call instance void class DriverClass<IFaceImpl>::Driver()
 
 	ldc.i4.0
-	ret 
+	ret
 }
 
 //EOF

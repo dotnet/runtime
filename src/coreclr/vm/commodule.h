@@ -26,7 +26,6 @@ public:
 extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pModule,
                                 LPCWSTR wszFullName,
                                 QCall::ModuleHandle pRefedModule,
-                                LPCWSTR wszRefedModuleFileName,
                                 INT32 tkResolution);
 
 // SetFieldRVAContent
@@ -45,7 +44,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetArrayMethodToken(QCall::ModuleHandle
 // This function will return the MemberRef token
 extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModule, QCall::ModuleHandle pRefedModule, INT32 tr, INT32 token);
 
-// This function return a MemberRef token given a MethodInfo describing a array method
+// This function return a MemberRef token given a MethodInfo describing an array method
 extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleHandle pModule, INT32 tr, MethodDesc * method);
 
 

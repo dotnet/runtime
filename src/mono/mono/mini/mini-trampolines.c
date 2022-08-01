@@ -194,7 +194,7 @@ mini_resolve_imt_method (MonoVTable *vt, gpointer *vtable_slot, MonoMethod *imt_
 	MonoMethod *impl = NULL, *generic_virtual = NULL;
 	gboolean lookup_aot, variance_used = FALSE, need_rgctx_tramp = FALSE;
 	guint8 *aot_addr = NULL;
-	int displacement = vtable_slot - ((gpointer*)vt);
+	int displacement = GPTRDIFF_TO_INT (vtable_slot - ((gpointer*)vt));
 	int interface_offset;
 	int imt_slot = MONO_IMT_SIZE + displacement;
 
@@ -317,7 +317,7 @@ mini_jit_info_is_gsharedvt (MonoJitInfo *ji)
 
 /**
  * mini_add_method_trampoline:
- * @m: 
+ * @m:
  * @compiled_method:
  * @add_static_rgctx_tramp: adds a static rgctx trampoline
  * @add_unbox_tramp: adds an unboxing trampoline
@@ -428,7 +428,6 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	gboolean generic_shared = FALSE;
 	gboolean need_unbox_tramp = FALSE;
 	gboolean need_rgctx_tramp = FALSE;
-	MonoMethod *declaring = NULL;
 	MonoMethod *generic_virtual = NULL, *variant_iface = NULL;
 	int context_used;
 	gboolean imt_call, virtual_;
@@ -469,29 +468,13 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 			vtable_slot = mini_resolve_imt_method (vt, vtable_slot, imt_method, &impl_method, &addr, &need_rgctx_tramp, &variant_iface, error);
 			return_val_if_nok (error, NULL);
 
-			if (mono_class_has_dim_conflicts (vt->klass)) {
-				GSList *conflicts = mono_class_get_dim_conflicts (vt->klass);
-				GSList *l;
-				MonoMethod *decl = imt_method;
-
-				if (decl->is_inflated)
-					decl = mono_method_get_declaring_generic_method (decl);
-
-				gboolean in_conflict = FALSE;
-				for (l = conflicts; l; l = l->next) {
-					if (decl == l->data) {
-						in_conflict = TRUE;
-						break;
-					}
-				}
-				if (in_conflict) {
-					char *class_name = mono_class_full_name (vt->klass);
-					char *method_name = mono_method_full_name (decl, TRUE);
-					mono_error_set_ambiguous_implementation (error, "Could not call method '%s' with type '%s' because there are multiple incompatible interface methods overriding this method.", method_name, class_name);
-					g_free (class_name);
-					g_free (method_name);
-					return NULL;
-				}
+			if (mono_class_has_dim_conflicts (vt->klass) && mono_class_is_method_ambiguous (vt->klass, imt_method)) {
+				char *class_name = mono_class_full_name (vt->klass);
+				char *method_name = mono_method_full_name (imt_method, TRUE);
+				mono_error_set_ambiguous_implementation (error, "Could not call method '%s' with type '%s' because there are multiple incompatible interface methods overriding this method.", method_name, class_name);
+				g_free (class_name);
+				g_free (method_name);
+				return NULL;
 			}
 
 			/* We must handle magic interfaces on rank 1 arrays of ref types as if they were variant */
@@ -513,13 +496,14 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		}
 	}
 
+	MonoMethod *declaring = NULL;
+
 	/*
 	 * The virtual check is needed because is_generic_method_definition (m) could
 	 * return TRUE for methods used in IMT calls too.
 	 */
 	if (virtual_ && is_generic_method_definition (m)) {
 		MonoGenericContext context = { NULL, NULL };
-		MonoMethod *declaring;
 
 		if (m->is_inflated)
 			declaring = mono_method_get_declaring_generic_method (m);
@@ -543,7 +527,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	} else if ((context_used = mono_method_check_context_used (m))) {
 		MonoClass *klass = NULL;
 		MonoMethod *actual_method = NULL;
-		MonoVTable *vt = NULL;
+		MonoVTable *actual_vt  = NULL;
 		MonoGenericInst *method_inst = NULL;
 
 		vtable_slot = NULL;
@@ -558,13 +542,19 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 			klass = mrgctx->class_vtable->klass;
 			method_inst = mrgctx->method_inst;
 		} else if ((m->flags & METHOD_ATTRIBUTE_STATIC) || m_class_is_valuetype (m->klass)) {
+			MonoMethodRuntimeGenericContext *mrgctx = (MonoMethodRuntimeGenericContext*)mono_arch_find_static_call_vtable (regs, code);
+
+			klass = mrgctx->class_vtable->klass;
+			method_inst = mrgctx->method_inst;
+			/*
 			MonoVTable *vtable = mono_arch_find_static_call_vtable (regs, code);
 
 			klass = vtable->klass;
+			*/
 		} else {
 			MonoObject *this_argument = (MonoObject *)mono_arch_get_this_arg_from_call (regs, code);
 
-			vt = this_argument->vtable;
+			actual_vt  = this_argument->vtable;
 			vtable_slot = orig_vtable_slot;
 
 			g_assert (m_class_is_inited (this_argument->vtable->klass));
@@ -578,13 +568,13 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		g_assert (vtable_slot || klass);
 
 		if (vtable_slot) {
-			int displacement = vtable_slot - ((gpointer*)vt);
+			int displacement = GPTRDIFF_TO_INT (vtable_slot - ((gpointer*)actual_vt));
 
 			g_assert_not_reached ();
 
 			g_assert (displacement > 0);
 
-			actual_method = m_class_get_vtable (vt->klass) [displacement];
+			actual_method = m_class_get_vtable (actual_vt ->klass) [displacement];
 		}
 
 		if (method_inst || m->wrapper_type) {
@@ -658,7 +648,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		mini_patch_jump_sites (m, mono_get_addr_from_ftnptr (addr));
 
 		/* Patch the got entries pointing to this method */
-		/* 
+		/*
 		 * We do this here instead of in mono_codegen () to cover the case when m
 		 * was loaded from an aot image.
 		 */
@@ -729,7 +719,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 				ji = mini_jit_info_table_find (code);
 
 			if (ji && target_ji && generic_shared && ji->has_generic_jit_info && !target_ji->has_generic_jit_info) {
-				/* 
+				/*
 				 * Can't patch the call as the caller is gshared, but the callee is not. Happens when
 				 * generic sharing fails.
 				 * FIXME: Performance problem.
@@ -860,12 +850,12 @@ leave:
 /**
  * mono_aot_trampoline:
  *
- * This trampoline handles calls made from AOT code. We try to bypass the 
+ * This trampoline handles calls made from AOT code. We try to bypass the
  * normal JIT compilation logic to avoid loading the metadata for the method.
  */
 #ifdef MONO_ARCH_AOT_SUPPORTED
 gpointer
-mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info, 
+mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info,
 					 guint8* tramp)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
@@ -912,7 +902,7 @@ mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info,
  *   This trampoline handles calls made from AOT code through the PLT table.
  */
 gpointer
-mono_aot_plt_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *aot_module, 
+mono_aot_plt_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *aot_module,
 						 guint8* tramp)
 {
 	gpointer res;
@@ -1002,8 +992,8 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 		method = delegate->method;
 
 		/*
-		 * delegate->method_ptr == NULL means the delegate was initialized by 
-		 * mini_delegate_ctor, while != NULL means it is initialized by 
+		 * delegate->method_ptr == NULL means the delegate was initialized by
+		 * mini_delegate_ctor, while != NULL means it is initialized by
 		 * mono_delegate_ctor_with_method (). In both cases, we need to add wrappers
 		 * (ctor_with_method () does this, but it doesn't store the wrapper back into
 		 * delegate->method).
@@ -1082,7 +1072,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			method = mono_object_get_virtual_method_internal (delegate->target, method);
 			enable_caching = FALSE;
 		} else if (delegate->target &&
-			method->flags & METHOD_ATTRIBUTE_VIRTUAL && 
+			method->flags & METHOD_ATTRIBUTE_VIRTUAL &&
 			method->flags & METHOD_ATTRIBUTE_ABSTRACT &&
 			mono_class_is_abstract (method->klass)) {
 			method = mono_object_get_virtual_method_internal (delegate->target, method);
@@ -1098,7 +1088,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			need_rgctx_tramp = TRUE;
 	}
 
-	/* 
+	/*
 	 * If the called address is a trampoline, replace it with the compiled method so
 	 * further calls don't have to go through the trampoline.
 	 */
@@ -1302,7 +1292,7 @@ mono_create_jump_trampoline (MonoMethod *method, gboolean add_sync_wrapper, Mono
 	ji->d.method = method;
 
 	/*
-	 * mono_delegate_ctor needs to find the method metadata from the 
+	 * mono_delegate_ctor needs to find the method metadata from the
 	 * trampoline address, so we save it here.
 	 */
 
@@ -1335,7 +1325,7 @@ mono_create_jit_trampoline (MonoMethod *method, MonoError *error)
 
 		/* Avoid creating trampolines if possible */
 		gpointer code = mono_jit_find_compiled_method (method);
-		
+
 		if (code)
 			return code;
 		if (mono_llvm_only) {
@@ -1363,7 +1353,7 @@ mono_create_jit_trampoline (MonoMethod *method, MonoError *error)
 	jit_mm_unlock (jit_mm);
 
 	return tramp;
-}	
+}
 
 gpointer
 mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
@@ -1382,7 +1372,7 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 	UnlockedIncrement (&jit_trampolines);
 
 	return tramp;
-}	
+}
 
 
 /*

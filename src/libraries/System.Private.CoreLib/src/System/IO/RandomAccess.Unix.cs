@@ -19,12 +19,8 @@ namespace System.IO
         // that get stackalloced in the Linux kernel.
         private const int IovStackThreshold = 8;
 
-        internal static long GetFileLength(SafeFileHandle handle)
-        {
-            int result = Interop.Sys.FStat(handle, out Interop.Sys.FileStatus status);
-            FileStreamHelpers.CheckFileCall(result, handle.Path);
-            return status.Size;
-        }
+        internal static unsafe void SetFileLength(SafeFileHandle handle, long length) =>
+            FileStreamHelpers.CheckFileCall(Interop.Sys.FTruncate(handle, length), handle.Path);
 
         internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {

@@ -90,7 +90,7 @@ STDMETHODIMP CorHost2::Start()
         else
         {
             // Increment the global (and dynamic) refCount...
-            FastInterlockIncrement(&m_RefCount);
+            InterlockedIncrement(&m_RefCount);
 
             // And set our flag that this host has invoked the Start...
             m_fStarted = TRUE;
@@ -113,7 +113,7 @@ STDMETHODIMP CorHost2::Start()
             // So, if you want to do that, just make sure you are the first host to load the
             // specific version of CLR in memory AND start it.
             m_fFirstToLoadCLR = TRUE;
-            FastInterlockIncrement(&m_RefCount);
+            InterlockedIncrement(&m_RefCount);
         }
     }
 
@@ -159,7 +159,7 @@ HRESULT CorHost2::Stop()
                 break;
             }
             else
-            if (FastInterlockCompareExchange(&m_RefCount, refCount - 1, refCount) == refCount)
+            if (InterlockedCompareExchange(&m_RefCount, refCount - 1, refCount) == refCount)
             {
                 // Indicate that we have got a Stop for a corresponding Start call from the
                 // Host. Semantically, CoreCLR has stopped for them.
@@ -249,7 +249,7 @@ HRESULT CorHost2::ExecuteApplication(LPCWSTR   pwzAppFullName,
  * ActualCmdLine - Foo arg1 arg2.
  * (Host1)       - Full_path_to_Foo arg1 arg2
 */
-void SetCommandLineArgs(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR* argv)
+static PTRARRAYREF SetCommandLineArgs(PCWSTR pwzAssemblyPath, int argc, PCWSTR* argv)
 {
     CONTRACTL
     {
@@ -262,34 +262,17 @@ void SetCommandLineArgs(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR* argv)
     // Record the command line.
     SaveManagedCommandLine(pwzAssemblyPath, argc, argv);
 
-    // Send the command line to System.Environment.
-    struct _gc
-    {
-        PTRARRAYREF cmdLineArgs;
-    } gc;
+    PCWSTR exePath = Bundle::AppIsBundle() ? static_cast<PCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath;
 
-    ZeroMemory(&gc, sizeof(gc));
-    GCPROTECT_BEGIN(gc);
+    PTRARRAYREF result;
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ENVIRONMENT__INITIALIZE_COMMAND_LINE_ARGS);
+    DECLARE_ARGHOLDER_ARRAY(args, 3);
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(exePath);
+    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(argc);
+    args[ARGNUM_2] = PTR_TO_ARGHOLDER(argv);
+    CALL_MANAGED_METHOD_RETREF(result, PTRARRAYREF, args);
 
-    gc.cmdLineArgs = (PTRARRAYREF)AllocateObjectArray(argc + 1 /* arg[0] should be the exe name*/, g_pStringClass);
-    OBJECTREF orAssemblyPath = StringObject::NewString(Bundle::AppIsBundle() ? static_cast<LPCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath);
-    gc.cmdLineArgs->SetAt(0, orAssemblyPath);
-
-    for (int i = 0; i < argc; ++i)
-    {
-        OBJECTREF argument = StringObject::NewString(argv[i]);
-        gc.cmdLineArgs->SetAt(i + 1, argument);
-    }
-
-    MethodDescCallSite setCmdLineArgs(METHOD__ENVIRONMENT__SET_COMMAND_LINE_ARGS);
-
-    ARG_SLOT args[] =
-    {
-        ObjToArgSlot(gc.cmdLineArgs),
-    };
-    setCmdLineArgs.Call(args);
-
-    GCPROTECT_END();
+    return result;
 }
 
 HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
@@ -356,18 +339,11 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
     {
         GCX_COOP();
 
-        // Here we call the managed method that gets the cmdLineArgs array.
-        SetCommandLineArgs(pwzAssemblyPath, argc, argv);
-
         PTRARRAYREF arguments = NULL;
         GCPROTECT_BEGIN(arguments);
 
-        arguments = (PTRARRAYREF)AllocateObjectArray(argc, g_pStringClass);
-        for (int i = 0; i < argc; ++i)
-        {
-            STRINGREF argument = StringObject::NewString(argv[i]);
-            arguments->SetAt(i, argument);
-        }
+        // Here we call the managed method that gets the cmdLineArgs array.
+        arguments = SetCommandLineArgs(pwzAssemblyPath, argc, argv);
 
         if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions))
         {
@@ -393,6 +369,11 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    ExecutableAllocator::DumpHolderUsage();
+    ExecutionManager::DumpExecutionManagerUsage();
+#endif
 
 ErrExit:
 
@@ -445,15 +426,13 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
         Assembly *pAssembly = AssemblySpec::LoadAssembly(pwzAssemblyPath);
 
         SString szTypeName(pwzTypeName);
-        StackScratchBuffer buff1;
-        const char* szTypeNameUTF8 = szTypeName.GetUTF8(buff1);
+        const char* szTypeNameUTF8 = szTypeName.GetUTF8();
         MethodTable *pMT = ClassLoader::LoadTypeByNameThrowing(pAssembly,
                                                             NULL,
                                                             szTypeNameUTF8).AsMethodTable();
 
         SString szMethodName(pwzMethodName);
-        StackScratchBuffer buff;
-        const char* szMethodNameUTF8 = szMethodName.GetUTF8(buff);
+        const char* szMethodNameUTF8 = szMethodName.GetUTF8();
         MethodDesc *pMethodMD = MemberLoader::FindMethod(pMT, szMethodNameUTF8, &gsig_SM_Str_RetInt);
 
         if (!pMethodMD)
@@ -735,7 +714,6 @@ HRESULT CorHost2::CreateDelegate(
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
     GCX_COOP_THREAD_EXISTS(GET_THREAD());
 
-    MAKE_UTF8PTR_FROMWIDE(szAssemblyName, wszAssemblyName);
     MAKE_UTF8PTR_FROMWIDE(szClassName, wszClassName);
     MAKE_UTF8PTR_FROMWIDE(szMethodName, wszMethodName);
 
@@ -743,7 +721,8 @@ HRESULT CorHost2::CreateDelegate(
         GCX_PREEMP();
 
         AssemblySpec spec;
-        spec.Init(szAssemblyName);
+        SString ssAssemblyName(wszAssemblyName);
+        spec.Init(ssAssemblyName);
         Assembly* pAsm=spec.LoadAssembly(FILE_ACTIVE);
 
         TypeHandle th=pAsm->GetLoader()->LoadTypeByNameThrowing(pAsm,NULL,szClassName);

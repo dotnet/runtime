@@ -10,7 +10,7 @@ namespace System.Transactions.Configuration
 
         internal static MachineSettingsSection GetSection() => s_section;
 
-        public TimeSpan MaxTimeout
+        public static TimeSpan MaxTimeout
         {
             get { return s_maxTimeout; }
         }

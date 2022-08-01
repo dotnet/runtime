@@ -60,6 +60,64 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
+        private void GetChildKeys_CanChainEmptyKeys()
+        {
+            var input = new Dictionary<string, string>() { };
+            for (int i = 0; i < 1000; i++)
+            {
+                input.Add(new string(' ', i), string.Empty);
+            }
+
+            IConfigurationRoot configurationRoot = new ConfigurationBuilder()
+                .Add(new MemoryConfigurationSource
+                {
+                    InitialData = input
+                })
+                .Build();
+
+            var chainedConfigurationSource = new ChainedConfigurationSource
+            {
+                Configuration = configurationRoot,
+                ShouldDisposeConfiguration = false,
+            };
+            
+            var chainedConfiguration = new ChainedConfigurationProvider(chainedConfigurationSource);
+            IEnumerable<string> childKeys = chainedConfiguration.GetChildKeys(new string[0], null);
+            Assert.Equal(1000, childKeys.Count());
+            Assert.Equal(string.Empty, childKeys.First());
+            Assert.Equal(999, childKeys.Last().Length);
+        }
+
+        [Fact]
+        private void GetChildKeys_CanChainKeyWithNoDelimiter()
+        {
+            var input = new Dictionary<string, string>() { };
+            for (int i = 1000; i < 2000; i++)
+            {
+                input.Add(i.ToString(), string.Empty);
+            }
+
+            IConfigurationRoot configurationRoot = new ConfigurationBuilder()
+                .Add(new MemoryConfigurationSource
+                {
+                    InitialData = input
+                })
+                .Build();
+
+            var chainedConfigurationSource = new ChainedConfigurationSource
+            {
+                Configuration = configurationRoot,
+                ShouldDisposeConfiguration = false,
+            };
+            
+            var chainedConfiguration = new ChainedConfigurationProvider(chainedConfigurationSource);
+            IEnumerable<string> childKeys = chainedConfiguration.GetChildKeys(new string[0], null);
+            Assert.Equal(1000, childKeys.Count());
+            Assert.Equal("1000", childKeys.First());
+            Assert.Equal("1999", childKeys.Last());
+        }
+
+        [Fact]
         public void CanChainConfiguration()
         {
             // Arrange

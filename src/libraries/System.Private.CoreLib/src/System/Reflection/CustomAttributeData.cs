@@ -12,32 +12,28 @@ namespace System.Reflection
         #region Public Static Members
         public static IList<CustomAttributeData> GetCustomAttributes(MemberInfo target)
         {
-            if (target is null)
-                throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
 
             return target.GetCustomAttributesData();
         }
 
         public static IList<CustomAttributeData> GetCustomAttributes(Module target)
         {
-            if (target is null)
-                throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
 
             return target.GetCustomAttributesData();
         }
 
         public static IList<CustomAttributeData> GetCustomAttributes(Assembly target)
         {
-            if (target is null)
-                throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
 
             return target.GetCustomAttributesData();
         }
 
         public static IList<CustomAttributeData> GetCustomAttributes(ParameterInfo target)
         {
-            if (target is null)
-                throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
 
             return target.GetCustomAttributesData();
         }
@@ -87,7 +83,7 @@ namespace System.Reflection
         #region Public Members
         public virtual Type AttributeType => Constructor.DeclaringType!;
 
-        // Expected to be overriden
+        // Expected to be overridden
         public virtual ConstructorInfo Constructor => null!;
         public virtual IList<CustomAttributeTypedArgument> ConstructorArguments => null!;
         public virtual IList<CustomAttributeNamedArgument> NamedArguments => null!;

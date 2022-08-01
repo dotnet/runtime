@@ -276,7 +276,7 @@ ep_session_enable_rundown (EventPipeSession *session)
 	const EventPipeEventLevel verbose_logging_level = EP_EVENT_LEVEL_VERBOSE;
 
 	EventPipeProviderConfiguration rundown_providers [2];
-	uint32_t rundown_providers_len = (uint32_t)EP_ARRAY_SIZE (rundown_providers);
+	uint32_t rundown_providers_len = (uint32_t)ARRAY_SIZE (rundown_providers);
 
 	ep_provider_config_init (&rundown_providers [0], ep_config_get_public_provider_name_utf8 (), keywords, verbose_logging_level, NULL); // Public provider.
 	ep_provider_config_init (&rundown_providers [1], ep_config_get_rundown_provider_name_utf8 (), keywords, verbose_logging_level, NULL); // Rundown provider.
@@ -578,7 +578,7 @@ ep_session_resume (EventPipeSession *session)
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_session;
 const char quiet_linker_empty_file_warning_eventpipe_session = 0;
 #endif

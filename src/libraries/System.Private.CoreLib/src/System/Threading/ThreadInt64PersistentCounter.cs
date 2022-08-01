@@ -4,25 +4,38 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
     internal sealed class ThreadInt64PersistentCounter
     {
-        private static readonly LowLevelLock s_lock = new LowLevelLock();
+        private readonly LowLevelLock _lock = new LowLevelLock();
 
         [ThreadStatic]
         private static List<ThreadLocalNodeFinalizationHelper>? t_nodeFinalizationHelpers;
 
         private long _overflowCount;
-        private HashSet<ThreadLocalNode> _nodes = new HashSet<ThreadLocalNode>();
+
+        // dummy node serving as a start and end of the ring list
+        private ThreadLocalNode _nodes;
+
+        public ThreadInt64PersistentCounter()
+        {
+            _nodes = new ThreadLocalNode(this);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Increment(object threadLocalCountObject)
         {
             Debug.Assert(threadLocalCountObject is ThreadLocalNode);
             Unsafe.As<ThreadLocalNode>(threadLocalCountObject).Increment();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Add(object threadLocalCountObject, uint count)
+        {
+            Debug.Assert(threadLocalCountObject is ThreadLocalNode);
+            Unsafe.As<ThreadLocalNode>(threadLocalCountObject).Add(count);
         }
 
         public object CreateThreadLocalCountObject()
@@ -32,14 +45,17 @@ namespace System.Threading
             List<ThreadLocalNodeFinalizationHelper>? nodeFinalizationHelpers = t_nodeFinalizationHelpers ??= new List<ThreadLocalNodeFinalizationHelper>(1);
             nodeFinalizationHelpers.Add(new ThreadLocalNodeFinalizationHelper(node));
 
-            s_lock.Acquire();
+            _lock.Acquire();
             try
             {
-                _nodes.Add(node);
+                node._next = _nodes._next;
+                node._prev = _nodes;
+                _nodes._next._prev = node;
+                _nodes._next = node;
             }
             finally
             {
-                s_lock.Release();
+                _lock.Release();
             }
 
             return node;
@@ -49,22 +65,21 @@ namespace System.Threading
         {
             get
             {
-                s_lock.Acquire();
+                _lock.Acquire();
                 long count = _overflowCount;
                 try
                 {
-                    foreach (ThreadLocalNode node in _nodes)
+                    ThreadLocalNode first = _nodes;
+                    ThreadLocalNode node = first._next;
+                    while (node != first)
                     {
                         count += node.Count;
+                        node = node._next;
                     }
-                }
-                catch (OutOfMemoryException)
-                {
-                    // Some allocation occurs above and it may be a bit awkward to get an OOM from this property getter
                 }
                 finally
                 {
-                    s_lock.Release();
+                    _lock.Release();
                 }
 
                 return count;
@@ -76,24 +91,31 @@ namespace System.Threading
             private uint _count;
             private readonly ThreadInt64PersistentCounter _counter;
 
+            internal ThreadLocalNode _prev;
+            internal ThreadLocalNode _next;
+
             public ThreadLocalNode(ThreadInt64PersistentCounter counter)
             {
                 Debug.Assert(counter != null);
                 _counter = counter;
+                _prev = this;
+                _next = this;
             }
 
             public void Dispose()
             {
                 ThreadInt64PersistentCounter counter = _counter;
-                s_lock.Acquire();
+                counter._lock.Acquire();
                 try
                 {
                     counter._overflowCount += _count;
-                    counter._nodes.Remove(this);
+
+                    _prev._next = _next;
+                    _next._prev = _prev;
                 }
                 finally
                 {
-                    s_lock.Release();
+                    counter._lock.Release();
                 }
             }
 
@@ -109,26 +131,42 @@ namespace System.Threading
                     return;
                 }
 
-                OnIncrementOverflow();
+                OnAddOverflow(1);
+            }
+
+            public void Add(uint count)
+            {
+                Debug.Assert(count != 0);
+
+                uint newCount = _count + count;
+                if (newCount >= count)
+                {
+                    _count = newCount;
+                    return;
+                }
+
+                OnAddOverflow(count);
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            private void OnIncrementOverflow()
+            private void OnAddOverflow(uint count)
             {
-                // Accumulate the count for this increment into the overflow count and reset the thread-local count
+                Debug.Assert(count != 0);
+
+                // Accumulate the count for this add into the overflow count and reset the thread-local count
 
                 // The lock, in coordination with other places that read these values, ensures that both changes below become
                 // visible together
                 ThreadInt64PersistentCounter counter = _counter;
-                s_lock.Acquire();
+                counter._lock.Acquire();
                 try
                 {
+                    counter._overflowCount += (long)_count + count;
                     _count = 0;
-                    counter._overflowCount += (long)uint.MaxValue + 1;
                 }
                 finally
                 {
-                    s_lock.Release();
+                    counter._lock.Release();
                 }
             }
         }

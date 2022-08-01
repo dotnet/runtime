@@ -12,7 +12,7 @@
 
 .assembly extern mscorlib {}
 
-.assembly r {}
+.assembly 'DevDiv_278369' {}
 .assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit C extends [mscorlib]System.Object

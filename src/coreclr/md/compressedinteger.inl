@@ -30,7 +30,7 @@ inline
 BOOL
 CompressedInteger::GetEncodingSize(
           UINT32  nValue,
-    __out UINT32 *pcbEncodingSize)
+    _Out_ UINT32 *pcbEncodingSize)
 {
     // Does it fit into 1-byte encoding?
     if (nValue <= const_Max1Byte)
@@ -67,8 +67,8 @@ inline
 BOOL
 CompressedInteger::Encode(
           UINT32  nValue,
-    __out UINT32 *pnEncodedValue,
-    __out UINT32 *pcbEncodingSize)
+    _Out_ UINT32 *pnEncodedValue,
+    _Out_ UINT32 *pcbEncodingSize)
 {
     // Does it fit into 1-byte encoding?
     if (nValue <= const_Max1Byte)

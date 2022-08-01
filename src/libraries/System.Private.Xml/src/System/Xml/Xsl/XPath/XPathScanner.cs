@@ -566,7 +566,7 @@ namespace System.Xml.Xsl.XPath
         }
 
         // May be called for the following tokens: Name, String, Eof, Comma, LParens, RParens, LBracket, RBracket, RBrace
-        private string LexKindToString(LexKind t)
+        private static string LexKindToString(LexKind t)
         {
             Debug.Assert(LexKind.FirstStringable <= t);
 

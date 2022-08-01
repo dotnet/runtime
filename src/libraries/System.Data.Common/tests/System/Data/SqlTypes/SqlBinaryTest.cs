@@ -122,8 +122,11 @@ namespace System.Data.Tests.SqlTypes
 
             // Equals
             Assert.False(_test1.Equals(_test2));
+            Assert.False(_test1.Equals((object)_test2));
             Assert.False(_test3.Equals(_test2));
+            Assert.False(_test3.Equals((object)_test2));
             Assert.True(_test3.Equals(_test1));
+            Assert.True(_test3.Equals((object)_test1));
 
             // NotEquals
             Assert.True(SqlBinary.NotEquals(_test1, _test2).Value);
@@ -246,6 +249,24 @@ namespace System.Data.Tests.SqlTypes
         {
             XmlQualifiedName qualifiedName = SqlBinary.GetXsdType(null);
             Assert.Equal("base64Binary", qualifiedName.Name);
+        }
+
+        [Fact]
+        public void WrapBytes()
+        {
+            byte[] bytes = new byte[10] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
+
+            SqlBinary binary = SqlBinary.WrapBytes(bytes);
+
+            Assert.Equal(bytes[5], binary[5]);
+
+            // verify that changing the byte[] that was passed in also changes the value in the SqlBinary instance
+            bytes[5] = 0xFF;
+            Assert.Equal(bytes[5], binary[5]);
+
+            SqlBinary nullBinary = SqlBinary.WrapBytes(null);
+
+            Assert.True(nullBinary.IsNull);
         }
     }
 }

@@ -13,6 +13,6 @@
     <Compile Include="../../ServerContracts/ServerGuids.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
+    <CMakeProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
   </ItemGroup>
 </Project>

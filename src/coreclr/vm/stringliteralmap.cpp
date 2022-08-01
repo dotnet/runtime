@@ -96,7 +96,7 @@ StringLiteralMap::~StringLiteralMap()
 
     // We do need to take the globalstringliteralmap lock because we are manipulating
     // StringLiteralEntry objects that belong to it.
-    // Note that we remember the current entry and relaese it only when the
+    // Note that we remember the current entry and release it only when the
     // enumerator has advanced to the next entry so that we don't endup deleteing the
     // current entry itself and killing the enumerator.
 
@@ -297,10 +297,6 @@ GlobalStringLiteralMap::GlobalStringLiteralMap()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-
-#ifdef _DEBUG
-    m_PinnedHeapHandleTable.RegisterCrstDebug(&m_HashTableCrstGlobal);
-#endif
 }
 
 GlobalStringLiteralMap::~GlobalStringLiteralMap()
@@ -428,7 +424,7 @@ StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString
 }
 
 #ifdef LOGGING
-static void LogStringLiteral(__in_z const char* action, EEStringData *pStringData)
+static void LogStringLiteral(_In_z_ const char* action, EEStringData *pStringData)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -568,7 +564,7 @@ void GlobalStringLiteralMap::RemoveStringLiteralEntry(StringLiteralEntry *pEntry
 
         BOOL bSuccess;
         bSuccess = m_StringToEntryHashTable->DeleteValue(&StringData);
-        // this assert is comented out to accomodate case when StringLiteralEntryHolder
+        // this assert is comented out to accommodate case when StringLiteralEntryHolder
         // releases this object after failed insertion into hash
         //_ASSERTE(bSuccess);
 

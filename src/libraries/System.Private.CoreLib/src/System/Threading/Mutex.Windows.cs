@@ -41,15 +41,7 @@ namespace System.Threading
 
         private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            if (name.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             result = null;
             // To allow users to view & edit the ACL's, call OpenMutex
@@ -61,6 +53,9 @@ namespace System.Threading
             if (myHandle.IsInvalid)
             {
                 int errorCode = Marshal.GetLastPInvokeError();
+
+                myHandle.Dispose();
+
 #if TARGET_UNIX || TARGET_BROWSER
                 if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                 {

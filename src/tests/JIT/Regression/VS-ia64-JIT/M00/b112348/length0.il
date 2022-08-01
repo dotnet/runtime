@@ -13,13 +13,12 @@
 
 .assembly extern mscorlib {}
 
-.assembly test
+.assembly 'length0'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module test.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000

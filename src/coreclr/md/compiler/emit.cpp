@@ -417,7 +417,7 @@ ErrExit:
 // Create a reference, in an emit scope, to a TypeDef in another scope.
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
-    IMetaDataAssemblyImport *pAssemImport,  // [IN] Assemby containing the TypeDef.
+    IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the TypeDef.
     const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
     ULONG    cbHashValue,           // [IN] Count of bytes.
     IMetaDataImport *pImport,           // [IN] Scope containing the TypeDef.
@@ -589,7 +589,7 @@ ErrExit:
 // Create a MemberRef record based on a member in an import scope.
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineImportMember(     // S_OK or error.
-    IMetaDataAssemblyImport *pAssemImport,  // [IN] Assemby containing the Member.
+    IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the Member.
     const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
     ULONG        cbHashValue,           // [IN] Count of bytes.
     IMetaDataImport *pImport,           // [IN] Import scope, with member.
@@ -1178,7 +1178,7 @@ HRESULT RegMeta::_DefinePermissionSet(
     DeclSecurityRec *pDeclSec = NULL;
     RID         iDeclSec;
     short       sAction = static_cast<short>(dwAction); // To match with the type in DeclSecurityRec.
-    mdPermission tkPerm;                // New permission token.
+    mdPermission tkPerm = mdTokenNil;   // New permission token.
 
     _ASSERTE(TypeFromToken(tk) == mdtTypeDef || TypeFromToken(tk) == mdtMethodDef ||
              TypeFromToken(tk) == mdtAssembly);
@@ -2624,7 +2624,7 @@ HRESULT RegMeta::_DefinePinvokeMap(     // Return hresult.
     return E_NOTIMPL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     ImplMapRec  *pRecord;
-    RID         iRecord;
+    RID         iRecord = 0;
     bool        bDupFound = false;
     HRESULT     hr = S_OK;
 
@@ -2736,8 +2736,8 @@ STDMETHODIMP RegMeta::SetPinvokeMap(          // Return code.
 
     if (InvalidRid(iRecord))
         IfFailGo(CLDB_E_RECORD_NOTFOUND);
-    else
-        IfFailGo(m_pStgdb->m_MiniMd.GetImplMapRecord(iRecord, &pRecord));
+
+    IfFailGo(m_pStgdb->m_MiniMd.GetImplMapRecord(iRecord, &pRecord));
 
     // Set the data.
     if (dwMappingFlags != UINT32_MAX)

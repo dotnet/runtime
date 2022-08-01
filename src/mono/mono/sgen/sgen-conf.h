@@ -175,7 +175,7 @@ typedef target_mword SgenDescriptor;
  *
  * Increasing this value speeds up allocation but will cause more frequent nursery collections as less space will be used.
  * Descreasing this value will cause allocation to be slower since we'll have to cycle thru more fragments.
- * 512 annedoctally keeps wastage under control and doesn't impact allocation performance too much. 
+ * 512 annedoctally keeps wastage under control and doesn't impact allocation performance too much.
 */
 #define SGEN_MAX_NURSERY_WASTE 512
 
@@ -209,7 +209,7 @@ typedef target_mword SgenDescriptor;
 #define SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO 0.33
 
 /*
- * Default ratio of memory we want to release in a major collection in relation to the the current heap size.
+ * Default ratio of memory we want to release in a major collection in relation to the current heap size.
  *
  * A major collection target is to free a given amount of memory. This amount is a ratio of the major heap size.
  *

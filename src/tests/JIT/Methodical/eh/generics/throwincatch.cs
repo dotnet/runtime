@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using Xunit;
 
 
 public class GenException<T> : Exception
@@ -76,7 +77,8 @@ public class Test_throwincatch
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         //Start recording
         testLog.StartRecording();

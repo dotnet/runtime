@@ -20,7 +20,7 @@
 // MetaData dispenser.
 //*****************************************************************************
 HRESULT SetInternalSystemDirectory();
-HRESULT GetInternalSystemDirectory(__out_ecount_opt(*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength);
+HRESULT GetInternalSystemDirectory(_Out_writes_opt_(*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength);
 
 #endif
 

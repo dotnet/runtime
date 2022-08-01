@@ -80,7 +80,6 @@ namespace System.Dynamic.Utils
             return pis;
         }
 
-#if FEATURE_COMPILE
         // Expression trees/compiler just use IsByRef, why do we need this?
         // (see LambdaCompiler.EmitArguments for usage in the compiler)
         internal static bool IsByRefParameter(this ParameterInfo pi)
@@ -91,6 +90,5 @@ namespace System.Dynamic.Utils
 
             return (pi.Attributes & ParameterAttributes.Out) == ParameterAttributes.Out;
         }
-#endif
     }
 }

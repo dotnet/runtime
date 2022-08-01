@@ -52,7 +52,11 @@ namespace System.Linq
 
     internal sealed class SystemCore_EnumerableDebugViewEmptyException : Exception
     {
+#pragma warning disable CA1822
+        // This property value is used by the debugger EE as the message
+        // displayed when a dynamic object has no members.
         public string Empty => SR.EmptyEnumerable;
+#pragma warning restore CA1822
     }
 
     internal sealed class SystemCore_EnumerableDebugView
@@ -105,7 +109,7 @@ namespace System.Linq
 
         // The name of this property must alphabetically follow `Key` so the elements appear last in the display.
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public TElement[] Values => _cachedValues ?? (_cachedValues = _grouping.ToArray());
+        public TElement[] Values => _cachedValues ??= _grouping.ToArray();
     }
 
     internal sealed class SystemLinq_LookupDebugView<TKey, TElement>
@@ -119,6 +123,6 @@ namespace System.Linq
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public IGrouping<TKey, TElement>[] Groupings => _cachedGroupings ?? (_cachedGroupings = _lookup.ToArray());
+        public IGrouping<TKey, TElement>[] Groupings => _cachedGroupings ??= _lookup.ToArray();
     }
 }

@@ -50,18 +50,13 @@ namespace System.Reflection.Emit
         // parameters.
         public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, PropertyInfo[] namedProperties, object?[] propertyValues, FieldInfo[] namedFields, object?[] fieldValues)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-            if (constructorArgs == null)
-                throw new ArgumentNullException(nameof(constructorArgs));
-            if (namedProperties == null)
-                throw new ArgumentNullException(nameof(namedProperties));
-            if (propertyValues == null)
-                throw new ArgumentNullException(nameof(propertyValues));
-            if (namedFields == null)
-                throw new ArgumentNullException(nameof(namedFields));
-            if (fieldValues == null)
-                throw new ArgumentNullException(nameof(fieldValues));
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(constructorArgs);
+            ArgumentNullException.ThrowIfNull(namedProperties);
+            ArgumentNullException.ThrowIfNull(propertyValues);
+            ArgumentNullException.ThrowIfNull(namedFields);
+            ArgumentNullException.ThrowIfNull(fieldValues);
+
 #pragma warning disable CA2208 // Instantiate argument exceptions correctly, combination of arguments used
             if (namedProperties.Length != propertyValues.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer, "namedProperties, propertyValues");

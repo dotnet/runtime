@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 
 class Program
 {
@@ -42,7 +43,7 @@ class Program
             typeof(IFoo).GetMethod("DefaultMethod").Invoke(new Reabstractor(), new object[] { 1 });
             return 501;
         }
-        catch (EntryPointNotFoundException)
+        catch (TargetInvocationException ie) when (ie.InnerException is EntryPointNotFoundException)
         {
         }
 

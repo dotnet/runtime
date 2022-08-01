@@ -3,7 +3,7 @@
 //
 // FILE: dwreport.h
 //
-// This file contains declarations for functions used to report errors occuring
+// This file contains declarations for functions used to report errors occurring
 // in a process running managed code.
 //
 
@@ -55,18 +55,18 @@ BOOL IsWatsonEnabled();
 BOOL RegisterOutOfProcessWatsonCallbacks();
 
 int DwGetAssemblyVersion(               // Number of characters written.
-    __in_z LPCWSTR  wszFilePath,         // Path to the executable.
-    __inout_ecount(cchBuf) WCHAR *pBuf, // Put description here.
+    _In_z_ LPCWSTR  wszFilePath,         // Path to the executable.
+    _Inout_updates_(cchBuf) WCHAR *pBuf, // Put description here.
     int cchBuf);
 
 HRESULT DwGetFileVersionInfo(               // S_OK or error
-    __in_z LPCWSTR wszFilePath,             // Path to the executable.
+    _In_z_ LPCWSTR wszFilePath,             // Path to the executable.
     USHORT& major,
     USHORT& minor,
     USHORT& build,
     USHORT& revision);
 
-BOOL ContainsUnicodeChars(__in_z LPCWSTR wsz);
+BOOL ContainsUnicodeChars(_In_z_ LPCWSTR wsz);
 
 // Proxy parameters for Resetting Watson buckets
 struct ResetWatsonBucketsParams
@@ -84,10 +84,7 @@ extern LONG g_watsonAlreadyLaunched;
 typedef enum tagEFaultRepRetVal EFaultRepRetVal;
 struct FaultReportInfo
 {
-    BOOL                /*in*/   m_fDoReportFault;
     EXCEPTION_POINTERS  /*in*/  *m_pExceptionInfo;
-    DWORD               /*in*/   m_threadid;
-    FaultReportResult   /*out*/  m_faultReportResult;
     EFaultRepRetVal     /*out*/  m_faultRepRetValResult;
 };
 

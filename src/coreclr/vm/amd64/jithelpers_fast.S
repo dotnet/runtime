@@ -209,7 +209,7 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
         REPRET
 #endif
 
-    // make sure this is bigger than any of the others 
+    // make sure this is bigger than any of the others
     .balign 16
         nop
 LEAF_END_MARKED JIT_WriteBarrier, _TEXT
@@ -219,7 +219,7 @@ LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
         ret
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
-// JIT_ByRefWriteBarrier has weird symantics, see usage in StubLinkerX86.cpp
+// JIT_ByRefWriteBarrier has weird semantics, see usage in StubLinkerX86.cpp
 //
 // Entry:
 //   RDI - address of ref-field (assigned to)
@@ -447,3 +447,13 @@ LOCAL_LABEL(ProbeLoop):
         ret
 
 LEAF_END_MARKED JIT_StackProbe, _TEXT
+
+LEAF_ENTRY JIT_ValidateIndirectCall, _TEST
+        ret
+LEAF_END JIT_ValidateIndirectCall, _TEST
+
+LEAF_ENTRY JIT_DispatchIndirectCall, _TEST
+        movabs r10, 0xCDCDCDCDCDCDCDCD // The real helper clobbers these registers, so clobber them too in the fake helper
+        movabs r11, 0xCDCDCDCDCDCDCDCD
+        rex64 jmp rax
+LEAF_END JIT_DispatchIndirectCall, _TEST

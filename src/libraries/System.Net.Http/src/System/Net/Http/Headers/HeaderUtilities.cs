@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -21,9 +20,6 @@ namespace System.Net.Http.Headers
             new NameValueWithParametersHeaderValue("100-continue");
 
         internal const string BytesUnit = "bytes";
-
-        // Validator
-        internal static readonly Action<HttpHeaderValueCollection<string>, string> TokenValidator = ValidateToken;
 
         internal static void SetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
@@ -82,7 +78,7 @@ namespace System.Net.Http.Headers
         {
             // Encode a string using RFC 5987 encoding.
             // encoding'lang'PercentEncodedSpecials
-            StringBuilder builder = StringBuilderCache.Acquire();
+            var builder = new ValueStringBuilder(stackalloc char[256]);
             byte[] utf8bytes = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(input.Length));
             int utf8length = Encoding.UTF8.GetBytes(input, 0, input.Length, utf8bytes, 0);
 
@@ -95,12 +91,12 @@ namespace System.Net.Http.Headers
                 //      ; token except ( "*" / "'" / "%" )
                 if (utf8byte > 0x7F) // Encodes as multiple utf-8 bytes
                 {
-                    AddHexEscaped(utf8byte, builder);
+                    AddHexEscaped(utf8byte, ref builder);
                 }
                 else if (!HttpRuleParser.IsTokenChar((char)utf8byte) || utf8byte == '*' || utf8byte == '\'' || utf8byte == '%')
                 {
                     // ASCII - Only one encoded byte.
-                    AddHexEscaped(utf8byte, builder);
+                    AddHexEscaped(utf8byte, ref builder);
                 }
                 else
                 {
@@ -112,14 +108,12 @@ namespace System.Net.Http.Headers
             Array.Clear(utf8bytes, 0, utf8length);
             ArrayPool<byte>.Shared.Return(utf8bytes);
 
-            return StringBuilderCache.GetStringAndRelease(builder);
+            return builder.ToString();
         }
 
         /// <summary>Transforms an ASCII character into its hexadecimal representation, adding the characters to a StringBuilder.</summary>
-        private static void AddHexEscaped(byte c, StringBuilder destination)
+        private static void AddHexEscaped(byte c, ref ValueStringBuilder destination)
         {
-            Debug.Assert(destination != null);
-
             destination.Append('%');
             destination.Append(HexConverter.ToCharUpper(c >> 4));
             destination.Append(HexConverter.ToCharUpper(c));
@@ -134,7 +128,7 @@ namespace System.Net.Http.Headers
             {
                 // Note that the RFC requires decimal '.' regardless of the culture. I.e. using ',' as decimal
                 // separator is considered invalid (even if the current culture would allow it).
-                double qualityValue = 0;
+                double qualityValue;
                 if (double.TryParse(qualityParameter.Value, NumberStyles.AllowDecimalPoint,
                     NumberFormatInfo.InvariantInfo, out qualityValue))
                 {
@@ -166,7 +160,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
             }
 
-            int length = 0;
+            int length;
             if ((HttpRuleParser.GetCommentLength(value, 0, out length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {
@@ -181,7 +175,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
             }
 
-            int length = 0;
+            int length;
             if ((HttpRuleParser.GetQuotedStringLength(value, 0, out length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {
@@ -273,14 +267,14 @@ namespace System.Net.Http.Headers
             // empty values, continue until the current character is neither a separator nor a whitespace.
             separatorFound = true;
             current++; // skip delimiter.
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             if (skipEmptyValues)
             {
                 while ((current < input.Length) && (input[current] == ','))
                 {
                     current++; // skip delimiter.
-                    current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                    current += HttpRuleParser.GetWhitespaceLength(input, current);
                 }
             }
 
@@ -291,7 +285,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(store != null);
 
-            object? storedValue = store.GetParsedValues(descriptor);
+            object? storedValue = store.GetSingleParsedValue(descriptor);
             if (storedValue != null)
             {
                 return (DateTimeOffset)storedValue;
@@ -308,7 +302,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(store != null);
 
-            object? storedValue = store.GetParsedValues(descriptor);
+            object? storedValue = store.GetSingleParsedValue(descriptor);
             if (storedValue != null)
             {
                 return (TimeSpan)storedValue;
@@ -370,11 +364,6 @@ namespace System.Net.Http.Headers
             }
 
             sb.Append('}');
-        }
-
-        private static void ValidateToken(HttpHeaderValueCollection<string> collection, string value)
-        {
-            CheckValidToken(value, "item");
         }
 
         internal static UnvalidatedObjectCollection<NameValueHeaderValue>? Clone(this UnvalidatedObjectCollection<NameValueHeaderValue>? source)

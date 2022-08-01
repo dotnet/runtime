@@ -19,7 +19,7 @@ jobs:
   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
-# s390x
+# s390x & PPC64 little endian
 # Build the whole product using Mono and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -30,6 +30,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Linux_s390x
+    - Linux_ppc64le
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -46,7 +47,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+          eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
@@ -56,4 +57,4 @@ jobs:
           or(
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
-          eq(variables['isFullMatrix'], true))
+          eq(variables['isRollingBuild'], true))

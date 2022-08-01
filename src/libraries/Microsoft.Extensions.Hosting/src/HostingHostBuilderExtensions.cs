@@ -31,10 +31,11 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureHostConfiguration(configBuilder =>
             {
+                ThrowHelper.ThrowIfNull(environment);
+
                 configBuilder.AddInMemoryCollection(new[]
                 {
-                    new KeyValuePair<string, string>(HostDefaults.EnvironmentKey,
-                        environment ?? throw new ArgumentNullException(nameof(environment)))
+                    new KeyValuePair<string, string?>(HostDefaults.EnvironmentKey, environment)
                 });
             });
         }
@@ -50,10 +51,11 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureHostConfiguration(configBuilder =>
             {
+                ThrowHelper.ThrowIfNull(contentRoot);
+
                 configBuilder.AddInMemoryCollection(new[]
                 {
-                    new KeyValuePair<string, string>(HostDefaults.ContentRootKey,
-                        contentRoot ?? throw new ArgumentNullException(nameof(contentRoot)))
+                    new KeyValuePair<string, string?>(HostDefaults.ContentRootKey, contentRoot)
                 });
             });
         }
@@ -185,46 +187,74 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="builder">The existing builder to configure.</param>
         /// <param name="args">The command line args.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        public static IHostBuilder ConfigureDefaults(this IHostBuilder builder, string[] args)
+        public static IHostBuilder ConfigureDefaults(this IHostBuilder builder, string[]? args)
         {
-            builder.UseContentRoot(Directory.GetCurrentDirectory());
-            builder.ConfigureHostConfiguration(config =>
+            return builder.ConfigureHostConfiguration(config => ApplyDefaultHostConfiguration(config, args))
+                          .ConfigureAppConfiguration((hostingContext, config) => ApplyDefaultAppConfiguration(hostingContext, config, args))
+                          .ConfigureServices(AddDefaultServices)
+                          .UseServiceProviderFactory(context => new DefaultServiceProviderFactory(CreateDefaultServiceProviderOptions(context)));
+        }
+
+        internal static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[]? args)
+        {
+            // If we're running anywhere other than C:\Windows\system32, we default to using the CWD for the ContentRoot.
+            // However, since many things like Windows services and MSIX installers have C:\Windows\system32 as there CWD which is not likely
+            // to really be the home for things like appsettings.json, we skip changing the ContentRoot in that case. The non-"default" initial
+            // value for ContentRoot is AppContext.BaseDirectory (e.g. the executable path) which probably makes more sense than the system32.
+
+            // In my testing, both Environment.CurrentDirectory and Environment.GetFolderPath(Environment.SpecialFolder.System) return the path without
+            // any trailing directory separator characters. I'm not even sure the casing can ever be different from these APIs, but I think it makes sense to
+            // ignore case for Windows path comparisons given the file system is usually (always?) going to be case insensitive for the system path.
+            string cwd = Environment.CurrentDirectory;
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || !string.Equals(cwd, Environment.GetFolderPath(Environment.SpecialFolder.System), StringComparison.OrdinalIgnoreCase))
             {
-                config.AddEnvironmentVariables(prefix: "DOTNET_");
-                if (args is { Length: > 0 })
+                hostConfigBuilder.AddInMemoryCollection(new[]
                 {
-                    config.AddCommandLine(args);
-                }
-            });
+                    new KeyValuePair<string, string?>(HostDefaults.ContentRootKey, cwd),
+                });
+            }
 
-            builder.ConfigureAppConfiguration((hostingContext, config) =>
+            hostConfigBuilder.AddEnvironmentVariables(prefix: "DOTNET_");
+            if (args is { Length: > 0 })
             {
-                IHostEnvironment env = hostingContext.HostingEnvironment;
-                bool reloadOnChange = GetReloadConfigOnChangeValue(hostingContext);
+                hostConfigBuilder.AddCommandLine(args);
+            }
+        }
 
-                config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: reloadOnChange)
-                        .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
+        internal static void ApplyDefaultAppConfiguration(HostBuilderContext hostingContext, IConfigurationBuilder appConfigBuilder, string[]? args)
+        {
+            IHostEnvironment env = hostingContext.HostingEnvironment;
+            bool reloadOnChange = GetReloadConfigOnChangeValue(hostingContext);
 
-                if (env.IsDevelopment() && env.ApplicationName is { Length: > 0 })
+            appConfigBuilder.AddJsonFile("appsettings.json", optional: true, reloadOnChange: reloadOnChange)
+                    .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
+
+            if (env.IsDevelopment() && env.ApplicationName is { Length: > 0 })
+            {
+                var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
+                if (appAssembly is not null)
                 {
-                    var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
-                    if (appAssembly is not null)
-                    {
-                        config.AddUserSecrets(appAssembly, optional: true, reloadOnChange: reloadOnChange);
-                    }
+                    appConfigBuilder.AddUserSecrets(appAssembly, optional: true, reloadOnChange: reloadOnChange);
                 }
+            }
 
-                config.AddEnvironmentVariables();
+            appConfigBuilder.AddEnvironmentVariables();
 
-                if (args is { Length: > 0 })
-                {
-                    config.AddCommandLine(args);
-                }
-            })
-            .ConfigureLogging((hostingContext, logging) =>
+            if (args is { Length: > 0 })
+            {
+                appConfigBuilder.AddCommandLine(args);
+            }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Calling IConfiguration.GetValue is safe when the T is bool.")]
+            static bool GetReloadConfigOnChangeValue(HostBuilderContext hostingContext) => hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
+        }
+
+        internal static void AddDefaultServices(HostBuilderContext hostingContext, IServiceCollection services)
+        {
+            services.AddLogging(logging =>
             {
                 bool isWindows =
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
                     OperatingSystem.IsWindows();
 #else
                     RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
@@ -239,7 +269,7 @@ namespace Microsoft.Extensions.Hosting
                 }
 
                 logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
                 if (!OperatingSystem.IsBrowser())
 #endif
                 {
@@ -261,19 +291,17 @@ namespace Microsoft.Extensions.Hosting
                         ActivityTrackingOptions.TraceId |
                         ActivityTrackingOptions.ParentId;
                 });
-
-            })
-            .UseDefaultServiceProvider((context, options) =>
-            {
-                bool isDevelopment = context.HostingEnvironment.IsDevelopment();
-                options.ValidateScopes = isDevelopment;
-                options.ValidateOnBuild = isDevelopment;
             });
+        }
 
-            return builder;
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Calling IConfiguration.GetValue is safe when the T is bool.")]
-            static bool GetReloadConfigOnChangeValue(HostBuilderContext hostingContext) => hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
+        internal static ServiceProviderOptions CreateDefaultServiceProviderOptions(HostBuilderContext context)
+        {
+            bool isDevelopment = context.HostingEnvironment.IsDevelopment();
+            return new ServiceProviderOptions
+            {
+                ValidateScopes = isDevelopment,
+                ValidateOnBuild = isDevelopment,
+            };
         }
 
         /// <summary>

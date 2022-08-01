@@ -96,6 +96,37 @@ namespace System.ConfigurationTests
 
         }
 
+#nullable enable
+        public class SettingsWithNullableAttribute : ApplicationSettingsBase
+        {
+            [ApplicationScopedSetting]
+            public string StringProperty
+            {
+                get
+                {
+                    return (string)this[nameof(StringProperty)];
+                }
+                set
+                {
+                    this[nameof(StringProperty)] = value;
+                }
+            }
+
+            [UserScopedSetting]
+            public string? NullableStringProperty
+            {
+                get
+                {
+                    return (string)this[nameof(NullableStringProperty)];
+                }
+                set
+                {
+                    this[nameof(NullableStringProperty)] = value;
+                }
+            }
+        }
+#nullable disable
+
         private class PersistedSimpleSettings : SimpleSettings
         {
         }
@@ -314,6 +345,28 @@ namespace System.ConfigurationTests
 
             Assert.Equal(newStringPropertyValue, settings.StringProperty);
             Assert.True(loadedFired);
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not fixed on NetFX")]
+        [Fact]
+        public void SettingsProperty_SettingsWithNullableAttributes_Ok()
+        {
+            SettingsWithNullableAttribute settings = new SettingsWithNullableAttribute();
+
+            Assert.Null(settings.NullableStringProperty);
+
+            string newValue = null;
+
+            settings.SettingChanging += (object sender, SettingChangingEventArgs e)
+                =>
+            {
+                newValue = (string)e.NewValue;
+            };
+
+            settings.NullableStringProperty = "test";
+
+            Assert.Equal("test", newValue);
+            Assert.Equal(newValue, settings.NullableStringProperty);
         }
     }
 }

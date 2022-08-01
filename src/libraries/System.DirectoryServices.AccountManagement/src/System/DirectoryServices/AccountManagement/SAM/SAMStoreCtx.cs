@@ -131,8 +131,7 @@ namespace System.DirectoryServices.AccountManagement
                 //                {
                 foreach (Hashtable propertyMappingTableByProperty in byPropertyTables)
                 {
-                    if (propertyMappingTableByProperty[propertyName] == null)
-                        propertyMappingTableByProperty[propertyName] = new ArrayList();
+                    propertyMappingTableByProperty[propertyName] ??= new ArrayList();
 
                     ((ArrayList)propertyMappingTableByProperty[propertyName]).Add(propertyEntry);
                 }
@@ -147,8 +146,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     foreach (Hashtable propertyMappingTableByWinNT in byWinNTTables)
                     {
-                        if (propertyMappingTableByWinNT[winNTAttributeLower] == null)
-                            propertyMappingTableByWinNT[winNTAttributeLower] = new ArrayList();
+                        propertyMappingTableByWinNT[winNTAttributeLower] ??= new ArrayList();
 
                         ((ArrayList)propertyMappingTableByWinNT[winNTAttributeLower]).Add(propertyEntry);
                     }
@@ -219,8 +217,8 @@ namespace System.DirectoryServices.AccountManagement
         // have been set, prior to persisting the Principal.
         internal override void Insert(Principal p)
         {
-            Debug.Assert(p.unpersisted == true);
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(p.unpersisted);
+            Debug.Assert(!p.fakePrincipal);
 
             try
             {
@@ -368,8 +366,8 @@ namespace System.DirectoryServices.AccountManagement
         internal override void InitializeUserAccountControl(AuthenticablePrincipal p)
         {
             Debug.Assert(p != null);
-            Debug.Assert(p.fakePrincipal == false);
-            Debug.Assert(p.unpersisted == true); // should only ever be called for new principals
+            Debug.Assert(!p.fakePrincipal);
+            Debug.Assert(p.unpersisted); // should only ever be called for new principals
 
             // set the userAccountControl bits on the underlying directory entry
             DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
@@ -445,8 +443,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (copyOfDe != null)
-                    copyOfDe.Dispose();
+                copyOfDe?.Dispose();
             }
         }
 
@@ -1052,7 +1049,7 @@ namespace System.DirectoryServices.AccountManagement
             try
             {
                 // This function takes in a flat or DNS name, and returns the flat name of the computer
-                int err = UnsafeNativeMethods.NetWkstaGetInfo(_machineUserSuppliedName, 100, ref buffer);
+                int err = Interop.Wkscli.NetWkstaGetInfo(_machineUserSuppliedName, 100, ref buffer);
                 if (err == 0)
                 {
                     UnsafeNativeMethods.WKSTA_INFO_100 wkstaInfo =
@@ -1072,7 +1069,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (buffer != IntPtr.Zero)
-                    UnsafeNativeMethods.NetApiBufferFree(buffer);
+                    Interop.Netutils.NetApiBufferFree(buffer);
             }
         }
 

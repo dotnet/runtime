@@ -118,7 +118,7 @@ struct GcInfoSize
     size_t NumUntracked;
     size_t NumTransitions;
     size_t SizeOfCode;
-    size_t EncPreservedSlots;
+    size_t EncInfoSize;
 
     size_t UntrackedSlotSize;
     size_t NumUntrackedSize;
@@ -434,13 +434,16 @@ public:
 
     // Number of slots preserved during EnC remap
     void SetSizeOfEditAndContinuePreservedArea( UINT32 size );
+#ifdef TARGET_ARM64
+    void SetSizeOfEditAndContinueFixedStackFrame( UINT32 size );
+#endif
 
 #ifdef TARGET_AMD64
     // Used to only report a frame once for the leaf function/funclet
     // instead of once for each live function/funclet on the stack.
     // Called only by RyuJIT (not JIT64)
     void SetWantsReportOnlyLeaf();
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     void SetHasTailCalls();
 #endif // TARGET_AMD64
 
@@ -496,7 +499,7 @@ private:
     bool   m_IsVarArg;
 #if defined(TARGET_AMD64)
     bool   m_WantsReportOnlyLeaf;
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool   m_HasTailCalls;
 #endif // TARGET_AMD64
     INT32  m_SecurityObjectStackSlot;
@@ -510,6 +513,9 @@ private:
     UINT32 m_CodeLength;
     UINT32 m_StackBaseRegister;
     UINT32 m_SizeOfEditAndContinuePreservedArea;
+#ifdef TARGET_ARM64
+    UINT32 m_SizeOfEditAndContinueFixedStackFrame;
+#endif
     INT32  m_ReversePInvokeFrameSlot;
     InterruptibleRange* m_pLastInterruptibleRange;
 

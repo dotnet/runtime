@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Serialization;
-using Internal.Runtime.CompilerServices;
 using System.Diagnostics.Tracing;
+using System.Runtime.Serialization;
 
 namespace System.Runtime.CompilerServices
 {
@@ -11,14 +10,24 @@ namespace System.Runtime.CompilerServices
     {
         public static void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (fldHandle.Value == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(fldHandle));
+            ArgumentNullException.ThrowIfNull(array);
+            ArgumentNullException.ThrowIfNull(fldHandle.Value, nameof(fldHandle));
 
             InitializeArray(array, fldHandle.Value);
         }
 
+        private static unsafe void* GetSpanDataFrom(
+            RuntimeFieldHandle fldHandle,
+            RuntimeTypeHandle targetTypeHandle,
+            out int count)
+        {
+            fixed (int *pCount = &count)
+            {
+                return (void*)GetSpanDataFrom(fldHandle.Value, targetTypeHandle.Value, new IntPtr(pCount));
+            }
+        }
+
+        [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
         {
             [Intrinsic]
@@ -130,8 +139,20 @@ namespace System.Runtime.CompilerServices
         internal static bool ObjectHasReferences(object obj)
         {
             // TODO: Missing intrinsic in interpreter
-            return RuntimeTypeHandle.HasReferences(obj.GetType() as RuntimeType);
+            return RuntimeTypeHandle.HasReferences((obj.GetType() as RuntimeType)!);
         }
+
+        // A conservative GC already scans the stack looking for potential object-refs or by-refs.
+        // Mono uses a conservative GC so there is no need for this API to be full implemented.
+        internal unsafe ref struct GCFrameRegistration
+        {
+            public GCFrameRegistration(void* allocation, uint elemCount, bool areByRefs = true)
+            {
+            }
+        }
+
+        internal static unsafe void RegisterForGCReporting(GCFrameRegistration* pRegistration) { /* nop */ }
+        internal static unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration) { /* nop */ }
 
         public static object GetUninitializedObject(
             // This API doesn't call any constructors, but the type needs to be seen as constructed.
@@ -144,10 +165,7 @@ namespace System.Runtime.CompilerServices
         {
             if (type is not RuntimeType rt)
             {
-                if (type is null)
-                {
-                    throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
-                }
+                ArgumentNullException.ThrowIfNull(type);
 
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
@@ -164,6 +182,12 @@ namespace System.Runtime.CompilerServices
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void InitializeArray(Array array, IntPtr fldHandle);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern unsafe IntPtr GetSpanDataFrom(
+            IntPtr fldHandle,
+            IntPtr targetTypeHandle,
+            IntPtr count);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void RunClassConstructor(IntPtr type);

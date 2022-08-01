@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Xml;
+using System.Xml.Schema;
+
 namespace System.Runtime.Serialization
 {
-    using System.Collections.Generic;
-    using System.Xml;
-    using System.Xml.Schema;
-
     public static class XmlSerializableServices
     {
         public static XmlNode[] ReadNodes(XmlReader xmlReader)
         {
-            if (xmlReader == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(xmlReader));
+            ArgumentNullException.ThrowIfNull(xmlReader);
+
             XmlDocument doc = new XmlDocument();
             List<XmlNode> nodeList = new List<XmlNode>();
             if (xmlReader.MoveToFirstAttribute())
@@ -54,8 +54,8 @@ namespace System.Runtime.Serialization
 
         public static void WriteNodes(XmlWriter xmlWriter, XmlNode?[]? nodes)
         {
-            if (xmlWriter == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(xmlWriter));
+            ArgumentNullException.ThrowIfNull(xmlWriter);
+
             if (nodes != null)
                 for (int i = 0; i < nodes.Length; i++)
                     if (nodes[i] != null)
@@ -65,10 +65,9 @@ namespace System.Runtime.Serialization
         internal static string AddDefaultSchemaMethodName = "AddDefaultSchema";
         public static void AddDefaultSchema(XmlSchemaSet schemas, XmlQualifiedName typeQName)
         {
-            if (schemas == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(schemas));
-            if (typeQName == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(typeQName));
+            ArgumentNullException.ThrowIfNull(schemas);
+            ArgumentNullException.ThrowIfNull(typeQName);
+
             SchemaExporter.AddDefaultXmlType(schemas, typeQName.Name, typeQName.Namespace);
         }
     }

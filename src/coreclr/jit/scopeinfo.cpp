@@ -144,7 +144,7 @@ bool CodeGenInterface::siVarLoc::vlIsOnStack() const
 }
 
 //------------------------------------------------------------------------
-// storeVariableInRegisters: Convert the siVarLoc instance in a regsiter
+// storeVariableInRegisters: Convert the siVarLoc instance in a register
 //  location using the given registers.
 //
 // Arguments:
@@ -295,7 +295,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_LONG:
         case TYP_DOUBLE:
 #endif // TARGET_64BIT
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if FEATURE_IMPLICIT_BYREFS
             // In the AMD64 ABI we are supposed to pass a struct by reference when its
             // size is not 1, 2, 4 or 8 bytes in size. During fgMorph, the compiler modifies
             // the IR to comply with the ABI and therefore changes the type of the lclVar
@@ -306,7 +306,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
             // See lvaSetStruct for further detail.
             //
             // Now, the VM expects a special enum for these type of local vars: VLT_STK_BYREF
-            // to accomodate for this situation.
+            // to accommodate for this situation.
             if (varDsc->lvIsImplicitByRef)
             {
                 assert(varDsc->lvIsParam);
@@ -314,7 +314,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
                 this->vlType = VLT_STK_BYREF;
             }
             else
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // FEATURE_IMPLICIT_BYREFS
             {
                 this->vlType = VLT_STK;
             }
@@ -454,7 +454,7 @@ CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg,
 {
     if (varDsc->lvIsInReg())
     {
-        var_types regType = varDsc->GetActualRegisterType();
+        var_types regType = genActualType(varDsc->GetRegisterType());
         siFillRegisterVarLoc(varDsc, regType, baseReg, offset, isFramePointerUsed);
     }
     else
@@ -1093,7 +1093,7 @@ void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned in
 
         while ((varScope = compiler->compGetNextEnterScope(beginOffs)) != nullptr)
         {
-            LclVarDsc* lclVarDsc = &compiler->lvaTable[varScope->vsdVarNum];
+            LclVarDsc* lclVarDsc = compiler->lvaGetDesc(varScope->vsdVarNum);
 
             // Only report locals that were referenced, if we're not doing debug codegen
             if (compiler->opts.compDbgCode || (lclVarDsc->lvRefCnt() > 0))
@@ -1179,10 +1179,8 @@ void CodeGen::siEndBlock(BasicBlock* block)
         JITDUMP("Scope info: ending scope, LVnum=%u [%03X..%03X)\n", varScope->vsdLVnum, varScope->vsdLifeBeg,
                 varScope->vsdLifeEnd);
 
-        unsigned   varNum     = varScope->vsdVarNum;
-        LclVarDsc* lclVarDsc1 = &compiler->lvaTable[varNum];
-
-        assert(lclVarDsc1);
+        unsigned         varNum     = varScope->vsdVarNum;
+        const LclVarDsc* lclVarDsc1 = compiler->lvaGetDesc(varNum);
 
         if (lclVarDsc1->lvTracked)
         {
@@ -1278,7 +1276,7 @@ void CodeGen::siCheckVarScope(unsigned varNum, IL_OFFSET offs)
     }
 
     siScope*   scope;
-    LclVarDsc* lclVarDsc1 = &compiler->lvaTable[varNum];
+    LclVarDsc* lclVarDsc1 = compiler->lvaGetDesc(varNum);
 
     // If there is an open scope corresponding to varNum, find it
 
@@ -1525,7 +1523,7 @@ void CodeGen::psiBegProlog()
     VarScopeDsc* varScope;
     while ((varScope = compiler->compGetNextEnterScope(0)) != nullptr)
     {
-        LclVarDsc* lclVarDsc = &compiler->lvaTable[varScope->vsdVarNum];
+        LclVarDsc* lclVarDsc = compiler->lvaGetDesc(varScope->vsdVarNum);
 
         if (!lclVarDsc->lvIsParam)
         {
@@ -1602,11 +1600,38 @@ void CodeGen::psiBegProlog()
             if (!isStructHandled)
             {
 #ifdef DEBUG
+#ifdef TARGET_LOONGARCH64
+                var_types regType;
+                if (varTypeIsStruct(lclVarDsc))
+                {
+                    // Must be <= 16 bytes or else it wouldn't be passed in registers,
+                    // which can be bigger (and is handled above).
+                    noway_assert(EA_SIZE_IN_BYTES(lclVarDsc->lvSize()) <= 16);
+                    if (emitter::isFloatReg(lclVarDsc->GetArgReg()))
+                    {
+                        regType = TYP_DOUBLE;
+                    }
+                    else
+                    {
+                        regType = lclVarDsc->GetLayout()->GetGCPtrType(0);
+                    }
+                }
+                else
+                {
+                    regType = compiler->mangleVarArgsType(lclVarDsc->TypeGet());
+                    if (emitter::isGeneralRegisterOrR0(lclVarDsc->GetArgReg()) && isFloatRegType(regType))
+                    {
+                        // For LoongArch64's ABI, the float args may be passed by integer register.
+                        regType = TYP_LONG;
+                    }
+                }
+#else
                 var_types regType = compiler->mangleVarArgsType(lclVarDsc->TypeGet());
                 if (lclVarDsc->lvIsHfaRegArg())
                 {
                     regType = lclVarDsc->GetHfaType();
                 }
+#endif
                 assert(genMapRegNumToRegArgNum(lclVarDsc->GetArgReg(), regType) != (unsigned)-1);
 #endif // DEBUG
 

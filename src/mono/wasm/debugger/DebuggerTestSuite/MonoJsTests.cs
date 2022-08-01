@@ -8,22 +8,26 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
-    public class MonoJsTests : DebuggerTestBase
+    public class MonoJsTests : DebuggerTests
     {
-        [Fact]
+        public MonoJsTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task BadRaiseDebugEventsTest()
         {
             var bad_expressions = new[]
             {
-                    "INTERNAL.mono_wasm_raise_debug_event('')",
-                    "INTERNAL.mono_wasm_raise_debug_event(undefined)",
-                    "INTERNAL.mono_wasm_raise_debug_event({})",
+                    "getDotnetRuntime(0).INTERNAL.mono_wasm_raise_debug_event('')",
+                    "getDotnetRuntime(0).INTERNAL.mono_wasm_raise_debug_event(undefined)",
+                    "getDotnetRuntime(0).INTERNAL.mono_wasm_raise_debug_event({})",
 
-                    "INTERNAL.mono_wasm_raise_debug_event({eventName:'foo'}, '')",
-                    "INTERNAL.mono_wasm_raise_debug_event({eventName:'foo'}, 12)"
+                    "getDotnetRuntime(0).INTERNAL.mono_wasm_raise_debug_event({eventName:'foo'}, '')",
+                    "getDotnetRuntime(0).INTERNAL.mono_wasm_raise_debug_event({eventName:'foo'}, 12)"
                 };
 
             foreach (var expression in bad_expressions)
@@ -38,7 +42,7 @@ namespace DebuggerTests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(true)]
         [InlineData(false)]
         [InlineData(null)]
@@ -58,7 +62,7 @@ namespace DebuggerTests
             });
 
             var trace_str = trace.HasValue ? $"trace: {trace.ToString().ToLower()}" : String.Empty;
-            var expression = $"INTERNAL.mono_wasm_raise_debug_event({{ eventName:'qwe' }}, {{ {trace_str} }})";
+            var expression = $"getDotnetRuntime(0).INTERNAL.mono_wasm_raise_debug_event({{ eventName:'qwe' }}, {{ {trace_str} }})";
             var res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), token);
             Assert.True(res.IsOk, $"Expected to pass for {expression}");
 
@@ -70,7 +74,7 @@ namespace DebuggerTests
                 Assert.False(tcs.Task == t, "Event should not have been logged");
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(true, 1)]
         [InlineData(false, 0)]
         public async Task DuplicateAssemblyLoadedEventNotLoadedFromBundle(bool load_pdb, int expected_count)
@@ -82,7 +86,7 @@ namespace DebuggerTests
                 expected_count
             );
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(true, 1)]
         [InlineData(false, 1)] // Since it's being loaded from the bundle, it will have the pdb even if we don't provide one
         public async Task DuplicateAssemblyLoadedEventForAssemblyFromBundle(bool load_pdb, int expected_count)
@@ -94,7 +98,7 @@ namespace DebuggerTests
                 expected_count
             );
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DuplicateAssemblyLoadedEventWithEmbeddedPdbNotLoadedFromBundle()
             => await AssemblyLoadedEventTest(
                 "lazy-debugger-test-embedded",
@@ -139,7 +143,7 @@ namespace DebuggerTests
                 pdb_base64 = Convert.ToBase64String(bytes);
             }
 
-            var expression = $@"INTERNAL.mono_wasm_raise_debug_event({{
+            var expression = $@"getDotnetRuntime(0).INTERNAL.mono_wasm_raise_debug_event({{
                     eventName: 'AssemblyLoaded',
                     assembly_name: '{asm_name}',
                     assembly_b64: '{asm_base64}',

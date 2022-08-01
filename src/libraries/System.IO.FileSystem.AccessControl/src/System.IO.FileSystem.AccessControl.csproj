@@ -1,15 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <AllowUnsafeBlocks Condition="'$(TargetsWindows)' == 'true'">true</AllowUnsafeBlocks>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <AllowUnsafeBlocks Condition="'$(TargetPlatformIdentifier)' == 'windows'">true</AllowUnsafeBlocks>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <!-- Source includes -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
              Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
@@ -86,20 +88,13 @@
              Link="Common\System\IO\FileSystem.DirectoryCreation.Windows.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
-    <Reference Include="System.Buffers" Condition="'$(TargetsWindows)' == 'true'" />
-    <Reference Include="System.Collections" Condition="'$(TargetsWindows)' == 'true'" />
+    <Reference Include="System.Buffers" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Reference Include="System.Collections" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Memory" Condition="'$(TargetsWindows)' == 'true'" />
-    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Memory" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" Condition="'$(TargetsWindows)' == 'true'" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.Handles" />
-    <Reference Include="System.Runtime.InteropServices" Condition="'$(TargetsWindows)' == 'true'" />
-    <Reference Include="System.Threading.Tasks" Condition="'$(TargetsWindows)' == 'true'" />
+    <Reference Include="System.Runtime.InteropServices" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Reference Include="System.Security.AccessControl" />
+    <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>
 </Project>

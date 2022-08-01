@@ -22,8 +22,6 @@
 #define ENUM_BUFFER_SIZE 10
 #define TAB_SIZE 8
 
-#define NumItems(s) (sizeof(s) / sizeof(s[0]))
-
 #define ISFLAG(p,x) if (Is##p##x(flags)) strcat_s(sFlags,STRING_BUFFER_LEN, "["#x "] ");
 
 extern HRESULT  _FillVariant(
@@ -206,7 +204,7 @@ void MDInfo::InitSigBuffer()
 
 // helper to append a string into the signature buffer. If size of signature buffer is not big enough,
 // we will grow it.
-HRESULT MDInfo::AddToSigBuffer(__in_z __in const char *string)
+HRESULT MDInfo::AddToSigBuffer(_In_z_ const char *string)
 {
     HRESULT     hr;
     size_t LL = strlen((LPSTR)m_sigBuf.Ptr()) + strlen(string) + 1;
@@ -219,8 +217,8 @@ MDInfo::MDInfo(IMetaDataImport2 *pImport, IMetaDataAssemblyImport *pAssemblyImpo
 {   // This constructor is specific to ILDASM/MetaInfo integration
 
     _ASSERTE(pImport != NULL);
-    _ASSERTE(NumItems(g_szMapElementType) == NumItems(g_szMapUndecorateType));
-    _ASSERTE(NumItems(g_szMapElementType) == ELEMENT_TYPE_MAX);
+    _ASSERTE(ARRAY_SIZE(g_szMapElementType) == ARRAY_SIZE(g_szMapUndecorateType));
+    _ASSERTE(ARRAY_SIZE(g_szMapElementType) == ELEMENT_TYPE_MAX);
 
     Init(inPBFn, (DUMP_FILTER)DumpFilter);
 
@@ -243,8 +241,8 @@ MDInfo::MDInfo(IMetaDataDispenserEx *pDispenser, LPCWSTR szScope, strPassBackFn 
     VARIANT     value;
 
     _ASSERTE(pDispenser != NULL && inPBFn != NULL);
-    _ASSERTE(NumItems(g_szMapElementType) == NumItems(g_szMapUndecorateType));
-    _ASSERTE(NumItems(g_szMapElementType) == ELEMENT_TYPE_MAX);
+    _ASSERTE(ARRAY_SIZE(g_szMapElementType) == ARRAY_SIZE(g_szMapUndecorateType));
+    _ASSERTE(ARRAY_SIZE(g_szMapElementType) == ELEMENT_TYPE_MAX);
 
     Init(inPBFn, (DUMP_FILTER)DumpFilter);
 
@@ -277,8 +275,8 @@ MDInfo::MDInfo(IMetaDataDispenserEx *pDispenser, LPCWSTR szScope, strPassBackFn 
 MDInfo::MDInfo(IMetaDataDispenserEx *pDispenser, PBYTE pbMetaData, DWORD dwSize, strPassBackFn inPBFn, ULONG DumpFilter)
 {
     _ASSERTE(pDispenser != NULL && inPBFn != NULL);
-    _ASSERTE(NumItems(g_szMapElementType) == NumItems(g_szMapUndecorateType));
-    _ASSERTE(NumItems(g_szMapElementType) == ELEMENT_TYPE_MAX);
+    _ASSERTE(ARRAY_SIZE(g_szMapElementType) == ARRAY_SIZE(g_szMapUndecorateType));
+    _ASSERTE(ARRAY_SIZE(g_szMapElementType) == ELEMENT_TYPE_MAX);
 
     Init(inPBFn, (DUMP_FILTER)DumpFilter);
 
@@ -362,7 +360,7 @@ void MDInfo::DisplayMD()
         // WriteLine("Unresolved MemberRefs");
         // DisplayMemberRefs(0x00000001, "\t");
 
-        VWrite("\n\nCoff symbol name overhead:  %d\n", g_cbCoffNames);
+        VWrite("\n\nCoff symbol name overhead:  %Iu\n", g_cbCoffNames);
     }
     WriteLine("===========================================================");
     if (m_DumpFilter & dumpUnsat)
@@ -370,7 +368,7 @@ void MDInfo::DisplayMD()
     WriteLine("===========================================================");
 } // MDVEHandlerClass()
 
-int MDInfo::WriteLine(__in_z __in const char *str)
+int MDInfo::WriteLine(_In_z_ const char *str)
 {
     ULONG32 count = (ULONG32) strlen(str);
 
@@ -379,7 +377,7 @@ int MDInfo::WriteLine(__in_z __in const char *str)
     return count;
 } // int MDInfo::WriteLine()
 
-int MDInfo::Write(__in_z __in const char *str)
+int MDInfo::Write(_In_z_ const char *str)
 {
     ULONG32 count = (ULONG32) strlen(str);
 
@@ -387,7 +385,7 @@ int MDInfo::Write(__in_z __in const char *str)
     return count;
 } // int MDInfo::Write()
 
-int MDInfo::VWriteLine(__in_z __in const char *str, ...)
+int MDInfo::VWriteLine(_In_z_ const char *str, ...)
 {
     va_list marker;
     int     count;
@@ -399,7 +397,7 @@ int MDInfo::VWriteLine(__in_z __in const char *str, ...)
     return count;
 } // int MDInfo::VWriteLine()
 
-int MDInfo::VWrite(__in_z __in const char *str, ...)
+int MDInfo::VWrite(_In_z_ const char *str, ...)
 {
     va_list marker;
     int     count;
@@ -410,7 +408,7 @@ int MDInfo::VWrite(__in_z __in const char *str, ...)
     return count;
 } // int MDInfo::VWrite()
 
-int MDInfo::VWriteMarker(__in_z __in const char *str, va_list marker)
+int MDInfo::VWriteMarker(_In_z_ const char *str, va_list marker)
 {
     HRESULT hr;
     int count = -1;
@@ -563,7 +561,7 @@ const char *MDInfo::TokenTypeName(mdToken inToken)
 // Prints out name of the given memberref
 //
 
-LPCWSTR MDInfo::MemberRefName(mdMemberRef inMemRef, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::MemberRefName(mdMemberRef inMemRef, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     HRESULT hr;
 
@@ -617,7 +615,7 @@ void MDInfo::DisplayMemberRefs(mdToken tkParent, const char *preFix)
 
 
     while (SUCCEEDED(hr = m_pImport->EnumMemberRefs( &memRefEnum, tkParent,
-                             memRefs, NumItems(memRefs), &count)) &&
+                             memRefs, ARRAY_SIZE(memRefs), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -644,7 +642,7 @@ void MDInfo::DisplayTypeRefs()
     HRESULT hr;
 
     while (SUCCEEDED(hr = m_pImport->EnumTypeRefs( &typeRefEnum,
-                             typeRefs, NumItems(typeRefs), &count)) &&
+                             typeRefs, ARRAY_SIZE(typeRefs), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -667,7 +665,7 @@ void MDInfo::DisplayTypeSpecs()
     HRESULT hr;
 
     while (SUCCEEDED(hr = m_pImport->EnumTypeSpecs( &typespecEnum,
-                             typespecs, NumItems(typespecs), &count)) &&
+                             typespecs, ARRAY_SIZE(typespecs), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -692,7 +690,7 @@ void MDInfo::DisplayMethodSpecs()
 
 /////  HACK until I implement EnumMethodSpecs!
 ///// while (SUCCEEDED(hr = m_pImport->EnumMethodSpecs( &MethodSpecEnum,
-/////                          MethodSpecs, NumItems(MethodSpecs), &count)) &&
+/////                          MethodSpecs, ARRAY_SIZE(MethodSpecs), &count)) &&
 /////         count > 0)
     for (ULONG rid=1; m_pImport->IsValidToken(TokenFromRid(rid, mdtMethodSpec)); ++rid)
     {
@@ -723,7 +721,7 @@ void MDInfo::DisplayTypeDefs()
     HRESULT hr;
 
     while (SUCCEEDED(hr = m_pImport->EnumTypeDefs( &typeDefEnum,
-                             typeDefs, NumItems(typeDefs), &count)) &&
+                             typeDefs, ARRAY_SIZE(typeDefs), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -748,7 +746,7 @@ void MDInfo::DisplayModuleRefs()
     HRESULT hr;
 
     while (SUCCEEDED(hr = m_pImport->EnumModuleRefs( &moduleRefEnum,
-                             moduleRefs, NumItems(moduleRefs), &count)) &&
+                             moduleRefs, ARRAY_SIZE(moduleRefs), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -793,7 +791,7 @@ void MDInfo::DisplaySignatures()
     HRESULT hr;
 
     while (SUCCEEDED(hr = m_pImport->EnumSignatures( &signatureEnum,
-                             signatures, NumItems(signatures), &count)) &&
+                             signatures, ARRAY_SIZE(signatures), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -831,7 +829,7 @@ void MDInfo::DisplaySignatureInfo(mdSignature inSignature)
 // member in wide characters
 //
 
-LPCWSTR MDInfo::MemberName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::MemberName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     HRESULT hr;
 
@@ -1051,7 +1049,7 @@ void MDInfo::DisplayMethods(mdTypeDef inTypeDef)
 
 
     while (SUCCEEDED(hr = m_pImport->EnumMethods( &methodEnum, inTypeDef,
-                             methods, NumItems(methods), &count)) &&
+                             methods, ARRAY_SIZE(methods), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -1088,7 +1086,7 @@ void MDInfo::DisplayFields(mdTypeDef inTypeDef, COR_FIELD_OFFSET *rFieldOffset, 
 
 
     while (SUCCEEDED(hr = m_pImport->EnumFields( &fieldEnum, inTypeDef,
-                             fields, NumItems(fields), &count)) &&
+                             fields, ARRAY_SIZE(fields), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -1144,7 +1142,7 @@ void MDInfo::DisplayMethodImpls(mdTypeDef inTypeDef)
 
 
     while (SUCCEEDED(hr = m_pImport->EnumMethodImpls( &methodImplEnum, inTypeDef,
-                             rtkMethodBody, rtkMethodDecl, NumItems(rtkMethodBody), &count)) &&
+                             rtkMethodBody, rtkMethodDecl, ARRAY_SIZE(rtkMethodBody), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -1177,11 +1175,13 @@ void MDInfo::DisplayParamInfo(mdParamDef inParamDef)
 #ifdef FEATURE_COMINTEROP
     ::VariantInit(&defValue);
 #endif
-    HRESULT hr = m_pImport->GetParamProps( inParamDef, &md, &num, paramName, NumItems(paramName),
+    HRESULT hr = m_pImport->GetParamProps( inParamDef, &md, &num, paramName, ARRAY_SIZE(paramName),
                             &nameLen, &flags, &dwCPlusFlags, &pValue, &cbValue);
     if (FAILED(hr)) Error("GetParamProps failed.", hr);
 
+#ifdef FEATURE_COMINTEROP
     _FillVariant((BYTE)dwCPlusFlags, pValue, cbValue, &defValue);
+#endif
 
     char sFlags[STRING_BUFFER_LEN];
     sFlags[0] = 0;
@@ -1222,7 +1222,7 @@ void MDInfo::DisplayParams(mdMethodDef inMethodDef)
 
 
     while (SUCCEEDED(hr = m_pImport->EnumParams( &paramEnum, inMethodDef,
-                             params, NumItems(params), &count)) &&
+                             params, ARRAY_SIZE(params), &count)) &&
             count > 0)
     {
         if (first)
@@ -1250,7 +1250,7 @@ void MDInfo::DisplayGenericParams(mdToken tk, const char *prefix)
 
 
     while (SUCCEEDED(hr = m_pImport->EnumGenericParams( &paramEnum, tk,
-                             params, NumItems(params), &count)) &&
+                             params, ARRAY_SIZE(params), &count)) &&
             count > 0)
     {
         if (first)
@@ -1282,14 +1282,14 @@ void MDInfo::DisplayGenericParamInfo(mdGenericParam tkParam, const char *prefix)
     mdToken owner;
     bool first = true;
 
-    HRESULT hr = m_pImport->GetGenericParamProps(tkParam, &ulSeq, &flags, &tkOwner, NULL, paramName, NumItems(paramName), &nameLen);
+    HRESULT hr = m_pImport->GetGenericParamProps(tkParam, &ulSeq, &flags, &tkOwner, NULL, paramName, ARRAY_SIZE(paramName), &nameLen);
     if (FAILED(hr)) Error("GetGenericParamProps failed.", hr);
 
     VWriteLine("%s\t(%ld) GenericParamToken : (%08x) Name : %ls flags: %08x Owner: %08x", prefix, ulSeq, tkParam, paramName, flags, tkOwner);
 
     // Any constraints for the GenericParam
     while (SUCCEEDED(hr = m_pImport->EnumGenericParamConstraints(&constraintEnum, tkParam,
-                constraints, NumItems(constraints), &count)) &&
+                constraints, ARRAY_SIZE(constraints), &count)) &&
            count > 0)
     {
         if (first)
@@ -1314,7 +1314,7 @@ void MDInfo::DisplayGenericParamInfo(mdGenericParam tkParam, const char *prefix)
     DisplayCustomAttributes(tkParam, newprefix);
 }
 
-LPCWSTR MDInfo::TokenName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::TokenName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     LPCUTF8     pName;                  // Token name in UTF8.
 
@@ -1331,7 +1331,7 @@ LPCWSTR MDInfo::TokenName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, U
 // prints out name of typeref or typedef
 //
 
-LPCWSTR MDInfo::TypeDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::TypeDeforRefName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     if (RidFromToken(inToken))
     {
@@ -1348,7 +1348,7 @@ LPCWSTR MDInfo::TypeDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR bu
         return W("");
 } // LPCWSTR MDInfo::TypeDeforRefName()
 
-LPCWSTR MDInfo::MemberDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::MemberDeforRefName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     if (RidFromToken(inToken))
     {
@@ -1367,7 +1367,7 @@ LPCWSTR MDInfo::MemberDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR 
 //
 //
 
-LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     HRESULT hr;
 
@@ -1381,7 +1381,7 @@ LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef, __out_ecount(bufLen) LPWSTR buf
         NULL);                  // [OUT] Put base class TypeDef/TypeRef here.
     if (FAILED(hr))
     {
-        swprintf_s(buffer, bufLen, W("[Invalid TypeDef]"));
+        wcscpy_s(buffer, bufLen, W("[Invalid TypeDef]"));
     }
 
     return buffer;
@@ -1415,7 +1415,7 @@ void MDInfo::DisplayTypeDefProps(mdTypeDef inTypeDef)
     VWriteLine("\tTypDefName: %ls  (%8.8X)",typeDefName,inTypeDef);
     VWriteLine("\tFlags     : %s (%08x)",ClassFlags(flags, sFlags), flags);
     VWriteLine("\tExtends   : %8.8X [%s] %ls",extends,TokenTypeName(extends),
-                                 TypeDeforRefName(extends, szTempBuf, NumItems(szTempBuf)));
+                                 TypeDeforRefName(extends, szTempBuf, ARRAY_SIZE(szTempBuf)));
 
     hr = m_pImport->GetClassLayout(inTypeDef, &dwPacking, 0,0,0, &dwSize);
     if (hr == S_OK)
@@ -1429,7 +1429,7 @@ void MDInfo::DisplayTypeDefProps(mdTypeDef inTypeDef)
         if (hr == S_OK)
         {
             VWriteLine("\tEnclosingClass : %ls (%8.8X)", TypeDeforRefName(tkEnclosingClass,
-                                            szTempBuf, NumItems(szTempBuf)), tkEnclosingClass);
+                                            szTempBuf, ARRAY_SIZE(szTempBuf)), tkEnclosingClass);
         }
         else if (hr == CLDB_E_RECORD_NOTFOUND)
             WriteLine("ERROR: EnclosingClass not found for NestedClass");
@@ -1441,7 +1441,7 @@ void MDInfo::DisplayTypeDefProps(mdTypeDef inTypeDef)
 //  Prints out the name of the given TypeRef
 //
 
-LPCWSTR MDInfo::TypeRefName(mdTypeRef tr, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::TypeRefName(mdTypeRef tr, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     HRESULT hr;
 
@@ -1453,7 +1453,7 @@ LPCWSTR MDInfo::TypeRefName(mdTypeRef tr, __out_ecount(bufLen) LPWSTR buffer, UL
         NULL);              // Put actual size of name here.
     if (FAILED(hr))
     {
-        swprintf_s(buffer, bufLen, W("[Invalid TypeRef]"));
+        wcscpy_s(buffer, bufLen, W("[Invalid TypeRef]"));
     }
 
     return (buffer);
@@ -1545,7 +1545,7 @@ void MDInfo::DisplayMethodSpecInfo(mdMethodSpec ms, const char *preFix)
 // associated with the class.
 //
 
-char *MDInfo::ClassFlags(DWORD flags, __out_ecount(STRING_BUFFER_LEN) char *sFlags)
+char *MDInfo::ClassFlags(DWORD flags, _Out_writes_(STRING_BUFFER_LEN) char *sFlags)
 {
     sFlags[0] = 0;
     ISFLAG(Td, NotPublic);
@@ -1628,7 +1628,7 @@ void MDInfo::DisplayInterfaceImpls(mdTypeDef inTypeDef)
     HRESULT hr;
 
     while(SUCCEEDED(hr = m_pImport->EnumInterfaceImpls( &interfaceImplEnum,
-                             inTypeDef,interfaceImpls,NumItems(interfaceImpls), &count)) &&
+                             inTypeDef,interfaceImpls,ARRAY_SIZE(interfaceImpls), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -1657,8 +1657,8 @@ void MDInfo::DisplayInterfaceImplInfo(mdInterfaceImpl inImpl)
     hr = m_pImport->GetInterfaceImplProps( inImpl, &typeDef, &token);
     if (FAILED(hr)) Error("GetInterfaceImplProps failed.", hr);
 
-    VWriteLine("\t\tClass     : %ls",TypeDeforRefName(typeDef, szTempBuf, NumItems(szTempBuf)));
-    VWriteLine("\t\tToken     : %8.8X [%s] %ls",token,TokenTypeName(token), TypeDeforRefName(token, szTempBuf, NumItems(szTempBuf)));
+    VWriteLine("\t\tClass     : %ls",TypeDeforRefName(typeDef, szTempBuf, ARRAY_SIZE(szTempBuf)));
+    VWriteLine("\t\tToken     : %8.8X [%s] %ls",token,TokenTypeName(token), TypeDeforRefName(token, szTempBuf, ARRAY_SIZE(szTempBuf)));
 
     DisplayCustomAttributes(inImpl, "\t\t");
 } // void MDInfo::DisplayInterfaceImplInfo()
@@ -1738,8 +1738,8 @@ void MDInfo::DisplayPropertyInfo(mdProperty inProp)
     VWriteLine("\t\tDefltValue: %ls",VariantAsString(&defaultValue));
 #endif
 
-    VWriteLine("\t\tSetter    : (%08x) %ls",setter,MemberDeforRefName(setter, szTempBuf, NumItems(szTempBuf)));
-    VWriteLine("\t\tGetter    : (%08x) %ls",getter,MemberDeforRefName(getter, szTempBuf, NumItems(szTempBuf)));
+    VWriteLine("\t\tSetter    : (%08x) %ls",setter,MemberDeforRefName(setter, szTempBuf, ARRAY_SIZE(szTempBuf)));
+    VWriteLine("\t\tGetter    : (%08x) %ls",getter,MemberDeforRefName(getter, szTempBuf, ARRAY_SIZE(szTempBuf)));
 
     // do something with others?
     VWriteLine("\t\t%ld Others",others);
@@ -1762,7 +1762,7 @@ void MDInfo::DisplayProperties(mdTypeDef inTypeDef)
 
 
     while(SUCCEEDED(hr = m_pImport->EnumProperties( &propEnum,
-                             inTypeDef,props,NumItems(props), &count)) &&
+                             inTypeDef,props,ARRAY_SIZE(props), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -1808,7 +1808,7 @@ void MDInfo::DisplayEventInfo(mdEvent inEvent)
         &fire,                  // [OUT] Fire method of the event
 
         otherMethod,            // [OUT] other method of the event
-        NumItems(otherMethod),  // [IN] size of rmdOtherMethod
+        ARRAY_SIZE(otherMethod),  // [IN] size of rmdOtherMethod
         &totalOther);           // [OUT] total number of other method of this event
     if (FAILED(hr)) Error("GetEventProps failed.", hr);
 
@@ -1827,9 +1827,9 @@ void MDInfo::DisplayEventInfo(mdEvent inEvent)
     WCHAR szTempBuf[STRING_BUFFER_LEN];
 
     VWriteLine("\t\tEventType : %8.8X [%s]",eventType,TokenTypeName(eventType));
-    VWriteLine("\t\tAddOnMethd: (%08x) %ls",addOn,MemberDeforRefName(addOn, szTempBuf, NumItems(szTempBuf)));
-    VWriteLine("\t\tRmvOnMethd: (%08x) %ls",removeOn,MemberDeforRefName(removeOn, szTempBuf, NumItems(szTempBuf)));
-    VWriteLine("\t\tFireMethod: (%08x) %ls",fire,MemberDeforRefName(fire, szTempBuf, NumItems(szTempBuf)));
+    VWriteLine("\t\tAddOnMethd: (%08x) %ls",addOn,MemberDeforRefName(addOn, szTempBuf, ARRAY_SIZE(szTempBuf)));
+    VWriteLine("\t\tRmvOnMethd: (%08x) %ls",removeOn,MemberDeforRefName(removeOn, szTempBuf, ARRAY_SIZE(szTempBuf)));
+    VWriteLine("\t\tFireMethod: (%08x) %ls",fire,MemberDeforRefName(fire, szTempBuf, ARRAY_SIZE(szTempBuf)));
 
     VWriteLine("\t\t%ld OtherMethods",totalOther);
 
@@ -1847,7 +1847,7 @@ void MDInfo::DisplayEvents(mdTypeDef inTypeDef)
 
 
     while(SUCCEEDED(hr = m_pImport->EnumEvents( &eventEnum,
-                             inTypeDef,events,NumItems(events), &count)) &&
+                             inTypeDef,events,ARRAY_SIZE(events), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -1879,7 +1879,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
     LPCUTF8     pMethName=0;            // Name of custom attribute ctor, if any.
     CQuickBytes qSigName;               // Buffer to pretty-print signature.
     PCCOR_SIGNATURE pSig=0;             // Signature of ctor.
-    ULONG       cbSig;                  // Size of the signature.
+    ULONG       cbSig=0;                // Size of the signature.
     BOOL        bCoffSymbol = false;    // true for coff symbol CA's.
     WCHAR       rcName[MAX_CLASS_NAME]; // Name of the type.
 
@@ -1941,7 +1941,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
 
     VWrite("%s\tCustomAttributeName: %ls", preFix, rcName);
     if (pSig && pMethName)
-        VWrite(" :: %S", qSigName.Ptr());
+        VWrite(" :: %S", (LPWSTR)qSigName.Ptr());
 
     // Keep track of coff overhead.
     if (!wcscmp(W("__DecoratedName"), rcName))
@@ -2041,7 +2041,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
                 case ELEMENT_TYPE_U8:
                     CA.GetU8(&u8);
                     uI64 = u8;
-                    VWrite("%#lx", uI64);
+                    VWrite("%#I64x", uI64);
                     break;
                 case ELEMENT_TYPE_R4:
                     dblVal = CA.GetR4();
@@ -2078,7 +2078,7 @@ void MDInfo::DisplayCustomAttributes(mdToken inToken, const char *preFix)
     HRESULT hr;
 
     while(SUCCEEDED(hr = m_pImport->EnumCustomAttributes( &customAttributeEnum, inToken, 0,
-                             customAttributes, NumItems(customAttributes), &count)) &&
+                             customAttributes, ARRAY_SIZE(customAttributes), &count)) &&
           count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -2104,7 +2104,7 @@ void MDInfo::DisplayPermissions(mdToken tk, const char *preFix)
 
 
     while (SUCCEEDED(hr = m_pImport->EnumPermissionSets( &permissionEnum,
-                     tk, 0, permissions, NumItems(permissions), &count)) &&
+                     tk, 0, permissions, ARRAY_SIZE(permissions), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -2171,7 +2171,7 @@ void MDInfo::DisplayPermissionInfo(mdPermission inPermission, const char *preFix
 
 // simply prints out the given GUID in standard form
 
-LPWSTR MDInfo::GUIDAsString(GUID inGuid, __out_ecount(bufLen) LPWSTR guidString, ULONG bufLen)
+LPWSTR MDInfo::GUIDAsString(GUID inGuid, _Out_writes_(bufLen) LPWSTR guidString, ULONG bufLen)
 {
     StringFromGUID2(inGuid, guidString, bufLen);
     return guidString;
@@ -2482,7 +2482,7 @@ void MDInfo::DisplayPinvokeInfo(mdToken inToken)
     char sFlags[STRING_BUFFER_LEN];
 
     hr = m_pImport->GetPinvokeMap(inToken, &flags, rcImport,
-                                  NumItems(rcImport), 0, &tkModuleRef);
+                                  ARRAY_SIZE(rcImport), 0, &tkModuleRef);
     if (FAILED(hr))
     {
         if (hr != CLDB_E_RECORD_NOTFOUND)
@@ -2529,7 +2529,7 @@ void MDInfo::DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, const 
 {
     ULONG       cbCur = 0;
     ULONG       cb;
-    // 428793: Prefix complained correctly about unitialized data.
+    // 428793: Prefix complained correctly about uninitialized data.
     ULONG       ulData = (ULONG) IMAGE_CEE_CS_CALLCONV_MAX;
     ULONG       ulArgs;
     HRESULT     hr = NOERROR;
@@ -2608,7 +2608,7 @@ void MDInfo::DisplaySignature(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, const 
         {
             ULONG       ulDataTemp;
 
-            // Handle the sentinal for varargs because it isn't counted in the args.
+            // Handle the sentinel for varargs because it isn't counted in the args.
             CorSigUncompressData(&pbSigBlob[cbCur], &ulDataTemp);
             ++i;
 
@@ -2742,7 +2742,7 @@ HRESULT MDInfo::GetOneElementType(PCCOR_SIGNATURE pbSigBlob, ULONG ulSigBlob, UL
         // get the name of type ref. Don't care if truncated
         if (TypeFromToken(tk) == mdtTypeDef || TypeFromToken(tk) == mdtTypeRef)
         {
-            sprintf_s(m_tempFormatBuffer, STRING_BUFFER_LEN, " %ls",TypeDeforRefName(tk, m_szTempBuf, NumItems(m_szTempBuf)));
+            sprintf_s(m_tempFormatBuffer, STRING_BUFFER_LEN, " %ls",TypeDeforRefName(tk, m_szTempBuf, ARRAY_SIZE(m_szTempBuf)));
             IfFailGo(AddToSigBuffer(m_tempFormatBuffer));
         }
         else
@@ -2952,7 +2952,7 @@ void MDInfo::DisplayCorNativeLink(COR_NATIVE_LINK *pCorNLnk, const char *preFix)
 // Fills given varaint with value given in pValue and of type in bCPlusTypeFlag
 //
 // Taken from MetaInternal.cpp
-
+#ifdef FEATURE_COMINTEROP
 HRESULT _FillVariant(
     BYTE        bCPlusTypeFlag,
     const void  *pValue,
@@ -3045,6 +3045,7 @@ HRESULT _FillVariant(
 
     return hr;
 } // HRESULT _FillVariant()
+#endif // FEATURE_COMINTEROP
 
 void MDInfo::DisplayAssembly()
 {
@@ -3136,7 +3137,7 @@ void MDInfo::DisplayAssemblyRefs()
     HRESULT         hr;
 
     while (SUCCEEDED(hr = m_pAssemblyImport->EnumAssemblyRefs( &assemblyRefEnum,
-                             AssemblyRefs, NumItems(AssemblyRefs), &count)) &&
+                             AssemblyRefs, ARRAY_SIZE(AssemblyRefs), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -3227,7 +3228,7 @@ void MDInfo::DisplayFiles()
     HRESULT         hr;
 
     while (SUCCEEDED(hr = m_pAssemblyImport->EnumFiles( &fileEnum,
-                             Files, NumItems(Files), &count)) &&
+                             Files, ARRAY_SIZE(Files), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -3283,7 +3284,7 @@ void MDInfo::DisplayExportedTypes()
     HRESULT         hr;
 
     while (SUCCEEDED(hr = m_pAssemblyImport->EnumExportedTypes( &comTypeEnum,
-                             ExportedTypes, NumItems(ExportedTypes), &count)) &&
+                             ExportedTypes, ARRAY_SIZE(ExportedTypes), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -3331,7 +3332,7 @@ void MDInfo::DisplayManifestResources()
     HRESULT         hr;
 
     while (SUCCEEDED(hr = m_pAssemblyImport->EnumManifestResources( &manifestResourceEnum,
-                             ManifestResources, NumItems(ManifestResources), &count)) &&
+                             ManifestResources, ARRAY_SIZE(ManifestResources), &count)) &&
             count > 0)
     {
         for (ULONG i = 0; i < count; i++, totalCount++)
@@ -3415,7 +3416,7 @@ void MDInfo::DisplayUserStrings()
     bool        bUnprint = false;       // Is an unprintable character found?
     HRESULT     hr;                     // A result.
     while (SUCCEEDED(hr = m_pImport->EnumUserStrings( &stringEnum,
-                             Strings, NumItems(Strings), &count)) &&
+                             Strings, ARRAY_SIZE(Strings), &count)) &&
             count > 0)
     {
         if (totalCount == 1)

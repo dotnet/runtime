@@ -3,7 +3,7 @@
 .assembly extern System.Collections { }
 .assembly extern System.Runtime { }
 .assembly extern mscorlib { }
-.assembly UnitTest { }
+.assembly 'CompatibleWithTest' { }
 
 .class public auto ansi abstract Base {}
 .class public auto ansi abstract Derived extends Base {}

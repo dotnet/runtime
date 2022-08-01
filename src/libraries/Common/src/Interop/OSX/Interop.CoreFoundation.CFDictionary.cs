@@ -11,7 +11,7 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
-        [GeneratedDllImport(Libraries.CoreFoundationLibrary)]
+        [LibraryImport(Libraries.CoreFoundationLibrary)]
         internal static partial IntPtr CFDictionaryGetValue(SafeCFDictionaryHandle handle, IntPtr key);
     }
 }

@@ -95,7 +95,7 @@ mono_alc_create_individual (MonoGCHandle this_gchandle, gboolean collectible, Mo
 static void
 mono_alc_cleanup_assemblies (MonoAssemblyLoadContext *alc)
 {
-	// The minimum refcount on assemblies is 2: one for the domain and one for the ALC. 
+	// The minimum refcount on assemblies is 2: one for the domain and one for the ALC.
 	// The domain refcount might be less than optimal on netcore, but its removal is too likely to cause issues for now.
 	GSList *tmp;
 
@@ -300,7 +300,7 @@ ves_icall_System_Runtime_Loader_AssemblyLoadContext_InternalGetLoadedAssemblies 
 
 	MonoArrayHandle res = mono_array_new_handle (mono_class_get_assembly_class (), assemblies->len, error);
 	goto_if_nok (error, leave);
-	for (int i = 0; i < assemblies->len; ++i) {
+	for (guint i = 0; i < assemblies->len; ++i) {
 		if (!add_assembly_to_array (res, i, (MonoAssembly *)g_ptr_array_index (assemblies, i), error))
 			goto leave;
 	}
@@ -424,11 +424,19 @@ mono_alc_from_gchandle (MonoGCHandle alc_gchandle)
 	if (alc_gchandle == default_alc->gchandle)
 		return default_alc;
 
-	HANDLE_FUNCTION_ENTER ();
-	MonoManagedAssemblyLoadContextHandle managed_alc = MONO_HANDLE_CAST (MonoManagedAssemblyLoadContext, mono_gchandle_get_target_handle (alc_gchandle));
-	g_assert (!MONO_HANDLE_IS_NULL (managed_alc));
-	MonoAssemblyLoadContext *alc = MONO_HANDLE_GETVAL (managed_alc, native_assembly_load_context);
-	HANDLE_FUNCTION_RETURN_VAL (alc);
+	MONO_STATIC_POINTER_INIT (MonoClassField, resolve)
+
+		MonoClass *alc_class = mono_class_get_assembly_load_context_class ();
+		g_assert (alc_class);
+		resolve = mono_class_get_field_from_name_full (alc_class, "_nativeAssemblyLoadContext", NULL);
+
+	MONO_STATIC_POINTER_INIT_END (MonoClassField, resolve)
+
+	g_assert (resolve);
+
+	MonoAssemblyLoadContext *alc = NULL;
+	mono_field_get_value_internal (mono_gchandle_get_target_internal (alc_gchandle), resolve, &alc);
+	return alc;
 }
 
 MonoGCHandle

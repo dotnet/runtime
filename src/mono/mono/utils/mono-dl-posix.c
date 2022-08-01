@@ -74,7 +74,7 @@ mono_dl_get_system_dir (void)
 #endif
 
 void *
-mono_dl_open_file (const char *file, int flags)
+mono_dl_open_file (const char *file, int flags, MonoError *error)
 {
 #ifdef HOST_ANDROID
 	/* Bionic doesn't support NULL filenames */
@@ -108,7 +108,7 @@ mono_dl_open_file (const char *file, int flags)
 }
 
 void
-mono_dl_close_handle (MonoDl *module)
+mono_dl_close_handle (MonoDl *module, MonoError *error)
 {
 	dlclose (module->handle);
 }

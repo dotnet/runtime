@@ -56,7 +56,7 @@ namespace System
                     if (NotAny(Flags.DosPath) &&
                         uriKind != UriKind.Absolute &&
                        ((uriKind == UriKind.Relative || (_string.Length >= 2 && (_string[0] != '\\' || _string[1] != '\\')))
-                    || (!IsWindowsSystem && InFact(Flags.UnixPath))))
+                    || (!OperatingSystem.IsWindows() && InFact(Flags.UnixPath))))
                     {
                         _syntax = null!; //make it be relative Uri
                         _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
@@ -204,7 +204,6 @@ namespace System
                                                 (UriComponents)0);
                     if (_string.Length > ushort.MaxValue)
                     {
-                        err = ParsingError.SizeLimit;
                         return;
                     }
                 }
@@ -249,7 +248,7 @@ namespace System
         //  Returns true if the string represents a valid argument to the Uri ctor
         //  If uriKind != AbsoluteUri then certain parsing errors are ignored but Uri usage is limited
         //
-        public static bool TryCreate([NotNullWhen(true)] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
+        public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
         {
             if (uriString is null)
             {
@@ -269,7 +268,7 @@ namespace System
         /// <param name="creationOptions">Options that control how the <seealso cref="Uri"/> is created and behaves.</param>
         /// <param name="result">The constructed <see cref="Uri"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="Uri"/> was successfully created; otherwise, <see langword="false"/>.</returns>
-        public static bool TryCreate([NotNullWhen(true)] string? uriString, in UriCreationOptions creationOptions, [NotNullWhen(true)] out Uri? result)
+        public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri)] string? uriString, in UriCreationOptions creationOptions, [NotNullWhen(true)] out Uri? result)
         {
             if (uriString is null)
             {
@@ -324,8 +323,7 @@ namespace System
                     return false;
             }
 
-            if (result is null)
-                result = CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e);
+            result ??= CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e);
 
             result?.DebugSetLeftCtor();
             return e is null && result != null && result.IsAbsoluteUri;
@@ -401,7 +399,7 @@ namespace System
             return Syntax.InternalIsWellFormedOriginalString(this);
         }
 
-        public static bool IsWellFormedUriString([NotNullWhen(true)] string? uriString, UriKind uriKind)
+        public static bool IsWellFormedUriString([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string? uriString, UriKind uriKind)
         {
             Uri? result;
 
@@ -460,22 +458,22 @@ namespace System
                 {
                     if ((nonCanonical & (Flags.E_UserNotCanonical | Flags.UserIriCanonical)) == (Flags.E_UserNotCanonical | Flags.UserIriCanonical))
                     {
-                        nonCanonical = nonCanonical & ~(Flags.E_UserNotCanonical | Flags.UserIriCanonical);
+                        nonCanonical &= ~(Flags.E_UserNotCanonical | Flags.UserIriCanonical);
                     }
 
                     if ((nonCanonical & (Flags.E_PathNotCanonical | Flags.PathIriCanonical)) == (Flags.E_PathNotCanonical | Flags.PathIriCanonical))
                     {
-                        nonCanonical = nonCanonical & ~(Flags.E_PathNotCanonical | Flags.PathIriCanonical);
+                        nonCanonical &= ~(Flags.E_PathNotCanonical | Flags.PathIriCanonical);
                     }
 
                     if ((nonCanonical & (Flags.E_QueryNotCanonical | Flags.QueryIriCanonical)) == (Flags.E_QueryNotCanonical | Flags.QueryIriCanonical))
                     {
-                        nonCanonical = nonCanonical & ~(Flags.E_QueryNotCanonical | Flags.QueryIriCanonical);
+                        nonCanonical &= ~(Flags.E_QueryNotCanonical | Flags.QueryIriCanonical);
                     }
 
                     if ((nonCanonical & (Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical)) == (Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical))
                     {
-                        nonCanonical = nonCanonical & ~(Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical);
+                        nonCanonical &= ~(Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical);
                     }
                 }
 
@@ -524,7 +522,7 @@ namespace System
                 //
                 // Check escaping for authority
                 //
-                // IPv6 hosts cannot be properly validated by CheckCannonical
+                // IPv6 hosts cannot be properly validated by CheckCanonical
                 if ((_flags & Flags.CanonicalDnsHost) == 0 && HostType != Flags.IPv6HostType)
                 {
                     idx = _info.Offset.User;
@@ -557,8 +555,7 @@ namespace System
 
         public static string UnescapeDataString(string stringToUnescape)
         {
-            if (stringToUnescape is null)
-                throw new ArgumentNullException(nameof(stringToUnescape));
+            ArgumentNullException.ThrowIfNull(stringToUnescape);
 
             if (stringToUnescape.Length == 0)
                 return string.Empty;
@@ -733,7 +730,7 @@ namespace System
             // Check on the DOS path in the relative Uri (a special case)
             if (relativeStr.Length >= 3
                 && (relativeStr[1] == ':' || relativeStr[1] == '|')
-                && UriHelper.IsAsciiLetter(relativeStr[0])
+                && char.IsAsciiLetter(relativeStr[0])
                 && (relativeStr[2] == '\\' || relativeStr[2] == '/'))
             {
                 if (baseUri.IsImplicitFile)
@@ -858,8 +855,7 @@ namespace System
 
         public bool IsBaseOf(Uri uri)
         {
-            if (uri is null)
-                throw new ArgumentNullException(nameof(uri));
+            ArgumentNullException.ThrowIfNull(uri);
 
             if (!IsAbsoluteUri)
                 return false;

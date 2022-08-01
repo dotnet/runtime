@@ -60,7 +60,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             dotnet.Exec("exec", appExe)
                 .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining("has already been found but with a different file extension");
         }
@@ -97,7 +97,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail();
         }
 
@@ -242,7 +242,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             dotnet.Exec("exec", "--depsfile", depsJson, appDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail();
         }
 
@@ -474,20 +474,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                         .BinPath;
 
                     expectedErrorCode = Constants.ErrorCode.FrameworkMissingFailure;
-                    expectedStdErr = $"The framework '{Constants.MicrosoftNETCoreApp}', " +
-                        $"version '{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}' ({fixture.RepoDirProvider.BuildArchitecture}) was not found.";
+                    expectedStdErr = $"Framework: '{Constants.MicrosoftNETCoreApp}', " +
+                        $"version '{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}' ({fixture.RepoDirProvider.BuildArchitecture})";
                     expectedUrlQuery = $"framework={Constants.MicrosoftNETCoreApp}&framework_version={sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}";
                 }
 
-                Command command = Command.Create(appExe)
+                CommandResult result = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot(invalidDotNet)
                     .MultilevelLookup(false)
-                    .Start();
+                    .Execute(expectedToFail: true);
 
-                var result = command.WaitForExit(true);
-                    result.Should().Fail()
-                    .And.HaveStdErrContaining($"- https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
+                result.Should().Fail()
+                    .And.HaveStdErrContaining($"https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
                     .And.HaveStdErrContaining(expectedStdErr);
 
                 // Some Unix systems will have 8 bit exit codes.
@@ -529,11 +528,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 WindowsUtils.WaitForPopupFromProcess(command.Process);
                 command.Process.Kill();
 
+                string expectedMissingFramework = $"'{Constants.MicrosoftNETCoreApp}', version '{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}' ({fixture.RepoDirProvider.BuildArchitecture})";
                 var result = command.WaitForExit(true)
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
                     .And.HaveStdErrContaining($"url: 'https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
-                    .And.HaveStdErrContaining("&gui=true");
+                    .And.HaveStdErrContaining("&gui=true")
+                    .And.HaveStdErrMatching($"dialog message: (?>.|\\s)*{System.Text.RegularExpressions.Regex.Escape(expectedMissingFramework)}");
             }
         }
 
@@ -607,7 +608,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 command.WaitForExit(true)
                     .Should().Fail()
                     .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(appExe)}' - error code: 0x{expectedErrorCode}")
-                    .And.HaveStdErrContaining("To run this application, you need to install a newer version of .NET");
+                    .And.HaveStdErrContaining("You must install or update .NET to run this application.")
+                    .And.HaveStdErrContaining("App host version:")
+                    .And.HaveStdErrContaining("apphost_version=");
             }
         }
 

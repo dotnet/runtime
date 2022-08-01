@@ -93,9 +93,8 @@ namespace System
             // stdin, stdout and stderr, but they may not be readable or
             // writable.  Verify this by calling WriteFile in the
             // appropriate modes. This must handle console-less Windows apps.
-            int bytesWritten;
             byte junkByte = 0x41;
-            int r = Interop.Kernel32.WriteFile(outErrHandle, &junkByte, 0, out bytesWritten, IntPtr.Zero);
+            int r = Interop.Kernel32.WriteFile(outErrHandle, &junkByte, 0, out _, IntPtr.Zero);
             return r != 0; // In Win32 apps w/ no console, bResult should be 0 for failure.
         }
 
@@ -178,24 +177,24 @@ namespace System
         // we will lose repeated keystrokes when someone switches from
         // calling ReadKey to calling Read or ReadLine.  Those methods should
         // ideally flush this cache as well.
-        private static Interop.InputRecord _cachedInputRecord;
+        private static Interop.INPUT_RECORD _cachedInputRecord;
 
         // Skip non key events. Generally we want to surface only KeyDown event
         // and suppress KeyUp event from the same Key press but there are cases
         // where the assumption of KeyDown-KeyUp pairing for a given key press
         // is invalid. For example in IME Unicode keyboard input, we often see
         // only KeyUp until the key is released.
-        private static bool IsKeyDownEvent(Interop.InputRecord ir)
+        private static bool IsKeyDownEvent(Interop.INPUT_RECORD ir)
         {
-            return (ir.eventType == Interop.KEY_EVENT && ir.keyEvent.keyDown != Interop.BOOL.FALSE);
+            return (ir.EventType == Interop.KEY_EVENT && ir.keyEvent.bKeyDown != Interop.BOOL.FALSE);
         }
 
-        private static bool IsModKey(Interop.InputRecord ir)
+        private static bool IsModKey(Interop.INPUT_RECORD ir)
         {
             // We should also skip over Shift, Control, and Alt, as well as caps lock.
             // Apparently we don't need to check for 0xA0 through 0xA5, which are keys like
             // Left Control & Right Control. See the ConsoleKey enum for these values.
-            short keyCode = ir.keyEvent.virtualKeyCode;
+            ushort keyCode = ir.keyEvent.wVirtualKeyCode;
             return ((keyCode >= 0x10 && keyCode <= 0x12)
                     || keyCode == 0x14 || keyCode == 0x90 || keyCode == 0x91);
         }
@@ -219,9 +218,9 @@ namespace System
         // desired effect is to translate the sequence into one Unicode KeyPress.
         // We need to keep track of the Alt+NumPad sequence and surface the final
         // unicode char alone when the Alt key is released.
-        private static bool IsAltKeyDown(Interop.InputRecord ir)
+        private static bool IsAltKeyDown(Interop.INPUT_RECORD ir)
         {
-            return (((ControlKeyState)ir.keyEvent.controlKeyState)
+            return (((ControlKeyState)ir.keyEvent.dwControlKeyState)
                               & (ControlKeyState.LeftAltPressed | ControlKeyState.RightAltPressed)) != 0;
         }
 
@@ -270,14 +269,12 @@ namespace System
         {
             get
             {
-                if (_cachedInputRecord.eventType == Interop.KEY_EVENT)
+                if (_cachedInputRecord.EventType == Interop.KEY_EVENT)
                     return true;
 
-                Interop.InputRecord ir = default;
-                int numEventsRead = 0;
                 while (true)
                 {
-                    bool r = Interop.Kernel32.PeekConsoleInput(InputHandle, out ir, 1, out numEventsRead);
+                    bool r = Interop.Kernel32.PeekConsoleInput(InputHandle, out Interop.INPUT_RECORD ir, 1, out int numEventsRead);
                     if (!r)
                     {
                         int errorCode = Marshal.GetLastPInvokeError();
@@ -292,7 +289,7 @@ namespace System
                     // Skip non key-down && mod key events.
                     if (!IsKeyDownEvent(ir) || IsModKey(ir))
                     {
-                        r = Interop.Kernel32.ReadConsoleInput(InputHandle, out ir, 1, out numEventsRead);
+                        r = Interop.Kernel32.ReadConsoleInput(InputHandle, out _, 1, out _);
 
                         if (!r)
                             throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
@@ -309,21 +306,20 @@ namespace System
 
         public static ConsoleKeyInfo ReadKey(bool intercept)
         {
-            Interop.InputRecord ir;
-            int numEventsRead = -1;
+            Interop.INPUT_RECORD ir;
             bool r;
 
             lock (s_readKeySyncObject)
             {
-                if (_cachedInputRecord.eventType == Interop.KEY_EVENT)
+                if (_cachedInputRecord.EventType == Interop.KEY_EVENT)
                 {
                     // We had a previous keystroke with repeated characters.
                     ir = _cachedInputRecord;
-                    if (_cachedInputRecord.keyEvent.repeatCount == 0)
-                        _cachedInputRecord.eventType = -1;
+                    if (_cachedInputRecord.keyEvent.wRepeatCount == 0)
+                        _cachedInputRecord.EventType = 0;
                     else
                     {
-                        _cachedInputRecord.keyEvent.repeatCount--;
+                        _cachedInputRecord.keyEvent.wRepeatCount--;
                     }
                     // We will return one key from this method, so we decrement the
                     // repeatCount here, leaving the cachedInputRecord in the "queue".
@@ -334,7 +330,7 @@ namespace System
 
                     while (true)
                     {
-                        r = Interop.Kernel32.ReadConsoleInput(InputHandle, out ir, 1, out numEventsRead);
+                        r = Interop.Kernel32.ReadConsoleInput(InputHandle, out ir, 1, out int numEventsRead);
                         if (!r || numEventsRead == 0)
                         {
                             // This will fail when stdin is redirected from a file or pipe.
@@ -343,7 +339,7 @@ namespace System
                             throw new InvalidOperationException(SR.InvalidOperation_ConsoleReadKeyOnFile);
                         }
 
-                        short keyCode = ir.keyEvent.virtualKeyCode;
+                        ushort keyCode = ir.keyEvent.wVirtualKeyCode;
 
                         // First check for non-keyboard events & discard them. Generally we tap into only KeyDown events and ignore the KeyUp events
                         // but it is possible that we are dealing with a Alt+NumPad unicode key sequence, the final unicode char is revealed only when
@@ -357,7 +353,7 @@ namespace System
                                 continue;
                         }
 
-                        char ch = (char)ir.keyEvent.uChar;
+                        char ch = ir.keyEvent.uChar;
 
                         // In a Alt+NumPad unicode sequence, when the alt key is released uChar will represent the final unicode character, we need to
                         // surface this. VirtualKeyCode for this event will be Alt from the Alt-Up key event. This is probably not the right code,
@@ -381,9 +377,9 @@ namespace System
                             continue;
                         }
 
-                        if (ir.keyEvent.repeatCount > 1)
+                        if (ir.keyEvent.wRepeatCount > 1)
                         {
-                            ir.keyEvent.repeatCount--;
+                            ir.keyEvent.wRepeatCount--;
                             _cachedInputRecord = ir;
                         }
                         break;
@@ -391,12 +387,12 @@ namespace System
                 }  // we did NOT have a previous keystroke with repeated characters.
             }
 
-            ControlKeyState state = (ControlKeyState)ir.keyEvent.controlKeyState;
+            ControlKeyState state = (ControlKeyState)ir.keyEvent.dwControlKeyState;
             bool shift = (state & ControlKeyState.ShiftPressed) != 0;
             bool alt = (state & (ControlKeyState.LeftAltPressed | ControlKeyState.RightAltPressed)) != 0;
             bool control = (state & (ControlKeyState.LeftCtrlPressed | ControlKeyState.RightCtrlPressed)) != 0;
 
-            ConsoleKeyInfo info = new ConsoleKeyInfo((char)ir.keyEvent.uChar, (ConsoleKey)ir.keyEvent.virtualKeyCode, shift, alt, control);
+            ConsoleKeyInfo info = new ConsoleKeyInfo(ir.keyEvent.uChar, (ConsoleKey)ir.keyEvent.wVirtualKeyCode, shift, alt, control);
 
             if (!intercept)
                 Console.Write(ir.keyEvent.uChar);
@@ -411,8 +407,7 @@ namespace System
                 if (handle == InvalidHandleValue)
                     throw new IOException(SR.IO_NoConsole);
 
-                int mode = 0;
-                if (!Interop.Kernel32.GetConsoleMode(handle, out mode))
+                if (!Interop.Kernel32.GetConsoleMode(handle, out int mode))
                     throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
                 return (mode & Interop.Kernel32.ENABLE_PROCESSED_INPUT) == 0;
@@ -423,8 +418,7 @@ namespace System
                 if (handle == InvalidHandleValue)
                     throw new IOException(SR.IO_NoConsole);
 
-                int mode = 0;
-                if (!Interop.Kernel32.GetConsoleMode(handle, out mode))
+                if (!Interop.Kernel32.GetConsoleMode(handle, out int mode))
                     throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
                 if (value)
@@ -767,17 +761,15 @@ namespace System
 
             // fill the entire screen with blanks
 
-            int numCellsWritten = 0;
             success = Interop.Kernel32.FillConsoleOutputCharacter(hConsole, ' ',
-                conSize, coordScreen, out numCellsWritten);
+                conSize, coordScreen, out _);
             if (!success)
                 throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
             // now set the buffer's attributes accordingly
 
-            numCellsWritten = 0;
             success = Interop.Kernel32.FillConsoleOutputAttribute(hConsole, csbi.wAttributes,
-                conSize, coordScreen, out numCellsWritten);
+                conSize, coordScreen, out _);
             if (!success)
                 throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastPInvokeError());
 
@@ -1042,8 +1034,7 @@ namespace System
 
         private static Interop.Kernel32.CONSOLE_SCREEN_BUFFER_INFO GetBufferInfo()
         {
-            bool unused;
-            return GetBufferInfo(true, out unused);
+            return GetBufferInfo(true, out _);
         }
 
         // For apps that don't have a console (like Windows apps), they might

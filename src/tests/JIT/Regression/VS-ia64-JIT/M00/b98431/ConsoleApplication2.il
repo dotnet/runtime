@@ -31,7 +31,6 @@
   .ver 1:0:583:22480
 }
 .assembly extern xunit.core {}
-.module ConsoleApplication2.exe
 .imagebase 0x11000000
 .file alignment 0x00000200
 .stackreserve 0x00100000

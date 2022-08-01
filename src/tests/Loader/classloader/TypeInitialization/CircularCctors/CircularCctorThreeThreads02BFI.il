@@ -1,22 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 2.0.50103.00
-//  Copyright (C) Microsoft Corporation. All rights reserved.
 .assembly extern System.Console { auto }
 .assembly extern xunit.core {}
 .assembly extern System.Threading.Thread { auto }
 // Metadata version: v2.0.50103
 .assembly extern mscorlib { auto }
 
-.assembly CircularCctorThreeThreads02
+.assembly 'CircularCctorThreeThreads02BFI'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module CircularCctorThreeThreads02.exe
 // MVID: {D90A3A61-FEDA-4DC1-A90B-0FEBC5C34B33}
 .imagebase 0x00400000
 .file alignment 0x00000200

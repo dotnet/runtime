@@ -12,14 +12,14 @@ using System;
 // the originally added arg as a "normal" arg that shouldn't be there.
 //
 // So, in summary, for a call A->B, to see this failure, we need:
-// 
+//
 // 1. The call is considered a potential tailcall (by the importer)
-// 2. The call requires non-standard arguments that add call argument IR in fgInitArgInfo()
+// 2. The call requires non-standard arguments that add call argument IR in AddFinalArgsAndDetermineABIInfo
 //    (e.g., VSD call -- in this case, a generic interface call)
 // 3. We reject the tailcall in fgMorphPotentialTailCall() (e.g., not enough incoming arg stack space in A
 //    to store B's outgoing args), in this case because the first arg is a large struct. We can't reject
 //    it earlier, due to things like address exposed locals -- we must get far enough through the checks
-//    to have called fgInitArgInfo() to add the extra non-standard arg.
+//    to have called AddFinalArgsAndDetermineABIInfo to add the extra non-standard arg.
 // 4. B returns a struct in multiple registers (e.g., a 16-byte struct in Linux x64 ABI)
 
 namespace GitHub_49078

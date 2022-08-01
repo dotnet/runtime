@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageType>Template</PackageType>
+    <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates</PackageId>
+    <Title>WebAssembly Templates</Title>
+    <Authors>Microsoft</Authors>
+    <Description>Templates to create WebAssembly projects.</Description>
+    <PackageTags>dotnet-new;templates</PackageTags>
+
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <IsPackable>true</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**" />
+  </ItemGroup>
+
+  <Target Name="CreateManifestResourceNames" />
+  <Target Name="CoreCompile" />
+  <Target Name="_SetProductVersion" DependsOnTargets="GetProductVersions" BeforeTargets="Pack">
+    <PropertyGroup>
+      <PackageVersion>$(ProductVersion)</PackageVersion>
+    </PropertyGroup>
+  </Target>
+
+</Project>

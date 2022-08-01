@@ -51,7 +51,7 @@ namespace System
         public virtual bool IsSZArray => throw NotImplemented.ByDesign;
         public virtual bool IsVariableBoundArray => IsArray && !IsSZArray;
 
-        public virtual bool IsByRefLike => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        public virtual bool IsByRefLike { [Intrinsic] get => throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
 
         public bool HasElementType => HasElementTypeImpl();
         protected abstract bool HasElementTypeImpl();
@@ -110,10 +110,10 @@ namespace System
         public bool IsPrimitive => IsPrimitiveImpl();
         protected abstract bool IsPrimitiveImpl();
         public bool IsValueType { [Intrinsic] get => IsValueTypeImpl(); }
+        protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
 
         [Intrinsic]
         public bool IsAssignableTo([NotNullWhen(true)] Type? targetType) => targetType?.IsAssignableFrom(this) ?? false;
-        protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
 
         public virtual bool IsSignatureType => false;
 
@@ -159,12 +159,11 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public ConstructorInfo? GetConstructor(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
-            if (types == null)
-                throw new ArgumentNullException(nameof(types));
+            ArgumentNullException.ThrowIfNull(types);
+
             for (int i = 0; i < types.Length; i++)
             {
-                if (types[i] == null)
-                    throw new ArgumentNullException(nameof(types));
+                ArgumentNullException.ThrowIfNull(types[i], nameof(types));
             }
             return GetConstructorImpl(bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -241,7 +240,7 @@ namespace System
                             "exists and wasn't trimmed, then the current Type's MemberInfo couldn't have been trimmed.")]
         public virtual MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {
-            if (member is null) throw new ArgumentNullException(nameof(member));
+            ArgumentNullException.ThrowIfNull(member);
 
             const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
             foreach (MemberInfo myMemberInfo in GetMembers(all))
@@ -267,8 +266,8 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, BindingFlags bindingAttr)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+
             return GetMethodImpl(name, bindingAttr, null, CallingConventions.Any, null, null);
         }
 
@@ -302,14 +301,12 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (types == null)
-                throw new ArgumentNullException(nameof(types));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(types);
+
             for (int i = 0; i < types.Length; i++)
             {
-                if (types[i] == null)
-                    throw new ArgumentNullException(nameof(types));
+                ArgumentNullException.ThrowIfNull(types[i], nameof(types));
             }
             return GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -329,16 +326,14 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         public MethodInfo? GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+
             if (genericParameterCount < 0)
                 throw new ArgumentException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(genericParameterCount));
-            if (types == null)
-                throw new ArgumentNullException(nameof(types));
+            ArgumentNullException.ThrowIfNull(types);
             for (int i = 0; i < types.Length; i++)
             {
-                if (types[i] == null)
-                    throw new ArgumentNullException(nameof(types));
+                ArgumentNullException.ThrowIfNull(types[i], nameof(types));
             }
             return GetMethodImpl(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -370,8 +365,8 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public PropertyInfo? GetProperty(string name, BindingFlags bindingAttr)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+
             return GetPropertyImpl(name, bindingAttr, null, null, null, null);
         }
 
@@ -380,8 +375,8 @@ namespace System
             Justification = "Linker doesn't recognize GetPropertyImpl(BindingFlags.Public) but this is what the body is doing")]
         public PropertyInfo? GetProperty(string name, Type? returnType)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
+
             return GetPropertyImpl(name, Type.DefaultLookup, null, returnType, null, null);
         }
 
@@ -397,10 +392,9 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public PropertyInfo? GetProperty(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[] types, ParameterModifier[]? modifiers)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (types == null)
-                throw new ArgumentNullException(nameof(types));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(types);
+
             return GetPropertyImpl(name, bindingAttr, binder, returnType, types, modifiers);
         }
 
@@ -425,16 +419,14 @@ namespace System
         public virtual RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
         public static RuntimeTypeHandle GetTypeHandle(object o)
         {
-            if (o == null)
-                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
-            Type type = o.GetType();
-            return type.TypeHandle;
+            ArgumentNullException.ThrowIfNull(o);
+
+            return o.GetType().TypeHandle;
         }
 
         public static Type[] GetTypeArray(object[] args)
         {
-            if (args == null)
-                throw new ArgumentNullException(nameof(args));
+            ArgumentNullException.ThrowIfNull(args);
 
             Type[] cls = new Type[args.Length];
             for (int i = 0; i < cls.Length; i++)
@@ -522,6 +514,8 @@ namespace System
 
             return fields[0].FieldType;
         }
+
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use Enum.GetValues<TEnum> instead.")]
         public virtual Array GetEnumValues()
         {
             if (!IsEnum)
@@ -532,10 +526,13 @@ namespace System
             throw NotImplemented.ByDesign;
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public virtual Type MakeArrayType() => throw new NotSupportedException();
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public virtual Type MakeArrayType(int rank) => throw new NotSupportedException();
         public virtual Type MakeByRefType() => throw new NotSupportedException();
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public virtual Type MakeGenericType(params Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 

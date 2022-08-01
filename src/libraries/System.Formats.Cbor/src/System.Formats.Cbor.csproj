@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes that can read and write the CBOR data format.
 
@@ -10,9 +9,9 @@ Commonly Used Types:
 System.Formats.Cbor.CborReader
 System.Formats.Cbor.CborWriter</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
-    <Compile Include="System\Formats\Cbor\HalfHelpers.cs" />
     <Compile Include="System\Formats\Cbor\Reader\CborReaderState.cs" />
     <Compile Include="System\Formats\Cbor\Reader\CborReader.PeekState.cs" />
     <Compile Include="System\Formats\Cbor\Reader\CborReader.SkipValue.cs" />
@@ -35,16 +34,28 @@ System.Formats.Cbor.CborWriter</PackageDescription>
     <Compile Include="System\Formats\Cbor\CborTag.cs" />
     <Compile Include="System\Formats\Cbor\CborContentException.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Numerics" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Threading" />
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\Formats\Cbor\CborHelpers.netcoreapp.cs" />
+    <Compile Include="System\Formats\Cbor\HalfHelpers.netcoreapp.cs" />
+    <Compile Include="System\Formats\Cbor\Reader\CborReader.Simple.netcoreapp.cs" />
+    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.netcoreapp.cs" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="System\Formats\Cbor\CborHelpers.netstandard.cs" />
+    <Compile Include="System\Formats\Cbor\HalfHelpers.netstandard.cs" />
+    <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.netstandard.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 </Project>

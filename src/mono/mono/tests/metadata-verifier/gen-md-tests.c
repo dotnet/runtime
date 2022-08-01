@@ -29,7 +29,7 @@ Grammar:
 
 tokens:
 	comment ::= '#.*<eol>
-	identifier ::= ([a-z] | [A-Z]) ([a-z] | [A-Z] | [0-9] | [_-.])* 
+	identifier ::= ([a-z] | [A-Z]) ([a-z] | [A-Z] | [0-9] | [_-.])*
 	hexa_digit = [0-9] | [a-f] | [A-F]
 	number ::= hexadecimal | decimal
 	hexadecimal ::= (+-)?('0' [xX])? hexa_digit+
@@ -44,7 +44,7 @@ test_case:
 	identifier '{' assembly_directive test_entry* '}'
 
 assembly_directive:
- 'assembly' identifier  
+ 'assembly' identifier
 
 test_entry:
 	validity patch (',' patch)*
@@ -277,7 +277,7 @@ init_test_set (test_set_t *test_set)
 		printf ("Could not parse image %s\n", test_set->assembly);
 		exit (INVALID_BAD_FILE);
 	}
-	
+
 	test_set->init = 1;
 }
 
@@ -293,7 +293,7 @@ make_test_name (test_entry_t *entry, test_set_t *test_set)
 #define READ_BIT(PTR,OFF) ((((guint8*)(PTR))[(OFF / 8)] & (1 << ((OFF) % 8))) != 0)
 #define SET_BIT(PTR,OFF) do { ((guint8*)(PTR))[(OFF / 8)] |= (1 << ((OFF) % 8)); } while (0)
 
-static guint32 
+static guint32
 get_pe_header (test_entry_t *entry)
 {
 	return READ_VAR (guint32, entry->data + 0x3c) + 4;
@@ -363,7 +363,7 @@ get_metadata_stream_header (test_entry_t *entry, guint32 idx)
 		}
 		offset = pad4 (offset);
 	}
-	return offset;	
+	return offset;
 }
 
 static guint32
@@ -374,14 +374,14 @@ lookup_var (test_entry_t *entry, const char *name)
 	if (!strcmp ("pe-signature", name))
 		return get_pe_header (entry) - 4;
 	if (!strcmp ("pe-header", name))
-		return get_pe_header (entry); 
+		return get_pe_header (entry);
 	if (!strcmp ("pe-optional-header", name))
-		return get_pe_header (entry) + 20; 
+		return get_pe_header (entry) + 20;
 	if (!strcmp ("section-table", name))
-		return get_pe_header (entry) + 244; 
+		return get_pe_header (entry) + 244;
 	if (!strcmp ("cli-header", name))
 		return get_cli_header (entry);
-	if (!strcmp ("cli-metadata", name)) 
+	if (!strcmp ("cli-metadata", name))
 		return get_cli_metadata_root (entry);
 	if (!strcmp ("tables-header", name)) {
 		guint32 metadata_root = get_cli_metadata_root (entry);
@@ -597,7 +597,7 @@ process_test_entry (test_set_t *test_set, test_entry_t *entry)
 	fclose (f);
 
 	g_free (file_name);
-} 	
+}
 
 /*******************************************************************************************************/
 
@@ -685,7 +685,7 @@ static char*
 token_text_dup (scanner_t *scanner, token_t *token)
 {
 	int len = token->end - token->start;
-	
+
 	char *str = g_memdup (scanner->input + token->start, len + 1);
 	str [len] = 0;
 	return str;
@@ -696,7 +696,7 @@ static void
 dump_token (scanner_t *scanner, token_t *token)
 {
 	char *str = token_text_dup (scanner, token);
-	
+
 	printf ("token '%s' of type '%s' at line %d\n", str, token_type_name (token->type), token->line);
 	free (str);
 }
@@ -965,13 +965,13 @@ parse_effect (scanner_t *scanner)
 	CONSUME_IDENTIFIER(name);
 
 	if (!strcmp ("set-byte", name))
-		type = EFFECT_SET_BYTE; 
+		type = EFFECT_SET_BYTE;
 	else if (!strcmp ("set-ushort", name))
-		type = EFFECT_SET_USHORT; 
+		type = EFFECT_SET_USHORT;
 	else if (!strcmp ("set-uint", name))
-		type = EFFECT_SET_UINT; 
+		type = EFFECT_SET_UINT;
 	else if (!strcmp ("set-bit", name))
-		type = EFFECT_SET_BIT; 
+		type = EFFECT_SET_BIT;
 	else if (!strcmp ("truncate", name))
 		type = EFFECT_SET_TRUNC;
 	else if (!strcmp ("or-byte", name))
@@ -980,7 +980,7 @@ parse_effect (scanner_t *scanner)
 		type = EFFECT_OR_USHORT;
 	else if (!strcmp ("or-uint", name))
 		type = EFFECT_OR_UINT;
-	else 
+	else
 		FAIL(g_strdup_printf ("Invalid effect kind, expected one of: (set-byte set-ushort set-uint set-bit or-byte or-ushort or-uint truncate) but got %s",name), INVALID_ID_TEXT);
 
 	effect = g_new0 (patch_effect_t, 1);
@@ -1027,7 +1027,7 @@ static void
 parse_test_entry (scanner_t *scanner, test_set_t *test_set)
 {
 	test_entry_t entry = { 0 };
-	
+
 	entry.validity = parse_validity (scanner);
 
 	do {
@@ -1073,7 +1073,7 @@ parse_program (scanner_t *scanner)
 static void
 digest_file (const char *file)
 {
-	scanner_t *scanner = scanner_new (file); 
+	scanner_t *scanner = scanner_new (file);
 	parse_program (scanner);
 	scanner_free (scanner);
 }

@@ -7,7 +7,7 @@
 .assembly extern System.Console { auto }
 .assembly extern System.Runtime { auto }
 
-.assembly test { }
+.assembly 'ldind_conv' { }
 
 .class auto Program extends [System.Runtime]System.Object
 {

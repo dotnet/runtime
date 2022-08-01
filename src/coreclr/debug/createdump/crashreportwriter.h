@@ -31,7 +31,7 @@ private:
     void Write(const std::string& text);
     void Write(const char* buffer);
     void Indent(std::string& text);
-    void WriteSeperator(std::string& text);
+    void WriteSeparator(std::string& text);
     void OpenValue(const char* key, char marker);
     void CloseValue(char marker);
     bool OpenWriter(const char* fileName);

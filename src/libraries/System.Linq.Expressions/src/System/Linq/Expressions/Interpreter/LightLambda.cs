@@ -422,7 +422,7 @@ namespace System.Linq.Expressions.Interpreter
                     arguments[i] = frame.Data[i];
                 }
 
-                frame.Leave(currentFrame);
+                InterpretedFrame.Leave(currentFrame);
             }
             return frame.Pop();
         }
@@ -446,7 +446,7 @@ namespace System.Linq.Expressions.Interpreter
                     arguments[i] = frame.Data[i];
                 }
 
-                frame.Leave(currentFrame);
+                InterpretedFrame.Leave(currentFrame);
             }
             return null;
         }

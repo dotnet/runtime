@@ -1,12 +1,9 @@
-<?xml version="1.0"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- .NETStandard,Version=v1.0 and .NETPortable,Version=v0.0,Profile=Profile259 are intentionally dropped from the package. -->
   <Suppression>
-    <DiagnosticId>PKV006</DiagnosticId>
-    <Target>.NETStandard,Version=v1.0</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>PKV006</DiagnosticId>
-    <Target>.NETPortable,Version=v0.0,Profile=Profile259</Target>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Composition.Hosting.Core.CompositeActivator.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Composition.Hosting.dll</Left>
+    <Right>lib/net7.0/System.Composition.Hosting.dll</Right>
   </Suppression>
 </Suppressions>

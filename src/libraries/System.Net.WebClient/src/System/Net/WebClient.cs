@@ -393,10 +393,8 @@ namespace System.Net
         public Stream OpenWrite(Uri address, string? method)
         {
             ArgumentNullException.ThrowIfNull(address);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             WebRequest? request = null;
             StartOperation();
@@ -434,10 +432,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(data);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             StartOperation();
             try
@@ -555,10 +551,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(fileName);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             FileStream? fs = null;
             WebRequest? request = null;
@@ -628,10 +622,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(data);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             WebRequest? request = null;
             StartOperation();
@@ -667,10 +659,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(data);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             StartOperation();
             try
@@ -1171,10 +1161,7 @@ namespace System.Net
             }
 
             // Do we have an encoding guess?  If not, use default.
-            if (enc == null)
-            {
-                enc = Encoding;
-            }
+            enc ??= Encoding;
 
             // Calculate BOM length based on encoding guess.  Then check for it in the data.
             if (bomLengthInData == -1)
@@ -1199,7 +1186,7 @@ namespace System.Net
                 "POST";
         }
 
-        [return: NotNullIfNotNull("str")]
+        [return: NotNullIfNotNull(nameof(str))]
         private static string? UrlEncode(string? str)
         {
             if (str == null)
@@ -1262,7 +1249,7 @@ namespace System.Net
 
         private static bool IsSafe(char ch)
         {
-            if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9')
+            if (char.IsAsciiLetterOrDigit(ch))
             {
                 return true;
             }
@@ -1336,10 +1323,8 @@ namespace System.Net
         public void OpenWriteAsync(Uri address, string? method, object? userToken)
         {
             ArgumentNullException.ThrowIfNull(address);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try
@@ -1476,10 +1461,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(data);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try
@@ -1527,10 +1510,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(data);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try
@@ -1568,10 +1549,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(fileName);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             FileStream? fs = null;
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
@@ -1607,10 +1586,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(data);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try

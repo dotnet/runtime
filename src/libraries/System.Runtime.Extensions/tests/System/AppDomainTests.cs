@@ -43,7 +43,7 @@ namespace System.Tests
             Assert.Null(AppDomain.CurrentDomain.RelativeSearchPath);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasHostExecutable))]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "The dotnet sdk will not be available on these platforms")]
         public void TargetFrameworkTest()
         {
@@ -254,12 +254,11 @@ namespace System.Tests
                 Assert.Equal(10, AppDomain.CurrentDomain.ExecuteAssemblyByName(assembly.FullName, new string[2] { "2", "3" }));
                 Assert.Throws<FormatException>(() => AppDomain.CurrentDomain.ExecuteAssemblyByName(assembly.FullName, new string[1] { "a" }));
                 AssemblyName assemblyName = assembly.GetName();
-                assemblyName.CodeBase = null;
                 Assert.Equal(105, AppDomain.CurrentDomain.ExecuteAssemblyByName(assemblyName, new string[3] { "50", "25", "25" }));
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void ExecuteAssembly()
         {
             CopyTestAssemblies();
@@ -358,12 +357,11 @@ namespace System.Tests
         public void Load()
         {
             AssemblyName assemblyName = typeof(AppDomainTests).Assembly.GetName();
-            assemblyName.CodeBase = null;
             Assert.NotNull(AppDomain.CurrentDomain.Load(assemblyName));
             Assert.NotNull(AppDomain.CurrentDomain.Load(typeof(AppDomainTests).Assembly.FullName));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public void LoadBytes()
         {
@@ -653,7 +651,7 @@ namespace System.Tests
             { }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/43909", TestRuntimes.Mono)]
         [InlineData(true)]
         [InlineData(false)]
@@ -813,7 +811,9 @@ namespace System.Tests
 #pragma warning restore SYSLIB0003 // Obsolete: CAS
         }
 
-        [Theory]
+        public static bool FileCreateCaseSensitiveAndAssemblyLoadingSupported => PlatformDetection.FileCreateCaseSensitive && PlatformDetection.IsAssemblyLoadingSupported;
+
+        [ConditionalTheory(nameof(FileCreateCaseSensitiveAndAssemblyLoadingSupported))]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {
@@ -874,7 +874,7 @@ namespace System.Tests
             yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclassnodefaultconstructorsample", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", exceptionType };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         [MemberData(nameof(TestingCreateInstanceObjectHandleData))]
         public static void TestingCreateInstanceObjectHandle(string assemblyName, string type, string returnedFullNameType, Type exceptionType)
         {
@@ -923,7 +923,7 @@ namespace System.Tests
             { "assemblyresolvetestapp", "assemblyresolvetestapp.publicclassnodefaultconstructorsample", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", typeof(TypeLoadException) }
         };
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleFullSignatureData))]
         public static void TestingCreateInstanceFromObjectHandleFullSignature(string physicalFileName, string assemblyFile, string type, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes, string returnedFullNameType)
         {
@@ -953,7 +953,7 @@ namespace System.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         [MemberData(nameof(TestingCreateInstanceObjectHandleFullSignatureData))]
         public static void TestingCreateInstanceObjectHandleFullSignature(string assemblyName, string type, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes, string returnedFullNameType)
         {

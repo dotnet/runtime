@@ -14,10 +14,7 @@ namespace System.ComponentModel.Composition
     {
         public static TMetadataView GetMetadataView<TMetadataView>(IDictionary<string, object?> metadata)
         {
-            if (metadata == null)
-            {
-                throw new ArgumentNullException(nameof(metadata));
-            }
+            ArgumentNullException.ThrowIfNull(metadata);
 
             Type metadataViewType = typeof(TMetadataView);
 
@@ -128,10 +125,7 @@ namespace System.ComponentModel.Composition
 
         public static bool IsViewTypeValid(Type metadataViewType)
         {
-            if (metadataViewType == null)
-            {
-                throw new ArgumentNullException(nameof(metadataViewType));
-            }
+            ArgumentNullException.ThrowIfNull(metadataViewType);
 
             // If the Metadata dictionary is cast compatible with the passed in type
             if (ExportServices.IsDefaultMetadataViewType(metadataViewType) ||

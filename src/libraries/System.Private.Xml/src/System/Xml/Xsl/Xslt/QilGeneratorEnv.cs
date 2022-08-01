@@ -9,12 +9,11 @@ using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.XPath;
+using FunctionInfo = System.Xml.Xsl.XPath.XPathBuilder.FunctionInfo<System.Xml.Xsl.Xslt.QilGenerator.FuncId>;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using FunctionInfo = XPathBuilder.FunctionInfo<QilGenerator.FuncId>;
-    using T = XmlQueryTypeFactory;
-
     internal sealed partial class QilGenerator : IXPathEnvironment
     {
         // Everywhere in this code in case of error in the stylesheet we should throw XslLoadException.
@@ -253,7 +252,7 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            return _f.XsltInvokeEarlyBound(name, scrFunc.Method, scrFunc.XmlReturnType, args);
+            return _f.XsltInvokeEarlyBound(name, scrFunc.Method!, scrFunc.XmlReturnType!, args);
         }
 
         private string ResolvePrefixThrow(bool ignoreDefaultNs, string prefix)
@@ -426,10 +425,7 @@ namespace System.Xml.Xsl.Xslt
             }
             else
             {
-                if (_generalKey == null)
-                {
-                    _generalKey = CreateGeneralKeyFunction();
-                }
+                _generalKey ??= CreateGeneralKeyFunction();
                 QilIterator i = _f.Let(name);
                 QilNode resolvedName = ResolveQNameDynamic(/*ignoreDefaultNs:*/true, i);
                 result = _f.Invoke(_generalKey, _f.ActualParameterList(i, resolvedName, key, env.GetCurrent()!));
@@ -530,7 +526,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileSingleDocument(QilNode uri, QilNode? baseNode)
         {
-            _f.CheckString(uri);
+            XPathQilFactory.CheckString(uri);
             QilNode baseUri;
 
             if (baseNode == null)
@@ -539,7 +535,7 @@ namespace System.Xml.Xsl.Xslt
             }
             else
             {
-                _f.CheckNodeSet(baseNode);
+                XPathQilFactory.CheckNodeSet(baseNode);
                 if (baseNode.XmlType!.IsSingleton)
                 {
                     baseUri = _f.InvokeBaseUri(baseNode);
@@ -554,14 +550,14 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            _f.CheckString(baseUri);
+            XPathQilFactory.CheckString(baseUri);
             return _f.DataSource(uri, baseUri);
         }
 
         private QilNode CompileFormatNumber(QilNode value, QilNode formatPicture, QilNode? formatName)
         {
-            _f.CheckDouble(value);
-            _f.CheckString(formatPicture);
+            XPathQilFactory.CheckDouble(value);
+            XPathQilFactory.CheckString(formatPicture);
             XmlQualifiedName? resolvedName;
 
             if (formatName == null)
@@ -572,7 +568,7 @@ namespace System.Xml.Xsl.Xslt
             }
             else
             {
-                _f.CheckString(formatName);
+                XPathQilFactory.CheckString(formatName);
                 if (formatName.NodeType == QilNodeType.LiteralString)
                 {
                     resolvedName = ResolveQNameThrow(/*ignoreDefaultNs:*/true, formatName);
@@ -626,13 +622,13 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileUnparsedEntityUri(QilNode n)
         {
-            _f.CheckString(n);
+            XPathQilFactory.CheckString(n);
             return _f.Error(_lastScope!.SourceLine, SR.Xslt_UnsupportedXsltFunction, "unparsed-entity-uri");
         }
 
         private QilNode CompileGenerateId(QilNode n)
         {
-            _f.CheckNodeSet(n);
+            XPathQilFactory.CheckNodeSet(n);
             if (n.XmlType!.IsSingleton)
             {
                 return _f.XsltGenerateId(n);
@@ -655,7 +651,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileSystemProperty(QilNode name)
         {
-            _f.CheckString(name);
+            XPathQilFactory.CheckString(name);
             if (name.NodeType == QilNodeType.LiteralString)
             {
                 XmlQualifiedName qname = ResolveQNameThrow(/*ignoreDefaultNs:*/true, name);
@@ -683,7 +679,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileElementAvailable(QilNode name)
         {
-            _f.CheckString(name);
+            XPathQilFactory.CheckString(name);
             if (name.NodeType == QilNodeType.LiteralString)
             {
                 XmlQualifiedName qname = ResolveQNameThrow(/*ignoreDefaultNs:*/false, name);
@@ -702,7 +698,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileFunctionAvailable(QilNode name)
         {
-            _f.CheckString(name);
+            XPathQilFactory.CheckString(name);
             if (name.NodeType == QilNodeType.LiteralString)
             {
                 XmlQualifiedName qname = ResolveQNameThrow(/*ignoreDefaultNs:*/true, name);

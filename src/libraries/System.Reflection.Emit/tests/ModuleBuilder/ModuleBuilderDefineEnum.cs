@@ -82,10 +82,10 @@ namespace System.Reflection.Emit.Tests
         {
             ModuleBuilder module = Helpers.DynamicModule();
             EnumBuilder underlyingEnumTypeBuilder = module.DefineEnum("Enum1", TypeAttributes.Public, typeof(int));
-            Type underlyingEnumType = underlyingEnumTypeBuilder.CreateTypeInfo().AsType();
+            Type underlyingEnumType = underlyingEnumTypeBuilder.CreateType();
 
             EnumBuilder enumBuilder = module.DefineEnum("Enum2", TypeAttributes.Public, underlyingEnumType);
-            Type enumType = enumBuilder.CreateTypeInfo().AsType();
+            Type enumType = enumBuilder.CreateType();
 
             Assert.Equal(typeof(int), Enum.GetUnderlyingType(enumType));
         }
@@ -160,11 +160,11 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void DefineEnum_ByRefUnderlyingType_ThrowsCOMExceptionOnCreation()
+        public void DefineEnum_ByRefUnderlyingType_ThrowsTypeLoadExceptionOnCreation()
         {
             ModuleBuilder module = Helpers.DynamicModule();
             EnumBuilder enumBuilder = module.DefineEnum("Name", TypeAttributes.Public, typeof(int).MakeByRefType());
-            Assert.Throws<COMException>(() => enumBuilder.CreateTypeInfo());
+            Assert.Throws<TypeLoadException>(() => enumBuilder.CreateTypeInfo());
         }
 
         [Theory]
@@ -183,7 +183,7 @@ namespace System.Reflection.Emit.Tests
             ModuleBuilder module = Helpers.DynamicModule();
             EnumBuilder enumBuilder = module.DefineEnum("Name", TypeAttributes.Public, underlyingType);
             Assert.Equal(underlyingType, enumBuilder.UnderlyingField.FieldType);
-            Assert.Throws<TypeLoadException>(() => enumBuilder.CreateTypeInfo().AsType());
+            Assert.Throws<TypeLoadException>(() => enumBuilder.CreateType());
         }
 
         protected enum Int32Enum { }

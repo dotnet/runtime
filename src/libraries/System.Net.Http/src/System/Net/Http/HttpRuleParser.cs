@@ -177,7 +177,7 @@ namespace System.Net.Http
             while (current < input.Length)
             {
                 c = input[current];
-                if ((c >= '0') && (c <= '9'))
+                if (char.IsAsciiDigit(c))
                 {
                     current++;
                 }
@@ -196,12 +196,11 @@ namespace System.Net.Http
             return current - startIndex;
         }
 
-        internal static int GetHostLength(string input, int startIndex, bool allowToken, out string? host)
+        internal static int GetHostLength(string input, int startIndex, bool allowToken)
         {
             Debug.Assert(input != null);
             Debug.Assert(startIndex >= 0);
 
-            host = null;
             if (startIndex >= input.Length)
             {
                 return 0;
@@ -236,13 +235,11 @@ namespace System.Net.Http
                 return 0;
             }
 
-            string result = input.Substring(startIndex, length);
-            if ((!allowToken || !isToken) && !IsValidHostName(result))
+            if ((!allowToken || !isToken) && !IsValidHostName(input.AsSpan(startIndex, length)))
             {
                 return 0;
             }
 
-            host = result;
             return length;
         }
 
@@ -311,14 +308,14 @@ namespace System.Net.Http
             {
                 // Only check whether we have a quoted char, if we have at least 3 characters left to read (i.e.
                 // quoted char + closing char). Otherwise the closing char may be considered part of the quoted char.
-                int quotedPairLength = 0;
+                int quotedPairLength;
                 if ((current + 2 < input.Length) &&
                     (GetQuotedPairLength(input, current, out quotedPairLength) == HttpParseResult.Parsed))
                 {
                     // We ignore invalid quoted-pairs. Invalid quoted-pairs may mean that it looked like a quoted pair,
                     // but we actually have a quoted-string: e.g. "\\u00FC" ('\' followed by a char >127 - quoted-pair only
                     // allows ASCII chars after '\'; qdtext allows both '\' and >127 chars).
-                    current = current + quotedPairLength;
+                    current += quotedPairLength;
                     continue;
                 }
 
@@ -338,7 +335,7 @@ namespace System.Net.Http
                         return HttpParseResult.InvalidFormat;
                     }
 
-                    int nestedLength = 0;
+                    int nestedLength;
                     HttpParseResult nestedResult = GetExpressionLength(input, current, openChar, closeChar,
                         supportsNesting, nestedCount + 1, out nestedLength);
 
@@ -379,10 +376,10 @@ namespace System.Net.Http
             return HttpParseResult.InvalidFormat;
         }
 
-        private static bool IsValidHostName(string host)
+        private static bool IsValidHostName(ReadOnlySpan<char> host)
         {
             // Also add user info (u@) to make sure 'host' doesn't include user info.
-            return Uri.TryCreate("http://u@" + host + "/", UriKind.Absolute, out Uri? hostUri);
+            return Uri.TryCreate($"http://u@{host}/", UriKind.Absolute, out _);
         }
     }
 }

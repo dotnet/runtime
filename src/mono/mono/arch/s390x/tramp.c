@@ -59,7 +59,7 @@ typedef struct {
 	      local_size,
 	      code_size,
 	      retStruct;
-} size_data;	
+} size_data;
 
 /*========================= End of Typedefs ========================*/
 
@@ -78,14 +78,14 @@ add_general (guint *gr, size_data *sz, gboolean simple)
 	if (simple) {
 		if (*gr >= GENERAL_REGS) {
 			sz->stack_size += sizeof(long);
-			sz->code_size  += 12;    
+			sz->code_size  += 12;
 		} else {
-			sz->code_size += 8;    
+			sz->code_size += 8;
 		}
 	} else {
 		if (*gr >= GENERAL_REGS - 1) {
 			sz->stack_size += 8 + (sz->stack_size % 8);
-			sz->code_size  += 10;   
+			sz->code_size  += 10;
 		} else {
 			sz->code_size += 8;
 		}
@@ -108,7 +108,7 @@ add_general (guint *gr, size_data *sz, gboolean simple)
 /*------------------------------------------------------------------*/
 
 static void inline
-calculate_sizes (MonoMethodSignature *sig, size_data *sz, 
+calculate_sizes (MonoMethodSignature *sig, size_data *sz,
 		 gboolean string_ctor)
 {
 	guint i, fr, gr, size;
@@ -166,7 +166,7 @@ enum_retvalue:
 				goto enum_retvalue;
 			}
 			gr++;
-			if (sig->pinvoke)
+			if (sig->pinvoke && !sig->marshalling_disabled)
 				size = mono_class_native_size (sig->ret->data.klass, &align);
 			else
                         	size = mono_class_value_size (sig->ret->data.klass, &align);
@@ -235,7 +235,7 @@ enum_retvalue:
 				simpletype = sig->params [i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-			if (sig->pinvoke)
+			if (sig->pinvoke && !sig->marshalling_disabled)
 				size = mono_class_native_size (sig->params [i]->data.klass, &align);
 			else
 				size = mono_class_value_size (sig->params [i]->data.klass, &align);
@@ -290,9 +290,9 @@ enum_retvalue:
 
 	/* align stack size to 8 */
 	DEBUG (printf ("      stack size: %d (%d)\n"
-		       "       code size: %d\n" 
+		       "       code size: %d\n"
 		       "      local size: %d\n",
-		      (sz->stack_size + 8) & ~8, sz->stack_size, 
+		      (sz->stack_size + 8) & ~8, sz->stack_size,
 		      (sz->code_size),(sz->local_size + 8) & ~8));
 	sz->stack_size = (sz->stack_size + 8) & ~8;
 	sz->local_size = (sz->local_size + 8) & ~8;
@@ -342,7 +342,7 @@ emit_prolog (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 /*                                                                  */
 /* Name		- emit_save_parameters                              */
 /*                                                                  */
-/* Function	- Create the instructions that load registers with  */ 
+/* Function	- Create the instructions that load registers with  */
 /*		  parameters, place others on the stack according   */
 /* 		  to the S/390 ABI.				    */
 /*                                                                  */
@@ -355,12 +355,12 @@ emit_prolog (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 inline static guint8*
 emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 {
-	guint i, fr, gr, act_strs, align, 
+	guint i, fr, gr, act_strs, align,
 	      stack_par_pos, size, local_pos;
 	guint32 simpletype;
 
 	/*----------------------------------------------------------*/
-	/* If a structure on stack is being returned, reserve r2    */ 
+	/* If a structure on stack is being returned, reserve r2    */
 	/* to point to an area where it can be passed.              */
 	/*----------------------------------------------------------*/
 	if (sz->retStruct)
@@ -423,7 +423,7 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 				simpletype = sig->params [i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-			if (sig->pinvoke) 
+			if (sig->pinvoke && !sig->marshalling_disabled)
 				size = mono_class_native_size (sig->params [i]->data.klass, &align);
 			else
 				size = mono_class_value_size (sig->params [i]->data.klass, &align);
@@ -455,7 +455,7 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 						s390_mvc (p, sizeof(long long), STK_BASE, stack_par_pos, s390_r10, 0);
 						stack_par_pos += sizeof(long long);
 					}
-					break;	
+					break;
 				default:
 					if (size <= 256) {
 						local_pos += (local_pos % align);
@@ -488,12 +488,12 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 			break;
 		case MONO_TYPE_I8:
 			if (gr < GENERAL_REGS) {
-				s390_lg (p, s390_r2 + gr, 0, ARG_BASE, STKARG); 
+				s390_lg (p, s390_r2 + gr, 0, ARG_BASE, STKARG);
 				gr += 2;
 			} else {
 				*(guint32 *) p += 7;
 				*(guint32 *) p &= ~7;
-				s390_mvc (p, sizeof(long long), STK_BASE, stack_par_pos, ARG_BASE, STKARG); 
+				s390_mvc (p, sizeof(long long), STK_BASE, stack_par_pos, ARG_BASE, STKARG);
 				stack_par_pos += sizeof(long long) + (stack_par_pos % sizeof(long long));
 			}
 			break;
@@ -523,7 +523,7 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 	}
 
 	/*----------------------------------------------------------*/
-	/* If we're returning a structure but not in a register     */ 
+	/* If we're returning a structure but not in a register     */
 	/* then point the result area for the called routine        */
 	/*----------------------------------------------------------*/
 	if (sz->retStruct) {
@@ -574,14 +574,14 @@ alloc_code_memory (guint code_size)
 /*------------------------------------------------------------------*/
 
 static guint8 *
-emit_call_and_store_retval (guint8 *p, MonoMethodSignature *sig, 
+emit_call_and_store_retval (guint8 *p, MonoMethodSignature *sig,
 			    size_data *sz, gboolean string_ctor)
 {
 	guint32 simpletype;
 	guint   retSize, align;
 
 	/* call "callme" */
-	s390_basr (p, s390_r14, s390_r9); 
+	s390_basr (p, s390_r14, s390_r9);
 
 	/* get return value */
 	if (m_type_is_byref (sig->ret) || string_ctor) {
@@ -625,7 +625,7 @@ enum_retvalue:
 				simpletype = sig->ret->data.klass->enum_basetype->type;
 				goto enum_retvalue;
 			}
-			if (sig->pinvoke) 
+			if (sig->pinvoke && !sig->marshalling_disabled)
 				retSize = mono_class_native_size (sig->ret->data.klass, &align);
 			else
 				retSize = mono_class_value_size (sig->ret->data.klass, &align);
@@ -655,7 +655,7 @@ printf("Returning %d bytes for type %d (%d)\n",retSize,simpletype,sig->pinvoke);
 		case MONO_TYPE_VOID:
 			break;
 		default:
-			g_error ("Can't handle as return value 0x%x", 
+			g_error ("Can't handle as return value 0x%x",
 				 sig->ret->type);
 		}
 	}
@@ -803,12 +803,12 @@ mono_arch_create_method_pointer (MonoMethod *method)
 
 	p = code_buffer = g_malloc (sz.code_size);
 
-	DEBUG (printf ("\nDelegate [start emiting] %s at 0x%08x\n", 
+	DEBUG (printf ("\nDelegate [start emiting] %s at 0x%08x\n",
 		       method->name,p));
 
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	/* prolog 					     	    */
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	s390_stmg(p, s390_r6, STK_BASE, STK_BASE, S390_REG_SAVE_OFFSET);
 	s390_lg  (p, s390_r7, 0, STK_BASE, MINV_POS);
 	s390_lgr (p, s390_r0, STK_BASE);
@@ -820,9 +820,9 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	s390_lghi(p, s390_r11, 0);
 	s390_mvcl(p, s390_r8, s390_r10);
 
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	/* Let's fill MonoInvocation - first zero some fields 	    */
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	s390_lghi (p, s390_r0, 0);
 	s390_stg  (p, s390_r0, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex)));
 	s390_stg  (p, s390_r0, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, ex_handler)));
@@ -830,15 +830,15 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	s390_lghi (p, s390_r0, 1);
 	s390_stg  (p, s390_r0, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, invoke_trap)));
 
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	/* set method pointer 					    */
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	s390_bras (p, s390_r13, 4);
 	s390_llong(p, method);
 	s390_lg	  (p, s390_r0, 0, s390_r13, 0);
 	s390_stg  (p, s390_r0, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, method)));
 
-	local_start = local_pos = MINV_POS + 
+	local_start = local_pos = MINV_POS +
 		      sizeof (MonoInvocation) + (sig->param_count + 1) * sizeof (stackval);
 	this_flag   = (sig->hasthis ? 1 : 0);
 
@@ -848,7 +848,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	/* area. If necessary save this hidden parameter for later  */
 	/*----------------------------------------------------------*/
 	if (MONO_TYPE_ISSTRUCT(sig->ret)) {
-		if (sig->pinvoke) 
+		if (sig->pinvoke && !sig->marshalling_disabled)
 			retSize = mono_class_native_size (sig->ret->data.klass, &align);
 		else
 			retSize = mono_class_value_size (sig->ret->data.klass, &align);
@@ -870,13 +870,13 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	}
 
 	if (this_flag) {
-		s390_stg (p, s390_r2 + reg_save, 0, STK_BASE, 
+		s390_stg (p, s390_r2 + reg_save, 0, STK_BASE,
 			  (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, obj)));
 		reg_param++;
 	} else {
 		s390_stg (p, s390_r2 + reg_save, 0, STK_BASE, local_pos);
 		local_pos += sizeof(int);
-		s390_stg (p, s390_r0, 0, STK_BASE, 
+		s390_stg (p, s390_r0, 0, STK_BASE,
 			 (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, obj)));
 	}
 
@@ -888,9 +888,9 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	s390_std (p, s390_f2, 0, STK_BASE, local_pos);
 	local_pos += sizeof(double);
 
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	/* prepare space for valuetypes			     	    */
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	vt_cur = local_pos;
 	vtbuf  = alloca (sizeof(int)*sig->param_count);
 	cpos   = 0;
@@ -904,7 +904,10 @@ mono_arch_create_method_pointer (MonoMethod *method)
 
 			if (klass->enumtype)
 				continue;
-			size = mono_class_native_size (klass, &align);
+			if (sig->pinvoke && !sig->marshalling_disabled)
+				size = mono_class_native_size (sig->ret->data.klass, &align);
+			else
+				size = mono_class_value_size (sig->ret->data.klass, &align);
 			cpos += align - 1;
 			cpos &= ~(align - 1);
 			vtbuf [i] = cpos;
@@ -916,16 +919,16 @@ mono_arch_create_method_pointer (MonoMethod *method)
 
 	local_pos += cpos;
 
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	/* set MonoInvocation::stack_args			    */
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	stackval_arg_pos = MINV_POS + sizeof (MonoInvocation);
 	s390_la  (p, s390_r0, 0, STK_BASE, stackval_arg_pos);
 	s390_stg (p, s390_r0, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, stack_args)));
 
-	/*----------------------------------------------------------*/ 
-	/* add stackval arguments 				    */	
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
+	/* add stackval arguments 				    */
+	/*----------------------------------------------------------*/
 	for (i = 0; i < sig->param_count; ++i) {
 		if (m_type_is_byref (sig->params [i])) {
 			ADD_ISTACK_PARM(0, 1);
@@ -947,7 +950,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 					simple_type = sig->params [i]->data.klass->enum_basetype->type;
 					goto enum_savechk;
 				}
-				if (sig->pinvoke)
+				if (sig->pinvoke && !sig->marshalling_disabled)
 					parSize = mono_class_native_size (sig->params [i]->data.klass, &align);
 				else
 					parSize = mono_class_value_size (sig->params [i]->data.klass, &align);
@@ -969,7 +972,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 				ADD_ISTACK_PARM(0, 1);
 			}
 		}
-				
+
 		if (vtbuf [i] >= 0) {
 			s390_la	 (p, s390_r3, 0, STK_BASE, vt_cur);
 			s390_stg (p, s390_r3, 0, STK_BASE, stackval_arg_pos);
@@ -996,17 +999,17 @@ mono_arch_create_method_pointer (MonoMethod *method)
 
 		/* fixme: alignment */
 		DEBUG (printf ("arg_pos %d --> ", arg_pos));
-		if (sig->pinvoke)
+		if (sig->pinvoke && !sig->marshalling_disabled)
 			arg_pos += mono_type_native_stack_size (sig->params [i], &align);
 		else
 			arg_pos += mono_type_stack_size (sig->params [i], &align);
-		
+
 		DEBUG (printf ("%d\n", stackval_arg_pos));
 	}
 
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	/* Set return area pointer. 				    */
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	s390_la (p, s390_r10, 0, STK_BASE, stackval_arg_pos);
 	s390_stg(p, s390_r10, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, retval)));
 	if (sig->ret->type == MONO_TYPE_VALUETYPE && !m_type_is_byref (sig->ret)) {
@@ -1018,18 +1021,18 @@ mono_arch_create_method_pointer (MonoMethod *method)
 		}
 	}
 
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	/* call ves_exec_method					    */
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	s390_bras (p, s390_r13, 4);
 	s390_llong(p, ves_exec_method);
 	s390_lg	  (p, s390_r1, 0, s390_r13, 0);
 	s390_la	  (p, s390_r2, 0, STK_BASE, MINV_POS);
 	s390_basr (p, s390_r14, s390_r1);
 
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	/* move retval from stackval to proper place (r3/r4/...)    */
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	DEBUG(printf("retType: %d byRef: %d\n",sig->ret->type,m_type_is_byref (sig->ret)));
 	if (m_type_is_byref (sig->ret)) {
 		DEBUG (printf ("ret by ref\n"));
@@ -1081,15 +1084,15 @@ mono_arch_create_method_pointer (MonoMethod *method)
 			s390_llong(p, stackval_to_data);
 			s390_lg	  (p, s390_r2, 0, s390_r13, 0);
 			s390_lg	  (p, s390_r3, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, retval)));
-			if (sz.retStruct) {	
+			if (sz.retStruct) {
 				/*------------------------------------------*/
 				/* Get stackval_to_data to set result area  */
 				/*------------------------------------------*/
 				s390_lgr (p, s390_r4, s390_r8);
-			} else {		
+			} else {
 				/*------------------------------------------*/
 				/* Give stackval_to_data a temp result area */
-				/*------------------------------------------*/ 
+				/*------------------------------------------*/
 				s390_la (p, s390_r4, 0, STK_BASE, stackval_arg_pos);
 			}
 			s390_lg   (p, s390_r5, 0,s390_r13, 4);
@@ -1118,15 +1121,15 @@ mono_arch_create_method_pointer (MonoMethod *method)
 			}
 			break;
 		default:
-			g_error ("Type 0x%x not handled yet in thunk creation", 
+			g_error ("Type 0x%x not handled yet in thunk creation",
 				 sig->ret->type);
 			break;
 		}
 	}
 
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	/* epilog 						    */
-	/*----------------------------------------------------------*/ 
+	/*----------------------------------------------------------*/
 	s390_lg   (p, STK_BASE, 0, STK_BASE, 0);
 	s390_lg   (p, s390_r4, 0, STK_BASE, S390_RET_ADDR_OFFSET);
 	s390_lmg  (p, s390_r6, STK_BASE, STK_BASE, S390_REG_SAVE_OFFSET);

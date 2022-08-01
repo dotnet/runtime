@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Enumeration;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -15,14 +16,26 @@ namespace System.IO
         // See: https://man7.org/linux/man-pages/man7/path_resolution.7.html
         private const int MaxFollowedLinks = 40;
 
+        // This gets filtered by umask.
+        internal const UnixFileMode DefaultUnixCreateDirectoryMode =
+            UnixFileMode.UserRead |
+            UnixFileMode.UserWrite |
+            UnixFileMode.UserExecute |
+            UnixFileMode.GroupRead |
+            UnixFileMode.GroupWrite |
+            UnixFileMode.GroupExecute |
+            UnixFileMode.OtherRead |
+            UnixFileMode.OtherWrite |
+            UnixFileMode.OtherExecute;
+
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             long fileLength;
-            Interop.Sys.Permissions filePermissions;
+            UnixFileMode filePermissions;
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out fileLength, out filePermissions);
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
-                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, openPermissions: filePermissions,
-                                            (Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path) => CreateOpenException(error, flags, path));
+                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
+                                            CreateOpenException);
 
             Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
 
@@ -38,6 +51,7 @@ namespace System.IO
             }
         }
 
+#pragma warning disable IDE0060
         public static void Encrypt(string path)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
@@ -47,6 +61,7 @@ namespace System.IO
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
+#pragma warning restore IDE0060
 
         private static void LinkOrCopyFile (string sourceFullPath, string destFullPath)
         {
@@ -105,8 +120,8 @@ namespace System.IO
             }
         }
 
-
-        public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors)
+#pragma warning disable IDE0060
+        public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors /* unused */)
         {
             // Unix rename works in more cases, we limit to what is allowed by Windows File.Replace.
             // These checks are not atomic, the file could change after a check was performed and before it is renamed.
@@ -158,8 +173,7 @@ namespace System.IO
             else
             {
                 // There is no backup file.  Just make sure the destination file exists, throwing if it doesn't.
-                Interop.Sys.FileStatus ignored;
-                if (Interop.Sys.Stat(destFullPath, out ignored) != 0)
+                if (Interop.Sys.Stat(destFullPath, out _) != 0)
                 {
                     Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
                     if (errno.Error == Interop.Error.ENOENT)
@@ -172,6 +186,7 @@ namespace System.IO
             // Finally, rename the source to the destination, overwriting the destination.
             Interop.CheckIo(Interop.Sys.Rename(sourceFullPath, destFullPath));
         }
+#pragma warning restore IDE0060
 
         public static void MoveFile(string sourceFullPath, string destFullPath)
         {
@@ -276,6 +291,9 @@ namespace System.IO
         }
 
         public static void CreateDirectory(string fullPath)
+            => CreateDirectory(fullPath, DefaultUnixCreateDirectoryMode);
+
+        public static void CreateDirectory(string fullPath, UnixFileMode unixCreateMode)
         {
             // The argument is a full path, which means it is an absolute path that
             // doesn't contain "//", "/./", and "/../".
@@ -287,7 +305,7 @@ namespace System.IO
                 return; // fullPath is '/'.
             }
 
-            int result = Interop.Sys.MkDir(fullPath, (int)Interop.Sys.Permissions.Mask);
+            int result = Interop.Sys.MkDir(fullPath, (int)unixCreateMode);
             if (result == 0)
             {
                 return; // Created directory.
@@ -300,7 +318,7 @@ namespace System.IO
             }
             else if (errorInfo.Error == Interop.Error.ENOENT) // Some parts of the path don't exist yet.
             {
-                CreateParentsAndDirectory(fullPath);
+                CreateParentsAndDirectory(fullPath, unixCreateMode);
             }
             else
             {
@@ -308,7 +326,7 @@ namespace System.IO
             }
         }
 
-        private static void CreateParentsAndDirectory(string fullPath)
+        private static void CreateParentsAndDirectory(string fullPath, UnixFileMode unixCreateMode)
         {
             // Try create parents bottom to top and track those that could not
             // be created due to missing parents. Then create them top to bottom.
@@ -331,7 +349,7 @@ namespace System.IO
                 }
 
                 ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, i);
-                int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
+                int result = Interop.Sys.MkDir(mkdirPath, (int)unixCreateMode);
                 if (result == 0)
                 {
                     break; // Created parent.
@@ -363,7 +381,7 @@ namespace System.IO
             for (i = stackDir.Length - 1; i >= 0; i--)
             {
                 ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, stackDir[i]);
-                int result = Interop.Sys.MkDir(mkdirPath, (int)Interop.Sys.Permissions.Mask);
+                int result = Interop.Sys.MkDir(mkdirPath, (int)unixCreateMode);
                 if (result < 0)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
@@ -387,40 +405,69 @@ namespace System.IO
             }
         }
 
-        public static void MoveDirectory(string sourceFullPath, string destFullPath)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
         {
-            // Windows doesn't care if you try and copy a file via "MoveDirectory"...
-            if (FileExists(sourceFullPath))
+            // isCaseSensitiveRename is only set for case-insensitive systems (like macOS).
+            Debug.Assert(!isCaseSensitiveRename || !PathInternal.IsCaseSensitive);
+
+            ReadOnlySpan<char> srcNoDirectorySeparator = Path.TrimEndingDirectorySeparator(sourceFullPath.AsSpan());
+            ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
+
+            // When the path ends with a directory separator, it must not be a file.
+            // On Unix 'rename' fails with ENOTDIR, on wasm we need to manually check.
+            if (OperatingSystem.IsBrowser() && Path.EndsInDirectorySeparator(sourceFullPath) && FileExists(sourceFullPath))
             {
-                // ... but it doesn't like the source to have a trailing slash ...
+                throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+            }
 
-                // On Windows we end up with ERROR_INVALID_NAME, which is
-                // "The filename, directory name, or volume label syntax is incorrect."
-                //
-                // This surfaces as an IOException, if we let it go beyond here it would
-                // give DirectoryNotFound.
+            // The destination must not exist (unless it is a case-sensitive rename).
+            // On Unix 'rename' will overwrite the destination file if it already exists, we need to manually check.
+            if (!isCaseSensitiveRename && Interop.Sys.LStat(destNoDirectorySeparator, out Interop.Sys.FileStatus destFileStatus) >= 0)
+            {
+                // Maintain order of exceptions as on Windows.
 
-                if (Path.EndsInDirectorySeparator(sourceFullPath))
+                // Throw if the source doesn't exist.
+                if (Interop.Sys.LStat(srcNoDirectorySeparator, out Interop.Sys.FileStatus sourceFileStatus) < 0)
+                {
+                    throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                }
+                // Source and destination must not be the same file unless it is a case-sensitive rename.
+                else if (sourceFileStatus.Dev == destFileStatus.Dev &&
+                         sourceFileStatus.Ino == destFileStatus.Ino)
+                {
+                    // isCaseSensitiveRename is only true when the system is case-insensitive (like macOS).
+                    // On a case-sensitive system (like Linux), there can stil be case-insensitive filesystems mounted.
+                    // When both paths refer to the same file and they differ only in casing, we fall through to Rename.
+                    if (!PathInternal.IsCaseSensitive && // handled by isCaseSensitiveRename.
+                        !srcNoDirectorySeparator.Equals(destNoDirectorySeparator, StringComparison.OrdinalIgnoreCase) ||     // different paths.
+                        Path.GetFileName(srcNoDirectorySeparator).SequenceEqual(Path.GetFileName(destNoDirectorySeparator))) // same names.
+                    {
+                        throw new IOException(SR.IO_SourceDestMustBeDifferent);
+                    }
+                }
+                // When the path ends with a directory separator, it must be a directory.
+                else if ((sourceFileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFDIR
+                    && Path.EndsInDirectorySeparator(sourceFullPath))
+                {
                     throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
-
-                // ... but it doesn't care if the destination has a trailing separator.
-                destFullPath = Path.TrimEndingDirectorySeparator(destFullPath);
+                }
+                else
+                {
+                    throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
+                }
             }
 
-            if (FileExists(destFullPath))
-            {
-                // Some Unix distros will overwrite the destination file if it already exists.
-                // Throwing IOException to match Windows behavior.
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
-            }
-
-            if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
+            if (Interop.Sys.Rename(sourceFullPath, destNoDirectorySeparator) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                 switch (errorInfo.Error)
                 {
                     case Interop.Error.EACCES: // match Win32 exception
                         throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), errorInfo.RawErrno);
+                    case Interop.Error.ENOENT:
+                        throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                    case Interop.Error.ENOTDIR: // sourceFullPath exists and it's not a directory
+                        throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
                     default:
                         throw Interop.GetExceptionForIoErrno(errorInfo, isDirectory: true);
                 }
@@ -429,88 +476,110 @@ namespace System.IO
 
         public static void RemoveDirectory(string fullPath, bool recursive)
         {
-            var di = new DirectoryInfo(fullPath);
-            if (!di.Exists)
+            // Delete the directory.
+            // If we're recursing, don't throw when it is not empty, and perform a recursive remove.
+            if (!RemoveEmptyDirectory(fullPath, topLevel: true, throwWhenNotEmpty: !recursive))
             {
-                throw Interop.GetExceptionForIoErrno(Interop.Error.ENOENT.Info(), fullPath, isDirectory: true);
+                Debug.Assert(recursive);
+
+                RemoveDirectoryRecursive(fullPath);
             }
-            RemoveDirectoryInternal(di, recursive, throwOnTopLevelDirectoryNotFound: true);
         }
 
-        private static void RemoveDirectoryInternal(DirectoryInfo directory, bool recursive, bool throwOnTopLevelDirectoryNotFound)
+        private static void RemoveDirectoryRecursive(string fullPath)
         {
             Exception? firstException = null;
 
-            if ((directory.Attributes & FileAttributes.ReparsePoint) != 0)
+            try
             {
-                DeleteFile(directory.FullName);
-                return;
-            }
+                var fse = new FileSystemEnumerable<(string, bool)>(fullPath,
+                            static (ref FileSystemEntry entry) =>
+                            {
+                                // Don't report symlinks to directories as directories.
+                                bool isRealDirectory = !entry.IsSymbolicLink && entry.IsDirectory;
+                                return (entry.ToFullPath(), isRealDirectory);
+                            },
+                            EnumerationOptions.Compatible);
 
-            if (recursive)
-            {
-                try
+                foreach ((string childPath, bool isDirectory) in fse)
                 {
-                    foreach (string item in Directory.EnumerateFileSystemEntries(directory.FullName))
+                    try
                     {
-                        if (!ShouldIgnoreDirectory(Path.GetFileName(item)))
+                        if (isDirectory)
                         {
-                            try
-                            {
-                                var childDirectory = new DirectoryInfo(item);
-                                if (childDirectory.Exists)
-                                {
-                                    RemoveDirectoryInternal(childDirectory, recursive, throwOnTopLevelDirectoryNotFound: false);
-                                }
-                                else
-                                {
-                                    DeleteFile(item);
-                                }
-                            }
-                            catch (Exception exc)
-                            {
-                                if (firstException != null)
-                                {
-                                    firstException = exc;
-                                }
-                            }
+                            RemoveDirectoryRecursive(childPath);
+                        }
+                        else
+                        {
+                            DeleteFile(childPath);
                         }
                     }
-                }
-                catch (Exception exc)
-                {
-                    if (firstException != null)
+                    catch (Exception ex)
                     {
-                        firstException = exc;
+                        firstException ??= ex;
                     }
                 }
-
-                if (firstException != null)
-                {
-                    throw firstException;
-                }
+            }
+            catch (Exception exc)
+            {
+                firstException ??= exc;
             }
 
-            if (Interop.Sys.RmDir(directory.FullName) < 0)
+            if (firstException != null)
+            {
+                throw firstException;
+            }
+
+            RemoveEmptyDirectory(fullPath);
+        }
+
+        private static bool RemoveEmptyDirectory(string fullPath, bool topLevel = false, bool throwWhenNotEmpty = true)
+        {
+            if (Interop.Sys.RmDir(fullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                switch (errorInfo.Error)
+
+                if (errorInfo.Error == Interop.Error.ENOTEMPTY)
                 {
-                    case Interop.Error.EACCES:
-                    case Interop.Error.EPERM:
-                    case Interop.Error.EROFS:
-                    case Interop.Error.EISDIR:
-                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, directory.FullName)); // match Win32 exception
-                    case Interop.Error.ENOENT:
-                        if (!throwOnTopLevelDirectoryNotFound)
-                        {
-                            return;
-                        }
-                        goto default;
-                    default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, directory.FullName, isDirectory: true);
+                    if (!throwWhenNotEmpty)
+                    {
+                        return false;
+                    }
                 }
+                else if (errorInfo.Error == Interop.Error.ENOENT)
+                {
+                    // When we're recursing, don't throw for items that go missing.
+                    if (!topLevel)
+                    {
+                        return true;
+                    }
+                }
+                else if (DirectoryExists(fullPath, out Interop.ErrorInfo existErr))
+                {
+                    // Top-level path is a symlink to a directory, delete the link.
+                    if (topLevel && errorInfo.Error == Interop.Error.ENOTDIR)
+                    {
+                        DeleteFile(fullPath);
+                        return true;
+                    }
+                }
+                else if (existErr.Error == Interop.Error.ENOENT)
+                {
+                    // Prefer throwing DirectoryNotFoundException over other exceptions.
+                    errorInfo = existErr;
+                }
+
+                if (errorInfo.Error == Interop.Error.EACCES ||
+                    errorInfo.Error == Interop.Error.EPERM ||
+                    errorInfo.Error == Interop.Error.EROFS)
+                {
+                    throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath));
+                }
+
+                throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
             }
+
+            return true;
         }
 
         /// <summary>Determines whether the specified directory name should be ignored.</summary>
@@ -531,63 +600,81 @@ namespace System.IO
             return attributes;
         }
 
+        public static FileAttributes GetAttributes(SafeFileHandle fileHandle)
+            => default(FileStatus).GetAttributes(fileHandle);
+
         public static void SetAttributes(string fullPath, FileAttributes attributes)
+            => default(FileStatus).SetAttributes(fullPath, attributes, asDirectory: false);
+
+        public static void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes)
+            => default(FileStatus).SetAttributes(fileHandle, attributes, asDirectory: false);
+
+        public static UnixFileMode GetUnixFileMode(string fullPath)
         {
-            new FileInfo(fullPath, null).Attributes = attributes;
+            UnixFileMode mode = default(FileStatus).GetUnixFileMode(fullPath);
+
+            if (mode == (UnixFileMode)(-1))
+                FileSystemInfo.ThrowNotFound(fullPath);
+
+            return mode;
         }
+
+        public static UnixFileMode GetUnixFileMode(SafeFileHandle fileHandle)
+            => default(FileStatus).GetUnixFileMode(fileHandle);
+
+        public static void SetUnixFileMode(string fullPath, UnixFileMode mode)
+            => default(FileStatus).SetUnixFileMode(fullPath, mode);
+
+        public static void SetUnixFileMode(SafeFileHandle fileHandle, UnixFileMode mode)
+            => default(FileStatus).SetUnixFileMode(fileHandle, mode);
 
         public static DateTimeOffset GetCreationTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).CreationTimeUtc;
-        }
+            => default(FileStatus).GetCreationTime(fullPath).UtcDateTime;
+
+        public static DateTimeOffset GetCreationTime(SafeFileHandle fileHandle)
+            => default(FileStatus).GetCreationTime(fileHandle).UtcDateTime;
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
+            => default(FileStatus).SetCreationTime(fullPath, time, asDirectory);
 
-            info.CreationTimeCore = time;
-        }
+        public static void SetCreationTime(SafeFileHandle fileHandle, DateTimeOffset time)
+            => default(FileStatus).SetCreationTime(fileHandle, time, asDirectory: false);
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).LastAccessTimeUtc;
-        }
+            => default(FileStatus).GetLastAccessTime(fullPath).UtcDateTime;
+
+        public static DateTimeOffset GetLastAccessTime(SafeFileHandle fileHandle)
+            => default(FileStatus).GetLastAccessTime(fileHandle).UtcDateTime;
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
+            => default(FileStatus).SetLastAccessTime(fullPath, time, asDirectory);
 
-            info.LastAccessTimeCore = time;
-        }
+        public static unsafe void SetLastAccessTime(SafeFileHandle fileHandle, DateTimeOffset time)
+            => default(FileStatus).SetLastAccessTime(fileHandle, time, asDirectory: false);
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).LastWriteTimeUtc;
-        }
+            => default(FileStatus).GetLastWriteTime(fullPath).UtcDateTime;
+
+        public static DateTimeOffset GetLastWriteTime(SafeFileHandle fileHandle)
+            => default(FileStatus).GetLastWriteTime(fileHandle).UtcDateTime;
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
+            => default(FileStatus).SetLastWriteTime(fullPath, time, asDirectory);
 
-            info.LastWriteTimeCore = time;
-        }
+        public static unsafe void SetLastWriteTime(SafeFileHandle fileHandle, DateTimeOffset time)
+            => default(FileStatus).SetLastWriteTime(fileHandle, time, asDirectory: false);
 
         public static string[] GetLogicalDrives()
         {
             return DriveInfoInternal.GetLogicalDrives();
         }
 
+#pragma warning disable IDE0060
         internal static string? GetLinkTarget(ReadOnlySpan<char> linkPath, bool isDirectory) => Interop.Sys.ReadLink(linkPath);
+#pragma warning restore IDE0060
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
-            string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
             Interop.CheckIo(Interop.Sys.SymLink(pathToTarget, path), path, isDirectory);
         }
 
@@ -596,7 +683,7 @@ namespace System.IO
             ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
             sb.Append(linkPath);
 
-            string? linkTarget = GetLinkTarget(linkPath, isDirectory: false /* Irrelevant in Unix */);
+            string? linkTarget = Interop.Sys.ReadLink(linkPath);
             if (linkTarget == null)
             {
                 sb.Dispose();
@@ -629,7 +716,7 @@ namespace System.IO
                     }
 
                     GetLinkTargetFullPath(ref sb, current);
-                    current = GetLinkTarget(sb.AsSpan(), isDirectory: false);
+                    current = Interop.Sys.ReadLink(sb.AsSpan());
                     visitCount++;
                 }
             }

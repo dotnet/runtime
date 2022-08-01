@@ -23,8 +23,10 @@ parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-platform", help="OS platform")
 parser.add_argument("-jit_directory", help="path to the directory containing clrjit binaries")
 parser.add_argument("-log_directory", help="path to the directory containing superpmi log files")
+parser.add_argument("-partition", help="Partition number specifying which set of flags to use: between 1 and the `-partition_count` value")
+parser.add_argument("-partition_count", help="Count of the total number of partitions we are using: should be <= 9 (number of jit_flags_all elements)")
 
-jit_flags = [
+jit_flags_all = [
     "JitStressRegs=0",
     "JitStressRegs=1",
     "JitStressRegs=2",
@@ -35,6 +37,20 @@ jit_flags = [
     "JitStressRegs=0x80",
     "JitStressRegs=0x1000",
 ]
+
+def split(a, n):
+    """ Splits array `a` in `n` partitions.
+        Slightly modified from https://stackoverflow.com/a/2135920.
+
+    Args:
+        args (ArgParse): args parsed by arg parser
+
+    Returns:
+        args (CoreclrArguments)
+
+    """
+    k, m = divmod(len(a), n)
+    return [a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n)]
 
 
 def setup_args(args):
@@ -67,8 +83,38 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "log_directory",
-                        lambda log_directory: True,
+                        lambda log_directory: os.path.isdir(log_directory),
                         "log_directory doesn't exist")
+
+    coreclr_args.verify(args,
+                        "partition",
+                        lambda partition: True,
+                        "Unable to set partition")
+
+    coreclr_args.verify(args,
+                        "partition_count",
+                        lambda partition: True,
+                        "Unable to set partition_count")
+
+    try:
+        coreclr_args.partition = int(coreclr_args.partition)
+    except ValueError as e:
+        print("Illegal `-partition` value: " + str(coreclr_args.partition))
+        sys.exit(1)
+
+    try:
+        coreclr_args.partition_count = int(coreclr_args.partition_count)
+    except ValueError as e:
+        print("Illegal `-partition_count` value: " + str(coreclr_args.partition_count))
+        sys.exit(1)
+
+    if coreclr_args.partition_count <= 0:
+        print("Illegal `-partition_count` value: " + str(coreclr_args.partition_count))
+        sys.exit(1)
+
+    if coreclr_args.partition < 1 or coreclr_args.partition > coreclr_args.partition_count:
+        print("Illegal `-partition` value: " + str(coreclr_args.partition))
+        sys.exit(1)
 
     return coreclr_args
 
@@ -79,7 +125,6 @@ def main(main_args):
     Args:
         main_args ([type]): Arguments to the script
     """
-
     python_path = sys.executable
     cwd = os.path.dirname(os.path.realpath(__file__))
     coreclr_args = setup_args(main_args)
@@ -92,9 +137,19 @@ def main(main_args):
     os_name = "universal" if arch_name.startswith("arm") else os_name
     jit_path = os.path.join(coreclr_args.jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
 
+    jit_flags_partitioned = split(jit_flags_all, coreclr_args.partition_count)
+    jit_flags = jit_flags_partitioned[coreclr_args.partition - 1] # partition number is 1-based
+
     print("Running superpmi.py download")
-    run_command([python_path, os.path.join(cwd, "superpmi.py"), "download", "--no_progress", "-target_os", platform_name,
-                 "-target_arch", arch_name, "-core_root", cwd, "-spmi_location", spmi_location], _exit_on_fail=True)
+    run_command([python_path,
+            os.path.join(cwd, "superpmi.py"),
+            "download",
+            "--no_progress",
+            "-target_os", platform_name,
+            "-target_arch", arch_name,
+            "-core_root", cwd,
+            "-spmi_location", spmi_location,
+            "-log_level", "debug"], _exit_on_fail=True)
 
     failed_runs = []
     for jit_flag in jit_flags:
@@ -107,7 +162,6 @@ def main(main_args):
             "replay",
             "-core_root", cwd,
             "-jitoption", jit_flag,
-            "-jitoption", "TieredCompilation=0",
             "-target_os", platform_name,
             "-target_arch", arch_name,
             "-arch", host_arch_name,
@@ -120,7 +174,7 @@ def main(main_args):
             failed_runs.append("Failure in {}".format(log_file))
 
     # Consolidate all superpmi_*.logs in superpmi_platform_architecture.log
-    final_log_name = os.path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
+    final_log_name = os.path.join(log_directory, "superpmi_{}_{}_{}.log".format(platform_name, arch_name, coreclr_args.partition))
     print("Consolidating final {}".format(final_log_name))
     with open(final_log_name, "a") as final_superpmi_log:
         for superpmi_log in os.listdir(log_directory):

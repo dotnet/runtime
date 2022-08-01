@@ -440,7 +440,7 @@ namespace System.Globalization
                 int digEnd = 0;
                 while (true)
                 {
-                    if ((ch >= '0' && ch <= '9') || (((options & NumberStyles.AllowHexSpecifier) != 0) && ((ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'))))
+                    if (char.IsAsciiDigit(ch) || (((options & NumberStyles.AllowHexSpecifier) != 0) && char.IsBetween((char)(ch | 0x20), 'a', 'f')))
                     {
                         state |= StateDigits;
 
@@ -510,7 +510,7 @@ namespace System.Globalization
                             ch = (p = next) < strEnd ? *p : '\0';
                             negExp = true;
                         }
-                        if (ch >= '0' && ch <= '9')
+                        if (char.IsAsciiDigit(ch))
                         {
                             int exp = 0;
                             do
@@ -520,12 +520,12 @@ namespace System.Globalization
                                 if (exp > 1000)
                                 {
                                     exp = 9999;
-                                    while (ch >= '0' && ch <= '9')
+                                    while (char.IsAsciiDigit(ch))
                                     {
                                         ch = ++p < strEnd ? *p : '\0';
                                     }
                                 }
-                            } while (ch >= '0' && ch <= '9');
+                            } while (char.IsAsciiDigit(ch));
                             if (negExp)
                             {
                                 exp = -exp;
@@ -584,18 +584,10 @@ namespace System.Globalization
                 return false;
             }
 
-            private static bool TrailingZeros(ReadOnlySpan<char> s, int index)
-            {
+            [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case
+            private static bool TrailingZeros(ReadOnlySpan<char> s, int index) =>
                 // For compatibility, we need to allow trailing zeros at the end of a number string
-                for (int i = index; i < s.Length; i++)
-                {
-                    if (s[i] != '\0')
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
+                s.Slice(index).IndexOfAnyExcept('\0') < 0;
 
             internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
             {
@@ -678,8 +670,7 @@ namespace System.Globalization
                     // If the format begins with a symbol, see if it's a standard format
                     // with or without a specified number of digits.
                     c = format[0];
-                    if ((uint)(c - 'A') <= 'Z' - 'A' ||
-                        (uint)(c - 'a') <= 'z' - 'a')
+                    if (char.IsAsciiLetter(c))
                     {
                         // Fast path for sole symbol, e.g. "D"
                         if (format.Length == 1)
@@ -714,7 +705,7 @@ namespace System.Globalization
                         // digits.  Further, for compat, we need to stop when we hit a null char.
                         int n = 0;
                         int i = 1;
-                        while (i < format.Length && (((uint)format[i] - '0') < 10))
+                        while ((uint)i < (uint)format.Length && char.IsAsciiDigit(format[i]))
                         {
                             int temp = (n * 10) + format[i++] - '0';
                             if (temp < n)

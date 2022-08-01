@@ -61,8 +61,7 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(modOpt))]  // Automatically keeps all previous fields too due to StructLayout
         internal FieldBuilder(TypeBuilder tb, string fieldName, Type type, FieldAttributes attributes, Type[]? modReq, Type[]? modOpt)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             attrs = attributes & ~FieldAttributes.ReservedMask;
             name = fieldName;
@@ -149,7 +148,16 @@ namespace System.Reflection.Emit
 
         internal void SetRVAData(byte[] data)
         {
+            attrs |= FieldAttributes.HasFieldRVA;
             rva_data = (byte[])data.Clone();
+        }
+
+        internal static PackingSize RVADataPackingSize(int size)
+        {
+            if ((size % 8) == 0) return PackingSize.Size8;
+            if ((size % 4) == 0) return PackingSize.Size4;
+            if ((size % 2) == 0) return PackingSize.Size2;
+            return PackingSize.Size1;
         }
 
         public void SetConstant(object? defaultValue)
@@ -165,8 +173,7 @@ namespace System.Reflection.Emit
         {
             RejectIfCreated();
 
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.FieldOffsetAttribute")
@@ -209,7 +216,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             RejectIfCreated();

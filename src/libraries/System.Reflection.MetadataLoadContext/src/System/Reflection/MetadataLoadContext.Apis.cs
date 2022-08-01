@@ -105,7 +105,7 @@ namespace System.Reflection
         /// </param>
         public MetadataLoadContext(MetadataAssemblyResolver resolver, string? coreAssemblyName = null)
         {
-            if (resolver == null)
+            if (resolver is null)
                 throw new ArgumentNullException(nameof(resolver));
 
             this.resolver = resolver;
@@ -127,12 +127,11 @@ namespace System.Reflection
         /// </summary>
         public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
-            if (IsDisposed)
-                throw new ObjectDisposedException(nameof(MetadataLoadContext));
-
-            if (assemblyPath == null)
+            if (assemblyPath is null)
                 throw new ArgumentNullException(nameof(assemblyPath));
 
+            if (IsDisposed)
+                throw new ObjectDisposedException(nameof(MetadataLoadContext));
             return LoadFromStreamCore(File.OpenRead(assemblyPath));
         }
 
@@ -143,12 +142,11 @@ namespace System.Reflection
         /// </summary>
         public Assembly LoadFromByteArray(byte[] assembly)
         {
-            if (IsDisposed)
-                throw new ObjectDisposedException(nameof(MetadataLoadContext));
-
-            if (assembly == null)
+            if (assembly is null)
                 throw new ArgumentNullException(nameof(assembly));
 
+            if (IsDisposed)
+                throw new ObjectDisposedException(nameof(MetadataLoadContext));
             return LoadFromStreamCore(new MemoryStream(assembly));
         }
 
@@ -162,12 +160,11 @@ namespace System.Reflection
         /// </summary>
         public Assembly LoadFromStream(Stream assembly)
         {
-            if (IsDisposed)
-                throw new ObjectDisposedException(nameof(MetadataLoadContext));
-
-            if (assembly == null)
+            if (assembly is null)
                 throw new ArgumentNullException(nameof(assembly));
 
+            if (IsDisposed)
+                throw new ObjectDisposedException(nameof(MetadataLoadContext));
             assembly.Position = 0;
             return LoadFromStreamCore(assembly);
         }
@@ -181,12 +178,11 @@ namespace System.Reflection
         /// </summary>
         public Assembly LoadFromAssemblyName(string assemblyName)
         {
-            if (IsDisposed)
-                throw new ObjectDisposedException(nameof(MetadataLoadContext));
-
-            if (assemblyName == null)
+            if (assemblyName is null)
                 throw new ArgumentNullException(nameof(assemblyName));
 
+            if (IsDisposed)
+                throw new ObjectDisposedException(nameof(MetadataLoadContext));
             AssemblyName assemblyNameObject = new AssemblyName(assemblyName);
             RoAssemblyName refName = assemblyNameObject.ToRoAssemblyName();
             return ResolveAssembly(refName);
@@ -201,12 +197,11 @@ namespace System.Reflection
         /// </summary>
         public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
-            if (IsDisposed)
-                throw new ObjectDisposedException(nameof(MetadataLoadContext));
-
-            if (assemblyName == null)
+            if (assemblyName is null)
                 throw new ArgumentNullException(nameof(assemblyName));
 
+            if (IsDisposed)
+                throw new ObjectDisposedException(nameof(MetadataLoadContext));
             RoAssemblyName refName = assemblyName.ToRoAssemblyName();
             return ResolveAssembly(refName);
         }

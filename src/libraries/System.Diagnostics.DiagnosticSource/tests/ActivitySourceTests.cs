@@ -470,15 +470,32 @@ namespace System.Diagnostics.Tests
             Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());
             Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
             Assert.Equal("k=v", context.TraceState);
+            Assert.False(context.IsRemote);
+
+            Assert.True(ActivityContext.TryParse(w3cId, "k=v", isRemote: true, out context));
+            Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", context.TraceId.ToHexString());
+            Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());
+            Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
+            Assert.Equal("k=v", context.TraceState);
+            Assert.True(context.IsRemote);
+
+            Assert.True(ActivityContext.TryParse(w3cId, "k=v", isRemote: false, out context));
+            Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", context.TraceId.ToHexString());
+            Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());
+            Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
+            Assert.Equal("k=v", context.TraceState);
+            Assert.False(context.IsRemote);
 
             context = ActivityContext.Parse(w3cId, "k=v");
             Assert.Equal("99d43cb30a4cdb4fbeee3a19c29201b0", context.TraceId.ToHexString());
             Assert.Equal("e82825765f051b47", context.SpanId.ToHexString());
             Assert.Equal(ActivityTraceFlags.Recorded, context.TraceFlags);
             Assert.Equal("k=v", context.TraceState);
+            Assert.False(context.IsRemote);
 
             context = ActivityContext.Parse(w3cId, null);
             Assert.Null(context.TraceState);
+            Assert.False(context.IsRemote);
 
             Assert.False(ActivityContext.TryParse(null, "k=v", out context));
             Assert.Throws<ArgumentNullException>(() => ActivityContext.Parse(null, null));
@@ -486,6 +503,8 @@ namespace System.Diagnostics.Tests
 
             const string invalidW3CContext = "00-Z9d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01";
             Assert.False(ActivityContext.TryParse(invalidW3CContext, null, out context));
+            Assert.False(ActivityContext.TryParse(invalidW3CContext, null, isRemote: true, out context));
+            Assert.False(ActivityContext.TryParse(invalidW3CContext, null, isRemote: false, out context));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -855,6 +874,57 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestHasRemoteParent()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource aSource = new ActivitySource("HasRemoteParent");
+                using ActivityListener listener1 = new ActivityListener();
+                listener1.ShouldListenTo = (activitySource) => activitySource == aSource;
+
+                listener1.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => ActivitySamplingResult.AllData;
+                listener1.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
+
+                ActivitySource.AddActivityListener(listener1);
+
+                using (Activity activity = aSource.StartActivity("a1", ActivityKind.Client))
+                {
+                    Assert.False(activity.HasRemoteParent);
+                }
+
+                using (Activity activity = aSource.StartActivity("a2", ActivityKind.Client, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), 0, null, false)))
+                {
+                    Assert.False(activity.HasRemoteParent);
+                }
+
+                using (Activity activity = aSource.StartActivity("a3", ActivityKind.Client, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), 0, null, true)))
+                {
+                    Assert.True(activity.HasRemoteParent);
+                }
+
+                using (Activity activity = aSource.CreateActivity("a2", ActivityKind.Client, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), 0, null, false)))
+                {
+                    Assert.False(activity.HasRemoteParent);
+                    activity.Start();
+                    Assert.False(activity.HasRemoteParent);
+                }
+
+                using (Activity activity = aSource.CreateActivity("a3", ActivityKind.Client, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), 0, null, true)))
+                {
+                    Assert.True(activity.HasRemoteParent);
+                    activity.Start();
+                    Assert.True(activity.HasRemoteParent);
+                }
+
+                using (Activity activity = new Activity("a4"))
+                {
+                    Assert.False(activity.HasRemoteParent);
+                    activity.Start();
+                    Assert.False(activity.HasRemoteParent);
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestAddSamplerAndActivityCreationTags()
         {
             RemoteExecutor.Invoke(() => {
@@ -1051,6 +1121,163 @@ namespace System.Diagnostics.Tests
 
                     a.Start();
                 }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestTraceState()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                using ActivitySource aSource = new ActivitySource("SourceActivityTraceStateTest");
+                Activity.Current = null;
+
+                using ActivityListener listener = new ActivityListener();
+                listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                ActivitySource.AddActivityListener(listener);
+
+                bool setTraceWithStringParent = false;
+                string? traceStateValueWithStringParent = null;
+                string? floatingTraceState = null;
+
+                SampleActivity<string> sampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) =>
+                {
+                    if (setTraceWithStringParent)
+                    {
+                        activityOptions = activityOptions with { TraceState = traceStateValueWithStringParent };
+                    }
+                    return ActivitySamplingResult.AllDataAndRecorded;
+                };
+                listener.SampleUsingParentId = sampleUsingParentId;
+
+                bool setTraceWithContextParent = false;
+                string? traceStateValueWithContextParent = null;
+
+                SampleActivity<ActivityContext> sampleUsingContext = (ref ActivityCreationOptions<ActivityContext> activityOptions) => {
+                    if (floatingTraceState is not null)
+                    {
+                        Assert.Equal(floatingTraceState, activityOptions.TraceState);
+                    }
+                    if (setTraceWithContextParent)
+                    {
+                        activityOptions = activityOptions with { TraceState = traceStateValueWithContextParent };
+                    }
+                    return ActivitySamplingResult.AllDataAndRecorded;
+                };
+
+                listener.Sample = sampleUsingContext;
+
+                //
+                // Test not setting trace state when creating Activity with parent name
+                //
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, "SomeParent"))
+                {
+                    Assert.Null(a.TraceStateString);
+                }
+
+                //
+                // Test setting trace state when creating Activity with parent name
+                //
+
+                setTraceWithStringParent = true;
+                traceStateValueWithStringParent = "state1";
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, "SomeParent"))
+                {
+                    Assert.Equal(traceStateValueWithStringParent, a.TraceStateString);
+                }
+
+                //
+                // Test not setting trace state when creating Activity with Context
+                //
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None)))
+                {
+                    Assert.Null(a.TraceStateString);
+                }
+
+                //
+                // Test not setting trace state when creating Activity with Context. Pick the trace state from the context
+                //
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "state0")))
+                {
+                    Assert.Equal("state0", a.TraceStateString);
+                }
+
+                //
+                // Test setting trace state when creating Activity with context
+                //
+
+                setTraceWithContextParent = true;
+                traceStateValueWithContextParent = "state2";
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "state0")))
+                {
+                    Assert.Equal(traceStateValueWithContextParent, a.TraceStateString);
+                }
+
+                //
+                // Test setting trace state when creating Activity with W3C parent
+                //
+
+                listener.SampleUsingParentId = null;
+                traceStateValueWithContextParent = "state3";
+                using (Activity a = aSource.CreateActivity("a", ActivityKind.Server, "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01", default, default, ActivityIdFormat.W3C))
+                {
+                    Assert.Equal(traceStateValueWithContextParent, a.TraceStateString);
+                }
+
+                //
+                // Test setting trace state when having 2 listeners, one have the parent Id callback and the second has the context callback
+                //
+
+                using ActivityListener listener1 = new ActivityListener();
+                listener1.ShouldListenTo = (activitySource) => object.ReferenceEquals(aSource, activitySource);
+                listener1.SampleUsingParentId = sampleUsingParentId;
+                ActivitySource.AddActivityListener(listener1);
+
+                traceStateValueWithStringParent  = "state4";
+                traceStateValueWithContextParent = "state5";
+
+                using (Activity a = aSource.CreateActivity("a", ActivityKind.Server, "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01", default, default, ActivityIdFormat.W3C))
+                {
+                    Assert.Equal(traceStateValueWithStringParent, a.TraceStateString); // listener1 is the last one overwrite the trace state, should win.
+                }
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "state0")))
+                {
+                    Assert.Equal(traceStateValueWithContextParent, a.TraceStateString); // listener is the only one registered to handle context, should win.
+                }
+
+                // Now flip the order of the listener callbacks
+
+                listener.Sample = null;
+                listener.SampleUsingParentId = sampleUsingParentId;
+                listener1.SampleUsingParentId = null;
+                listener1.Sample = sampleUsingContext;
+
+                using (Activity a = aSource.CreateActivity("a", ActivityKind.Server, "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01", default, default, ActivityIdFormat.W3C))
+                {
+                    Assert.Equal(traceStateValueWithContextParent, a.TraceStateString); // listener1 is the last one overwrite the trace state, should win.
+                }
+
+                using (Activity a = aSource.StartActivity("a", ActivityKind.Server, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, "state0")))
+                {
+                    Assert.Equal(traceStateValueWithContextParent, a.TraceStateString); // listener1 is the only one registered to handle context, should win.
+                }
+
+                //
+                // Test setting the trace state in one listener will be accessible in the next listener
+                //
+
+                floatingTraceState = traceStateValueWithStringParent;
+                using (Activity a = aSource.CreateActivity("a", ActivityKind.Server, "00-99d43cb30a4cdb4fbeee3a19c29201b0-e82825765f051b47-01", default, default, ActivityIdFormat.W3C))
+                {
+                    Assert.Equal(traceStateValueWithContextParent, a.TraceStateString); // listener1 is the last one overwrite the trace state, should win.
+                }
+
             }).Dispose();
         }
 

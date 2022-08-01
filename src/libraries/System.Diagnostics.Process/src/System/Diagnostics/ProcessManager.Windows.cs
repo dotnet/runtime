@@ -28,15 +28,26 @@ namespace System.Diagnostics
         public static bool IsProcessRunning(int processId, string machineName)
         {
             // Performance optimization for the local machine:
-            // First try to OpenProcess by id, if valid handle is returned, the process is definitely running
-            // Otherwise enumerate all processes and compare ids
-            if (!IsRemoteMachine(machineName))
+            // First try to OpenProcess by id, if valid handle is returned verify that process is running
+            // When the attempt to open a handle fails due to lack of permissions enumerate all processes and compare ids
+            // Attempt to open handle for Idle process (processId == 0) fails with ERROR_INVALID_PARAMETER
+            if (processId != 0 && !IsRemoteMachine(machineName))
             {
-                using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(ProcessOptions.PROCESS_QUERY_INFORMATION, false, processId))
+                using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION | ProcessOptions.SYNCHRONIZE, false, processId))
                 {
-                    if (!processHandle.IsInvalid)
+                    if (processHandle.IsInvalid)
                     {
-                        return true;
+                        int error = Marshal.GetLastWin32Error();
+                        if (error == Interop.Errors.ERROR_INVALID_PARAMETER)
+                        {
+                            Debug.Assert(processId != 0, "OpenProcess fails with ERROR_INVALID_PARAMETER for Idle Process");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        bool signaled = false;
+                        return !HasExited(processHandle, ref signaled, out _);
                     }
                 }
             }
@@ -45,13 +56,32 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
         /// <param name="machineName">The target machine.</param>
         /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string machineName)
+        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
         {
-            return IsRemoteMachine(machineName) ?
-                NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true) :
-                NtProcessInfoHelper.GetProcessInfos();
+            if (!IsRemoteMachine(machineName))
+            {
+                return NtProcessInfoHelper.GetProcessInfos(processNameFilter: processNameFilter);
+            }
+
+            ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
+            if (string.IsNullOrEmpty(processNameFilter))
+            {
+                return processInfos;
+            }
+
+            ArrayBuilder<ProcessInfo> results = default;
+            foreach (ProcessInfo pi in processInfos)
+            {
+                if (string.Equals(processNameFilter, pi.ProcessName, StringComparison.OrdinalIgnoreCase))
+                {
+                    results.Add(pi);
+                }
+            }
+
+            return results.ToArray();
         }
 
         /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
@@ -84,6 +114,42 @@ namespace System.Diagnostics
 
             return null;
         }
+
+        /// <summary>Gets the process name for the specified process ID on the specified machine.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <param name="machineName">The machine name.</param>
+        /// <returns>The process name for the process if it could be found; otherwise, null.</returns>
+        public static string? GetProcessName(int processId, string machineName)
+        {
+            if (IsRemoteMachine(machineName))
+            {
+                // remote case: we take the hit of looping through all results
+                ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
+                foreach (ProcessInfo processInfo in processInfos)
+                {
+                    if (processInfo.ProcessId == processId)
+                    {
+                        return processInfo.ProcessName;
+                    }
+                }
+            }
+            else
+            {
+                // local case: do not use performance counter and also attempt to get the matching (by pid) process only
+
+                string? processName = Interop.Kernel32.GetProcessName((uint)processId);
+                if (processName is not null)
+                {
+                    ReadOnlySpan<char> newName = NtProcessInfoHelper.GetProcessShortName(processName);
+                    return newName.SequenceEqual(processName) ?
+                        processName :
+                        newName.ToString();
+                }
+            }
+
+            return null;
+        }
+
 
         /// <summary>Gets the IDs of all processes on the specified machine.</summary>
         /// <param name="machineName">The machine to examine.</param>
@@ -165,10 +231,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                if (tokenHandle != null)
-                {
-                    tokenHandle.Dispose();
-                }
+                tokenHandle?.Dispose();
             }
         }
 
@@ -180,6 +243,8 @@ namespace System.Diagnostics
             {
                 return processHandle;
             }
+
+            processHandle.Dispose();
 
             if (processId == 0)
             {
@@ -208,11 +273,49 @@ namespace System.Diagnostics
             int result = Marshal.GetLastWin32Error();
             if (threadHandle.IsInvalid)
             {
+                threadHandle.Dispose();
                 if (result == Interop.Errors.ERROR_INVALID_PARAMETER)
                     throw new InvalidOperationException(SR.Format(SR.ThreadExited, threadId.ToString()));
                 throw new Win32Exception(result);
             }
             return threadHandle;
+        }
+
+        // Handle should be valid and have PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE access
+        public static bool HasExited(SafeProcessHandle handle, ref bool signaled, out int exitCode)
+        {
+            // Although this is the wrong way to check whether the process has exited,
+            // it was historically the way we checked for it, and a lot of code then took a dependency on
+            // the fact that this would always be set before the pipes were closed, so they would read
+            // the exit code out after calling ReadToEnd() or standard output or standard error. In order
+            // to allow 259 to function as a valid exit code and to break as few people as possible that
+            // took the ReadToEnd dependency, we check for an exit code before doing the more correct
+            // check to see if we have been signaled.
+            if (Interop.Kernel32.GetExitCodeProcess(handle, out exitCode) && exitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE)
+            {
+                return true;
+            }
+
+            // The best check for exit is that the kernel process object handle is invalid,
+            // or that it is valid and signaled.  Checking if the exit code != STILL_ACTIVE
+            // does not guarantee the process is closed,
+            // since some process could return an actual STILL_ACTIVE exit code (259).
+            if (!signaled) // if we just came from Process.WaitForExit, don't repeat
+            {
+                using (var wh = new Interop.Kernel32.ProcessWaitHandle(handle))
+                {
+                    signaled = wh.WaitOne(0);
+                }
+            }
+            if (signaled)
+            {
+                if (!Interop.Kernel32.GetExitCodeProcess(handle, out exitCode))
+                    throw new Win32Exception();
+
+                return true;
+            }
+
+            return false;
         }
     }
 

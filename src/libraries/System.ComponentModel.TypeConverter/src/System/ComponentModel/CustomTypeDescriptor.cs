@@ -70,7 +70,7 @@ namespace System.ComponentModel
         /// descriptor is representing.
         /// </summary>
         [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
-        public virtual TypeConverter GetConverter()
+        public virtual TypeConverter? GetConverter()
         {
             if (_parent != null)
             {

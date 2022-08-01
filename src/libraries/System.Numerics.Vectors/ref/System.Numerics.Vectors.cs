@@ -128,8 +128,8 @@ namespace System.Numerics
     }
     public partial struct Plane : System.IEquatable<System.Numerics.Plane>
     {
-        public float D;
         public System.Numerics.Vector3 Normal;
+        public float D;
         public Plane(System.Numerics.Vector3 normal, float d) { throw null; }
         public Plane(System.Numerics.Vector4 value) { throw null; }
         public Plane(float x, float y, float z, float d) { throw null; }
@@ -149,10 +149,10 @@ namespace System.Numerics
     }
     public partial struct Quaternion : System.IEquatable<System.Numerics.Quaternion>
     {
-        public float W;
         public float X;
         public float Y;
         public float Z;
+        public float W;
         public Quaternion(System.Numerics.Vector3 vectorPart, float scalarPart) { throw null; }
         public Quaternion(float x, float y, float z, float w) { throw null; }
         public static System.Numerics.Quaternion Zero { get { throw null; } }
@@ -290,6 +290,42 @@ namespace System.Numerics
         public static System.Numerics.Vector<System.UInt32> Narrow(System.Numerics.Vector<System.UInt64> low, System.Numerics.Vector<System.UInt64> high) { throw null; }
         public static System.Numerics.Vector<T> Negate<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<T> OnesComplement<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
+        public static System.Numerics.Vector<System.Byte> ShiftLeft(System.Numerics.Vector<System.Byte> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int16> ShiftLeft(System.Numerics.Vector<System.Int16> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int32> ShiftLeft(System.Numerics.Vector<System.Int32> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int64> ShiftLeft(System.Numerics.Vector<System.Int64> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<nint> ShiftLeft(System.Numerics.Vector<nint> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<nuint> ShiftLeft(System.Numerics.Vector<nuint> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.SByte> ShiftLeft(System.Numerics.Vector<System.SByte> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt16> ShiftLeft(System.Numerics.Vector<System.UInt16> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt32> ShiftLeft(System.Numerics.Vector<System.UInt32> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt64> ShiftLeft(System.Numerics.Vector<System.UInt64> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int16> ShiftRightArithmetic(System.Numerics.Vector<System.Int16> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int32> ShiftRightArithmetic(System.Numerics.Vector<System.Int32> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int64> ShiftRightArithmetic(System.Numerics.Vector<System.Int64> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<nint> ShiftRightArithmetic(System.Numerics.Vector<nint> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.SByte> ShiftRightArithmetic(System.Numerics.Vector<System.SByte> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Byte> ShiftRightLogical(System.Numerics.Vector<System.Byte> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int16> ShiftRightLogical(System.Numerics.Vector<System.Int16> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int32> ShiftRightLogical(System.Numerics.Vector<System.Int32> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<System.Int64> ShiftRightLogical(System.Numerics.Vector<System.Int64> value, int shiftCount) { throw null; }
+        public static System.Numerics.Vector<nint> ShiftRightLogical(System.Numerics.Vector<nint> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<nuint> ShiftRightLogical(System.Numerics.Vector<nuint> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.SByte> ShiftRightLogical(System.Numerics.Vector<System.SByte> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt16> ShiftRightLogical(System.Numerics.Vector<System.UInt16> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt32> ShiftRightLogical(System.Numerics.Vector<System.UInt32> value, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.Vector<System.UInt64> ShiftRightLogical(System.Numerics.Vector<System.UInt64> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<T> SquareRoot<T>(System.Numerics.Vector<T> value) where T : struct { throw null; }
         public static System.Numerics.Vector<T> Subtract<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -357,8 +393,8 @@ namespace System.Numerics
         public static System.Numerics.Vector2 SquareRoot(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Subtract(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public override readonly string ToString() { throw null; }
-        public readonly string ToString(string? format) { throw null; }
-        public readonly string ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        public readonly string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public readonly string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? formatProvider) { throw null; }
         public static System.Numerics.Vector2 Transform(System.Numerics.Vector2 position, System.Numerics.Matrix3x2 matrix) { throw null; }
         public static System.Numerics.Vector2 Transform(System.Numerics.Vector2 position, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector2 Transform(System.Numerics.Vector2 value, System.Numerics.Quaternion rotation) { throw null; }
@@ -420,18 +456,18 @@ namespace System.Numerics
         public static System.Numerics.Vector3 SquareRoot(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Subtract(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public override readonly string ToString() { throw null; }
-        public readonly string ToString(string? format) { throw null; }
-        public readonly string ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        public readonly string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public readonly string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? formatProvider) { throw null; }
         public static System.Numerics.Vector3 Transform(System.Numerics.Vector3 position, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector3 Transform(System.Numerics.Vector3 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector3 TransformNormal(System.Numerics.Vector3 normal, System.Numerics.Matrix4x4 matrix) { throw null; }
     }
     public partial struct Vector4 : System.IEquatable<System.Numerics.Vector4>, System.IFormattable
     {
-        public float W;
         public float X;
         public float Y;
         public float Z;
+        public float W;
         public Vector4(System.Numerics.Vector2 value, float z, float w) { throw null; }
         public Vector4(System.Numerics.Vector3 value, float w) { throw null; }
         public Vector4(float value) { throw null; }
@@ -482,8 +518,8 @@ namespace System.Numerics
         public static System.Numerics.Vector4 SquareRoot(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Subtract(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public override readonly string ToString() { throw null; }
-        public readonly string ToString(string? format) { throw null; }
-        public readonly string ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        public readonly string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public readonly string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? formatProvider) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector2 position, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector2 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector3 position, System.Numerics.Matrix4x4 matrix) { throw null; }
@@ -501,6 +537,7 @@ namespace System.Numerics
         public Vector(T[] values) { throw null; }
         public Vector(T[] values, int index) { throw null; }
         public static int Count { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
         public T this[int index] { get { throw null; } }
         public static System.Numerics.Vector<T> One { get { throw null; } }
         public static System.Numerics.Vector<T> Zero { get { throw null; } }
@@ -542,8 +579,8 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> operator -(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> operator -(System.Numerics.Vector<T> value) { throw null; }
         public override string ToString() { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? formatProvider) { throw null; }
         public bool TryCopyTo(System.Span<byte> destination) { throw null; }
         public bool TryCopyTo(System.Span<T> destination) { throw null; }
     }

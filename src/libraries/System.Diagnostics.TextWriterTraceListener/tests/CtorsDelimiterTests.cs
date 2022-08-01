@@ -90,8 +90,8 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         {
             var target = new DelimitedListTraceListener(FileStream.Null);
             Assert.Equal(DefaultDelimiter, target.Delimiter);
-            Assert.Throws<ArgumentNullException>(() => target.Delimiter = null);
-            AssertExtensions.Throws<ArgumentException>(null, () => target.Delimiter = string.Empty);
+            AssertExtensions.Throws<ArgumentNullException>("Delimiter", () => target.Delimiter = null);
+            AssertExtensions.Throws<ArgumentException>("Delimiter", () => target.Delimiter = string.Empty);
         }
 
         [Fact]

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly ILGEN_MODULE{}
+.assembly 'DevDiv_406156'{}
 .assembly extern xunit.core {}
 
 .class ILGEN_CLASS
@@ -145,7 +145,7 @@
 // Reading from 'lir_cpp__1524____Assertion_failed__next____def_____found_def_after_use_.mc' dumping raw IL for MC Indexes to console
 // ProcessName - 'ILGEN'
 .assembly extern mscorlib{}
-.assembly ILGEN_MODULE{}
+.assembly 'DevDiv_406156'{}
 .assembly extern xunit.core
 {
     .publickeytoken = (

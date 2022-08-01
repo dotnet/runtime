@@ -117,9 +117,9 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument Parse(Stream utf8Json, JsonDocumentOptions options = default)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
             ArraySegment<byte> drained = ReadToEnd(utf8Json);
@@ -200,9 +200,9 @@ namespace System.Text.Json
             JsonDocumentOptions options = default,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
             return ParseAsyncCore(utf8Json, options, cancellationToken);
@@ -247,7 +247,7 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
-        public static JsonDocument Parse(ReadOnlyMemory<char> json, JsonDocumentOptions options = default)
+        public static JsonDocument Parse([StringSyntax(StringSyntaxAttribute.Json)] ReadOnlyMemory<char> json, JsonDocumentOptions options = default)
         {
             ReadOnlySpan<char> jsonChars = json.Span;
             int expectedByteCount = JsonReaderHelper.GetUtf8ByteCount(jsonChars);
@@ -311,11 +311,11 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
-        public static JsonDocument Parse(string json, JsonDocumentOptions options = default)
+        public static JsonDocument Parse([StringSyntax(StringSyntaxAttribute.Json)] string json, JsonDocumentOptions options = default)
         {
-            if (json == null)
+            if (json is null)
             {
-                throw new ArgumentNullException(nameof(json));
+                ThrowHelper.ThrowArgumentNullException(nameof(json));
             }
 
             return Parse(json.AsMemory(), options);

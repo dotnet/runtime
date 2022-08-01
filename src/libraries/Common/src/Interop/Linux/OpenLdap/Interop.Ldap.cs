@@ -76,149 +76,190 @@ internal static partial class Interop
             ldap_get_option_int(IntPtr.Zero, LdapOption.LDAP_OPT_DEBUG_LEVEL, ref unused);
         }
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_initialize", CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern int ldap_initialize(out IntPtr ld, string uri);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_initialize", SetLastError = true)]
+        public static partial int ldap_initialize(out IntPtr ld,  [MarshalAs(UnmanagedType.LPUTF8Str)] string uri);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_unbind_ext_s", CharSet = CharSet.Ansi)]
-        public static extern int ldap_unbind_ext_s(IntPtr ld, ref IntPtr serverctrls, ref IntPtr clientctrls);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_unbind_ext_s")]
+        public static partial int ldap_unbind_ext_s(IntPtr ld, ref IntPtr serverctrls, ref IntPtr clientctrls);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_dn", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_get_dn([In] ConnectionHandle ldapHandle, [In] IntPtr result);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_dn")]
+        public static partial IntPtr ldap_get_dn(ConnectionHandle ldapHandle, IntPtr result);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_get_option_bool([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref bool outValue);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
+        public static partial int ldap_get_option_bool(ConnectionHandle ldapHandle, LdapOption option, [MarshalAs(UnmanagedType.Bool)] ref bool outValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_get_option_secInfo([In] ConnectionHandle ldapHandle, [In] LdapOption option, [In, Out] SecurityPackageContextConnectionInformation outValue);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
+        public static unsafe partial int ldap_get_option_secInfo(ConnectionHandle ldapHandle, LdapOption option, void* outValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_get_option_sechandle([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref SecurityHandle outValue);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
+        public static partial int ldap_get_option_sechandle(ConnectionHandle ldapHandle, LdapOption option, ref SecurityHandle outValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
-        private static extern int ldap_get_option_int([In] IntPtr ldapHandle, [In] LdapOption option, ref int outValue);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
+        private static partial int ldap_get_option_int(IntPtr ldapHandle, LdapOption option, ref int outValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_get_option_int([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref int outValue);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
+        public static partial int ldap_get_option_int(ConnectionHandle ldapHandle, LdapOption option, ref int outValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_get_option_ptr([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref IntPtr outValue);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
+        public static partial int ldap_get_option_ptr(ConnectionHandle ldapHandle, LdapOption option, ref IntPtr outValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_get_values_len", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_get_values_len([In] ConnectionHandle ldapHandle, [In] IntPtr result, string name);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_values_len")]
+        public static partial IntPtr ldap_get_values_len(ConnectionHandle ldapHandle, IntPtr result, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_result", SetLastError = true, CharSet = CharSet.Ansi)]
-        public static extern int ldap_result([In] ConnectionHandle ldapHandle, int messageId, int all, LDAP_TIMEVAL timeout, ref IntPtr Mesage);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_result", SetLastError = true)]
+        public static partial int ldap_result(ConnectionHandle ldapHandle, int messageId, int all, in LDAP_TIMEVAL timeout, ref IntPtr Mesage);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_result2error", CharSet = CharSet.Ansi)]
-        public static extern int ldap_result2error([In] ConnectionHandle ldapHandle, [In] IntPtr result, int freeIt);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_result2error")]
+        public static partial int ldap_result2error(ConnectionHandle ldapHandle, IntPtr result, int freeIt);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_search_ext", CharSet = CharSet.Ansi)]
-        public static extern int ldap_search([In] ConnectionHandle ldapHandle, string dn, int scope, string filter, IntPtr attributes, bool attributeOnly, IntPtr servercontrol, IntPtr clientcontrol, int timelimit, int sizelimit, ref int messageNumber);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_search_ext")]
+        public static partial int ldap_search(
+            ConnectionHandle ldapHandle,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string dn,
+            int scope,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string filter,
+            IntPtr attributes,
+            [MarshalAs(UnmanagedType.Bool)] bool attributeOnly,
+            IntPtr servercontrol,
+            IntPtr clientcontrol,
+            int timelimit,
+            int sizelimit,
+            ref int messageNumber);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern int ldap_set_option_bool([In] ConnectionHandle ld, [In] LdapOption option, bool value);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", SetLastError = true)]
+        public static partial int ldap_set_option_bool(ConnectionHandle ld, LdapOption option, [MarshalAs(UnmanagedType.Bool)] bool value);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_set_option_clientcert([In] ConnectionHandle ldapHandle, [In] LdapOption option, QUERYCLIENTCERT outValue);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
+        public static partial int ldap_set_option_clientcert(ConnectionHandle ldapHandle, LdapOption option, QUERYCLIENTCERT outValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_set_option_servercert([In] ConnectionHandle ldapHandle, [In] LdapOption option, VERIFYSERVERCERT outValue);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
+        public static partial int ldap_set_option_servercert(ConnectionHandle ldapHandle, LdapOption option, VERIFYSERVERCERT outValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern int ldap_set_option_int([In] ConnectionHandle ld, [In] LdapOption option, ref int inValue);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", SetLastError = true)]
+        public static partial int ldap_set_option_int(ConnectionHandle ld, LdapOption option, ref int inValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_set_option_ptr([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref IntPtr inValue);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
+        public static partial int ldap_set_option_ptr(ConnectionHandle ldapHandle, LdapOption option, ref IntPtr inValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_set_option_string([In] ConnectionHandle ldapHandle, [In] LdapOption option, string inValue);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
+        public static partial int ldap_set_option_string(ConnectionHandle ldapHandle, LdapOption option, [MarshalAs(UnmanagedType.LPUTF8Str)] string inValue);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", CharSet = CharSet.Ansi)]
-        public static extern int ldap_set_option_referral([In] ConnectionHandle ldapHandle, [In] LdapOption option, ref LdapReferralCallback outValue);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
+        public static partial int ldap_set_option_referral(ConnectionHandle ldapHandle, LdapOption option, ref LdapReferralCallback outValue);
 
         // Note that ldap_start_tls_s has a different signature across Windows LDAP and OpenLDAP
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_start_tls_s", CharSet = CharSet.Ansi)]
-        public static extern int ldap_start_tls(ConnectionHandle ldapHandle, IntPtr serverControls, IntPtr clientControls);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_start_tls_s")]
+        public static partial int ldap_start_tls(ConnectionHandle ldapHandle, IntPtr serverControls, IntPtr clientControls);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_result", CharSet = CharSet.Ansi)]
-        public static extern int ldap_parse_result([In] ConnectionHandle ldapHandle, [In] IntPtr result, ref int serverError, ref IntPtr dn, ref IntPtr message, ref IntPtr referral, ref IntPtr control, byte freeIt);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_result")]
+        public static partial int ldap_parse_result(ConnectionHandle ldapHandle, IntPtr result, ref int serverError, ref IntPtr dn, ref IntPtr message, ref IntPtr referral, ref IntPtr control, byte freeIt);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_result", CharSet = CharSet.Ansi)]
-        public static extern int ldap_parse_result_referral([In] ConnectionHandle ldapHandle, [In] IntPtr result, IntPtr serverError, IntPtr dn, IntPtr message, ref IntPtr referral, IntPtr control, byte freeIt);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_result")]
+        public static partial int ldap_parse_result_referral(ConnectionHandle ldapHandle, IntPtr result, IntPtr serverError, IntPtr dn, IntPtr message, ref IntPtr referral, IntPtr control, byte freeIt);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_extended_result", CharSet = CharSet.Ansi)]
-        public static extern int ldap_parse_extended_result([In] ConnectionHandle ldapHandle, [In] IntPtr result, ref IntPtr oid, ref IntPtr data, byte freeIt);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_extended_result")]
+        public static partial int ldap_parse_extended_result(ConnectionHandle ldapHandle, IntPtr result, ref IntPtr oid, ref IntPtr data, byte freeIt);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_reference", CharSet = CharSet.Ansi)]
-        public static extern int ldap_parse_reference([In] ConnectionHandle ldapHandle, [In] IntPtr result, ref IntPtr referrals, IntPtr ServerControls, byte freeIt);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_parse_reference")]
+        public static partial int ldap_parse_reference(ConnectionHandle ldapHandle, IntPtr result, ref IntPtr referrals, IntPtr ServerControls, byte freeIt);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_bind_s", CharSet = CharSet.Ansi)]
-        internal static extern int ldap_sasl_bind([In] ConnectionHandle ld, string dn, string mechanism, berval cred, IntPtr serverctrls, IntPtr clientctrls, IntPtr servercredp);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_bind_s")]
+        internal static partial int ldap_sasl_bind(
+            ConnectionHandle ld,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string dn,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string mechanism,
+            BerVal cred,
+            IntPtr serverctrls,
+            IntPtr clientctrls,
+            IntPtr servercredp);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_interactive_bind_s", CharSet = CharSet.Ansi)]
-        internal static extern int ldap_sasl_interactive_bind([In] ConnectionHandle ld, string dn, string mechanism, IntPtr serverctrls, IntPtr clientctrls, uint flags, [MarshalAs(UnmanagedType.FunctionPtr)] LDAP_SASL_INTERACT_PROC proc, IntPtr defaults);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_sasl_interactive_bind_s")]
+        internal static partial int ldap_sasl_interactive_bind(
+            ConnectionHandle ld,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string dn,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string mechanism,
+            IntPtr serverctrls,
+            IntPtr clientctrls,
+            uint flags,
+            LDAP_SASL_INTERACT_PROC proc,
+            IntPtr defaults);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_err2string", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_err2string(int err);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_err2string")]
+        public static partial IntPtr ldap_err2string(int err);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_extended_operation", CharSet = CharSet.Ansi)]
-        public static extern int ldap_extended_operation([In] ConnectionHandle ldapHandle, string oid, berval data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_extended_operation")]
+        public static partial int ldap_extended_operation(ConnectionHandle ldapHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string oid, BerVal data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_first_attribute", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_first_attribute([In] ConnectionHandle ldapHandle, [In] IntPtr result, ref IntPtr address);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_first_attribute")]
+        public static partial IntPtr ldap_first_attribute(ConnectionHandle ldapHandle, IntPtr result, ref IntPtr address);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_first_entry", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_first_entry([In] ConnectionHandle ldapHandle, [In] IntPtr result);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_first_entry")]
+        public static partial IntPtr ldap_first_entry(ConnectionHandle ldapHandle, IntPtr result);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_first_reference", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_first_reference([In] ConnectionHandle ldapHandle, [In] IntPtr result);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_first_reference")]
+        public static partial IntPtr ldap_first_reference(ConnectionHandle ldapHandle, IntPtr result);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_create_sort_control", CharSet = CharSet.Ansi)]
-        public static extern int ldap_create_sort_control(ConnectionHandle handle, IntPtr keys, byte critical, ref IntPtr control);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_create_sort_control")]
+        public static partial int ldap_create_sort_control(ConnectionHandle handle, IntPtr keys, byte critical, ref IntPtr control);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_control_free", CharSet = CharSet.Ansi)]
-        public static extern int ldap_control_free(IntPtr control);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_control_free")]
+        public static partial int ldap_control_free(IntPtr control);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_controls_free", CharSet = CharSet.Ansi)]
-        public static extern int ldap_controls_free([In] IntPtr value);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_controls_free")]
+        public static partial int ldap_controls_free(IntPtr value);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_value_free", CharSet = CharSet.Ansi)]
-        public static extern int ldap_value_free([In] IntPtr value);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_value_free")]
+        public static partial int ldap_value_free(IntPtr value);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_value_free_len", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_value_free_len([In] IntPtr berelement);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_value_free_len")]
+        public static partial IntPtr ldap_value_free_len(IntPtr berelement);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_memfree", CharSet = CharSet.Ansi)]
-        public static extern void ldap_memfree([In] IntPtr value);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_memfree")]
+        public static partial void ldap_memfree(IntPtr value);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_msgfree", CharSet = CharSet.Ansi)]
-        public static extern void ldap_msgfree([In] IntPtr value);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_msgfree")]
+        public static partial void ldap_msgfree(IntPtr value);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_modify_ext", CharSet = CharSet.Ansi)]
-        public static extern int ldap_modify([In] ConnectionHandle ldapHandle, string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_modify_ext")]
+        public static partial int ldap_modify(ConnectionHandle ldapHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_next_attribute", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_next_attribute([In] ConnectionHandle ldapHandle, [In] IntPtr result, [In, Out] IntPtr address);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_next_attribute")]
+        public static partial IntPtr ldap_next_attribute(ConnectionHandle ldapHandle, IntPtr result, IntPtr address);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_next_entry", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_next_entry([In] ConnectionHandle ldapHandle, [In] IntPtr result);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_next_entry")]
+        public static partial IntPtr ldap_next_entry(ConnectionHandle ldapHandle, IntPtr result);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_next_reference", CharSet = CharSet.Ansi)]
-        public static extern IntPtr ldap_next_reference([In] ConnectionHandle ldapHandle, [In] IntPtr result);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_next_reference")]
+        public static partial IntPtr ldap_next_reference(ConnectionHandle ldapHandle, IntPtr result);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_abandon", CharSet = CharSet.Ansi)]
-        public static extern int ldap_abandon([In] ConnectionHandle ldapHandle, [In] int messagId);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_abandon")]
+        public static partial int ldap_abandon(ConnectionHandle ldapHandle, int messagId);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_add_ext", CharSet = CharSet.Ansi)]
-        public static extern int ldap_add([In] ConnectionHandle ldapHandle, string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_add_ext")]
+        public static partial int ldap_add(ConnectionHandle ldapHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string dn, IntPtr attrs, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_delete_ext", CharSet = CharSet.Ansi)]
-        public static extern int ldap_delete_ext([In] ConnectionHandle ldapHandle, string dn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_delete_ext")]
+        public static partial int ldap_delete_ext(ConnectionHandle ldapHandle, [MarshalAs(UnmanagedType.LPUTF8Str)] string dn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_rename", CharSet = CharSet.Ansi)]
-        public static extern int ldap_rename([In] ConnectionHandle ldapHandle, string dn, string newRdn, string newParentDn, int deleteOldRdn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_rename")]
+        public static partial int ldap_rename(
+            ConnectionHandle ldapHandle,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string dn,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string newRdn,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string newParentDn,
+            int deleteOldRdn,
+            IntPtr servercontrol,
+            IntPtr clientcontrol,
+            ref int messageNumber);
 
-        [DllImport(Libraries.OpenLdap, EntryPoint = "ldap_compare_ext", CharSet = CharSet.Ansi)]
-        public static extern int ldap_compare([In] ConnectionHandle ldapHandle, string dn, string attributeName, berval binaryValue, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber);
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_compare_ext")]
+        public static partial int ldap_compare(
+            ConnectionHandle ldapHandle,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string dn,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string attributeName,
+            BerVal binaryValue,
+            IntPtr servercontrol,
+            IntPtr clientcontrol,
+            ref int messageNumber);
     }
 }

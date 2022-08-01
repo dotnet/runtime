@@ -49,7 +49,7 @@ Combine: MonoDefaults, GENERATE_GET_CLASS_WITH_CACHE, TYPED_HANDLE_DECL and frie
 
 /*
  * NOTE: Async suspend
- * 
+ *
  * If we are running with cooperative GC, all the handle stack
  * manipulation will complete before a GC thread scans the handle
  * stack. If we are using async suspend, however, a thread may be
@@ -362,7 +362,7 @@ mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, c
 /*
  * Pop the stack until @stackmark and make @value the top value.
  *
- * @return the new handle for what @value points to 
+ * @return the new handle for what @value points to
  */
 MonoRawHandle
 mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, MonoRawHandle value)
@@ -452,7 +452,7 @@ mono_object_handle_pin_unbox (MonoObjectHandle obj, MonoGCHandle *gchandle)
 void
 mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArrayHandle src, uintptr_t src_idx, uintptr_t len)
 {
-	mono_array_memcpy_refs_internal (MONO_HANDLE_RAW (dest), dest_idx, MONO_HANDLE_RAW (src), src_idx, len);
+	mono_array_memcpy_refs_internal (MONO_HANDLE_RAW (dest), dest_idx, MONO_HANDLE_RAW (src), src_idx, GUINTPTR_TO_INT (len));
 }
 
 gboolean

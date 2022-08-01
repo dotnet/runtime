@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
+    <Nullable>disable</Nullable>
+    <EnableBinPlacing>false</EnableBinPlacing>
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
     <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
-    <IsSourceProject>false</IsSourceProject>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
 
@@ -20,7 +21,7 @@
     
     <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' == 'core'">$(NetCoreAppToolCurrent)</_generateRuntimeGraphTargetFramework>
     <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' != 'core'">net472</_generateRuntimeGraphTargetFramework>
-    <_generateRuntimeGraphTask>$([MSBuild]::NormalizePath('$(BaseOutputPath)', '$(_generateRuntimeGraphTargetFramework)-$(Configuration)', '$(AssemblyName).dll'))</_generateRuntimeGraphTask>
+    <_generateRuntimeGraphTask>$([MSBuild]::NormalizePath('$(BaseOutputPath)', $(Configuration), '$(_generateRuntimeGraphTargetFramework)', '$(AssemblyName).dll'))</_generateRuntimeGraphTask>
     <!-- When building from source, ensure the RID we're building for is part of the RID graph -->
     <AdditionalRuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalRuntimeIdentifiers);$(OutputRID)</AdditionalRuntimeIdentifiers>
   </PropertyGroup>

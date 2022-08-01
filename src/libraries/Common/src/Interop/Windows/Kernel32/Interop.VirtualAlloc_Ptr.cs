@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true)]
+        [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial void* VirtualAlloc(void* lpAddress, UIntPtr dwSize, int flAllocationType, int flProtect);
     }
 }

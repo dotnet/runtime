@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Drawing.Imaging;
+using System.Drawing.Internal;
 using System.IO;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
@@ -14,7 +15,7 @@ namespace System.Drawing
             "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-    public sealed partial class Bitmap : Image
+    public sealed class Bitmap : Image
     {
         private static readonly Color s_defaultTransparentColor = Color.LightGray;
 
@@ -30,7 +31,7 @@ namespace System.Drawing
             // so if the app's default directory changes we won't get an error.
             filename = Path.GetFullPath(filename);
 
-            IntPtr bitmap = IntPtr.Zero;
+            IntPtr bitmap;
             int status;
 
             if (useIcm)
@@ -53,20 +54,36 @@ namespace System.Drawing
         {
         }
 
+        public unsafe Bitmap(Stream stream, bool useIcm)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+
+            using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(new GPStream(stream));
+
+            IntPtr bitmap = IntPtr.Zero;
+            if (useIcm)
+            {
+                Gdip.CheckStatus(Gdip.GdipCreateBitmapFromStreamICM(streamWrapper.Ptr, &bitmap));
+            }
+            else
+            {
+                Gdip.CheckStatus(Gdip.GdipCreateBitmapFromStream(streamWrapper.Ptr, &bitmap));
+            }
+
+            ValidateImage(bitmap);
+
+            SetNativeImage(bitmap);
+            EnsureSave(this, null, stream);
+        }
+
         public Bitmap(Type type, string resource) : this(GetResourceStream(type, resource))
         {
         }
 
         private static Stream GetResourceStream(Type type, string resource)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-            if (resource == null)
-            {
-                throw new ArgumentNullException(nameof(resource));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(resource);
 
             Stream? stream = type.Module.Assembly.GetManifestResourceStream(type, resource);
             if (stream == null)
@@ -83,12 +100,9 @@ namespace System.Drawing
 
         public Bitmap(int width, int height, Graphics g)
         {
-            if (g == null)
-            {
-                throw new ArgumentNullException(nameof(g));
-            }
+            ArgumentNullException.ThrowIfNull(g);
 
-            IntPtr bitmap = IntPtr.Zero;
+            IntPtr bitmap;
             int status = Gdip.GdipCreateBitmapFromGraphics(width, height, new HandleRef(g, g.NativeGraphics), out bitmap);
             Gdip.CheckStatus(status);
 
@@ -97,7 +111,7 @@ namespace System.Drawing
 
         public Bitmap(int width, int height, int stride, PixelFormat format, IntPtr scan0)
         {
-            IntPtr bitmap = IntPtr.Zero;
+            IntPtr bitmap;
             int status = Gdip.GdipCreateBitmapFromScan0(width, height, stride, unchecked((int)format), scan0, out bitmap);
             Gdip.CheckStatus(status);
 
@@ -106,7 +120,7 @@ namespace System.Drawing
 
         public Bitmap(int width, int height, PixelFormat format)
         {
-            IntPtr bitmap = IntPtr.Zero;
+            IntPtr bitmap;
             int status = Gdip.GdipCreateBitmapFromScan0(width, height, 0, unchecked((int)format), IntPtr.Zero, out bitmap);
             Gdip.CheckStatus(status);
 
@@ -123,8 +137,7 @@ namespace System.Drawing
 
         public Bitmap(Image original, int width, int height) : this(width, height, PixelFormat.Format32bppArgb)
         {
-            if (original == null)
-                throw new ArgumentNullException(nameof(original));
+            ArgumentNullException.ThrowIfNull(original);
 
             using (Graphics g = Graphics.FromImage(this))
             {
@@ -163,7 +176,7 @@ namespace System.Drawing
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public IntPtr GetHbitmap(Color background)
         {
-            IntPtr hBitmap = IntPtr.Zero;
+            IntPtr hBitmap;
             int status = Gdip.GdipCreateHBITMAPFromBitmap(new HandleRef(this, nativeImage), out hBitmap,
                                                              ColorTranslator.ToWin32(background));
             if (status == 2 /* invalid parameter*/ && (Width >= short.MaxValue || Height >= short.MaxValue))
@@ -179,7 +192,7 @@ namespace System.Drawing
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public IntPtr GetHicon()
         {
-            IntPtr hIcon = IntPtr.Zero;
+            IntPtr hIcon;
             int status = Gdip.GdipCreateHICONFromBitmap(new HandleRef(this, nativeImage), out hIcon);
             Gdip.CheckStatus(status);
 
@@ -193,7 +206,7 @@ namespace System.Drawing
                 throw new ArgumentException(SR.Format(SR.GdiplusInvalidRectangle, rect.ToString()));
             }
 
-            IntPtr dstHandle = IntPtr.Zero;
+            IntPtr dstHandle;
 
             int status = Gdip.GdipCloneBitmapArea(
                                                     rect.X,
@@ -297,7 +310,7 @@ namespace System.Drawing
                 throw new ArgumentOutOfRangeException(nameof(y), SR.ValidRangeY);
             }
 
-            int color = 0;
+            int color;
             int status = Gdip.GdipBitmapGetPixel(new HandleRef(this, nativeImage), x, y, out color);
             Gdip.CheckStatus(status);
 
@@ -337,7 +350,7 @@ namespace System.Drawing
                 throw new ArgumentException(SR.Format(SR.GdiplusInvalidRectangle, rect.ToString()));
             }
 
-            IntPtr dstHandle = IntPtr.Zero;
+            IntPtr dstHandle;
             int status = Gdip.GdipCloneBitmapAreaI(
                                                      rect.X,
                                                      rect.Y,

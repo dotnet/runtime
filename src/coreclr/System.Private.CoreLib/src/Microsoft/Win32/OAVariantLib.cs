@@ -6,7 +6,7 @@
 **
 **
 ** Purpose: This class only exists to provide support for
-**          implenting IDispatch on managed objects. It is
+**          implementing IDispatch on managed objects. It is
 **          used to provide OleAut style coercion rules.
 **
 **
@@ -74,10 +74,9 @@ namespace Microsoft.Win32
          */
         internal static Variant ChangeType(Variant source, Type targetClass, short options, CultureInfo culture)
         {
-            if (targetClass == null)
-                throw new ArgumentNullException(nameof(targetClass));
-            if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
+            ArgumentNullException.ThrowIfNull(targetClass);
+            ArgumentNullException.ThrowIfNull(culture);
+
             Variant result = default;
             ChangeTypeEx(ref result, ref source,
                          culture.LCID,

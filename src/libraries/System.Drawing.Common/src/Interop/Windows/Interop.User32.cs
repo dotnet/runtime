@@ -3,31 +3,65 @@
 
 using System;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 
 internal static partial class Interop
 {
     internal static partial class User32
     {
-        [DllImport(Libraries.User32, SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern IntPtr LoadIcon(HandleRef hInst, IntPtr iconId);
+        [LibraryImport(Libraries.User32, EntryPoint = "LoadIconW", SetLastError = true)]
+        internal static partial IntPtr LoadIcon(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hInst, IntPtr iconId);
 
-        [DllImport(Libraries.User32, SetLastError = true, ExactSpelling = true)]
-        internal static extern bool DestroyIcon(HandleRef hIcon);
+        [LibraryImport(Libraries.User32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool DestroyIcon(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hIcon);
 
-        [DllImport(Libraries.User32, SetLastError = true, ExactSpelling = true)]
-        internal static extern IntPtr CopyImage(HandleRef hImage, int uType, int cxDesired, int cyDesired, int fuFlags);
+        [LibraryImport(Libraries.User32, SetLastError = true)]
+        internal static partial IntPtr CopyImage(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hImage, int uType, int cxDesired, int cyDesired, int fuFlags);
 
-        [DllImport(Libraries.User32, SetLastError = true, ExactSpelling = true)]
-        internal static extern bool GetIconInfo(HandleRef hIcon, ref ICONINFO info);
+        [LibraryImport(Libraries.User32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool GetIconInfo(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hIcon, ref ICONINFO info);
 
-        [DllImport(Libraries.User32, SetLastError = true, ExactSpelling = true)]
-        public static extern int GetSystemMetrics(int nIndex);
+        [LibraryImport(Libraries.User32, SetLastError = true)]
+        public static partial int GetSystemMetrics(int nIndex);
 
-        [DllImport(Libraries.User32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        internal static extern bool DrawIconEx(HandleRef hDC, int x, int y, HandleRef hIcon, int width, int height, int iStepIfAniCursor, HandleRef hBrushFlickerFree, int diFlags);
+        [LibraryImport(Libraries.User32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool DrawIconEx(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hDC, int x, int y,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hIcon, int width, int height, int iStepIfAniCursor,
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hBrushFlickerFree, int diFlags);
 
-        [DllImport(Libraries.User32, ExactSpelling = true, SetLastError = true)]
-        internal static extern unsafe IntPtr CreateIconFromResourceEx(byte* pbIconBits, uint cbIconBits, bool fIcon, int dwVersion, int csDesired, int cyDesired, int flags);
+        [LibraryImport(Libraries.User32, SetLastError = true)]
+        internal static unsafe partial IntPtr CreateIconFromResourceEx(byte* pbIconBits, uint cbIconBits, [MarshalAs(UnmanagedType.Bool)] bool fIcon, int dwVersion, int csDesired, int cyDesired, int flags);
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct ICONINFO

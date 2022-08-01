@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EncodeDecodeTests.cs" />
@@ -37,7 +37,7 @@
     <Compile Include="XmlIdeographicCharConvertTests1.cs" />
     <Compile Include="XmlIdeographicCharConvertTests2.cs" />
     <Compile Include="XmlIdeographicCharConvertTests3.cs" />
-    <Compile Include="$(CommonTestPath)System\Xml\DisableParallelization.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelizationPerAssembly.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)System\Xml\ModuleCore\ModuleCore.csproj" />

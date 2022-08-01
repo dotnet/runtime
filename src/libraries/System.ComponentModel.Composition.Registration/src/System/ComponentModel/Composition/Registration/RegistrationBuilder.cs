@@ -40,8 +40,10 @@ namespace System.ComponentModel.Composition.Registration
 
         public PartBuilder ForTypesDerivedFrom(Type type)
         {
-            if (type == null)
+            if (type is null)
+            {
                 throw new ArgumentNullException(nameof(type));
+            }
 
             var partBuilder = new PartBuilder((t) => type != t && type.IsAssignableFrom(t));
             _conventions.Add(partBuilder);
@@ -59,8 +61,10 @@ namespace System.ComponentModel.Composition.Registration
 
         public PartBuilder ForType(Type type)
         {
-            if (type == null)
+            if (type is null)
+            {
                 throw new ArgumentNullException(nameof(type));
+            }
 
             var partBuilder = new PartBuilder((t) => t == type);
             _conventions.Add(partBuilder);
@@ -70,8 +74,10 @@ namespace System.ComponentModel.Composition.Registration
 
         public PartBuilder<T> ForTypesMatching<T>(Predicate<Type> typeFilter)
         {
-            if (typeFilter == null)
+            if (typeFilter is null)
+            {
                 throw new ArgumentNullException(nameof(typeFilter));
+            }
 
             var partBuilder = new PartBuilder<T>(typeFilter);
             _conventions.Add(partBuilder);
@@ -81,8 +87,10 @@ namespace System.ComponentModel.Composition.Registration
 
         public PartBuilder ForTypesMatching(Predicate<Type> typeFilter)
         {
-            if (typeFilter == null)
+            if (typeFilter is null)
+            {
                 throw new ArgumentNullException(nameof(typeFilter));
+            }
 
             var partBuilder = new PartBuilder(typeFilter);
             _conventions.Add(partBuilder);

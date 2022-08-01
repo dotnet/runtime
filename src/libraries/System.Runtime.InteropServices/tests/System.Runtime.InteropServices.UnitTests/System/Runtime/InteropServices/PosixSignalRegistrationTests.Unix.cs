@@ -41,6 +41,7 @@ namespace System.Tests
         public static bool NotMobileAndRemoteExecutable => PlatformDetection.IsNotMobile && RemoteExecutor.IsSupported;
 
         [ConditionalTheory(nameof(NotMobileAndRemoteExecutable))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [MemberData(nameof(SupportedSignals))]
         public void SignalHandlerCalledForKnownSignals(PosixSignal s)
         {
@@ -75,6 +76,7 @@ namespace System.Tests
         }
 
         [ConditionalTheory(nameof(NotMobileAndRemoteExecutable))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [MemberData(nameof(PosixSignalAsRawValues))]
         public void SignalHandlerCalledForRawSignals(PosixSignal s)
         {
@@ -159,13 +161,20 @@ namespace System.Tests
             }
         }
 
+        [ConditionalFact(nameof(NotMobileAndRemoteExecutable))]
+        [OuterLoop("SIGQUIT will generate a coredump")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65000", TestPlatforms.OSX)] // large (~6 GB) coredump on OSX leads to timeout on upload
+        public void SignalCanCancelTermination_ExpectedCrash()
+        {
+            SignalCanCancelTermination(PosixSignal.SIGQUIT, false, 131);
+        }
+
         [ConditionalTheory(nameof(NotMobileAndRemoteExecutable))]
         [InlineData(PosixSignal.SIGINT, true, 0)]
         [InlineData(PosixSignal.SIGINT, false, 130)]
         [InlineData(PosixSignal.SIGTERM, true, 0)]
         [InlineData(PosixSignal.SIGTERM, false, 143)]
         [InlineData(PosixSignal.SIGQUIT, true, 0)]
-        [InlineData(PosixSignal.SIGQUIT, false, 131)]
         public void SignalCanCancelTermination(PosixSignal signal, bool cancel, int expectedExitCode)
         {
             // Mono doesn't restore and call SIG_DFL on SIGQUIT.

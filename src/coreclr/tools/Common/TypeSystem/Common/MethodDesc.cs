@@ -41,7 +41,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Represents the parameter types, the return type, and flags of a method.
     /// </summary>
-    public sealed partial class MethodSignature : TypeSystemEntity
+    public sealed partial class MethodSignature : TypeSystemEntity, IEquatable<MethodSignature>
     {
         internal MethodSignatureFlags _flags;
         internal int _genericParameterCount;
@@ -428,7 +428,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Compute HashCode. Should only be overriden by a MethodDesc that represents an instantiated method.
+        /// Compute HashCode. Should only be overridden by a MethodDesc that represents an instantiated method.
         /// </summary>
         protected virtual int ComputeHashCode()
         {
@@ -555,7 +555,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Gets a value indicating whether this virtual method needs to be overriden
+        /// Gets a value indicating whether this virtual method needs to be overridden
         /// by all non-abstract classes deriving from the method's owning type.
         /// </summary>
         public virtual bool IsAbstract
@@ -567,7 +567,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Gets a value indicating that this method cannot be overriden.
+        /// Gets a value indicating that this method cannot be overridden.
         /// </summary>
         public virtual bool IsFinal
         {

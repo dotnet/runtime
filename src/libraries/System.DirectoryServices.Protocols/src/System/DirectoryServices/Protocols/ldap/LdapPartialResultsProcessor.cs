@@ -124,7 +124,7 @@ namespace System.DirectoryServices.Protocols
             tmpCallback?.Invoke(asyncResult);
         }
 
-        private void GetResultsHelper(LdapPartialAsyncResult asyncResult)
+        private static void GetResultsHelper(LdapPartialAsyncResult asyncResult)
         {
             LdapConnection connection = asyncResult._con;
             ResultAll resultType = ResultAll.LDAP_MSG_RECEIVED;
@@ -308,7 +308,7 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        private void AddResult(SearchResponse partialResults, SearchResponse newResult)
+        private static void AddResult(SearchResponse partialResults, SearchResponse newResult)
         {
             if (newResult == null)
             {

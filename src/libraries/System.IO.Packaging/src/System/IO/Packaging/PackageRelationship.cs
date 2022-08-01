@@ -112,19 +112,25 @@ namespace System.IO.Packaging
         /// <param name="id">unique identifier</param>
         internal PackageRelationship(Package package, PackagePart? sourcePart, Uri targetUri, TargetMode targetMode, string relationshipType, string id)
         {
+            if (package is null)
+            {
+                throw new ArgumentNullException(nameof(package));
+            }
+            if (targetUri is null)
+            {
+                throw new ArgumentNullException(nameof(targetUri));
+            }
+            if (relationshipType is null)
+            {
+                throw new ArgumentNullException(nameof(relationshipType));
+            }
+            if (id is null)
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
             //sourcePart can be null to represent that the relationships are at the package level
 
-            if (package == null)
-                throw new ArgumentNullException(nameof(package));
-
-            if (targetUri == null)
-                throw new ArgumentNullException(nameof(targetUri));
-
-            if (relationshipType == null)
-                throw new ArgumentNullException(nameof(relationshipType));
-
-            if (id == null)
-                throw new ArgumentNullException(nameof(id));
             // The ID is guaranteed to be an XML ID by the caller (InternalRelationshipCollection).
             // The following check is a precaution against future bug introductions.
 #if DEBUG

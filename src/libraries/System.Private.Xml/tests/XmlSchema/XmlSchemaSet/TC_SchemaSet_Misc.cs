@@ -389,7 +389,7 @@ namespace System.Xml.Tests
         {
             if (args.Severity == XmlSeverityType.Warning)
             {
-                _output.WriteLine("WARNING Recieved");
+                _output.WriteLine("WARNING Received");
                 bWarningCallback = true;
                 warningCount++;
                 CError.Compare(args.Exception.InnerException == null, false, "Inner Exception not set");

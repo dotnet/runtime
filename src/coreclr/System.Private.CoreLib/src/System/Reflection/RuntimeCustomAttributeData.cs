@@ -6,9 +6,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
-
-using Internal.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -681,8 +678,7 @@ namespace System.Reflection
             ref CustomAttributeNamedParameter[] customAttributeNamedParameters,
             RuntimeModule customAttributeModule)
         {
-            if (customAttributeModule is null)
-                throw new ArgumentNullException(nameof(customAttributeModule));
+            ArgumentNullException.ThrowIfNull(customAttributeModule);
 
             Debug.Assert(customAttributeCtorParameters is not null);
             Debug.Assert(customAttributeNamedParameters is not null);
@@ -715,8 +711,7 @@ namespace System.Reflection
 
         public CustomAttributeNamedParameter(string argumentName, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
         {
-            if (argumentName is null)
-                throw new ArgumentNullException(nameof(argumentName));
+            ArgumentNullException.ThrowIfNull(argumentName);
 
             m_argumentName = argumentName;
             m_fieldOrProperty = fieldOrProperty;
@@ -908,7 +903,7 @@ namespace System.Reflection
             Debug.Assert(caType is not null);
 
             if (type.GetElementType() is not null)
-                return (caType.IsValueType) ? Array.Empty<object>() : CreateAttributeArrayHelper(caType, 0);
+                return CreateAttributeArrayHelper(caType, 0);
 
             if (type.IsGenericType && !type.IsGenericTypeDefinition)
                 type = (type.GetGenericTypeDefinition() as RuntimeType)!;
@@ -928,8 +923,6 @@ namespace System.Reflection
 
             RuntimeType.ListBuilder<object> result = default;
             bool mustBeInheritable = false;
-            bool useObjectArray = (caType.IsValueType || caType.ContainsGenericParameters);
-            RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : caType;
 
             for (int i = 0; i < pcas.Count; i++)
                 result.Add(pcas[i]);
@@ -941,7 +934,7 @@ namespace System.Reflection
                 type = (type.BaseType as RuntimeType)!;
             }
 
-            object[] typedResult = CreateAttributeArrayHelper(arrayType, result.Count);
+            object[] typedResult = CreateAttributeArrayHelper(caType, result.Count);
             for (int i = 0; i < result.Count; i++)
             {
                 typedResult[i] = result[i];
@@ -972,8 +965,6 @@ namespace System.Reflection
 
             RuntimeType.ListBuilder<object> result = default;
             bool mustBeInheritable = false;
-            bool useObjectArray = (caType.IsValueType || caType.ContainsGenericParameters);
-            RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : caType;
 
             for (int i = 0; i < pcas.Count; i++)
                 result.Add(pcas[i]);
@@ -985,7 +976,7 @@ namespace System.Reflection
                 method = method.GetParentDefinition()!;
             }
 
-            object[] typedResult = CreateAttributeArrayHelper(arrayType, result.Count);
+            object[] typedResult = CreateAttributeArrayHelper(caType, result.Count);
             for (int i = 0; i < result.Count; i++)
             {
                 typedResult[i] = result[i];
@@ -1132,16 +1123,13 @@ namespace System.Reflection
         }
 
         private static object[] GetCustomAttributes(
-            RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount, RuntimeType? attributeFilterType)
+            RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount, RuntimeType attributeFilterType)
         {
             RuntimeType.ListBuilder<object> attributes = default;
 
             AddCustomAttributes(ref attributes, decoratedModule, decoratedMetadataToken, attributeFilterType, false, default);
 
-            bool useObjectArray = attributeFilterType is null || attributeFilterType.IsValueType || attributeFilterType.ContainsGenericParameters;
-            RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : attributeFilterType!;
-
-            object[] result = CreateAttributeArrayHelper(arrayType, attributes.Count + pcaCount);
+            object[] result = CreateAttributeArrayHelper(attributeFilterType, attributes.Count + pcaCount);
             for (int i = 0; i < attributes.Count; i++)
             {
                 result[i] = attributes[i];
@@ -1149,7 +1137,7 @@ namespace System.Reflection
             return result;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:MethodParameterDoesntMeetThisParameterRequirements",
             Justification = "Linker guarantees presence of all the constructor parameters, property setters and fields which are accessed by any " +
                             "attribute instantiation which is present in the code linker has analyzed." +
                             "As such the reflection usage in this method will never fail as those methods/fields will be present.")]
@@ -1285,7 +1273,7 @@ namespace System.Reflection
             Justification = "Module.ResolveMethod and Module.ResolveType are marked as RequiresUnreferencedCode because they rely on tokens" +
                             "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break." +
                             "The usage here is not like that as all these tokens come from existing metadata loaded from some IL" +
-                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
+                            "and so trimming has no effect (the tokens are read AFTER trimming occurred).")]
         private static bool FilterCustomAttributeRecord(
             MetadataToken caCtorToken,
             in MetadataImport scope,
@@ -1305,7 +1293,7 @@ namespace System.Reflection
             attributeType = (decoratedModule.ResolveType(scope.GetParentToken(caCtorToken), null, null) as RuntimeType)!;
 
             // Test attribute type against user provided attribute type filter
-            if (!attributeFilterType.IsAssignableFrom(attributeType))
+            if (!MatchesTypeFilter(attributeType, attributeFilterType))
                 return false;
 
             // Ensure if attribute type must be inheritable that it is inheritable
@@ -1386,6 +1374,23 @@ namespace System.Reflection
             GC.KeepAlive(ctorWithParameters);
             return result;
         }
+
+        private static bool MatchesTypeFilter(RuntimeType attributeType, RuntimeType attributeFilterType)
+        {
+            if (attributeFilterType.IsGenericTypeDefinition)
+            {
+                for (RuntimeType? type = attributeType; type != null; type = (RuntimeType?)type.BaseType)
+                {
+                    if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == attributeFilterType)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            return attributeFilterType.IsAssignableFrom(attributeType);
+        }
         #endregion
 
         #region Private Static Methods
@@ -1422,7 +1427,7 @@ namespace System.Reflection
             Justification = "Module.ResolveType is marked as RequiresUnreferencedCode because it relies on tokens" +
                             "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break." +
                             "The usage here is not like that as all these tokens come from existing metadata loaded from some IL" +
-                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
+                            "and so trimming has no effect (the tokens are read AFTER trimming occurred).")]
         internal static AttributeUsageAttribute GetAttributeUsage(RuntimeType decoratedAttribute)
         {
             RuntimeModule decoratedModule = decoratedAttribute.GetRuntimeModule();
@@ -1447,6 +1452,42 @@ namespace System.Reflection
             }
 
             return attributeUsageAttribute ?? AttributeUsageAttribute.Default;
+        }
+
+        internal static object[] CreateAttributeArrayHelper(RuntimeType caType, int elementCount)
+        {
+            bool useAttributeArray = false;
+            bool useObjectArray = false;
+
+            if (caType == typeof(Attribute))
+            {
+                useAttributeArray = true;
+            }
+            else if (caType.IsValueType)
+            {
+                useObjectArray = true;
+            }
+            else if (caType.ContainsGenericParameters)
+            {
+                if (caType.IsSubclassOf(typeof(Attribute)))
+                {
+                    useAttributeArray = true;
+                }
+                else
+                {
+                    useObjectArray = true;
+                }
+            }
+
+            if (useAttributeArray)
+            {
+                return elementCount == 0 ? Array.Empty<Attribute>() : new Attribute[elementCount];
+            }
+            if (useObjectArray)
+            {
+                return elementCount == 0 ? Array.Empty<object>() : new object[elementCount];
+            }
+            return elementCount == 0 ? caType.GetEmptyArray() : (object[])Array.CreateInstance(caType, elementCount);
         }
         #endregion
 
@@ -1484,17 +1525,6 @@ namespace System.Reflection
             _GetPropertyOrFieldData(
                 module, &pBlobStart, (byte*)blobEnd, out name, out isProperty, out type, out value);
             blobStart = (IntPtr)pBlobStart;
-        }
-
-        private static object[] CreateAttributeArrayHelper(RuntimeType elementType, int elementCount)
-        {
-            // If we have 0 elements, don't allocate a new array
-            if (elementCount == 0)
-            {
-                return elementType.GetEmptyArray();
-            }
-
-            return (object[])Array.CreateInstance(elementType, elementCount);
         }
         #endregion
     }
@@ -1872,12 +1902,6 @@ namespace System.Reflection
                 default: Debug.Fail("Unreachable code"); break;
             }
             type.GetRuntimeModule().MetadataImport.GetClassLayout(type.MetadataToken, out int pack, out int size);
-
-            // Metadata parameter checking should not have allowed 0 for packing size.
-            // The runtime later converts a packing size of 0 to 8 so do the same here
-            // because it's more useful from a user perspective.
-            if (pack == 0)
-                pack = 8; // DEFAULT_PACKING_SIZE
 
             StructLayoutAttribute attribute = new StructLayoutAttribute(layoutKind);
 

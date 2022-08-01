@@ -4,8 +4,7 @@
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
-.assembly Generated0 {}
-.module Generated0.exe
+.assembly 'dev10_788724' {}
 
 .class public sequential sealed MyStruct0 extends [mscorlib]System.ValueType
 {

@@ -26,7 +26,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module spill.exe
 // MVID: {7C50D91F-9C85-49FE-8B5A-900DF6F8E2CD}
 .imagebase 0x00400000
 .file alignment 0x00000200

@@ -1,3 +1,4 @@
+#include "wasm-config.h"
 #include "pinvoke.h"
 
 #include <stdint.h>

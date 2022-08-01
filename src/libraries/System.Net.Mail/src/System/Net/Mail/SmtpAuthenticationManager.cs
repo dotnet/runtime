@@ -11,17 +11,14 @@ namespace System.Net.Mail
 
         static SmtpAuthenticationManager()
         {
-#if !NO_NTAUTHENTICATION
             Register(new SmtpNegotiateAuthenticationModule());
             Register(new SmtpNtlmAuthenticationModule());
-#endif
             Register(new SmtpLoginAuthenticationModule());
         }
 
         internal static void Register(ISmtpAuthenticationModule module)
         {
-            if (module == null)
-                throw new ArgumentNullException(nameof(module));
+            ArgumentNullException.ThrowIfNull(module);
 
             lock (s_modules)
             {

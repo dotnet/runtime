@@ -35,7 +35,6 @@ namespace Microsoft.Win32
         // cross-thread marshaling
         private static volatile Queue<Delegate>? s_threadCallbackList; // list of Delegates
         private static volatile int s_threadCallbackMessage;
-        private static volatile ManualResetEvent? s_eventThreadTerminated;
 
         // Per-instance data that is isolated to the window thread.
         private volatile IntPtr _windowHandle;
@@ -371,7 +370,7 @@ namespace Microsoft.Win32
             return false;
         }
 
-        private IntPtr DefWndProc
+        private static IntPtr DefWndProc
         {
             get
             {
@@ -394,8 +393,9 @@ namespace Microsoft.Win32
             }
 
             EnsureSystemEvents(requireHandle: true);
-            IntPtr timerId = Interop.User32.SendMessageW(new HandleRef(s_systemEvents, s_systemEvents!._windowHandle),
+            IntPtr timerId = Interop.User32.SendMessageW(s_systemEvents!._windowHandle,
                                                         Interop.User32.WM_CREATETIMER, (IntPtr)interval, IntPtr.Zero);
+            GC.KeepAlive(s_systemEvents);
 
             if (timerId == IntPtr.Zero)
             {
@@ -410,7 +410,8 @@ namespace Microsoft.Win32
             {
                 if (s_registeredSessionNotification)
                 {
-                    Interop.Wtsapi32.WTSUnRegisterSessionNotification(new HandleRef(s_systemEvents, s_systemEvents!._windowHandle));
+                    Interop.Wtsapi32.WTSUnRegisterSessionNotification(s_systemEvents!._windowHandle);
+                    GC.KeepAlive(s_systemEvents);
                 }
 
                 IntPtr handle = _windowHandle;
@@ -508,14 +509,15 @@ namespace Microsoft.Win32
 
                 if (retval != IntPtr.Zero)
                 {
-                    Interop.Wtsapi32.WTSRegisterSessionNotification(new HandleRef(s_systemEvents, s_systemEvents!._windowHandle), Interop.Wtsapi32.NOTIFY_FOR_THIS_SESSION);
+                    Interop.Wtsapi32.WTSRegisterSessionNotification(s_systemEvents!._windowHandle, Interop.Wtsapi32.NOTIFY_FOR_THIS_SESSION);
+                    GC.KeepAlive(s_systemEvents);
                     s_registeredSessionNotification = true;
                     Interop.Kernel32.FreeLibrary(retval);
                 }
             }
         }
 
-        private UserPreferenceCategory GetUserPreferenceCategory(int msg, IntPtr wParam, IntPtr lParam)
+        private static UserPreferenceCategory GetUserPreferenceCategory(int msg, IntPtr wParam, IntPtr lParam)
         {
             UserPreferenceCategory pref = UserPreferenceCategory.General;
 
@@ -701,7 +703,7 @@ namespace Microsoft.Win32
         ///  This empties this control's callback queue, propagating any exceptions
         ///  back as needed.
         /// </summary>
-        private void InvokeMarshaledCallbacks()
+        private static void InvokeMarshaledCallbacks()
         {
             Debug.Assert(s_threadCallbackList != null, "Invoking marshaled callbacks before there are any");
 
@@ -753,9 +755,13 @@ namespace Microsoft.Win32
             EnsureSystemEvents(requireHandle: true);
 
 #if DEBUG
-            int pid;
-            int thread = Interop.User32.GetWindowThreadProcessId(new HandleRef(s_systemEvents, s_systemEvents!._windowHandle), out pid);
-            Debug.Assert(s_windowThread == null || thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call MarshaledInvoke on the system events thread");
+            unsafe
+            {
+                int pid;
+                int thread = Interop.User32.GetWindowThreadProcessId(s_systemEvents!._windowHandle, &pid);
+                GC.KeepAlive(s_systemEvents);
+                Debug.Assert(s_windowThread == null || thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call MarshaledInvoke on the system events thread");
+            }
 #endif
 
             if (s_threadCallbackList == null)
@@ -777,7 +783,8 @@ namespace Microsoft.Win32
                 s_threadCallbackList.Enqueue(method);
             }
 
-            Interop.User32.PostMessageW(new HandleRef(s_systemEvents, s_systemEvents!._windowHandle), s_threadCallbackMessage, IntPtr.Zero, IntPtr.Zero);
+            Interop.User32.PostMessageW(s_systemEvents!._windowHandle, s_threadCallbackMessage, IntPtr.Zero, IntPtr.Zero);
+            GC.KeepAlive(s_systemEvents);
         }
 
         /// <summary>
@@ -788,8 +795,9 @@ namespace Microsoft.Win32
             EnsureSystemEvents(requireHandle: true);
             if (s_systemEvents!._windowHandle != IntPtr.Zero)
             {
-                int res = (int)Interop.User32.SendMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle),
+                int res = (int)Interop.User32.SendMessageW(s_systemEvents._windowHandle,
                                                                 Interop.User32.WM_KILLTIMER, timerId, IntPtr.Zero);
+                GC.KeepAlive(s_systemEvents);
 
                 if (res == 0)
                     throw new ExternalException(SR.ErrorKillTimer);
@@ -905,7 +913,7 @@ namespace Microsoft.Win32
         /// </summary>
         private int OnSessionEnding(IntPtr lParam)
         {
-            int endOk = 1;
+            int endOk;
 
             SessionEndReasons reason = SessionEndReasons.SystemShutdown;
 
@@ -996,10 +1004,8 @@ namespace Microsoft.Win32
 
             lock (s_eventLockObject)
             {
-                if (s_handlers != null && s_handlers.ContainsKey(key))
+                if (s_handlers != null && s_handlers.TryGetValue(key, out List<SystemEventInvokeInfo>? invokeItems))
                 {
-                    List<SystemEventInvokeInfo> invokeItems = s_handlers[key];
-
                     // clone the list so we don't have this type locked and cause
                     // a deadlock if someone tries to modify handlers during an invoke.
                     if (invokeItems != null)
@@ -1060,10 +1066,8 @@ namespace Microsoft.Win32
 
             lock (s_eventLockObject)
             {
-                if (s_handlers != null && s_handlers.ContainsKey(key))
+                if (s_handlers != null && s_handlers.TryGetValue(key, out List<SystemEventInvokeInfo>? invokeItems))
                 {
-                    List<SystemEventInvokeInfo> invokeItems = s_handlers[key];
-
                     invokeItems.Remove(new SystemEventInvokeInfo(value));
                 }
             }
@@ -1071,7 +1075,7 @@ namespace Microsoft.Win32
 
         private static void Shutdown()
         {
-            if (s_systemEvents != null && s_systemEvents._windowHandle != IntPtr.Zero)
+            if (s_systemEvents != null)
             {
                 lock (s_procLockObject)
                 {
@@ -1080,17 +1084,26 @@ namespace Microsoft.Win32
                         // If we are using system events from another thread, request that it terminate
                         if (s_windowThread != null)
                         {
-                            s_eventThreadTerminated = new ManualResetEvent(false);
-
 #if DEBUG
-                            int pid;
-                            int thread = Interop.User32.GetWindowThreadProcessId(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), out pid);
-                            Debug.Assert(thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call Shutdown on the system events thread");
-#endif
-                            Interop.User32.PostMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), Interop.User32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
+                            unsafe
+                            {
+                                int pid;
+                                int thread = Interop.User32.GetWindowThreadProcessId(s_systemEvents._windowHandle, &pid);
+                                Debug.Assert(thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call Shutdown on the system events thread");
 
-                            s_eventThreadTerminated.WaitOne();
-                            s_windowThread.Join(); // avoids an AppDomainUnloaded exception on our background thread.
+                            }
+#endif
+                            // The handle could be valid, Zero or invalid depending on the state of the thread
+                            // that is processing the messages. We optimistically expect it to be valid to
+                            // notify the thread to shutdown. The Zero or invalid values should be present
+                            // only when the thread is already shutting down due to external factors.
+                            if (s_systemEvents._windowHandle != IntPtr.Zero)
+                            {
+                                Interop.User32.PostMessageW(s_systemEvents._windowHandle, Interop.User32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
+                                GC.KeepAlive(s_systemEvents);
+                            }
+
+                            s_windowThread.Join();
                         }
                         else
                         {
@@ -1218,6 +1231,11 @@ namespace Microsoft.Win32
                     OnTimerElapsed(wParam);
                     break;
 
+                case Interop.User32.WM_DESTROY:
+                    Interop.User32.PostQuitMessage(0);
+                    _windowHandle = IntPtr.Zero;
+                    break;
+
                 default:
                     // If we received a thread execute message, then execute it.
                     if (msg == s_threadCallbackMessage && msg != 0)
@@ -1248,33 +1266,10 @@ namespace Microsoft.Win32
                 {
                     Interop.User32.MSG msg = default(Interop.User32.MSG);
 
-                    bool keepRunning = true;
-
-                    // Blocking on a GetMessage() call prevents the EE from being able to unwind
-                    // this thread properly (e.g. during AppDomainUnload). So, we use PeekMessage()
-                    // and sleep so we always block in managed code instead.
-                    while (keepRunning)
+                    while (Interop.User32.GetMessageW(ref msg, _windowHandle, 0, 0) > 0)
                     {
-                        int ret = Interop.User32.MsgWaitForMultipleObjectsEx(0, IntPtr.Zero, 100, Interop.User32.QS_ALLINPUT, Interop.User32.MWMO_INPUTAVAILABLE);
-
-                        if (ret == Interop.User32.WAIT_TIMEOUT)
-                        {
-                            Thread.Sleep(1);
-                        }
-                        else
-                        {
-                            while (Interop.User32.PeekMessageW(ref msg, IntPtr.Zero, 0, 0, Interop.User32.PM_REMOVE))
-                            {
-                                if (msg.message == Interop.User32.WM_QUIT)
-                                {
-                                    keepRunning = false;
-                                    break;
-                                }
-
-                                Interop.User32.TranslateMessage(ref msg);
-                                Interop.User32.DispatchMessageW(ref msg);
-                            }
-                        }
+                        Interop.User32.TranslateMessage(ref msg);
+                        Interop.User32.DispatchMessageW(ref msg);
                     }
                 }
 
@@ -1293,10 +1288,6 @@ namespace Microsoft.Win32
             }
 
             Dispose();
-            if (s_eventThreadTerminated != null)
-            {
-                s_eventThreadTerminated.Set();
-            }
         }
 
         // A class that helps fire events on the right thread.

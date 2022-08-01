@@ -35,8 +35,7 @@ namespace System.Collections
 
         public void CopyTo(Array array, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
@@ -45,7 +44,7 @@ namespace System.Collections
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (array.Length - index < this.Count)
-                throw new ArgumentException(SR.ArgumentOutOfRange_Index, nameof(index));
+                throw new ArgumentException(SR.ArgumentOutOfRange_IndexMustBeLessOrEqual, nameof(index));
 
             // the actual copy is a NOP
         }
@@ -62,18 +61,13 @@ namespace System.Collections
         {
             get
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-                }
+                ArgumentNullException.ThrowIfNull(key);
+
                 return null;
             }
             set
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-                }
+                ArgumentNullException.ThrowIfNull(key);
 
                 if (!key.GetType().IsSerializable)
                     throw new ArgumentException(SR.Argument_NotSerializable, nameof(key));
@@ -96,10 +90,7 @@ namespace System.Collections
 
         public void Add(object key, object? value)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             if (!key.GetType().IsSerializable)
                 throw new ArgumentException(SR.Argument_NotSerializable, nameof(key));

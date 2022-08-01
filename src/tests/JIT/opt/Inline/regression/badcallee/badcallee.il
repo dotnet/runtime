@@ -14,11 +14,10 @@
   .ver 4:0:0:0
 }
 
-.assembly BadCallee
+.assembly 'badcallee'
 {
 }
 
-.module BadCallee.exe
 
 .class public auto ansi beforefieldinit P
        extends [mscorlib]System.Object

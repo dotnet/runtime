@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
+
 namespace System.Runtime.InteropServices.ComTypes
 {
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public enum DESCKIND
     {
         DESCKIND_NONE = 0,
@@ -13,6 +16,7 @@ namespace System.Runtime.InteropServices.ComTypes
         DESCKIND_MAX = DESCKIND_IMPLICITAPPOBJ + 1
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
     public struct BINDPTR
     {
@@ -25,6 +29,7 @@ namespace System.Runtime.InteropServices.ComTypes
     }
 
     [Guid("00020403-0000-0000-C000-000000000046")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     public interface ITypeComp

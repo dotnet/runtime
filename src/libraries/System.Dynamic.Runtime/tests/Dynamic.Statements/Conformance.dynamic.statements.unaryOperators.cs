@@ -124,7 +124,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
         AmbigMember, // Ambiguity between '{0}' and '{1}'
         SizeofUnsafe, // '{0}' does not have a predefined size, therefore sizeof can only be used in an unsafe context (consider using System.Runtime.InteropServices.Marshal.SizeOf)
         FieldInitRefNonstatic, // A field initializer cannot reference the non-static field, method, or property '{0}'
-        CallingFinalizeDepracated, // Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.
+        CallingFinalizeDeprecated, // Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.
         CallingBaseFinalizeDeprecated, // Do not directly call your base class Finalize method. It is called automatically from your destructor.
         BadCastInFixed, // The right hand side of a fixed statement assignment may not be a cast expression
         NoImplicitConvCast, // Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)
@@ -251,7 +251,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
     //<Expects Status=success></Expects>
     // <Code>
 
-    public class temp
+    public class Temp
     {
     }
 
@@ -265,7 +265,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
 
         public static int MainMethod(string[] args)
         {
-            temp t = new temp();
+            Temp t = new Temp();
             dynamic d = t as dynamic;
             try
             {
@@ -399,7 +399,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
     // <Code>
     //<Expects Status=warning>\(26,18\).*CS1981</Expects>
 
-    public class temp
+    public class Temp
     {
         public dynamic MyTest()
         {
@@ -418,7 +418,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
 
         public static int MainMethod(string[] args)
         {
-            dynamic d = new temp();
+            dynamic d = new Temp();
             bool b = d.MyTest() is dynamic;
             if (b != true)
                 return 1;

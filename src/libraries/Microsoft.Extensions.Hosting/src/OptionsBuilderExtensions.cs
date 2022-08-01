@@ -23,10 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static OptionsBuilder<TOptions> ValidateOnStart<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(this OptionsBuilder<TOptions> optionsBuilder)
             where TOptions : class
         {
-            if (optionsBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(optionsBuilder));
-            }
+            ThrowHelper.ThrowIfNull(optionsBuilder);
 
             optionsBuilder.Services.AddHostedService<ValidationHostedService>();
             optionsBuilder.Services.AddOptions<ValidatorOptions>()

@@ -64,7 +64,7 @@ namespace System.IO
         static FileSystemWatcher()
         {
             int s_notifyFiltersValidMask = 0;
-            foreach (int enumValue in Enum.GetValues(typeof(NotifyFilters)))
+            foreach (int enumValue in Enum.GetValues<NotifyFilters>())
                 s_notifyFiltersValidMask |= enumValue;
             Debug.Assert(c_notifyFiltersValidMask == s_notifyFiltersValidMask, "The NotifyFilters enum has changed. The c_notifyFiltersValidMask must be updated to reflect the values of the NotifyFilters enum.");
         }
@@ -95,8 +95,10 @@ namespace System.IO
         public FileSystemWatcher(string path, string filter)
         {
             CheckPathValidity(path);
+            ArgumentNullException.ThrowIfNull(filter);
+
             _directory = path;
-            Filter = filter ?? throw new ArgumentNullException(nameof(filter));
+            Filter = filter;
         }
 
         /// <devdoc>
@@ -248,7 +250,7 @@ namespace System.IO
             }
             set
             {
-                value = (value == null) ? string.Empty : value;
+                value ??= string.Empty;
                 if (!string.Equals(_directory, value, PathInternal.StringComparison))
                 {
                     if (value.Length == 0)
@@ -370,8 +372,7 @@ namespace System.IO
 
         private static void CheckPathValidity(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            ArgumentNullException.ThrowIfNull(path);
 
             // Early check for directory parameter so that an exception can be thrown as early as possible.
             if (path.Length == 0)
@@ -617,6 +618,19 @@ namespace System.IO
             return tcs.Task.IsCompletedSuccessfully ?
                 tcs.Task.Result :
                 WaitForChangedResult.TimedOutResult;
+        }
+
+        public WaitForChangedResult WaitForChanged(WatcherChangeTypes changeType, TimeSpan timeout) =>
+            WaitForChanged(changeType, ToTimeoutMilliseconds(timeout));
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+            return (int)totalMilliseconds;
         }
 
         /// <devdoc>

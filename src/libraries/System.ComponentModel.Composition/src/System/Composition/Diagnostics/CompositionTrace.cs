@@ -14,10 +14,7 @@ namespace System.Composition.Diagnostics
     {
         internal static void PartDefinitionResurrected(ComposablePartDefinition definition)
         {
-            if (definition == null)
-            {
-                throw new ArgumentNullException(nameof(definition));
-            }
+            ArgumentNullException.ThrowIfNull(definition);
 
             if (CompositionTraceSource.CanWriteInformation)
             {
@@ -29,16 +26,8 @@ namespace System.Composition.Diagnostics
 
         internal static void PartDefinitionRejected(ComposablePartDefinition definition, ChangeRejectedException exception)
         {
-            if (definition == null)
-            {
-                throw new ArgumentNullException(nameof(definition));
-            }
-
-            if (exception == null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
-
+            ArgumentNullException.ThrowIfNull(definition);
+            ArgumentNullException.ThrowIfNull(exception);
 
             if (CompositionTraceSource.CanWriteWarning)
             {
@@ -51,20 +40,9 @@ namespace System.Composition.Diagnostics
 
         internal static void AssemblyLoadFailed(DirectoryCatalog catalog, string fileName, Exception exception)
         {
-            if (catalog == null)
-            {
-                throw new ArgumentNullException(nameof(catalog));
-            }
-
-            if (exception == null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
-
-            if (fileName == null)
-            {
-                throw new ArgumentNullException(nameof(fileName));
-            }
+            ArgumentNullException.ThrowIfNull(catalog);
+            ArgumentNullException.ThrowIfNull(fileName);
+            ArgumentNullException.ThrowIfNull(exception);
 
             if (fileName.Length == 0)
             {
@@ -83,10 +61,7 @@ namespace System.Composition.Diagnostics
 
         internal static void DefinitionMarkedWithPartNotDiscoverableAttribute(Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             if (CompositionTraceSource.CanWriteInformation)
             {
@@ -98,15 +73,8 @@ namespace System.Composition.Diagnostics
 
         internal static void DefinitionMismatchedExportArity(Type type, MemberInfo member)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(member);
 
             if (CompositionTraceSource.CanWriteInformation)
             {
@@ -118,10 +86,7 @@ namespace System.Composition.Diagnostics
 
         internal static void DefinitionContainsNoExports(Type type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             if (CompositionTraceSource.CanWriteInformation)
             {
@@ -133,10 +98,7 @@ namespace System.Composition.Diagnostics
 
         internal static void MemberMarkedWithMultipleImportAndImportMany(ReflectionItem item)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             if (CompositionTraceSource.CanWriteError)
             {

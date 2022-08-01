@@ -40,9 +40,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => ecdsa.SignData(new byte[0], 0, -1, default(HashAlgorithmName)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => ecdsa.SignData(new byte[0], 0, 1, default(HashAlgorithmName)));
 
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(new byte[0], default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(new byte[0], 0, 0, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(new byte[0], 0, 0, default(HashAlgorithmName)));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(new byte[0], default(HashAlgorithmName)));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(new byte[0], 0, 0, default(HashAlgorithmName)));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(new byte[0], 0, 0, default(HashAlgorithmName)));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(new byte[10], 0, 10, new HashAlgorithmName("")));
 
             Assert.ThrowsAny<CryptographicException>(() => ecdsa.SignData(new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
@@ -64,8 +64,8 @@ namespace System.Security.Cryptography.EcDsa.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => ecdsa.VerifyData(new byte[0], 0, -1, null, default(HashAlgorithmName)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => ecdsa.VerifyData(new byte[0], 0, 1, null, default(HashAlgorithmName)));
 
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[0], new byte[0], default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[0], 0, 0, new byte[0], default(HashAlgorithmName)));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[0], new byte[0], default(HashAlgorithmName)));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[0], 0, 0, new byte[0], default(HashAlgorithmName)));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[10], new byte[0], new HashAlgorithmName("")));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[10], 0, 10, new byte[0], new HashAlgorithmName("")));
 
@@ -110,7 +110,8 @@ namespace System.Security.Cryptography.EcDsa.Tests
         public void SignData_InvalidArguments_Throws(ECDsa ecdsa)
         {
             AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.SignData((Stream)null, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(new MemoryStream(), default(HashAlgorithmName)));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(new MemoryStream(), default(HashAlgorithmName)));
+            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(new MemoryStream(), new HashAlgorithmName("")));
             Assert.ThrowsAny<CryptographicException>(() => ecdsa.SignData(new MemoryStream(), new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
         }
 
@@ -119,7 +120,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.VerifyData((Stream)null, null, default(HashAlgorithmName)));
             AssertExtensions.Throws<ArgumentNullException>("signature", () => ecdsa.VerifyData(new MemoryStream(), null, default(HashAlgorithmName)));
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new MemoryStream(), new byte[0], default(HashAlgorithmName)));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.VerifyData(new MemoryStream(), new byte[0], default(HashAlgorithmName)));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new MemoryStream(), new byte[0], new HashAlgorithmName("")));
             Assert.ThrowsAny<CryptographicException>(() => ecdsa.VerifyData(new MemoryStream(), new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
         }
@@ -273,26 +274,18 @@ namespace System.Security.Cryptography.EcDsa.Tests
         [MemberData(nameof(InteroperableSignatureConfigurations))]
         public void SignVerify_InteroperableSameKeys_RoundTripsUnlessTampered(ECDsa ecdsa, HashAlgorithmName hashAlgorithm)
         {
-            byte[] data = Encoding.UTF8.GetBytes("something to repeat and sign");
-
             // large enough to make hashing work though multiple iterations and not a multiple of 4KB it uses.
             byte[] dataArray = new byte[33333];
 
             byte[] dataArray2 = new byte[dataArray.Length + 2];
             dataArray.CopyTo(dataArray2, 1);
 
-            HashAlgorithm halg;
-            if (hashAlgorithm == HashAlgorithmName.MD5)
-                halg = MD5.Create();
-            else if (hashAlgorithm == HashAlgorithmName.SHA1)
-                halg = SHA1.Create();
-            else if (hashAlgorithm == HashAlgorithmName.SHA256)
-                halg = SHA256.Create();
-            else if (hashAlgorithm == HashAlgorithmName.SHA384)
-                halg = SHA384.Create();
-            else if (hashAlgorithm == HashAlgorithmName.SHA512)
-                halg = SHA512.Create();
-            else
+            using HashAlgorithm halg =
+                hashAlgorithm == HashAlgorithmName.MD5 ? MD5.Create() :
+                hashAlgorithm == HashAlgorithmName.SHA1 ? SHA1.Create() :
+                hashAlgorithm == HashAlgorithmName.SHA256 ? SHA256.Create() :
+                hashAlgorithm == HashAlgorithmName.SHA384 ? SHA384.Create() :
+                hashAlgorithm == HashAlgorithmName.SHA512 ? SHA512.Create() :
                 throw new Exception("Hash algorithm not supported.");
 
             List<byte[]> signatures = new List<byte[]>(6);

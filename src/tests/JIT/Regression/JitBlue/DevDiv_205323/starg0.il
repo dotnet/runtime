@@ -7,7 +7,6 @@
 .assembly extern mscorlib {}
 .assembly starg0 {}
 .assembly extern xunit.core {}
-.module starg0.exe
 
 .class public F
 {

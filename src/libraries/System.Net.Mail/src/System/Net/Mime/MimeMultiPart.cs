@@ -40,19 +40,9 @@ namespace System.Net.Mime
             ContentType.Boundary = GetNextBoundary();
         }
 
-        internal Collection<MimeBasePart> Parts
-        {
-            get
-            {
-                if (_parts == null)
-                {
-                    _parts = new Collection<MimeBasePart>();
-                }
-                return _parts;
-            }
-        }
+        internal Collection<MimeBasePart> Parts => _parts ??= new Collection<MimeBasePart>();
 
-        internal void Complete(IAsyncResult result, Exception? e)
+        internal static void Complete(IAsyncResult result, Exception? e)
         {
             //if we already completed and we got called again,
             //it mean's that there was an exception in the callback and we
@@ -71,10 +61,7 @@ namespace System.Net.Mime
             }
             catch (Exception ex)
             {
-                if (e == null)
-                {
-                    e = ex;
-                }
+                e ??= ex;
             }
             context._completed = true;
             context._result.InvokeCallback(e);
@@ -99,7 +86,7 @@ namespace System.Net.Mime
             }
         }
 
-        private void MimeWriterCloseCallbackHandler(IAsyncResult result)
+        private static void MimeWriterCloseCallbackHandler(IAsyncResult result)
         {
             MimePartContext context = (MimePartContext)result.AsyncState!;
             ((MimeWriter)context._writer).EndClose(result);
@@ -173,7 +160,7 @@ namespace System.Net.Mime
         private void ContentStreamCallbackHandler(IAsyncResult result)
         {
             MimePartContext context = (MimePartContext)result.AsyncState!;
-            context._outputStream = context._writer.EndGetContentStream(result);
+            context._outputStream = BaseWriter.EndGetContentStream(result);
             context._writer = new MimeWriter(context._outputStream!, ContentType.Boundary!);
             if (context._partsEnumerator.MoveNext())
             {
@@ -246,7 +233,7 @@ namespace System.Net.Mime
             outputStream.Close();
         }
 
-        internal string GetNextBoundary()
+        internal static string GetNextBoundary()
         {
             int b = Interlocked.Increment(ref s_boundary) - 1;
             return $"--boundary_{(uint)b}_{Guid.NewGuid()}";

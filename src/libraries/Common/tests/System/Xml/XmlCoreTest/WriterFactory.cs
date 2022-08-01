@@ -60,7 +60,7 @@ namespace XmlCoreTest.Common
 
         private XmlWriterSettings _wSettings = null;
         private XmlWriter _xmlWriter = null;
-        private Stream _writerStream = null;
+        private MemoryStream _writerStream = null;
 
         XmlWriter CreateWriterImpl()
         {
@@ -90,9 +90,8 @@ namespace XmlCoreTest.Common
                     _wSettings.CloseOutput = false;
                     if (_overrideAsync)
                         _wSettings.Async = _async;
-
+                    _xmlWriter = new CustomWriter(_writerStream, _wSettings);
                     FilePathUtil.addStream(_fileName, _writerStream);
-                    _xmlWriter = new CustomWriter(_fileName, _wSettings);
                     break;
                 case WriterType.UTF8WriterIndent:
                     _writerStream = new MemoryStream();

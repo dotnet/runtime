@@ -57,7 +57,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackCall has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -197,7 +197,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackInvokeDefault1 has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -212,7 +212,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackInvokeDefault2 has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -383,7 +383,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function 'LateGet
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackGet has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -600,7 +600,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackIndexSetComplex has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -778,7 +778,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub 'LateIndexSet
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackIndexSet has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -824,7 +824,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackSetComplex has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>
@@ -876,7 +876,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         'This method is only called from DynamicMethods generated at runtime
-        <Obsolete("do not use this method", True)>
+        <Obsolete("FallbackSet has been deprecated and is not supported.", True)>
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
         <RequiresUnreferencedCode(LateBindingTrimMessage)>

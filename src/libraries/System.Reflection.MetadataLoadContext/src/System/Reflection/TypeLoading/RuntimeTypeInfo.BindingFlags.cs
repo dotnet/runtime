@@ -38,8 +38,7 @@ namespace System.Reflection.TypeLoading
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                 return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
 
-            if (binder == null)
-                binder = Loader.GetDefaultBinder();
+            binder ??= Loader.GetDefaultBinder();
 
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
         }
@@ -96,8 +95,7 @@ namespace System.Reflection.TypeLoading
                 if (types.Length == 0 && candidates.Count == 1)
                     return candidates[0];
 
-                if (binder == null)
-                    binder = Loader.GetDefaultBinder();
+                binder ??= Loader.GetDefaultBinder();
                 return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as MethodInfo;
             }
         }
@@ -150,15 +148,14 @@ namespace System.Reflection.TypeLoading
                     {
                         if (returnType is null)
                             // if we are here we have no args or property type to select over and we have more than one property with that name
-                            throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                            throw new AmbiguousMatchException();
                     }
                 }
 
                 if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                     return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
 
-                if (binder == null)
-                    binder = Loader.GetDefaultBinder();
+                binder ??= Loader.GetDefaultBinder();
 
                 return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
             }
@@ -171,8 +168,11 @@ namespace System.Reflection.TypeLoading
 
         private QueryResult<M> Query<M>(string name, BindingFlags bindingAttr) where M : MemberInfo
         {
-            if (name == null)
+            if (name is null)
+            {
                 throw new ArgumentNullException(nameof(name));
+            }
+
             return Query<M>(name, bindingAttr, null);
         }
 
@@ -206,7 +206,7 @@ namespace System.Reflection.TypeLoading
             return true;
         }
 
-        private TypeComponentsCache Cache => _lazyCache ?? (_lazyCache = new TypeComponentsCache(this));
+        private TypeComponentsCache Cache => _lazyCache ??= new TypeComponentsCache(this);
 
         private volatile TypeComponentsCache? _lazyCache;
 

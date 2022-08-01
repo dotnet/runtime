@@ -241,12 +241,10 @@ free_data (void)
 {
 	MonoObject *obj G_GNUC_UNUSED;
 	HashEntry *entry;
-	int total_srcs = 0;
 	int max_srcs = 0;
 
 	SGEN_HASH_TABLE_FOREACH (&hash_table, MonoObject *, obj, HashEntry *, entry) {
 		int entry_size = dyn_array_ptr_size (&entry->srcs);
-		total_srcs += entry_size;
 		if (entry_size > max_srcs)
 			max_srcs = entry_size;
 		dyn_array_ptr_uninit (&entry->srcs);
@@ -255,7 +253,6 @@ free_data (void)
 	sgen_hash_table_clean (&hash_table);
 
 	dyn_array_int_uninit (&merge_array);
-	//g_print ("total srcs %d - max %d\n", total_srcs, max_srcs);
 }
 
 static HashEntry*
@@ -747,7 +744,7 @@ static int num_registered_bridges, hash_table_size;
 static void
 processing_build_callback_data (int generation)
 {
-	int i, j;
+	int j;
 	int num_sccs, num_xrefs;
 	int max_entries, max_xrefs;
 	MonoObject *obj G_GNUC_UNUSED;
@@ -794,8 +791,8 @@ processing_build_callback_data (int generation)
 	/* second DFS pass */
 
 	dyn_array_scc_init (&sccs);
-	for (i = 0; i < hash_table.num_entries; ++i) {
-		HashEntry *entry = all_entries [i];
+	for (guint i = 0; i < hash_table.num_entries; ++i) {
+		entry = all_entries [i];
 		if (entry->v.dfs2.scc_index < 0) {
 			int index = dyn_array_scc_size (&sccs);
 			current_scc = dyn_array_scc_add (&sccs);
@@ -839,7 +836,7 @@ processing_build_callback_data (int generation)
 	}
 #endif
 
-	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+	for (int i = 0; i < dyn_array_scc_size (&sccs); ++i) {
 		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
 		g_assert (scc->index == i);
 		if (!scc->num_bridge_entries)
@@ -860,7 +857,7 @@ processing_build_callback_data (int generation)
 	}
 
 #ifdef TEST_NEW_XREFS
-	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+	for (int i = 0; i < dyn_array_scc_size (&sccs); ++i) {
 		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
 		g_assert (scc->index == i);
 		if (!scc->num_bridge_entries)
@@ -890,29 +887,29 @@ processing_build_callback_data (int generation)
 	 * direction as the other logging loop that records live/dead information.
 	 */
 	if (bridge_accounting_enabled) {
-		for (i = hash_table.num_entries - 1; i >= 0; --i) {
+		for (int i = hash_table.num_entries - 1; i >= 0; --i) {
 			double w;
-			HashEntryWithAccounting *entry = (HashEntryWithAccounting*)all_entries [i];
+			HashEntryWithAccounting *entry_acc = (HashEntryWithAccounting*)all_entries [i];
 
-			entry->weight += (double)sgen_safe_object_get_size (sgen_hash_table_key_for_value_pointer (entry));
-			w = entry->weight / dyn_array_ptr_size (&entry->entry.srcs);
-			for (j = 0; j < dyn_array_ptr_size (&entry->entry.srcs); ++j) {
-				HashEntryWithAccounting *other = (HashEntryWithAccounting *)dyn_array_ptr_get (&entry->entry.srcs, j);
+			entry_acc->weight += (double)sgen_safe_object_get_size (sgen_hash_table_key_for_value_pointer (entry_acc));
+			w = entry_acc->weight / dyn_array_ptr_size (&entry_acc->entry.srcs);
+			for (j = 0; j < dyn_array_ptr_size (&entry_acc->entry.srcs); ++j) {
+				HashEntryWithAccounting *other = (HashEntryWithAccounting *)dyn_array_ptr_get (&entry_acc->entry.srcs, j);
 				other->weight += w;
 			}
 		}
-		for (i = 0; i < hash_table.num_entries; ++i) {
-			HashEntryWithAccounting *entry = (HashEntryWithAccounting*)all_entries [i];
-			if (entry->entry.is_bridge) {
-				MonoObject *obj = sgen_hash_table_key_for_value_pointer (entry);
-				MonoClass *klass = SGEN_LOAD_VTABLE (obj)->klass;
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "OBJECT %s::%s (%p) weight %f", m_class_get_name_space (klass), m_class_get_name (klass), obj, entry->weight);
+		for (guint i = 0; i < hash_table.num_entries; ++i) {
+			HashEntryWithAccounting *entry_acc = (HashEntryWithAccounting*)all_entries [i];
+			if (entry_acc->entry.is_bridge) {
+				MonoObject *instance = sgen_hash_table_key_for_value_pointer (entry_acc);
+				MonoClass *klass = SGEN_LOAD_VTABLE (instance)->klass;
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "OBJECT %s::%s (%p) weight %f", m_class_get_name_space (klass), m_class_get_name (klass), instance, entry_acc->weight);
 			}
 		}
 	}
 
-	for (i = 0; i < hash_table.num_entries; ++i) {
-		HashEntry *entry = all_entries [i];
+	for (guint i = 0; i < hash_table.num_entries; ++i) {
+		entry = all_entries [i];
 		second_pass_links += dyn_array_ptr_size (&entry->srcs);
 	}
 
@@ -926,7 +923,7 @@ processing_build_callback_data (int generation)
 	/* init data for callback */
 
 	num_sccs = 0;
-	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+	for (int i = 0; i < dyn_array_scc_size (&sccs); ++i) {
 		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
 		g_assert (scc->index == i);
 		if (scc->num_bridge_entries)
@@ -938,7 +935,7 @@ processing_build_callback_data (int generation)
 	api_sccs = (MonoGCBridgeSCC **)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 	num_xrefs = 0;
 	j = 0;
-	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+	for (int i = 0; i < dyn_array_scc_size (&sccs); ++i) {
 		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
 		if (!scc->num_bridge_entries)
 			continue;
@@ -961,7 +958,7 @@ processing_build_callback_data (int generation)
 
 	api_xrefs = (MonoGCBridgeXRef *)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeXRef) * num_xrefs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 	j = 0;
-	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+	for (int i = 0; i < dyn_array_scc_size (&sccs); ++i) {
 		int k;
 		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
 		if (!scc->num_bridge_entries)
@@ -983,7 +980,7 @@ processing_build_callback_data (int generation)
 
 	j = 0;
 	max_entries = max_xrefs = 0;
-	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+	for (int i = 0; i < dyn_array_scc_size (&sccs); ++i) {
 		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
 		if (scc->num_bridge_entries)
 			++j;

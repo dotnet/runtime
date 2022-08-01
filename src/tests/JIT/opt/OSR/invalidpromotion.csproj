@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <DebugType />
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+set COMPlus_TieredCompilation=1
+set COMPlus_TC_QuickJitForLoops=1
+set COMPlus_TC_OnStackReplacement=1
+set COMPlus_OSR_HitLimit=1
+set COMPlus_TC_OnStackReplacement=1
+set COMPlus_TC_OnStackReplacement_InitialCounter=1
+]]></CLRTestBatchPreCommands>
+    <BashCLRTestPreCommands><![CDATA[
+$(BashCLRTestPreCommands)
+export COMPlus_TieredCompilation=1
+export COMPlus_TC_QuickJitForLoops=1
+export COMPlus_TC_OnStackReplacement=1
+export COMPlus_OSR_HitLimit=1
+export COMPlus_TC_OnStackReplacement=1
+export COMPlus_TC_OnStackReplacement_InitialCounter=1
+]]></BashCLRTestPreCommands>
+  </PropertyGroup>
+</Project>

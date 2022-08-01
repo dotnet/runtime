@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-.module 'gcindir.exe'
 
 .assembly extern System.Console
 {
@@ -8,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly 'gcindir'
+.assembly 'b26324b'
 {
   
   

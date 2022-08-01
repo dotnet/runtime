@@ -18,16 +18,25 @@ namespace System.IO
     {
         private static readonly IOCompletionCallback s_callback = AllocateCallback();
 
-        internal static unsafe long GetFileLength(SafeFileHandle handle)
+        internal static unsafe void SetFileLength(SafeFileHandle handle, long length)
         {
-            Interop.Kernel32.FILE_STANDARD_INFO info;
-
-            if (!Interop.Kernel32.GetFileInformationByHandleEx(handle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
+            var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
-            }
+                EndOfFile = length
+            };
 
-            return info.EndOfFile;
+            if (!Interop.Kernel32.SetFileInformationByHandle(
+                handle,
+                Interop.Kernel32.FileEndOfFileInfo,
+                &eofInfo,
+                (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
+            {
+                int errorCode = Marshal.GetLastPInvokeError();
+
+                throw errorCode == Interop.Errors.ERROR_INVALID_PARAMETER
+                    ? new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig)
+                    : Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
+            }
         }
 
         internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
@@ -53,8 +62,8 @@ namespace System.IO
                         // "If lpOverlapped is not NULL, then when a synchronous read operation reaches the end of a file,
                         // ReadFile returns FALSE and GetLastError returns ERROR_HANDLE_EOF"
                         return numBytesRead;
-                    case Interop.Errors.ERROR_BROKEN_PIPE:
-                        // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
+                    case Interop.Errors.ERROR_BROKEN_PIPE: // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
+                    case Interop.Errors.ERROR_INVALID_PARAMETER when IsEndOfFileForNoBuffering(handle, fileOffset):
                         return 0;
                     default:
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
@@ -95,11 +104,20 @@ namespace System.IO
 
                         errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                     }
+                    else
+                    {
+                        // The initial errorCode was neither ERROR_IO_PENDING nor ERROR_SUCCESS, so the operation
+                        // failed with an error and the callback won't be invoked.  We thus need to decrement the
+                        // ref count on the resetEvent that was initialized to a value under the expectation that
+                        // the callback would be invoked and decrement it.
+                        resetEvent.ReleaseRefCount(overlapped);
+                    }
 
                     switch (errorCode)
                     {
                         case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
                         case Interop.Errors.ERROR_BROKEN_PIPE:
+                        case Interop.Errors.ERROR_INVALID_PARAMETER when IsEndOfFileForNoBuffering(handle, fileOffset):
                             // EOF on a pipe. Callback will not be called.
                             // We clear the overlapped status bit for this special case (failure
                             // to do so looks like we are freeing a pending overlapped later).
@@ -115,7 +133,7 @@ namespace System.IO
             {
                 if (overlapped != null)
                 {
-                    resetEvent.FreeNativeOverlapped(overlapped);
+                    resetEvent.ReleaseRefCount(overlapped);
                 }
 
                 resetEvent.Dispose();
@@ -193,6 +211,14 @@ namespace System.IO
 
                         errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                     }
+                    else
+                    {
+                        // The initial errorCode was neither ERROR_IO_PENDING nor ERROR_SUCCESS, so the operation
+                        // failed with an error and the callback won't be invoked.  We thus need to decrement the
+                        // ref count on the resetEvent that was initialized to a value under the expectation that
+                        // the callback would be invoked and decrement it.
+                        resetEvent.ReleaseRefCount(overlapped);
+                    }
 
                     switch (errorCode)
                     {
@@ -215,7 +241,7 @@ namespace System.IO
             {
                 if (overlapped != null)
                 {
-                    resetEvent.FreeNativeOverlapped(overlapped);
+                    resetEvent.ReleaseRefCount(overlapped);
                 }
 
                 resetEvent.Dispose();
@@ -272,6 +298,7 @@ namespace System.IO
 
                         case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
                         case Interop.Errors.ERROR_BROKEN_PIPE:
+                        case Interop.Errors.ERROR_INVALID_PARAMETER when IsEndOfFileForNoBuffering(handle, fileOffset):
                             // EOF on a pipe. Callback will not be called.
                             // We clear the overlapped status bit for this special case (failure
                             // to do so looks like we are freeing a pending overlapped later).
@@ -435,7 +462,8 @@ namespace System.IO
         // The pinned MemoryHandles and the pointer to the segments must be cleaned-up
         // with the CleanupScatterGatherBuffers method.
         private static unsafe bool TryPrepareScatterGatherBuffers<T, THandler>(IReadOnlyList<T> buffers,
-            THandler handler, [NotNullWhen(true)] out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
+            [NotNullWhen(true)] out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
+            where T : struct
             where THandler : struct, IMemoryHandler<T>
         {
             int pageSize = Environment.SystemPageSize;
@@ -458,14 +486,14 @@ namespace System.IO
                 for (int i = 0; i < buffersCount; i++)
                 {
                     T buffer = buffers[i];
-                    int length = handler.GetLength(in buffer);
+                    int length = THandler.GetLength(in buffer);
                     totalBytes64 += length;
                     if (length != pageSize || totalBytes64 > int.MaxValue)
                     {
                         return false;
                     }
 
-                    MemoryHandle handle = handler.Pin(in buffer);
+                    MemoryHandle handle = THandler.Pin(in buffer);
                     long ptr = (long)handle.Pointer;
                     if ((ptr & alignedAtPageSizeMask) != 0)
                     {
@@ -525,7 +553,7 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareScatterGatherBuffers(buffers, default(MemoryHandler), out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
+                && TryPrepareScatterGatherBuffers<Memory<byte>, MemoryHandler>(buffers, out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
             {
                 return ReadScatterAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
             }
@@ -622,7 +650,7 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareScatterGatherBuffers(buffers, default(ReadOnlyMemoryHandler), out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
+                && TryPrepareScatterGatherBuffers<ReadOnlyMemory<byte>, ReadOnlyMemoryHandler>(buffers, out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
             {
                 return WriteGatherAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
             }
@@ -699,7 +727,7 @@ namespace System.IO
         {
             // After SafeFileHandle is bound to ThreadPool, we need to use ThreadPoolBinding
             // to allocate a native overlapped and provide a valid callback.
-            NativeOverlapped* result = handle.ThreadPoolBinding!.AllocateNativeOverlapped(s_callback, resetEvent, null);
+            NativeOverlapped* result = handle.ThreadPoolBinding!.UnsafeAllocateNativeOverlapped(s_callback, resetEvent, null);
 
             if (handle.CanSeek)
             {
@@ -739,11 +767,23 @@ namespace System.IO
             static unsafe void Callback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
                 CallbackResetEvent state = (CallbackResetEvent)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
-                state.FreeNativeOverlapped(pOverlapped);
+                state.ReleaseRefCount(pOverlapped);
             }
         }
 
-        // We need to store the reference count (see the comment in FreeNativeOverlappedIfItIsSafe) and an EventHandle to signal the completion.
+        // From https://docs.microsoft.com/en-us/windows/win32/fileio/file-buffering:
+        // "File access sizes, including the optional file offset in the OVERLAPPED structure,
+        // if specified, must be for a number of bytes that is an integer multiple of the volume sector size."
+        // So if buffer and physical sector size is 4096 and the file size is 4097:
+        // the read from offset=0 reads 4096 bytes
+        // the read from offset=4096 reads 1 byte
+        // the read from offset=4097 fails with ERROR_INVALID_PARAMETER (the offset is not a multiple of sector size)
+        // Based on feedback received from customers (https://github.com/dotnet/runtime/issues/62851),
+        // it was decided to not throw, but just return 0.
+        private static bool IsEndOfFileForNoBuffering(SafeFileHandle fileHandle, long fileOffset)
+            => fileHandle.IsNoBuffering && fileHandle.CanSeek && fileOffset >= fileHandle.GetFileLength();
+
+        // We need to store the reference count (see the comment in ReleaseRefCount) and an EventHandle to signal the completion.
         // We could keep these two things separate, but since ManualResetEvent is sealed and we want to avoid any extra allocations, this type has been created.
         // It's basically ManualResetEvent with reference count.
         private sealed class CallbackResetEvent : EventWaitHandle
@@ -756,7 +796,7 @@ namespace System.IO
                 _threadPoolBoundHandle = threadPoolBoundHandle;
             }
 
-            internal unsafe void FreeNativeOverlapped(NativeOverlapped* pOverlapped)
+            internal unsafe void ReleaseRefCount(NativeOverlapped* pOverlapped)
             {
                 // Each SafeFileHandle opened for async IO is bound to ThreadPool.
                 // It requires us to provide a callback even if we want to use EventHandle and use GetOverlappedResult to obtain the result.
@@ -770,23 +810,22 @@ namespace System.IO
         }
 
         // Abstracts away the type signature incompatibility between Memory and ReadOnlyMemory.
-        // TODO: Use abstract static methods when they become stable.
         private interface IMemoryHandler<T>
         {
-            int GetLength(in T memory);
-            MemoryHandle Pin(in T memory);
+            static abstract int GetLength(in T memory);
+            static abstract MemoryHandle Pin(in T memory);
         }
 
         private readonly struct MemoryHandler : IMemoryHandler<Memory<byte>>
         {
-            public int GetLength(in Memory<byte> memory) => memory.Length;
-            public MemoryHandle Pin(in Memory<byte> memory) => memory.Pin();
+            public static int GetLength(in Memory<byte> memory) => memory.Length;
+            public static MemoryHandle Pin(in Memory<byte> memory) => memory.Pin();
         }
 
         private readonly struct ReadOnlyMemoryHandler : IMemoryHandler<ReadOnlyMemory<byte>>
         {
-            public int GetLength(in ReadOnlyMemory<byte> memory) => memory.Length;
-            public MemoryHandle Pin(in ReadOnlyMemory<byte> memory) => memory.Pin();
+            public static int GetLength(in ReadOnlyMemory<byte> memory) => memory.Length;
+            public static MemoryHandle Pin(in ReadOnlyMemory<byte> memory) => memory.Pin();
         }
     }
 }

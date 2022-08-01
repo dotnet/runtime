@@ -24,7 +24,7 @@ parameters:
   tieringTest: ''
   longRunningGcTests: ''
   gcSimulatorTests: ''
-  runtimeFlavorDisplayName: 'CoreCLR'
+  runtimeFlavor: 'CoreCLR'
   runtimeVariant: ''
   shouldContinueOnError: false
 
@@ -50,14 +50,14 @@ steps:
       _RunCrossGen2: ${{ parameters.runCrossGen2 }}
       _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
-      _TieringTest: ${{ parameters.runInUnloadableContext }}
+      _TieringTest: ${{ parameters.tieringTest }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
       _Scenarios: ${{ join(',', parameters.scenarios) }}
       _PALTestsDir: ${{ parameters.runPALTestsDir }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
-      runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+      RuntimeFlavor: ${{ parameters.runtimeFlavor }}
       _RuntimeVariant: ${{ parameters.runtimeVariant }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)

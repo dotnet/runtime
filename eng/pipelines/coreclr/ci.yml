@@ -8,14 +8,12 @@ trigger:
     - '*'
     - src/libraries/System.Private.CoreLib/*
     exclude:
+    - '**.md'
+    - .devcontainer/*
     - .github/*
     - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
     - LICENSE.TXT
     - PATENTS.TXT
-    - README.md
-    - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
     - src/installer/*
     - src/libraries/*
@@ -111,8 +109,6 @@ jobs:
     platforms:
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     testGroup: outerloop
-    jobParameters:
-      liveLibrariesBuildConfig: Release
 
 #
 # Checked JIT test runs

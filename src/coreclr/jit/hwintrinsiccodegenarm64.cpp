@@ -206,6 +206,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     const HWIntrinsic intrin(node);
 
+    // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
+    assert(compiler->compIsaSupportedDebugOnly(HWIntrinsicInfo::lookupIsa(intrin.id)));
+
     regNumber targetReg = node->GetRegNum();
 
     regNumber op1Reg = REG_NA;
@@ -364,11 +367,32 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             switch (intrin.numOperands)
             {
                 case 1:
-                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    if (intrin.op1->isContained())
+                    {
+                        assert(ins == INS_ld1);
+
+                        // Emit 'ldr target, [base, index]'
+                        GenTreeAddrMode* lea = intrin.op1->AsAddrMode();
+                        assert(lea->GetScale() == 1);
+                        assert(lea->Offset() == 0);
+                        GetEmitter()->emitIns_R_R_R(INS_ldr, emitSize, targetReg, lea->Base()->GetRegNum(),
+                                                    lea->Index()->GetRegNum());
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
                     break;
 
                 case 2:
-                    if (isRMW)
+                    // This handles optimizations for instructions that have
+                    // an implicit 'zero' vector of what would be the second operand.
+                    if (HWIntrinsicInfo::SupportsContainment(intrin.id) && intrin.op2->isContained() &&
+                        intrin.op2->IsVectorZero())
+                    {
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
+                    else if (isRMW)
                     {
                         assert(targetReg != op2Reg);
 
@@ -668,6 +692,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            case NI_AdvSimd_Arm64_LoadPairVector128:
+            case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector64:
+            case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, node->GetOtherReg(), op1Reg);
+                break;
+
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+                GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), targetReg, node->GetOtherReg(), op1Reg);
+                break;
+
             case NI_AdvSimd_Store:
                 GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
                 break;
@@ -754,17 +790,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            // mvni doesn't support the range of element types, so hard code the 'opts' value.
-            case NI_Vector64_get_Zero:
-            case NI_Vector64_get_AllBitsSet:
-                GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_2S);
-                break;
-
-            case NI_Vector128_get_Zero:
-            case NI_Vector128_get_AllBitsSet:
-                GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_4S);
-                break;
-
             case NI_AdvSimd_DuplicateToVector64:
             case NI_AdvSimd_DuplicateToVector128:
             case NI_AdvSimd_Arm64_DuplicateToVector64:
@@ -836,7 +861,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     regNumber baseReg;
                     regNumber indexReg = op2Reg;
 
-                    // Optimize the case of op1 is in memory and trying to access ith element.
+                    // Optimize the case of op1 is in memory and trying to access i'th element.
                     if (!intrin.op1->isUsedFromReg())
                     {
                         assert(intrin.op1->isContained());

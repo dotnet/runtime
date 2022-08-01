@@ -7,6 +7,7 @@ syntax: glob
 #       instead of directories), git will still ignore them.
 .dotnet
 .dotnet-mono
+.dotnet-tools-global
 .packages
 .tools
 
@@ -186,6 +187,8 @@ node_modules/
 *.metaproj
 *.metaproj.tmp
 bin.localpkg/
+src/mono/wasm/runtime/dotnet.d.ts.sha256
+src/mono/sample/wasm/browser-nextjs/public/
 
 # RIA/Silverlight projects
 Generated_Code/
@@ -280,6 +283,9 @@ Session.vim
 # Visual Studio Code
 .vscode/
 
+# Codespaces
+.venv/
+
 # Private test configuration and binaries.
 config.ps1
 **/IISApplications
@@ -354,3 +360,7 @@ src/coreclr/System.Private.CoreLib/common
 !src/coreclr/inc/obj/
 !src/coreclr/vm/.vscode/
 !src/coreclr/vm/.vscode/c_cpp_properties.json
+
+# Temporary artifacts from local libraries stress builds
+.dotnet-daily/
+run-stress-*

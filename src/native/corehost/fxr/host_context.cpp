@@ -129,8 +129,8 @@ host_context_t::host_context_t(
     const corehost_context_contract &hostpolicy_context_contract)
     : marker { valid_host_context_marker }
     , type { type }
-    , hostpolicy_contract { hostpolicy_contract }
-    , hostpolicy_context_contract { hostpolicy_context_contract }
+    , hostpolicy_contract (hostpolicy_contract)
+    , hostpolicy_context_contract (hostpolicy_context_contract)
 { }
 
 void host_context_t::initialize_frameworks(const corehost_init_t& init)

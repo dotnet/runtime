@@ -27,10 +27,7 @@ internal static partial class Interop
             public byte lfQuality;
             public byte lfPitchAndFamily;
             private fixed char _lfFaceName[LF_FACESIZE];
-            public Span<char> lfFaceName
-            {
-                get { fixed (char* c = _lfFaceName) { return new Span<char>(c, LF_FACESIZE); } }
-            }
+            public Span<char> lfFaceName => MemoryMarshal.CreateSpan(ref _lfFaceName[0], LF_FACESIZE);
 
             public override string ToString()
             {

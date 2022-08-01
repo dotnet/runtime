@@ -1,27 +1,27 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <NoWarn>$(NoWarn);CA5384</NoWarn>
-    <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.1-windows;netstandard2.1;netstandard2.0-windows;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for PKCS and CMS algorithms.
 
 Commonly Used Types:
 System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
   </PropertyGroup>
+
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
-  <!-- Don't delete these clauses even if they look useless. They tell the VS IDE that "Windows_Debug", etc., are
-       valid configuration for this project and stop it from trying to "fix up" the .sln file -->
-  <!-- API types (platform independent) -->
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <!-- API types (platform independent) -->
     <Compile Include="System\Security\Cryptography\CryptographicAttributeObject.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicAttributeObjectCollection.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicAttributeObjectEnumerator.cs" />
@@ -49,11 +49,8 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\SubjectIdentifierOrKeyType.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\SubjectIdentifierType.cs" />
     <Compile Include="System\Security\Cryptography\Xml\X509IssuerSerial.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
-  </ItemGroup>
-  <!-- Internal types (platform independent) -->
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+
+     <!-- Internal types (platform independent) -->
     <Compile Include="Internal\Cryptography\DecryptorPal.cs" />
     <Compile Include="Internal\Cryptography\KeyAgreeRecipientInfoPal.cs" />
     <Compile Include="Internal\Cryptography\KeyLengths.cs" />
@@ -61,13 +58,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="Internal\Cryptography\PkcsHelpers.cs" />
     <Compile Include="Internal\Cryptography\PkcsPal.cs" />
     <Compile Include="Internal\Cryptography\RecipientInfoPal.cs" />
-    <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs"
-             Link="Internal\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
-  </ItemGroup>
-  <!-- Internal types (platform: AnyOS) -->
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Helpers.cs"
+             Link="Common\System\Security\Cryptography\Helpers.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\ContentInfoAsn.xml</Link>
     </AsnXml>
@@ -140,8 +134,14 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\RecipientKeyIdentifier.xml</DependentUpon>
     </Compile>
   </ItemGroup>
-  <!-- Internal types (platform: Windows) -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <!-- Internal types (platform: Windows) -->
     <Compile Include="Internal\Cryptography\Pal\Windows\AlgId.cs" />
     <Compile Include="Internal\Cryptography\Pal\Windows\DecryptorPalWindows.cs" />
     <Compile Include="Internal\Cryptography\Pal\Windows\DecryptorPalWindows.Decode.cs" />
@@ -159,9 +159,8 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeHeapAllocHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProvOrNCryptKeyHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProvOrNCryptKeyHandleUwp.cs" />
-  </ItemGroup>
-  <!-- Interop types (platform: Windows) -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
+
+    <!-- Interop types (platform: Windows) -->
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.CryptAcquireContext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CryptDestroyHash.cs"
@@ -304,18 +303,19 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
              Link="Common\Interop\Windows\NCrypt\Interop.NCryptFreeObject.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
-  </ItemGroup>
-  <!-- Common types (platform: Windows) -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="$(CommonPath)Internal\Cryptography\Windows\CryptoThrowHelper.cs"
-             Link="Common\Internal\Cryptography\Windows\CryptoThrowHelper.cs" />
+
+    <!-- Common types (platform: Windows) -->
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoThrowHelper.Windows.cs"
+             Link="Common\System\Security\Cryptography\CryptoThrowHelper.Windows.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
   </ItemGroup>
+
   <!-- Internal types (platform: AnyOS) -->
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Internal\Cryptography\Pal\AnyOS\PkcsPal.AnyOS.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
@@ -490,6 +490,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\MessageImprint.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\MessageImprint.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\OtherCertificateFormat.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OtherCertificateFormat.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OtherCertificateFormat.xml</DependentUpon>
+    </Compile>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PkiFailureInfo.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PkiStatus.cs" />
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\PkiStatusInfo.xml" />
@@ -555,6 +559,7 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\SignerInfoCollection.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\SignerInfoEnumerator.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
@@ -633,49 +638,24 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161TimestampToken.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161TimestampTokenInfo.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <None Include="@(AsnXml)" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Formats.Asn1\src\System.Formats.Asn1.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <Reference Include="System.Runtime.Numerics" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Security.Cryptography.Cng" />
-    <Reference Include="System.Security.Cryptography.Csp" />
-    <Reference Include="System.Security.Cryptography.Encoding" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Threading" />
-  </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
-    <Reference Include="System.Security.Cryptography" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' and '$(IsPartialFacadeAssembly)' != 'true'">
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
     <PackageReference Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('netstandard2.0'))">
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Buffers"  Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <!-- S.R.C.Unsafe isn't a primary but transitive dependency and this P2P makes sure that the live version is used. -->
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" PrivateAssets="all" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />
   </ItemGroup>

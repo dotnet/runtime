@@ -13,7 +13,7 @@ internal static partial class Interop
 {
     internal static partial class NCrypt
     {
-        [GeneratedDllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
+        [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial ErrorCode NCryptGetProperty(
             SafeNCryptHandle hObject,
             string pszProperty,
@@ -22,7 +22,7 @@ internal static partial class Interop
             out int pcbResult,
             CngPropertyOptions dwFlags);
 
-        [GeneratedDllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
+        [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial ErrorCode NCryptSetProperty(
             SafeNCryptHandle hObject,
             string pszProperty,

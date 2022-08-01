@@ -5,14 +5,8 @@ namespace System.Net
 {
     internal sealed partial class ContextAwareResult
     {
-        private void SafeCaptureIdentity()
-        {
-            // WindowsIdentity is not supported on Unix
-        }
+        partial void SafeCaptureIdentity();
 
-        private void CleanupInternal()
-        {
-            // Nothing to cleanup
-        }
+        partial void CleanupInternal();
     }
 }

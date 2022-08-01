@@ -3,8 +3,6 @@
 
 /*++
 
-
-
 Module Name:
 
     wchar.c
@@ -13,10 +11,7 @@ Abstract:
 
     Implementation of wide char string functions.
 
-
-
 --*/
-
 
 #include "pal/palinternal.h"
 #include "pal/cruntime.h"
@@ -24,7 +19,6 @@ Abstract:
 
 #include "pal/thread.hpp"
 #include "pal/threadsusp.hpp"
-
 
 #if HAVE_CONFIG_H
 #include "config.h"
@@ -949,47 +943,4 @@ PAL_wcstod( const wchar_16 * nptr, wchar_16 **endptr )
     LOGEXIT( "wcstod returning %f.\n", RetVal );
     PERF_EXIT(wcstod);
     return RetVal;
-}
-
-/*++
-Function:
-   PAL_wcscspn
-
-Finds the number of consecutive characters from the start of the string
-that are not in the set.
-
-Return value:
-
-The number of characters from the start of the string that are not in
-the set.
-
-Parameters:
-string          String
-strCharSet      Set of delimiter characters
-
---*/
-size_t
-__cdecl
-PAL_wcscspn(const wchar_16 *string, const wchar_16 *strCharSet)
-{
-    const wchar_16 *temp;
-    size_t count = 0;
-
-    PERF_ENTRY(wcscspn);
-
-    while(*string != 0)
-    {
-        for(temp = strCharSet; *temp != 0; temp++)
-        {
-            if (*string == *temp)
-            {
-                PERF_EXIT(wcscspn);
-                return count;
-            }
-        }
-        count++;
-        string++;
-    }
-    PERF_EXIT(wcscspn);
-    return count;
 }

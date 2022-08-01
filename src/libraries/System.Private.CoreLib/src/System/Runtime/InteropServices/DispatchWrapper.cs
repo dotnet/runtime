@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
     // Wrapper that is converted to a variant with VT_DISPATCH
     [SupportedOSPlatform("windows")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class DispatchWrapper
     {
         public DispatchWrapper(object? obj)

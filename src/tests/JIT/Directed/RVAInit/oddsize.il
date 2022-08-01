@@ -8,10 +8,9 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly test
+.assembly 'oddsize'
 {
 }
-.module test.exe
 // MVID: {3DA3EDA0-F1A4-42F9-8E0B-F269420E91A5}
 
 .file alignment 512

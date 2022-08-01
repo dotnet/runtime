@@ -26,10 +26,7 @@ namespace System
 
         protected WeakReference(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
+            ArgumentNullException.ThrowIfNull(info);
 
             object? target = info.GetValue("TrackedObject", typeof(object)); // Do not rename (binary serialization)
             bool trackResurrection = info.GetBoolean("TrackResurrection"); // Do not rename (binary serialization)
@@ -39,10 +36,8 @@ namespace System
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
+            ArgumentNullException.ThrowIfNull(info);
+
             info.AddValue("TrackedObject", Target, typeof(object)); // Do not rename (binary serialization)
             info.AddValue("TrackResurrection", IsTrackResurrection()); // Do not rename (binary serialization)
         }

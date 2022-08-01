@@ -1,23 +1,20 @@
 <Project>
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>$(MSBuildThisFileName)</AssemblyName>
     <RootNamespace>$(MSBuildThisFileName)</RootNamespace>
     <StringResourcesClassName>SR</StringResourcesClassName>
     <StringResourcesName>FxResources.$(RootNamespace).$(StringResourcesClassName)</StringResourcesName>
-    <Nullable>enable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
     <CLSCompliant>false</CLSCompliant>
-    <IsPackable>false</IsPackable>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynApiVersion)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

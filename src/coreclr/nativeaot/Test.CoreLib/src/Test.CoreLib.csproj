@@ -1,0 +1,241 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DefineConstants>FEATURE_GC_STRESS;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'arm'">
+    <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'armel'">
+    <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'wasm'">
+    <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <!-- For now, link Runtime.Base into Test.CoreLib until there is proper multifile build -->
+  <PropertyGroup>
+    <InPlaceRuntime>true</InPlaceRuntime>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(InPlaceRuntime)' == 'true'">
+    <DefineConstants>INPLACE_RUNTIME;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(Platform)' == 'arm'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(Platform)' == 'armel'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
+
+    <IntermediatesDir>$(ArtifactsObjDir)\coreclr\$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)</IntermediatesDir>
+    <IntermediatesDir Condition="'$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform('Windows'))">$(IntermediatesDir)\ide</IntermediatesDir>
+  </PropertyGroup>
+  <PropertyGroup>
+    <CommonPath>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', 'src'))</CommonPath>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs">
+      <Link>Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\DispatchResolve.cs">
+      <Link>Runtime.Base\src\System\Runtime\DispatchResolve.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\GCStress.cs">
+      <Link>Runtime.Base\src\System\Runtime\GCStress.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\__Finalizer.cs">
+      <Link>Runtime.Base\src\System\Runtime\__Finalizer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\MethodTable.Runtime.cs">
+      <Link>Runtime.Base\src\System\Runtime\MethodTable.Runtime.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\ExceptionHandling.cs">
+      <Link>Runtime.Base\src\System\Runtime\ExceptionHandling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InternalCalls.cs">
+      <Link>Runtime.Base\src\System\Runtime\InternalCalls.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\RuntimeExports.cs">
+      <Link>Runtime.Base\src\System\Runtime\RuntimeExports.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\StackFrameIterator.cs">
+      <Link>Runtime.Base\src\System\Runtime\StackFrameIterator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\ThunkPool.cs">
+      <Link>Runtime.Base\src\System\Runtime\ThunkPool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\TypeCast.cs">
+      <Link>Runtime.Base\src\System\Runtime\TypeCast.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs">
+      <Link>Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnmanagedType.cs">
+      <Link>Runtime.Base\src\System\Runtime\InteropServices\UnmanagedType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\RhBaseName.cs">
+      <Link>Runtime.Base\src\RhBaseName.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\Internal\Runtime\TransitionBlock.cs">
+      <Link>Common\TransitionBlock.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
+    <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Full\AsmOffsets.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
+      <Link>Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\Internal\Runtime\CompilerHelpers\StartupCodeHelpers.cs">
+      <Link>Internal\Runtime\CompilerHelpers\StartupCodeHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\Internal\Runtime\CompilerHelpers\StartupDebug.cs">
+      <Link>Internal\Runtime\CompilerHelpers\StartupDebug.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MethodTable.Constants.cs">
+      <Link>System\Runtime\MethodTable.Constants.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\Internal\Runtime\MethodTable.cs">
+      <Link>System\Runtime\MethodTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\ModuleHeaders.cs">
+      <Link>Internal\Runtime\ModuleHeaders.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\RuntimeConstants.cs">
+      <Link>Internal\Runtime\RuntimeConstants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Array.cs">
+      <Link>System\Array.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Attribute.cs">
+      <Link>System\Attribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\AttributeTargets.cs">
+      <Link>System\AttributeTargets.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\AttributeUsageAttribute.cs">
+      <Link>System\AttributeUsageAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Delegate.cs">
+      <Link>System\Delegate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Diagnostics\ConditionalAttribute.cs">
+      <Link>System\Diagnostics\ConditionalAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Diagnostics\Debug.cs">
+      <Link>System\Diagnostics\Debug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Exception.cs">
+      <Link>System\Exception.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\FlagsAttribute.cs">
+      <Link>System\FlagsAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\GC.cs">
+      <Link>System\GC.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\MulticastDelegate.cs">
+      <Link>System\MulticastDelegate.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Nullable.cs">
+      <Link>System\Nullable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\ParamArrayAttribute.cs">
+      <Link>System\ParamArrayAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Primitives.cs">
+      <Link>System\Primitives.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\RuntimeHandles.cs">
+      <Link>System\RuntimeHandles.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs">
+      <Link>System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\IntrinsicAttribute.cs">
+      <Link>System\Runtime\CompilerServices\IntrinsicAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\IsVolatile.cs">
+      <Link>System\Runtime\CompilerServices\IsVolatile.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\MethodImplAttribute.cs">
+      <Link>System\Runtime\CompilerServices\MethodImplAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\IsByRefLikeAttribute.cs">
+      <Link>Runtime.Base\src\System\Runtime\CompilerServices\IsByRefLikeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\EETypePtr.cs">
+      <Link>System\EETypePtr.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\ExceptionIDs.cs">
+      <Link>System\Runtime\ExceptionIDs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\CallingConvention.cs">
+      <Link>System\Runtime\InteropServices\CallingConvention.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\CharSet.cs">
+      <Link>System\Runtime\InteropServices\CharSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\DllImportAttribute.cs">
+      <Link>System\Runtime\InteropServices\DllImportAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\FieldOffsetAttribute.cs">
+      <Link>System\Runtime\InteropServices\FieldOffsetAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\GCHandleType.cs">
+      <Link>System\Runtime\InteropServices\GCHandleType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\LayoutKind.cs">
+      <Link>System\Runtime\InteropServices\LayoutKind.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnmanagedCallConvAttribute.cs">
+      <Link>System\Runtime\InteropServices\UnmanagedCallConvAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs">
+      <Link>System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\OutAttribute.cs">
+      <Link>System\Runtime\InteropServices\OutAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\StructLayoutAttribute.cs">
+      <Link>System\Runtime\InteropServices\StructLayoutAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\RuntimeExportAttribute.cs">
+      <Link>System\Runtime\RuntimeExportAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\RuntimeImportAttribute.cs">
+      <Link>System\Runtime\RuntimeImportAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\String.cs">
+      <Link>System\String.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\ThrowHelpers.cs">
+      <Link>System\ThrowHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Void.cs">
+      <Link>System\Void.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\Unsafe.cs">
+      <Link>System\Runtime\CompilerServices\Unsafe.cs</Link>
+    </Compile>
+    <Compile Include="Internal\Runtime\IDynamicInterfaceCastableSupport.cs" />
+    <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
+    <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
+    <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\DoesNotReturnIfAttribute.cs" />
+    <Compile Include="System\Runtime\RuntimeImports.cs" />
+    <Compile Include="System\Runtime\RuntimeHelpers.cs" />
+    <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
+    <Compile Include="System\Threading\Interlocked.cs" />
+    <Compile Include="System\Array.cs" />
+    <Compile Include="System\RuntimeExceptionHelpers.cs" />
+    <Compile Include="System\Object.cs" />
+    <Compile Include="System\Type.cs" />
+    <Compile Include="System\RuntimeTypeHandle.cs" />
+    <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeManagerHandle.cs">
+      <Link>Internal\Runtime\TypeManagerHandle.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

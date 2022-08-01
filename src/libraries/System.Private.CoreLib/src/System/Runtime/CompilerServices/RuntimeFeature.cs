@@ -28,10 +28,19 @@ namespace System.Runtime.CompilerServices
         public const string CovariantReturnsOfClasses = nameof(CovariantReturnsOfClasses);
 
         /// <summary>
+        /// Represents a runtime feature where types can define ref fields.
+        /// </summary>
+        public const string ByRefFields = nameof(ByRefFields);
+
+        /// <summary>
         /// Indicates that this version of runtime supports virtual static members of interfaces.
         /// </summary>
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
+
+        /// <summary>
+        /// Indicates that this version of runtime supports <see cref="System.IntPtr" /> and <see cref="System.UIntPtr" /> as numeric types.
+        /// </summary>
+        public const string NumericIntPtr = nameof(NumericIntPtr);
 
         /// <summary>
         /// Checks whether a certain feature is supported by the Runtime.
@@ -42,11 +51,11 @@ namespace System.Runtime.CompilerServices
             {
                 case PortablePdb:
                 case CovariantReturnsOfClasses:
+                case ByRefFields:
                 case UnmanagedSignatureCallingConvention:
                 case DefaultImplementationsOfInterfaces:
-#pragma warning disable CA2252
                 case VirtualStaticsInInterfaces:
-#pragma warning restore CA2252
+                case NumericIntPtr:
                     return true;
                 case nameof(IsDynamicCodeSupported):
                     return IsDynamicCodeSupported;

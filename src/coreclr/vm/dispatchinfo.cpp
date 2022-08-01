@@ -60,7 +60,7 @@ inline UPTR DispID2HashKey(DISPID DispID)
     return DispID + 2;
 }
 
-// Typedef for string comparition functions.
+// Typedef for string comparison functions.
 typedef int (__cdecl *UnicodeStringCompareFuncPtr)(const WCHAR *, const WCHAR *);
 
 //--------------------------------------------------------------------------------
@@ -197,7 +197,7 @@ void DispatchMemberInfo::Init()
     EX_END_CATCH(RethrowTerminalExceptions);
 }
 
-HRESULT DispatchMemberInfo::GetIDsOfParameters(__in_ecount(NumNames) WCHAR **astrNames, int NumNames, DISPID *aDispIds, BOOL bCaseSensitive)
+HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astrNames, int NumNames, DISPID *aDispIds, BOOL bCaseSensitive)
 {
     CONTRACTL
     {
@@ -1144,7 +1144,7 @@ DispatchMemberInfo* DispatchInfo::FindMember(SString& strName, BOOL bCaseSensiti
         pCurrMemberInfo = pCurrMemberInfo->m_pNext;
     }
 
-    // No member has been found with the coresponding name.
+    // No member has been found with the corresponding name.
     RETURN NULL;
 }
 
@@ -1261,7 +1261,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
     Thread* pThread = GetThread();
     AppDomain* pAppDomain = pThread->GetDomain();
 
-    SafeArrayHolder pSA(NULL);
+    SafeArrayPtrHolder pSA = NULL;
     VARIANT safeArrayVar;
     HRESULT hr;
 
@@ -1756,7 +1756,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         if (!pDispMemberInfo)
         {
             WCHAR strTmp[64];
-            _snwprintf_s(strTmp, NumItems(strTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, id);
+            _snwprintf_s(strTmp, ARRAY_SIZE(strTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, id);
             pObjs->MemberName = (OBJECTREF)StringObject::NewString(strTmp);
         }
         else
@@ -2489,7 +2489,7 @@ void DispatchInfo::SetUpNamedParamArray(DispatchMemberInfo *pMemberInfo, DISPID 
             {
                 WCHAR wszTmp[64];
 
-                _snwprintf_s(wszTmp, NumItems(wszTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, pSrcArgNames[iSrcArg]);
+                _snwprintf_s(wszTmp, ARRAY_SIZE(wszTmp), _TRUNCATE, DISPID_NAME_FORMAT_STRING, pSrcArgNames[iSrcArg]);
                 STRINGREF strTmp = StringObject::NewString(wszTmp);
                 (*pNamedParamArray)->SetAt(iDestArg, (OBJECTREF)strTmp);
             }

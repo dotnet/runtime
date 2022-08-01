@@ -1,7 +1,7 @@
-#include <common/entrypoints.h>
+#include <minipal/entrypoints.h>
 #include "mono/metadata/native-library.h"
 
-static Entry mono_qcalls[] = 
+static Entry mono_qcalls[] =
 {
 	DllImportEntry(NULL) // This NULL entry can be removed when a QCall is added to Mono (and added to this array)
 };
@@ -9,5 +9,5 @@ static Entry mono_qcalls[] =
 gpointer
 mono_lookup_pinvoke_qcall_internal (const char *name)
 {
-	return (gpointer)minipal_resolve_dllimport(mono_qcalls, lengthof(mono_qcalls), name);
+	return (gpointer)minipal_resolve_dllimport(mono_qcalls, G_N_ELEMENTS(mono_qcalls), name);
 }

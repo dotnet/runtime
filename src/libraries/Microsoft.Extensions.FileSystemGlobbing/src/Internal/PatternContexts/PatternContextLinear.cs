@@ -12,7 +12,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     {
         public PatternContextLinear(ILinearPattern pattern)
         {
-            Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
+            ThrowHelper.ThrowIfNull(pattern);
+
+            Pattern = pattern;
         }
 
         public override PatternTestResult Test(FileInfoBase file)
@@ -56,7 +58,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
                 }
 
                 // directory matches segment, advance position in pattern
-                frame.SegmentIndex = frame.SegmentIndex + 1;
+                frame.SegmentIndex++;
             }
 
             PushDataFrame(frame);

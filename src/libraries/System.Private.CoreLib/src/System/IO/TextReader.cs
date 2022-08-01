@@ -19,7 +19,8 @@ namespace System.IO
     // There are methods on the Stream class for reading bytes.
     public abstract partial class TextReader : MarshalByRefObject, IDisposable
     {
-        public static readonly TextReader Null = new NullTextReader();
+        // Create our own instance to avoid static field initialization order problems on Mono.
+        public static readonly TextReader Null = new StreamReader.NullStreamReader();
 
         protected TextReader() { }
 
@@ -68,10 +69,8 @@ namespace System.IO
         //
         public virtual int Read(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -203,18 +202,56 @@ namespace System.IO
         }
 
         #region Task based Async APIs
-        public virtual Task<string?> ReadLineAsync() =>
-            Task<string?>.Factory.StartNew(static state => ((TextReader)state!).ReadLine(), this,
-                CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+        public virtual Task<string?> ReadLineAsync() => ReadLineCoreAsync(default);
 
-        public virtual async Task<string> ReadToEndAsync()
+        /// <summary>
+        /// Reads a line of characters asynchronously and returns the data as a string.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A value task that represents the asynchronous read operation. The value of the <c>TResult</c>
+        /// parameter contains the next line from the text reader, or is <see langword="null" /> if all of the characters have been read.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The text reader has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
+        /// <remarks>
+        /// <para>The <see cref="TextReader"/> class is an abstract class. Therefore, you do not instantiate it in
+        /// your code. For an example of using the <see cref="ReadLineAsync(CancellationToken)"/> method, see the
+        /// <see cref="StreamReader.ReadLineAsync(CancellationToken)"/> method.</para>
+        /// <para>If the current <see cref="TextReader"/> represents the standard input stream returned by
+        /// the <c>Console.In</c> property, the <see cref="ReadLineAsync(CancellationToken)"/> method
+        /// executes synchronously rather than asynchronously.</para>
+        /// </remarks>
+        public virtual ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken) =>
+            new ValueTask<string?>(ReadLineCoreAsync(cancellationToken));
+
+        private Task<string?> ReadLineCoreAsync(CancellationToken cancellationToken) =>
+            Task<string?>.Factory.StartNew(static state => ((TextReader)state!).ReadLine(), this,
+                cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+
+        public virtual Task<string> ReadToEndAsync() => ReadToEndAsync(default);
+
+        /// <summary>
+        /// Reads all characters from the current position to the end of the text reader asynchronously and returns them as one string.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous read operation. The value of the <c>TResult</c> parameter contains
+        /// a string with the characters from the current position to the end of the text reader.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The number of characters is larger than <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The text reader has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
+        /// <remarks>
+        /// <para>The <see cref="TextReader"/> class is an abstract class. Therefore, you do not instantiate it in
+        /// your code. For an example of using the <see cref="ReadToEndAsync(CancellationToken)"/> method, see the
+        /// <see cref="StreamReader.ReadToEndAsync(CancellationToken)"/> method.</para>
+        /// </remarks>
+        public virtual async Task<string> ReadToEndAsync(CancellationToken cancellationToken)
         {
             var sb = new StringBuilder(4096);
             char[] chars = ArrayPool<char>.Shared.Rent(4096);
             try
             {
                 int len;
-                while ((len = await ReadAsyncInternal(chars, default).ConfigureAwait(false)) != 0)
+                while ((len = await ReadAsyncInternal(chars, cancellationToken).ConfigureAwait(false)) != 0)
                 {
                     sb.Append(chars, 0, len);
                 }
@@ -228,10 +265,8 @@ namespace System.IO
 
         public virtual Task<int> ReadAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0 || count < 0)
             {
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -262,10 +297,8 @@ namespace System.IO
 
         public virtual Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0 || count < 0)
             {
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -300,25 +333,9 @@ namespace System.IO
         }
         #endregion
 
-        private sealed class NullTextReader : TextReader
-        {
-            public NullTextReader() { }
-
-            public override int Read(char[] buffer, int index, int count)
-            {
-                return 0;
-            }
-
-            public override string? ReadLine()
-            {
-                return null;
-            }
-        }
-
         public static TextReader Synchronized(TextReader reader)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
 
             return reader is SyncTextReader ? reader : new SyncTextReader(reader);
         }
@@ -369,13 +386,21 @@ namespace System.IO
             public override Task<string?> ReadLineAsync() => Task.FromResult(ReadLine());
 
             [MethodImpl(MethodImplOptions.Synchronized)]
+            public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
+                => cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<string?>(cancellationToken) : new ValueTask<string?>(ReadLine());
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task<string> ReadToEndAsync() => Task.FromResult(ReadToEnd());
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task<string> ReadToEndAsync(CancellationToken cancellationToken)
+                => cancellationToken.IsCancellationRequested ? Task.FromCanceled<string>(cancellationToken) : Task.FromResult(ReadToEnd());
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
             {
-                if (buffer == null)
-                    throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+                ArgumentNullException.ThrowIfNull(buffer);
+
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (buffer.Length - index < count)
@@ -387,8 +412,8 @@ namespace System.IO
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task<int> ReadAsync(char[] buffer, int index, int count)
             {
-                if (buffer == null)
-                    throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+                ArgumentNullException.ThrowIfNull(buffer);
+
                 if (index < 0 || count < 0)
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (buffer.Length - index < count)

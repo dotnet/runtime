@@ -314,7 +314,7 @@ char * CBlobFetcher::ComputePointer(unsigned offset) const
 //-----------------------------------------------------------------------------
 // See if a pointer came from this blob fetcher
 //-----------------------------------------------------------------------------
-BOOL CBlobFetcher::ContainsPointer( __in char *ptr) const
+BOOL CBlobFetcher::ContainsPointer( _In_ char *ptr) const
 {
     _ASSERTE(m_pIndex);
 
@@ -337,7 +337,7 @@ BOOL CBlobFetcher::ContainsPointer( __in char *ptr) const
 //-----------------------------------------------------------------------------
 // Find a pointer as if this were linear (middle weight function)
 //-----------------------------------------------------------------------------
-unsigned CBlobFetcher::ComputeOffset(__in char *ptr) const
+unsigned CBlobFetcher::ComputeOffset(_In_ char *ptr) const
 {
     _ASSERTE(m_pIndex);
 

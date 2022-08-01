@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Xml;
-    using System.Xml.XPath;
-
     internal abstract class CompiledAction : Action
     {
         internal abstract void Compile(Compiler compiler);
@@ -66,7 +66,7 @@ namespace System.Xml.Xsl.XsltOld
             return result;
         }
 
-        public void CheckEmpty(Compiler compiler)
+        public static void CheckEmpty(Compiler compiler)
         {
             // Really EMPTY means no content at all, but the sake of compatibility with MSXML we allow whitespace
             string elementName = compiler.Input.Name;
@@ -90,12 +90,12 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        public void CheckRequiredAttribute(Compiler compiler, object? attrValue, string attrName)
+        public static void CheckRequiredAttribute(Compiler compiler, object? attrValue, string attrName)
         {
             CheckRequiredAttribute(compiler, attrValue != null, attrName);
         }
 
-        public void CheckRequiredAttribute(Compiler compiler, bool attr, string attrName)
+        public static void CheckRequiredAttribute(Compiler compiler, bool attr, string attrName)
         {
             if (!attr)
             {

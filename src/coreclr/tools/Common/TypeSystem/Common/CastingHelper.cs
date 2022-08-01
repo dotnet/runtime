@@ -263,7 +263,7 @@ namespace Internal.TypeSystem
             else if (curTypesParm.IsGenericParameter)
             {
                 var genericVariableFromParam = (GenericParameterDesc)curTypesParm;
-                if (genericVariableFromParam.HasReferenceTypeConstraint)
+                if (genericVariableFromParam.HasReferenceTypeConstraint || IsConstrainedAsGCPointer(genericVariableFromParam))
                 {
                     return genericVariableFromParam.CanCastToInternal(paramType, protect);
                 }
@@ -281,14 +281,38 @@ namespace Internal.TypeSystem
             return false;
         }
 
+        private static bool IsConstrainedAsGCPointer(GenericParameterDesc type)
+        {
+            foreach (var typeConstraint in type.TypeConstraints)
+            {
+                if (typeConstraint.IsGenericParameter)
+                {
+                    if (IsConstrainedAsGCPointer((GenericParameterDesc)typeConstraint))
+                        return true;
+                }
+
+                if (!typeConstraint.IsInterface && typeConstraint.IsGCPointer)
+                {
+                    // Object, ValueType, and Enum are GCPointers but they do not constrain the type to GCPointer!
+                    if (!typeConstraint.IsWellKnownType(WellKnownType.Object) &&
+                        !typeConstraint.IsWellKnownType(WellKnownType.ValueType) &&
+                        !typeConstraint.IsWellKnownType(WellKnownType.Enum))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         private static TypeFlags GetNormalizedIntegralArrayElementType(TypeDesc type)
         {
             Debug.Assert(!type.IsEnum);
 
             // Primitive types such as E_T_I4 and E_T_U4 are interchangeable
-            // Enums with interchangeable underlying types are interchangable
+            // Enums with interchangeable underlying types are interchangeable
             // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
-            // Float and double are not interchangable here.
+            // Float and double are not interchangeable here.
 
             TypeFlags elementType = type.Category;
             switch (elementType)
@@ -502,7 +526,7 @@ namespace Internal.TypeSystem
             else if (thisType.IsGenericParameter)
             {
                 var genericVariableFromParam = (GenericParameterDesc)thisType;
-                if (genericVariableFromParam.HasReferenceTypeConstraint)
+                if (genericVariableFromParam.HasReferenceTypeConstraint || IsConstrainedAsGCPointer(genericVariableFromParam))
                 {
                     return genericVariableFromParam.CanCastToInternal(otherType, protect);
                 }

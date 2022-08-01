@@ -156,7 +156,7 @@ namespace System.Data
 
         internal override bool CanBeRemovedFromCollection(ConstraintCollection constraints, bool fThrowException) => true;
 
-        internal bool IsKeyNull(object[] values)
+        internal static bool IsKeyNull(object[] values)
         {
             for (int i = 0; i < values.Length; i++)
             {
@@ -581,7 +581,7 @@ namespace System.Data
                         object[] parentKeyValues = parentRow.GetKeyValues(_parentKey, action == DataRowAction.Rollback ? version : DataRowVersion.Default);
 
                         int parentKeyValuesRecord = childRow.Table.NewRecord();
-                        childRow.Table.SetKeyValues(_childKey, parentKeyValues, parentKeyValuesRecord);
+                        DataTable.SetKeyValues(_childKey, parentKeyValues, parentKeyValuesRecord);
                         if (_childKey.RecordsEqual(childRow._tempRecord, parentKeyValuesRecord))
                         {
                             return;
@@ -599,7 +599,7 @@ namespace System.Data
                         // could be self-join constraint
                         if (_childKey.Table == _parentKey.Table && childRow._tempRecord != -1)
                         {
-                            int lo = 0;
+                            int lo;
                             for (lo = 0; lo < childValues.Length; lo++)
                             {
                                 DataColumn column = _parentKey.ColumnsReference[lo];
@@ -761,12 +761,10 @@ namespace System.Data
             DataColumn[] columns = new DataColumn[keys];
             DataColumn[] relatedColumns = new DataColumn[keys];
 
-            int iDest = 0;
-
             for (int i = 0; i < keys; i++)
             {
                 DataColumn src = Columns[i];
-                iDest = destination.Columns.IndexOf(src.ColumnName);
+                int iDest = destination.Columns.IndexOf(src.ColumnName);
                 if (iDest < 0)
                 {
                     return null;

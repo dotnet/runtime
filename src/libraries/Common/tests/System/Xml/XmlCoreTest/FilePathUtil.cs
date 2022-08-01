@@ -111,8 +111,7 @@ namespace XmlCoreTest.Common
             return resultPath.ToString();
         }
 
-        private static MyDict<string, Stream> s_XmlFileInMemoryCache = null;
-        private static MyDict<string, Stream> s_XmlFileInMemoryCacheBackup = null;
+        private static MyDict<string, MemoryStream> s_XmlFileInMemoryCache = null;
 
         private static readonly object s_XmlFileMemoryCacheLock = new object();
         static void initXmlFileCacheIfNotYet()
@@ -121,35 +120,22 @@ namespace XmlCoreTest.Common
             {
                 if (s_XmlFileInMemoryCache == null)
                 {
-                    s_XmlFileInMemoryCache = new MyDict<string, Stream>();
-                    s_XmlFileInMemoryCacheBackup = new MyDict<string, Stream>();
+                    MyDict<string, MemoryStream> cache = new MyDict<string, MemoryStream>();
 
-                    foreach (var file in GetDataFiles())
+                    foreach (Tuple<string, byte[]> file in GetDataFiles())
                     {
-                        addBytes(file.Item1, file.Item2);
+                        var ms = new MemoryStream(file.Item2);
+                        cache[NormalizeFilePath(file.Item1)] = ms;
                     }
+
+                    s_XmlFileInMemoryCache = cache;
                 }
             }
         }
 
-        public static void cacheXml(string filename, string content)
-        {
-            initXmlFileCacheIfNotYet();
-            MemoryStream ms = new MemoryStream();
-            StreamWriter sw = new StreamWriter(ms);
-            sw.Write(content);
-            sw.Flush();
-            s_XmlFileInMemoryCache[NormalizeFilePath(filename)] = ms;
-
-            MemoryStream msbak = new MemoryStream();
-            ms.Position = 0;
-            ms.CopyTo(msbak);
-            s_XmlFileInMemoryCacheBackup[NormalizeFilePath(filename)] = msbak;
-        }
-
         public static Stream getStreamDirect(string filename)
         {
-            foreach (var file in GetDataFiles())
+            foreach (Tuple<string, byte[]> file in GetDataFiles())
             {
                 if (file.Item1 == filename)
                 {
@@ -171,52 +157,26 @@ namespace XmlCoreTest.Common
 
             lock (s_XmlFileMemoryCacheLock)
             {
-                Stream s = s_XmlFileInMemoryCache[normalizedFileName];
+                MemoryStream ms = s_XmlFileInMemoryCache[normalizedFileName];
 
-                if (s == null)
+                if (ms == null)
                 {
                     throw new FileNotFoundException("File Not Found: " + filename);
                 }
 
-                if (s.CanSeek)
-                {
-                    s.Position = 0;
-                    return s;
-                }
-                else
-                {
-                    Stream msbak = s_XmlFileInMemoryCacheBackup[normalizedFileName];
-                    MemoryStream msnew = new MemoryStream();
-                    msbak.Position = 0;
-                    msbak.CopyTo(msnew);
-
-                    s_XmlFileInMemoryCache[normalizedFileName] = msnew;
-                    msnew.Position = 0;
-                    return msnew;
-                }
-            }
-        }
-
-        public static void addBytes(string filename, byte[] bytes)
-        {
-            if (null == filename)
-                return;
-
-            initXmlFileCacheIfNotYet();
-
-            lock (s_XmlFileMemoryCacheLock)
-            {
-                var ms = new MemoryStream(bytes);
-                s_XmlFileInMemoryCache[NormalizeFilePath(filename)] = ms;
-                MemoryStream msbak = new MemoryStream();
+                // Always give out a new stream, so there's no concern about concurrent use
+                MemoryStream msnew = new MemoryStream();
                 ms.Position = 0;
-                ms.CopyTo(msbak);
-                s_XmlFileInMemoryCacheBackup[NormalizeFilePath(filename)] = msbak;
+                ms.CopyTo(msnew);
+                msnew.Position = 0;
+                return msnew;
             }
         }
 
-        public static void addStream(string filename, Stream s)
+        public static void addStream(string filename, MemoryStream s)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             if (null == filename)
                 return;
 
@@ -224,12 +184,8 @@ namespace XmlCoreTest.Common
 
             lock (s_XmlFileMemoryCacheLock)
             {
+                // overwrite any existing
                 s_XmlFileInMemoryCache[NormalizeFilePath(filename)] = s;
-
-                MemoryStream msbak = new MemoryStream();
-                s.Position = 0;
-                s.CopyTo(msbak);
-                s_XmlFileInMemoryCacheBackup[NormalizeFilePath(filename)] = msbak;
             }
         }
 

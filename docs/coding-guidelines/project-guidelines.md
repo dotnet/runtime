@@ -6,10 +6,13 @@ In order to work in the dotnet/runtime repo you must first run build.cmd/sh from
 - Restore tools
 - Restore external dependencies
  - CoreCLR - Copy to `bin\runtime\$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)`
-- Build targeting pack
- - Build src\libraries\ref.proj which builds all references assembly projects. For reference assembly project information see [ref](#ref)
-- Build product
- - Build src\libraries\src.proj which builds all the source library projects. For source library project information see [src](#src).
+- Build shared framework projects
+ - Build src\libraries\sfx.proj which builds all shared framework projects.
+- Build out of band projects
+ - Build src\libraries\oob.proj which builds all the out-of-band (OOB) projects.
+
+For reference assembly project information see [ref](#ref)
+For source library project information see [src](#src)
 
 # Build Pivots
 Below is a list of all the various options we pivot the project builds on:
@@ -22,7 +25,7 @@ Below is a list of all the various options we pivot the project builds on:
 ## Individual build properties
 The following are the properties associated with each build pivot
 
-- `$(BuildTargetFramework) -> Any .NETCoreApp or .NETFramework TFM, e.g. net5.0`
+- `$(BuildTargetFramework) -> Any .NETCoreApp or .NETFramework TFM, e.g. net7.0`
 - `$(TargetOS) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
 - `$(Configuration) -> Release | [defaults to Debug when empty]`
 - `$(TargetArchitecture) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
@@ -37,22 +40,18 @@ Each project will define a set of supported TargetFrameworks
 <PropertyGroup>
 ```
 
-- `$(BuildSettings) -> $(BuildTargetFramework)[-$(TargetOS)][-$(Configuration)][-$(TargetArchitecture)]`
- - Note this property should be file path safe and thus can be used in file names or directories that need to a unique path for a project configuration.
- - The only required Build Settings value is the `$(BuildTargetFramework)` the others are optional.
-
 Example:
-Pure netstandard configuration:
+Non cross-targeting project that targets .NETStandard:
 ```
 <PropertyGroup>
-  <TargetFrameworks>netstandard2.0</TargetFrameworks>
+  <TargetFramework>netstandard2.0</TargetFramework>
 <PropertyGroup>
 ```
 
-All supported targets with unique windows/unix build for netcoreapp:
+A cross-targeting project which targets specific platform with `$(NetCoreAppCurrent)` and one .NETFramework tfm:
 ```
 <PropertyGroup>
-  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetFrameworkCurrent)</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetFrameworkMinimum)</TargetFrameworks>
 <PropertyGroup>
 ```
 
@@ -61,15 +60,15 @@ All supported targets with unique windows/unix build for netcoreapp:
 A full or individual project build is centered around BuildTargetFramework, TargetOS, Configuration and TargetArchitecture.
 
 1. `$(BuildTargetFramework), $(TargetOS), $(Configuration), $(TargetArchitecture)` can individually be passed in to change the default values.
-2. If nothing is passed to the build then we will default value of these properties from the environment. Example: `net5.0-[TargetOS Running On]-Debug-x64`.
-3. While Building an individual project from the VS, we build the project for all latest netcoreapp target frameworks.
+2. If nothing is passed to the build then we will default value of these properties from the environment. Example: `net7.0-[TargetOS Running On]-Debug-x64`.
+3. When building an individual project (either from the CLI or an IDE), all target frameworks are built.
 
 We also have `RuntimeOS` which can be passed to customize the specific OS and version needed for native package builds as well as package restoration. If not passed it will default based on the OS you are running on.
 
-Any of the mentioned properties can be set via `/p:<Property>=<Value>` at the command line. When building using our run tool or any of the wrapper scripts around it (i.e. build.cmd) a number of these properties have aliases which make them easier to pass (run build.cmd/sh -? for the aliases).
+Any of the mentioned properties can be set via `/p:<Property>=<Value>` at the command line. When building using any of the wrapper scripts around it (i.e. build.cmd) a number of these properties have aliases which make them easier to pass (run build.cmd/sh -? for the aliases).
 
 ## Selecting the correct BuildSettings
-When building an individual project the `BuildTargetFramework` and `TargetOS` will be used to select the closest matching TargetFramework listed in the projects `TargetFrameworks` property. The rules used to select the targetFramework will consider compatible target frameworks and OS fallbacks.
+When building an individual project the `BuildTargetFramework` and `TargetOS` will be used to select the compatible dependencies which are expressed as ProjectReference items.
 
 ## Supported full build settings
 - .NET Core latest on current OS (default) -> `$(NetCoreAppCurrent)-[RunningOS]`
@@ -80,37 +79,64 @@ When building an individual project the `BuildTargetFramework` and `TargetOS` wi
 ## TargetFramework conditions
 `TargetFramework` conditions should be avoided in the first PropertyGroup as that causes DesignTimeBuild issues: https://github.com/dotnet/project-system/issues/6143
 
-1. Use an equality check if the TargetFramework isn't overloaded with the OS portion.
+1. Use TargetFrameworkIdentifier to condition on an entire framework to differentiate between .NETCoreApp, .NETStandard and .NETFramework.
 Example:
 ```
 <PropertyGroup>
-  <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
 </PropertyGroup>
+<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">...</ItemGroup>
+<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">...</ItemGroup>
+<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">...</ItemGroup>
+```
+2. Use equality checks if you want to condition on specific runtime agnostic target frameworks (i.e. without the `-windows` suffix).
+Example:
+```
+<PropertyGroup>
+  <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">...</ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">...</ItemGroup>
+<ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkMinimum)'">...</ItemGroup>
 ```
-2. Use a StartsWith when you want to test for multiple .NETStandard or .NETFramework versions.
+3. Use the `TargetPlatformIdentifier` property to condition on a .NETCoreApp platform specific target framework. Note that .NETStandard and .NETFramework target frameworks can't be platform specific.
 Example:
 ```
 <PropertyGroup>
-  <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)</TargetFrameworks>
 </PropertyGroup>
-<ItemGroup Condition="$(TargetFramework.StartsWith('netstandard'))>...</ItemGroup>
+<ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">...</ItemGroup>
+<ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'OSX'">...</ItemGroup>
 ```
-3. Use a StartsWith if the TargetFramework is overloaded with the OS portion.
+Important: In contrast to the old `Targets*` checks, `TargetPlatformIdentifier` conditions apply to a single tfm only, inheritance between target frameworks can't be expressed. See the example below for Unix:
+```
+<PropertyGroup>
+  <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-windows</TargetFrameworks>
+</PropertyGroup>
+<ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Linux' or '$(TargetPlatformIdentifier)' == 'android'">...</ItemGroup>
+<!-- Negations make such conditions easier to write and read. -->
+<ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">...</ItemGroup>
+```
+4. Set the `TargetPlatformIdentifier` property in the project to be able to condition on it in properties in the project file.
+That is necessary as the SDK sets the `TargetPlatformIdentifier` in a .targets file after the project is evaluated. Because of that, the property isn't available during the project's evaluation and must be set manually.
 Example:
 ```
 <PropertyGroup>
-  <TargetFrameworks>netstandard2.0-windows;netstandard2.0-Unix</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-android</TargetFrameworks>
 </PropertyGroup>
-<ItemGroup Condition="$(TargetFramework.StartsWith('netstandard2.0'))>...</ItemGroup>
+<!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+<PropertyGroup>
+  <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+  <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'android'">$(DefineConstants);ANDROID_USE_BUFFER</DefineConstants>
+</PropertyGroup>
 ```
-4. Use negations if that makes the conditions easier.
+5. Use negations if that makes the conditions easier.
 Example:
 ```
 <PropertyGroup>
-  <TargetFrameworks>netstandard2.0;net462;net472;net5.0</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net462</TargetFrameworks>
 </PropertyGroup>
-<ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))>...</ItemGroup>
+<ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">...</ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">...</ItemGroup>
 ```
 
@@ -119,11 +145,10 @@ Example:
 Library projects should use the following directory layout.
 
 ```
-src\<Library Name>\src - Contains the source code for the library.
-src\<Library Name>\ref - Contains any reference assembly projects for the library.
-src\<Library Name>\pkg - Contains package projects for the library.
-src\<Library Name>\tests - Contains the test code for a library.
 src\<Library Name>\gen - Contains source code for the assembly's source generator.
+src\<Library Name>\ref - Contains any reference assembly projects for the library.
+src\<Library Name>\src - Contains the source code for the library.
+src\<Library Name>\tests - Contains the test code for a library.
 ```
 
 ## ref
@@ -163,6 +188,7 @@ All test outputs should be under
 
 ## gen
 In the gen directory any source generator related to the assembly should exist. This does not mean the source generator is only used for that assembly only that it is conceptually apart of that assembly. For example, the assembly may provide attributes or low-level types the source generator uses.
+To consume a source generator, simply add an `<AnalyzerReference Include="..." />` item to the project, usually next to the `References` and `ProjectReferences` items.
 
 ## Facades
 Facade are unique in that they don't have any code and instead are generated by finding a contract reference assembly with the matching identity and generating type forwards for all the types to where they live in the implementation assemblies (aka facade seeds). There are also partial facades which contain some type forwards as well as some code definitions. All the various build configurations should be contained in the one csproj file per library.

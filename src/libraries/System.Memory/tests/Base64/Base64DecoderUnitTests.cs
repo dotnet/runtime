@@ -21,7 +21,7 @@ namespace System.Buffers.Text.Tests
                 } while (numBytes % 4 != 0);    // ensure we have a valid length
 
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
                 Assert.Equal(OperationStatus.Done, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
@@ -44,7 +44,7 @@ namespace System.Buffers.Text.Tests
                 } while (numBytes % 4 == 0);    // ensure we have a invalid length
 
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
                 int expectedConsumed = numBytes / 4 * 4;    // decode input up to the closest multiple of 4
@@ -70,7 +70,7 @@ namespace System.Buffers.Text.Tests
                 } while (numBytes % 4 != 0);    // ensure we have a valid length
 
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
                 int expectedConsumed = source.Length / 4 * 4; // only consume closest multiple of four since isFinalBlock is false
@@ -95,7 +95,7 @@ namespace System.Buffers.Text.Tests
                 } while (numBytes % 4 == 0);    // ensure we have a invalid length
 
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
                 int expectedConsumed = source.Length / 4 * 4; // only consume closest multiple of four since isFinalBlock is false
@@ -140,7 +140,7 @@ namespace System.Buffers.Text.Tests
             for (int numBytes = 5; numBytes < 20; numBytes++)
             {
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Span<byte> decodedBytes = new byte[3];
                 int consumed, written;
@@ -163,7 +163,7 @@ namespace System.Buffers.Text.Tests
             // Output too small even with padding characters in the input
             {
                 Span<byte> source = new byte[12];
-                Base64TestHelper.InitalizeDecodableBytes(source);
+                Base64TestHelper.InitializeDecodableBytes(source);
                 source[10] = Base64TestHelper.EncodingPad;
                 source[11] = Base64TestHelper.EncodingPad;
 
@@ -177,7 +177,7 @@ namespace System.Buffers.Text.Tests
 
             {
                 Span<byte> source = new byte[12];
-                Base64TestHelper.InitalizeDecodableBytes(source);
+                Base64TestHelper.InitializeDecodableBytes(source);
                 source[11] = Base64TestHelper.EncodingPad;
 
                 Span<byte> decodedBytes = new byte[7];
@@ -195,7 +195,7 @@ namespace System.Buffers.Text.Tests
             for (int numBytes = 8; numBytes < 20; numBytes++)
             {
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Span<byte> decodedBytes = new byte[4];
                 int consumed, written;
@@ -215,7 +215,7 @@ namespace System.Buffers.Text.Tests
         public void DecodingOutputTooSmallRetry(bool isFinalBlock)
         {
             Span<byte> source = new byte[1000];
-            Base64TestHelper.InitalizeDecodableBytes(source);
+            Base64TestHelper.InitializeDecodableBytes(source);
 
             int outputSize = 240;
             int requiredSize = Base64.GetMaxDecodedFromUtf8Length(source.Length);
@@ -337,7 +337,7 @@ namespace System.Buffers.Text.Tests
 
             for (int j = 0; j < 8; j++)
             {
-                Span<byte> source = new byte[8] { 50, 50, 50, 50, 80, 80, 80, 80 }; // valid input - "2222PPPP"
+                Span<byte> source = "2222PPPP"u8.ToArray(); // valid input
                 Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
 
                 for (int i = 0; i < invalidBytes.Length; i++)
@@ -368,7 +368,7 @@ namespace System.Buffers.Text.Tests
             // Input that is not a multiple of 4 is considered invalid, if isFinalBlock = true
             if (isFinalBlock)
             {
-                Span<byte> source = new byte[7] { 50, 50, 50, 50, 80, 80, 80 }; // incomplete input - "2222PPP"
+                Span<byte> source = "2222PPP"u8.ToArray(); // incomplete input
                 Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
                 Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
                 Assert.Equal(4, consumed);
@@ -385,7 +385,7 @@ namespace System.Buffers.Text.Tests
             // Only last 2 bytes can be padding, all other occurrence of padding is invalid
             for (int j = 0; j < 7; j++)
             {
-                Span<byte> source = new byte[] { 50, 50, 50, 50, 80, 80, 80, 80 }; // valid input - "2222PPPP"
+                Span<byte> source = "2222PPPP"u8.ToArray(); // valid input
                 Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
                 source[j] = Base64TestHelper.EncodingPad;
                 Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount, isFinalBlock));
@@ -490,7 +490,7 @@ namespace System.Buffers.Text.Tests
             for (int numberOfBytesToTest = 0; numberOfBytesToTest <= numberOfBytes; numberOfBytesToTest += 4)
             {
                 Span<byte> testBytes = new byte[numberOfBytes];
-                Base64TestHelper.InitalizeDecodableBytes(testBytes);
+                Base64TestHelper.InitializeDecodableBytes(testBytes);
                 string sourceString = Encoding.ASCII.GetString(testBytes.Slice(0, numberOfBytesToTest).ToArray());
                 Span<byte> expectedBytes = Convert.FromBase64String(sourceString);
 
@@ -535,7 +535,7 @@ namespace System.Buffers.Text.Tests
             {
                 for (int i = 0; i < invalidBytes.Length; i++)
                 {
-                    Span<byte> buffer = new byte[8] { 50, 50, 50, 50, 80, 80, 80, 80 }; // valid input - "2222PPPP"
+                    Span<byte> buffer = "2222PPPP"u8.ToArray(); // valid input
 
                     // Don't test padding (byte 61 i.e. '='), which is tested in DecodeInPlaceInvalidBytesPadding
                     if (invalidBytes[i] == Base64TestHelper.EncodingPad)
@@ -562,7 +562,7 @@ namespace System.Buffers.Text.Tests
 
             // Input that is not a multiple of 4 is considered invalid
             {
-                Span<byte> buffer = new byte[7] { 50, 50, 50, 50, 80, 80, 80 }; // incomplete input - "2222PPP"
+                Span<byte> buffer = "2222PPP"u8.ToArray(); // incomplete input
                 Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8InPlace(buffer, out int bytesWritten));
                 Assert.Equal(0, bytesWritten);
             }
@@ -574,7 +574,7 @@ namespace System.Buffers.Text.Tests
             // Only last 2 bytes can be padding, all other occurrence of padding is invalid
             for (int j = 0; j < 7; j++)
             {
-                Span<byte> buffer = new byte[] { 50, 50, 50, 50, 80, 80, 80, 80 }; // valid input - "2222PPPP"
+                Span<byte> buffer = "2222PPPP"u8.ToArray(); // valid input
                 buffer[j] = Base64TestHelper.EncodingPad;
                 string sourceString = Encoding.ASCII.GetString(buffer.Slice(0, 4).ToArray());
 

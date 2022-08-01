@@ -35,6 +35,7 @@ public class MonoRunner extends Instrumentation
         System.loadLibrary("monodroid");
     }
 
+    static String testResultsDir;
     static String entryPointLibName = "%EntryPointLibName%";
     static Bundle result = new Bundle();
 
@@ -64,28 +65,30 @@ public class MonoRunner extends Instrumentation
             argsToForward = argsList.toArray(new String[argsList.size()]);
         }
 
+%EnvVariables%
+
         super.onCreate(arguments);
         start();
-    }
-
-    private static String getDocsDir(Context ctx) {
-        File docsPath  = ctx.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
-        if (docsPath == null) {
-            docsPath = ctx.getCacheDir();
-        }
-        return docsPath.getAbsolutePath();
     }
 
     public static int initialize(String entryPointLibName, String[] args, Context context) {
         String filesDir = context.getFilesDir().getAbsolutePath();
         String cacheDir = context.getCacheDir().getAbsolutePath();
-        String docsDir = getDocsDir(context);
+
+        File docsPath = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+
+        // on Android API 30 there are "adb pull" permission issues with getExternalFilesDir() paths on emulators, see https://github.com/dotnet/xharness/issues/385
+        if (docsPath == null || android.os.Build.VERSION.SDK_INT == 30) {
+            testResultsDir = context.getCacheDir().getAbsolutePath();
+        } else {
+            testResultsDir = docsPath.getAbsolutePath();
+        }
 
         // unzip libs and test files to filesDir
         unzipAssets(context, filesDir, "assets.zip");
 
         Log.i("DOTNET", "MonoRunner initialize,, entryPointLibName=" + entryPointLibName);
-        return initRuntime(filesDir, cacheDir, docsDir, entryPointLibName, args);
+        return initRuntime(filesDir, cacheDir, testResultsDir, entryPointLibName, args);
     }
 
     @Override
@@ -103,7 +106,7 @@ public class MonoRunner extends Instrumentation
         result.putInt("return-code", retcode);
 
         // Xharness cli expects "test-results-path" with test results
-        File testResults = new File(getDocsDir(getContext()) + "/testResults.xml");
+        File testResults = new File(testResultsDir + "/testResults.xml");
         if (testResults.exists()) {
             Log.i("DOTNET", "MonoRunner finished, test-results-path=" + testResults.getAbsolutePath());
             result.putString("test-results-path", testResults.getAbsolutePath());
@@ -146,7 +149,7 @@ public class MonoRunner extends Instrumentation
         }
     }
 
-    static native int initRuntime(String libsDir, String cacheDir, String docsDir, String entryPointLibName, String[] args);
+    static native int initRuntime(String libsDir, String cacheDir, String testResultsDir, String entryPointLibName, String[] args);
 
     static native int setEnv(String key, String value);
 }

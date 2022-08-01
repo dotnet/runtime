@@ -3,7 +3,6 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
-    <CLRTestExecutionArguments>-trustedexe</CLRTestExecutionArguments>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="oomexception01.cs" />

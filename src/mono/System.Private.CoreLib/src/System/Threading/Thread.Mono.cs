@@ -279,7 +279,7 @@ namespace System.Threading
         {
             ThreadState state = GetState(this);
             if ((state & ThreadState.Stopped) != 0)
-                throw new ThreadStateException("Thread is dead; state can not be accessed.");
+                throw new ThreadStateException(SR.ThreadState_Dead_State);
             return state;
         }
 
@@ -309,7 +309,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern ulong GetCurrentOSThreadId();
 
-        [MemberNotNull("self")]
+        [MemberNotNull(nameof(self))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void InitInternal(Thread thread);
 

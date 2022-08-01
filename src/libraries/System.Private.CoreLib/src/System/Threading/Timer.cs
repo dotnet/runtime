@@ -94,8 +94,12 @@ namespace System.Threading
         {
             private readonly TimerQueue _queue;
 
-            public TimerQueueDebuggerTypeProxy(TimerQueue queue) =>
-                _queue = queue ?? throw new ArgumentNullException(nameof(queue));
+            public TimerQueueDebuggerTypeProxy(TimerQueue queue)
+            {
+                ArgumentNullException.ThrowIfNull(queue);
+
+                _queue = queue;
+            }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
             public TimerQueueTimer[] Items => new List<TimerQueueTimer>(_queue.GetTimersForDebugger()).ToArray();
@@ -888,8 +892,7 @@ namespace System.Threading
                                 uint period,
                                 bool flowExecutionContext = true)
         {
-            if (callback == null)
-                throw new ArgumentNullException(nameof(callback));
+            ArgumentNullException.ThrowIfNull(callback);
 
             _timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period, flowExecutionContext));
         }
@@ -951,8 +954,7 @@ namespace System.Threading
 
         public bool Dispose(WaitHandle notifyObject)
         {
-            if (notifyObject == null)
-                throw new ArgumentNullException(nameof(notifyObject));
+            ArgumentNullException.ThrowIfNull(notifyObject);
 
             return _timer.Close(notifyObject);
         }

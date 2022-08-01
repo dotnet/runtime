@@ -104,7 +104,7 @@ cpp_quote("#define _SOS_StackReference_")
 
 typedef enum SOSStackSourceType
 {
-    SOS_StackSourceIP,     // Instuction pointer in managed code
+    SOS_StackSourceIP,     // Instruction pointer in managed code
     SOS_StackSourceFrame,  // clr!Frame
 } SOSStackSourceType;
 
@@ -448,4 +448,14 @@ interface ISOSDacInterface11 : IUnknown
 {
     HRESULT IsTrackedType(CLRDATA_ADDRESS objAddr, BOOL* isTrackedType, BOOL* hasTaggedMemory);
     HRESULT GetTaggedMemory(CLRDATA_ADDRESS objAddr, CLRDATA_ADDRESS* taggedMemory, size_t* taggedMemorySizeInBytes);
+}
+
+[
+    object,
+    local,
+    uuid(1b93bacc-8ca4-432d-943a-3e6e7ec0b0a3)
+]
+interface ISOSDacInterface12 : IUnknown
+{
+    HRESULT GetGlobalAllocationContext(CLRDATA_ADDRESS* allocPtr, CLRDATA_ADDRESS* allocLimit);
 }

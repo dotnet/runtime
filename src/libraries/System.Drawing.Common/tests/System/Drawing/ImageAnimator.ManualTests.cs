@@ -70,7 +70,7 @@ namespace System.Drawing.Tests
                     animation.Save(Path.Combine(testOutputFolder, $"{++frameIndexes[imageName]}_{timestamp}.jpg"), ImageFormat.Jpeg);
                 }));
 
-                bitmaps[imageName] = new(Helpers.GetTestBitmapPath(imageName));
+                bitmaps[imageName] = new Bitmap(Helpers.GetTestBitmapPath(imageName));
                 ImageAnimator.Animate(bitmaps[imageName], handlers[imageName]);
             }
 

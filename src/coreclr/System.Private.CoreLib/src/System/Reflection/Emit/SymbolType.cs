@@ -87,7 +87,7 @@ namespace System.Reflection.Emit
                         curIndex++;
                     }
                     // consume, one dimension at a time
-                    if ((format[curIndex] >= '0' && format[curIndex] <= '9') || format[curIndex] == '-')
+                    if (char.IsAsciiDigit(format[curIndex]) || format[curIndex] == '-')
                     {
                         bool isNegative = false;
                         if (format[curIndex] == '-')
@@ -97,7 +97,7 @@ namespace System.Reflection.Emit
                         }
 
                         // lower bound is specified. Consume the low bound
-                        while (format[curIndex] >= '0' && format[curIndex] <= '9')
+                        while (char.IsAsciiDigit(format[curIndex]))
                         {
                             iLowerBound *= 10;
                             iLowerBound += format[curIndex] - '0';
@@ -126,7 +126,7 @@ namespace System.Reflection.Emit
 
                         curIndex++;
                         // consume the upper bound
-                        if ((format[curIndex] >= '0' && format[curIndex] <= '9') || format[curIndex] == '-')
+                        if (char.IsAsciiDigit(format[curIndex]) || format[curIndex] == '-')
                         {
                             bool isNegative = false;
                             iUpperBound = 0;
@@ -137,7 +137,7 @@ namespace System.Reflection.Emit
                             }
 
                             // lower bound is specified. Consume the low bound
-                            while (format[curIndex] >= '0' && format[curIndex] <= '9')
+                            while (char.IsAsciiDigit(format[curIndex]))
                             {
                                 iUpperBound *= 10;
                                 iUpperBound += format[curIndex] - '0';
@@ -226,8 +226,7 @@ namespace System.Reflection.Emit
         #region Internal Members
         internal void SetElementType(Type baseType)
         {
-            if (baseType is null)
-                throw new ArgumentNullException(nameof(baseType));
+            ArgumentNullException.ThrowIfNull(baseType);
 
             m_baseType = baseType;
         }

@@ -21,7 +21,7 @@ namespace System.IO.Strategies
         private int _readPos;
         private int _readLen;
         // The last successful Task returned from ReadAsync (perf optimization for successive reads of the same size)
-        private Task<int>? _lastSyncCompletedReadTask;
+        private CachedCompletedInt32Task _lastSyncCompletedReadTask;
 
         internal BufferedFileStreamStrategy(FileStreamStrategy strategy, int bufferSize)
         {
@@ -29,21 +29,6 @@ namespace System.IO.Strategies
 
             _strategy = strategy;
             _bufferSize = bufferSize;
-        }
-
-        ~BufferedFileStreamStrategy()
-        {
-            try
-            {
-                // the finalizer must at least try to flush the write buffer
-                // so we enforce it by passing always true
-                Dispose(true);
-            }
-            catch (Exception e) when (FileStreamHelpers.IsIoRelatedException(e))
-            {
-                // On finalization, ignore failures from trying to flush the write buffer,
-                // e.g. if this stream is wrapping a pipe and the pipe is now broken.
-            }
         }
 
         public override bool CanRead => _strategy.CanRead;
@@ -137,23 +122,21 @@ namespace System.IO.Strategies
             }
         }
 
-        internal override void DisposeInternal(bool disposing) => Dispose(disposing);
-
-        protected override void Dispose(bool disposing)
+        protected sealed override void Dispose(bool disposing)
         {
+            if (_strategy.IsClosed)
+            {
+                return;
+            }
+
             try
             {
-                if (disposing && !_strategy.IsClosed)
-                {
-                    try
-                    {
-                        Flush();
-                    }
-                    finally
-                    {
-                        _strategy.Dispose();
-                    }
-                }
+                Flush();
+            }
+            catch (Exception e) when (!disposing && FileStreamHelpers.IsIoRelatedException(e))
+            {
+                // On finalization, ignore failures from trying to flush the write buffer,
+                // e.g. if this stream is wrapping a pipe and the pipe is now broken.
             }
             finally
             {
@@ -161,10 +144,10 @@ namespace System.IO.Strategies
                 // when users have a race condition in their code (i.e. they call
                 // FileStream.Close when calling another method on FileStream like Read).
 
-                // Call base.Dispose(bool) to cleanup async IO resources
-                base.Dispose(disposing);
-
+                // There is no need to call base.Dispose as it's empty
                 _writePos = 0;
+
+                _strategy.DisposeInternal(disposing);
             }
         }
 
@@ -310,21 +293,8 @@ namespace System.IO.Strategies
             ValueTask<int> readResult = ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken);
 
             return readResult.IsCompletedSuccessfully
-                ? LastSyncCompletedReadTask(readResult.Result)
+                ? _lastSyncCompletedReadTask.GetTask(readResult.Result)
                 : readResult.AsTask();
-
-            Task<int> LastSyncCompletedReadTask(int val)
-            {
-                Task<int>? t = _lastSyncCompletedReadTask;
-                Debug.Assert(t == null || t.IsCompletedSuccessfully);
-
-                if (t != null && t.Result == val)
-                    return t;
-
-                t = Task.FromResult<int>(val);
-                _lastSyncCompletedReadTask = t;
-                return t;
-            }
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)

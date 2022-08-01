@@ -16,16 +16,14 @@ namespace System.Security.Cryptography
 
         public RSAPKCS1SignatureFormatter(AsymmetricAlgorithm key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             _rsaKey = (RSA)key;
         }
 
         public override void SetKey(AsymmetricAlgorithm key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             _rsaKey = (RSA)key;
         }
@@ -47,8 +45,8 @@ namespace System.Security.Cryptography
 
         public override byte[] CreateSignature(byte[] rgbHash)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
+            ArgumentNullException.ThrowIfNull(rgbHash);
+
             if (_algName == null)
                 throw new CryptographicUnexpectedOperationException(SR.Cryptography_FormatterMissingAlgorithm);
             if (_rsaKey == null)

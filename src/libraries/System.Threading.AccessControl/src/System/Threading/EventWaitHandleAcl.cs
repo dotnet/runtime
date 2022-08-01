@@ -126,10 +126,8 @@ namespace System.Threading
 
         private static OpenExistingResult OpenExistingWorker(string name, EventWaitHandleRights rights, out EventWaitHandle? result)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
@@ -141,6 +139,7 @@ namespace System.Threading
             int errorCode = Marshal.GetLastWin32Error();
             if (existingHandle.IsInvalid)
             {
+                existingHandle.Dispose();
                 return errorCode switch
                 {
                     Interop.Errors.ERROR_FILE_NOT_FOUND or Interop.Errors.ERROR_INVALID_NAME => OpenExistingResult.NameNotFound,

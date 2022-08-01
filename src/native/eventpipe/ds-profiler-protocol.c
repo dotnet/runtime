@@ -67,7 +67,7 @@ attach_profiler_command_try_parse_payload (
 	instance->incoming_buffer = buffer;
 
 	if (!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->attach_timeout ) ||
-		!ds_ipc_message_try_parse_value (&buffer_cursor, &buffer_cursor_len, (uint8_t *)&instance->profiler_guid, (uint32_t)EP_ARRAY_SIZE (instance->profiler_guid)) ||
+		!ds_ipc_message_try_parse_value (&buffer_cursor, &buffer_cursor_len, (uint8_t *)&instance->profiler_guid, (uint32_t)ARRAY_SIZE (instance->profiler_guid)) ||
 		!ds_ipc_message_try_parse_string_utf16_t (&buffer_cursor, &buffer_cursor_len, &instance->profiler_path) ||
 		!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->client_data_len) ||
 		!(buffer_cursor_len <= instance->client_data_len))
@@ -193,7 +193,7 @@ startup_profiler_command_try_parse_payload (
 
 	instance->incoming_buffer = buffer;
 
-	if (!ds_ipc_message_try_parse_value (&buffer_cursor, &buffer_cursor_len, (uint8_t *)&instance->profiler_guid, (uint32_t)EP_ARRAY_SIZE (instance->profiler_guid)) ||
+	if (!ds_ipc_message_try_parse_value (&buffer_cursor, &buffer_cursor_len, (uint8_t *)&instance->profiler_guid, (uint32_t)ARRAY_SIZE (instance->profiler_guid)) ||
 		!ds_ipc_message_try_parse_string_utf16_t (&buffer_cursor, &buffer_cursor_len, &instance->profiler_path))
 		ep_raise_error ();
 
@@ -223,7 +223,7 @@ profiler_protocol_helper_startup_profiler (
 	if (!ds_server_is_paused_in_startup()) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_INVALIDARG);
 		ep_raise_error ();
-	}		
+	}
 
 	payload = (DiagnosticsStartupProfilerCommandPayload *)ds_ipc_message_try_parse_payload (message, startup_profiler_command_try_parse_payload);
 
@@ -294,12 +294,12 @@ ds_profiler_protocol_helper_handle_ipc_message (
 
 	return true;
 }
-#endif // PROFILING_SUPPORTED 
+#endif // PROFILING_SUPPORTED
 
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef DS_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(DS_INCLUDE_SOURCE_FILES) && !defined(DS_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_diagnostics_profiler_protocol;
 const char quiet_linker_empty_file_warning_diagnostics_profiler_protocol = 0;
 #endif

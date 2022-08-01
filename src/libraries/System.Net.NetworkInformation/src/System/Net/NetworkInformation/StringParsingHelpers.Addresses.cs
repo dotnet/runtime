@@ -86,7 +86,7 @@ namespace System.Net.NetworkInformation
             {
                 if (File.Exists(filePath)) // avoid an exception in most cases if path doesn't already exist
                 {
-                    string fileContents = File.ReadAllText(filePath);
+                    string fileContents = ReadAllText(filePath);
                     int leaseIndex = -1;
                     int secondBrace = -1;
                     while ((leaseIndex = fileContents.IndexOf("lease", leaseIndex + 1, StringComparison.Ordinal)) != -1)
@@ -128,7 +128,7 @@ namespace System.Net.NetworkInformation
             {
                 if (File.Exists(smbConfFilePath)) // avoid an exception in most cases if path doesn't already exist
                 {
-                    string fileContents = File.ReadAllText(smbConfFilePath);
+                    string fileContents = ReadAllText(smbConfFilePath);
                     string label = "wins server = ";
                     int labelIndex = fileContents.IndexOf(label);
                     int labelLineStart = fileContents.LastIndexOf(Environment.NewLine, labelIndex, StringComparison.Ordinal);

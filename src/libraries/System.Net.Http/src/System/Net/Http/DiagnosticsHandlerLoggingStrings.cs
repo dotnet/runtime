@@ -8,12 +8,13 @@ namespace System.Net.Http
     /// </summary>
     internal static class DiagnosticsHandlerLoggingStrings
     {
-        public const string DiagnosticListenerName = "HttpHandlerDiagnosticListener";
-        public const string RequestWriteNameDeprecated = "System.Net.Http.Request";
-        public const string ResponseWriteNameDeprecated = "System.Net.Http.Response";
-
-        public const string ExceptionEventName = "System.Net.Http.Exception";
-        public const string ActivityName = "System.Net.Http.HttpRequestOut";
-        public const string ActivityStartName = "System.Net.Http.HttpRequestOut.Start";
+        public const string DiagnosticListenerName         = "HttpHandlerDiagnosticListener";
+        public const string Namespace                      = "System.Net.Http";
+        public const string RequestWriteNameDeprecated     = Namespace + ".Request";
+        public const string ResponseWriteNameDeprecated    = Namespace + ".Response";
+        public const string ExceptionEventName             = Namespace + ".Exception";
+        public const string ActivityName                   = Namespace + ".HttpRequestOut";
+        public const string ActivityStartName              = ActivityName + ".Start";
+        public const string ActivityStopName               = ActivityName + ".Stop";
     }
 }

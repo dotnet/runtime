@@ -15,8 +15,109 @@
 #include "corerror.h"
 #include <assert.h>
 #include <stdio.h>
+#include <memory>
+#include "corhlpr.h"
 
 #ifdef HOST_WINDOWS
+
+namespace
+{
+    HRESULT GetMachineAndDirectoryAddress(ICorDebugDataTarget* dataTarget,
+        ULONG64 moduleBaseAddress,
+        uint8_t imageDirectory,
+        WORD* imageFileMachine,
+        DWORD* directoryRVA)
+    {
+        // Fun code ahead... below is a hand written PE decoder with some of the file offsets hardcoded.
+        // It supports no more than what we absolutely have to to get to the PE directory we need. Any of the
+        // magic numbers used below can be determined by using the public documentation on the web.
+        //
+        // Yes utilcode has a PE decoder, no it does not support reading its data through a datatarget
+        // It was easier to inspect the small portion that I needed than to shove an abstraction layer under
+        // our utilcode and then make sure everything still worked.
+
+        // SECURITY WARNING: all data provided by the data target should be considered untrusted.
+        // Do not allow malicious data to cause large reads, memory allocations, buffer overflow,
+        // or any other undesirable behavior.
+
+        HRESULT hr = S_OK;
+
+        // at offset 3c in the image is a 4 byte file pointer that indicates where the PE signature is
+        IMAGE_DOS_HEADER dosHeader;
+        hr = ReadFromDataTarget(dataTarget, moduleBaseAddress, (BYTE*)&dosHeader, sizeof(dosHeader));
+
+        // verify there is a 4 byte PE signature there
+        DWORD peSigFilePointer = 0;
+        if (SUCCEEDED(hr))
+        {
+            peSigFilePointer = dosHeader.e_lfanew;
+            DWORD peSig = 0;
+            hr = ReadFromDataTarget(dataTarget, moduleBaseAddress + peSigFilePointer, (BYTE*)&peSig, 4);
+            if (SUCCEEDED(hr) && peSig != IMAGE_NT_SIGNATURE)
+            {
+                hr = E_FAIL; // PE signature not present
+            }
+        }
+
+        // after the signature is a 20 byte image file header
+        // we need to parse this to figure out the target architecture
+        IMAGE_FILE_HEADER imageFileHeader = {};
+        if (SUCCEEDED(hr))
+        {
+            hr = ReadFromDataTarget(dataTarget, moduleBaseAddress + peSigFilePointer + 4, (BYTE*)&imageFileHeader, IMAGE_SIZEOF_FILE_HEADER);
+        }
+
+        WORD optHeaderMagic = 0;
+        DWORD peOptImageHeaderFilePointer = 0;
+        if (SUCCEEDED(hr))
+        {
+            if(imageFileMachine != NULL)
+            {
+                *imageFileMachine = imageFileHeader.Machine;
+            }
+
+            // 4 bytes after the signature is the 20 byte image file header
+            // 24 bytes after the signature is the image-only header
+            // at the beginning of the image-only header is a 2 byte magic number indicating its format
+            peOptImageHeaderFilePointer = peSigFilePointer + IMAGE_SIZEOF_FILE_HEADER + sizeof(DWORD);
+            hr = ReadFromDataTarget(dataTarget, moduleBaseAddress + peOptImageHeaderFilePointer, (BYTE*)&optHeaderMagic, 2);
+        }
+
+        // Either 112 or 128 bytes after the beginning of the image-only header is an 8 byte resource table
+        // depending on whether the image is PE32 or PE32+
+        DWORD sectionRVA = 0;
+        if (SUCCEEDED(hr))
+        {
+            if (optHeaderMagic == IMAGE_NT_OPTIONAL_HDR32_MAGIC) // PE32
+            {
+                IMAGE_OPTIONAL_HEADER32 header32;
+                hr = ReadFromDataTarget(dataTarget, moduleBaseAddress + peOptImageHeaderFilePointer,
+                    (BYTE*)&header32, sizeof(header32));
+                if (SUCCEEDED(hr))
+                {
+                    sectionRVA = header32.DataDirectory[imageDirectory].VirtualAddress;
+                }
+            }
+            else if (optHeaderMagic == IMAGE_NT_OPTIONAL_HDR64_MAGIC) //PE32+
+            {
+                IMAGE_OPTIONAL_HEADER64 header64;
+                hr = ReadFromDataTarget(dataTarget, moduleBaseAddress + peOptImageHeaderFilePointer,
+                    (BYTE*)&header64, sizeof(header64));
+                if (SUCCEEDED(hr))
+                {
+                    sectionRVA = header64.DataDirectory[imageDirectory].VirtualAddress;
+                }
+            }
+            else
+            {
+                hr = E_FAIL; // Invalid PE
+            }
+        }
+
+        *directoryRVA = sectionRVA;
+        return hr;
+    }
+}
 
 // Returns the RVA of the resource section for the module specified by the given data target and module base.
 // Returns failure if the module doesn't have a resource section.
@@ -31,96 +132,7 @@ HRESULT GetMachineAndResourceSectionRVA(ICorDebugDataTarget* pDataTarget,
     WORD* pwImageFileMachine,
     DWORD* pdwResourceSectionRVA)
 {
-    // Fun code ahead... below is a hand written PE decoder with some of the file offsets hardcoded.
-    // It supports no more than what we absolutely have to to get to the resources we need. Any of the
-    // magic numbers used below can be determined by using the public documentation on the web.
-    //
-    // Yes utilcode has a PE decoder, no it does not support reading its data through a datatarget
-    // It was easier to inspect the small portion that I needed than to shove an abstraction layer under
-    // our utilcode and then make sure everything still worked.
-
-    // SECURITY WARNING: all data provided by the data target should be considered untrusted.
-    // Do not allow malicious data to cause large reads, memory allocations, buffer overflow,
-    // or any other undesirable behavior.
-
-    HRESULT hr = S_OK;
-
-    // at offset 3c in the image is a 4 byte file pointer that indicates where the PE signature is
-    IMAGE_DOS_HEADER dosHeader;
-    hr = ReadFromDataTarget(pDataTarget, moduleBaseAddress, (BYTE*)&dosHeader, sizeof(dosHeader));
-
-    // verify there is a 4 byte PE signature there
-    DWORD peSigFilePointer = 0;
-    if (SUCCEEDED(hr))
-    {
-        peSigFilePointer = dosHeader.e_lfanew;
-        DWORD peSig = 0;
-        hr = ReadFromDataTarget(pDataTarget, moduleBaseAddress + peSigFilePointer, (BYTE*)&peSig, 4);
-        if (SUCCEEDED(hr) && peSig != IMAGE_NT_SIGNATURE)
-        {
-            hr = E_FAIL; // PE signature not present
-        }
-    }
-
-    // after the signature is a 20 byte image file header
-    // we need to parse this to figure out the target architecture
-    IMAGE_FILE_HEADER imageFileHeader;
-    if (SUCCEEDED(hr))
-    {
-        hr = ReadFromDataTarget(pDataTarget, moduleBaseAddress + peSigFilePointer + 4, (BYTE*)&imageFileHeader, IMAGE_SIZEOF_FILE_HEADER);
-    }
-
-
-
-    WORD optHeaderMagic = 0;
-    DWORD peOptImageHeaderFilePointer = 0;
-    if (SUCCEEDED(hr))
-    {
-        if(pwImageFileMachine != NULL)
-        {
-            *pwImageFileMachine = imageFileHeader.Machine;
-        }
-
-        // 4 bytes after the signature is the 20 byte image file header
-        // 24 bytes after the signature is the image-only header
-        // at the beginning of the image-only header is a 2 byte magic number indicating its format
-        peOptImageHeaderFilePointer = peSigFilePointer + IMAGE_SIZEOF_FILE_HEADER + sizeof(DWORD);
-        hr = ReadFromDataTarget(pDataTarget, moduleBaseAddress + peOptImageHeaderFilePointer, (BYTE*)&optHeaderMagic, 2);
-    }
-
-    // Either 112 or 128 bytes after the beginning of the image-only header is an 8 byte resource table
-    // depending on whether the image is PE32 or PE32+
-    DWORD resourceSectionRVA = 0;
-    if (SUCCEEDED(hr))
-    {
-        if (optHeaderMagic == IMAGE_NT_OPTIONAL_HDR32_MAGIC) // PE32
-        {
-            IMAGE_OPTIONAL_HEADER32 header32;
-            hr = ReadFromDataTarget(pDataTarget, moduleBaseAddress + peOptImageHeaderFilePointer,
-                (BYTE*)&header32, sizeof(header32));
-            if (SUCCEEDED(hr))
-            {
-                resourceSectionRVA = header32.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
-            }
-        }
-        else if (optHeaderMagic == IMAGE_NT_OPTIONAL_HDR64_MAGIC) //PE32+
-        {
-            IMAGE_OPTIONAL_HEADER64 header64;
-            hr = ReadFromDataTarget(pDataTarget, moduleBaseAddress + peOptImageHeaderFilePointer,
-                (BYTE*)&header64, sizeof(header64));
-            if (SUCCEEDED(hr))
-            {
-                resourceSectionRVA = header64.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
-            }
-        }
-        else
-        {
-            hr = E_FAIL; // Invalid PE
-        }
-    }
-
-    *pdwResourceSectionRVA = resourceSectionRVA;
-    return S_OK;
+    return GetMachineAndDirectoryAddress(pDataTarget, moduleBaseAddress, IMAGE_DIRECTORY_ENTRY_RESOURCE, pwImageFileMachine, pdwResourceSectionRVA);
 }
 
 HRESULT GetResourceRvaFromResourceSectionRva(ICorDebugDataTarget* pDataTarget,
@@ -240,7 +252,7 @@ HRESULT GetResourceRvaFromResourceSectionRvaByName(ICorDebugDataTarget* pDataTar
 //   pNextLevelRVA - out - The RVA for the next level tree directory or the RVA of the resource entry
 //
 // Returns:
-//   S_OK if succesful or an appropriate failing HRESULT
+//   S_OK if successful or an appropriate failing HRESULT
 HRESULT GetNextLevelResourceEntryRVA(ICorDebugDataTarget* pDataTarget,
     DWORD id,
     ULONG64 moduleBaseAddress,
@@ -307,7 +319,7 @@ HRESULT GetNextLevelResourceEntryRVA(ICorDebugDataTarget* pDataTarget,
 //   pNextLevelRVA - out - The RVA for the next level tree directory or the RVA of the resource entry
 //
 // Returns:
-//   S_OK if succesful or an appropriate failing HRESULT
+//   S_OK if successful or an appropriate failing HRESULT
 HRESULT GetNextLevelResourceEntryRVAByName(ICorDebugDataTarget* pDataTarget,
     LPCWSTR pwzName,
     ULONG64 moduleBaseAddress,
@@ -427,3 +439,72 @@ HRESULT ReadFromDataTarget(ICorDebugDataTarget* pDataTarget,
 
     return hr;
 }
+
+#if TARGET_WINDOWS
+
+extern "C" bool
+TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
+{
+    DWORD exportTableRva;
+    if (FAILED(GetMachineAndDirectoryAddress(dataTarget, baseAddress, IMAGE_DIRECTORY_ENTRY_EXPORT, nullptr, &exportTableRva)))
+    {
+        return false;
+    }
+
+    // Manually read the export directory from the target to find the requested symbol.
+    IMAGE_EXPORT_DIRECTORY exportDir{};
+    if (FAILED(ReadFromDataTarget(dataTarget, baseAddress + exportTableRva, (BYTE*)&exportDir, sizeof(exportDir))))
+    {
+        return false;
+    }
+
+    uint32_t namePointerCount = VAL32(exportDir.NumberOfNames);
+    uint32_t addressTableRVA = VAL32(exportDir.AddressOfFunctions);
+    uint32_t ordinalTableRVA = VAL32(exportDir.AddressOfNameOrdinals);
+    uint32_t nameTableRVA = VAL32(exportDir.AddressOfNames);
+
+    for (uint32_t nameIndex = 0; nameIndex < namePointerCount; nameIndex++)
+    {
+        uint32_t namePointerRVA = 0;
+        if (FAILED(ReadFromDataTarget(dataTarget, baseAddress + nameTableRVA + sizeof(uint32_t) * nameIndex, (BYTE*)&namePointerRVA, sizeof(namePointerRVA))))
+        {
+            return false;
+        }
+        if (namePointerRVA != 0)
+        {
+            size_t symbolNameLength = strlen(symbolName);
+            if (symbolNameLength > UINT32_MAX)
+            {
+                // Symbol name is too large, we won't discover it.
+                return false;
+            }
+            // Allocate a buffer for the memory that we'll read out of the target image.
+            // We can allocate as much space as the target symbol name as we gracefully handle reading
+            // inaccessable memory.
+            std::unique_ptr<char[]> namePointer(new char[symbolNameLength + 1]);
+            // If we fail to read the memory or the name doesn't match, then we don't have the right export.
+            if (SUCCEEDED(ReadFromDataTarget(dataTarget, baseAddress + namePointerRVA, (BYTE*)namePointer.get(), (UINT32)symbolNameLength + 1))
+                && strncmp(namePointer.get(), symbolName, symbolNameLength + 1) == 0)
+            {
+                // If the name matches, we should be able to get the ordinal
+                uint16_t ordinalForNamedExport = 0;
+                if (FAILED(ReadFromDataTarget(dataTarget, baseAddress + ordinalTableRVA + sizeof(uint16_t) * nameIndex, (BYTE*)&ordinalForNamedExport, sizeof(ordinalForNamedExport))))
+                {
+                    return false;
+                }
+                // If the name matches, we should be able to get the export
+                uint32_t exportRVA = 0;
+                if (FAILED(ReadFromDataTarget(dataTarget, baseAddress + addressTableRVA + sizeof(uint32_t) * ordinalForNamedExport, (BYTE*)&exportRVA, sizeof(exportRVA))))
+                {
+                    return false;
+                }
+                *symbolAddress = baseAddress + exportRVA;
+                return true;
+            }
+        }
+    }
+
+    *symbolAddress = 0;
+    return false;
+}
+#endif

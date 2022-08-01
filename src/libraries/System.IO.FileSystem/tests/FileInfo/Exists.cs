@@ -51,8 +51,7 @@ namespace System.IO.Tests
             Assert.False(info.Exists);
         }
 
-        [Fact]
-        [PlatformSpecific(CaseInsensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseInsensitiveOS))]
         public void CaseInsensitivity()
         {
             string path = GetTestFilePath();
@@ -61,8 +60,7 @@ namespace System.IO.Tests
             Assert.True(new FileInfo(path.ToLowerInvariant()).Exists);
         }
 
-        [Fact]
-        [PlatformSpecific(CaseSensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
         public void CaseSensitivity()
         {
             string path = GetTestFilePath();
@@ -92,6 +90,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Uses P/Invokes
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
         public void TrueForNonRegularFile()
         {
             string fileName = GetTestFilePath();
@@ -100,11 +99,11 @@ namespace System.IO.Tests
             Assert.True(fi.Exists);
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = GetTestFilePath();
+            var linkPath = GetRandomLinkPath();
 
             var pathFI = new FileInfo(path);
             var linkPathFI = new FileInfo(linkPath);

@@ -57,6 +57,8 @@ ThreadInfo::Initialize()
     TRACE("Thread %04x PC %08lx SP %08lx\n", m_tid, (unsigned long)m_gpRegisters.ARM_pc, (unsigned long)m_gpRegisters.ARM_sp);
 #elif defined(__x86_64__)
     TRACE("Thread %04x RIP %016llx RSP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.rip, (unsigned long long)m_gpRegisters.rsp);
+#elif defined(__loongarch64)
+    TRACE("Thread %04x PC %016llx SP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.pc, (unsigned long long)m_gpRegisters.gpr[3]);
 #else
 #error "Unsupported architecture"
 #endif
@@ -69,7 +71,7 @@ ThreadInfo::GetRegistersWithPTrace()
     struct iovec gpRegsVec = { &m_gpRegisters, sizeof(m_gpRegisters) };
     if (ptrace((__ptrace_request)PTRACE_GETREGSET, m_tid, NT_PRSTATUS, &gpRegsVec) == -1)
     {
-        fprintf(stderr, "ptrace(PTRACE_GETREGSET, %d, NT_PRSTATUS) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
+        printf_error("ptrace(PTRACE_GETREGSET, %d, NT_PRSTATUS) FAILED %s (%d)\n", m_tid, strerror(errno), errno);
         return false;
     }
     assert(sizeof(m_gpRegisters) == gpRegsVec.iov_len);
@@ -80,7 +82,7 @@ ThreadInfo::GetRegistersWithPTrace()
 #if defined(__arm__)
         // Some aarch64 kernels may not support NT_FPREGSET for arm processes. We treat this failure as non-fatal.
 #else
-        fprintf(stderr, "ptrace(PTRACE_GETREGSET, %d, NT_FPREGSET) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
+        printf_error("ptrace(PTRACE_GETREGSET, %d, NT_FPREGSET) FAILED %s (%d)\n", m_tid, strerror(errno), errno);
         return false;
 #endif
     }
@@ -89,7 +91,7 @@ ThreadInfo::GetRegistersWithPTrace()
 #if defined(__i386__)
     if (ptrace((__ptrace_request)PTRACE_GETFPXREGS, m_tid, nullptr, &m_fpxRegisters) == -1)
     {
-        fprintf(stderr, "ptrace(GETFPXREGS, %d) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
+        printf_error("ptrace(GETFPXREGS, %d) FAILED %s (%d)\n", m_tid, strerror(errno), errno);
         return false;
     }
 #elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
@@ -100,7 +102,7 @@ ThreadInfo::GetRegistersWithPTrace()
 
     if (ptrace((__ptrace_request)PTRACE_GETVFPREGS, m_tid, nullptr, &m_vfpRegisters) == -1)
     {
-        fprintf(stderr, "ptrace(PTRACE_GETVFPREGS, %d) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
+        printf_error("ptrace(PTRACE_GETVFPREGS, %d) FAILED %s (%d)\n", m_tid, strerror(errno), errno);
         return false;
     }
 #endif
@@ -220,6 +222,26 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
         assert(sizeof(context->D) == sizeof(m_vfpRegisters.fpregs));
         memcpy(context->D, m_vfpRegisters.fpregs, sizeof(context->D));
 #endif
+    }
+#elif defined(__loongarch64)
+    if ((flags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
+    {
+        context->Ra = MCREG_Ra(m_gpRegisters);
+        context->Sp = MCREG_Sp(m_gpRegisters);
+        context->Fp = MCREG_Fp(m_gpRegisters);
+        context->Pc = MCREG_Pc(m_gpRegisters);
+    }
+    if ((flags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
+    {
+        context->Tp = m_gpRegisters.gpr[2];
+        memcpy(&context->A0, &m_gpRegisters.gpr[4], sizeof(context->A0)*(21 - 4 + 1));
+        memcpy(&context->S0, &m_gpRegisters.gpr[23], sizeof(context->S0)*9);
+    }
+    if ((flags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    {
+        assert(sizeof(context->F) == sizeof(m_fpRegisters.fpregs));
+        memcpy(context->F, m_fpRegisters.fpregs, sizeof(context->F));
+        context->Fcsr = m_fpRegisters.fpscr;
     }
 #else
 #error Platform not supported

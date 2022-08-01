@@ -24,10 +24,8 @@ namespace System.Xml
 
         internal void Encode(byte[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
@@ -68,10 +66,7 @@ namespace System.Xml
             if (_leftOverBytesCount > 0)
             {
                 count -= _leftOverBytesCount;
-                if (_leftOverBytes == null)
-                {
-                    _leftOverBytes = new byte[3];
-                }
+                _leftOverBytes ??= new byte[3];
                 for (int i = 0; i < _leftOverBytesCount; i++)
                 {
                     _leftOverBytes[i] = buffer[index + count + i];

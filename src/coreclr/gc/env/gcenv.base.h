@@ -6,6 +6,8 @@
 // Sets up basic environment for CLR GC
 //
 
+#include <minipal/utils.h>
+
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif // _MSC_VER
@@ -94,10 +96,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
 
-#ifndef _countof
-#define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
-#endif
-
 #ifndef min
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 #endif
@@ -113,7 +111,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #ifdef TARGET_UNIX
 #define _vsnprintf_s(string, sizeInBytes, count, format, args) vsnprintf(string, sizeInBytes, format, args)
 #define sprintf_s snprintf
-#define swprintf_s swprintf
 #define _snprintf_s(string, sizeInBytes, count, format, ...) \
   snprintf(string, sizeInBytes, format, ## __VA_ARGS__)
 #endif
@@ -121,12 +118,10 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #ifdef UNICODE
 #define _tcslen wcslen
 #define _tcscpy wcscpy
-#define _stprintf_s swprintf_s
 #define _tfopen _wfopen
 #else
 #define _tcslen strlen
 #define _tcscpy strcpy
-#define _stprintf_s sprintf_s
 #define _tfopen fopen
 #endif
 
@@ -231,6 +226,11 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #define YieldProcessor() asm volatile ("yield")
  #define MemoryBarrier __sync_synchronize
 #endif // __arm__ || __aarch64__
+
+#ifdef __loongarch64
+ #define YieldProcessor() __asm__ volatile( "dbar 0; \n")
+ #define MemoryBarrier __sync_synchronize
+#endif // __loongarch64
 
 #endif // _MSC_VER
 

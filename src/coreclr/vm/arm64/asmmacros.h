@@ -1,12 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-;; ==++==
-;;
-
-;;
-;; ==--==
-
 ;-----------------------------------------------------------------------------
 ; Macro used to assign an alternate name to a symbol containing characters normally disallowed in a symbol
 ; name (e.g. C++ decorated names).
@@ -147,6 +141,9 @@ $__EndLabelName
 
     LEAF_END $FuncName
 
+    ; make sure this symbol gets its own address
+    nop
+
     MEND
 ;-----------------------------------------------------------------------------
 ; Macro use for enabling C++ to know where to patch code at runtime.
@@ -155,6 +152,24 @@ $__EndLabelName
 $FuncName
     EXPORT $FuncName
 
+    MEND
+
+;-----------------------------------------------------------------------------
+; Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling
+; out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
+; before a call (if you have a frame pointer and a dynamic stack). A breakpoint will be invoked if the stack
+; is misaligned.
+;
+    MACRO
+        CHECK_STACK_ALIGNMENT
+
+#ifdef _DEBUG
+        add     x9, sp, xzr
+        tst     x9, #15
+        beq     %F0
+        EMIT_BREAKPOINT
+0
+#endif
     MEND
 
 ;-----------------------------------------------------------------------------
@@ -329,7 +344,7 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
 ;-----------------------------------------------------------------------------
 ; INLINE_GETTHREAD_CONSTANT_POOL macro has to be used after the last function in the .asm file that used
 ; INLINE_GETTHREAD. Optionally, it can be also used after any function that used INLINE_GETTHREAD
-; to improve density, or to reduce distance betweeen the constant pool and its use.
+; to improve density, or to reduce distance between the constant pool and its use.
 ;
     SETALIAS gCurrentThreadInfo, ?gCurrentThreadInfo@@3UThreadLocalInfo@@A
 

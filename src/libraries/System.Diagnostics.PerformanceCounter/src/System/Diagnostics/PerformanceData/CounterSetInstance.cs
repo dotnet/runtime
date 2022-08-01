@@ -19,14 +19,9 @@ namespace System.Diagnostics.PerformanceData
 
         internal unsafe CounterSetInstance(CounterSet counterSetDefined, string instanceName)
         {
-            if (counterSetDefined == null)
-            {
-                throw new ArgumentNullException(nameof(counterSetDefined));
-            }
-            if (instanceName == null)
-            {
-                throw new ArgumentNullException(nameof(instanceName));
-            }
+            ArgumentNullException.ThrowIfNull(counterSetDefined);
+            ArgumentNullException.ThrowIfNull(instanceName);
+
             if (instanceName.Length == 0)
             {
                 throw new ArgumentException(SR.Perflib_Argument_EmptyInstanceName, nameof(instanceName));

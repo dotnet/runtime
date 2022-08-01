@@ -10,7 +10,7 @@ namespace System.IO.Tests
     // Don't run in parallel as the WhenDiskIsFullTheErrorMessageContainsAllDetails test
     // consumes entire available free space on the disk (only on Linux, this is how posix_fallocate works)
     // and if we try to run other disk-writing test in the meantime we are going to get "No space left on device" exception.
-    [Collection("NoParallelTests")]
+    [Collection(nameof(DisableParallelization))]
     public partial class FileStream_ctor_options : FileStream_ctor_str_fm_fa_fs_buffer_fo
     {
         protected override string GetExpectedParamName(string paramName) => "value";
@@ -52,6 +52,19 @@ namespace System.IO.Tests
                         BufferSize = bufferSize,
                         Options = options,
                         PreallocationSize = preallocationSize
+                    });
+
+        protected virtual FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize, UnixFileMode unixFileMode)
+            => new FileStream(path,
+                    new FileStreamOptions
+                    {
+                        Mode = mode,
+                        Access = access,
+                        Share = share,
+                        BufferSize = bufferSize,
+                        Options = options,
+                        PreallocationSize = preallocationSize,
+                        UnixCreateMode = unixFileMode
                     });
 
         [Fact]
@@ -166,7 +179,4 @@ namespace System.IO.Tests
             Assert.False(exists);
         }
     }
-
-    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
-    public partial class NoParallelTests { }
 }

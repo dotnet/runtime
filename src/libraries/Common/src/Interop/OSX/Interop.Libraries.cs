@@ -15,6 +15,5 @@ internal static partial class Interop
         internal const string SystemConfigurationLibrary = "/System/Library/Frameworks/SystemConfiguration.framework/SystemConfiguration";
         internal const string AppleCryptoNative = "libSystem.Security.Cryptography.Native.Apple";
         internal const string MsQuic = "libmsquic.dylib";
-        internal const string libc = "libc";
     }
 }

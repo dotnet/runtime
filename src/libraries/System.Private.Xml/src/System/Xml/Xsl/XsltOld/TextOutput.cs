@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.IO;
+using System.Xml;
+using System.Xml.XPath;
+using System.Text;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.IO;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Text;
-
     internal sealed class TextOutput : SequentialOutput
     {
         private TextWriter _writer;
@@ -16,10 +16,7 @@ namespace System.Xml.Xsl.XsltOld
         internal TextOutput(Processor processor, Stream stream)
             : base(processor)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 
             this.encoding = processor.Output.Encoding;
             _writer = new StreamWriter(stream, this.encoding);
@@ -28,10 +25,7 @@ namespace System.Xml.Xsl.XsltOld
         internal TextOutput(Processor processor, TextWriter writer)
             : base(processor)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             this.encoding = writer.Encoding;
             _writer = writer;

@@ -14,7 +14,7 @@ namespace System.Text.Json
         public const byte LineFeed = (byte)'\n';
         public const byte Tab = (byte)'\t';
         public const byte ListSeparator = (byte)',';
-        public const byte KeyValueSeperator = (byte)':';
+        public const byte KeyValueSeparator = (byte)':';
         public const byte Quote = (byte)'"';
         public const byte BackSlash = (byte)'\\';
         public const byte Slash = (byte)'/';
@@ -33,13 +33,13 @@ namespace System.Text.Json
         public const byte StartingByteOfNonStandardSeparator = 0xE2;
 
         public static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
-        public static ReadOnlySpan<byte> TrueValue => new byte[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
-        public static ReadOnlySpan<byte> FalseValue => new byte[] { (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e' };
-        public static ReadOnlySpan<byte> NullValue => new byte[] { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
+        public static ReadOnlySpan<byte> TrueValue => "true"u8;
+        public static ReadOnlySpan<byte> FalseValue => "false"u8;
+        public static ReadOnlySpan<byte> NullValue => "null"u8;
 
-        public static ReadOnlySpan<byte> NaNValue => new byte[] { (byte)'N', (byte)'a', (byte)'N' };
-        public static ReadOnlySpan<byte> PositiveInfinityValue => new byte[] { (byte)'I', (byte)'n', (byte)'f', (byte)'i', (byte)'n', (byte)'i', (byte)'t', (byte)'y' };
-        public static ReadOnlySpan<byte> NegativeInfinityValue => new byte[] { (byte)'-', (byte)'I', (byte)'n', (byte)'f', (byte)'i', (byte)'n', (byte)'i', (byte)'t', (byte)'y' };
+        public static ReadOnlySpan<byte> NaNValue => "NaN"u8;
+        public static ReadOnlySpan<byte> PositiveInfinityValue => "Infinity"u8;
+        public static ReadOnlySpan<byte> NegativeInfinityValue => "-Infinity"u8;
 
         // Used to search for the end of a number
         public static ReadOnlySpan<byte> Delimiters => new byte[] { ListSeparator, CloseBrace, CloseBracket, Space, LineFeed, CarriageReturn, Tab, Slash };
@@ -48,7 +48,6 @@ namespace System.Text.Json
         public static ReadOnlySpan<byte> EscapableChars => new byte[] { Quote, (byte)'n', (byte)'r', (byte)'t', Slash, (byte)'u', (byte)'b', (byte)'f' };
 
         public const int SpacesPerIndent = 2;
-        public const int MaxWriterDepth = 1_000;
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
         public const int StackallocByteThreshold = 256;

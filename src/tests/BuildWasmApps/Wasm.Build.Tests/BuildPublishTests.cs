@@ -21,8 +21,8 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.V8, aot: false, config: "Release")]
-        [BuildAndRun(host: RunHost.V8, aot: false, config: "Debug")]
+        [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Release")]
+        [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Debug")]
         public void BuildThenPublishNoAOT(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"build_publish_{buildArgs.Config}";
@@ -33,11 +33,14 @@ namespace Wasm.Build.Tests
             // no relinking for build
             bool relinked = false;
             BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                        dotnetWasmFromRuntimePack: !relinked,
                         id: id,
-                        createProject: true,
-                        publish: false);
+                        new BuildProjectOptions(
+                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                        DotnetWasmFromRuntimePack: !relinked,
+                        CreateProject: true,
+                        Publish: false
+                        ));
+
 
             Run();
 
@@ -47,16 +50,16 @@ namespace Wasm.Build.Tests
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
 
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
-            Console.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
             // relink by default for Release+publish
             relinked = buildArgs.Config == "Release";
             BuildProject(buildArgs,
                         id: id,
-                        dotnetWasmFromRuntimePack: !relinked,
-                        createProject: false,
-                        publish: true,
-                        useCache: false);
+                        new BuildProjectOptions(
+                            DotnetWasmFromRuntimePack: !relinked,
+                            CreateProject: false,
+                            Publish: true,
+                            UseCache: false));
 
             Run();
 
@@ -67,8 +70,8 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(host: RunHost.V8, aot: true, config: "Release")]
-        [BuildAndRun(host: RunHost.V8, aot: true, config: "Debug")]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release")]
+        [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Debug")]
         public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"build_publish_{buildArgs.Config}";
@@ -79,12 +82,13 @@ namespace Wasm.Build.Tests
             // no relinking for build
             bool relinked = false;
             (_, string output) = BuildProject(buildArgs,
-                                    initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                                    dotnetWasmFromRuntimePack: !relinked,
-                                    id: id,
-                                    createProject: true,
-                                    publish: false,
-                                    label: "first_build");
+                                    id,
+                                    new BuildProjectOptions(
+                                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                                        DotnetWasmFromRuntimePack: !relinked,
+                                        CreateProject: true,
+                                        Publish: false,
+                                        Label: "first_build"));
 
             BuildPaths paths = GetBuildPaths(buildArgs);
             var pathsDict = GetFilesTable(buildArgs, paths, unchanged: false);
@@ -104,16 +108,16 @@ namespace Wasm.Build.Tests
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
 
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
-            Console.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
             // relink by default for Release+publish
             (_, output) = BuildProject(buildArgs,
                                     id: id,
-                                    dotnetWasmFromRuntimePack: false,
-                                    createProject: false,
-                                    publish: true,
-                                    useCache: false,
-                                    label: "first_publish");
+                                    new BuildProjectOptions(
+                                        DotnetWasmFromRuntimePack: false,
+                                        CreateProject: false,
+                                        Publish: true,
+                                        UseCache: false,
+                                        Label: "first_publish"));
 
             var publishStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
             Assert.True(publishStat["pinvoke.o"].Exists);
@@ -125,12 +129,13 @@ namespace Wasm.Build.Tests
 
             // second build
             (_, output) = BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                        dotnetWasmFromRuntimePack: !relinked,
-                        id: id,
-                        createProject: true,
-                        publish: false,
-                        label: "second_build");
+                                        id: id,
+                                        new BuildProjectOptions(
+                                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                                            DotnetWasmFromRuntimePack: !relinked,
+                                            CreateProject: true,
+                                            Publish: false,
+                                            Label: "second_build"));
             var secondBuildStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // no relinking, or AOT

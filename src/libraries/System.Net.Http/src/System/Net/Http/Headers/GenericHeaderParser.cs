@@ -133,9 +133,9 @@ namespace System.Net.Http.Headers
 
         private static int ParseHost(string value, int startIndex, out object? parsedValue)
         {
-            int hostLength = HttpRuleParser.GetHostLength(value, startIndex, false, out string? host);
+            int hostLength = HttpRuleParser.GetHostLength(value, startIndex, false);
 
-            parsedValue = host;
+            parsedValue = value.Substring(startIndex, hostLength);
             return hostLength;
         }
 

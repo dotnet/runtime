@@ -32,10 +32,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public override void SetSavedLicenseKey(Type type, string key)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             _savedLicenseKeys[type.AssemblyQualifiedName!] = key;
         }
@@ -50,7 +47,7 @@ namespace System.ComponentModel.Design
         /// if there is a '#' in the path, everything after this is treated as a fragment. So
         /// we need to append the fragment to the end of the path.
         /// </summary>
-        private string GetLocalPath(string fileName)
+        private static string GetLocalPath(string fileName)
         {
             Debug.Assert(fileName != null && fileName.Length > 0, "Cannot get local path, fileName is not valid");
 
@@ -64,15 +61,8 @@ namespace System.ComponentModel.Design
         {
             if (_savedLicenseKeys == null || _savedLicenseKeys[type.AssemblyQualifiedName!] == null)
             {
-                if (_savedLicenseKeys == null)
-                {
-                    _savedLicenseKeys = new Hashtable();
-                }
-
-                if (resourceAssembly == null)
-                {
-                    resourceAssembly = Assembly.GetEntryAssembly();
-                }
+                _savedLicenseKeys ??= new Hashtable();
+                resourceAssembly ??= Assembly.GetEntryAssembly();
 
                 if (resourceAssembly == null)
                 {
@@ -88,12 +78,10 @@ namespace System.ComponentModel.Design
                         string fileName = new FileInfo(location).Name;
 
                         Stream? s = asm.GetManifestResourceStream(fileName + ".licenses");
-                        if (s == null)
-                        {
-                            // Since the casing may be different depending on how the assembly was loaded,
-                            // we'll do a case insensitive lookup for this manifest resource stream...
-                            s = CaseInsensitiveManifestResourceStreamLookup(asm, fileName + ".licenses");
-                        }
+
+                        // Since the casing may be different depending on how the assembly was loaded,
+                        // we'll do a case insensitive lookup for this manifest resource stream...
+                        s ??= CaseInsensitiveManifestResourceStreamLookup(asm, fileName + ".licenses");
 
                         if (s != null)
                         {
@@ -150,7 +138,7 @@ namespace System.ComponentModel.Design
         * we are attempting to locate could have different casing
         * depending on how the assembly was loaded.
         **/
-        private Stream? CaseInsensitiveManifestResourceStreamLookup(Assembly satellite, string name)
+        private static Stream? CaseInsensitiveManifestResourceStreamLookup(Assembly satellite, string name)
         {
             CompareInfo comparer = CultureInfo.InvariantCulture.CompareInfo;
 

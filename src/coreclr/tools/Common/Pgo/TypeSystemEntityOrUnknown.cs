@@ -18,6 +18,11 @@ namespace Internal.Pgo
             _data = type;
         }
 
+        public TypeSystemEntityOrUnknown(MethodDesc method)
+        {
+            _data = method;
+        }
+
         readonly object _data;
         public TypeDesc AsType => _data as TypeDesc;
         public MethodDesc AsMethod => _data as MethodDesc;

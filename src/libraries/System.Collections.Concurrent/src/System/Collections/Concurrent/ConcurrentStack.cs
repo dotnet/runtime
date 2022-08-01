@@ -78,10 +78,8 @@ namespace System.Collections.Concurrent
         /// null.</exception>
         public ConcurrentStack(IEnumerable<T> collection)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
+            ArgumentNullException.ThrowIfNull(collection);
+
             InitializeFromCollection(collection);
         }
 
@@ -226,11 +224,7 @@ namespace System.Collections.Concurrent
         /// </exception>
         void ICollection.CopyTo(Array array, int index)
         {
-            // Validate arguments.
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             // We must be careful not to corrupt the array, so we will first accumulate an
             // internal list of elements that we will then copy to the array. This requires
@@ -261,10 +255,7 @@ namespace System.Collections.Concurrent
         /// </exception>
         public void CopyTo(T[] array, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             // We must be careful not to corrupt the array, so we will first accumulate an
             // internal list of elements that we will then copy to the array. This requires
@@ -312,10 +303,8 @@ namespace System.Collections.Concurrent
         /// </remarks>
         public void PushRange(T[] items)
         {
-            if (items == null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
+            ArgumentNullException.ThrowIfNull(items);
+
             PushRange(items, 0, items.Length);
         }
 
@@ -348,7 +337,6 @@ namespace System.Collections.Concurrent
             // No op if the count is zero
             if (count == 0)
                 return;
-
 
             Node head, tail;
             head = tail = new Node(items[startIndex]);
@@ -401,16 +389,14 @@ namespace System.Collections.Concurrent
         /// </summary>
         private static void ValidatePushPopRangeInput(T[] items, int startIndex, int count)
         {
-            if (items == null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
+            ArgumentNullException.ThrowIfNull(items);
+
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ConcurrentStack_PushPopRange_CountOutOfRange);
             }
             int length = items.Length;
-            if (startIndex >= length || startIndex < 0)
+            if (startIndex > length || startIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ConcurrentStack_PushPopRange_StartOutOfRange);
             }
@@ -514,10 +500,7 @@ namespace System.Collections.Concurrent
         /// </remarks>
         public int TryPopRange(T[] items)
         {
-            if (items == null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
+            ArgumentNullException.ThrowIfNull(items);
 
             return TryPopRange(items, 0, items.Length);
         }
@@ -718,7 +701,7 @@ namespace System.Collections.Concurrent
         /// Returns an array containing a snapshot of the list's contents starting at the specified node.
         /// </summary>
         /// <returns>A list of the stack's contents starting at the specified node.</returns>
-        private List<T> ToList(Node? curr)
+        private static List<T> ToList(Node? curr)
         {
             List<T> list = new List<T>();
 
@@ -754,7 +737,7 @@ namespace System.Collections.Concurrent
             return GetEnumerator(_head);
         }
 
-        private IEnumerator<T> GetEnumerator(Node? head)
+        private static IEnumerator<T> GetEnumerator(Node? head)
         {
             Node? current = head;
             while (current != null)

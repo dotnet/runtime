@@ -7,18 +7,16 @@
 // Logic for resolving configuration names.
 //
 
-#ifndef StrLen
-#define StrLen(STR) ((sizeof(STR) / sizeof(STR[0])) - 1)
-#endif // !StrLen
+#include<minipal/utils.h>
 
 // Config prefixes
 #define COMPLUS_PREFIX_A "COMPlus_"
 #define COMPLUS_PREFIX W("COMPlus_")
-#define LEN_OF_COMPLUS_PREFIX StrLen(COMPLUS_PREFIX_A)
+#define LEN_OF_COMPLUS_PREFIX STRING_LENGTH(COMPLUS_PREFIX_A)
 
 #define DOTNET_PREFIX_A "DOTNET_"
 #define DOTNET_PREFIX W("DOTNET_")
-#define LEN_OF_DOTNET_PREFIX StrLen(DOTNET_PREFIX_A)
+#define LEN_OF_DOTNET_PREFIX STRING_LENGTH(DOTNET_PREFIX_A)
 
 class CLRConfigNoCache
 {
@@ -56,18 +54,18 @@ public:
 
         if (noPrefix)
         {
-            if (namelen >= _countof(nameBuffer))
+            if (namelen >= ARRAY_SIZE(nameBuffer))
             {
                 _ASSERTE(!"Environment variable name too long.");
                 return {};
             }
 
-            *nameBuffer = W('\0');
+            *nameBuffer = '\0';
         }
         else
         {
-            bool dotnetValid = namelen < (size_t)(_countof(nameBuffer) - 1 - LEN_OF_DOTNET_PREFIX);
-            bool complusValid = namelen < (size_t)(_countof(nameBuffer) - 1 - LEN_OF_COMPLUS_PREFIX);
+            bool dotnetValid = namelen < (size_t)(STRING_LENGTH(nameBuffer) - LEN_OF_DOTNET_PREFIX);
+            bool complusValid = namelen < (size_t)(STRING_LENGTH(nameBuffer) - LEN_OF_COMPLUS_PREFIX);
             if (!dotnetValid || !complusValid)
             {
                 _ASSERTE(!"Environment variable name too long.");
@@ -75,17 +73,17 @@ public:
             }
 
             // Priority order is DOTNET_ and then COMPlus_.
-            strcpy_s(nameBuffer, _countof(nameBuffer), DOTNET_PREFIX_A);
+            strcpy_s(nameBuffer, ARRAY_SIZE(nameBuffer), DOTNET_PREFIX_A);
             fallbackPrefix = COMPLUS_PREFIX_A;
         }
 
-        strcat_s(nameBuffer, _countof(nameBuffer), cfg);
+        strcat_s(nameBuffer, ARRAY_SIZE(nameBuffer), cfg);
 
         LPCSTR val = getEnvFptr != NULL ? getEnvFptr(nameBuffer) : getenv(nameBuffer);
         if (val == NULL && fallbackPrefix != NULL)
         {
-            strcpy_s(nameBuffer, _countof(nameBuffer), fallbackPrefix);
-            strcat_s(nameBuffer, _countof(nameBuffer), cfg);
+            strcpy_s(nameBuffer, ARRAY_SIZE(nameBuffer), fallbackPrefix);
+            strcat_s(nameBuffer, ARRAY_SIZE(nameBuffer), cfg);
             val = getEnvFptr != NULL ? getEnvFptr(nameBuffer) : getenv(nameBuffer);
         }
 

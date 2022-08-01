@@ -7,7 +7,7 @@ Scenarios:
       Will only include paths specified in the list.
   3. exclude + include:
       1st we evaluate changes for all paths except ones in excluded list. If we can not find
-      any applicable changes like that, then we evaluate changes for incldued paths
+      any applicable changes like that, then we evaluate changes for included paths
       if any of these two finds changes, then a variable will be set to true.
   In order to consume this variable in a yaml pipeline, reference it via: $[ dependencies.<JobName>.outputs["<StepName>_<subset>.containschange"] ]
 
@@ -141,7 +141,7 @@ probePaths() {
     echo "******* Probing $_subset exclude paths *******";
     for _path in "${exclude_paths[@]}"; do
       echo "$_path"
-      if [[ "$exclude_path_string" == "" ]]; then
+      if [[ -z "$exclude_path_string" ]]; then
         exclude_path_string=":!$_path"
       else
         exclude_path_string="$exclude_path_string :!$_path"
@@ -159,7 +159,7 @@ probePaths() {
     echo "******* Probing $_subset include paths *******";
     for _path in "${include_paths[@]}"; do
       echo "$_path"
-      if [[ "$include_path_string" == "" ]]; then
+      if [[ -z "$include_path_string" ]]; then
         include_path_string=":$_path"
       else
         include_path_string="$include_path_string :$_path"

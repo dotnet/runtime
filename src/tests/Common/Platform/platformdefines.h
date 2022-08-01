@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cstdint>
+#include <minipal/utils.h>
 
 #ifndef _PLATFORMDEFINES__H
 #define _PLATFORMDEFINES__H
@@ -39,8 +40,6 @@
 #include <windows.h>
 #include <combaseapi.h>
 
-#define FS_SEPERATOR L"\\"
-#define PATH_DELIMITER L";"
 #define L(t) L##t
 #define W(str)  L##str
 
@@ -91,8 +90,6 @@ typedef unsigned int ULONG, *PULONG;
 
 #define UInt32x32To64(a, b) ((unsigned __int64)((ULONG)(a)) * (unsigned __int64)((ULONG)(b)))
 
-#define ARRAYSIZE(x) (sizeof(x)/sizeof(*x))
-
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -135,8 +132,6 @@ typedef unsigned int ULONG, *PULONG;
 
 LPWSTR HackyConvertToWSTR(const char* pszInput);
 
-#define FS_SEPERATOR L("/")
-#define PATH_DELIMITER L(":")
 #define L(t) HackyConvertToWSTR(t)
 #define W(str)  u##str
 #define MAX_PATH 260

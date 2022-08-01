@@ -55,7 +55,8 @@ namespace System.Xml.Linq
         /// </remarks>
         public XName GetName(string localName)
         {
-            if (localName == null) throw new ArgumentNullException(nameof(localName));
+            ArgumentNullException.ThrowIfNull(localName);
+
             return GetName(localName, 0, localName.Length);
         }
 
@@ -114,7 +115,8 @@ namespace System.Xml.Linq
         /// </remarks>
         public static XNamespace Get(string namespaceName)
         {
-            if (namespaceName == null) throw new ArgumentNullException(nameof(namespaceName));
+            ArgumentNullException.ThrowIfNull(namespaceName);
+
             return Get(namespaceName, 0, namespaceName.Length);
         }
 
@@ -124,7 +126,7 @@ namespace System.Xml.Linq
         /// <param name="namespaceName">A string containing the namespace name.</param>
         /// <returns>An <see cref="XNamespace"/> constructed from the namespace name string.</returns>
         [CLSCompliant(false)]
-        [return: NotNullIfNotNull("namespaceName")]
+        [return: NotNullIfNotNull(nameof(namespaceName))]
         public static implicit operator XNamespace?(string? namespaceName)
         {
             return namespaceName != null ? Get(namespaceName) : null;
@@ -138,7 +140,8 @@ namespace System.Xml.Linq
         /// <returns>The new XName constructed from the namespace and local name.</returns>
         public static XName operator +(XNamespace ns, string localName)
         {
-            if (ns == null) throw new ArgumentNullException(nameof(ns));
+            ArgumentNullException.ThrowIfNull(ns);
+
             return ns.GetName(localName);
         }
 
