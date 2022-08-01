@@ -1836,8 +1836,12 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
                 //
                 // 1) ICF address is higher than the current frame's SP (which we get from DispatcherContext), AND
                 // 2) ICF address is below callerSP.
-                if ((GetSP(pDispatcherContext->ContextRecord) < (TADDR)pICF) &&
-                    ((UINT_PTR)pICF < uCallerSP))
+                // 3) ICF is active.
+                //      - IL stubs link the frame in for the whole stub, so if an exception is thrown during marshalling,
+                //        the ICF will be on the frame chain and inactive.
+                if ((GetSP(pDispatcherContext->ContextRecord) < (TADDR)pICF)
+                    && ((UINT_PTR)pICF < uCallerSP)
+                    && InlinedCallFrame::FrameHasActiveCall(pICF))
                 {
                     pICFForUnwindTarget = pFrame;
 
