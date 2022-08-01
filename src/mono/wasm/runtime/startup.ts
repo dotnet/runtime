@@ -928,9 +928,8 @@ export async function mono_wasm_pthread_worker_init(): Promise<void> {
     console.debug("MONO_WASM: worker initializing essential C exports and APIs");
     // FIXME: copy/pasted from mono_wasm_pre_init_essential - can we share this code? Any other global state that needs initialization?
     init_c_exports();
-    cwraps_internal(INTERNAL);
-    cwraps_mono_api(MONO);
-    cwraps_binding_api(BINDING);
+    // not initializing INTERNAL, MONO, or BINDING C wrappers here - those legacy APIs are not likely to be needed on pthread workers.
+
     // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
         console.debug("MONO_WASM: pthread created", ev.pthread_self.pthread_id);
