@@ -1103,12 +1103,34 @@ begin_suspend_peek_and_preempt (MonoThreadInfo *info);
 MonoThreadBeginSuspendResult
 mono_thread_info_begin_suspend (MonoThreadInfo *info, MonoThreadSuspendPhase phase)
 {
-	if (phase == MONO_THREAD_SUSPEND_PHASE_INITIAL && mono_threads_platform_stw_defer_initial_suspend (info))
-		return MONO_THREAD_BEGIN_SUSPEND_NEXT_PHASE;
-	if (phase == MONO_THREAD_SUSPEND_PHASE_MOPUP && mono_threads_is_hybrid_suspension_enabled ())
-		return begin_suspend_peek_and_preempt (info);
-	else
-		return begin_suspend_request_suspension_cordially (info);
+	switch (phase) {
+	case MONO_THREAD_SUSPEND_PHASE_INITIAL:
+		if (mono_threads_platform_stw_defer_initial_suspend (info))
+			return MONO_THREAD_BEGIN_SUSPEND_NEXT_PHASE;
+		else
+			return begin_suspend_request_suspension_cordially (info);
+		break;
+	case MONO_THREAD_SUSPEND_PHASE_MOPUP:
+		if (mono_threads_is_hybrid_suspension_enabled ())
+			return begin_suspend_peek_and_preempt (info);
+		else if (mono_threads_platform_stw_defer_initial_suspend (info)) {
+			/* Only coop suspend defers coop suspension to the next phase for some threads */
+			g_assert (mono_threads_is_cooperative_suspension_enabled ());
+			return begin_suspend_request_suspension_cordially (info);
+		} else {
+			/* Only coop suspend defers coop suspension to the next phase for some threads */
+			g_assert (mono_threads_is_cooperative_suspension_enabled ());
+			/* Note: begin_suspend_request_suspension_cordially () will increment the
+			 * suspend count if it is called a second time!  We must skip threads that
+			 * were requested to suspend in the initial phase.  Tell the STW we already
+			 * tried suspending them.
+			 */
+			return MONO_THREAD_BEGIN_SUSPEND_SUSPENDED;
+		}
+		break;
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 MonoThreadBeginSuspendResult
@@ -1119,6 +1141,12 @@ begin_suspend_request_suspension_cordially (MonoThreadInfo *info)
 	/* Ask the thread nicely to suspend.  In hybrid suspend, blocking
 	 * threads are transitioned to blocking_suspend_requested, but not
 	 * preemptively suspend in the current phase.
+	 *
+	 * It is important not to call this function more than once per STW!  If a thread is already
+	 * in a "suspend requested" or "suspended" state, mono_threads_transition_request_suspension
+	 * will increment the suspend_count another time.  But STW restart will only decrement the
+	 * suspend count once.  So the suspend_count will be unbalanced and eventually overflow, and
+	 * the thread will never resume.
 	 */
 	switch (mono_threads_transition_request_suspension (info)) {
 	case ReqSuspendAlreadySuspended:

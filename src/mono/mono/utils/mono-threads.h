@@ -162,7 +162,7 @@ enum {
 	STATE_MAX				= 0x09,
 
 	// This is stored in a signed 8 bit value, so not really.
-	THREAD_SUSPEND_COUNT_MAX		= 0xFF,
+	THREAD_SUSPEND_COUNT_MAX		= 0x7F,
 
 	SELF_SUSPEND_STATE_INDEX = 0,
 	ASYNC_SUSPEND_STATE_INDEX = 1,
