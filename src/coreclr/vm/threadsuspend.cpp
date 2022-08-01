@@ -5864,7 +5864,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         frame.Pop(pThread);
 
-        pThread->HandleThreadAbort();
+        //pThread->HandleThreadAbort();
     }
     else
     {
