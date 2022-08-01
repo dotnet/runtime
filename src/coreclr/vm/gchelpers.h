@@ -28,7 +28,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 OBJECTREF AllocateArrayEx(TypeHandle  arrayType, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
 
 // Create a SD array of primitive types given an element type
-OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements);
+OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements, BOOL bAllocateInPinnedHeap = FALSE);
 
 // Allocate SD array of object types given an element type
 OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle ElementType, BOOL bAllocateInPinnedHeap = FALSE);

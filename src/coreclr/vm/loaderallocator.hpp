@@ -25,6 +25,7 @@ class FuncPtrStubs;
 #include "onstackreplacement.h"
 #include "lockedrangelist.h"
 #include "pgo.h"
+#include "pinnedheaphandles.h"
 
 #define VPTRU_LoaderAllocator 0x3200
 
@@ -201,6 +202,12 @@ protected:
     // PgoManager to hold pgo data associated with this LoaderAllocator
     Volatile<PgoManager *> m_pgoManager;
 #endif // FEATURE_PGO
+
+    // The pinned heap handle table.
+    PinnedHeapHandleTable       *m_pPinnedHeapHandleTable = NULL;
+
+    // The pinned heap handle table critical section.
+    CrstExplicitInit             m_PinnedHeapHandleTableCrst;
 
 public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
@@ -486,7 +493,24 @@ public:
     LOADERALLOCATORREF GetExposedObject();
 
 #ifndef DACCESS_COMPILE
-    LOADERHANDLE AllocateHandle(OBJECTREF value);
+#ifndef DACCESS_COMPILE
+    OBJECTREF* AllocateStaticFieldObjRefPtrs(int nRequested, OBJECTREF** ppLazyAllocate = NULL)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        return AllocateObjRefPtrsInLargeTable(nRequested, ppLazyAllocate);
+    }
+#endif // DACCESS_COMPILE
+
+    // Returns an array of OBJECTREF* that can be used to store domain specific data.
+    // Statics and reflection info (Types, MemberInfo,..) are stored this way
+    // If ppLazyAllocate != 0, allocation will only take place if *ppLazyAllocate != 0 (and the allocation
+    // will be properly serialized)
+    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF** ppLazyAllocate = NULL);
+    void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
+
+    LOADERHANDLE AllocateHandle(OBJECTREF value, BOOL supportEfficientFreeOperation = FALSE);
+    void* AllocateDataOnGCHeapWithLoaderAllocatorLifetime(size_t cb, size_t alignment);
 
     void SetHandleValue(LOADERHANDLE handle, OBJECTREF value);
     OBJECTREF CompareExchangeValueInHandle(LOADERHANDLE handle, OBJECTREF value, OBJECTREF compare);
@@ -627,6 +651,10 @@ public:
 private:
     // Deletes marshaling data at shutdown (which contains cached factories that needs to be released)
     void DeleteMarshalingData();
+
+    //****************************************************************************************
+    // Helper method to initialize the large heap handle table.
+    void InitPinnedHeapHandleTable();
 
 public:
 

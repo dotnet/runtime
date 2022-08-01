@@ -729,7 +729,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 /*
  * Allocates a single dimensional array of primitive types.
  */
-OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements)
+OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements, BOOL bAllocateInPinnedHeap)
 {
     CONTRACTL
     {
@@ -754,7 +754,8 @@ OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements)
         TypeHandle typHnd = ClassLoader::LoadArrayTypeThrowing(elemType, ELEMENT_TYPE_SZARRAY, 0);
         g_pPredefinedArrayTypes[type] = typHnd;
     }
-    return AllocateSzArray(g_pPredefinedArrayTypes[type].AsMethodTable(), cElements);
+    GC_ALLOC_FLAGS flags = bAllocateInPinnedHeap ? GC_ALLOC_PINNED_OBJECT_HEAP : GC_ALLOC_NO_FLAGS;
+    return AllocateSzArray(g_pPredefinedArrayTypes[type].AsMethodTable(), cElements, flags);
 }
 
 //

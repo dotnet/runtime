@@ -1704,7 +1704,7 @@ void Module::AllocateRegularStaticHandles(AppDomain* pDomain)
     _ASSERTE(pModuleData->GetPrecomputedGCStaticsBasePointerAddress() != NULL);
     if (this->m_dwMaxGCRegularStaticHandles > 0)
     {
-        pDomain->AllocateStaticFieldObjRefPtrs(this->m_dwMaxGCRegularStaticHandles,
+        GetLoaderAllocator()->AllocateStaticFieldObjRefPtrs(this->m_dwMaxGCRegularStaticHandles,
                                                pModuleData->GetPrecomputedGCStaticsBasePointerAddress());
 
         // We should throw if we fail to allocate and never hit this assert

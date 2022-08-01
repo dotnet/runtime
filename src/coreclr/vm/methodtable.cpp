@@ -1145,19 +1145,23 @@ void MethodTable::SetupGenericsStaticsInfo(FieldDesc* pStaticFieldDescs)
     // in the NGEN image it would be actively incorrect to do so.  However
     // we still leave the optional member in the MethodTable holding the value -1 for the ID.
 
-    GenericsStaticsInfo *pInfo = GetGenericsStaticsInfo();
     if (!ContainsGenericVariables() && !IsSharedByGenericInstantiations())
     {
+        _ASSERTE(pStaticFieldDescs != NULL);
+        GenericsStaticsInfo *pInfo = GetGenericsStaticsInfo();
         Module * pModuleForStatics = GetLoaderModule();
 
-        pInfo->m_DynamicTypeID = pModuleForStatics->AllocateDynamicEntry(this);
+        m_dynamicTypeID = pModuleForStatics->AllocateDynamicEntry(this);
     }
     else
     {
-        pInfo->m_DynamicTypeID = (SIZE_T)-1;
+        m_dynamicTypeID = (DWORD)-1;
     }
 
-    pInfo->m_pFieldDescs = pStaticFieldDescs;
+    if (HasGenericsStaticsInfo())
+    {
+        GetGenericsStaticsInfo()->m_pFieldDescs = pStaticFieldDescs;
+    }
 }
 
 #endif // !DACCESS_COMPILE
@@ -6035,6 +6039,7 @@ bool MethodTable::SetTypeIDOnFlags(UINT32 typeID)
         returnValue = true; // Unable to set TypeID
     }
     SetFlag(flagToSet);
+    return returnValue;
 }
 
 //==========================================================================================

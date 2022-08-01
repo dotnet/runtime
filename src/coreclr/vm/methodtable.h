@@ -248,10 +248,6 @@ struct GenericsStaticsInfo
 {
     // Pointer to field descs for statics
     PTR_FieldDesc       m_pFieldDescs;
-
-    // Method table ID for statics
-    SIZE_T              m_DynamicTypeID;
-
 };  // struct GenericsStaticsInfo
 typedef DPTR(GenericsStaticsInfo) PTR_GenericsStaticsInfo;
 
@@ -3488,9 +3484,7 @@ private:
 
 #endif // _DEBUG
     DWORD           m_dwWriteableFlags;                 // Lot of empty bits here.
-#if defined(HOST_64BIT)
-    DWORD           m_dwPadding;                        // Just to keep the size a multiple of 8
-#endif // HOST_64BIT
+    DWORD           m_dynamicTypeID;                    // Just to keep the size a multiple of 8
     /*
      * m_hExposedClassObject is LoaderAllocator slot index to
      * a RuntimeType instance for this class.

@@ -87,39 +87,14 @@ struct DomainLocalModule
     {\
         DomainLocalModule::PTR_DynamicClassInfo dynamicClassInfo = dac_cast<DomainLocalModule::PTR_DynamicClassInfo>(dynamicClassInfoParam);\
         DomainLocalModule::PTR_DynamicEntry pDynamicEntry = dac_cast<DomainLocalModule::PTR_DynamicEntry>((DomainLocalModule::DynamicEntry*)dynamicClassInfo->m_pDynamicEntry.Load()); \
-        if ((dynamicClassInfo->m_dwFlags) & ClassInitFlags::COLLECTIBLE_FLAG) \
-        {\
-            PTRARRAYREF objArray;\
-            objArray = (PTRARRAYREF)pLoaderAllocator->GetHandleValueFastCannotFailType2( \
-                                        (dac_cast<DomainLocalModule::PTR_CollectibleDynamicEntry>(pDynamicEntry))->m_hGCStatics);\
-            *(pGCStatics) = dac_cast<PTR_BYTE>(PTR_READ(PTR_TO_TADDR(OBJECTREFToObject( objArray )) + offsetof(PtrArray, m_Array), objArray->GetNumComponents() * sizeof(void*))) ;\
-        }\
-        else\
-        {\
-            *(pGCStatics) = (dac_cast<DomainLocalModule::PTR_NormalDynamicEntry>(pDynamicEntry))->GetGCStaticsBasePointer();\
-        }\
+        *(pGCStatics) = (dac_cast<DomainLocalModule::PTR_NormalDynamicEntry>(pDynamicEntry))->GetGCStaticsBasePointer();\
     }\
 
 #define GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pLoaderAllocator, dynamicClassInfoParam, pNonGCStatics) \
     {\
         DomainLocalModule::PTR_DynamicClassInfo dynamicClassInfo = dac_cast<DomainLocalModule::PTR_DynamicClassInfo>(dynamicClassInfoParam);\
         DomainLocalModule::PTR_DynamicEntry pDynamicEntry = dac_cast<DomainLocalModule::PTR_DynamicEntry>((DomainLocalModule::DynamicEntry*)(dynamicClassInfo)->m_pDynamicEntry.Load()); \
-        if (((dynamicClassInfo)->m_dwFlags) & ClassInitFlags::COLLECTIBLE_FLAG) \
-        {\
-            if ((dac_cast<DomainLocalModule::PTR_CollectibleDynamicEntry>(pDynamicEntry))->m_hNonGCStatics != 0) \
-            { \
-                U1ARRAYREF objArray;\
-                objArray = (U1ARRAYREF)pLoaderAllocator->GetHandleValueFastCannotFailType2( \
-                                            (dac_cast<DomainLocalModule::PTR_CollectibleDynamicEntry>(pDynamicEntry))->m_hNonGCStatics);\
-                *(pNonGCStatics) = dac_cast<PTR_BYTE>(PTR_READ( \
-                        PTR_TO_TADDR(OBJECTREFToObject( objArray )) + sizeof(ArrayBase) - DomainLocalModule::DynamicEntry::GetOffsetOfDataBlob(), \
-                            objArray->GetNumComponents() * (DWORD)objArray->GetComponentSize() + DomainLocalModule::DynamicEntry::GetOffsetOfDataBlob())); \
-            } else (*pNonGCStatics) = NULL; \
-        }\
-        else\
-        {\
-            *(pNonGCStatics) = dac_cast<DomainLocalModule::PTR_NormalDynamicEntry>(pDynamicEntry)->GetNonGCStaticsBasePointer();\
-        }\
+        *(pNonGCStatics) = dac_cast<DomainLocalModule::PTR_NormalDynamicEntry>(pDynamicEntry)->GetNonGCStaticsBasePointer();\
     }\
 
     struct DynamicEntry
@@ -127,13 +102,6 @@ struct DomainLocalModule
         static DWORD GetOffsetOfDataBlob();
     };
     typedef DPTR(DynamicEntry) PTR_DynamicEntry;
-
-    struct CollectibleDynamicEntry : public DynamicEntry
-    {
-        LOADERHANDLE    m_hGCStatics;
-        LOADERHANDLE    m_hNonGCStatics;
-    };
-    typedef DPTR(CollectibleDynamicEntry) PTR_CollectibleDynamicEntry;
 
     struct NormalDynamicEntry : public DynamicEntry
     {
@@ -337,11 +305,8 @@ struct DomainLocalModule
     {
         WRAPPER_NO_CONTRACT;
 
-        // m_aDynamicEntries is set last, it needs to be checked first
-        if (n >= m_aDynamicEntries)
-        {
-            return NULL;
-        }
+        _ASSERTE(n != (DWORD)-1);
+        _ASSERTE(n >= m_aDynamicEntries); // Types are initialized before being visible to code
 
         _ASSERTE(m_pDynamicClassTable.Load() != NULL);
         PTR_DynamicClassInfo pDynamicClassInfo = (PTR_DynamicClassInfo)(m_pDynamicClassTable.Load() + n);
@@ -462,151 +427,7 @@ public:
 #pragma warning(pop)
 #endif
 
-
-// The pinned heap handle bucket class is used to contain handles allocated
-// from an array contained in the pinned heap.
-class PinnedHeapHandleBucket
-{
-public:
-    // Constructor and desctructor.
-    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size, BaseDomain *pDomain);
-    ~PinnedHeapHandleBucket();
-
-    // This returns the next bucket.
-    PinnedHeapHandleBucket *GetNext()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_pNext;
-    }
-
-    // This returns the number of remaining handle slots.
-    DWORD GetNumRemainingHandles()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_ArraySize - m_CurrentPos;
-    }
-
-    void ConsumeRemaining()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_CurrentPos = m_ArraySize;
-    }
-
-    OBJECTREF *TryAllocateEmbeddedFreeHandle();
-
-    // Allocate handles from the bucket.
-    OBJECTREF* AllocateHandles(DWORD nRequested);
-    OBJECTREF* CurrentPos()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pArrayDataPtr + m_CurrentPos;
-    }
-
-    void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
-
-private:
-    PinnedHeapHandleBucket *m_pNext;
-    int m_ArraySize;
-    int m_CurrentPos;
-    int m_CurrentEmbeddedFreePos;
-    OBJECTHANDLE m_hndHandleArray;
-    OBJECTREF *m_pArrayDataPtr;
-};
-
-
-
-// The pinned heap handle table is used to allocate handles that are pointers
-// to objects stored in an array in the pinned object heap.
-class PinnedHeapHandleTable
-{
-public:
-    // Constructor and desctructor.
-    PinnedHeapHandleTable(BaseDomain *pDomain, DWORD InitialBucketSize);
-    ~PinnedHeapHandleTable();
-
-    // Allocate handles from the pinned heap handle table.
-    OBJECTREF* AllocateHandles(DWORD nRequested);
-
-    // Release object handles allocated using AllocateHandles().
-    void ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased);
-
-    void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
-
-private:
-    void ReleaseHandlesLocked(OBJECTREF *pObjRef, DWORD nReleased);
-
-    // The buckets of object handles.
-    // synchronized by m_Crst
-    PinnedHeapHandleBucket *m_pHead;
-
-    // We need to know the containing domain so we know where to allocate handles
-    BaseDomain *m_pDomain;
-
-    // The size of the PinnedHeapHandleBucket.
-    // synchronized by m_Crst
-    DWORD m_NextBucketSize;
-
-    // for finding and re-using embedded free items in the list
-    // these fields are synchronized by m_Crst
-    PinnedHeapHandleBucket *m_pFreeSearchHint;
-    DWORD m_cEmbeddedFree;
-
-    CrstExplicitInit m_Crst;
-};
-
-class PinnedHeapHandleBlockHolder;
-void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockHolder*);
-
-
-class PinnedHeapHandleBlockHolder:public Holder<PinnedHeapHandleBlockHolder*,DoNothing,PinnedHeapHandleBlockHolder__StaticFree>
-
-{
-    PinnedHeapHandleTable* m_pTable;
-    DWORD m_Count;
-    OBJECTREF* m_Data;
-public:
-    FORCEINLINE PinnedHeapHandleBlockHolder(PinnedHeapHandleTable* pOwner, DWORD nCount)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        m_Data = pOwner->AllocateHandles(nCount);
-        m_Count=nCount;
-        m_pTable=pOwner;
-    };
-
-    FORCEINLINE void FreeData()
-    {
-        WRAPPER_NO_CONTRACT;
-        for (DWORD i=0;i< m_Count;i++)
-            ClearObjectReference(m_Data+i);
-        m_pTable->ReleaseHandles(m_Data, m_Count);
-    };
-    FORCEINLINE OBJECTREF* operator[] (DWORD idx)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(idx<m_Count);
-        return &(m_Data[idx]);
-    }
-};
-
-FORCEINLINE  void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockHolder* pHolder)
-{
-    WRAPPER_NO_CONTRACT;
-    pHolder->FreeData();
-};
-
-
-
-
+#include "pinnedheaphandles.h"
 
 // The large heap handle bucket class is used to contain handles allocated
 // from an array contained in the large heap.
@@ -1095,10 +916,6 @@ public:
 
 protected:
 
-    //****************************************************************************************
-    // Helper method to initialize the large heap handle table.
-    void InitPinnedHeapHandleTable();
-
     // Critical sections & locks
     PEFileListLock   m_FileLoadLock;            // Protects the list of assemblies in the domain
     CrstExplicitInit m_DomainCrst;              // General Protection for the Domain
@@ -1119,9 +936,6 @@ protected:
     DefaultAssemblyBinder *m_pDefaultBinder; // Reference to the binding context that holds TPA list details
 
     IGCHandleStore* m_handleStore;
-
-    // The pinned heap handle table.
-    PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
 
 #ifdef FEATURE_COMINTEROP
     // Information regarding the managed standard interfaces.

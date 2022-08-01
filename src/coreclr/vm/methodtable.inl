@@ -1315,8 +1315,7 @@ FORCEINLINE PTR_Module MethodTable::GetGenericsStaticsModuleAndID(DWORD * pID)
 
     _ASSERTE(HasGenericsStaticsInfo());
 
-    _ASSERTE(FitsIn<DWORD>(GetGenericsStaticsInfo()->m_DynamicTypeID) || GetGenericsStaticsInfo()->m_DynamicTypeID == (SIZE_T)-1);
-    *pID = static_cast<DWORD>(GetGenericsStaticsInfo()->m_DynamicTypeID);
+    *pID = m_dynamicTypeID;
     return GetLoaderModule();
 }
 

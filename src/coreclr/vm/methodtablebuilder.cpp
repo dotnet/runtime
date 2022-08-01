@@ -1854,6 +1854,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
         else
         {
+            pMT->SetupGenericsStaticsInfo(NULL);
             // Get an id for the dynamic class. We store it in the class because
             // no class that is persisted in ngen should have it (ie, if the class is ngened
             // The id is stored in an optional field so we need to ensure an optional field descriptor has

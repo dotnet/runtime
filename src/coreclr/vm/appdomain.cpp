@@ -85,8 +85,6 @@
 
 static const WCHAR DEFAULT_DOMAIN_FRIENDLY_NAME[] = W("DefaultDomain");
 
-#define STATIC_OBJECT_TABLE_BUCKET_SIZE 1020
-
 // Statics
 
 SPTR_IMPL(AppDomain, AppDomain, m_pTheAppDomain);
@@ -109,7 +107,7 @@ CrstStatic          SystemDomain::m_SystemDomainCrst;
 CrstStatic          SystemDomain::m_DelayedUnloadCrst;
 
 // Constructor for the PinnedHeapHandleBucket class.
-PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size, BaseDomain *pDomain)
+PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext,  PTRARRAYREF pinnedHandleArrayObj, DWORD Size, LoaderAllocator *pLoaderAllocator)
 : m_pNext(pNext)
 , m_ArraySize(size)
 , m_CurrentPos(0)
@@ -120,7 +118,7 @@ PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PT
         THROWS;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pDomain));
+        PRECONDITION(CheckPointer(pLoaderAllocator));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -130,9 +128,12 @@ PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PT
     m_pArrayDataPtr = (OBJECTREF *)pinnedHandleArrayObj->GetDataPtr();
 
     // Store the array in a strong handle to keep it alive.
-    m_hndHandleArray = pDomain->CreateStrongHandle((OBJECTREF)pinnedHandleArrayObj);
+    m_collectible = pLoaderAllocator->IsCollectible();
+    if (m_collectible)
+        m_hndHandleArray = GetAppDomain()->CreateDependentHandle(ObjectFromHandle(pLoaderAllocator->GetLoaderAllocatorObjectHandle()), (OBJECTREF)pinnedHandleArrayObj);
+    else
+        m_hndHandleArray = GetAppDomain()->CreateStrongHandle((OBJECTREF)pinnedHandleArrayObj);
 }
-
 
 // Destructor for the PinnedHeapHandleBucket class.
 PinnedHeapHandleBucket::~PinnedHeapHandleBucket()
@@ -146,7 +147,15 @@ PinnedHeapHandleBucket::~PinnedHeapHandleBucket()
 
     if (m_hndHandleArray)
     {
-        DestroyStrongHandle(m_hndHandleArray);
+        if (m_collectible)
+        {
+            DestroyStrongHandle(m_hndHandleArray);
+        }
+        else
+        {
+            DestroyDependentHandle(m_hndHandleArray);
+        }
+
         m_hndHandleArray = NULL;
     }
 }
@@ -164,8 +173,19 @@ OBJECTREF *PinnedHeapHandleBucket::AllocateHandles(DWORD nRequested)
     CONTRACTL_END;
 
     _ASSERTE(nRequested > 0 && nRequested <= GetNumRemainingHandles());
-    _ASSERTE(m_pArrayDataPtr == (OBJECTREF*)((PTRARRAYREF)ObjectFromHandle(m_hndHandleArray))->GetDataPtr());
-
+#ifdef _DEBUG
+    OBJECTREF handleArrayObj;
+    if (m_collectible)
+    {
+        Object* handleArrayRawObj = GCHandleUtilities::GetGCHandleManager()->GetDependentHandleSecondary(m_hndHandleArray);
+        handleArrayObj = ObjectToOBJECTREF(handleArrayRawObj);
+    }
+    else
+    {
+        handleArrayObj = ObjectFromHandle(m_hndHandleArray);
+    }
+    _ASSERTE(m_pArrayDataPtr == (OBJECTREF*)((PTRARRAYREF)handleArrayObj)->GetDataPtr());
+#endif
     // Store the handles in the buffer that was passed in
     OBJECTREF* ret = &m_pArrayDataPtr[m_CurrentPos];
     m_CurrentPos += nRequested;
@@ -220,9 +240,9 @@ void PinnedHeapHandleBucket::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
 #define MAX_BUCKETSIZE (16384 - 4)
 
 // Constructor for the PinnedHeapHandleTable class.
-PinnedHeapHandleTable::PinnedHeapHandleTable(BaseDomain *pDomain, DWORD InitialBucketSize)
+PinnedHeapHandleTable::PinnedHeapHandleTable(LoaderAllocator *pLoaderAllocator, DWORD InitialBucketSize)
 : m_pHead(NULL)
-, m_pDomain(pDomain)
+, m_pLoaderAllocator(pLoaderAllocator)
 , m_NextBucketSize(InitialBucketSize)
 , m_pFreeSearchHint(NULL)
 , m_cEmbeddedFree(0)
@@ -232,7 +252,7 @@ PinnedHeapHandleTable::PinnedHeapHandleTable(BaseDomain *pDomain, DWORD InitialB
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pDomain));
+        PRECONDITION(CheckPointer(pLoaderAllocator));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -364,7 +384,7 @@ OBJECTREF* PinnedHeapHandleTable::AllocateHandles(DWORD nRequested)
                 m_pHead->ConsumeRemaining();
             }
 
-            m_pHead = new PinnedHeapHandleBucket(m_pHead, pinnedHandleArrayObj, newBucketSize, m_pDomain);
+            m_pHead = new PinnedHeapHandleBucket(m_pHead, pinnedHandleArrayObj, newBucketSize, m_pLoaderAllocator);
 
             // we already computed nextBucketSize to be double the previous size above, but it is possible that
             // other threads increased m_NextBucketSize while the lock was unheld. We want to ensure
@@ -575,9 +595,6 @@ BaseDomain::BaseDomain()
     CONTRACTL_END;
 
     m_pDefaultBinder = NULL;
-
-    // Make sure the container is set to NULL so that it gets loaded when it is used.
-    m_pPinnedHeapHandleTable = NULL;
 
     // Note that m_handleStore is overridden by app domains
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
@@ -799,33 +816,7 @@ OBJECTREF* BaseDomain::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF*
     }
     CONTRACTL_END;
 
-    if (ppLazyAllocate && *ppLazyAllocate)
-    {
-        // Allocation already happened
-        return *ppLazyAllocate;
-    }
-
-    GCX_COOP();
-
-    // Make sure the large heap handle table is initialized.
-    if (!m_pPinnedHeapHandleTable)
-        InitPinnedHeapHandleTable();
-
-    // Allocate the handles.
-    OBJECTREF* result = m_pPinnedHeapHandleTable->AllocateHandles(nRequested);
-    if (ppLazyAllocate)
-    {
-        // race with other threads that might be doing the same concurrent allocation
-        if (InterlockedCompareExchangeT<OBJECTREF*>(ppLazyAllocate, result, NULL) != NULL)
-        {
-            // we lost the race, release our handles and use the handles from the
-            // winning thread
-            m_pPinnedHeapHandleTable->ReleaseHandles(result, nRequested);
-            result = *ppLazyAllocate;
-        }
-    }
-
-    return result;
+    return GetLoaderAllocator()->AllocateObjRefPtrsInLargeTable(nRequested, ppLazyAllocate);
 }
 
 #endif // !DACCESS_COMPILE
@@ -898,26 +889,6 @@ STRINGREF *BaseDomain::GetOrInternString(STRINGREF *pString)
 
     return GetLoaderAllocator()->GetOrInternString(pString);
 }
-
-void BaseDomain::InitPinnedHeapHandleTable()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    PinnedHeapHandleTable* pTable = new PinnedHeapHandleTable(this, STATIC_OBJECT_TABLE_BUCKET_SIZE);
-    if(InterlockedCompareExchangeT<PinnedHeapHandleTable*>(&m_pPinnedHeapHandleTable, pTable, NULL) != NULL)
-    {
-        // another thread beat us to initializing the field, delete our copy
-        delete pTable;
-    }
-}
-
 
 //*****************************************************************************
 //*****************************************************************************
@@ -4229,26 +4200,32 @@ void    DomainLocalModule::AllocateDynamicClass(MethodTable *pMT)
     {
         if (pDynamicStatics == NULL)
         {
-            LoaderHeap * pLoaderAllocator = GetDomainAssembly()->GetLoaderAllocator()->GetHighFrequencyHeap();
+            LoaderAllocator * pLoaderAllocator = GetDomainAssembly()->GetLoaderAllocator();
+
+            SIZE_T dynamicEntrySize = DynamicEntry::GetOffsetOfDataBlob() + dwStaticBytes;
 
             if (pMT->Collectible())
             {
-                pDynamicStatics = (DynamicEntry*)(void*)pLoaderAllocator->AllocMem(S_SIZE_T(sizeof(CollectibleDynamicEntry)));
+                size_t alignment = TARGET_POINTER_SIZE;
+#ifdef FEATURE_64BIT_ALIGNMENT
+                if (dwStaticBytes >= MAX_PRIMITIVE_FIELD_SIZE)
+                    alignment = MAX_PRIMITIVE_FIELD_SIZE;
+#endif
+                pDynamicStatics = (DynamicEntry*)pLoaderAllocator->AllocateDataOnGCHeapWithLoaderAllocatorLifetime(dynamicEntrySize, alignment);
             }
             else
             {
-                SIZE_T dynamicEntrySize = DynamicEntry::GetOffsetOfDataBlob() + dwStaticBytes;
-
+                LoaderHeap * pLoaderHeap = pLoaderAllocator->GetHighFrequencyHeap();
 #ifdef FEATURE_64BIT_ALIGNMENT
                 // Allocate memory with extra alignment only if it is really necessary
                 if (dwStaticBytes >= MAX_PRIMITIVE_FIELD_SIZE)
                 {
                     static_assert_no_msg(sizeof(NormalDynamicEntry) % MAX_PRIMITIVE_FIELD_SIZE == 0);
-                    pDynamicStatics = (DynamicEntry*)(void*)pLoaderAllocator->AllocAlignedMem(dynamicEntrySize, MAX_PRIMITIVE_FIELD_SIZE);
+                    pDynamicStatics = (DynamicEntry*)(void*)pLoaderHeap->AllocAlignedMem(dynamicEntrySize, MAX_PRIMITIVE_FIELD_SIZE);
                 }
                 else
 #endif
-                    pDynamicStatics = (DynamicEntry*)(void*)pLoaderAllocator->AllocMem(S_SIZE_T(dynamicEntrySize));
+                    pDynamicStatics = (DynamicEntry*)(void*)pLoaderHeap->AllocMem(S_SIZE_T(dynamicEntrySize));
             }
 
             // Note: Memory allocated on loader heap is zero filled
@@ -4256,37 +4233,10 @@ void    DomainLocalModule::AllocateDynamicClass(MethodTable *pMT)
             m_pDynamicClassTable[dynamicEntryIDIndex].m_pDynamicEntry = pDynamicStatics;
         }
 
-        if (pMT->Collectible() && (dwStaticBytes != 0))
-        {
-            GCX_COOP();
-            OBJECTREF nongcStaticsArray = NULL;
-            GCPROTECT_BEGIN(nongcStaticsArray);
-#ifdef FEATURE_64BIT_ALIGNMENT
-            // Allocate memory with extra alignment only if it is really necessary
-            if (dwStaticBytes >= MAX_PRIMITIVE_FIELD_SIZE)
-                nongcStaticsArray = AllocatePrimitiveArray(ELEMENT_TYPE_I8, (dwStaticBytes + (sizeof(CLR_I8)-1)) / (sizeof(CLR_I8)));
-            else
-#endif
-                nongcStaticsArray = AllocatePrimitiveArray(ELEMENT_TYPE_U1, dwStaticBytes);
-            ((CollectibleDynamicEntry *)pDynamicStatics)->m_hNonGCStatics = GetDomainAssembly()->GetModule()->GetLoaderAllocator()->AllocateHandle(nongcStaticsArray);
-            GCPROTECT_END();
-        }
         if (dwNumHandleStatics > 0)
         {
-            if (!pMT->Collectible())
-            {
-                GetAppDomain()->AllocateStaticFieldObjRefPtrs(dwNumHandleStatics,
-                                                              &((NormalDynamicEntry *)pDynamicStatics)->m_pGCStatics);
-            }
-            else
-            {
-                GCX_COOP();
-                OBJECTREF gcStaticsArray = NULL;
-                GCPROTECT_BEGIN(gcStaticsArray);
-                gcStaticsArray = AllocateObjectArray(dwNumHandleStatics, g_pObjectClass);
-                ((CollectibleDynamicEntry *)pDynamicStatics)->m_hGCStatics = GetDomainAssembly()->GetModule()->GetLoaderAllocator()->AllocateHandle(gcStaticsArray);
-                GCPROTECT_END();
-            }
+            GetDomainAssembly()->GetModule()->GetLoaderAllocator()->AllocateStaticFieldObjRefPtrs(dwNumHandleStatics,
+                                                            &((NormalDynamicEntry *)pDynamicStatics)->m_pGCStatics);
         }
     }
 }
@@ -4591,10 +4541,7 @@ void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
              GCHeapUtilities::IsServerHeap()   &&
              IsGCSpecialThread());
 
-    if (m_pPinnedHeapHandleTable != nullptr)
-    {
-        m_pPinnedHeapHandleTable->EnumStaticGCRefs(fn, sc);
-    }
+    GetLoaderAllocator()->EnumStaticGCRefs(fn, sc);
 
     RETURN;
 }

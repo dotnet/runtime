@@ -142,6 +142,7 @@ typedef DPTR(class DelegateObject)      PTR_DelegateObject;
 typedef DPTR(class ObjHeader)           PTR_ObjHeader;
 typedef DPTR(class Precode)             PTR_Precode;
 typedef VPTR(class ReflectionModule)    PTR_ReflectionModule;
+typedef VPTR(class ModuleBase)          PTR_ModuleBase;
 typedef DPTR(class ReflectClassBaseObject) PTR_ReflectClassBaseObject;
 typedef DPTR(class ReflectMethodObject) PTR_ReflectMethodObject;
 typedef DPTR(class ReflectFieldObject)  PTR_ReflectFieldObject;

@@ -499,6 +499,10 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         }
         pMT->SetupGenericsStaticsInfo(pStaticFieldDescs);
     }
+    else
+    {
+        pMT->SetupGenericsStaticsInfo(NULL);
+    }
 
 
     // VTS info doesn't depend on the exact instantiation but we make a copy

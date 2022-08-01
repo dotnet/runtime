@@ -81,6 +81,7 @@ LoaderAllocator::LoaderAllocator()
 #ifdef FEATURE_PGO
     m_pgoManager = NULL;
 #endif
+    m_pPinnedHeapHandleTable = NULL;
 }
 
 LoaderAllocator::~LoaderAllocator()
@@ -721,7 +722,7 @@ extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle p
 #define MAX_LOADERALLOCATOR_HANDLE 0x40000000
 
 // Returns NULL if the managed LoaderAllocator object was already collected.
-LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
+LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value, BOOL supportEfficientFreeOperation)
 {
     CONTRACTL
     {
@@ -732,6 +733,10 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
     CONTRACTL_END;
 
     LOADERHANDLE retVal;
+
+    // Efficient free support is only provided for collectible loader allocator handles
+    // and is used only for implementation of TLS
+    _ASSERTE(!supportEfficientFreeOperation || IsCollectible());
 
     struct _gc
     {
@@ -748,7 +753,7 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
     gc.value = value;
 
     // The handle table is read locklessly, be careful
-    if (IsCollectible())
+    if (supportEfficientFreeOperation)
     {
         gc.loaderAllocator = (LOADERALLOCATORREF)ObjectFromHandle(m_hLoaderAllocatorObjectHandle);
         if (gc.loaderAllocator == NULL)
@@ -845,6 +850,43 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
     GCPROTECT_END();
 
     return retVal;
+}
+
+void* LoaderAllocator::AllocateDataOnGCHeapWithLoaderAllocatorLifetime(size_t cb, size_t alignment)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    void* result = NULL;
+    GCX_COOP();
+    BASEARRAYREF array = NULL;
+    GCPROTECT_BEGIN(array);
+    DWORD cbDWORD = (DWORD)cb;
+    if (((size_t)(cbDWORD + 8)) != cb)
+    {
+        ThrowOutOfMemory();
+    }
+#if defined(FEATURE_64BIT_ALIGNMENT) && (TARGET_POINTER_SIZE != 8)
+    if (alignment == 8)
+    {
+        array = (BASEARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_R8, (cbDWORD + (sizeof(CLR_R8)-1)) / (sizeof(CLR_R8)), TRUE);
+    }
+    else
+#endif
+    {
+        array = (BASEARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_I, (cbDWORD + (sizeof(CLR_I)-1)) / (sizeof(CLR_I)), TRUE);
+    }
+    // Ensure the allocated memory lasts the lifetime of the LoaderAllocator
+    AllocateHandle(array);
+    result = array->GetDataPtr();
+
+    GCPROTECT_END();
+    return result;
 }
 
 OBJECTREF LoaderAllocator::GetHandleValue(LOADERHANDLE handle)
@@ -1058,6 +1100,10 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     m_crstLoaderAllocator.Init(CrstLoaderAllocator, (CrstFlags)CRST_UNSAFE_COOPGC);
     m_InteropDataCrst.Init(CrstInteropData, CRST_REENTRANCY);
+
+    // Pinned heap handle table CRST.
+    m_PinnedHeapHandleTableCrst.Init(CrstPinnedHeapHandleTable);
+
 #ifdef FEATURE_COMINTEROP
     m_ComCallWrapperCrst.Init(CrstCOMCallWrapper);
 #endif
@@ -1435,6 +1481,11 @@ void LoaderAllocator::Terminate()
 
     CleanupStringLiteralMap();
 
+    if (m_pPinnedHeapHandleTable != NULL)
+    {
+        delete m_pPinnedHeapHandleTable;
+        m_pPinnedHeapHandleTable = NULL;
+    }
     LOG((LF_CLASSLOADER, LL_INFO100, "End LoaderAllocator::Terminate for loader allocator %p\n", reinterpret_cast<void *>(static_cast<PTR_LoaderAllocator>(this))));
 }
 
@@ -2182,3 +2233,86 @@ PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
 #endif //
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
+#ifndef DACCESS_COMPILE
+OBJECTREF* LoaderAllocator::AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF** ppLazyAllocate)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION((nRequested > 0));
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    if (ppLazyAllocate && *ppLazyAllocate)
+    {
+        // Allocation already happened
+        return *ppLazyAllocate;
+    }
+
+    GCX_COOP();
+
+    // Make sure the large heap handle table is initialized.
+    if (!m_pPinnedHeapHandleTable)
+        InitPinnedHeapHandleTable();
+
+    // Allocate the handles.
+    OBJECTREF* result = m_pPinnedHeapHandleTable->AllocateHandles(nRequested);
+    if (ppLazyAllocate)
+    {
+        // race with other threads that might be doing the same concurrent allocation
+        if (InterlockedCompareExchangeT<OBJECTREF*>(ppLazyAllocate, result, NULL) != NULL)
+        {
+            // we lost the race, release our handles and use the handles from the
+            // winning thread
+            m_pPinnedHeapHandleTable->ReleaseHandles(result, nRequested);
+            result = *ppLazyAllocate;
+        }
+
+    return result;
+}
+
+void LoaderAllocator::InitPinnedHeapHandleTable()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+#define STATIC_OBJECT_TABLE_BUCKET_SIZE 1020
+#define COLLECTIBLE_STATIC_OBJECT_TABLE_BUCKET_SIZE 250
+
+    PinnedHeapHandleTable* pTable = new PinnedHeapHandleTable(this, IsCollectible() ? COLLECTIBLE_STATIC_OBJECT_TABLE_BUCKET_SIZE : STATIC_OBJECT_TABLE_BUCKET_SIZE);
+    if(InterlockedCompareExchangeT<PinnedHeapHandleTable*>(&m_pPinnedHeapHandleTable, pTable, NULL) != NULL)
+    {
+        // another thread beat us to initializing the field, delete our copy
+        delete pTable;
+    }
+}
+
+void LoaderAllocator::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
+{
+    CONTRACT_VOID
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACT_END;
+
+    _ASSERTE(GCHeapUtilities::IsGCInProgress() &&
+             GCHeapUtilities::IsServerHeap()   &&
+             IsGCSpecialThread());
+
+    if (m_pPinnedHeapHandleTable != nullptr)
+    {
+        m_pPinnedHeapHandleTable->EnumStaticGCRefs(fn, sc);
+    }
+
+    RETURN;
+}
+#endif
