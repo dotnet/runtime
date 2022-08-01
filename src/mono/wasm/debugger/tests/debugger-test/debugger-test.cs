@@ -1252,6 +1252,8 @@ public class InspectIntPtr
     public static void Run()
     {
         IntPtr myInt = default;
+        IntPtr myInt2 = new IntPtr(1);
+
         System.Diagnostics.Debugger.Break();
     }
 }

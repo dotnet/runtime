@@ -1030,11 +1030,12 @@ namespace DebuggerTests
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 1254, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 1256, 8,
                 $"InspectIntPtr.Run",
                 locals_fn: async (locals) =>
                 {
                     await CheckValueType(locals, "myInt", "System.IntPtr");
+                    await CheckValueType(locals, "myInt2", "System.IntPtr");
                 }
             );
         }
