@@ -458,7 +458,7 @@ namespace DebuggerTests
             // This will run all the tests until it hits the bp
             await Evaluate("window.setTimeout(function() { invoke_run_all (); }, 1);");
             var wait_res = await WaitFor(Inspector.PAUSE);
-            AssertLocation(wait_res, "locals_inner");
+            AssertLocation(wait_res, "DebuggerTest.locals_inner");
             return wait_res;
         }
 
@@ -924,7 +924,7 @@ namespace DebuggerTests
                 locals = new JArray(locals.Union(locals_internal));
             if (locals_private != null)
                 locals = new JArray(locals.Union(locals_private));
-            // FIXME: Should be done when generating the list in dotnet.cjs.lib.js, but not sure yet
+            // FIXME: Should be done when generating the list in dotnet.es6.lib.js, but not sure yet
             //        whether to remove it, and how to do it correctly.
             if (locals is JArray)
             {
@@ -982,7 +982,7 @@ namespace DebuggerTests
             var locals_internal = frame_props.Value["internalProperties"];
             var locals_private = frame_props.Value["privateProperties"];
 
-            // FIXME: Should be done when generating the list in dotnet.cjs.lib.js, but not sure yet
+            // FIXME: Should be done when generating the list in dotnet.es6.lib.js, but not sure yet
             //        whether to remove it, and how to do it correctly.
             if (locals is JArray)
             {
@@ -1421,8 +1421,10 @@ namespace DebuggerTests
         {
             foreach (var arg in args)
             {
-                (_, Result _res) = await EvaluateOnCallFrame(id, arg.expression, expect_ok: false).ConfigureAwait(false);;
-                AssertEqual(arg.message, _res.Error["result"]?["description"]?.Value<string>(), $"Expression '{arg.expression}' - wrong error message");
+                (_, Result _res) = await EvaluateOnCallFrame(id, arg.expression, expect_ok: false).ConfigureAwait(false);
+                // different response structure for Chrome and Firefox:
+                string errorMessage = _res.Error["preview"] == null ? _res.Error["result"]?["description"]?.Value<string>() : _res.Error["preview"]?["message"]?.Value<string>();
+                AssertEqual(arg.message, errorMessage, $"Expression '{arg.expression}' - wrong error message");
             }
         }
     }

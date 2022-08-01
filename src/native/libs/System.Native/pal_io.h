@@ -264,7 +264,7 @@ enum
 typedef enum
 {
     PAL_MADV_DONTFORK = 1, // don't map pages in to forked process
-} MemmoryAdvice;
+} MemoryAdvice;
 
 /**
  * Name argument to SysConf.
@@ -286,7 +286,7 @@ typedef enum
     PAL_POSIX_FADV_SEQUENTIAL = 2, /* sequential I/O access */
     PAL_POSIX_FADV_WILLNEED = 3,   /* will need specified pages */
     PAL_POSIX_FADV_DONTNEED = 4,   /* don't need the specified pages */
-    PAL_POSIX_FADV_NOREUSE = 5,    /* data will only be acessed once */
+    PAL_POSIX_FADV_NOREUSE = 5,    /* data will only be accessed once */
 } FileAdvice;
 
 /**
@@ -523,7 +523,7 @@ PALEXPORT int32_t SystemNative_Access(const char* path, int32_t mode);
 /**
  * Seek to a specified location within a seekable stream
  *
- * On success, the resulting offet, in bytes, from the beginning of the stream; otherwise,
+ * On success, the resulting offset, in bytes, from the beginning of the stream; otherwise,
  * returns -1 and errno is set.
  */
 PALEXPORT int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence);
@@ -668,7 +668,7 @@ PALEXPORT int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t 
  * Renames a file, moving to the correct destination if necessary. There are many edge cases to this call, check man 2
  * rename for more info
  *
- * Returns 0 on succes; otherwise, returns -1 and errno is set.
+ * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
 PALEXPORT int32_t SystemNative_Rename(const char* oldPath, const char* newPath);
 
@@ -757,6 +757,13 @@ PALEXPORT int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64
 * Returns 0 for success, -1 for failure. Sets errno for failure.
 */
 PALEXPORT int32_t SystemNative_LChflags(const char* path, uint32_t flags);
+
+/**
+* Changes the file flags of the file "fd".
+*
+* Returns 0 for success, -1 for failure. Sets errno for failure.
+*/
+PALEXPORT int32_t SystemNative_FChflags(intptr_t fd, uint32_t flags);
 
 /**
  * Determines if the current platform supports setting UF_HIDDEN (0x8000) flag

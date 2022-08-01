@@ -13,9 +13,9 @@ namespace System.Net.Security
     {
         private const string ClientAuthenticationOID = "1.3.6.1.5.5.7.3.2";
 
-        internal static X509Certificate2? GetEligibleClientCertificate(X509CertificateCollection candidateCerts)
+        internal static X509Certificate2? GetEligibleClientCertificate(X509CertificateCollection? candidateCerts)
         {
-            if (candidateCerts.Count == 0)
+            if (candidateCerts == null || candidateCerts.Count == 0)
             {
                 return null;
             }
@@ -26,9 +26,9 @@ namespace System.Net.Security
             return GetEligibleClientCertificate(certs);
         }
 
-        internal static X509Certificate2? GetEligibleClientCertificate(X509Certificate2Collection candidateCerts)
+        internal static X509Certificate2? GetEligibleClientCertificate(X509Certificate2Collection? candidateCerts)
         {
-            if (candidateCerts.Count == 0)
+            if (candidateCerts == null || candidateCerts.Count == 0)
             {
                 return null;
             }

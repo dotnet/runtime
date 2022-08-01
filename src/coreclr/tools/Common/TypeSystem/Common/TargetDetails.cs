@@ -80,6 +80,7 @@ namespace Internal.TypeSystem
                 {
                     case TargetArchitecture.ARM64:
                     case TargetArchitecture.X64:
+                    case TargetArchitecture.LoongArch64:
                         return 8;
                     case TargetArchitecture.ARM:
                     case TargetArchitecture.X86:
@@ -114,6 +115,10 @@ namespace Internal.TypeSystem
                 else if (Architecture == TargetArchitecture.ARM64)
                 {
                     // Corresponds to alignmet required for __m256
+                    return 16;
+                }
+                else if (Architecture == TargetArchitecture.LoongArch64)
+                {
                     return 16;
                 }
 
@@ -172,6 +177,7 @@ namespace Internal.TypeSystem
                     case TargetArchitecture.ARM:
                         return 2;
                     case TargetArchitecture.ARM64:
+                    case TargetArchitecture.LoongArch64:
                         return 4;
                     default:
                         return 1;
@@ -276,6 +282,7 @@ namespace Internal.TypeSystem
                         return new LayoutInt(8);
                 case TargetArchitecture.X64:
                 case TargetArchitecture.ARM64:
+                case TargetArchitecture.LoongArch64:
                     return new LayoutInt(8);
                 case TargetArchitecture.X86:
                     return new LayoutInt(4);
@@ -318,6 +325,7 @@ namespace Internal.TypeSystem
                 // and Procedure Call Standard for the Arm 64-bit Architecture.
                 Debug.Assert(Architecture == TargetArchitecture.ARM ||
                     Architecture == TargetArchitecture.ARM64 ||
+                    Architecture == TargetArchitecture.LoongArch64 ||
                     Architecture == TargetArchitecture.X64 ||
                     Architecture == TargetArchitecture.X86);
 

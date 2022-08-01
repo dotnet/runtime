@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace System.Collections.Specialized
 {
-    // This class is an internal class used by System.Diagnostics.Proccess on property EnvironmentVariables which returns an StringDictionary. Since we need
+    // This class is an internal class used by System.Diagnostics.Process on property EnvironmentVariables which returns an StringDictionary. Since we need
     // EnvironmentVariables to return a StringDictionary, this is a wrapper to the Environment property in order to get the same comparer behavior on both properties.
 
     internal sealed class StringDictionaryWrapper : StringDictionary

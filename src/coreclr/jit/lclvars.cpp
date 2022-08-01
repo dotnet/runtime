@@ -509,11 +509,6 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
             lvaSetClass(varDscInfo->varNum, info.compClassHnd);
         }
 
-        varDsc->lvVerTypeInfo = typeInfo();
-
-        // Mark the 'this' pointer for the method
-        varDsc->lvVerTypeInfo.SetIsThisPtr();
-
         varDsc->lvIsRegArg = 1;
         noway_assert(varDscInfo->intRegArgNum == 0);
 
@@ -709,9 +704,9 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         if (isHfaArg)
         {
             // We have an HFA argument, so from here on out treat the type as a float, double, or vector.
-            // The orginal struct type is available by using origArgType.
+            // The original struct type is available by using origArgType.
             // We also update the cSlots to be the number of float/double/vector fields in the HFA.
-            argType = hfaType; // TODO-Cleanup: remove this asignment and mark `argType` as const.
+            argType = hfaType; // TODO-Cleanup: remove this assignment and mark `argType` as const.
             varDsc->SetHfaType(hfaType);
             cSlots = varDsc->lvHfaSlots();
         }
@@ -1479,19 +1474,9 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
         compFloatingPointUsed = true;
     }
 
-    if (typeHnd)
+    if (typeHnd != NO_CLASS_HANDLE)
     {
-        unsigned cFlags = info.compCompHnd->getClassAttribs(typeHnd);
-
-        // We can get typeHnds for primitive types, these are value types which only contain
-        // a primitive. We will need the typeHnd to distinguish them, so we store it here.
-        if ((cFlags & CORINFO_FLG_VALUECLASS) && !varTypeIsStruct(type))
-        {
-            // printf("This is a struct that the JIT will treat as a primitive\n");
-            varDsc->lvVerTypeInfo = verMakeTypeInfo(typeHnd);
-        }
-
-        varDsc->lvOverlappingFields = StructHasOverlappingFields(cFlags);
+        varDsc->lvOverlappingFields = StructHasOverlappingFields(info.compCompHnd->getClassAttribs(typeHnd));
     }
 
 #if FEATURE_IMPLICIT_BYREFS
@@ -1511,7 +1496,7 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     }
     if ((varTypeIsStruct(type)))
     {
-        lvaSetStruct(varNum, typeHnd, typeHnd != nullptr, true);
+        lvaSetStruct(varNum, typeHnd, typeHnd != NO_CLASS_HANDLE);
         if (info.compIsVarArgs)
         {
             lvaSetStructUsedAsVarArg(varNum);
@@ -1796,7 +1781,7 @@ void Compiler::StructPromotionHelper::CheckRetypedAsScalar(CORINFO_FIELD_HANDLE 
 //   The last analyzed type is memorized to skip the check if we ask about the same time again next.
 //   However, it was not found profitable to memorize all analyzed types in a map.
 //
-//   The check initializes only nessasary fields in lvaStructPromotionInfo,
+//   The check initializes only necessary fields in lvaStructPromotionInfo,
 //   so if the promotion is rejected early than most fields will be uninitialized.
 //
 bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE typeHnd)
@@ -2596,7 +2581,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         {
             // Set size to zero so that lvaSetStruct will appropriately set the SIMD-relevant fields.
             fieldVarDsc->lvExactSize = 0;
-            compiler->lvaSetStruct(varNum, pFieldInfo->fldTypeHnd, false, true);
+            compiler->lvaSetStruct(varNum, pFieldInfo->fldTypeHnd, false);
             // We will not recursively promote this, so mark it as 'lvRegStruct' (note that we wouldn't
             // be promoting this if we didn't think it could be enregistered.
             fieldVarDsc->lvRegStruct = true;
@@ -2977,13 +2962,9 @@ bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVarArg)
 /*****************************************************************************
  * Set the lvClass for a local variable of a struct type */
 
-void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck, bool setTypeInfo)
+void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool unsafeValueClsCheck)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
-    if (setTypeInfo)
-    {
-        varDsc->lvVerTypeInfo = typeInfo(TI_STRUCT, typeHnd);
-    }
 
     // Set the type and associated info if we haven't already set it.
     if (varDsc->lvType == TYP_UNDEF)
@@ -3199,7 +3180,7 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
     LclVarDsc* varDsc = lvaGetDesc(varNum);
     assert(varDsc->lvType == TYP_REF);
 
-    // We shoud not have any ref type information for this var.
+    // We should not have any ref type information for this var.
     assert(varDsc->lvClassHnd == NO_CLASS_HANDLE);
     assert(!varDsc->lvClassIsExact);
 
@@ -4230,7 +4211,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
     if (!isRecompute)
     {
-        /* Is this an assigment? */
+        /* Is this an assignment? */
 
         if (tree->OperIs(GT_ASG))
         {
@@ -5629,7 +5610,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 #endif // !defined(TARGET_AMD64)
                     )
             {
-                doAssignStkOffs = false; // Not on frame or an incomming stack arg
+                doAssignStkOffs = false; // Not on frame or an incoming stack arg
             }
         }
 
@@ -5971,7 +5952,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 //  individual argument, and return the offset for the next argument.
 //  Note: This method only calculates the initial offset of the stack passed/spilled arguments
 //  (if any - the RA might decide to spill(home on the stack) register passed arguments, if rarely used.)
-//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existance,
+//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existence,
 //        ret address slot, stack frame padding, alloca instructions, etc.
 //  Note: This is the implementation for UNIX_AMD64 System V platforms.
 //
@@ -6064,7 +6045,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
 //  individual argument, and return the offset for the next argument.
 //  Note: This method only calculates the initial offset of the stack passed/spilled arguments
 //  (if any - the RA might decide to spill(home on the stack) register passed arguments, if rarely used.)
-//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existance,
+//        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existence,
 //        ret address slot, stack frame padding, alloca instructions, etc.
 //  Note: This implementation for all the platforms but UNIX_AMD64 OSs (System V 64 bit.)
 int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
@@ -6604,7 +6585,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             int offset         = originalFrameStkOffs + originalOffset;
 
             JITDUMP(
-                "---OSR--- V%02u (on tier0 frame, monitor aquired) tier0 FP-rel offset %d tier0 frame offset %d new "
+                "---OSR--- V%02u (on tier0 frame, monitor acquired) tier0 FP-rel offset %d tier0 frame offset %d new "
                 "virt offset %d\n",
                 lvaMonAcquired, originalOffset, originalFrameStkOffs, offset);
 
@@ -7890,7 +7871,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" ld-addr-op");
     }
-    if (varDsc->lvVerTypeInfo.IsThisPtr())
+    if (lvaIsOriginalThisArg(lclNum))
     {
         printf(" this");
     }
@@ -8339,7 +8320,7 @@ static unsigned LCL_FLD_PADDING(unsigned lclNum)
     The stress mode does 2 passes.
 
     In the first pass we will mark the locals where we CAN't apply the stress mode.
-    In the second pass we will do the appropiate morphing wherever we've not determined we can't do it.
+    In the second pass we will do the appropriate morphing wherever we've not determined we can't do it.
 */
 Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* data)
 {

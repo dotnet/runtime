@@ -53,7 +53,12 @@ namespace System.Security.Cryptography
         }
 
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm)
-            : this(Encoding.UTF8.GetBytes(password), salt, iterations, hashAlgorithm, clearPassword: true)
+            : this(
+                Encoding.UTF8.GetBytes(password ?? throw new ArgumentNullException(nameof(password))),
+                salt,
+                iterations,
+                hashAlgorithm,
+                clearPassword: true)
         {
         }
 
@@ -91,7 +96,7 @@ namespace System.Security.Cryptography
 
         internal Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm, bool clearPassword) :
             this(
-                new ReadOnlySpan<byte>(password ?? throw new NullReferenceException()), // This "should" be ArgumentNullException but for compat, we throw NullReferenceException.
+                new ReadOnlySpan<byte>(password ?? throw new ArgumentNullException(nameof(password))),
                 new ReadOnlySpan<byte>(salt ?? throw new ArgumentNullException(nameof(salt))),
                 iterations,
                 hashAlgorithm)

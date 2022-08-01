@@ -39,6 +39,7 @@ namespace System.Text.Json.Serialization.Converters
                 obj = jsonTypeInfo.CreateObject()!;
 
                 jsonTypeInfo.OnDeserializing?.Invoke(obj);
+                state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
 
                 // Process all properties.
                 while (true)
@@ -143,6 +144,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     state.Current.ReturnValue = obj;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
+                    state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
                 }
                 else
                 {
@@ -200,7 +202,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     if (state.Current.PropertyState < StackFramePropertyState.ReadValue)
                     {
-                        if (!jsonPropertyInfo.HasSetter)
+                        if (!jsonPropertyInfo.CanDeserialize)
                         {
                             if (!reader.TrySkip())
                             {
@@ -250,6 +252,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             jsonTypeInfo.OnDeserialized?.Invoke(obj);
+            state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
             // Unbox
             Debug.Assert(obj != null);
@@ -289,7 +292,7 @@ namespace System.Text.Json.Serialization.Converters
                 for (int i = 0; i < properties.Count; i++)
                 {
                     JsonPropertyInfo jsonPropertyInfo = properties[i].Value;
-                    if (jsonPropertyInfo.HasGetter)
+                    if (jsonPropertyInfo.CanSerialize)
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
                         state.Current.JsonPropertyInfo = jsonPropertyInfo;
@@ -305,7 +308,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 // Write extension data after the normal properties.
                 JsonPropertyInfo? extensionDataProperty = jsonTypeInfo.ExtensionDataProperty;
-                if (extensionDataProperty?.HasGetter == true)
+                if (extensionDataProperty?.CanSerialize == true)
                 {
                     // Remember the current property for JsonPath support if an exception is thrown.
                     state.Current.JsonPropertyInfo = extensionDataProperty;
@@ -339,7 +342,7 @@ namespace System.Text.Json.Serialization.Converters
                 while (state.Current.EnumeratorIndex < propertyList.Count)
                 {
                     JsonPropertyInfo jsonPropertyInfo = propertyList[state.Current.EnumeratorIndex].Value;
-                    if (jsonPropertyInfo.HasGetter)
+                    if (jsonPropertyInfo.CanSerialize)
                     {
                         state.Current.JsonPropertyInfo = jsonPropertyInfo;
                         state.Current.NumberHandling = jsonPropertyInfo.EffectiveNumberHandling;
@@ -368,7 +371,7 @@ namespace System.Text.Json.Serialization.Converters
                 if (state.Current.EnumeratorIndex == propertyList.Count)
                 {
                     JsonPropertyInfo? extensionDataProperty = jsonTypeInfo.ExtensionDataProperty;
-                    if (extensionDataProperty?.HasGetter == true)
+                    if (extensionDataProperty?.CanSerialize == true)
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
                         state.Current.JsonPropertyInfo = extensionDataProperty;
@@ -415,7 +418,7 @@ namespace System.Text.Json.Serialization.Converters
             bool useExtensionProperty)
         {
             // Skip the property if not found.
-            if (!jsonPropertyInfo.HasSetter)
+            if (!jsonPropertyInfo.CanDeserialize)
             {
                 reader.Skip();
             }

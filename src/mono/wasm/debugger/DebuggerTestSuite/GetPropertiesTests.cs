@@ -203,7 +203,7 @@ namespace DebuggerTests
         [MemberData(nameof(StructGetPropertiesTestData), parameters: false)]
         public async Task InspectTypeInheritedMembers(string type_name, bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.GetPropertiesTests.{type_name}",
-            $"InstanceMethod{(is_async ? "Async" : "")}", 1, (is_async ? "MoveNext" : "InstanceMethod"),
+            $"InstanceMethod{(is_async ? "Async" : "")}", 1, $"DebuggerTests.GetPropertiesTests.{type_name}." + (is_async ? "InstanceMethodAsync" : "InstanceMethod"),
             $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.{type_name}:run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -230,7 +230,7 @@ namespace DebuggerTests
             $"DebuggerTests.GetPropertiesTests.NestedStruct",
             is_async ? $"TestNestedStructStaticAsync" : "TestNestedStructStatic",
             2,
-            is_async ? "MoveNext" : $"TestNestedStructStatic",
+            "DebuggerTests.GetPropertiesTests.NestedStruct." + (is_async ? "TestNestedStructStaticAsync" : $"TestNestedStructStatic"),
             $"window.setTimeout(function() {{ invoke_static_method_async ('[debugger-test] DebuggerTests.GetPropertiesTests.NestedStruct:run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -371,7 +371,7 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function() { invoke_static_method('[debugger-test] TestChild:TestWatchWithInheritance'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test2.cs", 128, 8,
-               "TestWatchWithInheritance");
+               "TestChild.TestWatchWithInheritance");
             var frame_id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
             var frame_locals = await GetProperties(frame_id);
             var test_props = await GetObjectOnLocals(frame_locals, "test");
@@ -533,7 +533,7 @@ namespace DebuggerTests
         public async Task PropertiesSortedByProtectionLevel(
             Dictionary<string, JObject> expectedPublic, Dictionary<string, JObject> expectedProtInter, Dictionary<string, JObject> expectedPriv, string entryMethod) =>
             await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.GetPropertiesTests.{entryMethod}", "InstanceMethod", 1, "InstanceMethod",
+            $"DebuggerTests.GetPropertiesTests.{entryMethod}", "InstanceMethod", 1, $"DebuggerTests.GetPropertiesTests.{entryMethod}.InstanceMethod",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.GetPropertiesTests.{entryMethod}:run'); }})",
             wait_for_event_fn: async (pause_location) =>
             {

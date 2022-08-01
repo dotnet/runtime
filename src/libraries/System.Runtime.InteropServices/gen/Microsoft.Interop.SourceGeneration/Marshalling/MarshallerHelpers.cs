@@ -147,6 +147,11 @@ namespace Microsoft.Interop
             return context.GetAdditionalIdentifier(info, "numElements");
         }
 
+        internal static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In);
+        }
+
         /// <summary>
         /// Generate a topologically sorted collection of elements.
         /// </summary>
@@ -272,15 +277,18 @@ namespace Microsoft.Interop
         public static IEnumerable<TypePositionInfo> GetDependentElementsOfMarshallingInfo(
             MarshallingInfo elementMarshallingInfo)
         {
-            if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo_V1 nestedCollection)
+            if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo nestedCollection)
             {
                 if (nestedCollection.ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
                 {
                     yield return nestedCountElement;
                 }
-                foreach (TypePositionInfo nestedElements in GetDependentElementsOfMarshallingInfo(nestedCollection.ElementMarshallingInfo))
+                foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in nestedCollection.Marshallers.Modes)
                 {
-                    yield return nestedElements;
+                    foreach (TypePositionInfo nestedElements in GetDependentElementsOfMarshallingInfo(mode.Value.CollectionElementMarshallingInfo))
+                    {
+                        yield return nestedElements;
+                    }
                 }
             }
         }

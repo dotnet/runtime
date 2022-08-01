@@ -466,7 +466,7 @@ namespace System.Text.Json.SourceGeneration
                         }
 
                         declarationElements[tokenCount] = "class";
-                        declarationElements[tokenCount + 1] = currentSymbol.Name;
+                        declarationElements[tokenCount + 1] = GetClassDeclarationName(currentSymbol);
 
                         (classDeclarationList ??= new List<string>()).Add(string.Join(" ", declarationElements));
                     }
@@ -476,6 +476,38 @@ namespace System.Text.Json.SourceGeneration
 
                 Debug.Assert(classDeclarationList.Count > 0);
                 return true;
+            }
+
+            private static string GetClassDeclarationName(INamedTypeSymbol typeSymbol)
+            {
+                if (typeSymbol.TypeArguments.Length == 0)
+                {
+                    return typeSymbol.Name;
+                }
+
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append(typeSymbol.Name);
+                sb.Append('<');
+
+                bool first = true;
+                foreach (ITypeSymbol typeArg in typeSymbol.TypeArguments)
+                {
+                    if (!first)
+                    {
+                        sb.Append(", ");
+                    }
+                    else
+                    {
+                        first = false;
+                    }
+
+                    sb.Append(typeArg.Name);
+                }
+
+                sb.Append('>');
+
+                return sb.ToString();
             }
 
             private TypeGenerationSpec? GetRootSerializableType(
@@ -999,7 +1031,7 @@ namespace System.Text.Json.SourceGeneration
                                 bool isVirtual = propertyInfo.IsVirtual();
 
                                 if (propertyInfo.GetIndexParameters().Length > 0 ||
-                                    PropertyIsOverridenAndIgnored(propertyInfo.Name, propertyInfo.PropertyType, isVirtual, ignoredMembers))
+                                    PropertyIsOverriddenAndIgnored(propertyInfo.Name, propertyInfo.PropertyType, isVirtual, ignoredMembers))
                                 {
                                     continue;
                                 }
@@ -1010,7 +1042,7 @@ namespace System.Text.Json.SourceGeneration
 
                             foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
                             {
-                                if (PropertyIsOverridenAndIgnored(fieldInfo.Name, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
+                                if (PropertyIsOverriddenAndIgnored(fieldInfo.Name, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
                                 {
                                     continue;
                                 }
@@ -1131,7 +1163,7 @@ namespace System.Text.Json.SourceGeneration
             private static bool PropertyIsConstructorParameter(PropertyGenerationSpec propSpec, ParameterGenerationSpec[]? paramGenSpecArray)
                 => paramGenSpecArray != null && paramGenSpecArray.Any(paramSpec => propSpec.ClrName.Equals(paramSpec.ParameterInfo.Name, StringComparison.OrdinalIgnoreCase));
 
-            private static bool PropertyIsOverridenAndIgnored(
+            private static bool PropertyIsOverriddenAndIgnored(
                 string currentMemberName,
                 Type currentMemberType,
                 bool currentMemberIsVirtual,

@@ -17,12 +17,14 @@ namespace Microsoft.Interop
     {
         public class Ids
         {
-            // SYSLIB1050-SYSLIB1059 are reserved for JSImportGenerator
-            public const string Prefix = "JS";
-            public const string InvalidJSImportAttributeUsage = Prefix + "1050";
-            public const string TypeNotSupported = Prefix + "1051";
-            public const string ConfigurationNotSupported = Prefix + "1052";
-            public const string CannotForwardToDllImport = Prefix + "1053";
+            // SYSLIB1070-SYSLIB1089 are reserved for JSImportGenerator
+            public const string Prefix = "SYSLIB";
+            public const string InvalidJSImportAttributeUsage = Prefix + "1070";
+            public const string InvalidJSExportAttributeUsage = Prefix + "1071";
+            public const string TypeNotSupported = Prefix + "1072";
+            public const string ConfigurationNotSupported = Prefix + "1073";
+            public const string JSImportRequiresAllowUnsafeBlocks = Prefix + "1074";
+            public const string JSExportRequiresAllowUnsafeBlocks = Prefix + "1075";
         }
 
         private const string Category = "JSImportGenerator";
@@ -268,7 +270,7 @@ namespace Microsoft.Interop
 
         public static readonly DiagnosticDescriptor InvalidExportAttributedMethodSignature =
             new DiagnosticDescriptor(
-            Ids.InvalidJSImportAttributeUsage,
+            Ids.InvalidJSExportAttributeUsage,
             GetResourceString(nameof(SR.InvalidJSExportAttributeUsageTitle)),
             GetResourceString(nameof(SR.InvalidJSExportAttributedMethodSignatureMessage)),
             Category,
@@ -288,13 +290,33 @@ namespace Microsoft.Interop
 
         public static readonly DiagnosticDescriptor InvalidExportAttributedMethodContainingTypeMissingModifiers =
             new DiagnosticDescriptor(
-            Ids.InvalidJSImportAttributeUsage,
-            GetResourceString(nameof(SR.InvalidJSImportAttributeUsageTitle)),
+            Ids.InvalidJSExportAttributeUsage,
+            GetResourceString(nameof(SR.InvalidJSExportAttributeUsageTitle)),
             GetResourceString(nameof(SR.InvalidAttributedMethodContainingTypeMissingModifiersMessage)),
             Category,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidJSExportAttributedMethodDescription)));
+
+        public static readonly DiagnosticDescriptor JSImportRequiresAllowUnsafeBlocks =
+                   new DiagnosticDescriptor(
+                       Ids.JSImportRequiresAllowUnsafeBlocks,
+                       GetResourceString(nameof(SR.JSImportRequiresAllowUnsafeBlocksTitle)),
+                       GetResourceString(nameof(SR.JSImportRequiresAllowUnsafeBlocksMessage)),
+                       Category,
+                       DiagnosticSeverity.Error,
+                       isEnabledByDefault: true,
+                       description: GetResourceString(nameof(SR.JSImportRequiresAllowUnsafeBlocksDescription)));
+
+        public static readonly DiagnosticDescriptor JSExportRequiresAllowUnsafeBlocks =
+                   new DiagnosticDescriptor(
+                       Ids.JSExportRequiresAllowUnsafeBlocks,
+                       GetResourceString(nameof(SR.JSExportRequiresAllowUnsafeBlocksTitle)),
+                       GetResourceString(nameof(SR.JSExportRequiresAllowUnsafeBlocksMessage)),
+                       Category,
+                       DiagnosticSeverity.Error,
+                       isEnabledByDefault: true,
+                       description: GetResourceString(nameof(SR.JSExportRequiresAllowUnsafeBlocksDescription)));
 
         private static LocalizableResourceString GetResourceString(string resourceName)
         {

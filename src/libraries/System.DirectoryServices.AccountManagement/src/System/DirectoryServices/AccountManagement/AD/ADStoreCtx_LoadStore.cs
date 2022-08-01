@@ -94,7 +94,7 @@ namespace System.DirectoryServices.AccountManagement
                                 }
                             }
 
-                            // If the base objects RDN prefix is not the same as the dervied class then we need to set both
+                            // If the base objects RDN prefix is not the same as the derived class then we need to set both
                             if (defaultRdn != rdnPrefix)
                             {
                                 baseObjectRdnPrefix = defaultRdn;

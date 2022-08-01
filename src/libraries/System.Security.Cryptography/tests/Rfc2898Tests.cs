@@ -20,14 +20,14 @@ namespace System.Security.Cryptography
         [Fact]
         public static void Ctor_NullPasswordBytes()
         {
-            Assert.Throws<NullReferenceException>(() =>
+            Assert.Throws<ArgumentNullException>("password", () =>
                 new Rfc2898DeriveBytes((byte[])null, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1));
         }
 
         [Fact]
         public static void Ctor_NullPasswordString()
         {
-            Assert.Throws<ArgumentNullException>(() =>
+            Assert.Throws<ArgumentNullException>("password", () =>
                 new Rfc2898DeriveBytes((string)null, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1));
         }
 
@@ -188,7 +188,7 @@ namespace System.Security.Cryptography
         [Fact]
         public static void GetBytes_NegativeLength()
         {
-            Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1);
+            using Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1);
             Assert.Throws<ArgumentOutOfRangeException>(() => deriveBytes.GetBytes(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => deriveBytes.GetBytes(int.MinValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => deriveBytes.GetBytes(int.MinValue / 2));

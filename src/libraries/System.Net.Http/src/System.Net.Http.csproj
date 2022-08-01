@@ -138,8 +138,6 @@
              Link="Common\System\Net\HttpDateParser.cs" />
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"
              Link="Common\System\Text\SimpleRegex.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
-             Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
@@ -181,8 +179,6 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Stream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamWindowManager.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3Connection.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ConnectionException.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ProtocolException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3RequestStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthenticatedConnectionHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthority.cs" />
@@ -228,6 +224,8 @@
              Link="Common\System\Net\DebugSafeHandle.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs"
              Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
+             Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
   <!-- Header support -->
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs">
       <Link>Common\System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs</Link>
@@ -434,13 +432,12 @@
     <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\HttpTelemetry.Browser.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpInterop.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs" 
+    <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\CancelablePromise.cs" 
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\CancelablePromise.cs"
              Link="InteropServices\JavaScript\CancelablePromise.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Quic\src\System.Net.Quic.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
@@ -453,6 +450,7 @@
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.NetworkInformation" />
     <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Net.Quic" />
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
@@ -471,6 +469,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <Reference Include="System.Runtime.InteropServices.JavaScript" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseManagedNtlm)' == 'true'">

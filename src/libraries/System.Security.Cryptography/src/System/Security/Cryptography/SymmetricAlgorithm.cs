@@ -22,7 +22,7 @@ namespace System.Security.Cryptography
         [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
         public static SymmetricAlgorithm? Create(string algName) =>
-            (SymmetricAlgorithm?)CryptoConfigForwarder.CreateFromName(algName);
+            CryptoConfigForwarder.CreateFromName<SymmetricAlgorithm>(algName);
 
         public virtual int FeedbackSize
         {

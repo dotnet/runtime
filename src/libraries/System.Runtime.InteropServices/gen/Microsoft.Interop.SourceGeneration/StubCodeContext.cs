@@ -58,7 +58,7 @@ namespace Microsoft.Interop
             Unmarshal,
 
             /// <summary>
-            /// Notify a marshaller object that the Invoke stage and all stages preceeding the Invoke stage
+            /// Notify a marshaller object that the Invoke stage and all stages preceding the Invoke stage
             /// successfully completed without any exceptions.
             /// </summary>
             NotifyForSuccessfulInvoke,
@@ -81,10 +81,10 @@ namespace Microsoft.Interop
         public Stage CurrentStage { get; init; } = Stage.Invalid;
 
         /// <summary>
-        /// <c>CustomTypeMarshallerDirection.In</c> means method import like <c>[LibraryImport]</c>.
-        /// <c>CustomTypeMarshallerDirection.Out</c> means method export like in <c>[UnmanagedCallersOnly]</c> or in <c>[JSExport]</c>
+        /// <c>CustomTypeMarshallingDirection.In</c> means method import like <c>[LibraryImport]</c>.
+        /// <c>CustomTypeMarshallingDirection.Out</c> means method export like in <c>[UnmanagedCallersOnly]</c> or in <c>[JSExport]</c>
         /// </summary>
-        public CustomTypeMarshallerDirection Direction { get; init; } = CustomTypeMarshallerDirection.In;
+        public CustomTypeMarshallingDirection Direction { get; init; } = CustomTypeMarshallingDirection.In;
 
         /// <summary>
         /// Gets the currently targeted framework and version for stub code generation.

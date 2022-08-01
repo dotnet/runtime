@@ -11,6 +11,7 @@
     <ProjectReference Include="$(RepoRoot)src\mono\wasm\host\WasmAppHost.csproj" />
 
     <PackageFile Include="Sdk\AutoImport.props" TargetPath="Sdk" />
+    <PackageFile Include="Sdk\Sdk.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.targets" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\wasm\build\WasmApp.Native.*" TargetPath="Sdk" />

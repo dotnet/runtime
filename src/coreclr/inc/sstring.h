@@ -169,7 +169,7 @@ private:
     void Set(const WCHAR *string, COUNT_T count);
 
     // Set this string to a prellocated copy of a given string.
-    // The caller is the owner of the bufffer and has to coordinate its lifetime.
+    // The caller is the owner of the buffer and has to coordinate its lifetime.
     void SetPreallocated(const WCHAR *string, COUNT_T count);
 
     void SetASCII(const ASCII *string, COUNT_T count);
@@ -317,7 +317,7 @@ private:
     //
     // For CIterator & Iterator, we try our best to iterate the string without
     // modifying it. (Currently, we do require an ASCII or Unicode string
-    // for simple WCHAR retrival, but you could imagine being more flexible
+    // for simple WCHAR retrieval, but you could imagine being more flexible
     // going forward - perhaps even supporting iterating multibyte encodings
     // directly.)
     //
@@ -355,8 +355,8 @@ private:
         const CHAR *GetASCII() const;
 
       public:
-        // Note these should supercede the Indexer versions
-        // since this class comes first in the inheritence list
+        // Note these should supersede the Indexer versions
+        // since this class comes first in the inheritance list
         WCHAR operator*() const;
         void operator->() const;
         WCHAR operator[](int index) const;

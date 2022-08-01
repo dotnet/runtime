@@ -53,12 +53,12 @@ namespace Microsoft.Interop.JavaScript
                 .Select(a => ParseTypeName(a.FullTypeName))
                 .ToArray();
 
-            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallerDirection.In && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallingDirection.In && info.IsManagedReturnPosition)
             {
                 yield return ToManagedMethod(target, source, jsty);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Marshal && context.Direction == CustomTypeMarshallerDirection.Out && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Marshal && context.Direction == CustomTypeMarshallingDirection.Out && info.IsManagedReturnPosition)
             {
                 yield return ToJSMethod(target, source, jsty);
             }
@@ -68,12 +68,12 @@ namespace Microsoft.Interop.JavaScript
                 yield return x;
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Invoke && context.Direction == CustomTypeMarshallerDirection.In && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Invoke && context.Direction == CustomTypeMarshallingDirection.In && !info.IsManagedReturnPosition)
             {
                 yield return ToJSMethod(target, source, jsty);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallerDirection.Out && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallingDirection.Out && !info.IsManagedReturnPosition)
             {
                 yield return ToManagedMethod(target, source, jsty);
             }

@@ -111,7 +111,7 @@ namespace System.Net
 
         internal void SetServerTimeout(int[] timeouts, uint minSendBytesPerSecond)
         {
-            ValidateV2Property(); // CheckDispose and initilize HttpListener in the case of app.config timeouts
+            ValidateV2Property(); // CheckDispose and initialize HttpListener in the case of app.config timeouts
 
             Interop.HttpApi.HTTP_TIMEOUT_LIMIT_INFO timeoutinfo = default;
 
@@ -1725,6 +1725,7 @@ namespace System.Net
                         token = Interop.HttpApi.SafeLocalFreeChannelBinding.LocalAlloc(tokenSize);
                         if (token.IsInvalid)
                         {
+                            token.Dispose();
                             throw new OutOfMemoryException();
                         }
                         Marshal.Copy(blob, tokenOffset, token.DangerousGetHandle(), tokenSize);

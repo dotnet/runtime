@@ -166,7 +166,7 @@ struct HENUMInternal
         DWORD           tkKind,             // kind of token that we are iterating
         HENUMInternal   **ppEnum);          // return the created HENUMInternal
 
-    // Destory Enum. This will free the memory
+    // Destroy Enum. This will free the memory
     static void DestroyEnum(
         HENUMInternal   *pmdEnum);
 

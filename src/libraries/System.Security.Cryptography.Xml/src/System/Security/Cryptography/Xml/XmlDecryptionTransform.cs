@@ -166,7 +166,7 @@ namespace System.Security.Cryptography.Xml
             _encryptedDataList = document.SelectNodes("//enc:EncryptedData", _nsm);
         }
 
-        // Replace the encrytped XML element with the decrypted data for signature verification
+        // Replace the encrypted XML element with the decrypted data for signature verification
         private void ReplaceEncryptedData(XmlElement encryptedDataElement, byte[] decrypted)
         {
             XmlNode parent = encryptedDataElement.ParentNode;

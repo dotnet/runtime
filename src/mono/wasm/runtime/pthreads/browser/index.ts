@@ -3,6 +3,8 @@
 
 import { Module } from "../../imports";
 import { pthread_ptr, MonoWorkerMessageChannelCreated, isMonoWorkerMessageChannelCreated, monoSymbol } from "../shared";
+import { MonoThreadMessage } from "../shared";
+import { PromiseController, createPromiseController } from "../../promise-controller";
 
 const threads: Map<pthread_ptr, Thread> = new Map();
 
@@ -10,10 +12,43 @@ export interface Thread {
     readonly pthread_ptr: pthread_ptr;
     readonly worker: Worker;
     readonly port: MessagePort;
+    postMessageToWorker<T extends MonoThreadMessage>(message: T): void;
+}
+
+class ThreadImpl implements Thread {
+    constructor(readonly pthread_ptr: pthread_ptr, readonly worker: Worker, readonly port: MessagePort) { }
+    postMessageToWorker<T extends MonoThreadMessage>(message: T): void {
+        this.port.postMessage(message);
+    }
+}
+
+const thread_promises: Map<pthread_ptr, PromiseController<Thread>[]> = new Map();
+
+/// wait until the thread with the given id has set up a message port to the runtime
+export function waitForThread(pthread_ptr: pthread_ptr): Promise<Thread> {
+    if (threads.has(pthread_ptr)) {
+        return Promise.resolve(threads.get(pthread_ptr)!);
+    }
+    const promiseAndController = createPromiseController<Thread>();
+    const arr = thread_promises.get(pthread_ptr);
+    if (arr === undefined) {
+        thread_promises.set(pthread_ptr, [promiseAndController.promise_control]);
+    } else {
+        arr.push(promiseAndController.promise_control);
+    }
+    return promiseAndController.promise;
+}
+
+function resolvePromises(pthread_ptr: pthread_ptr, thread: Thread): void {
+    const arr = thread_promises.get(pthread_ptr);
+    if (arr !== undefined) {
+        arr.forEach((controller) => controller.resolve(thread));
+        thread_promises.delete(pthread_ptr);
+    }
 }
 
 function addThread(pthread_ptr: pthread_ptr, worker: Worker, port: MessagePort): Thread {
-    const thread = { pthread_ptr, worker, port };
+    const thread = new ThreadImpl(pthread_ptr, worker, port);
     threads.set(pthread_ptr, thread);
     return thread;
 }
@@ -43,7 +78,7 @@ export const getThreadIds = (): IterableIterator<pthread_ptr> => threads.keys();
 
 function monoDedicatedChannelMessageFromWorkerToMain(event: MessageEvent<unknown>, thread: Thread): void {
     // TODO: add callbacks that will be called from here
-    console.debug("got message from worker on the dedicated channel", event.data, thread);
+    console.debug("MONO_WASM: got message from worker on the dedicated channel", event.data, thread);
 }
 
 // handler that runs in the main thread when a message is received from a pthread worker
@@ -51,12 +86,13 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
     /// N.B. important to ignore messages we don't recognize - Emscripten uses the message event to send internal messages
     const data = ev.data;
     if (isMonoWorkerMessageChannelCreated(data)) {
-        console.debug("received the channel created message", data, worker);
+        console.debug("MONO_WASM: received the channel created message", data, worker);
         const port = data[monoSymbol].port;
         const pthread_id = data[monoSymbol].thread_id;
         const thread = addThread(pthread_id, worker, port);
         port.addEventListener("message", (ev) => monoDedicatedChannelMessageFromWorkerToMain(ev, thread));
         port.start();
+        resolvePromises(pthread_id, thread);
     }
 }
 
@@ -64,7 +100,7 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
 /// At this point the worker doesn't have any pthread assigned to it, yet.
 export function afterLoadWasmModuleToWorker(worker: Worker): void {
     worker.addEventListener("message", (ev) => monoWorkerMessageHandler(worker, ev));
-    console.debug("afterLoadWasmModuleToWorker added message event handler", worker);
+    console.debug("MONO_WASM: afterLoadWasmModuleToWorker added message event handler", worker);
 }
 
 /// These utility functions dig into Emscripten internals

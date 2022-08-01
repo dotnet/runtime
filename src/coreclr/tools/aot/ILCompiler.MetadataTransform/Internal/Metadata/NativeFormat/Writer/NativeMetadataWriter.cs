@@ -357,7 +357,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
             if (LogWriter != null)
             {
-                // Create a CSV file, one line per meta-data record.  
+                // Create a CSV file, one line per meta-data record.
                 LogWriter.WriteLine("Handle, Kind, Name, Children");
                 // needed to enumerate children of a meta-data record
                 var childVisitor = new WriteChildrenVisitor(LogWriter);
@@ -387,7 +387,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                         LogWriter.Write("\"");
                     LogWriter.Write(", ");
 
-                    // Finally write out the handle IDs for my children 
+                    // Finally write out the handle IDs for my children
                     LogWriter.Write("\"");
                     childVisitor.Reset();
                     rec.Visit(childVisitor);
@@ -398,11 +398,11 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         }
 
-        // WriteChildrenVisitor is a helper class needed to write out the list of the 
-        // handles (as space separated hex numbers) of all children of a given node 
-        // to the 'logWriter' text stream.  It simply implementes the IRecordVisitor
+        // WriteChildrenVisitor is a helper class needed to write out the list of the
+        // handles (as space separated hex numbers) of all children of a given node
+        // to the 'logWriter' text stream.  It simply implements the IRecordVisitor
         // interface to hook the callbacks needed for the MetadataRecord.Visit API.
-        // It is only used in the Write() method above.  
+        // It is only used in the Write() method above.
         private class WriteChildrenVisitor : IRecordVisitor
         {
             public WriteChildrenVisitor(TextWriter logWriter)

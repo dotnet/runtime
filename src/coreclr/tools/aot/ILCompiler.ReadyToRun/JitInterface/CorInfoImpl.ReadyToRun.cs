@@ -295,7 +295,7 @@ namespace Internal.JitInterface
             if (result != 0)
                 return result;
 
-            // The OwningType/OwningTypeNotDerivedFromToken shoud be equivalent if the above conditions are equal.
+            // The OwningType/OwningTypeNotDerivedFromToken should be equivalent if the above conditions are equal.
             Debug.Assert(OwningTypeNotDerivedFromToken == other.OwningTypeNotDerivedFromToken);
             Debug.Assert(OwningTypeNotDerivedFromToken || (OwningType == other.OwningType));
 
@@ -775,6 +775,9 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GetRuntimeTypeHandle;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOF_EXCEPTION:
+                    id = ReadyToRunHelper.IsInstanceOfException;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_BOX:
                     id = ReadyToRunHelper.Box;
                     break;
@@ -2647,7 +2650,7 @@ namespace Internal.JitInterface
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false, context: null);
 
-            if (ecmaMethod.IsSuppressGCTransition())
+            if ((ecmaMethod.GetPInvokeMethodCallingConventions() & UnmanagedCallingConventions.IsSuppressGcTransition) != 0)
             {
                 pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetPInvokeTargetNode(methodWithToken));
                 pLookup.accessType = InfoAccessType.IAT_PVALUE;
