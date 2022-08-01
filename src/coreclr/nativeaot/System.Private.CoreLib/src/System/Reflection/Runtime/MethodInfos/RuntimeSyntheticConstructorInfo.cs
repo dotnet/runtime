@@ -79,8 +79,6 @@ namespace System.Reflection.Runtime.MethodInfos
         [DebuggerGuidedStepThrough]
         public sealed override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
-            parameters ??= Array.Empty<object>();
-
             object ctorAllocatedObject = this.MethodInvoker.Invoke(null, parameters, binder, invokeAttr, culture)!;
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return ctorAllocatedObject;

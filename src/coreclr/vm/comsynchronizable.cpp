@@ -1096,13 +1096,36 @@ extern "C" BOOL QCALLTYPE ThreadNative_YieldThread()
 
     BOOL ret = FALSE;
 
-    BEGIN_QCALL
+    BEGIN_QCALL;
 
     ret = __SwitchToThread(0, CALLER_LIMITS_SPINNING);
 
-    END_QCALL
+    END_QCALL;
 
     return ret;
+}
+
+extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    thread->UserAbort(EEPolicy::TA_Safe, INFINITE);
+
+    END_QCALL;
+}
+
+// Unmark the current thread for a safe abort.
+extern "C" void QCALLTYPE ThreadNative_ResetAbort()
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    Thread *pThread = GetThread();
+    if (pThread->IsAbortRequested())
+    {
+        pThread->UnmarkThreadForAbort(EEPolicy::TA_Safe);
+    }
 }
 
 FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)

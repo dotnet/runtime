@@ -144,7 +144,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 Assert.True(regex.options is not null || regex.matchTimeout is null);
                 code.AppendLine("    /// <summary>RegexGenerator method</summary>");
-                code.Append($"    [RegexGenerator({SymbolDisplay.FormatLiteral(regex.pattern, quote: true)}");
+                code.Append($"    [GeneratedRegex({SymbolDisplay.FormatLiteral(regex.pattern, quote: true)}");
                 if (regex.options is not null)
                 {
                     code.Append($", {string.Join(" | ", regex.options.ToString().Split(',').Select(o => $"RegexOptions.{o.Trim()}"))}");

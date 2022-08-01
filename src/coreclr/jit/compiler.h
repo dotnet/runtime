@@ -2216,6 +2216,8 @@ public:
     bool fgNormalizeEHCase2();
     bool fgNormalizeEHCase3();
 
+    void fgCreateFiltersForGenericExceptions();
+
     void fgCheckForLoopsInHandlers();
 
 #ifdef DEBUG

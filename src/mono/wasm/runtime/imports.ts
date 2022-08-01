@@ -4,19 +4,19 @@
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/v8.d.ts" />
 
+import { BINDINGType, MONOType } from "./net6-legacy/exports-legacy";
 import { DotnetModule, EarlyExports, EarlyImports, MonoConfig, RuntimeHelpers } from "./types";
 import { EmscriptenModule } from "./types/emscripten";
 
 // these are our public API (except internal)
 export let Module: EmscriptenModule & DotnetModule;
-export let MONO: any;
-export let BINDING: any;
+export let MONO: MONOType;
+export let BINDING: BINDINGType;
 export let INTERNAL: any;
 export let EXPORTS: any;
 export let IMPORTS: any;
 
 // these are imported and re-exported from emscripten internals
-export let ENVIRONMENT_IS_ESM: boolean;
 export let ENVIRONMENT_IS_NODE: boolean;
 export let ENVIRONMENT_IS_SHELL: boolean;
 export let ENVIRONMENT_IS_WEB: boolean;
@@ -36,7 +36,6 @@ export function set_imports_exports(
     EXPORTS = exports.marshaled_exports; // [JSExport]
     IMPORTS = exports.marshaled_imports; // [JSImport]
 
-    ENVIRONMENT_IS_ESM = imports.isESM;
     ENVIRONMENT_IS_NODE = imports.isNode;
     ENVIRONMENT_IS_SHELL = imports.isShell;
     ENVIRONMENT_IS_WEB = imports.isWeb;
@@ -51,8 +50,7 @@ let monoConfig: MonoConfig = {} as any;
 let runtime_is_ready = false;
 
 export const runtimeHelpers: RuntimeHelpers = <any>{
-    namespace: "System.Runtime.InteropServices.JavaScript",
-    classname: "Runtime",
+    javaScriptExports: {},
     mono_wasm_load_runtime_done: false,
     mono_wasm_bindings_is_ready: false,
     get mono_wasm_runtime_is_ready() {

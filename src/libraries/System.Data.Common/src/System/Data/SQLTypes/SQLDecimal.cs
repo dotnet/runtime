@@ -1152,6 +1152,26 @@ namespace System.Data.SqlTypes
             }
         }
 
+        [CLSCompliant(false)]
+        public int WriteTdsValue(Span<uint> destination)
+        {
+            if (IsNull)
+            {
+                throw new SqlNullValueException();
+            }
+
+            if (destination.Length < 4)
+            {
+                throw new ArgumentOutOfRangeException(nameof(destination));
+            }
+
+            destination[0] = _data1;
+            destination[1] = _data2;
+            destination[2] = _data3;
+            destination[3] = _data4;
+            return 4;
+        }
+
         // Implicit conversion from Decimal to SqlDecimal
         public static implicit operator SqlDecimal(decimal x)
         {
