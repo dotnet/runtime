@@ -1141,6 +1141,17 @@ TEST(mono_object_get_virtual_method_can_call_interface_method)
     CHECK_EQUAL(42, int_result);
 }
 
+TEST(mono_object_get_virtual_method_can_call_explicit_interface_method)
+{
+    MonoMethod *method = GetMethodHelper(kTestDLLNameSpace, "TestInterface", "Method", 0);
+    MonoClass *inherited = GetClassHelper(kTestDLLNameSpace, "ClassExplicitlyImplementingInterface");
+    GET_AND_CHECK(obj, mono_object_new(g_domain, inherited));
+    GET_AND_CHECK(virtualmethod, mono_object_get_virtual_method (obj, method));
+    MonoObject* returnValue = mono_runtime_invoke(virtualmethod, obj, nullptr, nullptr);
+    int int_result = *(int*)mono_object_unbox(returnValue);
+    CHECK_EQUAL(42, int_result);
+}
+
 TEST(can_call_method_on_member_struct)
 {
     MonoMethod *method1 = GetMethodHelper(kTestDLLNameSpace, "TestStructWithFields", "SetupFields", 0);
@@ -1165,7 +1176,7 @@ TEST(can_call_method_on_member_struct)
     CHECK_EQUAL(579, int_result);
 }
 
-#if 0 // JON
+#if FAILING_TEST
 
 TEST(can_call_interface_method_on_member_struct)
 {
@@ -1190,6 +1201,7 @@ TEST(can_call_interface_method_on_member_struct)
     int int_result = *(int*)mono_object_unbox(returnValue);
     CHECK_EQUAL(42, int_result);
 }
+#endif
 
 TEST(mono_object_get_virtual_method_can_call_interface_method_on_struct)
 {
@@ -1205,6 +1217,26 @@ TEST(mono_object_get_virtual_method_can_call_interface_method_on_struct)
     int int_result = *(int*)mono_object_unbox(returnValue);
     CHECK_EQUAL(42, int_result);
 }
+
+#if FAILING_TEST
+
+// the call to mono_object_get_virtual_method cannot properly lookup explicit interface imlpementations
+
+TEST(mono_object_get_virtual_method_can_call_explicit_interface_method_on_struct)
+{
+    MonoMethod *method = GetMethodHelper(kTestDLLNameSpace, "TestInterface", "Method", 0);
+    MonoClass *inherited = GetClassHelper(kTestDLLNameSpace, "StructExplicitlyImplementingInterface");
+    MonoMethod *setupmethod = GetMethodHelper(kTestDLLNameSpace, "StructExplicitlyImplementingInterface", "Setup", 0);
+    MonoMethod *setupmethod2 = GetMethodHelper(kTestDLLNameSpace, "StructExplicitlyImplementingInterface", "TestDll.TestInterface.Method", 0);
+    GET_AND_CHECK(obj, mono_object_new(g_domain, inherited));
+    GET_AND_CHECK(virtualmethod, mono_object_get_virtual_method (obj, method));
+    mono_runtime_invoke(setupmethod, obj, nullptr, nullptr);
+    mono_runtime_invoke(setupmethod2, obj, nullptr, nullptr);
+    MonoObject* returnValue = mono_runtime_invoke(virtualmethod, obj, nullptr, nullptr);
+    int int_result = *(int*)mono_object_unbox(returnValue);
+    CHECK_EQUAL(42, int_result);
+}
+
 #endif
 
 TEST(mono_type_is_byref_works)
