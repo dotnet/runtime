@@ -96,7 +96,7 @@ namespace System.Reflection.Tests
                 AssertMembersAreNotNull(mi1, pi1, fi1, ei1, ci1, pai1);
 
                 clearCache(new[] { typeof(ReflectionCacheTests) });
-                Assert.True(HotReloadDeltaApplied());
+                Assert.True(CacheCleared());
 
                 MethodInfo mi2 = s_type.GetMethod(nameof(Method));
                 PropertyInfo pi2 = s_type.GetProperty(nameof(Property));
@@ -177,7 +177,7 @@ namespace System.Reflection.Tests
                 AssertMembersAreNotNull(mi1, pi1, fi1, ei1, ci1, pai1);
 
                 clearCache(null);
-                Assert.True(HotReloadDeltaApplied());
+                Assert.True(CacheCleared());
                 MethodInfo mi2 = s_type.GetMethod(nameof(Method));
                 PropertyInfo pi2 = s_type.GetProperty(nameof(Property));
                 FieldInfo fi2 = s_type.GetField(nameof(Field1));
@@ -205,12 +205,12 @@ namespace System.Reflection.Tests
             return clearCache.CreateDelegate<Action<Type[]>>();
         }
 
-        private static bool HotReloadDeltaApplied()
+        private static bool CacheCleared()
         {
             Type updateHandler = typeof(Type).Assembly.GetType("System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler", throwOnError: true, ignoreCase: false);
-            PropertyInfo hotReloadApplied = updateHandler.GetProperty("HotReloadDeltaApplied", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(hotReloadApplied);
-            return (bool)hotReloadApplied.GetValue(null);
+            PropertyInfo metadataUpdaterSupportedAndCacheCleared = updateHandler.GetProperty("MetadataUpdaterSupportedAndCacheCleared", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(metadataUpdaterSupportedAndCacheCleared);
+            return (bool)metadataUpdaterSupportedAndCacheCleared.GetValue(null);
         }
     }
 }
