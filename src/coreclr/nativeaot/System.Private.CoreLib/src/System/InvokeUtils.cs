@@ -475,23 +475,25 @@ namespace System
                     }
 
                     EETypePtr srcEEType = arg.GetEETypePtr();
-                    EETypePtr dstEEType = argumentInfo.Type;
 
                     // Quick check for exact match
-                    if (srcEEType.RawValue != dstEEType.RawValue)
+                    if (srcEEType.RawValue != argumentInfo.Type.RawValue)
                     {
-                        if (!RuntimeImports.AreTypesAssignable(srcEEType, dstEEType))
+                        if (!RuntimeImports.AreTypesAssignable(srcEEType, argumentInfo.Type))
                         {
                             // Slow path that supports type conversions.
                             arg = CheckArgument(arg, argumentInfo.Type, CheckArgumentSemantics.DynamicInvoke, binderBundle);
                         }
+                    }
 
+                    if ((argumentInfo.Transform & DynamicInvokeTransform.Reference) == 0)
+                    {
                         if ((argumentInfo.Transform & (DynamicInvokeTransform.ByRef | DynamicInvokeTransform.Nullable)) != 0)
                         {
                             // Rebox the value to allow mutating the original box. This also takes care of
                             // T -> Nullable<T> transformation as side-effect.
-                            object box = Runtime.RuntimeImports.RhNewObject(dstEEType);
-                            RuntimeImports.RhUnbox(arg, ref box.GetRawData(), dstEEType);
+                            object box = Runtime.RuntimeImports.RhNewObject(argumentInfo.Type);
+                            RuntimeImports.RhUnbox(arg, ref box.GetRawData(), argumentInfo.Type);
                             arg = box;
                         }
                     }
