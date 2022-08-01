@@ -323,7 +323,7 @@ namespace System
         }
 
         public static Array GetValuesAsUnderlyingType<TEnum>() where TEnum : struct, Enum =>
-            GetValuesAsUnderlyingType(typeof(TEnum));
+            typeof(TEnum).GetEnumValuesAsUnderlyingType();
 
         public static Array GetValuesAsUnderlyingType(Type enumType)
         {
