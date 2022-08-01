@@ -79,7 +79,8 @@ namespace ILCompiler.DependencyAnalysis
                     if (type.IsPrimitive || type.IsVoid)
                         return;
 
-                    // Function pointers are supported yet.
+                    // Function pointers are not supported yet.
+                    // https://github.com/dotnet/runtime/issues/71883
                     if (type.IsFunctionPointer)
                         return;
 
