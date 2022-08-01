@@ -65,38 +65,42 @@ namespace System
             {
                 EETypePtr srcEEType = srcObject.GetEETypePtr();
 
-                if (RuntimeImports.AreTypesAssignable(srcEEType, dstEEType))
-                    return srcObject;
-
-                if (dstEEType.IsInterface)
+                if (srcEEType.RawValue == dstEEType.RawValue ||
+                    RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
+                    (dstEEType.IsInterface && srcObject is Runtime.InteropServices.IDynamicInterfaceCastable castable
+                        && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false)))
                 {
-                    if (srcObject is Runtime.InteropServices.IDynamicInterfaceCastable castable
-                        && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false))
-                        return srcObject;
+                    return srcObject;
                 }
 
-                object? dstObject;
-                Exception exception = ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(srcObject, srcEEType, dstEEType, semantics, out dstObject);
-                if (exception == null)
-                    return dstObject;
-
-                if (binderBundle == null)
-                    throw exception;
-
-                // Our normal coercion rules could not convert the passed in argument but we were supplied a custom binder. See if it can do it.
-                Type exactDstType = Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType))!;
-
-                srcObject = binderBundle.ChangeType(srcObject, exactDstType);
-
-                // For compat with desktop, the result of the binder call gets processed through the default rules again.
-                dstObject = CheckArgument(srcObject, dstEEType, semantics, binderBundle: null);
-                return dstObject;
+                return CheckArgumentConversions(srcObject, dstEEType, semantics, binderBundle);
             }
         }
 
-        // Special coersion rules for primitives, enums and pointer.
-        private static Exception ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(object srcObject, EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object? dstObject)
+        private static object? CheckArgumentConversions(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
         {
+            object? dstObject;
+            Exception exception = ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(srcObject, dstEEType, CheckArgumentSemantics.DynamicInvoke, out dstObject);
+            if (exception == null)
+                return dstObject;
+
+            if (binderBundle == null)
+                throw exception;
+
+            // Our normal coercion rules could not convert the passed in argument but we were supplied a custom binder. See if it can do it.
+            Type exactDstType = Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType))!;
+
+            srcObject = binderBundle.ChangeType(srcObject, exactDstType);
+
+            // For compat with desktop, the result of the binder call gets processed through the default rules again.
+            return CheckArgument(srcObject, dstEEType, semantics, binderBundle: null);
+        }
+
+        // Special coersion rules for primitives, enums and pointer.
+        private static Exception ConvertOrWidenPrimitivesEnumsAndPointersIfPossible(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object? dstObject)
+        {
+            EETypePtr srcEEType = srcObject.GetEETypePtr();
+
             if (semantics == CheckArgumentSemantics.SetFieldDirect && (srcEEType.IsEnum || dstEEType.IsEnum))
             {
                 dstObject = null;
@@ -105,7 +109,7 @@ namespace System
 
             if (dstEEType.IsPointer)
             {
-                Exception exception = ConvertPointerIfPossible(srcObject, srcEEType, dstEEType, semantics, out IntPtr dstIntPtr);
+                Exception exception = ConvertPointerIfPossible(srcObject, dstEEType, semantics, out IntPtr dstIntPtr);
                 if (exception != null)
                 {
                     dstObject = null;
@@ -212,7 +216,7 @@ namespace System
             return null;
         }
 
-        private static Exception ConvertPointerIfPossible(object srcObject, EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics, out IntPtr dstIntPtr)
+        private static Exception ConvertPointerIfPossible(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, out IntPtr dstIntPtr)
         {
             if (srcObject is IntPtr srcIntPtr)
             {
@@ -230,7 +234,7 @@ namespace System
             }
 
             dstIntPtr = IntPtr.Zero;
-            return CreateChangeTypeException(srcEEType, dstEEType, semantics);
+            return CreateChangeTypeException(srcObject.GetEETypePtr(), dstEEType, semantics);
         }
 
         private static Exception CreateChangeTypeException(EETypePtr srcEEType, EETypePtr dstEEType, CheckArgumentSemantics semantics)
@@ -248,9 +252,12 @@ namespace System
             }
         }
 
-        private static ArgumentException CreateChangeTypeArgumentException(EETypePtr srcEEType, EETypePtr dstEEType)
+        private static ArgumentException CreateChangeTypeArgumentException(EETypePtr srcEEType, EETypePtr dstEEType, bool destinationIsByRef = false)
         {
-            return new ArgumentException(SR.Format(SR.Arg_ObjObjEx, Type.GetTypeFromHandle(new RuntimeTypeHandle(srcEEType)), Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType))));
+            object? destinationTypeName = Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType));
+            if (destinationIsByRef)
+                destinationTypeName += "&";
+            return new ArgumentException(SR.Format(SR.Arg_ObjObjEx, Type.GetTypeFromHandle(new RuntimeTypeHandle(srcEEType)), destinationTypeName));
         }
 
         private static InvalidCastException CreateChangeTypeInvalidCastException(EETypePtr srcEEType, EETypePtr dstEEType)
@@ -482,15 +489,18 @@ namespace System
                     }
 
                     EETypePtr srcEEType = arg.GetEETypePtr();
+                    EETypePtr dstEEType = argumentInfo.Type;
 
-                    // Quick check for exact match
-                    if (srcEEType.RawValue != argumentInfo.Type.RawValue)
+                    if (!(srcEEType.RawValue == dstEEType.RawValue ||
+                        RuntimeImports.AreTypesAssignable(srcEEType, dstEEType) ||
+                        (dstEEType.IsInterface && arg is Runtime.InteropServices.IDynamicInterfaceCastable castable
+                            && castable.IsInterfaceImplemented(new RuntimeTypeHandle(dstEEType), throwIfNotImplemented: false))))
                     {
-                        if (!RuntimeImports.AreTypesAssignable(srcEEType, argumentInfo.Type))
-                        {
-                            // Slow path that supports type conversions.
-                            arg = CheckArgument(arg, argumentInfo.Type, CheckArgumentSemantics.DynamicInvoke, binderBundle);
-                        }
+                        // ByRefs have to be exact match
+                        if ((argumentInfo.Transform & DynamicInvokeTransform.ByRef) != 0)
+                            throw CreateChangeTypeArgumentException(srcEEType, argumentInfo.Type, destinationIsByRef: true);
+
+                        arg = CheckArgumentConversions(arg, argumentInfo.Type, CheckArgumentSemantics.DynamicInvoke, binderBundle);
                     }
 
                     if ((argumentInfo.Transform & DynamicInvokeTransform.Reference) == 0)
