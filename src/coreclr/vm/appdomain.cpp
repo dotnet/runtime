@@ -107,7 +107,7 @@ CrstStatic          SystemDomain::m_SystemDomainCrst;
 CrstStatic          SystemDomain::m_DelayedUnloadCrst;
 
 // Constructor for the PinnedHeapHandleBucket class.
-PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext,  PTRARRAYREF pinnedHandleArrayObj, DWORD Size, LoaderAllocator *pLoaderAllocator)
+PinnedHeapHandleBucket::PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext,  PTRARRAYREF pinnedHandleArrayObj, DWORD size, LoaderAllocator *pLoaderAllocator)
 : m_pNext(pNext)
 , m_ArraySize(size)
 , m_CurrentPos(0)

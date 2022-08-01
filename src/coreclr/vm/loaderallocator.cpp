@@ -2270,6 +2270,7 @@ OBJECTREF* LoaderAllocator::AllocateObjRefPtrsInLargeTable(int nRequested, OBJEC
             m_pPinnedHeapHandleTable->ReleaseHandles(result, nRequested);
             result = *ppLazyAllocate;
         }
+    }
 
     return result;
 }

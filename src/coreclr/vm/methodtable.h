@@ -3367,12 +3367,12 @@ private:
 
     __forceinline void SetFlag(DWFLAGS_WRITEABLE_ENUM flag)
     {
-        FastInterlockOr(&m_dwWriteableFlags, flag);
+        InterlockedOr((LONG*)&m_dwWriteableFlags, flag);
     }
 
     __forceinline void ClearFlag(DWFLAGS_WRITEABLE_ENUM flag)
     {
-        FastInterlockAnd(&m_dwWriteableFlags, ~flag);
+        InterlockedAnd((LONG*)&m_dwWriteableFlags, ~flag);
     }
 
     __forceinline BOOL GetFlag(DWFLAGS_WRITEABLE_ENUM flag) const
