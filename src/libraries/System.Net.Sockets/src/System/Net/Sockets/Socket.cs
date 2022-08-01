@@ -3196,12 +3196,7 @@ namespace System.Net.Sockets
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.Dispose()");
                     handle.Dispose();
                 }
-                else if (!handle.OwnsHandle)
-                {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs()");
-                    handle.CloseAsIs(abortive: false);
-                }
-                else
+                else if (handle.OwnsHandle)
                 {
                     // Close the handle in one of several ways depending on the timeout.
                     // Ignore ObjectDisposedException just in case the handle somehow gets disposed elsewhere.
@@ -3288,6 +3283,11 @@ namespace System.Net.Sockets
                     catch (ObjectDisposedException)
                     {
                     }
+                }
+                else
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs() for non-owned handle");
+                    handle.CloseAsIs(abortive: false);
                 }
 
                 // Delete file of bound UnixDomainSocketEndPoint.
