@@ -259,7 +259,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonBundledAssemblyLoadingSupported))]
         public void ExecuteAssembly()
         {
             CopyTestAssemblies();
