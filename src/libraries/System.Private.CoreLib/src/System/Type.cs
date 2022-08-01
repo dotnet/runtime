@@ -526,6 +526,17 @@ namespace System
             throw NotImplemented.ByDesign;
         }
 
+        /// <summary>
+        /// Gets an array of values of the underlying type of the Enum.
+        /// </summary>
+        /// <remarks>
+        /// This method can be used to get enum values when creating an Array of Enum is challenging
+        /// For example, in reflection-only context or on a platform where runtime codegen is not available.
+        /// </remarks>
+        /// <returns>Array of values containing the underlying type of the Enum</returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the type is not Enum
+        /// </exception>
         public virtual Array GetEnumValuesAsUnderlyingType() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]

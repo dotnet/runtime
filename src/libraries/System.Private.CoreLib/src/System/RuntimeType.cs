@@ -139,6 +139,17 @@ namespace System
             return ret;
         }
 
+        /// <summary>
+        /// Gets an array of values of the underlying type of the Enum.
+        /// </summary>
+        /// <remarks>
+        /// This method can be used to get enum values when creating an Array of Enum is challenging
+        /// For example, in reflection-only context or on a platform where runtime codegen is not available.
+        /// </remarks>
+        /// <returns>Array of values containing the underlying type of the Enum</returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the type is not Enum
+        /// </exception>
         public override Array GetEnumValuesAsUnderlyingType()
         {
             if (!IsActualEnum)
@@ -147,15 +158,85 @@ namespace System
             // Get all of the values
             ulong[] values = Enum.InternalGetValues(this);
 
-            Array ret = Array.CreateInstance(Enum.InternalGetUnderlyingType(this), values.Length);
-
-            for (int i = 0; i < values.Length; i++)
+            switch (RuntimeTypeHandle.GetCorElementType(Enum.InternalGetUnderlyingType(this)))
             {
-                object val = Enum.ToObject(this, values[i]);
-                ret.SetValue(val, i);
-            }
+                case CorElementType.ELEMENT_TYPE_U1:
+                    {
+                        var ret = new byte[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (byte)values[i];
+                        }
+                        return ret;
+                    }
 
-            return ret;
+                case CorElementType.ELEMENT_TYPE_U2:
+                    {
+                        var ret = new ushort[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (ushort)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_U4:
+                    {
+                        var ret = new uint[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (uint)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_U8:
+                    {
+                        return (Array)values.Clone();
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I1:
+                    {
+                        var ret = new sbyte[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (sbyte)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I2:
+                    {
+                        var ret = new short[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (short)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I4:
+                    {
+                        var ret = new int[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (int)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I8:
+                    {
+                        var ret = new long[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (long)values[i];
+                        }
+                        return ret;
+                    }
+                default:
+                    throw new NotImplementedException("Not Implemented");
+            }
         }
 
         public override Type GetEnumUnderlyingType()

@@ -322,9 +322,30 @@ namespace System
             return enumType.GetEnumValues();
         }
 
+        /// <summary>
+        /// Gets an array of values of the underlying type of the Enum.
+        /// </summary>
+        /// <typeparam name="TEnum">Enum type</typeparam>
+        /// /// <remarks>
+        /// This method can be used to get enum values when creating an Array of Enum is challenging
+        /// For example, reflection-only context or on a platform where runtime codegen is not available.
+        /// </remarks>
+        /// <returns>Array of values containing the underlying type of the Enum</returns>
         public static Array GetValuesAsUnderlyingType<TEnum>() where TEnum : struct, Enum =>
             typeof(TEnum).GetEnumValuesAsUnderlyingType();
 
+        /// <summary>
+        /// Gets an array of values of the underlying type of the Enum.
+        /// </summary>
+        /// <param name="enumType">Enum type</param>
+        /// <remarks>
+        /// This method can be used to get enum values when creating an Array of Enum is challenging
+        /// For example, in reflection-only context or on a platform where runtime codegen is not available.
+        /// </remarks>
+        /// <returns>Array of values containing the underlying type of the Enum</returns>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when the enum type is null
+        /// </exception>
         public static Array GetValuesAsUnderlyingType(Type enumType)
         {
             ArgumentNullException.ThrowIfNull(enumType);
