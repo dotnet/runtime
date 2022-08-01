@@ -1436,9 +1436,6 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
-        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Generics/Exceptions/GenericCatchInterfaceProgram/**">
-            <Issue>https://github.com/dotnet/runtime/issues/72827</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
             <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
         </ExcludeList>

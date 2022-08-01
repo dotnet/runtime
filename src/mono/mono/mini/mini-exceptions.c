@@ -2043,7 +2043,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 				}
 
 				ERROR_DECL (isinst_error); // FIXME not used https://github.com/mono/mono/pull/3055/files#r240548187
-				if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst_checked (ex_obj, catch_class, error)) {
+				if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && !MONO_CLASS_IS_INTERFACE_INTERNAL (catch_class) && mono_object_isinst_checked (ex_obj, catch_class, error)) {
 					/* runtime invokes catch even unhandled exceptions */
 					setup_stack_trace (mono_ex, &dynamic_methods, trace_ips, method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE);
 					g_list_free (trace_ips);
@@ -2422,6 +2422,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 				error_init (error);
 				if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE &&
+					 !MONO_CLASS_IS_INTERFACE_INTERNAL (catch_class) &&
 				     mono_object_isinst_checked (ex_obj, catch_class, error)) || filtered) {
 					/*
 					 * This guards against the situation that we abort a thread that is executing a finally clause
