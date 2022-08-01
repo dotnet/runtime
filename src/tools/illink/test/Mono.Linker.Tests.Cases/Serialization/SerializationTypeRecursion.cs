@@ -9,6 +9,7 @@ namespace Mono.Linker.Tests.Cases.Serialization
 	[Reference ("System.Xml.ReaderWriter.dll")]
 	[Reference ("System.Xml.XmlSerializer.dll")]
 	[SetupCompileArgument ("/unsafe")]
+	[SetupLinkerArgument ("--enable-serialization-discovery")]
 	public class SerializationTypeRecursion
 	{
 		public static void Main ()

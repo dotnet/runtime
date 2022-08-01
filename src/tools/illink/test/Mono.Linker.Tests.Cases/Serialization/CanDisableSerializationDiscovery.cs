@@ -9,7 +9,6 @@ namespace Mono.Linker.Tests.Cases.Serialization
 {
 	[Reference ("System.Xml.ReaderWriter.dll")]
 	[Reference ("System.Xml.XmlSerializer.dll")]
-	[SetupLinkerArgument ("--disable-serialization-discovery")]
 	public class CanDisableSerializationDiscovery
 	{
 		public static void Main ()
