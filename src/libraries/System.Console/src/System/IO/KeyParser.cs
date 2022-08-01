@@ -27,7 +27,7 @@ internal static class KeyParser
             return new ConsoleKeyInfo(buffer[startIndex++], ConsoleKey.Backspace, false, false, false);
         }
 
-        // Escape Sequences start with Escape. But some terminals like PuTTY and rxvt use Escape to express that for given sequence Alt was pressed.
+        // Escape Sequences start with Escape. But some terminals like PuTTY and rxvt prepend Escape to express that for given sequence Alt was pressed.
         if (length >= MinimalSequenceLength + 1 && buffer[startIndex] == Escape && buffer[startIndex + 1] == Escape)
         {
             startIndex++;
@@ -75,7 +75,7 @@ internal static class KeyParser
                 // Example: ^[OH either means Home or simply is not used by given terminal.
                 // But with "^[[{character}" sequences, there are conflicts between rxvt and SCO.
                 // Example: "^[[a" is Shift+UpArrow for rxvt and Shift+F3 for SCO.
-                (key, modifiers) = input[1] == 'O'|| terminalFormatStrings.IsRxvtTerm
+                (key, modifiers) = input[1] == 'O' || terminalFormatStrings.IsRxvtTerm
                     ? MapKeyIdOXterm(input[2], terminalFormatStrings.IsRxvtTerm)
                     : MapSCO(input[2]);
 
@@ -301,7 +301,7 @@ internal static class KeyParser
             };
 
         static ConsoleKeyInfo Create(char keyChar, ConsoleKey key, ConsoleModifiers modifiers)
-            => new (keyChar, key, (modifiers & ConsoleModifiers.Shift) != 0, (modifiers & ConsoleModifiers.Alt) != 0, (modifiers & ConsoleModifiers.Control) != 0);
+            => new(keyChar, key, (modifiers & ConsoleModifiers.Shift) != 0, (modifiers & ConsoleModifiers.Alt) != 0, (modifiers & ConsoleModifiers.Control) != 0);
     }
 
     private static ConsoleKeyInfo ParseFromSingleChar(char single, bool isAlt)
