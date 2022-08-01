@@ -123,7 +123,7 @@ namespace System.IO.Hashing.Tests
         protected static IEnumerable<LargeTestCase> LargeTestCaseDefinitions { get; } =
             new[]
             {
-                //https://asecuritysite.com/encryption/xxHash, Example 1
+                // Manually run against the xxHash32 reference implementation.
                 new LargeTestCase(
                     "EEEEE... (10GB)",
                     (byte)'E',
