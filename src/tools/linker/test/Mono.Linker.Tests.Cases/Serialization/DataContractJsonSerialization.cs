@@ -9,6 +9,7 @@ namespace Mono.Linker.Tests.Cases.Serialization
 	[Reference ("System.Runtime.Serialization.dll")]
 	[Reference ("System.Runtime.Serialization.Primitives.dll")]
 	[Reference ("System.Runtime.Serialization.Json.dll")]
+	[SetupLinkerArgument ("--enable-serialization-discovery")]
 	public class DataContractJsonSerialization
 	{
 		public static void Main ()

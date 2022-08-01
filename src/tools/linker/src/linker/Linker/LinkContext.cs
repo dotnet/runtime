@@ -115,7 +115,7 @@ namespace Mono.Linker
 
 		public bool KeepUsedAttributeTypesOnly { get; set; }
 
-		public bool DisableSerializationDiscovery { get; set; }
+		public bool EnableSerializationDiscovery { get; set; }
 
 		public bool DisableOperatorDiscovery { get; set; }
 

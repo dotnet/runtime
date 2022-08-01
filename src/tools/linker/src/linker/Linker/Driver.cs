@@ -375,8 +375,8 @@ namespace Mono.Linker
 							continue;
 						}
 
-					case "--disable-serialization-discovery":
-						if (!GetBoolParam (token, l => context.DisableSerializationDiscovery = l))
+					case "--enable-serialization-discovery":
+						if (!GetBoolParam (token, l => context.EnableSerializationDiscovery = l))
 							return -1;
 
 						continue;
@@ -773,7 +773,7 @@ namespace Mono.Linker
 			// SealerStep
 			// OutputStep
 
-			if (!context.DisableSerializationDiscovery)
+			if (context.EnableSerializationDiscovery)
 				p.MarkHandlers.Add (new DiscoverSerializationHandler ());
 
 			if (!context.DisableOperatorDiscovery)

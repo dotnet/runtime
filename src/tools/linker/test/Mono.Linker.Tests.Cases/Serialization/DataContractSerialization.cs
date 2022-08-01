@@ -10,6 +10,7 @@ namespace Mono.Linker.Tests.Cases.Serialization
 	[Reference ("System.Runtime.Serialization.dll")]
 	[Reference ("System.Runtime.Serialization.Xml.dll")]
 	[Reference ("System.Runtime.Serialization.Primitives.dll")]
+	[SetupLinkerArgument ("--enable-serialization-discovery")]
 	public class DataContractSerialization
 	{
 		public static void Main ()

@@ -6,15 +6,17 @@ If possible, avoid using reflection-based serializers with trimming, and prefer 
 
 As a last resort, the linker does have limited heuristics that can be enabled to keep _some_ of the types and members required for serialization, but this provides no correctness guarantees; apps which use reflection-based serializers are still considered "broken" as far as the static analysis can tell, and it is up to you to make sure that the app works as intended.
 
+Serialization discovery is disabled by default, and can be enabled by passing `--enable-serialization-discovery`.
+
 ## History
 
 The linker has historically been used for Xamarin scenarios that use reflection-based serializers like XmlSerializer, since before the introduction of the trim analysis warnings. There were limited heuristics to satisfy some simple uses of serializers. To provide backwards compatibility for such scenarios, the linker has built-in heuristics that makes some simple cases "just work", albeit in an opaque and unpredictable way.
 
-Consider disabling this behavior by passing `--disable-serialization-discovery` if possible, but it may be necessary when using legacy serializers that don't provide source generators or a similar solution that is statically analyzable. The following is a description of the heuristics for anyone who is unfortunate enough to have to rely on this behavior.
+Consider disabling this behavior if possible, but it may be necessary when using legacy serializers that don't provide source generators or a similar solution that is statically analyzable. The following is a description of the heuristics for anyone who is unfortunate enough to have to rely on this behavior.
 
 ## Heuristics
 
-Serialization discovery is enabled by default, and can be disabled by passing `--disable-serialization-discovery`. There are four parts to the heuristics:
+There are four parts to the heuristics:
 - Activation: which conditions cause the discovered roots and their recursive types to be kept
 - Root discovery: logic to discover types and members are entry points to serialization
 - Type graph: recursive logic to build a set of types to consider for serialization, starting from the roots

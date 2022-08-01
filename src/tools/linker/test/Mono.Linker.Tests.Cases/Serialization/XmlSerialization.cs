@@ -9,6 +9,7 @@ namespace Mono.Linker.Tests.Cases.Serialization
 {
 	[Reference ("System.Xml.ReaderWriter.dll")]
 	[Reference ("System.Xml.XmlSerializer.dll")]
+	[SetupLinkerArgument ("--enable-serialization-discovery")]
 	public class XmlSerialization
 	{
 		public static void Main ()

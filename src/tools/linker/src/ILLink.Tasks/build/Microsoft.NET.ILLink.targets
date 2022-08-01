@@ -259,6 +259,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       <NoWarn Condition=" '$(PlatformTarget)' != 'x64' AND '$(PlatformTarget)' != 'arm64'">$(NoWarn);IL2009;IL2012</NoWarn> <!-- Unresolved field referenced in XML -->
     </PropertyGroup>
 
+    <!-- Enable serialization discovery for compat in < 7.0 -->
+    <PropertyGroup Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '7.0')">
+      <_ExtraTrimmerArgs>--enable-serialization-discovery $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
+    </PropertyGroup>
+
     <!-- Set a default value for TrimmerRemoveSymbols unless set explicitly. -->
     <PropertyGroup Condition=" '$(TrimmerRemoveSymbols)' == '' ">
       <!-- The default is to remove symbols when debugger support is disabled, and keep them otherwise. -->
