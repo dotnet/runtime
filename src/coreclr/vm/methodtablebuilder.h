@@ -783,9 +783,9 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // Returns the substitution to be used in interpreting the signature.
-        const Substitution &
+        const Substitution *
         GetSubstitution() const
-            { return *m_pSubst; }
+            { return m_pSubst; }
 
         //-----------------------------------------------------------------------------------------
         // Returns true if the names are equal; otherwise returns false. This is a

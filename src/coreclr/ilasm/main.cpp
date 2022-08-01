@@ -12,7 +12,7 @@
 #include "shimload.h"
 
 #include "strsafe.h"
-#define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
+#define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
 WCHAR* EqualOrColon(_In_ __nullterminated WCHAR* szArg)
 {

@@ -2074,7 +2074,7 @@ namespace System.Net.Http
                 _idleSinceTickCount = Environment.TickCount64;
 
                 // Put connection back in the pool.
-                _pool.ReturnHttp11Connection(this, isNewConnection: false);
+                _pool.RecycleHttp11Connection(this);
             }
         }
 

@@ -1782,6 +1782,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("CHECK_INSTANCE_ANY");
                     break;
 
+                case ReadyToRunHelper.IsInstanceOfException:
+                    builder.Append("SIMPLE_ISINSTANCE_OF");
+                    break;
+
                 case ReadyToRunHelper.GenericGcStaticBase:
                     builder.Append("GENERIC_GC_STATIC_BASE");
                     break;

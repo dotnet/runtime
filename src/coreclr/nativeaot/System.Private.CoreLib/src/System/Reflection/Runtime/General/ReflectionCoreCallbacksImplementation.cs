@@ -404,6 +404,40 @@ namespace System.Reflection.Runtime.General
 
         public sealed override Assembly[] GetLoadedAssemblies() => RuntimeAssemblyInfo.GetLoadedAssemblies();
 
-        public sealed override EnumInfo GetEnumInfo(Type type) => type.CastToRuntimeTypeInfo().EnumInfo;
+        public sealed override EnumInfo GetEnumInfo(Type type)
+        {
+            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
+
+            EnumInfo? info = runtimeType.GenericCache as EnumInfo;
+            if (info != null)
+                return info;
+
+            info = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo(runtimeType.TypeHandle);
+            runtimeType.GenericCache = info;
+            return info;
+        }
+
+        public sealed override DelegateDynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
+        {
+            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
+
+            DelegateDynamicInvokeInfo? info = runtimeType.GenericCache as DelegateDynamicInvokeInfo;
+            if (info != null)
+                return info;
+
+            RuntimeMethodInfo invokeMethod = runtimeType.GetInvokeMethod();
+
+            MethodInvoker methodInvoker = invokeMethod.MethodInvoker;
+            IntPtr invokeThunk = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetDynamicInvokeThunk(methodInvoker, out IntPtr genericDictionary);
+
+            info = new DelegateDynamicInvokeInfo()
+            {
+                InvokeMethod = invokeMethod,
+                InvokeThunk = invokeThunk,
+                GenericDictionary = genericDictionary
+            };
+            runtimeType.GenericCache = info;
+            return info;
+        }
     }
 }

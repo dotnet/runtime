@@ -1193,17 +1193,6 @@ public:
     static LONG s_CordbObjectUID;    // Unique ID for each object.
     static LONG s_TotalObjectCount; // total number of outstanding objects.
 
-
-    void ValidateObject()
-    {
-        if( !IsValidObject() )
-        {
-            STRESS_LOG1(LF_ASSERT, LL_ALWAYS, "CordbCommonBase::IsValidObject() failed: %x\n", this);
-            _ASSERTE(!"CordbCommonBase::IsValidObject() failed");
-            FreeBuildDebugBreak();
-        }
-    }
-
     bool IsValidObject()
     {
         return (m_signature == CORDB_COMMON_BASE_SIGNATURE);

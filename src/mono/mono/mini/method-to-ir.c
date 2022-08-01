@@ -7472,6 +7472,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				cmethod_override = NULL;
 				virtual_ = FALSE;
 				il_op = MONO_CEE_CALL;
+				printf("\n    overriding callvirt virtual resolution mechanism %i", (constrained_class == NULL) ? 0 : 1);
 			} else {
 				cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
 			}
@@ -9568,17 +9569,27 @@ calli_end:
 			//   call SomeStruct::Method()
 			guchar* callvirt_ip;
 			guint32 i32166_token;
-			if((callvirt_ip = il_read_callvirt(next_ip, end, &i32166_token)) && ip_in_bb(cfg, cfg->cbb, callvirt_ip)) 
+			if( next_ip < end &&
+				(callvirt_ip = il_read_callvirt(next_ip, end, &i32166_token)) && 
+				ip_in_bb(cfg, cfg->cbb, callvirt_ip) &&
+				m_class_is_valuetype(klass) && 
+				!m_class_is_primitive(klass) &&
+				!constrained_class)
 			{
-				printf("\n*** JITting %s", mono_method_get_full_name(method));
-
+				//printf("\n*** JITting %s", mono_method_get_full_name(method));
+				
 				MonoMethod* iface_method = mini_get_method(cfg, method, i32166_token, NULL, generic_context);
 				MonoMethodSignature* iface_method_sig = mono_method_signature_internal(iface_method);
 
-				if(	(val->flags & MONO_INST_INDIRECT) && // we have the address on stack (not the value itself)
-					iface_method_sig != NULL && // callee signture is healthy
-					iface_method_sig->hasthis && // the callee is a method of what's on stack
-					iface_method_sig->param_count == 0) // the callee has no args (other than this)
+				//printf("\n--- callvirt %s", mono_method_get_full_name(iface_method));
+				//printf("\n--- vt=%i, hasthis=%i, pars=%i, expl.this=%i", val->type, iface_method_sig->hasthis, iface_method_sig->param_count, iface_method_sig->explicit_this);
+
+				if(	val != NULL &&
+					//(val->flags & MONO_INST_INDIRECT) && // we have the address on stack (not the value itself)
+					//(val->type == STACK_VTYPE || val->type == STACK_PTR || val->type == STACK_OBJ) &&
+					iface_method_sig != NULL && 
+					iface_method_sig->hasthis && 
+					((iface_method_sig->explicit_this && iface_method_sig->param_count == 1) || (!iface_method_sig->explicit_this && iface_method_sig->param_count == 0)))
 				{
 					MonoMethod* struct_method = mono_class_get_virtual_method(klass, iface_method, error);
 
@@ -9586,7 +9597,9 @@ calli_end:
 						*(sp++) = val;
 						cmethod_override = struct_method;
 
-						printf ("\n*** box+callvirt optimization (%s) ===> (%s)", 
+						printf("\n***  %s", mono_method_get_full_name(method));
+						printf("\n    flags=%i, type=%i", val->flags, val->type);
+						printf ("\n    box+callvirt optimization (%s) ===> (%s)",
 							mono_method_get_full_name(iface_method),
 							mono_method_get_full_name(struct_method));
 
@@ -9595,7 +9608,7 @@ calli_end:
 						mono_error_cleanup(error);
 					}
 				}
-			}			
+			}	
 
 			gboolean is_true;
 

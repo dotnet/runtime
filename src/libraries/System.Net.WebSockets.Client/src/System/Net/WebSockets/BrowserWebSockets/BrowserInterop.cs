@@ -3,7 +3,7 @@
 
 using System.Threading.Tasks;
 using System.Runtime.InteropServices.JavaScript;
-using System.Runtime.InteropServices;
+using System.Buffers;
 
 namespace System.Net.WebSockets
 {
@@ -28,7 +28,17 @@ namespace System.Net.WebSockets
         public static partial JSObject WebSocketCreate(
             string uri,
             string?[]? subProtocols,
+            IntPtr responseStatusPtr,
             [JSMarshalAs<JSType.Function<JSType.Number, JSType.String>>] Action<int, string> onClosed);
+
+        public static unsafe JSObject UnsafeCreate(
+            string uri,
+            string?[]? subProtocols,
+            MemoryHandle responseHandle,
+            [JSMarshalAs<JSType.Function<JSType.Number, JSType.String>>] Action<int, string> onClosed)
+        {
+            return WebSocketCreate(uri, subProtocols, (IntPtr)responseHandle.Pointer, onClosed);
+        }
 
         [JSImport("INTERNAL.ws_wasm_open")]
         public static partial Task WebSocketOpen(
@@ -37,15 +47,36 @@ namespace System.Net.WebSockets
         [JSImport("INTERNAL.ws_wasm_send")]
         public static partial Task? WebSocketSend(
             JSObject webSocket,
-            [JSMarshalAs<JSType.MemoryView>] ArraySegment<byte> buffer,
+            IntPtr bufferPtr,
+            int bufferLength,
             int messageType,
             bool endOfMessage);
+
+        public static unsafe Task? UnsafeSendSync(JSObject jsWs, ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage)
+        {
+            if (buffer.Count == 0)
+            {
+                return WebSocketSend(jsWs, IntPtr.Zero, 0, (int)messageType, endOfMessage);
+            }
+
+            var span = buffer.AsSpan();
+            // we can do this because the bytes in the buffer are always consumed synchronously (not later with Task resolution)
+            fixed (void* spanPtr = span)
+            {
+                return WebSocketSend(jsWs, (IntPtr)spanPtr, buffer.Count, (int)messageType, endOfMessage);
+            }
+        }
 
         [JSImport("INTERNAL.ws_wasm_receive")]
         public static partial Task? WebSocketReceive(
             JSObject webSocket,
-            [JSMarshalAs<JSType.MemoryView>] ArraySegment<byte> buffer,
-            [JSMarshalAs<JSType.MemoryView>] ArraySegment<int> response);
+            IntPtr bufferPtr,
+            int bufferLength);
+
+        public static unsafe Task? ReceiveUnsafeSync(JSObject jsWs, MemoryHandle pinBuffer, int length)
+        {
+            return WebSocketReceive(jsWs, (IntPtr)pinBuffer.Pointer, length);
+        }
 
         [JSImport("INTERNAL.ws_wasm_close")]
         public static partial Task? WebSocketClose(

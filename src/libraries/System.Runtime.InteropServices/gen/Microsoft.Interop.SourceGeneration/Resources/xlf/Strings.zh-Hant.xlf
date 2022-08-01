@@ -74,7 +74,7 @@
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
         <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
-        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</target>
+        <target state="translated">受控型別 '{1}' 的封送處理器類型 '{0}' 必須是靜態類別或結構。</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">

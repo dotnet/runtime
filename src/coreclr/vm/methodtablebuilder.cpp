@@ -258,8 +258,8 @@ MethodTableBuilder::LoaderFindMethodInParentClass(
                     // and return the result to the caller.
                     // We do this here to avoid recalculating pSubst.
                     *pMethodConstraintsMatch = MetaSig::CompareMethodConstraints(
-                        &methodSig.GetSubstitution(), methodSig.GetModule(), methodSig.GetToken(),
-                        &entrySig.GetSubstitution(),  entrySig.GetModule(),  entrySig.GetToken());
+                        methodSig.GetSubstitution(), methodSig.GetModule(), methodSig.GetToken(),
+                        entrySig.GetSubstitution(),  entrySig.GetModule(),  entrySig.GetToken());
                 }
 
                 return pEntryMethod;
@@ -869,8 +869,8 @@ MethodTableBuilder::MethodSignature::SignaturesEquivalent(
     STANDARD_VM_CONTRACT;
 
     return !!MetaSig::CompareMethodSigs(
-        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(),
-        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution(),
+        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), sig1.GetSubstitution(),
+        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), sig2.GetSubstitution(),
         allowCovariantReturn);
 }
 
@@ -884,8 +884,8 @@ MethodTableBuilder::MethodSignature::SignaturesExactlyEqual(
 
     TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(NULL);
     return !!MetaSig::CompareMethodSigs(
-        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), &sig1.GetSubstitution(),
-        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), &sig2.GetSubstitution(),
+        sig1.GetSignature(), static_cast<DWORD>(sig1.GetSignatureLength()), sig1.GetModule(), sig1.GetSubstitution(),
+        sig2.GetSignature(), static_cast<DWORD>(sig2.GetSignatureLength()), sig2.GetModule(), sig2.GetSubstitution(),
         FALSE, &newVisited);
 }
 
@@ -6257,8 +6257,8 @@ MethodTableBuilder::MethodImplCompareSignatures(
     }
 
     //now compare the method constraints
-    if (!MetaSig::CompareMethodConstraints(&implSig.GetSubstitution(), implSig.GetModule(), implSig.GetToken(),
-                                           &declSig.GetSubstitution(), declSig.GetModule(), declSig.GetToken()))
+    if (!MetaSig::CompareMethodConstraints(implSig.GetSubstitution(), implSig.GetModule(), implSig.GetToken(),
+                                           declSig.GetSubstitution(), declSig.GetModule(), declSig.GetToken()))
     {
         BuildMethodTableThrowException(dwConstraintErrorCode, implSig.GetToken());
     }
@@ -6599,7 +6599,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnClass(
     DispatchMapTypeID firstDispatchMapTypeID;
     ComputeDispatchMapTypeIDs(
         pDeclMT,
-        &pDecl->GetMethodSignature().GetSubstitution(),
+        pDecl->GetMethodSignature().GetSubstitution(),
         &firstDispatchMapTypeID,
         1,
         &cInterfaceDuplicates);
@@ -6622,7 +6622,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnClass(
         DispatchMapTypeID * rgDispatchMapTypeIDs = (DispatchMapTypeID *)_alloca(sizeof(DispatchMapTypeID) * cInterfaceDuplicates);
         ComputeDispatchMapTypeIDs(
             pDeclMT,
-            &pDecl->GetMethodSignature().GetSubstitution(),
+            pDecl->GetMethodSignature().GetSubstitution(),
             rgDispatchMapTypeIDs,
             cInterfaceDuplicates,
             &cInterfaceDuplicates);
