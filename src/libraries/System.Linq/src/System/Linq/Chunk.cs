@@ -47,40 +47,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.size);
             }
 
-            if (source.TryGetNonEnumeratedCount(out int count))
-            {
-                return ChunkIterator(source, size, count);
-            }
             return ChunkIterator(source, size);
-        }
-
-        private static IEnumerable<TSource[]> ChunkIterator<TSource>(IEnumerable<TSource> source, int size, int count)
-        {
-            if (count == 0)
-            {
-                yield break;
-            }
-
-            if (count <= size)
-            {
-                yield return source.ToArray();
-                yield break;
-            }
-
-            using IEnumerator<TSource> e = source.GetEnumerator();
-            do
-            {
-                int arraySize = Math.Min(size, count);
-                TSource[] local = new TSource[arraySize];
-                for (int i = 0; (uint)i < (uint)arraySize; i++)
-                {
-                    bool res = e.MoveNext();
-                    Debug.Assert(res);
-                    local[i] = e.Current;
-                }
-                count -= arraySize;
-                yield return local;
-            } while (count > 0);
         }
 
         private static IEnumerable<TSource[]> ChunkIterator<TSource>(IEnumerable<TSource> source, int size)
@@ -90,14 +57,19 @@ namespace System.Linq
             // Before allocating anything, make sure there's at least one element.
             if (e.MoveNext())
             {
-                // Now that we know we have at least one item, allocate an initial storage array. This is not
-                // the array we'll yield.  It starts out small in order to avoid significantly overallocating
-                // when the source has many fewer elements than the chunk size.
-                var arraySize = Math.Min(size, 4);
+                if (!source.TryGetNonEnumeratedCount(out int count))
+                {
+                    // Now that we know we have at least one item, allocate an initial storage array. This is not
+                    // the array we'll yield.  It starts out small in order to avoid significantly overallocating
+                    // when the source has many fewer elements than the chunk size.
+                    count = 4;
+                }
+                int arraySize = Math.Min(size, count);
                 int i;
                 do
                 {
                     var array = new TSource[arraySize];
+
                     // Store the first item.
                     array[0] = e.Current;
                     i = 1;
@@ -128,22 +100,15 @@ namespace System.Linq
                         }
                     }
 
-                    // If the array has the right size return it directly
-                    if (i == array.Length)
+                    if (i != array.Length)
                     {
-                        yield return array;
+                        Array.Resize(ref array, i);
                     }
-                    else
-                    {
-                        // Otherwise, copy to a correctly sized array and null out the original array so that we don't keep
-                        // objects alive longer than needed (the caller might clear out elements from the yielded array.)
-                        var chunk = new TSource[i];
-                        Array.Copy(array, 0, chunk, 0, i);
-                        array = null;
-                        yield return chunk;
-                    }
+
+                    yield return array;
                 }
                 while (i >= size && e.MoveNext());
             }
         }
     }
+}
