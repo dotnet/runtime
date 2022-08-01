@@ -6085,7 +6085,7 @@ mono_metadata_type_dup_with_cmods (MonoImage *image, const MonoType *o, const Mo
 
 	if (cmods_source->has_cmods) {
 		/* FIXME: if it's aggregate what do we assert here? */
-		g_assert (!image || (!aggregate && image == mono_type_get_cmods (cmods_source)->image));
+		g_assert (!image || (o == cmods_source) || (!aggregate && image == mono_type_get_cmods (cmods_source)->image));
 		memcpy (r, cmods_source, mono_sizeof_type (cmods_source));
 	}
 
