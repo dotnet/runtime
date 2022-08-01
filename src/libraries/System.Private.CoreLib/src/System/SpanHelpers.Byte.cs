@@ -2329,6 +2329,9 @@ namespace System
         {
             if (Avx2.IsSupported && (nuint)Vector256<byte>.Count * 2 <= length)
             {
+                Vector256<byte> reverseMask = Vector256.Create(
+                    (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, // first 128-bit lane
+                    15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0); // second 128-bit lane
                 nuint numElements = (nuint)Vector256<byte>.Count;
                 nuint numIters = (length / numElements) / 2;
                 for (nuint i = 0; i < numIters; i++)
@@ -2359,13 +2362,9 @@ namespace System
                     //     +-------------------------------------------------------------------------------+
                     //     | P1 | O1 | N1 | M1 | L1 | K1 | J1 | I1 | H1 | G1 | F1 | E1 | D1 | C1 | B1 | A1 |
                     //     +-------------------------------------------------------------------------------+
-                    tempFirst = Vector256.Shuffle(tempFirst, Vector256.Create(
-                        (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,   // first 128-bit lane
-                              15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)); // second 128-bit lane
+                    tempFirst = Avx2.Shuffle(tempFirst, reverseMask);
                     tempFirst = Avx2.Permute2x128(tempFirst, tempFirst, 0b00_01);
-                    tempLast = Vector256.Shuffle(tempLast, Vector256.Create(
-                        (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,   // first 128-bit lane
-                              15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)); // second 128-bit lane
+                    tempLast = Avx2.Shuffle(tempLast, reverseMask);
                     tempLast = Avx2.Permute2x128(tempLast, tempLast, 0b00_01);
 
                     // Store the reversed vectors

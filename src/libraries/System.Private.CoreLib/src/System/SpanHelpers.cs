@@ -414,6 +414,7 @@ namespace System
             {
                 nuint numElements = (nuint)Vector256<int>.Count;
                 nuint numIters = (length / numElements) / 2;
+                Vector256<int> reverseMask = Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0);
                 for (nuint i = 0; i < numIters; i++)
                 {
                     nuint firstOffset = i * numElements;
@@ -431,8 +432,8 @@ namespace System
                     //     +-------------------------------+
                     //     | H | G | F | E | D | C | B | A |
                     //     +-------------------------------+
-                    tempFirst = Vector256.Shuffle(tempFirst, Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0));
-                    tempLast = Vector256.Shuffle(tempLast, Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0));
+                    tempFirst = Avx2.PermuteVar8x32(tempFirst, reverseMask);
+                    tempLast = Avx2.PermuteVar8x32(tempLast, reverseMask);
 
                     // Store the values into final location
                     tempLast.StoreUnsafe(ref buf, firstOffset);
@@ -498,8 +499,8 @@ namespace System
                     //     +---------------+
                     //     | D | C | B | A |
                     //     +---------------+
-                    tempFirst = Vector256.Shuffle(tempFirst, Vector256.Create(3, 2, 1, 0));
-                    tempLast = Vector256.Shuffle(tempLast, Vector256.Create(3, 2, 1, 0));
+                    tempFirst = Avx2.Permute4x64(tempFirst, 0b00_01_10_11);
+                    tempLast = Avx2.Permute4x64(tempLast, 0b00_01_10_11);
 
                     // Store the values into final location
                     tempLast.StoreUnsafe(ref buf, firstOffset);
