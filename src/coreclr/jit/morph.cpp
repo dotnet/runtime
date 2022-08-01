@@ -11919,8 +11919,12 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
             //   AND(RSH(x, y), 1)  ->  AND(x, LSH(1, y))
             else
             {
+                // Remove flags from op1, but keep op2's
+                rshiftOp->gtFlags &= ~GTF_ALL_EFFECT;
+                rshiftOp->gtFlags |= rshiftOp->gtGetOp2()->gtFlags & GTF_ALL_EFFECT;
+
                 andOp->gtOp1    = rshiftOp->gtGetOp1();
-                rshiftOp->gtOp1 = andOp->gtOp2;
+                rshiftOp->gtOp1 = andOp->gtGetOp2();
                 andOp->gtOp2    = rshiftOp;
 
                 rshiftOp->SetOper(GT_LSH);
