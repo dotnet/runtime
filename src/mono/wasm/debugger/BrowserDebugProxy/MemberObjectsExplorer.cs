@@ -35,7 +35,17 @@ namespace BrowserDebugProxy
             return $"{memberName} ({justClassName})";
         }
 
-        private static async Task<JObject> ReadFieldValue(MonoSDBHelper sdbHelper, MonoBinaryReader reader, FieldTypeClass field, int objectId, TypeInfoWithDebugInformation typeInfo, int fieldValueType, bool isOwn, GetObjectCommandOptions getObjectOptions, CancellationToken token)
+        private static async Task<JObject> ReadFieldValue(
+            MonoSDBHelper sdbHelper,
+            MonoBinaryReader reader,
+            FieldTypeClass field,
+            int objectId,
+            TypeInfoWithDebugInformation typeInfo,
+            int fieldValueType,
+            bool isOwn,
+            int parentTypeId,
+            GetObjectCommandOptions getObjectOptions,
+            CancellationToken token)
         {
             var fieldValue = await sdbHelper.ValueCreator.ReadAsVariableValue(
                 reader,
@@ -62,7 +72,10 @@ namespace BrowserDebugProxy
                 _ => "internal"
             };
             if (field.IsBackingField)
+            {
                 fieldValue["__isBackingField"] = true;
+                fieldValue["__parentTypeId"] = parentTypeId;
+            }
             if (field.Attributes.HasFlag(FieldAttributes.Static))
                 fieldValue["__isStatic"] = true;
 
@@ -189,6 +202,7 @@ namespace BrowserDebugProxy
             MonoSDBHelper sdbHelper,
             DotnetObjectId id,
             int containerTypeId,
+            int parentTypeId,
             IReadOnlyList<FieldTypeClass> fields,
             GetObjectCommandOptions getCommandOptions,
             bool isOwn,
@@ -220,7 +234,7 @@ namespace BrowserDebugProxy
                 int valtype = retDebuggerCmdReader.ReadByte();
                 retDebuggerCmdReader.BaseStream.Position = initialPos;
 
-                JObject fieldValue = await ReadFieldValue(sdbHelper, retDebuggerCmdReader, field, id.Value, typeInfo, valtype, isOwn, getCommandOptions, token);
+                JObject fieldValue = await ReadFieldValue(sdbHelper, retDebuggerCmdReader, field, id.Value, typeInfo, valtype, isOwn, parentTypeId, getCommandOptions, token);
                 numFieldsRead++;
 
                 if (!Enum.TryParse(fieldValue["__state"].Value<string>(), out DebuggerBrowsableState fieldState)
@@ -302,7 +316,8 @@ namespace BrowserDebugProxy
             bool isOwn,
             CancellationToken token,
             Dictionary<string, JObject> allMembers,
-            bool includeStatic)
+            bool includeStatic,
+            int parentTypeId = -1)
         {
             using var retDebuggerCmdReader = await sdbHelper.GetTypePropertiesReader(typeId, token);
             if (retDebuggerCmdReader == null)
@@ -330,6 +345,9 @@ namespace BrowserDebugProxy
                 MethodInfoWithDebugInformation getterInfo = await sdbHelper.GetMethodInfo(getMethodId, token);
                 MethodAttributes getterAttrs = getterInfo.Info.Attributes;
                 MethodAttributes getterMemberAccessAttrs = getterAttrs & MethodAttributes.MemberAccessMask;
+                MethodAttributes vtableLayout = getterAttrs & MethodAttributes.VtableLayoutMask;
+                bool isNewSlot = (vtableLayout & MethodAttributes.NewSlot) == MethodAttributes.NewSlot;
+                Console.WriteLine($"[ILONA] propName={propName} parentSuffix={parentSuffix} isNewSlot={isNewSlot}");
 
                 typePropertiesBrowsableInfo.TryGetValue(propName, out DebuggerBrowsableState? state);
 
@@ -337,9 +355,10 @@ namespace BrowserDebugProxy
                 if (!allMembers.TryGetValue(propName, out JObject existingMember))
                 {
                     // new member
-                    await AddProperty(getMethodId, state, propName, getterMemberAccessAttrs, isStatic);
+                    await AddProperty(getMethodId, parentTypeId, state, propName, getterMemberAccessAttrs, isStatic, isNewSlot: isNewSlot);
                     continue;
                 }
+                Console.WriteLine($"[ILONA] existingMember={existingMember}");
 
                 bool isExistingMemberABackingField = existingMember["__isBackingField"]?.Value<bool>() == true;
                 if (isOwn && !isExistingMemberABackingField)
@@ -358,24 +377,36 @@ namespace BrowserDebugProxy
                 }
 
                 var overriddenOrHiddenPropName = $"{propName} ({parentSuffix})";
-                MethodAttributes vtableLayout = getterAttrs & MethodAttributes.VtableLayoutMask;
-                bool wasOverriddenByDerivedType = (vtableLayout & MethodAttributes.NewSlot) == MethodAttributes.NewSlot;
-                if (wasOverriddenByDerivedType)
+                if (isNewSlot)
                 {
-                    /*
-                     * property was overridden by a derived type member. We want to show
-                     * only the overridden members. So, remove the backing field
-                     * for this auto-property that was added, with the type name suffix
-                     *
-                     * Two cases:
-                     * 1. auto-prop in base, overridden by auto-prop in derived
-                     * 2. auto-prop in base, overridden by prop in derived
-                     *
-                     *    And in both cases we want to remove the backing field for the auto-prop for
-                     *      *this* base type
-                     */
-                    allMembers.Remove(overriddenOrHiddenPropName);
-                    continue;
+                    // we would have to check if backing field's child was a new slot - how? Missing testcases for this in VHO
+                    if (allMembers.TryGetValue(overriddenOrHiddenPropName, out JObject removableProp) && removableProp?["__isBackingField"]?.Value<bool>() == true)
+                    {
+                        allMembers.Remove(overriddenOrHiddenPropName);
+                        continue;
+                    }
+
+                    // direct child was not a new slot -> current item has a `new` keyword or was overridden:
+                    var child = allMembers.FirstOrDefault(
+                        kvp => (kvp.Key == propName || kvp.Key.StartsWith($"{propName} (")) && kvp.Value["__parentTypeId"]?.Value<int>() == typeId).Value;
+                    bool wasOverriddenByDerivedType = child != null && child["__isNewSlot"]?.Value<bool>() != true;
+                    if (wasOverriddenByDerivedType)
+                    {
+                        /*
+                         * property was overridden by a derived type member. We want to show
+                         * only the overridden members. So, remove the backing field
+                         * for this auto-property that was added, with the type name suffix
+                         *
+                         * Two cases:
+                         * 1. auto-prop in base, overridden by auto-prop in derived
+                         * 2. auto-prop in base, overridden by prop in derived
+                         *
+                         *    And in both cases we want to remove the backing field for the auto-prop for
+                         *      *this* base type
+                         */
+                        allMembers.Remove(overriddenOrHiddenPropName);
+                        continue;
+                    }
                 }
 
                 /*
@@ -388,7 +419,7 @@ namespace BrowserDebugProxy
                 {
                     // hiding with a non-auto property, so nothing to adjust
                     // add the new property
-                    await AddProperty(getMethodId, state, overriddenOrHiddenPropName, getterMemberAccessAttrs, isStatic);
+                    await AddProperty(getMethodId, parentTypeId, state, overriddenOrHiddenPropName, getterMemberAccessAttrs, isStatic, isNewSlot: isNewSlot);
                     continue;
                 }
 
@@ -420,7 +451,14 @@ namespace BrowserDebugProxy
                     allMembers[evalue["name"].Value<string>()] = evalue;
             }
 
-            async Task AddProperty(int getMethodId, DebuggerBrowsableState? state, string propNameWithSufix, MethodAttributes getterAttrs, bool isPropertyStatic)
+            async Task AddProperty(
+                int getMethodId,
+                int parentTypeId,
+                DebuggerBrowsableState? state,
+                string propNameWithSufix,
+                MethodAttributes getterAttrs,
+                bool isPropertyStatic,
+                bool isNewSlot)
             {
                 string returnTypeName = await sdbHelper.GetReturnType(getMethodId, token);
                 JObject propRet = null;
@@ -448,6 +486,11 @@ namespace BrowserDebugProxy
                     _ => "internal"
                 };
                 propRet["__state"] = state?.ToString();
+                if (parentTypeId != -1)
+                {
+                    propRet["__parentTypeId"] = parentTypeId;
+                    propRet["__isNewSlot"] = isNewSlot;
+                }
 
                 string namePrefix = GetNamePrefixForValues(propNameWithSufix, typeName, isOwn, state);
                 var expandedMembers = await GetExpandedMemberValues(
@@ -529,9 +572,11 @@ namespace BrowserDebugProxy
             ArraySegment<byte> getPropertiesParamBuffer = commandParamsObjWriter.GetParameterBuffer();
 
             var allMembers = new Dictionary<string, JObject>();
-            for (int i = 0; i < typeIdsIncludingParents.Count; i++)
+            int typeIdsCnt = typeIdsIncludingParents.Count;
+            for (int i = 0; i < typeIdsCnt; i++)
             {
                 int typeId = typeIdsIncludingParents[i];
+                int parentTypeId = i + 1 < typeIdsCnt ? typeIdsIncludingParents[i + 1] : -1;
                 string typeName = await sdbHelper.GetTypeName(typeId, token);
                 // 0th id is for the object itself, and then its ancestors
                 bool isOwn = i == 0;
@@ -541,7 +586,7 @@ namespace BrowserDebugProxy
                 if (thisTypeFields.Count > 0)
                 {
                     var allFields = await ExpandFieldValues(
-                        sdbHelper, id, typeId, thisTypeFields, getCommandType, isOwn, includeStatic, token);
+                        sdbHelper, id, typeId, parentTypeId, thisTypeFields, getCommandType, isOwn, includeStatic, token);
 
                     if (getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
                     {
@@ -566,7 +611,8 @@ namespace BrowserDebugProxy
                     isOwn,
                     token,
                     allMembers,
-                    includeStatic);
+                    includeStatic,
+                    parentTypeId);
 
                 // ownProperties
                 // Note: ownProperties should mean that we return members of the klass itself,
@@ -577,6 +623,7 @@ namespace BrowserDebugProxy
                 /*if (accessorPropertiesOnly)
                     break;*/
             }
+
             return GetMembersResult.FromValues(allMembers.Values, sortByAccessLevel);
 
             static void AddOnlyNewFieldValuesByNameTo(JArray namedValues, IDictionary<string, JObject> valuesDict, string typeName, bool isOwn)
