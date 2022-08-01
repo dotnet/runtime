@@ -65,7 +65,7 @@ public class KeyParserTests
     [MemberData(nameof(AsciiCharactersArguments))]
     public void AsciiCharacters(TerminalData terminalData, char input, ConsoleKey expectedKey)
     {
-        ConsoleKeyInfo consoleKeyInfo = Map(new[] { input }, terminalData.TerminalDb, terminalData.Verase, 1);
+        ConsoleKeyInfo consoleKeyInfo = Parse(new[] { input }, terminalData.TerminalDb, terminalData.Verase, 1);
 
         Assert.Equal(input, consoleKeyInfo.KeyChar);
         Assert.Equal(expectedKey, consoleKeyInfo.Key);
@@ -171,7 +171,7 @@ public class KeyParserTests
     {
         char[] encoded = terminalData.ConsoleEncoding.GetString(recordedBytes).ToCharArray();
 
-        ConsoleKeyInfo actual = Map(encoded, terminalData.TerminalDb, terminalData.Verase, encoded.Length);
+        ConsoleKeyInfo actual = Parse(encoded, terminalData.TerminalDb, terminalData.Verase, encoded.Length);
 
         Assert.Equal(expected.Key, actual.Key);
         Assert.Equal(expected.Modifiers, actual.Modifiers);
@@ -227,7 +227,7 @@ public class KeyParserTests
             expectedKey = ConsoleKey.Select; // rxvt binds this key to Select in Terminfo and uses "^[[8~" for End key
         }
 
-        ConsoleKeyInfo consoleKeyInfo = Map(input.ToCharArray(), terminalData.TerminalDb, terminalData.Verase, input.Length);
+        ConsoleKeyInfo consoleKeyInfo = Parse(input.ToCharArray(), terminalData.TerminalDb, terminalData.Verase, input.Length);
 
         Assert.Equal(expectedKey, consoleKeyInfo.Key);
         Assert.Equal(default, consoleKeyInfo.KeyChar);
@@ -252,11 +252,11 @@ public class KeyParserTests
 
         foreach ((string input, ConsoleKey expectedKey) in ThreeCharactersKeysRxvt)
         {
-            ConsoleKeyInfo consoleKeyInfo = Map(input.ToCharArray(), terminalData.TerminalDb, terminalData.Verase, input.Length);
+            ConsoleKeyInfo consoleKeyInfo = Parse(input.ToCharArray(), terminalData.TerminalDb, terminalData.Verase, input.Length);
 
             Assert.Equal(expectedKey, consoleKeyInfo.Key);
             Assert.Equal(default, consoleKeyInfo.KeyChar);
-            Assert.Equal(ConsoleModifiers.Control, consoleKeyInfo.Modifiers); // this particular test excercises the extended strings code path
+            Assert.Equal(ConsoleModifiers.Control, consoleKeyInfo.Modifiers);
         }
     }
 
@@ -370,7 +370,7 @@ public class KeyParserTests
     [MemberData(nameof(AsciiCharactersArguments))]
     public void VeraseIsRespected(TerminalData terminalData, char input, ConsoleKey ifNotVerase)
     {
-        ConsoleKeyInfo consoleKeyInfo = Map(new[] { input }, terminalData.TerminalDb, (byte)input, 1);
+        ConsoleKeyInfo consoleKeyInfo = Parse(new[] { input }, terminalData.TerminalDb, (byte)input, 1);
 
         Assert.Equal(input, consoleKeyInfo.KeyChar);
         Assert.Equal(ConsoleKey.Backspace, consoleKeyInfo.Key);
@@ -383,7 +383,7 @@ public class KeyParserTests
     {
         XTermData xTerm = new();
 
-        ConsoleKeyInfo consoleKeyInfo = Map("\u001BOM".ToCharArray(), xTerm.TerminalDb, xTerm.Verase, 3);
+        ConsoleKeyInfo consoleKeyInfo = Parse("\u001BOM".ToCharArray(), xTerm.TerminalDb, xTerm.Verase, 3);
 
         Assert.Equal(ConsoleKey.Enter, consoleKeyInfo.Key);
         Assert.Equal('\r', consoleKeyInfo.KeyChar);
@@ -395,14 +395,14 @@ public class KeyParserTests
     {
         XTermData xTerm = new();
 
-        ConsoleKeyInfo consoleKeyInfo = Map("\u001B[Z".ToCharArray(), xTerm.TerminalDb, xTerm.Verase, 3);
+        ConsoleKeyInfo consoleKeyInfo = Parse("\u001B[Z".ToCharArray(), xTerm.TerminalDb, xTerm.Verase, 3);
 
         Assert.Equal(ConsoleKey.Tab, consoleKeyInfo.Key);
         Assert.Equal(default, consoleKeyInfo.KeyChar);
         Assert.Equal(ConsoleModifiers.Shift, consoleKeyInfo.Modifiers);
     }
 
-    private static ConsoleKeyInfo Map(char[] chars, TerminalFormatStrings terminalFormatStrings, byte verase, int expectedStartIndex)
+    private static ConsoleKeyInfo Parse(char[] chars, TerminalFormatStrings terminalFormatStrings, byte verase, int expectedStartIndex)
     {
         int startIndex = 0;
 

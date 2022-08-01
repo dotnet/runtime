@@ -124,8 +124,9 @@ internal static class KeyParser
             return false;
         }
 
-        if (input[SequencePrefixLength + digitCount] is VtSequenceEndTag or '^' or '$' or '@') // it's a VT Sequence like ^[[11~ or rxvt like ^[[11^
+        if (IsSequenceEndTag(input[SequencePrefixLength + digitCount]))
         {
+            // it's a VT Sequence like ^[[11~ or rxvt like ^[[11^
             int sequenceLength = SequencePrefixLength + digitCount + 1;
             if (!terminfoDb.TryGetValue(buffer.AsMemory(startIndex, sequenceLength), out parsed))
             {
@@ -135,7 +136,7 @@ internal static class KeyParser
                     return false; // it was not a known sequence
                 }
 
-                if (input[SequencePrefixLength + digitCount] is '^' or '$' or '@') // rxvt modifiers
+                if (IsRxvtModifier(input[SequencePrefixLength + digitCount]))
                 {
                     modifiers = MapRxvtModifiers(input[SequencePrefixLength + digitCount]);
                 }
@@ -290,6 +291,10 @@ internal static class KeyParser
                 '8' => ConsoleModifiers.Shift | ConsoleModifiers.Alt | ConsoleModifiers.Control,
                 _ => default
             };
+
+        static bool IsSequenceEndTag(char character) => character is VtSequenceEndTag || IsRxvtModifier(character);
+
+        static bool IsRxvtModifier(char character) => MapRxvtModifiers(character) != default;
 
         static ConsoleModifiers MapRxvtModifiers(char modifier)
             => modifier switch
