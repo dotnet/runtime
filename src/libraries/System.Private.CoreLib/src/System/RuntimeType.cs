@@ -158,7 +158,7 @@ namespace System
             // Get all of the values
             ulong[] values = Enum.InternalGetValues(this);
 
-            switch (RuntimeTypeHandle.GetCorElementType(Enum.InternalGetUnderlyingType(this)))
+            switch (RuntimeTypeHandle.GetCorElementType(this))
             {
                 case CorElementType.ELEMENT_TYPE_U1:
                     {
