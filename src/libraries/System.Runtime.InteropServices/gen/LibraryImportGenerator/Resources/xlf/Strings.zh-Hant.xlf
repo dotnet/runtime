@@ -9,12 +9,12 @@
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="translated">當透過提供在封送處理器類型上採用 'Span&lt;T&gt;' 的 'FromManaged' 方法來使用 'Managed to Unmanaged with Caller-Allocated Buffer' 圖形時，該類型必須提供靜態 'BufferSize' 屬性以提供 caller-allocated 緩衝區中的元素數字。</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="translated">封送處理器類型 '{0}' 必須有靜態唯讀 'int' 'BufferSize' 屬性，以指定 caller-allocated 緩衝區的大小，因為它具有採用 caller-allocated 'Span&lt;{1}&gt;' 的 FromManaged 方法</target>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportDescription">
@@ -449,12 +449,12 @@
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="translated">當透過提供在封送處理程式類型上採用 'Span&lt;T&gt;' 的 'AllocateContainerForUnmanagedElements' 方法來使用 'Managed to Unmanaged with Caller-Allocated Buffer' 圖形時，該類型必須提供靜態 'BufferSize' 屬性以提供 caller-allocated 緩衝區中的元素數目。</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="translated">封送處理程式類型 '{0}' 必須有靜態唯讀 'int' 'BufferSize' 屬性，以指定 caller-allocated 緩衝區的大小，因為它具有採用 caller-allocated 'Span&lt;{1}&gt;' 的 'AllocateContainerForUnmanagedElements' 方法</target>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">

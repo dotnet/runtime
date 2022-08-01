@@ -9,12 +9,12 @@
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="translated">Quando si usa la forma 'Managed to Unmanaged with Caller-Allocated Buffer', fornendo un metodo "FromManaged" che accetta un elemento "Span&lt;T&gt;" per il tipo di marshaller, il tipo deve fornire una proprietà statica "BufferSize" per fornire il numero di elementi nel buffer allocato dal chiamante.</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="translated">Il tipo di marshaller '{0}' deve avere una proprietà 'int' 'BufferSize' di sola lettura statica per specificare le dimensioni del buffer allocato dal chiamante perché dispone di un metodo FromManaged che accetta un elemento 'Span&lt;{1}&gt;' allocato dal chiamante</target>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportDescription">
@@ -449,12 +449,12 @@
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="translated">Quando si usa la forma 'Managed to Unmanaged with Caller-Allocated Buffer', fornendo un metodo 'AllocateContainerForUnmanagedElements' che accetta un elemento "Span&lt;T&gt;" per il tipo di marshaller, il tipo deve fornire una proprietà statica "BufferSize" per fornire il numero di elementi nel buffer allocato dal chiamante.</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="translated">Il tipo di marshaller '{0}' deve avere una proprietà 'int' 'BufferSize' di sola lettura statica per specificare le dimensioni del buffer allocato dal chiamante perché dispone di un metodo 'AllocateContainerForUnmanagedElements' che accetta un elemento 'Span&lt;{1}&gt;' allocato dal chiamante</target>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">

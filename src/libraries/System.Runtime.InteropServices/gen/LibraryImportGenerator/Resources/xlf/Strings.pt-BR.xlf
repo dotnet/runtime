@@ -9,12 +9,12 @@
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="translated">Quando a forma 'Managed to Unmanaged com Caller-Allocated Buffer' é usada fornecendo um método 'FromManaged' que usa um 'Span&lt;T&gt;' no tipo de empacotador, o tipo deve fornecer uma propriedade estática 'BufferSize' para fornecer o número de elementos no buffer alocado pelo chamador.</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="translated">O tipo de empacotador '{0}' deve ter uma propriedade estática somente leitura 'int' 'BufferSize' para especificar o tamanho do buffer alocado pelo chamador porque ele tem um método FromManaged que recebe um 'Span' alocado pelo chamador&lt;{1}&gt;'</target>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportDescription">
@@ -449,12 +449,12 @@
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="translated">Quando a forma 'Managed to Unmanaged with Caller-Allocated Buffer' é usada fornecendo um método 'AllocateContainerForUnmanagedElements' que usa um 'Span&lt;T&gt;' no tipo de marshaller, o tipo deve fornecer uma propriedade estática 'BufferSize' para fornecer o número de elementos no buffer alocado pelo chamador.</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="translated">O tipo de marshaller “{0}” deve ter uma propriedade estática somente leitura 'int' 'BufferSize' para especificar o tamanho do buffer alocado pelo chamador porque ele tem um método 'AllocateContainerForUnmanagedElements' que recebe um 'Span' alocado pelo chamador&lt;{1}&gt;'</target>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">
