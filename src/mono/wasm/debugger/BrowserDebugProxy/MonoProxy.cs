@@ -1553,7 +1553,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return store;
         }
 
-        private static IEnumerable<IGrouping<SourceId, SourceLocation>> GetBPReqLocations(DebugStore store, BreakpointRequest req)
+        private static IEnumerable<IGrouping<SourceId, SourceLocation>> GetBPReqLocations(DebugStore store, BreakpointRequest req, bool ifNoneFoundThenFindNext = false)
         {
             var comparer = new SourceLocation.LocationComparer();
             // if column is specified the frontend wants the exact matches
@@ -1563,16 +1563,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 .Where(l => l.Line == req.Line && (req.Column == 0 || l.Column == req.Column))
                 .OrderBy(l => l.Column)
                 .GroupBy(l => l.Id);
+            if (ifNoneFoundThenFindNext && !locations.Any())
+            {
+                var nextLocation = store.FindBreakpointNextLocation(req);
+                var nextLocationList = new SourceLocation[1];
+                if (nextLocation != null)
+                    nextLocationList[0] = nextLocation;
+                return nextLocationList.GroupBy(l => l.Id);
+            }
             return locations;
-        }
-
-        private static IEnumerable<IGrouping<SourceId, SourceLocation>> GetBPReqNextLocation(DebugStore store, BreakpointRequest req)
-        {
-            var nextLocation = store.FindBreakpointNextLocation(req);
-            var nextLocationList = new List<SourceLocation>();
-            if (nextLocation != null)
-                nextLocationList.Add(nextLocation);
-            return nextLocationList.GroupBy(l => l.Id);
         }
 
         private async Task ResetBreakpoint(SessionId msg_id, DebugStore store, MethodInfo method, CancellationToken token)
@@ -1632,14 +1631,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return;
             }
 
-            var locations = GetBPReqLocations(store, req);
+            var locations = GetBPReqLocations(store, req, true);
 
             logger.LogDebug("BP request for '{Req}' runtime ready {Context.RuntimeReady}", req, context.IsRuntimeReady);
 
             var breakpoints = new List<Breakpoint>();
-            if (!locations.Any())
-                locations = GetBPReqNextLocation(store, req);
-
             foreach (IGrouping<SourceId, SourceLocation> sourceId in locations)
             {
                 SourceLocation loc = sourceId.First();

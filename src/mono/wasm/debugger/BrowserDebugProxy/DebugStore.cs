@@ -1629,14 +1629,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             foreach (MethodInfo method in sourceFile.Methods)
             {
-                if (!method.DebugInformation.SequencePointsBlob.IsNil)
+                if (method.DebugInformation.SequencePointsBlob.IsNil)
+                    continue;
+
+                foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
                 {
-                    foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
+                    if (!sequencePoint.IsHidden && method.StartLocation.Line < request.Line && request.Line < method.EndLocation.Line && sequencePoint.StartLine > request.Line)
                     {
-                        if (!sequencePoint.IsHidden && method.StartLocation.Line < request.Line && request.Line < method.EndLocation.Line && sequencePoint.StartLine > request.Line)
-                        {
-                            return new SourceLocation(method, sequencePoint);
-                        }
+                        return new SourceLocation(method, sequencePoint);
                     }
                 }
             }
