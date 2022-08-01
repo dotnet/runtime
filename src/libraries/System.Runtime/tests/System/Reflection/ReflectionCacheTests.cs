@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Tests;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -9,13 +10,18 @@ namespace System.Reflection.Tests
     [Collection(nameof(DisableParallelization))]
     public class ReflectionCacheTests
     {
+        private static bool IsMetadataUpdateAndRemoteExecutorSupported => PlatformDetection.IsMetadataUpdateSupported && RemoteExecutor.IsSupported;
+
         private static readonly Type s_type = typeof(ReflectionCacheTests);
+        //private BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
 
         public string Property { get; set; }
 
         public int Field1;
 
-        private void Method()
+#pragma warning disable xUnit1013 // Public method should be marked as test
+        public void Method(bool param)
+#pragma warning restore xUnit1013 // Public method should be marked as test
         {
             Event1(null, EventArgs.Empty);
         }
@@ -23,29 +29,39 @@ namespace System.Reflection.Tests
         public event EventHandler Event1;
 
         [Fact]
-        public void GetMethod_MultipleCalls_SameObjects()
+        public void GetMembers_MultipleCalls_SameObjects()
         {
-            MethodInfo mi1 = s_type.GetMethod(nameof(GetMethod_MultipleCalls_SameObjects));
+            MethodInfo mi1 = s_type.GetMethod(nameof(Method));
             PropertyInfo pi1 = s_type.GetProperty(nameof(Property));
             FieldInfo fi1 = s_type.GetField(nameof(Field1));
             EventInfo ei1 = s_type.GetEvent(nameof(Event1));
-            Assert.NotNull(mi1);
-            Assert.NotNull(pi1);
-            Assert.NotNull(fi1);
+            ConstructorInfo ci1 = s_type.GetConstructor(Type.EmptyTypes);
+            ParameterInfo pai1 = mi1.GetParameters()[0];
 
-            MethodInfo mi2 = s_type.GetMethod(nameof(GetMethod_MultipleCalls_SameObjects));
+            AssertMembersAreNotNull(mi1, pi1, fi1, ei1, ci1, pai1);
+
+            MethodInfo mi2 = s_type.GetMethod(nameof(Method));
             PropertyInfo pi2 = s_type.GetProperty(nameof(Property));
             FieldInfo fi2 = s_type.GetField(nameof(Field1));
-            Assert.NotNull(mi2);
-            Assert.NotNull(pi2);
-            Assert.NotNull(fi2);
+            EventInfo ei2 = s_type.GetEvent(nameof(Event1));
+            ConstructorInfo ci2 = s_type.GetConstructor(Type.EmptyTypes);
+            ParameterInfo pai2 = mi2.GetParameters()[0];
+
+            AssertMembersAreNotNull(mi2, pi2, fi2, ei2, ci2, pai2);
 
             Assert.Same(mi1, mi2);
             Assert.Same(pi1, pi2);
             Assert.Same(fi1, fi2);
+            Assert.Same(ei1, ei2);
+            Assert.Same(ci1, ci2);
+            Assert.Same(pai1, pai2);
+
             Assert.Equal(mi1, mi2);
             Assert.Equal(pi1, pi2);
             Assert.Equal(fi1, fi2);
+            Assert.Equal(ei1, ei2);
+            Assert.Equal(ci1, ci2);
+            Assert.Equal(pai1, pai2);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50978", TestRuntimes.Mono)]
@@ -60,56 +76,71 @@ namespace System.Reflection.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50978", TestRuntimes.Mono)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataUpdateSupported))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void GetMethod_MultipleCalls_ClearCache_DifferentObjects(bool justSpecificType)
+        [ConditionalFact(typeof(ReflectionCacheTests), nameof(IsMetadataUpdateAndRemoteExecutorSupported))]
+        public void GetMembers_MultipleCalls_ClearCache_SpecificType()
         {
-            Action<Type[]> clearCache = GetClearCacheMethod();
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables.Add("DOTNET_MODIFIABLE_ASSEMBLIES", "debug");
 
-            MethodInfo mi1 = s_type.GetMethod(nameof(GetMethod_MultipleCalls_ClearCache_DifferentObjects));
-            PropertyInfo pi1 = s_type.GetProperty(nameof(Property));
-            FieldInfo fi1 = s_type.GetField(nameof(Field1));
-            EventInfo ei1 = s_type.GetEvent(nameof(Event1));
-            ConstructorInfo ci1 = s_type.GetConstructor(Type.EmptyTypes);
-            ParameterInfo pai1 = mi1.GetParameters()[0];
-            int mi1Hash = mi1.GetHashCode();
-            int pi1Hash = pi1.GetHashCode();
-            int fi1Hash = fi1.GetHashCode();
-            int ei1Hash = ei1.GetHashCode();
-            int ci1Hash = ci1.GetHashCode();
-            int pai1Hash = pai1.GetHashCode();
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
+            {
+                Action<Type[]> clearCache = GetClearCacheMethod();
 
-            Assert.NotNull(mi1);
-            Assert.NotNull(pi1);
-            Assert.NotNull(fi1);
-            Assert.Equal(nameof(GetMethod_MultipleCalls_ClearCache_DifferentObjects), mi1.Name);
-            Assert.Equal(nameof(Property), pi1.Name);
-            Assert.Equal(nameof(Field1), fi1.Name);
+                MethodInfo mi1 = s_type.GetMethod(nameof(Method));
+                PropertyInfo pi1 = s_type.GetProperty(nameof(Property));
+                FieldInfo fi1 = s_type.GetField(nameof(Field1));
+                EventInfo ei1 = s_type.GetEvent(nameof(Event1));
+                ConstructorInfo ci1 = s_type.GetConstructor(Type.EmptyTypes);
+                ParameterInfo pai1 = mi1.GetParameters()[0];
 
-            clearCache(justSpecificType ? new[] { typeof(ReflectionCacheTests) } : null);
-            Assert.True(HotReloadDeltaApplied());
-            MethodInfo mi2 = s_type.GetMethod(nameof(GetMethod_MultipleCalls_ClearCache_DifferentObjects));
-            PropertyInfo pi2 = s_type.GetProperty(nameof(Property));
-            FieldInfo fi2 = s_type.GetField(nameof(Field1));
-            EventInfo ei2 = s_type.GetEvent(nameof(Event1));
-            ConstructorInfo ci2 = s_type.GetConstructor(Type.EmptyTypes);
-            ParameterInfo pai2 = mi2.GetParameters()[0];
-            int mi2Hash = mi2.GetHashCode();
-            int pi2Hash = pi2.GetHashCode();
-            int fi2Hash = fi2.GetHashCode();
-            int ei2Hash = ei2.GetHashCode();
-            int ci2Hash = ci2.GetHashCode();
-            int pai2Hash = pai2.GetHashCode();
+                AssertMembersAreNotNull(mi1, pi1, fi1, ei1, ci1, pai1);
 
-            Assert.NotNull(mi2);
-            Assert.NotNull(pi2);
-            Assert.NotNull(fi2);
-            Assert.Equal(nameof(GetMethod_MultipleCalls_ClearCache_DifferentObjects), mi2.Name);
-            Assert.Equal(nameof(Property), pi2.Name);
-            Assert.Equal(nameof(Field1), fi2.Name);
+                clearCache(new[] { typeof(ReflectionCacheTests) });
+                Assert.True(HotReloadDeltaApplied());
 
-            // After the Cache cleared the references of same member will be diffenet 
+                MethodInfo mi2 = s_type.GetMethod(nameof(Method));
+                PropertyInfo pi2 = s_type.GetProperty(nameof(Property));
+                FieldInfo fi2 = s_type.GetField(nameof(Field1));
+                EventInfo ei2 = s_type.GetEvent(nameof(Event1));
+                ConstructorInfo ci2 = s_type.GetConstructor(Type.EmptyTypes);
+                ParameterInfo pai2 = mi2.GetParameters()[0];
+
+                AssertMembersAreNotNull(mi2, pi2, fi2, ei2, ci2, pai2);
+
+                // After the Cache cleared the references of the same member of same type will be diffenet
+                // But they should be evaluated as Equal so that there were no issue using the same member after hot reload
+                AssertMemberReferencesNotSameButEqual(mi1, pi1, fi1, ei1, ci1, pai1, mi2, pi2, fi2, ei2, ci2, pai2);
+
+                // And the HashCode of a member before and after hot reload should produce same result 
+                AssertHashCodesAreEqual(mi1.GetHashCode(), pi1.GetHashCode(), fi1.GetHashCode(), ei1.GetHashCode(), ci1.GetHashCode(), pai1.GetHashCode(),
+                    mi2.GetHashCode(), pi2.GetHashCode(), fi2.GetHashCode(), ei2.GetHashCode(), ci2.GetHashCode(), pai2.GetHashCode());
+            }, options);
+        }
+
+        private static void AssertMembersAreNotNull(MethodInfo mi, PropertyInfo pi, FieldInfo fi, EventInfo ei, ConstructorInfo ci, ParameterInfo pai)
+        {
+            Assert.NotNull(mi);
+            Assert.NotNull(pi);
+            Assert.NotNull(fi);
+            Assert.NotNull(ei);
+            Assert.NotNull(ci);
+            Assert.NotNull(pai);
+        }
+
+        private static void AssertHashCodesAreEqual(int mi1Hash, int pi1Hash, int fi1Hash, int ei1Hash, int ci1Hash, int pai1Hash,
+            int mi2Hash, int pi2Hash, int fi2Hash, int ei2Hash, int ci2Hash, int pai2Hash)
+        {
+            Assert.Equal(mi1Hash, mi2Hash);
+            Assert.Equal(pi1Hash, pi2Hash);
+            Assert.Equal(fi1Hash, fi2Hash);
+            Assert.Equal(ei1Hash, ei2Hash);
+            Assert.Equal(ci1Hash, ci2Hash);
+            Assert.Equal(pai1Hash, pai2Hash);
+        }
+
+        private static void AssertMemberReferencesNotSameButEqual(MethodInfo mi1, PropertyInfo pi1, FieldInfo fi1, EventInfo ei1, ConstructorInfo ci1, ParameterInfo pai1,
+            MethodInfo mi2, PropertyInfo pi2, FieldInfo fi2, EventInfo ei2, ConstructorInfo ci2, ParameterInfo pai2)
+        {
             Assert.NotSame(mi1, mi2);
             Assert.NotSame(pi1, pi2);
             Assert.NotSame(fi1, fi2);
@@ -117,21 +148,53 @@ namespace System.Reflection.Tests
             Assert.NotSame(ci1, ci2);
             Assert.NotSame(pai1, pai2);
 
-            // But they should be evaluated as Equal so that there were no issue using the same member after hot reload
             Assert.Equal(mi1, mi2);
             Assert.Equal(pi1, pi2);
             Assert.Equal(fi1, fi2);
             Assert.Equal(ei1, ei2);
             Assert.Equal(ci1, ci2);
             Assert.Equal(pai1, pai2);
+        }
 
-            // And the HashCode of a member before and after hot reload should produce same result 
-            Assert.Equal(mi1Hash, mi2Hash);
-            Assert.Equal(pi1Hash, pi2Hash);
-            Assert.Equal(fi1Hash, fi2Hash);
-            Assert.Equal(ei1Hash, ei2Hash);
-            Assert.Equal(ci1Hash, ci2Hash);
-            Assert.Equal(pai1Hash, pai2Hash);
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50978", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(ReflectionCacheTests), nameof(IsMetadataUpdateAndRemoteExecutorSupported))]
+        public void GetMembers_MultipleCalls_ClearCache_All()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables.Add("DOTNET_MODIFIABLE_ASSEMBLIES", "debug");
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
+            {
+                Action<Type[]> clearCache = GetClearCacheMethod();
+
+                MethodInfo mi1 = s_type.GetMethod(nameof(Method));
+                PropertyInfo pi1 = s_type.GetProperty(nameof(Property));
+                FieldInfo fi1 = s_type.GetField(nameof(Field1));
+                EventInfo ei1 = s_type.GetEvent(nameof(Event1));
+                ConstructorInfo ci1 = s_type.GetConstructor(Type.EmptyTypes);
+                ParameterInfo pai1 = mi1.GetParameters()[0];
+
+                AssertMembersAreNotNull(mi1, pi1, fi1, ei1, ci1, pai1);
+
+                clearCache(null);
+                Assert.True(HotReloadDeltaApplied());
+                MethodInfo mi2 = s_type.GetMethod(nameof(Method));
+                PropertyInfo pi2 = s_type.GetProperty(nameof(Property));
+                FieldInfo fi2 = s_type.GetField(nameof(Field1));
+                EventInfo ei2 = s_type.GetEvent(nameof(Event1));
+                ConstructorInfo ci2 = s_type.GetConstructor(Type.EmptyTypes);
+                ParameterInfo pai2 = mi2.GetParameters()[0];
+
+                AssertMembersAreNotNull(mi2, pi2, fi2, ei2, ci2, pai2);
+
+                // After the Cache cleared the references of the same member of same type will be diffenet
+                // But they should be evaluated as Equal so that there were no issue using the same member after hot reload
+                AssertMemberReferencesNotSameButEqual(mi1, pi1, fi1, ei1, ci1, pai1, mi2, pi2, fi2, ei2, ci2, pai2);
+
+                // And the HashCode of a member before and after hot reload should produce same result 
+                AssertHashCodesAreEqual(mi1.GetHashCode(), pi1.GetHashCode(), fi1.GetHashCode(), ei1.GetHashCode(), ci1.GetHashCode(), pai1.GetHashCode(),
+                    mi2.GetHashCode(), pi2.GetHashCode(), fi2.GetHashCode(), ei2.GetHashCode(), ci2.GetHashCode(), pai2.GetHashCode());
+            }, options);
         }
 
         private static Action<Type[]> GetClearCacheMethod()

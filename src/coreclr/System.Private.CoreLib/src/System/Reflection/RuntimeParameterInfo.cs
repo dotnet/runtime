@@ -499,7 +499,7 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             obj == (object)this ||
-                (RuntimeTypeMetadataUpdateHandler.HotReloadDeltaApplied &&
+                (RuntimeTypeMetadataUpdateHandler.MetadataUpdaterSupportedAndCacheCleared &&
                     obj is RuntimeParameterInfo m &&
                     m_tkParamDef == m.m_tkParamDef &&
                     GetRuntimeModule()!.Equals(m.GetRuntimeModule()));

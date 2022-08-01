@@ -50,7 +50,7 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             obj == (object)this ||
-            (RuntimeTypeMetadataUpdateHandler.HotReloadDeltaApplied && CacheEquals(obj));
+            (RuntimeTypeMetadataUpdateHandler.MetadataUpdaterSupportedAndCacheCleared && CacheEquals(obj));
 
         public override int GetHashCode() => HashCode.Combine(MetadataToken.GetHashCode(), Module.GetHashCode());
         #endregion

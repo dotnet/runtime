@@ -209,7 +209,7 @@ namespace System.Reflection
             }
 
             return obj == (object)this ||
-                (RuntimeTypeMetadataUpdateHandler.HotReloadDeltaApplied &&
+                (RuntimeTypeMetadataUpdateHandler.MetadataUpdaterSupportedAndCacheCleared &&
                     obj is RuntimeMethodInfo m &&
                     m.MetadataToken == MetadataToken &&
                     RuntimeTypeHandle.GetModule(m_declaringType).Equals(RuntimeTypeHandle.GetModule(m.m_declaringType)));
