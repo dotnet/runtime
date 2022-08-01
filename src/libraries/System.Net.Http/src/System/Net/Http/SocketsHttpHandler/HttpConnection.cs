@@ -67,7 +67,7 @@ namespace System.Net.Http
         private int _readLength;
 
         private long _idleSinceTickCount;
-        private int _keepAliveTimeoutSeconds;
+        private int _keepAliveTimeoutSeconds; // 0 == no timeout
         private bool _inUse;
         private bool _detachedFromPool;
         private bool _canRetry;
@@ -236,11 +236,10 @@ namespace System.Net.Http
 
         private bool CheckKeepAliveTimeoutExceeded()
         {
-            // Avoid reusing a connection if there is less than one second remaining before the timeout.
-            const int TimeoutOffsetSeconds = 1;
-
+            // We only honor a Keep-Alive timeout on HTTP/1.0 responses.
+            // If _keepAliveTimeoutSeconds is 0, no timeout has been set.
             return _keepAliveTimeoutSeconds != 0 &&
-                GetIdleTicks(Environment.TickCount64) >= (_keepAliveTimeoutSeconds - TimeoutOffsetSeconds) * 1000;
+                GetIdleTicks(Environment.TickCount64) >= _keepAliveTimeoutSeconds * 1000;
         }
 
         private ValueTask<int>? ConsumeReadAheadTask()
@@ -1150,7 +1149,7 @@ namespace System.Net.Http
                                 HeaderUtilities.TryParseInt32(nameValue.Value, out int timeout) &&
                                 timeout >= 0)
                             {
-                                if (timeout <= 1)
+                                if (timeout == 0)
                                 {
                                     _connectionClose = true;
                                 }
