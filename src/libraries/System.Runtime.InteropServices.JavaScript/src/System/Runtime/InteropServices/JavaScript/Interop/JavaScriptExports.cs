@@ -62,6 +62,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     result = (Task<int>)method.Invoke(null, argsToPass)!;
                 }
+                else
+                {
+                    throw new InvalidProgramException(method.ReturnType.FullName);
+                }
                 arg_result.ToJS(result, (ref JSMarshalerArgument arg, int value) =>
                 {
                     arg.ToJS(value);
