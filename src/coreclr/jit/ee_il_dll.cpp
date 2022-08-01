@@ -87,7 +87,7 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
     {
         int stdoutFd = _fileno(procstdout());
         // Check fileno error output(s) -1 may overlap with errno result
-        // but is included for completness.
+        // but is included for completeness.
         // We want to detect the case where the initial handle is null
         // or bogus and avoid making further calls.
         if ((stdoutFd != -1) && (stdoutFd != -2) && (errno != EINVAL))

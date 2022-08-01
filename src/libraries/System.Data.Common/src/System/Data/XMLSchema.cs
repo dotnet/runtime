@@ -25,7 +25,7 @@ namespace System.Data
         internal static void SetProperties(object instance, XmlAttributeCollection attrs)
         {
             // This is called from both XSD and XDR schemas.
-            // Do we realy need it in XSD ???
+            // Do we really need it in XSD ???
             for (int i = 0; i < attrs.Count; i++)
             {
                 if (attrs[i].NamespaceURI == Keywords.MSDNS)
@@ -259,7 +259,7 @@ namespace System.Data
         internal static void SetProperties(object instance, XmlAttribute[]? attrs)
         {
             // This is called from both XSD and XDR schemas.
-            // Do we realy need it in XSD ???
+            // Do we really need it in XSD ???
             if (attrs == null)
                 return;
             for (int i = 0; i < attrs.Length; i++)
@@ -724,7 +724,7 @@ namespace System.Data
                 }
                 // we should not write it also
                 setRootNStoDataSet = true;
-                //incase of Root is not mapped to DataSet and is mapped to DataTable instead; to be backward compatable
+                //incase of Root is not mapped to DataSet and is mapped to DataTable instead; to be backward compatible
                 // we need to set the Namespace of Root to DataSet's namespace also(it would be NS of First DataTable in collection)
             }
 
@@ -1899,7 +1899,7 @@ namespace System.Data
             if (index < 0)
             {
 #if DEBUG
-                // Let's check that we realy don't have this name:
+                // Let's check that we really don't have this name:
                 foreach (NameType nt in s_mapNameTypeXsd)
                 {
                     Debug.Assert(nt.name != name, $"FindNameType('{name}') -- failed. Existed name not found");
@@ -1959,7 +1959,7 @@ namespace System.Data
             if (typeNode.QualifiedName.Name != null && typeNode.QualifiedName.Name.Length != 0 && typeNode.QualifiedName.Namespace != Keywords.XSDNS)
             { // this means UDSimpleType
                 xsdType = new SimpleType(typeNode);
-                strType = typeNode.QualifiedName.ToString(); // use qualifed name
+                strType = typeNode.QualifiedName.ToString(); // use qualified name
                 type = ParseDataType(typeNode.QualifiedName.ToString());
             }
             else
@@ -2215,7 +2215,7 @@ namespace System.Data
                 if (node.QualifiedName.Name != null && node.QualifiedName.Name.Length != 0 && node.QualifiedName.Namespace != Keywords.XSDNS)
                 {
                     // this means UDSimpleType
-                    strType = node.QualifiedName.ToString(); // use qualifed name
+                    strType = node.QualifiedName.ToString(); // use qualified name
                     type = ParseDataType(node.QualifiedName.ToString()); // search with QName
                 }
                 else
@@ -2378,7 +2378,7 @@ namespace System.Data
                 // it should be  user defined  Named  simple type
                 if (((XmlSchemaSimpleType)typeNode).Name != null && ((XmlSchemaSimpleType)typeNode).Name!.Length != 0 && ((XmlSchemaSimpleType)typeNode).QualifiedName.Namespace != Keywords.XSDNS)
                 {
-                    strType = ((XmlSchemaSimpleType)typeNode).QualifiedName.ToString(); // use qualifed name
+                    strType = ((XmlSchemaSimpleType)typeNode).QualifiedName.ToString(); // use qualified name
                     type = ParseDataType(strType);
                 }
                 else
@@ -2485,7 +2485,7 @@ namespace System.Data
 
 
             if (!elem.RefName.IsEmpty || elem.QualifiedName.Namespace != table.Namespace)
-            { // if ref element (or in diferent NS) it is global element, so form MUST BE Qualified
+            { // if ref element (or in different NS) it is global element, so form MUST BE Qualified
                 column.Namespace = elem.QualifiedName.Namespace;
                 column.Namespace = GetStringAttribute(el, "targetNamespace", column.Namespace);
             }

@@ -16,7 +16,7 @@
     <!--
       Microsoft.Net.Test.Sdk has a dependency on Newtonsoft.Json v9.0.1. We upgrade the dependency version
       with the one used in libraries to have a consistent set of dependency versions. Additionally this works
-      around a dupliate type between System.Runtime.Serialization.Formatters and Newtonsoft.Json.
+      around a duplicate type between System.Runtime.Serialization.Formatters and Newtonsoft.Json.
     -->
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
   </ItemGroup>

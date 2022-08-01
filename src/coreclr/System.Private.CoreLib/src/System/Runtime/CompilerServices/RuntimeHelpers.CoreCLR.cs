@@ -8,11 +8,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
+        private static int s_pointerHashSeed;
+
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
@@ -37,7 +40,7 @@ namespace System.Runtime.CompilerServices
         // Of course, reference types are not cloned.
         //
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [return: NotNullIfNotNull("obj")]
+        [return: NotNullIfNotNull(nameof(obj))]
         public static extern object? GetObjectValue(object? obj);
 
         // RunClassConstructor causes the class constructor for the given type to be triggered
@@ -331,8 +334,8 @@ namespace System.Runtime.CompilerServices
         [StackTraceHidden]
         private static unsafe void DispatchTailCalls(
             IntPtr callersRetAddrSlot,
-            delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> callTarget,
-            IntPtr retVal)
+            delegate*<IntPtr, ref byte, PortableTailCallFrame*, void> callTarget,
+            ref byte retVal)
         {
             IntPtr callersRetAddr;
             TailCallTls* tls = GetTailCallInfo(callersRetAddrSlot, &callersRetAddr);
@@ -354,7 +357,7 @@ namespace System.Runtime.CompilerServices
 
                 do
                 {
-                    callTarget(tls->ArgBuffer, retVal, &newFrame);
+                    callTarget(tls->ArgBuffer, ref retVal, &newFrame);
                     callTarget = newFrame.NextCall;
                 } while (callTarget != null);
             }
@@ -397,6 +400,31 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration);
+
+        internal static int GetHashCodeOfPtr(IntPtr ptr)
+        {
+            int hashCode = (int)ptr;
+
+            if (hashCode == 0)
+            {
+                return 0;
+            }
+
+            int seed = s_pointerHashSeed;
+
+            // Initialize s_pointerHashSeed lazily
+            if (seed == 0)
+            {
+                // We use the first non-0 pointer as the seed, all hashcodes will be based off that.
+                // This is to make sure that we only reveal relative memory addresses and never absolute ones.
+                seed = hashCode;
+                Interlocked.CompareExchange(ref s_pointerHashSeed, seed, 0);
+                seed = s_pointerHashSeed;
+            }
+
+            Debug.Assert(s_pointerHashSeed != 0);
+            return hashCode - seed;
+        }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
@@ -663,7 +691,7 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct PortableTailCallFrame
     {
         public IntPtr TailCallAwareReturnAddress;
-        public delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> NextCall;
+        public delegate*<IntPtr, ref byte, PortableTailCallFrame*, void> NextCall;
     }
 
     [StructLayout(LayoutKind.Sequential)]

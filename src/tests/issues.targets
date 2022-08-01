@@ -190,9 +190,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/**">
             <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/nested/nestedtry/throwinnestedtrycatch_il_r/*">
-            <Issue>https://github.com/dotnet/runtime/issues/66327</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm64 All OS -->
@@ -226,9 +223,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_590771/DevDiv_590771/*">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_35821/GitHub_35821/*">
-            <Issue>https://github.com/dotnet/runtime/issues/66921</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
             <Issue>https://github.com/dotnet/runtime/issues/67870</Issue>
@@ -879,7 +873,7 @@
             <Issue>By Test Infrastructure design</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/RVAInit/nested/*">
-            <!-- Data refered from static field is dropped -->
+            <!-- Data referred from static field is dropped -->
             <Issue>Bug</Issue>
         </ExcludeList>
     </ItemGroup>
@@ -931,10 +925,22 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/AdvSimd.Arm64/AdvSimd.Arm64_Part2_r/*">
             <Issue>https://github.com/dotnet/runtime/issues/63856</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/*">
+            <Issue>https://github.com/dotnet/runtime/issues/72822</Issue>
+        </ExcludeList>
     </ItemGroup>
 
       <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/NegativeTestCases/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/DiamondShape/svm_diamondshape_d/*">
+            <Issue>https://github.com/dotnet/runtime/issues/72589</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/DiamondShape/svm_diamondshape_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/72589</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/callconvs/TestCallingConventions/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/153</Issue>
         </ExcludeList>
@@ -1363,24 +1369,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader\DefaultInterfaceMethods\constrainedcall\constrained2\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader\DefaultInterfaceMethods\constrainedcall\constrained2_gm\*" />
 
-        <!-- Catch(T) in shared code -->
-        <!-- https://github.com/dotnet/runtimelab/issues/204 -->
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\throwincatch_generics_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\throwincatch_generics_do\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\throwincatch_generics_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\throwincatch_generics_ro\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchnestedtype_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchnestedtype_do\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchnestedtype_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchnestedtype_ro\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchsimpletype_d\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchsimpletype_do\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchsimpletype_r\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\eh\generics\trycatchsimpletype_ro\*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/InstructionCombining/ArrayLengthArithmetic/*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b441487/b441487/*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_21990/GitHub_21990/*" />
-
         <!-- Arrays with non-zero lower bounds -->
         <!-- https://github.com/dotnet/runtimelab/issues/155 -->
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\Arrays\huge\huge_b_il_r\*" />
@@ -1434,9 +1422,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\UnitTest_GVM\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\UnitTestDelegates\*" />
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\MethodImpl\CovariantReturns\UnitTest\OverrideMoreDerivedReturn\*" />
-
-        <!-- Static virtual methods -->
-        <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\StaticVirtualMethods\**" />
     </ItemGroup>
 
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
@@ -1451,6 +1436,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Generics/Exceptions/GenericCatchInterfaceProgram/**">
+            <Issue>https://github.com/dotnet/runtime/issues/72827</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
             <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
         </ExcludeList>
@@ -1817,7 +1805,7 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/tailcall/mutual_recursion/**">
-            <Issue>needs triage</Issue>
+            <Issue>FSharp Test</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/newarr/newarr/**">
             <Issue>needs triage</Issue>
@@ -1959,6 +1947,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_72265/**">
             <Issue>https://github.com/dotnet/runtime/issues/72016</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_72845/**">
+            <Issue>FSharp Test</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/V1.2-M02/b10828/**">
             <Issue>needs triage</Issue>
@@ -2777,6 +2768,10 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
             <Issue>https://github.com/dotnet/runtime/issues/67675</Issue>
         </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/**">
+            <Issue>https://github.com/dotnet/runtime/issues/72460</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' ">
@@ -3063,6 +3058,10 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
             <Issue>https://github.com/dotnet/runtime/issues/67675</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/**">
+            <Issue>https://github.com/dotnet/runtime/issues/72460</Issue>
         </ExcludeList>
     </ItemGroup>
 

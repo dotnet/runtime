@@ -348,7 +348,7 @@ namespace System.Text.RegularExpressions.Generator
             bool needsTryFind = false, needsTryMatch = false;
             RegexNode root = rm.Tree.Root.Child(0);
 
-            // We can alway emit our most general purpose scan loop, but there are common situations we can easily check
+            // We can always emit our most general purpose scan loop, but there are common situations we can easily check
             // for where we can emit simpler/better code instead.
             if (root.Kind is RegexNodeKind.Empty)
             {
@@ -4701,7 +4701,7 @@ namespace System.Text.RegularExpressions.Generator
             };
         }
 
-        /// <summary>Gets an identifer to describe a capture group.</summary>
+        /// <summary>Gets an identifier to describe a capture group.</summary>
         private static string DescribeCapture(int capNum, RegexMethod rm)
         {
             // If we can get a capture name from the captures collection and it's not just a numerical representation of the group, use it.

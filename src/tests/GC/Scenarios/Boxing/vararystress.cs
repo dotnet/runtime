@@ -6,7 +6,7 @@
 /* Coverage:    Test GC and Variant Array
 /* What:    Use SetVarAry method that calls himself to generate
 /* Variant array elements. The elements are Variant arrays whose
-/* elememts also are Variant array. iRep is the max embeded level
+/* elememts also are Variant array. iRep is the max embedded level
 /* number of these Variant array. Check out if GC can handle these
 /* objects
 /**************************************************************/

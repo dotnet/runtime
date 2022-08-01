@@ -564,7 +564,7 @@ void GCToOSInterface::Shutdown()
 }
 
 // Get numeric id of the current thread if possible on the
-// current platform. It is indended for logging purposes only.
+// current platform. It is intended for logging purposes only.
 // Return:
 //  Numeric id of the current thread or 0 if the
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()

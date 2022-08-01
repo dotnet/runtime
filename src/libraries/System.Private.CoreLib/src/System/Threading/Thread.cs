@@ -540,8 +540,8 @@ namespace System.Threading
         public static int VolatileRead(ref int address) => Volatile.Read(ref address);
         public static long VolatileRead(ref long address) => Volatile.Read(ref address);
         public static IntPtr VolatileRead(ref IntPtr address) => Volatile.Read(ref address);
-        [return: NotNullIfNotNull("address")]
-        public static object? VolatileRead([NotNullIfNotNull("address")] ref object? address) => Volatile.Read(ref address);
+        [return: NotNullIfNotNull(nameof(address))]
+        public static object? VolatileRead([NotNullIfNotNull(nameof(address))] ref object? address) => Volatile.Read(ref address);
         [CLSCompliant(false)]
         public static sbyte VolatileRead(ref sbyte address) => Volatile.Read(ref address);
         public static float VolatileRead(ref float address) => Volatile.Read(ref address);
@@ -559,7 +559,7 @@ namespace System.Threading
         public static void VolatileWrite(ref int address, int value) => Volatile.Write(ref address, value);
         public static void VolatileWrite(ref long address, long value) => Volatile.Write(ref address, value);
         public static void VolatileWrite(ref IntPtr address, IntPtr value) => Volatile.Write(ref address, value);
-        public static void VolatileWrite([NotNullIfNotNull("value")] ref object? address, object? value) => Volatile.Write(ref address, value);
+        public static void VolatileWrite([NotNullIfNotNull(nameof(value))] ref object? address, object? value) => Volatile.Write(ref address, value);
         [CLSCompliant(false)]
         public static void VolatileWrite(ref sbyte address, sbyte value) => Volatile.Write(ref address, value);
         public static void VolatileWrite(ref float address, float value) => Volatile.Write(ref address, value);

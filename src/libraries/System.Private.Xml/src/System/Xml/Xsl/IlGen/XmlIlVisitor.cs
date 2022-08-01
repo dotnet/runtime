@@ -2775,7 +2775,7 @@ namespace System.Xml.Xsl.IlGen
             XmlILConstructInfo info = XmlILConstructInfo.Read(ndElem);
             bool callChk;
             GenerateNameType nameType;
-            Debug.Assert(XmlILConstructInfo.Read(ndElem).PushToWriterFirst, "Element contruction should always be pushed to writer.");
+            Debug.Assert(XmlILConstructInfo.Read(ndElem).PushToWriterFirst, "Element construction should always be pushed to writer.");
 
             // Runtime checks must be made in the following cases:
             //   1. Xml state is not known at compile-time, or is illegal
@@ -3600,7 +3600,7 @@ namespace System.Xml.Xsl.IlGen
         /// Generate code for QilNodeType.XsltInvokeEarlyBound.
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:RequiresUnreferencedCode",
-            Justification = "Supressing warning about not having the RequiresUnreferencedCode attribute since we added " +
+            Justification = "Suppressing warning about not having the RequiresUnreferencedCode attribute since we added " +
             "the attribute to this subclass' constructor. This allows us to not have to annotate the whole QilNode hirerarchy.")]
         protected override QilNode VisitXsltInvokeEarlyBound(QilInvokeEarlyBound ndInvoke)
         {

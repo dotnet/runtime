@@ -1988,79 +1988,64 @@
             "operator": "or",
             "operands": [
               {
-                "operator": "and",
-                "operands": [
-                  {
-                    "operator": "or",
-                    "operands": [
-                      {
-                        "name": "hasLabel",
-                        "parameters": {
-                          "label": "area-AssemblyLoader-coreclr"
-                        }
-                      },
-                      {
-                        "name": "hasLabel",
-                        "parameters": {
-                          "label": "area-Host"
-                        }
-                      },
-                      {
-                        "name": "hasLabel",
-                        "parameters": {
-                          "label": "area-HostModel"
-                        }
-                      },
-                      {
-                        "name": "hasLabel",
-                        "parameters": {
-                          "label": "area-NativeAOT-coreclr"
-                        }
-                      },
-                      {
-                        "name": "hasLabel",
-                        "parameters": {
-                          "label": "area-Single-File"
-                        }
-                      }
-                    ]
-                  }
-                ]
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-AssemblyLoader-coreclr"
+                }
               },
               {
-                "operator": "or",
-                "operands": [
-                  {
-                    "name": "labelAdded",
-                    "parameters": {
-                      "label": "area-AssemblyLoader-coreclr"
-                    }
-                  },
-                  {
-                    "name": "labelAdded",
-                    "parameters": {
-                      "label": "area-Host"
-                    }
-                  },
-                  {
-                    "name": "labelAdded",
-                    "parameters": {
-                      "label": "area-HostModel"
-                    }
-                  },
-                  {
-                    "name": "labelAdded",
-                    "parameters": {
-                      "label": "area-NativeAOT-coreclr"
-                    }
-                  },
-                  {
-                    "name": "labelAdded",
-                    "parameters": {
-                      "label": "area-Single-File"
-                    }
-                  }
-                ]
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Host"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-HostModel"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-NativeAOT-coreclr"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Single-File"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "area-AssemblyLoader-coreclr"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "area-Host"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "area-HostModel"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "area-NativeAOT-coreclr"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "area-Single-File"
+                }
               }
             ]
           },

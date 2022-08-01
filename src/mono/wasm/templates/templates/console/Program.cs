@@ -3,6 +3,8 @@ using System.Runtime.InteropServices.JavaScript;
 
 Console.WriteLine("Hello, Console!");
 
+return 0;
+
 public partial class MyClass
 {
     [JSExport]

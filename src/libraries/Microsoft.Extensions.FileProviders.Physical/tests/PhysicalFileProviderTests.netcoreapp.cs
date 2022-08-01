@@ -107,7 +107,11 @@ namespace Microsoft.Extensions.FileProviders
 
             // Act - Change link target to file 2.
             File.Delete(linkPath);
-            File.CreateSymbolicLink(linkPath, file2Path);
+
+            RetryHelper.Execute(() =>
+            {
+                File.CreateSymbolicLink(linkPath, file2Path); // can fail, presumably due to some latency of delete of linkPath
+            }, maxAttempts: 10, retryWhen: e => e is UnauthorizedAccessException);
 
             // Assert - It should report the change regardless of the timestamp being older.
             Assert.True(await tcs.Task,

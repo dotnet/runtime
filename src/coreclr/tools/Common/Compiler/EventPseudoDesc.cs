@@ -47,6 +47,7 @@ namespace ILCompiler
             }
         }
 
+<<<<<<< HEAD:src/coreclr/tools/Common/Compiler/EventPseudoDesc.cs
         public CustomAttributeHandleCollection GetCustomAttributes
         {
             get
@@ -55,6 +56,8 @@ namespace ILCompiler
             }
         }
 
+=======
+>>>>>>> e6d5bba17d727b8a2d196186f2e181d9bf73578d:src/coreclr/tools/aot/ILCompiler.Compiler/Compiler/EventPseudoDesc.cs
         public MetadataType OwningType
         {
             get

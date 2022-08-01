@@ -42,7 +42,7 @@ public static partial class XmlSerializerTests
     public static void Xml_TypeWithDateTimePropertyAsXmlTime()
     {
         DateTime localTime = new DateTime(549269870000L, DateTimeKind.Local);
-        TypeWithDateTimePropertyAsXmlTime localTimeOjbect = new TypeWithDateTimePropertyAsXmlTime()
+        TypeWithDateTimePropertyAsXmlTime localTimeObject = new TypeWithDateTimePropertyAsXmlTime()
         {
             Value = localTime
         };
@@ -50,24 +50,24 @@ public static partial class XmlSerializerTests
         // This is how we convert DateTime from time to string.
         var localTimeDateTime = DateTime.MinValue + localTime.TimeOfDay;
         string localTimeString = localTimeDateTime.ToString("HH:mm:ss.fffffffzzzzzz", DateTimeFormatInfo.InvariantInfo);
-        TypeWithDateTimePropertyAsXmlTime localTimeOjbectRoundTrip = SerializeAndDeserialize(localTimeOjbect,
+        TypeWithDateTimePropertyAsXmlTime localTimeObjectRoundTrip = SerializeAndDeserialize(localTimeObject,
 string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 <TypeWithDateTimePropertyAsXmlTime xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">{0}</TypeWithDateTimePropertyAsXmlTime>", localTimeString));
 
-        Assert.StrictEqual(localTimeOjbect.Value, localTimeOjbectRoundTrip.Value);
+        Assert.StrictEqual(localTimeObject.Value, localTimeObjectRoundTrip.Value);
 
-        TypeWithDateTimePropertyAsXmlTime utcTimeOjbect = new TypeWithDateTimePropertyAsXmlTime()
+        TypeWithDateTimePropertyAsXmlTime utcTimeObject = new TypeWithDateTimePropertyAsXmlTime()
         {
             Value = new DateTime(549269870000L, DateTimeKind.Utc)
         };
 
         if (IsTimeSpanSerializationAvailable)
         {
-            TypeWithDateTimePropertyAsXmlTime utcTimeRoundTrip = SerializeAndDeserialize(utcTimeOjbect,
+            TypeWithDateTimePropertyAsXmlTime utcTimeRoundTrip = SerializeAndDeserialize(utcTimeObject,
     @"<?xml version=""1.0"" encoding=""utf-8""?>
 <TypeWithDateTimePropertyAsXmlTime xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">15:15:26.9870000Z</TypeWithDateTimePropertyAsXmlTime>");
 
-            Assert.StrictEqual(utcTimeOjbect.Value, utcTimeRoundTrip.Value);
+            Assert.StrictEqual(utcTimeObject.Value, utcTimeRoundTrip.Value);
         }
     }
 
