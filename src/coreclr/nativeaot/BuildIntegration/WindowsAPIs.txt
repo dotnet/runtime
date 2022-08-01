@@ -2334,6 +2334,11 @@ ws2_32!WSCUnInstallNameSpace
 ws2_32!WSCUpdateProvider
 ws2_32!WSCWriteNameSpaceOrder
 ws2_32!WSCWriteProviderOrder
+
+#
+# Include all memory allocation APIs from ucrt to ensure that all of them use allocator
+# from the same ucrt copy. Also include the frequently used basic memory manipulation APIs.
+#
 ucrtbase!_aligned_free
 ucrtbase!_aligned_malloc
 ucrtbase!_aligned_msize
