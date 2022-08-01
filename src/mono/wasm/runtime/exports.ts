@@ -14,6 +14,7 @@ import { export_binding_api, export_mono_api } from "./net6-legacy/exports-legac
 import { export_internal } from "./exports-internal";
 import { export_linker } from "./exports-linker";
 import { init_polyfills } from "./polyfills";
+import { set_legacy_exports } from "./net6-legacy/imports";
 
 export const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
 export let __linker_exports: any = null;
@@ -34,6 +35,7 @@ function initializeImportsAndExports(
 
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
     set_imports_exports(imports, exports);
+    set_legacy_exports(exports);
     init_polyfills(replacements);
 
     // here we merge methods from the local objects into exported objects

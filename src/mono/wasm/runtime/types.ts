@@ -125,30 +125,12 @@ export type AssetBehaviours =
     | "dotnetwasm"; // the binary of the dotnet runtime
 
 export type RuntimeHelpers = {
-    get_call_sig_ref: MonoMethod;
-    complete_task_method: MonoMethod;
-    create_task_method: MonoMethod;
-    call_delegate: MonoMethod;
     runtime_interop_module: MonoAssembly;
     runtime_interop_namespace: string;
     runtime_interop_exports_classname: string;
     runtime_interop_exports_class: MonoClass;
-    runtime_legacy_exports_classname: string;
-    runtime_legacy_exports_class: MonoClass;
 
-    _box_buffer_size: number;
-    _unbox_buffer_size: number;
-
-    _box_buffer: VoidPtr;
-    _unbox_buffer: VoidPtr;
     _i52_error_scratch_buffer: Int32Ptr;
-    _box_root: any;
-    // A WasmRoot that is guaranteed to contain 0
-    _null_root: any;
-    _class_int32: MonoClass;
-    _class_uint32: MonoClass;
-    _class_double: MonoClass;
-    _class_boolean: MonoClass;
     mono_wasm_load_runtime_done: boolean;
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
@@ -166,8 +148,6 @@ export type RuntimeHelpers = {
     locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
 }
-
-export const wasm_type_symbol = Symbol.for("wasm type");
 
 export type GlobalizationMode =
     "icu" | // load ICU globalization data from any runtime assets with behavior "icu".

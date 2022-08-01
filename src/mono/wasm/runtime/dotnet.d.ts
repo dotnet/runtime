@@ -391,7 +391,13 @@ declare function getF32(offset: _MemOffset): number;
 declare function getF64(offset: _MemOffset): number;
 declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
 
+/**
+ * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
+ */
 declare function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void>;
+/**
+ * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
+ */
 declare function mono_run_main(main_assembly_name: string, args: string[]): Promise<number>;
 
 declare function mono_wasm_setenv(name: string, value: string): void;

@@ -362,17 +362,17 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     }
     mono_assert(isThenable(value), "Value is not a Promise");
 
-    const gc_handle: GCHandle = runtimeHelpers.javaScriptExports._create_task_callback();
+    const gc_handle: GCHandle = runtimeHelpers.javaScriptExports.create_task_callback();
     set_gc_handle(arg, gc_handle);
     set_arg_type(arg, MarshalerType.Task);
     const holder = new TaskCallbackHolder(value);
     setup_managed_proxy(holder, gc_handle);
 
     value.then(data => {
-        runtimeHelpers.javaScriptExports._complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
+        runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
         teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
     }).catch(reason => {
-        runtimeHelpers.javaScriptExports._complete_task(gc_handle, reason, null, undefined);
+        runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
         teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed
     });
 }
@@ -454,16 +454,16 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
                 set_js_handle(arg, js_handle);
             }
             else if (value instanceof Uint8Array) {
-                _marshal_array_to_cs_impl(arg, value, MarshalerType.Byte);
+                marshal_array_to_cs_impl(arg, value, MarshalerType.Byte);
             }
             else if (value instanceof Float64Array) {
-                _marshal_array_to_cs_impl(arg, value, MarshalerType.Double);
+                marshal_array_to_cs_impl(arg, value, MarshalerType.Double);
             }
             else if (value instanceof Int32Array) {
-                _marshal_array_to_cs_impl(arg, value, MarshalerType.Int32);
+                marshal_array_to_cs_impl(arg, value, MarshalerType.Int32);
             }
             else if (Array.isArray(value)) {
-                _marshal_array_to_cs_impl(arg, value, MarshalerType.Object);
+                marshal_array_to_cs_impl(arg, value, MarshalerType.Object);
             }
             else if (value instanceof Int16Array
                 || value instanceof Int8Array
@@ -511,10 +511,10 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
 function _marshal_array_to_cs(arg: JSMarshalerArgument, value: Array<any> | TypedArray, sig?: JSMarshalerType): void {
     mono_assert(!!sig, "Expected valid sig parameter");
     const element_type = get_signature_arg1_type(sig);
-    _marshal_array_to_cs_impl(arg, value, element_type);
+    marshal_array_to_cs_impl(arg, value, element_type);
 }
 
-function _marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<any> | TypedArray, element_type: MarshalerType): void {
+export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined, element_type: MarshalerType): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     }
