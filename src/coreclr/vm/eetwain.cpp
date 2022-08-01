@@ -777,7 +777,7 @@ void EECodeManager::FixContext( ContextType     ctxType,
     if (ctxType == FILTER_CONTEXT)
         *ppEndRegion = (size_t *)pBaseSPslots + 1;
 
-    /*  This is just a simple assigment of throwObject to ctx->Eax,
+    /*  This is just a simple assignment of throwObject to ctx->Eax,
         just pretend the cast goo isn't there.
      */
 
@@ -2115,7 +2115,7 @@ unsigned scanArgRegTable(PTR_CBYTE    table,
  *
  * Note on the encoding used for interior pointers
  *
- *   The iptr encoding must immediately preceed a call encoding.  It is used to
+ *   The iptr encoding must immediately precede a call encoding.  It is used to
  *   transform a normal GC pointer addresses into an interior pointers for GC purposes.
  *   The mask supplied to the iptr encoding is read from the least signicant bit
  *   to the most signicant bit. (i.e the lowest bit is read first)
@@ -2763,7 +2763,7 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
 
                 if  (argOfs >= MAX_PTRARG_OFS)
                 {
-                     _ASSERTE_ALL_BUILDS("clr/src/VM/eetwain.cpp", !"scanArgRegTableI: args pushed 'too deep'");
+                     _ASSERTE_ALL_BUILDS(!"scanArgRegTableI: args pushed 'too deep'");
                 }
                 else
                 {

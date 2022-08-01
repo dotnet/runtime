@@ -43,7 +43,7 @@ namespace Microsoft.Win32.RegistryTests
         {
             using (var rk = TestRegistryKey.CreateSubKey(TestRegistryKeyName))
             {
-                rk.CreateSubKey(TestRegistryKeyName);
+                using RegistryKey created = rk.CreateSubKey(TestRegistryKeyName);
                 rk.DeleteSubKeyTree("");
             }
 
@@ -54,8 +54,9 @@ namespace Microsoft.Win32.RegistryTests
         public void DeleteSubKeyTreeTest()
         {
             // Creating new SubKey and deleting it
-            TestRegistryKey.CreateSubKey(TestRegistryKeyName);
-            Assert.NotNull(TestRegistryKey.OpenSubKey(TestRegistryKeyName));
+            using RegistryKey created = TestRegistryKey.CreateSubKey(TestRegistryKeyName);
+            using RegistryKey opened = TestRegistryKey.OpenSubKey(TestRegistryKeyName);
+            Assert.NotNull(opened);
 
             TestRegistryKey.DeleteSubKeyTree(TestRegistryKeyName);
             Assert.Null(TestRegistryKey.OpenSubKey(TestRegistryKeyName));
@@ -67,13 +68,15 @@ namespace Microsoft.Win32.RegistryTests
             // [] Add in multiple subkeys and then delete the root key
             string[] subKeyNames = Enumerable.Range(1, 9).Select(x => "BLAH_" + x.ToString()).ToArray();
 
-            using (var rk = TestRegistryKey.CreateSubKey(TestRegistryKeyName))
+            using (RegistryKey rk = TestRegistryKey.CreateSubKey(TestRegistryKeyName))
             {
                 foreach (var subKeyName in subKeyNames)
                 {
-                    var rk2 = rk.CreateSubKey(subKeyName);
+                    using RegistryKey rk2 = rk.CreateSubKey(subKeyName);
                     Assert.NotNull(rk2);
-                    Assert.NotNull(rk2.CreateSubKey("Test"));
+
+                    using RegistryKey rk3 = rk2.CreateSubKey("Test");
+                    Assert.NotNull(rk3);
                 }
 
                 Assert.Equal(subKeyNames, rk.GetSubKeyNames());

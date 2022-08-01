@@ -19,6 +19,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.Generated.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\LegacyExports.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Runtime.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Array.cs" />

@@ -547,8 +547,8 @@ namespace System.Text.RegularExpressions.Tests
 
             // Expressions containing Nothing (subexpressions that never match).
             // (Lookarounds aren't supported by NonBacktracking, but optimizer reduces (?!) to Nothing, which is supported.)
-            yield return ("(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty); 
-            yield return ("(?!)|((?!))|(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty); 
+            yield return ("(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty);
+            yield return ("(?!)|((?!))|(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty);
             yield return ("cat(?!)", "cat", RegexOptions.None, 0, 3, false, string.Empty);
             yield return ("(?<!)", "cat", RegexOptions.None, 0, 3, false, string.Empty);
             yield return ("(?!)|cat", "cat", RegexOptions.None, 0, 3, true, "cat");
@@ -621,7 +621,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "----       ", RegexOptions.RightToLeft, 0, 11, true, "---       ");
             }
 
-            // Character Class Substraction
+            // Character Class Subtraction
 
             // No Negation
             yield return ("[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
@@ -1967,7 +1967,7 @@ namespace System.Text.RegularExpressions.Tests
                 // b1 is semantically identical to \b except for \u200c and \u200d
                 yield return new object[] { engine, $@"{b1}\w+{b1}", "one two three", 3 };
                 yield return new object[] { engine, $@"{b1}\w+{b1}", "on\u200ce two three", 4 };
-                // contrast between using \W = [^\w] vs negative lookaround !\w 
+                // contrast between using \W = [^\w] vs negative lookaround !\w
                 yield return new object[] { engine, $@"{b2}\w+{b2}", "one two three", 1 };
                 yield return new object[] { engine, $@"{b2}\w+{b2}", "one two", 0 };
             }
@@ -2149,7 +2149,7 @@ namespace System.Text.RegularExpressions.Tests
                 // Whitespace
                 yield return new object[] { engine, @"\s+", RegexOptions.None, "===== \n\t\v\r ====", new (int, int, string)[] { (5, 6, " \n\t\v\r ") } };
 
-                // Unicode character classes, the input string uses the first element of each character class 
+                // Unicode character classes, the input string uses the first element of each character class
                 yield return new object[] {
                         engine,
                         @"\p{Lu}\p{Ll}\p{Lt}\p{Lm}\p{Lo}\p{Mn}\p{Mc}\p{Me}\p{Nd}\p{Nl}", RegexOptions.None,

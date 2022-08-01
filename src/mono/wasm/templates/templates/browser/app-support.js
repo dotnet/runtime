@@ -142,12 +142,6 @@ function applyArguments() {
     }
 }
 
-const anchorTagForAbsoluteUrlConversions = document.createElement('a');
-const toAbsoluteUrl = function toAbsoluteUrl(path, prefix) {
-    anchorTagForAbsoluteUrlConversions.href = prefix + path;
-    return anchorTagForAbsoluteUrlConversions.href;
-}
-
 try {
     const argsResponse = await fetch('./runArgs.json')
     if (!argsResponse.ok) {
@@ -163,7 +157,6 @@ try {
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
-        locateFile: toAbsoluteUrl,
         onConfigLoaded: (config) => {
             if (!Module.config) {
                 const err = new Error("Could not find ./mono-config.json. Cancelling run");

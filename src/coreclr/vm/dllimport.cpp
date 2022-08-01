@@ -991,7 +991,7 @@ public:
         }
         else
         {
-            // Forward interop. Use StubTarget siganture
+            // Forward interop. Use StubTarget signature
             PCCOR_SIGNATURE pCallTargetSig = GetStubTargetMethodSig();
             DWORD           cCallTargetSig = GetStubTargetMethodSigLength();
 
@@ -5456,7 +5456,7 @@ namespace
             void* pvTarget = (void*)QCallResolveDllImport(pMD->GetEntrypointName());
 #ifdef _DEBUG
             CONSISTENCY_CHECK_MSGF(pvTarget != nullptr,
-                ("%s::%s is not registered using DllImportentry macro in qcallentrypoints.cpp",
+                ("%s::%s is not registered using DllImportEntry macro in qcallentrypoints.cpp",
                 pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 #endif
             pMD->SetNDirectTarget(pvTarget);

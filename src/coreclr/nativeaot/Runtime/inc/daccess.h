@@ -250,7 +250,7 @@
 // even though in target address terms one is embedded in the other.
 // The assumption of data stability means that this won't cause
 // a problem, but care must be taken with the address arithmetic,
-// as layed out in rules #2 and #3.
+// as laid out in rules #2 and #3.
 //
 // 4.  Global address references cannot be used.  Any reference to a
 //     global piece of code or data, such as a function address, global

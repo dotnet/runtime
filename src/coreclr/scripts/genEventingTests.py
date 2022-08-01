@@ -162,7 +162,7 @@ int __cdecl main(int argc, char **argv)
             Fail("One or more eventing Apis failed\\n ");
             return FAIL;
         }
-        Trace("\\n All eventing APIs were fired succesfully \\n");
+        Trace("\\n All eventing APIs were fired successfully \\n");
 #endif //defined(FEATURE_EVENT_TRACE)
 #if defined(TARGET_UNIX)
 
