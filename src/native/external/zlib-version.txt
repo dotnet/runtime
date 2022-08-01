@@ -4,6 +4,7 @@ v1.2.12
 https://github.com/madler/zlib/releases/tag/v1.2.12
 
 We have also cherry-picked into our local copy:
+https://github.com/madler/zlib/commit/ec3df00224d4b396e2ac6586ab5d25f673caa4c2
 https://github.com/madler/zlib/commit/7ecf7c7458578d05a20fa481436dd5c58db112f7
 
 And we have inserted into our local copy of zutil.h, line 196, the following declaration:
