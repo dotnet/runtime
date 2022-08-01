@@ -419,9 +419,13 @@ enum gc_oh_num
     soh = 0,
     loh = 1,
     poh = 2,
-    none = 3,
-    total_oh_count = 4
+    unknown = -1,
 };
+
+const int total_oh_count = gc_oh_num::poh + 1;
+const int recorded_committed_free_bucket = total_oh_count;
+const int recorded_committed_bookkeeping_bucket = recorded_committed_free_bucket + 1;
+const int recorded_committed_bucket_counts = recorded_committed_bookkeeping_bucket + 1;
 
 gc_oh_num gen_to_oh (int gen);
 
@@ -859,7 +863,7 @@ struct static_data
     float limit;
     float max_limit;
     uint64_t time_clock; // time after which to collect generation, in performance counts (see QueryPerformanceCounter)
-    size_t gc_clock; // nubmer of gcs after which to collect generation
+    size_t gc_clock; // number of gcs after which to collect generation
 };
 
 // The dynamic data fields are grouped into 3 categories:
@@ -1296,7 +1300,7 @@ public:
     PER_HEAP
     void verify_free_lists();
     PER_HEAP
-    void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail);
+    void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail, size_t* p_total_committed = nullptr);
     PER_HEAP
     void verify_regions (bool can_verify_gen_num, bool concurrent_p);
     PER_HEAP_ISOLATED
@@ -1476,10 +1480,14 @@ public:
     static
     void shutdown_gc();
 
-    // If the hard limit is specified, take that into consideration
-    // and this means it may modify the # of heaps.
     PER_HEAP_ISOLATED
-    size_t get_segment_size_hard_limit (uint32_t* num_heaps, bool should_adjust_num_heaps);
+    uint32_t adjust_heaps_hard_limit (uint32_t nhp);
+
+    PER_HEAP_ISOLATED
+    size_t adjust_segment_size_hard_limit_va (size_t seg_size);
+
+    PER_HEAP_ISOLATED
+    size_t adjust_segment_size_hard_limit (size_t limit, uint32_t nhp);
 
     PER_HEAP_ISOLATED
     bool should_retry_other_heap (int gen_number, size_t size);
@@ -2029,9 +2037,9 @@ protected:
     PER_HEAP_ISOLATED
     bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED
-    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1, bool* hard_limit_exceeded_p=NULL); 
+    bool virtual_commit (void* address, size_t size, int bucket, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
     PER_HEAP_ISOLATED
-    bool virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_number=-1);
+    bool virtual_decommit (void* address, size_t size, int bucket, int h_number=-1);
     PER_HEAP_ISOLATED
     void virtual_free (void* add, size_t size, heap_segment* sg=NULL);
     PER_HEAP
@@ -3799,7 +3807,7 @@ public:
     gen_to_condemn_tuning gen_to_condemn_reasons;
 
     PER_HEAP
-    size_t etw_allocation_running_amount[gc_oh_num::total_oh_count - 1];
+    size_t etw_allocation_running_amount[total_oh_count];
 
     PER_HEAP
     uint64_t total_alloc_bytes_soh;
@@ -4003,7 +4011,7 @@ public:
     size_t heap_hard_limit;
 
     PER_HEAP_ISOLATED
-    size_t heap_hard_limit_oh[total_oh_count - 1];
+    size_t heap_hard_limit_oh[total_oh_count];
 
     PER_HEAP_ISOLATED
     CLRCriticalSection check_commit_cs;
@@ -4012,7 +4020,12 @@ public:
     size_t current_total_committed;
 
     PER_HEAP_ISOLATED
-    size_t committed_by_oh[total_oh_count];
+    size_t committed_by_oh[recorded_committed_bucket_counts];
+
+#if defined (_DEBUG) && defined (MULTIPLE_HEAPS)
+    PER_HEAP
+    size_t committed_by_oh_per_heap[total_oh_count];
+#endif // _DEBUG && MULTIPLE_HEAPS
 
     // This is what GC uses for its own bookkeeping.
     PER_HEAP_ISOLATED
@@ -4814,7 +4827,7 @@ protected:
     size_t num_provisional_triggered;
 
     PER_HEAP
-    size_t allocated_since_last_gc[gc_oh_num::total_oh_count - 1];
+    size_t allocated_since_last_gc[total_oh_count];
 
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED

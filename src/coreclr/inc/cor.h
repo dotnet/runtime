@@ -2211,7 +2211,7 @@ inline ULONG CorSigCompressSignedInt(   // return number of bytes that compresse
         *(pBytes + 3) = BYTE(iData & 0xff);
         return 4;
     }
-    // Out of compressable range
+    // Out of compressible range
     return (ULONG)-1;
 } // CorSigCompressSignedInt
 

@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
-        public void CompactPrioritizesLowPriortyItems()
+        public void CompactPrioritizesLowPriorityItems()
         {
             var cache = CreateCache();
             cache.Set("key1", "Value1", new MemoryCacheEntryOptions().SetPriority(CacheItemPriority.Low));
@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Tests a race condition in Compact where CacheEntry.LastAccessed is getting updated
         /// by a different thread than what is doing the Compact, leading to sorting failing.
-        /// 
+        ///
         /// See https://github.com/dotnet/runtime/issues/61032.
         /// </summary>
         [Fact]

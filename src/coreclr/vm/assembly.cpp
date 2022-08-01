@@ -475,7 +475,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
 
             // Setup the managed proxy now, but do not actually transfer ownership to it.
             // Once everything is setup and nothing can fail anymore, the ownership will be
-            // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
+            // atomically transferred by call to LoaderAllocator::ActivateManagedTracking().
             pCollectibleLoaderAllocator->SetupManagedTracking(pKeepAlive);
             createdNewAssemblyLoaderAllocator = TRUE;
 

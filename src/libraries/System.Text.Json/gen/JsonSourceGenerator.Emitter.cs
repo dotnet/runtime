@@ -57,6 +57,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonNamingPolicyTypeRef = "global::System.Text.Json.JsonNamingPolicy";
             private const string JsonSerializerTypeRef = "global::System.Text.Json.JsonSerializer";
             private const string JsonSerializerOptionsTypeRef = "global::System.Text.Json.JsonSerializerOptions";
+            private const string JsonSerializerContextTypeRef = "global::System.Text.Json.Serialization.JsonSerializerContext";
             private const string Utf8JsonWriterTypeRef = "global::System.Text.Json.Utf8JsonWriter";
             private const string JsonConverterTypeRef = "global::System.Text.Json.Serialization.JsonConverter";
             private const string JsonConverterFactoryTypeRef = "global::System.Text.Json.Serialization.JsonConverterFactory";
@@ -1001,7 +1002,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
 
                 return $@"
 
-private static void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {valueTypeRef} {ValueVarName})
+private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {valueTypeRef} {ValueVarName})
 {{
     {GetEarlyNullCheckSource(emitNullCheck)}
     {serializeMethodBody}
@@ -1071,12 +1072,17 @@ private static void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName
                 string typeInfoPropertyTypeRef = $"{JsonTypeInfoTypeRef}<{typeCompilableName}>";
 
                 return @$"private {typeInfoPropertyTypeRef}? _{typeFriendlyName};
+/// <summary>
+/// Defines the source generated JSON serialization contract metadata for a given type.
+/// </summary>
 public {typeInfoPropertyTypeRef} {typeFriendlyName}
 {{
     get => _{typeFriendlyName} ??= {typeMetadata.CreateTypeInfoMethodName}({OptionsInstanceVariableName});
 }}
 
-private static {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
+// Intentionally not a static method because we create a delegate to it. Invoking delegates to instance
+// methods is almost as fast as virtual calls. Static methods need to go through a shuffle thunk.
+private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
 {{
     {typeInfoPropertyTypeRef}? {JsonTypeInfoReturnValueLocalVariableName} = null;
     {WrapWithCheckForCustomConverter(metadataInitSource, typeCompilableName)}
@@ -1101,6 +1107,7 @@ private static {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}
             {
                 string contextTypeRef = _currentContext.ContextTypeRef;
                 string contextTypeName = _currentContext.ContextType.Name;
+
                 int backTickIndex = contextTypeName.IndexOf('`');
                 if (backTickIndex != -1)
                 {
@@ -1112,14 +1119,23 @@ private static {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}
                 sb.Append(@$"{GetLogicForDefaultSerializerOptionsInit()}
 
 private static {contextTypeRef}? {DefaultContextBackingStaticVarName};
+
+/// <summary>
+/// The default <see cref=""{JsonSerializerContextTypeRef}""/> associated with a default <see cref=""{JsonSerializerOptionsTypeRef}""/> instance.
+/// </summary>
 public static {contextTypeRef} Default => {DefaultContextBackingStaticVarName} ??= new {contextTypeRef}(new {JsonSerializerOptionsTypeRef}({DefaultOptionsStaticVarName}));
 
+/// <summary>
+/// The source-generated options associated with this context.
+/// </summary>
 protected override {JsonSerializerOptionsTypeRef}? GeneratedSerializerOptions {{ get; }} = {DefaultOptionsStaticVarName};
 
+/// <inheritdoc/>
 public {contextTypeName}() : base(null)
 {{
 }}
 
+/// <inheritdoc/>
 public {contextTypeName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName}) : base({OptionsLocalVariableName})
 {{
 }}
@@ -1219,7 +1235,9 @@ private static {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({JsonS
             {
                 StringBuilder sb = new();
 
-                sb.Append(@$"public override {JsonTypeInfoTypeRef} GetTypeInfo({TypeTypeRef} type)
+                sb.Append(
+@$"/// <inheritdoc/>
+public override {JsonTypeInfoTypeRef} GetTypeInfo({TypeTypeRef} type)
 {{");
 
                 HashSet<TypeGenerationSpec> types = new(_currentContext.TypesWithMetadataGenerated);

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
@@ -55,7 +56,7 @@ namespace System.Threading
     ///   - Signaling
     ///     - A signaler iterates over waiters and tries to release waiters based on the signal count
     ///     - For each waiter, the signaler checks if the waiter's wait can be terminated
-    ///     - When a waiter's wait can be terminated, the signaler does everything necesary before waking the waiter, such that
+    ///     - When a waiter's wait can be terminated, the signaler does everything necessary before waking the waiter, such that
     ///       the waiter can simply continue after awakening, including unregistering the wait and assigning ownership if
     ///       applicable
     ///   - Interrupting
@@ -145,6 +146,8 @@ namespace System.Threading
 
         private static SafeWaitHandle NewHandle(WaitableObject waitableObject)
         {
+            var safeWaitHandle = new SafeWaitHandle();
+
             IntPtr handle = IntPtr.Zero;
             try
             {
@@ -158,19 +161,8 @@ namespace System.Threading
                 }
             }
 
-            SafeWaitHandle? safeWaitHandle = null;
-            try
-            {
-                safeWaitHandle = new SafeWaitHandle(handle, ownsHandle: true);
-                return safeWaitHandle;
-            }
-            finally
-            {
-                if (safeWaitHandle == null)
-                {
-                    HandleManager.DeleteHandle(handle);
-                }
-            }
+            Marshal.InitHandle(safeWaitHandle, handle);
+            return safeWaitHandle;
         }
 
         public static SafeWaitHandle NewEvent(bool initiallySignaled, EventResetMode resetMode)

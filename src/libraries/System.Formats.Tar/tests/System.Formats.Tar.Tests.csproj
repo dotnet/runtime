@@ -21,10 +21,10 @@
     <Compile Include="TarEntry\PaxTarEntry.Conversion.Tests.cs" />
     <Compile Include="TarEntry\UstarTarEntry.Conversion.Tests.cs" />
     <Compile Include="TarEntry\V7TarEntry.Conversion.Tests.cs" />
-    <Compile Include="TarEntry\TarEntryV7.Tests.cs" />
-    <Compile Include="TarEntry\TarEntryUstar.Tests.cs" />
-    <Compile Include="TarEntry\TarEntryPax.Tests.cs" />
-    <Compile Include="TarEntry\TarEntryGnu.Tests.cs" />
+    <Compile Include="TarEntry\V7TarEntry.Tests.cs" />
+    <Compile Include="TarEntry\UstarTarEntry.Tests.cs" />
+    <Compile Include="TarEntry\PaxTarEntry.Tests.cs" />
+    <Compile Include="TarEntry\GnuTarEntry.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectory.File.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectory.Stream.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectory.File.Tests.cs" />

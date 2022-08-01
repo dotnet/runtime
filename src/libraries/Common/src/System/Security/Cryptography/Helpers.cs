@@ -42,7 +42,7 @@ namespace Internal.Cryptography
             true;
 #endif
 
-        [return: NotNullIfNotNull("src")]
+        [return: NotNullIfNotNull(nameof(src))]
         public static byte[]? CloneByteArray(this byte[]? src)
         {
             if (src == null)

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-
 using System;
 using System.Text;
 using System.Collections.Generic;
@@ -34,7 +32,7 @@ namespace Microsoft.Extensions.Internal
             { typeof(ushort), "ushort" }
         };
 
-        [return: NotNullIfNotNull("item")]
+        [return: NotNullIfNotNull(nameof(item))]
         public static string? GetTypeDisplayName(object? item, bool fullName = true)
         {
             return item == null ? null : GetTypeDisplayName(item.GetType(), fullName);

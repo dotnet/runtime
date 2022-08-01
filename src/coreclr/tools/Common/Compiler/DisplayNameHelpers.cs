@@ -45,6 +45,7 @@ namespace ILCompiler
                 sb.Append(property.Name);
                 sb.Append('.');
                 sb.Append(property.GetMethod == method ? "get" : "set");
+                return sb.ToString();
             }
             else
             {
@@ -104,7 +105,7 @@ namespace ILCompiler
                 .Append('.')
                 .Append(property.Name).ToString();
         }
-        
+
         public static string GetDisplayName(this EventPseudoDesc @event)
         {
             return new StringBuilder(@event.OwningType.GetDisplayName())

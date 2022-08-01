@@ -10,7 +10,7 @@
 #include <mono/component/debugger.h>
 
 static bool
-debugger_avaliable (void);
+debugger_available (void);
 
 static void
 stub_debugger_parse_options (char *options);
@@ -67,7 +67,7 @@ static void
 stub_send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
 
 static MonoComponentDebugger fn_table = {
-	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable },
+	{ MONO_COMPONENT_ITF_VERSION, &debugger_available },
 	&stub_debugger_init,
 	&stub_debugger_user_break,
 	&stub_debugger_parse_options,
@@ -93,7 +93,7 @@ static MonoComponentDebugger fn_table = {
 };
 
 static bool
-debugger_avaliable (void)
+debugger_available (void)
 {
 	return false;
 }

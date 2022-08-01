@@ -93,13 +93,7 @@ namespace System.Text.Json
             }
         }
 
-        public void Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
-        {
-            JsonTypeInfo jsonTypeInfo = options.GetTypeInfoForRootType(type);
-            Initialize(jsonTypeInfo, supportContinuation);
-        }
-
-        internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false)
+        internal void Initialize(JsonTypeInfo jsonTypeInfo)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
             if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
@@ -108,7 +102,6 @@ namespace System.Text.Json
                 PreserveReferences = true;
             }
 
-            SupportContinuation = supportContinuation;
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;

@@ -382,8 +382,16 @@ namespace Internal.JitInterface
                 var interfaceMethod = (MethodDesc)ResolveTokenInScope(methodIL, typeOrMethodContext, pTargetMethod.token);
                 constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(methodIL, typeOrMethodContext, targetConstraint);
 
-                MethodDesc directMethod = canonConstrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(interfaceType, interfaceMethod, out bool forceRuntimeLookup);
-                if (directMethod != null)
+                DefaultInterfaceMethodResolution staticResolution = default;
+                MethodDesc directMethod = canonConstrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(interfaceType, interfaceMethod, out bool forceRuntimeLookup, ref staticResolution);
+                if (directMethod != null && !directMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                {
+                    targetMethod = directMethod;
+
+                    // We resolved the constraint
+                    constrainedType = null;
+                }
+                else if (directMethod != null)
                 {
                     // We resolved on a canonical form of the valuetype. Now find the method on the runtime determined form.
                     Debug.Assert(directMethod.OwningType.IsValueType);
@@ -404,6 +412,11 @@ namespace Internal.JitInterface
 
                     // We resolved the constraint
                     constrainedType = null;
+                }
+                else if (staticResolution is DefaultInterfaceMethodResolution.Diamond or DefaultInterfaceMethodResolution.Reabstraction)
+                {
+                    // TODO
+                    ThrowHelper.ThrowInvalidProgramException();
                 }
             }
 
@@ -530,6 +543,9 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.AreTypesEquivalent;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOF_EXCEPTION:
+                    id = ReadyToRunHelper.IsInstanceOfException;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_BOX:
                     id = ReadyToRunHelper.Box;
                     break;
@@ -893,13 +909,6 @@ namespace Internal.JitInterface
                             var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
                             var type = (TypeDesc)methodIL.GetObject((int)clause.ClassTokenOrOffset);
 
-                            // Once https://github.com/dotnet/corert/issues/3460 is done, this should be an assert.
-                            // Throwing InvalidProgram is not great, but we want to do *something* if this happens
-                            // because doing nothing means problems at runtime. This is not worth piping a
-                            // a new exception with a fancy message for.
-                            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                                ThrowHelper.ThrowInvalidProgramException();
-
                             var typeSymbol = _compilation.NecessaryTypeSymbolIfPossible(type);
 
                             RelocType rel = (_compilation.NodeFactory.Target.IsWindows) ?
@@ -968,10 +977,10 @@ namespace Internal.JitInterface
             for (int i = 0; i < cMap; i++)
             {
                 OffsetMapping nativeToILInfo = pMap[i];
-                int currectILOffset = (int)nativeToILInfo.ilOffset;
-                if (currectILOffset > largestILOffset) // Special offsets are negative.
+                int currentILOffset = (int)nativeToILInfo.ilOffset;
+                if (currentILOffset > largestILOffset) // Special offsets are negative.
                 {
-                    largestILOffset = currectILOffset;
+                    largestILOffset = currentILOffset;
                 }
             }
 
@@ -1172,6 +1181,7 @@ namespace Internal.JitInterface
             bool forceUseRuntimeLookup = false;
             bool targetIsFatFunctionPointer = false;
             bool useFatCallTransform = false;
+            DefaultInterfaceMethodResolution staticResolution = default;
 
             MethodDesc methodAfterConstraintResolution = method;
             if (constrainedType == null)
@@ -1186,7 +1196,7 @@ namespace Internal.JitInterface
                 // JIT compilation, and require a runtime lookup for the actual code pointer
                 // to call.
 
-                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
+                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup, ref staticResolution);
                 if (directMethod == null && constrainedType.IsEnum)
                 {
                     // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
@@ -1208,7 +1218,7 @@ namespace Internal.JitInterface
                     resolvedConstraint = true;
                     pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
 
-                    exactType = constrainedType;
+                    exactType = directMethod.OwningType;
                 }
                 else if (method.Signature.IsStatic)
                 {
@@ -1470,6 +1480,12 @@ namespace Internal.JitInterface
 
                 pResult->nullInstanceCheck = resolvedCallVirt;
             }
+            else if (staticResolution is DefaultInterfaceMethodResolution.Diamond or DefaultInterfaceMethodResolution.Reabstraction)
+            {
+                Debug.Assert(targetMethod.OwningType.IsInterface && targetMethod.IsVirtual && constrainedType != null);
+
+                ThrowHelper.ThrowBadImageFormatException();
+            }
             else if (targetMethod.Signature.IsStatic)
             {
                 // This should be an unresolved static virtual interface method call. Other static methods should
@@ -1481,9 +1497,17 @@ namespace Internal.JitInterface
                 TypeDesc runtimeDeterminedConstrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *pConstrainedResolvedToken);
                 MethodDesc runtimeDeterminedInterfaceMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
 
+                var constrainedCallInfo = new ConstrainedCallInfo(runtimeDeterminedConstrainedType, runtimeDeterminedInterfaceMethod);
+                var constrainedHelperId = ReadyToRunHelperId.ConstrainedDirectCall;
+
+                // Constant lookup doesn't make sense and we don't implement it. If we need constant lookup,
+                // the method wasn't implemented. Don't crash on it.
+                if (!_compilation.NeedsRuntimeLookup(constrainedHelperId, constrainedCallInfo))
+                    ThrowHelper.ThrowTypeLoadException(constrainedType);
+
                 ComputeLookup(ref pResolvedToken,
-                    new ConstrainedCallInfo(runtimeDeterminedConstrainedType, runtimeDeterminedInterfaceMethod),
-                    ReadyToRunHelperId.ConstrainedDirectCall,
+                    constrainedCallInfo,
+                    constrainedHelperId,
                     ref pResult->codePointerOrStubLookup);
 
                 targetIsFatFunctionPointer = true;

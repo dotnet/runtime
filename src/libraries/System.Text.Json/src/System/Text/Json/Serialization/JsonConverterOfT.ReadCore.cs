@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization
                     {
                         if (state.SupportContinuation)
                         {
-                            // If a Stream-based scenaio, return the actual value previously found;
+                            // If a Stream-based scenario, return the actual value previously found;
                             // this may or may not be the final pass through here.
                             state.BytesConsumed += reader.BytesConsumed;
                             if (state.Current.ReturnValue == null)

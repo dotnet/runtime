@@ -76,7 +76,7 @@ namespace Internal.ReadyToRunConstants
     public enum ReadyToRunVirtualFunctionOverrideFlags : uint
     {
         None = 0x00,
-        VirtualFunctionOverriden = 0x01,
+        VirtualFunctionOverridden = 0x01,
     }
 
     [Flags]
@@ -255,6 +255,7 @@ namespace Internal.ReadyToRunConstants
         GenericGcTlsBase            = 0x66,
         GenericNonGcTlsBase         = 0x67,
         VirtualFuncPtr              = 0x68,
+        IsInstanceOfException       = 0x69,
 
         // Long mul/div/shift ops
         LMul                        = 0xC0,
@@ -292,7 +293,7 @@ namespace Internal.ReadyToRunConstants
         DblRound                    = 0xE2,
         FltRound                    = 0xE3,
 
-        // Personality rountines
+        // Personality routines
         PersonalityRoutine          = 0xF0,
         PersonalityRoutineFilterFunclet = 0xF1,
 

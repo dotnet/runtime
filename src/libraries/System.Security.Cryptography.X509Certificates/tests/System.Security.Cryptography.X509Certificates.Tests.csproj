@@ -35,13 +35,16 @@
     <Compile Include="CtorTests.cs" />
     <Compile Include="ExportTests.cs" />
     <Compile Include="ExtensionsTests\AuthorityInformationAccessTests.cs" />
+    <Compile Include="ExtensionsTests\AuthorityKeyIdentifierTests.cs" />
     <Compile Include="ExtensionsTests\BasicConstraintsTests.cs" />
     <Compile Include="ExtensionsTests\ComprehensiveTests.cs" />
     <Compile Include="ExtensionsTests\EnhancedKeyUsageTests.cs" />
     <Compile Include="ExtensionsTests\KeyUsageTests.cs" />
+    <Compile Include="ExtensionsTests\SubjectAlternativeNameTests.cs" />
     <Compile Include="ExtensionsTests\SubjectKeyIdentifierTests.cs" />
     <Compile Include="FindTests.cs" />
     <Compile Include="LoadFromFileTests.cs" />
+    <Compile Include="MatchesHostnameTests.cs" />
     <Compile Include="NameTests.cs" />
     <Compile Include="PfxFormatTests.cs" />
     <Compile Include="PfxFormatTests.SingleCertGenerator.cs" />
@@ -66,6 +69,7 @@
     <Compile Include="CertificateCreation\CertificateRequestApiTests.cs" />
     <Compile Include="CertificateCreation\CertificateRequestChainTests.cs" />
     <Compile Include="CertificateCreation\CertificateRequestUsageTests.cs" />
+    <Compile Include="CertificateCreation\CrlBuilderTests.cs" />
     <Compile Include="CertificateCreation\DSAX509SignatureGenerator.cs" />
     <Compile Include="CertificateCreation\EccTestData.cs" />
     <Compile Include="CertificateCreation\ECDsaX509SignatureGeneratorTests.cs" />
