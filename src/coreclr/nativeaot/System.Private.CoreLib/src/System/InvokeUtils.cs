@@ -268,8 +268,15 @@ namespace System
             bool wrapInTargetInvocationException)
         {
             int argCount = parameters?.Length ?? 0;
-            if (argCount != dynamicInvokeInfo.Arguments.Length)
+            if (argCount != dynamicInvokeInfo.ArgumentCount)
             {
+                if (dynamicInvokeInfo.ArgumentCount < 0)
+                {
+                    if (dynamicInvokeInfo.ArgumentCount == DynamicInvokeInfo.ArgumentCount_NotSupported_ByRefLike)
+                        throw new NotSupportedException(SR.NotSupported_ByRefLike);
+                    throw new NotSupportedException();
+                }
+
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
@@ -366,7 +373,7 @@ namespace System
             DynamicInvokeInfo dynamicInvokeInfo, IntPtr methodToCall, ref byte thisArg, ref byte ret,
             object?[] parameters, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            int argCount = dynamicInvokeInfo.Arguments.Length;
+            int argCount = dynamicInvokeInfo.ArgumentCount;
 
             // We don't check a max stack size since we are invoking a method which
             // naturally requires a stack size that is dependent on the arg count\size.
@@ -466,7 +473,7 @@ namespace System
                     if (arg.GetType() == typeof(Missing))
                     {
                         // Missing is substited by metadata default value
-                        arg = GetCoercedDefaultValue(dynamicInvokeInfo, i, argumentInfo);
+                        arg = GetCoercedDefaultValue(dynamicInvokeInfo, i, in argumentInfo);
 
                         // The metadata default value is written back into the parameters array
                         parameters[i] = arg;

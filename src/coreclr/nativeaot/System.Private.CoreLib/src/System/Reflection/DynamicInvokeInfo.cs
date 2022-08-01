@@ -32,6 +32,10 @@ namespace System.Reflection
     [ReflectionBlocked]
     public class DynamicInvokeInfo
     {
+        // We use negative argument count to signal unsupported invoke signatures
+        public const int ArgumentCount_NotSupported = -1;
+        public const int ArgumentCount_NotSupported_ByRefLike = -2;
+
         public DynamicInvokeInfo(MethodBase method, IntPtr invokeThunk)
         {
             Method = method;
@@ -42,43 +46,52 @@ namespace System.Reflection
             // IsValueTypeInstanceMethod = method.DeclaringType?.IsValueType ?? false;
 
             ParameterInfo[] parameters = method.GetParametersNoCopy();
-            ArgumentInfo[] arguments = (parameters.Length != 0) ? new ArgumentInfo[parameters.Length] : Array.Empty<ArgumentInfo>();
-            for (int i = 0; i < parameters.Length; i++)
+
+            ArgumentCount = parameters.Length;
+
+            if (ArgumentCount != 0)
             {
-                DynamicInvokeTransform transform = default;
-
-                Type argumentType = parameters[i].ParameterType;
-                if (argumentType.IsByRef)
+                ArgumentInfo[] arguments = new ArgumentInfo[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
                 {
-                    NeedsCopyBack = true;
-                    transform |= DynamicInvokeTransform.ByRef;
-                    argumentType = argumentType.GetElementType()!;
+                    DynamicInvokeTransform transform = default;
+
+                    Type argumentType = parameters[i].ParameterType;
+                    if (argumentType.IsByRef)
+                    {
+                        NeedsCopyBack = true;
+                        transform |= DynamicInvokeTransform.ByRef;
+                        argumentType = argumentType.GetElementType()!;
+                    }
+                    Debug.Assert(!argumentType.IsByRef);
+
+                    EETypePtr eeArgumentType = argumentType.GetEEType();
+
+                    if (eeArgumentType.IsValueType)
+                    {
+                        Debug.Assert(argumentType.IsValueType);
+
+                        if (eeArgumentType.IsByRefLike)
+                            ArgumentCount = ArgumentCount_NotSupported_ByRefLike;
+
+                        if (eeArgumentType.IsNullable)
+                            transform |= DynamicInvokeTransform.Nullable;
+                    }
+                    else if (eeArgumentType.IsPointer)
+                    {
+                        Debug.Assert(argumentType.IsPointer);
+
+                        transform |= DynamicInvokeTransform.Pointer;
+                    }
+                    else
+                    {
+                        transform |= DynamicInvokeTransform.Reference;
+                    }
+
+                    arguments[i] = new ArgumentInfo(transform, eeArgumentType);
                 }
-                Debug.Assert(!argumentType.IsByRef);
-
-                EETypePtr eeArgumentType = argumentType.GetEEType();
-
-                if (eeArgumentType.IsValueType)
-                {
-                    Debug.Assert(argumentType.IsValueType);
-
-                    if (eeArgumentType.IsNullable)
-                        transform |= DynamicInvokeTransform.Nullable;
-                }
-                else if (eeArgumentType.IsPointer)
-                {
-                    Debug.Assert(argumentType.IsPointer);
-
-                    transform |= DynamicInvokeTransform.Pointer;
-                }
-                else
-                {
-                    transform |= DynamicInvokeTransform.Reference;
-                }
-
-                arguments[i] = new ArgumentInfo(transform, eeArgumentType);
+                Arguments = arguments;
             }
-            Arguments = arguments;
 
             if (method is MethodInfo methodInfo)
             {
@@ -100,11 +113,19 @@ namespace System.Reflection
 
                     if (returnType != typeof(void))
                     {
+                        if (eeReturnType.IsByRefLike)
+                            ArgumentCount = ArgumentCount_NotSupported_ByRefLike;
+
                         if ((transform & DynamicInvokeTransform.ByRef) == 0)
                             transform |= DynamicInvokeTransform.AllocateReturnBox;
 
                         if (eeReturnType.IsNullable)
                             transform |= DynamicInvokeTransform.Nullable;
+                    }
+                    else
+                    {
+                        if ((transform & DynamicInvokeTransform.ByRef) != 0)
+                            ArgumentCount = ArgumentCount_NotSupported; // ByRef to void return
                     }
                 }
                 else if (eeReturnType.IsPointer)
@@ -128,6 +149,7 @@ namespace System.Reflection
         public MethodBase Method { get; }
         public IntPtr InvokeThunk { get; }
 
+        internal int ArgumentCount { get; }
         internal bool IsStatic { get; }
         // internal bool IsValueTypeInstanceMethod { get; }
         internal bool NeedsCopyBack { get; }
