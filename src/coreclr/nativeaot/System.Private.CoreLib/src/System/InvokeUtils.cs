@@ -332,12 +332,7 @@ namespace System
                 StackAllocedArguments argStorage = default;
                 StackAllocatedByRefs byrefStorage = default;
 
-                CheckArguments(
-                    dynamicInvokeInfo,
-                    ref argStorage._arg0!,
-                    (ByReference*)&byrefStorage,
-                    parameters,
-                    binderBundle);
+                CheckArguments(dynamicInvokeInfo, ref argStorage._arg0!, (ByReference*)&byrefStorage, parameters, binderBundle);
 
                 if (wrapInTargetInvocationException)
                 {
@@ -359,7 +354,7 @@ namespace System
 
                 if (dynamicInvokeInfo.NeedsCopyBack)
                 {
-                    CopyBack(dynamicInvokeInfo, (ByReference*)&byrefStorage, parameters);
+                    CopyBack(dynamicInvokeInfo, ref argStorage._arg0!, parameters);
                 }
             }
 
@@ -388,12 +383,7 @@ namespace System
                 RuntimeImports.RhRegisterForGCReporting(&regArgStorage);
                 RuntimeImports.RhRegisterForGCReporting(&regByRefStorage);
 
-                CheckArguments(
-                    dynamicInvokeInfo,
-                    ref Unsafe.As<IntPtr, object>(ref *pStorage),
-                    (ByReference*)pByRefStorage,
-                    parameters,
-                    binderBundle);
+                CheckArguments(dynamicInvokeInfo, ref Unsafe.As<IntPtr, object>(ref *pStorage), pByRefStorage, parameters, binderBundle);
 
                 if (wrapInTargetInvocationException)
                 {
@@ -415,7 +405,7 @@ namespace System
 
                 if (dynamicInvokeInfo.NeedsCopyBack)
                 {
-                    CopyBack(dynamicInvokeInfo, pByRefStorage, parameters);
+                    CopyBack(dynamicInvokeInfo, ref Unsafe.As<IntPtr, object>(ref *pStorage), parameters);
                 }
             }
             finally
@@ -522,7 +512,7 @@ namespace System
             }
         }
 
-        private static unsafe void CopyBack(DynamicInvokeInfo dynamicInvokeInfo, ByReference* byrefParameters, object?[] parameters)
+        private static unsafe void CopyBack(DynamicInvokeInfo dynamicInvokeInfo, ref object copyOfParameters, object?[] parameters)
         {
             ArgumentInfo[] arguments = dynamicInvokeInfo.Arguments;
 
@@ -534,24 +524,22 @@ namespace System
                 if ((transform & DynamicInvokeTransform.ByRef) == 0)
                     continue;
 
-                ref byte byref = ref byrefParameters[i].Value;
+                object obj = Unsafe.Add(ref copyOfParameters, i);
 
-                object obj;
-                if ((transform & DynamicInvokeTransform.Pointer) != 0)
+                if ((transform & (DynamicInvokeTransform.Pointer | DynamicInvokeTransform.Nullable)) != 0)
                 {
-                    Type type = Type.GetTypeFromEETypePtr(argumentInfo.Type);
-                    Debug.Assert(type.IsPointer);
-                    obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref byref), type);
+                    if ((transform & DynamicInvokeTransform.Pointer) != 0)
+                    {
+                        Type type = Type.GetTypeFromEETypePtr(argumentInfo.Type);
+                        Debug.Assert(type.IsPointer);
+                        obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
+                    }
+                    else
+                    {
+                        obj = RuntimeImports.RhBox(argumentInfo.Type, ref obj.GetRawData());
+                    }
                 }
-                else if ((transform & DynamicInvokeTransform.Nullable) != 0)
-                {
-                    obj = RuntimeImports.RhBox(argumentInfo.Type, ref byref);
-                }
-                else
-                {
-                    // This must be either object reference or a value type box allocated in CheckArguments
-                    obj = Unsafe.As<byte, object>(ref byref);
-                }
+
                 parameters[i] = obj;
             }
         }
