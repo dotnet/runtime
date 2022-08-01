@@ -40,7 +40,7 @@ namespace System
 
         internal static object? CheckArgument(object? srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, BinderBundle? binderBundle)
         {
-            // Methods with ByRefLike types in signatures should be filtered out by the compiler
+            // Methods with ByRefLike types in signatures should be filtered out earlier
             Debug.Assert(!dstEEType.IsByRefLike);
 
             if (srcObject == null)
