@@ -3,7 +3,7 @@
 
 // The test came from https://github.com/dotnet/runtime/issues/21860.
 // It tests that we do access overlapping fields with the correct types.
-// Espessialy if the struct was casted by 'Unsafe.As` from a promoted type
+// Especially if the struct was casted by 'Unsafe.As` from a promoted type
 // and the promoted type had another field on the same offset but with a different type/size.
 
 using System.Runtime.CompilerServices;

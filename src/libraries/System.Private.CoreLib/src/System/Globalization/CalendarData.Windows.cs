@@ -210,7 +210,7 @@ namespace System.Globalization
                     // See if this works
                     if (!CallGetCalendarInfoEx(localeName, calendar, CAL_SCALNAME, out string _))
                     {
-                        // Failed, set it to a locale (fa-IR) that's always has Gregorian US available in the OS
+                        // Failed, set it to a locale (fa-IR) that always has Gregorian US available in the OS
                         localeName = "fa-IR";
 
                         // See if that works
