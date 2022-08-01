@@ -2002,12 +2002,11 @@ AssertionIndex Compiler::optAddAssertion(AssertionDsc* newAssertion)
 #endif // DEBUG
 
     // Track the shortcircuit criterias
-    optCanPropLclVar |= newAssertion->assertionKind == OAK_EQUAL && newAssertion->op1.kind == O1K_LCLVAR;
-    optCanPropEqual |= newAssertion->assertionKind == OAK_EQUAL || newAssertion->assertionKind == OAK_NOT_EQUAL;
-    optCanPropNonNull |=
-        newAssertion->assertionKind == OAK_NOT_EQUAL && newAssertion->op2.vn == ValueNumStore::VNForNull();
-    optCanPropSubRange |= newAssertion->assertionKind == OAK_SUBRANGE && newAssertion->op1.kind == O1K_LCLVAR;
-    optCanPropBndsChk |= newAssertion->op1.kind == O1K_ARR_BND;
+    optCanPropLclVar |= newAssertion->CanPropLclVar();
+    optCanPropEqual |= newAssertion->CanPropEqualOrNotEqual();
+    optCanPropNonNull |= newAssertion->CanPropNonNull();
+    optCanPropSubRange |= newAssertion->CanPropSubRange();
+    optCanPropBndsChk |= newAssertion->CanPropBndsCheck();
 
     // Assertion mask bits are [index + 1].
     if (optLocalAssertionProp)
@@ -2241,7 +2240,6 @@ AssertionIndex Compiler::optAssertionGenCast(GenTreeCast* cast)
     assertion.op1.lcl.ssaNum = lclVar->GetSsaNum();
     assertion.op2.kind       = O2K_SUBRANGE;
     assertion.op2.u2         = IntegralRange::ForCastInput(cast);
-    optCanPropSubRange       = true;
 
     return optFinalizeCreatingAssertion(&assertion);
 }
@@ -2850,8 +2848,7 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange ran
         AssertionDsc* curAssertion = optGetAssertion(index);
         if ((optLocalAssertionProp ||
              BitVecOps::IsMember(apTraits, assertions, index - 1)) && // either local prop or use propagated assertions
-            (curAssertion->assertionKind == OAK_SUBRANGE) &&
-            (curAssertion->op1.kind == O1K_LCLVAR))
+            curAssertion->CanPropSubRange())
         {
             // For local assertion prop use comparison on locals, and use comparison on vns for global prop.
             bool isEqual = optLocalAssertionProp
@@ -3629,7 +3626,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         }
         // See if the variable is equal to a constant or another variable.
         AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
-        if (curAssertion->assertionKind != OAK_EQUAL || curAssertion->op1.kind != O1K_LCLVAR)
+        if (!curAssertion->CanPropLclVar())
         {
             continue;
         }
@@ -3830,7 +3827,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
             break;
         }
         AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
-        if ((curAssertion->assertionKind != OAK_EQUAL && curAssertion->assertionKind != OAK_NOT_EQUAL))
+        if (!curAssertion->CanPropEqualOrNotEqual())
         {
             continue;
         }
@@ -3883,7 +3880,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_T
             break;
         }
         AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
-        if ((curAssertion->assertionKind != OAK_EQUAL && curAssertion->assertionKind != OAK_NOT_EQUAL))
+        if (!curAssertion->CanPropEqualOrNotEqual())
         {
             continue;
         }
@@ -4557,12 +4554,7 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
                 break;
             }
             AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
-            if (curAssertion->assertionKind != OAK_NOT_EQUAL)
-            {
-                continue;
-            }
-
-            if (curAssertion->op2.vn != ValueNumStore::VNForNull())
+            if (!curAssertion->CanPropNonNull())
             {
                 continue;
             }

@@ -7110,6 +7110,31 @@ public:
             return ((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL)) && (op2.kind == O2K_CONST_INT);
         }
 
+        bool CanPropLclVar()
+        {
+            return assertionKind == OAK_EQUAL && op1.kind == O1K_LCLVAR;
+        }
+
+        bool CanPropEqualOrNotEqual()
+        {
+            return assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL;
+        }
+
+        bool CanPropNonNull()
+        {
+            return assertionKind == OAK_NOT_EQUAL && op2.vn == ValueNumStore::VNForNull();
+        }
+
+        bool CanPropBndsCheck()
+        {
+            return op1.kind == O1K_ARR_BND;
+        }
+
+        bool CanPropSubRange()
+        {
+            return assertionKind == OAK_SUBRANGE && op1.kind == O1K_LCLVAR;
+        }
+
         static bool SameKind(AssertionDsc* a1, AssertionDsc* a2)
         {
             return a1->assertionKind == a2->assertionKind && a1->op1.kind == a2->op1.kind &&
