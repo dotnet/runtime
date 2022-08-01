@@ -7,9 +7,7 @@ using Internal.IL;
 using Internal.Text;
 using Internal.TypeSystem;
 
-using ILCompiler.Compiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
-using ILCompiler.DependencyAnalysis;
 
 using DependencyList=ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using CombinedDependencyList=System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;

@@ -1,12 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
-namespace ILCompiler.Compiler.DependencyAnalysis
+namespace ILCompiler.DependencyAnalysis
 {
     internal class ModuleUseBasedDependencyAlgorithm
     {

@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-using ILCompiler.Compiler.DependencyAnalysis;
-
 using Internal.Text;
 using Internal.TypeSystem;
 
