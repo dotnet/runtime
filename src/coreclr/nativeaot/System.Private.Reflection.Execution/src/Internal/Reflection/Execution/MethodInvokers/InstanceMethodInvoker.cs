@@ -29,7 +29,11 @@ namespace Internal.Reflection.Execution.MethodInvokers
         [DebuggerGuidedStepThroughAttribute]
         protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            ValidateThis(thisObject, _declaringTypeHandle);
+            if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
+            {
+                ValidateThis(thisObject, _declaringTypeHandle);
+            }
+
             object? result = MethodInvokeInfo.Invoke(
                 thisObject,
                 MethodInvokeInfo.LdFtnResult,

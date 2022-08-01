@@ -53,9 +53,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
         [DebuggerGuidedStepThroughAttribute]
         protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            ValidateThis(thisObject, _declaringTypeHandle);
+            IntPtr resolvedVirtual = IntPtr.Zero;
 
-            IntPtr resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
+            if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
+            {
+                ValidateThis(thisObject, _declaringTypeHandle);
+
+                resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
+            }
 
             object? result = MethodInvokeInfo.Invoke(
                 thisObject,

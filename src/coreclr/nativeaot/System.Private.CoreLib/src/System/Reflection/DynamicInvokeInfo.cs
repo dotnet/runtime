@@ -161,6 +161,8 @@ namespace System.Reflection
             }
         }
 
+        public bool IsSupportedSignature => _argumentCount >= 0;
+
         [DebuggerGuidedStepThroughAttribute]
         public unsafe object? Invoke(
             object? thisPtr,
