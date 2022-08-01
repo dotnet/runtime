@@ -619,6 +619,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "----       ", RegexOptions.None, 0, 11, true, "--- ");
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "zabcaaaaaaa", RegexOptions.RightToLeft, 0, 11, true, "aaaa");
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "----       ", RegexOptions.RightToLeft, 0, 11, true, "---       ");
+                yield return (@"(aaa)(?(1)aaa|b?)*", "aaaaaa", RegexOptions.None, 0, 6, true, "aaaaaa");
             }
 
             // Character Class Subtraction

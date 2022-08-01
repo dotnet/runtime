@@ -1799,7 +1799,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                 string postYesDoneLabel = doneLabel;
-                if (postYesDoneLabel != originalDoneLabel)
+                if (postYesDoneLabel != originalDoneLabel || isInLoop)
                 {
                     writer.WriteLine($"{resumeAt} = 0;");
                 }
@@ -1821,7 +1821,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
-                    if (postNoDoneLabel != originalDoneLabel)
+                    if (postNoDoneLabel != originalDoneLabel || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 1;");
                     }
@@ -1831,7 +1831,7 @@ namespace System.Text.RegularExpressions.Generator
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (postYesDoneLabel != originalDoneLabel)
+                    if (postYesDoneLabel != originalDoneLabel || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 2;");
                     }
