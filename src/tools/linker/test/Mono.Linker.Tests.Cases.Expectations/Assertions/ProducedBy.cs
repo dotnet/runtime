@@ -15,6 +15,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		Trimmer = 1,
 		Analyzer = 2,
-		TrimmerAndAnalyzer = Trimmer | Analyzer
+		NativeAot = 4,
+		TrimmerAnalyzerAndNativeAot = Trimmer | Analyzer | NativeAot
 	}
 }

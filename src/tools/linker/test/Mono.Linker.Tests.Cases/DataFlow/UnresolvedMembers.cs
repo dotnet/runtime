@@ -12,6 +12,10 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	// NativeAOT will not compile a method with unresolved types in it - it will instead replace it with a throwing method body
+	// So it doesn't produce any of these warnings - which is also correct, because the code at runtime would never get there
+	// it would fail to JIT/run anyway.
+
 	[SkipPeVerify]
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[SetupCompileBefore ("UnresolvedLibrary.dll", new[] { "Dependencies/UnresolvedLibrary.cs" }, removeFromLinkerInput: true)]
@@ -43,9 +47,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{ }
 
 		[Kept]
-		[ExpectedWarning ("IL2066", "TypeWithUnresolvedGenericArgument")] // Local variable type
-		[ExpectedWarning ("IL2066", "TypeWithUnresolvedGenericArgument")] // Called method declaring type
-		[ExpectedWarning ("IL2066", nameof (MethodWithUnresolvedGenericArgument))]
+		[ExpectedWarning ("IL2066", "TypeWithUnresolvedGenericArgument", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)] // Local variable type
+		[ExpectedWarning ("IL2066", "TypeWithUnresolvedGenericArgument", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)] // Called method declaring type
+		[ExpectedWarning ("IL2066", nameof (MethodWithUnresolvedGenericArgument), ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 		static void UnresolvedGenericArgument ()
 		{
 			var a = new TypeWithUnresolvedGenericArgument<Dependencies.UnresolvedType> ();
@@ -75,7 +79,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2062", nameof (AttributeWithRequirements))]
+		[ExpectedWarning ("IL2062", nameof (AttributeWithRequirements), ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 		[KeptAttributeAttribute (typeof (AttributeWithRequirements))]
 		[AttributeWithRequirements (typeof (Dependencies.UnresolvedType))]
 		static void UnresolvedAttributeArgument ()
@@ -83,7 +87,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2062", nameof (AttributeWithRequirements.PropertyWithRequirements))]
+		[ExpectedWarning ("IL2062", nameof (AttributeWithRequirements.PropertyWithRequirements), ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 		[KeptAttributeAttribute (typeof (AttributeWithRequirements))]
 		[AttributeWithRequirements (typeof (EmptyType), PropertyWithRequirements = typeof (Dependencies.UnresolvedType))]
 		static void UnresolvedAttributePropertyValue ()
@@ -91,7 +95,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2064", nameof (AttributeWithRequirements.FieldWithRequirements))]
+		[ExpectedWarning ("IL2064", nameof (AttributeWithRequirements.FieldWithRequirements), ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 		[KeptAttributeAttribute (typeof (AttributeWithRequirements))]
 		[AttributeWithRequirements (typeof (EmptyType), FieldWithRequirements = typeof (Dependencies.UnresolvedType))]
 		static void UnresolvedAttributeFieldValue ()
@@ -102,14 +106,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static Dependencies.UnresolvedType _unresolvedField;
 
 		[Kept]
-		[ExpectedWarning ("IL2072", nameof (Object.GetType))]
+		[ExpectedWarning ("IL2072", nameof (Object.GetType), ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 		static void UnresolvedObjectGetType ()
 		{
 			RequirePublicMethods (_unresolvedField.GetType ());
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2072", nameof (Object.GetType))]
+		[ExpectedWarning ("IL2072", nameof (Object.GetType), ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 		static void UnresolvedMethodParameter ()
 		{
 			RequirePublicMethods (typeof (Dependencies.UnresolvedType));

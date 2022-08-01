@@ -43,11 +43,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		// Trimmer and analyzer use different formats for ref parameters: https://github.com/dotnet/linker/issues/2406
-		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", ProducedBy = ProducedBy.Analyzer)]
-		[ExpectedWarning ("IL2069", nameof (s_typeWithPublicParameterlessConstructor), "parameter 'type'", nameof (MethodWithRefParameter), ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2069", nameof (s_typeWithPublicParameterlessConstructor), "parameter 'type'", nameof (MethodWithRefParameter), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		// MethodWithRefParameter (ref x)
-		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", ProducedBy = ProducedBy.Analyzer)]
 		public static void PassRefToField ()
 		{
@@ -58,7 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		// Trimmer and analyzer use different formats for ref parameters: https://github.com/dotnet/linker/issues/2406
-		[ExpectedWarning ("IL2067", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2067", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2067", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", ProducedBy = ProducedBy.Analyzer)]
 		public static void PassRefToParameter (Type parameter)
 		{

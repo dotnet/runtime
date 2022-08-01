@@ -202,7 +202,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			static AccessReturnedInstanceField GetInstance ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type unused) => null;
 
 			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance),
-				ProducedBy = ProducedBy.Trimmer)] // https://github.com/dotnet/linker/issues/2832
+				ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)] // https://github.com/dotnet/linker/issues/2832
 			[ExpectedWarning ("IL2077", nameof (field), nameof (DataFlowTypeExtensions.RequiresAll))]
 			static void TestRead ()
 			{
@@ -210,7 +210,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance),
-				ProducedBy = ProducedBy.Trimmer)] // https://github.com/dotnet/linker/issues/2832
+				ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)] // https://github.com/dotnet/linker/issues/2832
 			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (field))]
 			static void TestWrite ()
 			{
@@ -218,7 +218,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance),
-				ProducedBy = ProducedBy.Trimmer)] // https://github.com/dotnet/linker/issues/2832
+				ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)] // https://github.com/dotnet/linker/issues/2832
 			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (field))]
 			static void TestNullCoalescingAssignment ()
 			{

@@ -123,11 +123,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Linker merges branches going forward.
 		[ExpectedWarning ("IL2073", nameof (MultipleFinallyPaths) + "()", nameof (GetWithPublicMethods) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2073", nameof (MultipleFinallyPaths) + "()", nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2073", nameof (MultipleFinallyPaths) + "()", nameof (GetWithPublicProperties) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 		public static Type MultipleFinallyPaths ()
 		{
@@ -325,25 +325,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Linker merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll4) + "(Type)", nameof (GetWithPublicProperties) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll5) + "(Type)", nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll5) + "(Type)", nameof (GetWithPublicProperties) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll7) + "(Type)", nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll7) + "(Type)", nameof (GetWithPublicProperties) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll7) + "(Type)", nameof (GetWithPublicEvents) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicProperties) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicEvents) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 
 		public static void TryFlowsToMultipleCatchAndFinally ()
 		{
@@ -487,7 +487,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()")]
 		// Linker merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void CatchInTry ()
 		{
 			try {
@@ -512,7 +512,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Linker merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void CatchInTryWithFinally ()
 		{
 			Type t = GetWithPublicConstructors ();
@@ -542,7 +542,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Linker merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void TestCatchesHaveSeparateState ()
 		{
 			Type t = GetWithPublicMethods ();
@@ -713,7 +713,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Linker merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void NestedFinally ()
 		{
 			Type t = GetWithPublicMethods ();
@@ -743,7 +743,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Linker merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void NestedFinallyWithPredecessor ()
 		{
 			Type t = GetWithPublicMethods ();
@@ -784,7 +784,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Linker merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void ExceptionFilterStateChange ()
 		{
 			Type t = GetWithPublicMethods ();
@@ -823,11 +823,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Linker merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void ExceptionMultipleFilters ()
 		{
 			Type t = GetWithPublicMethods ();
@@ -859,7 +859,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Linker merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods),
-			ProducedBy = ProducedBy.Trimmer)]
+			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void ExceptionFilterWithBranch ()
 		{
 			Type t = GetWithPublicMethods ();
