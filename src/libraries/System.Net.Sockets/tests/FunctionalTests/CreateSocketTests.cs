@@ -703,20 +703,29 @@ namespace System.Net.Sockets.Tests
             LibcInterop.close(ptr[1]);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
-        public void Ctor_Dispose_HandleClosedIfOwnsHandle(bool ownsHandle)
+        public void Ctor_Dispose_HandleClosedIfOwnsHandle(bool ownsHandleOuter)
         {
-            Socket original = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            IntPtr handleValue = original.Handle;
+            // Since the handle is closed with a manual call, it won't be unregistered from SocektAsyncEngine on Unix,
+            // which can lead to handle-reuse errors in unrelated tests. Process-isolation should solve this.
+            RemoteExecutor.Invoke(static ownsHandleInner =>
+            {
+                bool ownsHandle = bool.Parse(ownsHandleInner);
+                Socket original = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                IntPtr handleValue = original.Handle;
 
-            SafeSocketHandle handleClone = new SafeSocketHandle(handleValue, ownsHandle: ownsHandle);
-            Socket socketClone = new Socket(handleClone);
-            socketClone.Dispose();
+                SafeSocketHandle handleClone = new SafeSocketHandle(handleValue, ownsHandle: ownsHandle);
+                Socket socketClone = new Socket(handleClone);
+                socketClone.Dispose();
 
-            bool manualCloseSucceeded = CloseSocketHandle(handleValue) == 0;
-            Assert.Equal(!ownsHandle, manualCloseSucceeded);
+                bool manualCloseSucceeded = CloseSocketHandle(handleValue) == 0;
+                Assert.Equal(!ownsHandle, manualCloseSucceeded);
+
+                GC.SuppressFinalize(original.SafeHandle);
+                GC.SuppressFinalize(original);
+            }, ownsHandleOuter.ToString()).Dispose();
         }
 
         private static void AssertEqualOrSameException<T>(Func<T> expected, Func<T> actual)
