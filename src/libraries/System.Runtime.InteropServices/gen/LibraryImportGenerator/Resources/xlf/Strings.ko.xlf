@@ -9,12 +9,12 @@
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="translated">마샬러 형식에서 'Span&lt;T&gt;'을 사용하는 'FromManaged' 메서드를 제공하여 '호출자 할당 버퍼로 관리되지 않음' 셰이프를 사용하는 경우 형식은 숫자를 제공하기 위해 정적 'BufferSize' 속성을 제공해야 합니다. 호출자 할당 버퍼의 요소 수</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="translated">마샬러 유형 '{0}'에는 호출자 할당 'Span&lt;{1}&gt;'를 사용하는 FromManaged 메서드가 있으므로 호출자 할당 버퍼의 크기를 지정하려면 정적 읽기 전용 'int' 'BufferSize' 속성이 있어야 합니다.</target>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportDescription">
@@ -449,12 +449,12 @@
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="translated">마샬러 형식에서 'Span&lt;T&gt;'을 사용하는 'AllocateContainerForUnmanagedElements' 메서드를 제공하여 '호출자 할당 버퍼로 관리되지 않음' 셰이프를 사용하는 경우 형식은 호출자 할당 버퍼의 요소 수를 제공하기 위해 정적 'BufferSize' 속성을 제공해야 합니다.</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="translated">마샬러 유형 '{0}'에는 호출자 할당 'Span&lt;{1}&gt;'을 사용하는 'AllocateContainerForUnmanagedElements' 메서드가 있으므로 호출자 할당 버퍼의 크기를 지정하려면 정적 읽기 전용 'int' 'BufferSize' 속성이 있어야 합니다.</target>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">
