@@ -2510,9 +2510,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_544983/DevDiv_544983/**">
             <Issue>https://github.com/dotnet/runtime/issues/54393</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests/Localloc_do/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54359</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/Misc/function_pointer/MutualThdRecur-fptr/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -2630,9 +2627,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/interactions/strswitchfinal_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests/Localloc_do/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54359</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/Misc/function_pointer/MutualThdRecur-fptr/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -2647,15 +2641,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/DefaultInterfaceMethods/diamondshape/diamondshape_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/54399</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests/Localloc_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54359</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests/Localloc_ro/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54359</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests/Localloc_d/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54359</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b25459/b25459/**">
             <Issue>https://github.com/dotnet/runtime/issues/54393</Issue>
