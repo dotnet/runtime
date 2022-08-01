@@ -44,18 +44,16 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [Fact]
-        public async Task Http10ResponseWithKeepAliveTimeout_ConnectionRecycledBeforeTimeout()
+        public async Task Http10ResponseWithKeepAliveTimeout_ConnectionRecycledAfterTimeout()
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClient client = CreateHttpClient();
 
                 await client.GetAsync(uri);
-
-                await Task.Delay(10);
                 await client.GetAsync(uri);
 
-                await Task.Delay(2500);
+                await Task.Delay(6000);
                 await client.GetAsync(uri);
             },
             async server =>
@@ -63,7 +61,7 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestDataAsync();
-                    await connection.WriteStringAsync("HTTP/1.0 200 OK\r\nKeep-Alive: timeout=3\r\nContent-Length: 1\r\n\r\n1");
+                    await connection.WriteStringAsync("HTTP/1.0 200 OK\r\nKeep-Alive: timeout=5\r\nContent-Length: 1\r\n\r\n1");
                     connection.CompleteRequestProcessing();
 
                     await connection.HandleRequestAsync();
@@ -78,11 +76,10 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData("timeout=1000", true)]
-        [InlineData("timeout=2", true)]
-        [InlineData("timeout=1", false)]
+        [InlineData("timeout=5", true)]
         [InlineData("timeout=0", false)]
-        [InlineData("foo, bar=baz, timeout=2", true)]
-        [InlineData("foo, bar=baz, timeout=1", false)]
+        [InlineData("foo, bar=baz, timeout=5", true)]
+        [InlineData("foo, bar=baz, timeout=0", false)]
         [InlineData("timeout=-1", true)]
         [InlineData("timeout=abc", true)]
         [InlineData("max=1", true)]
@@ -91,8 +88,8 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("max=abc", true)]
         [InlineData("timeout=5, max=1", true)]
         [InlineData("timeout=5, max=0", false)]
-        [InlineData("timeout=1, max=1", false)]
-        [InlineData("timeout=1, max=0", false)]
+        [InlineData("timeout=0, max=1", false)]
+        [InlineData("timeout=0, max=0", false)]
         public async Task Http10ResponseWithKeepAlive_ConnectionNotReusedForShortTimeoutOrMax0(string keepAlive, bool shouldReuseConnection)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -128,8 +125,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData("timeout=2")]
         [InlineData("timeout=1")]
+        [InlineData("timeout=0")]
         [InlineData("max=1")]
         [InlineData("max=0")]
         public async Task Http11ResponseWithKeepAlive_KeepAliveIsIgnored(string keepAlive)
