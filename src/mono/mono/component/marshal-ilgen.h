@@ -41,12 +41,6 @@ mono_install_marshal_callbacks_ilgen (MonoMarshalILgenCallbacks *cb);
 MONO_API void
 mono_marshal_ilgen_init (void);
  
-void
-mono_marshal_noilgen_init_heavyweight (void);
-
-void
-mono_marshal_noilgen_init_lightweight (void);
-
 int
 mono_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	      MonoMarshalSpec *spec, int conv_arg,

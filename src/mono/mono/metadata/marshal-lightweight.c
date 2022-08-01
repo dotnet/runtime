@@ -8,15 +8,13 @@
 #include <alloca.h>
 #endif
 
-#include "metadata/method-builder-ilgen.h"
-#include "metadata/method-builder-ilgen-internals.h"
-#include "component/marshal-ilgen.h"
+#include "mono/metadata/method-builder-ilgen.h"
+#include "mono/metadata/method-builder-ilgen-internals.h"
 #include <mono/metadata/object.h>
 #include <mono/metadata/loader.h>
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
-// #include "metadata/marshal-ilgen.h"
 #include "metadata/marshal-lightweight.h"
 #include "metadata/marshal-shared.h"
 #include "metadata/tabledefs.h"

@@ -1,10 +1,8 @@
 #include "config.h"
-
 #include <mono/metadata/attrdefs.h>
-#include "metadata/marshal-internals.h"
-#include "metadata/marshal.h"
-// TODO: PRobably shouldn't directly refer to a header in a component like this?
-#include "component/marshal-ilgen.h"
+#include <mono/metadata/marshal-internals.h>
+#include <mono/metadata/marshal.h>
+#include <mono/metadata/marshal-noilgen.h>
 #include "utils/mono-compiler.h"
 
 #ifndef ENABLE_ILGEN
