@@ -1247,3 +1247,11 @@ public class AsyncGeneric
     }
 }
 
+public class InspectIntPtr
+{
+    public static void Run()
+    {
+        IntPtr myInt = default;
+        System.Diagnostics.Debugger.Break();
+    }
+}
