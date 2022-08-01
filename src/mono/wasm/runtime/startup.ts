@@ -264,9 +264,6 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
 
     await init_polyfills_async();
-    if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
-        await mono_wasm_pthread_worker_init();
-    }
 
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
 }
@@ -928,11 +925,18 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
 /// 1. Emscripten skips a lot of initialization on the pthread workers, Module may not have everything you expect.
 /// 2. Emscripten does not run the preInit or preRun functions in the workers.
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
-async function mono_wasm_pthread_worker_init(): Promise<void> {
+export async function mono_wasm_pthread_worker_init(): Promise<void> {
+    console.debug("MONO_WASM: worker initializing essential C exports and APIs");
+    // FIXME: copy/pasted from mono_wasm_pre_init_essential - can we share this code? Any other global state that needs initialization?
+    init_c_exports();
+    cwraps_internal(INTERNAL);
+    cwraps_mono_api(MONO);
+    cwraps_binding_api(BINDING);
     // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
         console.debug("MONO_WASM: pthread created", ev.pthread_self.pthread_id);
     });
+
 }
 
 /**

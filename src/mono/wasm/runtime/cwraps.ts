@@ -6,7 +6,7 @@ import {
     MonoMethod, MonoObject, MonoString,
     MonoType, MonoObjectRef, MonoStringRef
 } from "./types";
-import { Module } from "./imports";
+import { ENVIRONMENT_IS_PTHREAD, Module } from "./imports";
 import { JSMarshalerArguments } from "./marshal";
 import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 
@@ -216,10 +216,12 @@ export const enum I52Error {
 }
 
 export function init_c_exports(): void {
+    // init_c_exports is called very early in a pthread before Module.cwrap is available
+    const alwaysLazy = !!ENVIRONMENT_IS_PTHREAD;
     for (const sig of fn_signatures) {
         const wf: any = wrapped_c_functions;
         const [lazy, name, returnType, argTypes, opts] = sig;
-        if (lazy) {
+        if (lazy || alwaysLazy) {
             // lazy init on first run
             wf[name] = function (...args: any[]) {
                 const fce = Module.cwrap(name, returnType, argTypes, opts);
