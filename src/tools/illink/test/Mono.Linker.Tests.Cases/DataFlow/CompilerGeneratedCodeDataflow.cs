@@ -39,9 +39,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// Linker tracks all assignments of hoisted locals, so this produces warnings.
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresPublicFields), CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicFields), nameof (DataFlowTypeExtensions.RequiresPublicMethods), CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			static IEnumerable<int> NoFlowAcrossYieldReturn ()
 			{
 				Type t = GetWithPublicMethods ();
@@ -119,9 +119,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// Linker tracks all assignments of hoisted locals, so this produces warnings.
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresPublicFields), CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicFields), nameof (DataFlowTypeExtensions.RequiresPublicMethods), CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer)]
+				ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			static async void NoFlowAcrossAwait ()
 			{
 				Type t = GetWithPublicMethods ();
@@ -430,7 +430,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				Type t = GetWithPublicFields ();
 
 				Action lambda =
-					[ExpectedWarning ("IL2072", nameof (GetWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll))]
+				[ExpectedWarning ("IL2072", nameof (GetWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll))]
 				[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll))]
 				() => t.RequiresAll ();
 
