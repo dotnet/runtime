@@ -852,15 +852,14 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, source_loc, 544, 4, "HiddenSequencePointTest.StepOverHiddenSP");
         }
 
-        // [ConditionalFact(nameof(RunningOnChrome))]
-        // Issue: https://github.com/dotnet/runtime/issues/42704
+        [ConditionalFact(nameof(RunningOnChrome))]
         async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLine()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 539, 8);
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 546, 4,
-                "StepOverHiddenSP2");
+                "dotnet://debugger-test.dll/debugger-test.cs", 542, 8,
+                "HiddenSequencePointTest.StepOverHiddenSP");
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]

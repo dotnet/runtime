@@ -1565,6 +1565,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 .GroupBy(l => l.Id);
             return locations;
         }
+
+        private static IEnumerable<IGrouping<SourceId, SourceLocation>> GetBPReqNextLocation(DebugStore store, BreakpointRequest req)
+        {
+            var nextLocation = store.FindBreakpointNextLocation(req);
+            var nextLocationList = new List<SourceLocation>();
+            if (nextLocation != null)
+                nextLocationList.Add(nextLocation);
+            return nextLocationList.GroupBy(l => l.Id);
+        }
+
         private async Task ResetBreakpoint(SessionId msg_id, DebugStore store, MethodInfo method, CancellationToken token)
         {
             ExecutionContext context = GetContext(msg_id);
@@ -1627,6 +1637,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             logger.LogDebug("BP request for '{Req}' runtime ready {Context.RuntimeReady}", req, context.IsRuntimeReady);
 
             var breakpoints = new List<Breakpoint>();
+            if (!locations.Any())
+                locations = GetBPReqNextLocation(store, req);
 
             foreach (IGrouping<SourceId, SourceLocation> sourceId in locations)
             {

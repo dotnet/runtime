@@ -1619,6 +1619,30 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
+        public SourceLocation FindBreakpointNextLocation(BreakpointRequest request)
+        {
+            AssemblyInfo asm = assemblies.FirstOrDefault(a => a.Name.Equals(request.Assembly, StringComparison.OrdinalIgnoreCase));
+            SourceFile sourceFile = asm?.Sources?.SingleOrDefault(s => s.DebuggerFileName.Equals(request.File, StringComparison.OrdinalIgnoreCase));
+
+            if (sourceFile == null)
+                return null;
+
+            foreach (MethodInfo method in sourceFile.Methods)
+            {
+                if (!method.DebugInformation.SequencePointsBlob.IsNil)
+                {
+                    foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
+                    {
+                        if (!sequencePoint.IsHidden && method.StartLocation.Line < request.Line && request.Line < method.EndLocation.Line && sequencePoint.StartLine > request.Line)
+                        {
+                            return new SourceLocation(method, sequencePoint);
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
         public string ToUrl(SourceLocation location) => location != null ? GetFileById(location.Id).Url : "";
     }
 }
