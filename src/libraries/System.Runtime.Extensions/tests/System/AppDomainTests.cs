@@ -811,7 +811,9 @@ namespace System.Tests
 #pragma warning restore SYSLIB0003 // Obsolete: CAS
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.FileCreateCaseSensitive))]
+        public static bool FileCreateCaseSensitiveAndAssemblyLoadingSupported => PlatformDetection.FileCreateCaseSensitive && PlatformDetection.IsAssemblyLoadingSupported;
+
+        [ConditionalTheory(nameof(FileCreateCaseSensitiveAndAssemblyLoadingSupported))]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {
