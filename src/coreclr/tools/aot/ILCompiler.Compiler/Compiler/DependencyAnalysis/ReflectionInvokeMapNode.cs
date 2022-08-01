@@ -101,8 +101,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (method.HasInstantiation)
             {
-                bool useUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
-
                 if (method.IsCanonicalMethod(CanonicalFormKind.Universal))
                 {
                     dependencies.Add(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method)),
@@ -142,8 +140,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (!factory.MetadataManager.ShouldMethodBeInInvokeMap(method))
                     continue;
-
-                bool useUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
 
                 InvokeTableFlags flags = 0;
 
@@ -205,7 +201,8 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     vertex = writer.GetTuple(vertex,
                         writer.GetUnsignedConstant(_externalReferences.GetIndex(
-                            factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific), useUnboxingStub))));
+                            factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific),
+                            unboxingStub: method.OwningType.IsValueType && !method.Signature.IsStatic))));
                 }
 
                 if ((flags & InvokeTableFlags.NeedsParameterInterpretation) == 0)
