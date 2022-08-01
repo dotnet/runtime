@@ -323,28 +323,31 @@ namespace System
         }
 
         /// <summary>
-        /// Gets an array of values of the underlying type of the Enum.
+        /// Retrieves an array of the values of the underlying type constants in a specified enumeration type.
         /// </summary>
-        /// <typeparam name="TEnum">Enum type</typeparam>
+        /// <typeparam name="TEnum">An enumeration type.</typeparam>
         /// /// <remarks>
-        /// This method can be used to get enum values when creating an Array of Enum is challenging
-        /// For example, reflection-only context or on a platform where runtime codegen is not available.
+        /// This method can be used to get enumeration values when creating an array of the enumeration type is challenging.
+        /// For example, <see cref="T:System.Reflection.MetadataLoadContext" /> or on a platform where runtime codegen is not available.
         /// </remarks>
-        /// <returns>Array of values containing the underlying type of the Enum</returns>
+        /// <returns>An array that contains the values of the underlying type constants in enumType.</returns>
         public static Array GetValuesAsUnderlyingType<TEnum>() where TEnum : struct, Enum =>
             typeof(TEnum).GetEnumValuesAsUnderlyingType();
 
         /// <summary>
-        /// Gets an array of values of the underlying type of the Enum.
+        /// Retrieves an array of the values of the underlying type constants in a specified enumeration.
         /// </summary>
-        /// <param name="enumType">Enum type</param>
+        /// <param name="enumType">An enumeration type.</param>
         /// <remarks>
-        /// This method can be used to get enum values when creating an Array of Enum is challenging
-        /// For example, in reflection-only context or on a platform where runtime codegen is not available.
+        /// This method can be used to get enumeration values when creating an array of the enumeration type is challenging.
+        /// For example, <see cref="T:System.Reflection.MetadataLoadContext" /> or on a platform where runtime codegen is not available.
         /// </remarks>
-        /// <returns>Array of values containing the underlying type of the Enum</returns>
+        /// <returns>An array that contains the values of the underlying type constants in  <paramref name="enumType" />.</returns>
         /// <exception cref="ArgumentNullException">
-        /// Thrown when the enum type is null
+        /// Thrown when the enumeration type is null.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the type is not an enumeration type.
         /// </exception>
         public static Array GetValuesAsUnderlyingType(Type enumType)
         {

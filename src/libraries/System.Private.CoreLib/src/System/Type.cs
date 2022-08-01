@@ -527,15 +527,15 @@ namespace System
         }
 
         /// <summary>
-        /// Gets an array of values of the underlying type of the Enum.
+        /// Retrieves an array of the values of the underlying type constants in a specified enumeration type.
         /// </summary>
         /// <remarks>
-        /// This method can be used to get enum values when creating an Array of Enum is challenging
-        /// For example, in reflection-only context or on a platform where runtime codegen is not available.
+        /// This method can be used to get enumeration values when creating an array of the enumeration type is challenging.
+        /// For example, <see cref="T:System.Reflection.MetadataLoadContext" /> or on a platform where runtime codegen is not available.
         /// </remarks>
-        /// <returns>Array of values containing the underlying type of the Enum</returns>
+        /// <returns>An array that contains the values of the underlying type constants in enumType.</returns>
         /// <exception cref="ArgumentException">
-        /// Thrown when the type is not Enum
+        /// Thrown when the type is not an enumeration type.
         /// </exception>
         public virtual Array GetEnumValuesAsUnderlyingType() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
