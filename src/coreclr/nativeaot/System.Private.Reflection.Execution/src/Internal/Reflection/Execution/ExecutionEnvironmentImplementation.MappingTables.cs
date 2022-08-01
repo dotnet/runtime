@@ -397,12 +397,11 @@ namespace Internal.Reflection.Execution
             return MethodInvokerWithMethodInvokeInfo.CreateMethodInvoker(declaringTypeHandle, methodHandle, methodInvokeInfo);
         }
 
-        // Get the pointers necessary to call a dynamic method invocation function
+        //
+        // Get the pointer of a dynamic method invocation thunk
         //
         private static IntPtr GetDynamicMethodInvoke(NativeFormatModuleInfo module, uint cookie)
         {
-            // Nongeneric DynamicInvoke method. This is used to DynamicInvoke methods that have parameters that
-            // cannot be shared (or if there are no parameters to begin with).
             ExternalReferencesTable extRefs = default(ExternalReferencesTable);
             extRefs.InitializeCommonFixupsTable(module);
 

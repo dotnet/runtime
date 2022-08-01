@@ -497,7 +497,7 @@ namespace System
                     {
                         if ((argumentInfo.Transform & (DynamicInvokeTransform.ByRef | DynamicInvokeTransform.Nullable)) != 0)
                         {
-                            // Rebox the value to allow mutating the original box. This also takes care of
+                            // Rebox the value to avoid mutating the original box. This also takes care of
                             // T -> Nullable<T> transformation as side-effect.
                             object box = Runtime.RuntimeImports.RhNewObject(argumentInfo.Type);
                             RuntimeImports.RhUnbox(arg, ref box.GetRawData(), argumentInfo.Type);
