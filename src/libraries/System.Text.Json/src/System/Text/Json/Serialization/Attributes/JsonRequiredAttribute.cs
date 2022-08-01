@@ -12,6 +12,9 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Initializes a new instance of <see cref="JsonRequiredAttribute"/>.
         /// </summary>
+        /// <remarks>
+        /// <see langword="null"/> token in JSON will not trigger a validation error.
+        /// </remarks>
         public JsonRequiredAttribute()
         {
         }

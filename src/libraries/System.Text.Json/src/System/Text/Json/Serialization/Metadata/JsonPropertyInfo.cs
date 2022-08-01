@@ -204,15 +204,18 @@ namespace System.Text.Json.Serialization.Metadata
         private bool _isExtensionDataProperty;
 
         /// <summary>
-        /// Specifies whether the current property is required during deserialization.
+        /// Specifies whether the current property is required for deserialization to be successful.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
         /// </exception>
         /// <remarks>
         /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
-        /// the value of this property will be mapped from based on presence of <see cref="JsonRequiredAttribute"/> annotation or presence of <see langword="required"/> keyword.
-        /// If SetsRequiredMembersAttribute is specified on the constructor the <see langword="required"/> keyword will not influence value of this property.
+        /// the value of this property will be mapped from <see cref="JsonRequiredAttribute"/> annotations.
+        ///
+        /// For contracts using <see cref="DefaultJsonTypeInfoResolver"/>, properties using the <see langword="required"/> keyword
+        /// will also map to this setting, unless deserialization uses a SetsRequiredMembersAttribute on a constructor that populates all required properties.
+        /// <see langword="required"/> keyword is currently not supported in <see cref="JsonSerializerContext"/> contracts.
         /// </remarks>
         public bool IsRequired
         {
