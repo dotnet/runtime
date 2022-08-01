@@ -318,22 +318,14 @@ namespace System
 
             if (argCount == 0)
             {
-                if (wrapInTargetInvocationException)
-                {
-                    try
-                    {
-                        ret = ref RawCalliHelper.Call(dynamicInvokeInfo.InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, null);
-                        DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-                    }
-                    catch (Exception e)
-                    {
-                        throw new TargetInvocationException(e);
-                    }
-                }
-                else
+                try
                 {
                     ret = ref RawCalliHelper.Call(dynamicInvokeInfo.InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, null);
                     DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+                }
+                catch (Exception e) when (wrapInTargetInvocationException)
+                {
+                    throw new TargetInvocationException(e);
                 }
             }
             else if (argCount > MaxStackAllocArgCount)
@@ -348,27 +340,19 @@ namespace System
 
                 CheckArguments(dynamicInvokeInfo, ref argStorage._arg0!, (ByReference*)&byrefStorage, parameters, binderBundle);
 
-                if (wrapInTargetInvocationException)
-                {
-                    try
-                    {
-                        ret = ref RawCalliHelper.Call(dynamicInvokeInfo.InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, &byrefStorage);
-                        DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-                    }
-                    catch (Exception e)
-                    {
-                        throw new TargetInvocationException(e);
-                    }
-                }
-                else
+                try
                 {
                     ret = ref RawCalliHelper.Call(dynamicInvokeInfo.InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, &byrefStorage);
                     DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 }
-
-                if (dynamicInvokeInfo.NeedsCopyBack)
+                catch (Exception e) when (wrapInTargetInvocationException)
                 {
-                    CopyBack(dynamicInvokeInfo, ref argStorage._arg0!, parameters);
+                    throw new TargetInvocationException(e);
+                }
+                finally
+                {
+                    if (dynamicInvokeInfo.NeedsCopyBack)
+                        CopyBack(dynamicInvokeInfo, ref argStorage._arg0!, parameters);
                 }
             }
 
@@ -399,27 +383,19 @@ namespace System
 
                 CheckArguments(dynamicInvokeInfo, ref Unsafe.As<IntPtr, object>(ref *pStorage), pByRefStorage, parameters, binderBundle);
 
-                if (wrapInTargetInvocationException)
-                {
-                    try
-                    {
-                        ret = ref RawCalliHelper.Call(dynamicInvokeInfo.InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, pByRefStorage);
-                        DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-                    }
-                    catch (Exception e)
-                    {
-                        throw new TargetInvocationException(e);
-                    }
-                }
-                else
+                try
                 {
                     ret = ref RawCalliHelper.Call(dynamicInvokeInfo.InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, pByRefStorage);
                     DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 }
-
-                if (dynamicInvokeInfo.NeedsCopyBack)
+                catch (Exception e) when (wrapInTargetInvocationException)
                 {
-                    CopyBack(dynamicInvokeInfo, ref Unsafe.As<IntPtr, object>(ref *pStorage), parameters);
+                    throw new TargetInvocationException(e);
+                }
+                finally
+                {
+                    if (dynamicInvokeInfo.NeedsCopyBack)
+                        CopyBack(dynamicInvokeInfo, ref Unsafe.As<IntPtr, object>(ref *pStorage), parameters);
                 }
             }
             finally
