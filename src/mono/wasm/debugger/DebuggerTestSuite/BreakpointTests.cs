@@ -899,5 +899,18 @@ namespace DebuggerTests
                 "DefaultInterfaceMethod." + methodName
             );
         }
+
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(".*debugger-test.cs.sameprefix", "TestBreakpointUsingUrlRegex", "debugger-test.cs.sameprefix")]
+        [InlineData(".*debugger-test.cs.sameprefix2", "TestBreakpointUsingUrlRegex2", "debugger-test.cs.sameprefix2")]
+        public async Task SetBreakpointUsingUrlRegexWithSourceWithSamePrefix(string regex, string klassName, string fileName)
+        {
+            var bp1_res = await SetBreakpoint(regex, 8, 8, use_regex: true);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] " + klassName + ":Run'); }, 1);",
+                $"dotnet://debugger-test.dll/{fileName}", 8, 8,
+                $"{klassName}.Run"
+            );
+        }
     }
 }

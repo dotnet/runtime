@@ -1506,7 +1506,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public IEnumerable<SourceFile> AllSources() => assemblies.SelectMany(a => a.Sources);
+        public IEnumerable<SourceFile> AllSources() => assemblies.SelectMany(a => a.Sources).OrderBy(source => source.Url);
 
         public SourceFile GetFileById(SourceId id) => AllSources().SingleOrDefault(f => f.SourceId.Equals(id));
 

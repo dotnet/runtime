@@ -11,6 +11,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="debugger-test.cs.sameprefix2" />
+    <Compile Include="debugger-test.cs.sameprefix" />
+
     <WasmExtraFilesToDeploy Include="debugger-driver.html" />
     <WasmExtraFilesToDeploy Include="non-wasm-page.html" />
     <WasmExtraFilesToDeploy Include="wasm-page-without-assets.html" />
