@@ -258,8 +258,8 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(TestPlatforms.Linux)]
         public void Ctor_Socket_FromPipeHandle_Ctor_Dispose_Success(bool ownsHandle)
         {
-            (int fd1, int fd2) = pipe2();
-            close(fd2);
+            (int fd1, int fd2) = LibcInterop.pipe2();
+            LibcInterop.close(fd2);
 
             using var _ = new Socket(new SafeSocketHandle(new IntPtr(fd1), ownsHandle));
         }
@@ -631,28 +631,43 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-
-        [DllImport("libc")]
-        private static unsafe extern int socketpair(int domain, int type, int protocol, int* ptr);
-
-        [DllImport("libc")]
-        private static extern int close(int fd);
-
-        [DllImport("libc", SetLastError = true)]
-        private static unsafe extern int pipe2(int* pipefd, int flags);
-
-        private static unsafe (int, int) pipe2(int flags = 0)
+        private static int CloseSocketHandle(IntPtr handle)
         {
-            Span<int> pipefd = stackalloc int[2];
-            fixed (int* ptr = pipefd)
+            return PlatformDetection.IsWindows ?
+                WinInterop.closesocket(handle) :
+                LibcInterop.close((int)handle);
+        }
+
+        private static class WinInterop
+        {
+            [DllImport("ws2_32.dll", SetLastError = true)]
+            internal static extern int closesocket(IntPtr socketHandle);
+        }
+
+        private static class LibcInterop
+        {
+            [DllImport("libc")]
+            public static unsafe extern int socketpair(int domain, int type, int protocol, int* ptr);
+
+            [DllImport("libc")]
+            public static extern int close(int fd);
+
+            [DllImport("libc", SetLastError = true)]
+            public static unsafe extern int pipe2(int* pipefd, int flags);
+
+            public static unsafe (int, int) pipe2(int flags = 0)
             {
-                if (pipe2(ptr, flags) == 0)
+                Span<int> pipefd = stackalloc int[2];
+                fixed (int* ptr = pipefd)
                 {
-                    return (pipefd[0], pipefd[1]);
-                }
-                else
-                {
-                    throw new Win32Exception();
+                    if (pipe2(ptr, flags) == 0)
+                    {
+                        return (pipefd[0], pipefd[1]);
+                    }
+                    else
+                    {
+                        throw new Win32Exception();
+                    }
                 }
             }
         }
@@ -669,7 +684,7 @@ namespace System.Net.Sockets.Tests
 
             fixed (int* bufferPtr = ptr)
             {
-                int result = socketpair(AF_UNIX, SOCK_STREAM, 0, bufferPtr);
+                int result = LibcInterop.socketpair(AF_UNIX, SOCK_STREAM, 0, bufferPtr);
                 Assert.Equal(0, result);
             }
 
@@ -684,8 +699,24 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(ProtocolType.Unspecified, s.ProtocolType);
             }
 
-            close(ptr[0]);
-            close(ptr[1]);
+            LibcInterop.close(ptr[0]);
+            LibcInterop.close(ptr[1]);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Ctor_Dispose_HandleClosedIfOwnsHandle(bool ownsHandle)
+        {
+            Socket original = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            IntPtr handleValue = original.Handle;
+
+            SafeSocketHandle handleClone = new SafeSocketHandle(handleValue, ownsHandle: ownsHandle);
+            Socket socketClone = new Socket(handleClone);
+            socketClone.Dispose();
+
+            bool manualCloseSucceeded = CloseSocketHandle(handleValue) == 0;
+            Assert.Equal(!ownsHandle, manualCloseSucceeded);
         }
 
         private static void AssertEqualOrSameException<T>(Func<T> expected, Func<T> actual)
