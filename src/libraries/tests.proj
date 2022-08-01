@@ -295,6 +295,9 @@
 
     <!-- Functional tests on devices have problems with return codes from mlaunch -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj" />
+    
+    <!-- https://github.com/dotnet/runtime/issues/73041 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp\tests\Microsoft.CSharp.Tests.csproj" />
   </ItemGroup>
 
   <!-- Excluding all tests for aot catalyst until building on helix works properly -->
