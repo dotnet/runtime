@@ -5,7 +5,7 @@ import ProductVersion from "consts:productVersion";
 import Configuration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 
-import { ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_WORKER, set_imports_exports } from "./imports";
+import { ENVIRONMENT_IS_PTHREAD, set_imports_exports } from "./imports";
 import { DotnetModule, is_nullish, DotnetPublicAPI, EarlyImports, EarlyExports, EarlyReplacements } from "./types";
 import { configure_emscripten_startup, mono_wasm_pthread_worker_init } from "./startup";
 import { mono_bind_static_method } from "./net6-legacy/method-calls";

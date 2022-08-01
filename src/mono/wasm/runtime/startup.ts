@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
 import { mono_assert, CharPtrNull, DotnetModule, MonoConfig, wasm_type_symbol, MonoObject, MonoConfigError, LoadingResource, AssetEntry, ResourceRequest, DotnetPublicAPI } from "./types";
-import { BINDING, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_SHELL, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
+import { BINDING, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
