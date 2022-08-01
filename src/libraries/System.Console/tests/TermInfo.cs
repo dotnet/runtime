@@ -28,6 +28,7 @@ public class TermInfo
     private const string TerminfoLocationsField = "_terminfoLocations";
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/72833", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests TermInfo
     public void VerifyInstalledTermInfosParse()
     {
@@ -71,6 +72,7 @@ public class TermInfo
     }
 
     [Theory]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/72833", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests TermInfo
     [InlineData("xterm-256color", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0)]
     [InlineData("xterm-256color", "\u001B\u005B\u00331m", "\u001B\u005B\u00341m", 1)]

@@ -5,9 +5,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
-    <RdXmlFile Include="default.rd.xml" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="CancelKeyPress.cs" />
     <Compile Include="ConsoleStreamTests.cs" />
