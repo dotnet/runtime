@@ -12,7 +12,11 @@ namespace System.Text.Json.Serialization
     /// <remarks>
     /// Reading is case insensitive, writing can be customized via a <see cref="JsonNamingPolicy" />.
     /// </remarks>
-    [RequiresDynamicCode(JsonStringEnumConverterRequiresDynamicCodeMessage)]
+    [RequiresDynamicCode(
+        "JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. " +
+        "There is no built-in solution compatible with native AOT applications. " +
+        "Consider authoring a custom converter that is not a factory to work around the issue. " +
+        "See https://github.com/dotnet/runtime/issues/73124." )]
     public class JsonStringEnumConverter : JsonConverterFactory
     {
         private readonly JsonNamingPolicy? _namingPolicy;

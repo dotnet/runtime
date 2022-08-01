@@ -14,11 +14,6 @@ namespace System.Text.Json.Serialization
     /// </remarks>
     public abstract class JsonConverterFactory : JsonConverter
     {
-        private protected const string JsonStringEnumConverterRequiresDynamicCodeMessage =
-            "JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. " +
-            "There is no built-in solution compatible with native AOT applications. " +
-            "Consider authoring a custom converter that is not a factory to work around the issue. " +
-            "See https://github.com/dotnet/runtime/issues/73124.";
         /// <summary>
         /// When overridden, constructs a new <see cref="JsonConverterFactory"/> instance.
         /// </summary>
