@@ -30,10 +30,9 @@ namespace Internal.Reflection.Execution.MethodInvokers
         protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             ValidateThis(thisObject, _declaringTypeHandle);
-            object? result = RuntimeAugments.CallDynamicInvokeMethod(
+            object? result = MethodInvokeInfo.Invoke(
                 thisObject,
                 MethodInvokeInfo.LdFtnResult,
-                MethodInvokeInfo,
                 arguments,
                 binderBundle,
                 wrapInTargetInvocationException);

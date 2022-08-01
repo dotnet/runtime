@@ -57,10 +57,9 @@ namespace Internal.Reflection.Execution.MethodInvokers
 
             IntPtr resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
 
-            object? result = RuntimeAugments.CallDynamicInvokeMethod(
+            object? result = MethodInvokeInfo.Invoke(
                 thisObject,
                 resolvedVirtual,
-                MethodInvokeInfo,
                 arguments,
                 binderBundle,
                 wrapInTargetInvocationException);

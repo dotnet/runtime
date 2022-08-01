@@ -360,26 +360,6 @@ namespace Internal.Runtime.Augments
 
         public static unsafe int ObjectHeaderSize => sizeof(EETypePtr);
 
-        [DebuggerGuidedStepThroughAttribute]
-        public static object? CallDynamicInvokeMethod(
-            object? thisPtr,
-            IntPtr methodToCall,
-            DynamicInvokeInfo dynamicInvokeInfo,
-            object?[]? parameters,
-            BinderBundle binderBundle,
-            bool wrapInTargetInvocationException)
-        {
-            object? result = InvokeUtils.CallDynamicInvokeMethod(
-                thisPtr,
-                methodToCall,
-                dynamicInvokeInfo,
-                parameters,
-                binderBundle,
-                wrapInTargetInvocationException);
-            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-            return result;
-        }
-
         public static unsafe void EnsureClassConstructorRun(IntPtr staticClassConstructionContext)
         {
             StaticClassConstructionContext* context = (StaticClassConstructionContext*)staticClassConstructionContext;

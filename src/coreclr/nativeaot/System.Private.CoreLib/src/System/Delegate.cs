@@ -278,8 +278,8 @@ namespace System
             {
                 DynamicInvokeInfo dynamicInvokeInfo = ReflectionAugments.ReflectionCoreCallbacks.GetDelegateDynamicInvokeInfo(GetType());
 
-                object? result = InvokeUtils.CallDynamicInvokeMethod(m_firstParameter, m_functionPointer,
-                    dynamicInvokeInfo, args, binderBundle: null, wrapInTargetInvocationException: true);
+                object? result = dynamicInvokeInfo.Invoke(m_firstParameter, m_functionPointer,
+                    args, binderBundle: null, wrapInTargetInvocationException: true);
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }
