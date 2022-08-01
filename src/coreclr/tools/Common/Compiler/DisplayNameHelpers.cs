@@ -117,58 +117,7 @@ namespace ILCompiler
 
         public static string GetDisplayName(this TypeDesc type)
         {
-            var sb = new StringBuilder();
-            if (type == null)
-                return sb.ToString();
-
-            Stack<TypeDesc> genericArguments = null;
-            switch (type)
-            {
-                // TODO: Linker handles here ArrayType and GenericInstanceType
-                default:
-                    string simpleName = Formatter.Instance.FormatName(type, FormatOptions.NamespaceQualify);
-                    if (type.HasInstantiation)
-                    {
-                        int genericParametersCount = type.Instantiation.Length;
-                        int declaringTypeGenericParametersCount = 0;
-                        if (type is DefType defType)
-                            declaringTypeGenericParametersCount = defType.ContainingType?.Instantiation.Length ?? 0;
-
-                        if (genericParametersCount > declaringTypeGenericParametersCount)
-                        {
-                            if (genericArguments?.Count > 0)
-                                PrependGenericArguments(genericArguments, genericParametersCount - declaringTypeGenericParametersCount, sb);
-                            else
-                                PrependGenericParameters(type.Instantiation, sb);
-
-                            int explicitArityIndex = simpleName.IndexOf('`');
-                            simpleName = explicitArityIndex != -1 ? simpleName.Substring(0, explicitArityIndex) : simpleName;
-                        }
-                    }
-
-                    sb.Insert(0, simpleName);
-                    break;
-            }
-
-            return sb.ToString();
-        }
-
-        internal static void PrependGenericParameters(Instantiation genericParameters, StringBuilder sb)
-        {
-            sb.Insert(0, '>').Insert(0, genericParameters[genericParameters.Length - 1]);
-            for (int i = genericParameters.Length - 2; i >= 0; i--)
-                sb.Insert(0, ',').Insert(0, genericParameters[i]);
-
-            sb.Insert(0, '<');
-        }
-
-        static void PrependGenericArguments(Stack<TypeDesc> genericArguments, int argumentsToTake, StringBuilder sb)
-        {
-            sb.Insert(0, '>').Insert(0, genericArguments.Pop().GetDisplayNameWithoutNamespace().ToString());
-            while (--argumentsToTake > 0)
-                sb.Insert(0, ',').Insert(0, genericArguments.Pop().GetDisplayNameWithoutNamespace().ToString());
-
-            sb.Insert(0, '<');
+            return Formatter.Instance.FormatName(type, FormatOptions.NamespaceQualify);
         }
 
         public static string GetDisplayNameWithoutNamespace(this TypeDesc type)
