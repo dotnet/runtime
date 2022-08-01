@@ -11917,8 +11917,18 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
             }
             // Otherwise, if the shift is not constant, just rewire the nodes and reverse the shift op:
             //   AND(RSH(x, y), 1)  ->  AND(x, LSH(1, y))
+            //
+            // On ARM/BMI2 the original pattern should result in smaller code when comparing to non-zero,
+            // the other case where this transform is worth is if the compare is being used by a jump.
+            //
             else
             {
+                if (!(cmp->gtFlags & GTF_RELOP_JMP_USED) &&
+                    ((op2Value == 0 && cmp->OperIs(GT_NE)) || (op2Value == 1 && cmp->OperIs(GT_EQ))))
+                {
+                    goto SKIP;
+                }
+
                 // Remove flags from op1, but keep op2's
                 rshiftOp->gtFlags &= ~GTF_ALL_EFFECT;
                 rshiftOp->gtFlags |= rshiftOp->gtGetOp2()->gtFlags & GTF_ALL_EFFECT;
