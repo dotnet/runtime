@@ -2185,8 +2185,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, "(?i:[\0-ac-\uFFFF])", RegexOptions.None, "b", new (int, int, string)[] { (0, 1, "b") } };
                 yield return new object[] { engine, "(?i:[\0-PR-\uFFFF])", RegexOptions.None, "Q", new (int, int, string)[] { (0, 1, "Q") } };
                 yield return new object[] { engine, "(?i:[\0-pr-\uFFFF])", RegexOptions.None, "q", new (int, int, string)[] { (0, 1, "q") } };
-                yield return new object[] { engine, "(?i:[^a])", RegexOptions.None, "aAaA", null };             // this correponds to not{a,A}
-                yield return new object[] { engine, "(?i:[\0-\uFFFF-[A]])", RegexOptions.None, "aAaA", null };  // this correponds to not{a,A}
+                yield return new object[] { engine, "(?i:[^a])", RegexOptions.None, "aAaA", null };             // this corresponds to not{a,A}
+                yield return new object[] { engine, "(?i:[\0-\uFFFF-[A]])", RegexOptions.None, "aAaA", null };  // this corresponds to not{a,A}
                 yield return new object[] { engine, "(?i:[^Q])", RegexOptions.None, "q", null };
                 yield return new object[] { engine, "(?i:[^b])", RegexOptions.None, "b", null };
 

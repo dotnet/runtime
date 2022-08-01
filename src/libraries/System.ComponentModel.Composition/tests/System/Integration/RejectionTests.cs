@@ -329,7 +329,7 @@ namespace Tests.Integration
         //
         // Both have desirable and undesirable characteristics.  The first case is non-discriminatory but
         // rejects more parts than are necessary, the second minimizes rejection but must choose a subset
-        // on somewhat arbitary grounds.
+        // on somewhat arbitrary grounds.
         [Fact]
         public void Rejection_TheClemensLoop()
         {

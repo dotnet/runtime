@@ -885,7 +885,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         (sig->retType != CORINFO_TYPE_VAR))
     {
         // Make sure that all valuetypes (including enums) that we push are loaded.
-        // This is to guarantee that if a GC is triggerred from the prestub of this methods,
+        // This is to guarantee that if a GC is triggered from the prestub of this methods,
         // all valuetypes in the method signature are already loaded.
         // We need to be able to find the size of the valuetypes, but we cannot
         // do a class-load from within GC.
@@ -1797,7 +1797,7 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 noway_assert(blockNode->OperIsBlk());
 
                 // Sink the GT_COMMA below the blockNode addr.
-                // That is GT_COMMA(op1, op2=blockNode) is tranformed into
+                // That is GT_COMMA(op1, op2=blockNode) is transformed into
                 // blockNode(GT_COMMA(TYP_BYREF, op1, op2's op1)).
                 //
                 // In case of a chained GT_COMMA case, we sink the last
@@ -8393,7 +8393,7 @@ bool Compiler::impCanPInvokeInline()
 // from a call to see if the call qualifies as an inline pinvoke.
 //
 // Arguments:
-//    block      - block contaning the call, or for inlinees, block
+//    block      - block containing the call, or for inlinees, block
 //                 containing the call being inlined
 //
 // Return Value:
@@ -8479,7 +8479,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 //    methHnd    - handle for the method being called (may be null)
 //    sig        - signature of the method being called
 //    mflags     - method flags for the method being called
-//    block      - block contaning the call, or for inlinees, block
+//    block      - block containing the call, or for inlinees, block
 //                 containing the call being inlined
 //
 // Notes:
@@ -10013,7 +10013,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     sig->retType != CORINFO_TYPE_VAR)
                 {
                     // Make sure that all valuetypes (including enums) that we push are loaded.
-                    // This is to guarantee that if a GC is triggerred from the prestub of this methods,
+                    // This is to guarantee that if a GC is triggered from the prestub of this methods,
                     // all valuetypes in the method signature are already loaded.
                     // We need to be able to find the size of the valuetypes, but we cannot
                     // do a class-load from within GC.
@@ -10664,7 +10664,7 @@ DONE:
 
         // We only do these OSR checks in the root method because:
         // * If we fail to import the root method entry when importing the root method, we can't go back
-        //    and import it during inlining. So instead of checking jsut for recursive tail calls we also
+        //    and import it during inlining. So instead of checking just for recursive tail calls we also
         //    have to check for anything that might introduce a recursive tail call.
         // * We only instrument root method blocks in OSR methods,
         //
@@ -12374,7 +12374,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     if (shouldExpandInline && compCurBB->isRunRarely())
     {
-        // For cold blocks we only expand castclass against exact classes becauses because it's cheap
+        // For cold blocks we only expand castclass against exact classes because it's cheap
         shouldExpandInline = isCastClass && isClassExact;
     }
 
@@ -15450,7 +15450,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // fixed.  Allocate the memory and call the constructor.
 
                     // Note: We cannot add a peep to avoid use of temp here
-                    // becase we don't have enough interference info to detect when
+                    // because we don't have enough interference info to detect when
                     // sources and destination interfere, example: s = new S(ref);
 
                     // TODO: We find the correct place to introduce a general
@@ -18388,7 +18388,7 @@ void Compiler::impImportBlock(BasicBlock* block)
 
     assert(block);
 
-    /* Make the block globaly available */
+    /* Make the block globally available */
 
     compCurBB = block;
 
@@ -20275,7 +20275,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     // Inlined methods always use the managed calling convention
     const bool hasRetBuffArg = impMethodInfo_hasRetBuffArg(methInfo, CorInfoCallConvExtension::Managed);
 
-    /* init the argument stuct */
+    /* init the argument struct */
 
     memset(inlArgInfo, 0, (MAX_INL_ARGS + 1) * sizeof(inlArgInfo[0]));
 
@@ -21550,7 +21550,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // In R2R mode, we might see virtual stub calls to
     // non-virtuals. For instance cases where the non-virtual method
     // is in a different assembly but is called via CALLVIRT. For
-    // verison resilience we must allow for the fact that the method
+    // version resilience we must allow for the fact that the method
     // might become virtual in some update.
     //
     // In non-R2R modes CALLVIRT <nonvirtual> will be turned into a
