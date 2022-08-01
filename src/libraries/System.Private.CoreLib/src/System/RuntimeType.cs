@@ -235,7 +235,7 @@ namespace System
                         return ret;
                     }
                 default:
-                    throw new NotImplementedException("Not Implemented");
+                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
         }
 
