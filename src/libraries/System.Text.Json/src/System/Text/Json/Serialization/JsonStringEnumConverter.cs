@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization
     /// <remarks>
     /// Reading is case insensitive, writing can be customized via a <see cref="JsonNamingPolicy" />.
     /// </remarks>
-    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+    [RequiresDynamicCode(JsonConverterFactoryRequiresDynamicCodeMessage)]
     public class JsonStringEnumConverter : JsonConverterFactory
     {
         private readonly JsonNamingPolicy? _namingPolicy;

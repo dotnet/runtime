@@ -14,6 +14,8 @@ namespace System.Text.Json.Serialization
     /// </remarks>
     public abstract class JsonConverterFactory : JsonConverter
     {
+        internal const string JsonConverterFactoryRequiresDynamicCodeMessage = "Types deriving from JsonConverterFactory cannot be statically analyzed and might require runtime code generation.";
+
         /// <summary>
         /// When overridden, constructs a new <see cref="JsonConverterFactory"/> instance.
         /// </summary>
