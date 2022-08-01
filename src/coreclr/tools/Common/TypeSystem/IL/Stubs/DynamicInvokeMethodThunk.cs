@@ -43,10 +43,13 @@ namespace Internal.IL.Stubs
             {
                 flags |= MethodSignatureFlags.Static;
             }
-            else if (valueTypeInstanceMethod)
-            {
-                flags |= MethodSignatureFlags_ValueTypeInstanceMethod;
-            }
+            // TODO: Reflection invoke assumes unboxing stubs. It means that the "this" pointer is always a regular boxed object reference and
+            // that the dynamic invoke thunks cannot be used to invoke instance methods on unboxed value types currently. This will need
+            // to be addressed for the eventual allocation-free reflection invoke.
+            // else if (valueTypeInstanceMethod)
+            // {
+            //     flags |= MethodSignatureFlags_ValueTypeInstanceMethod;
+            // }
 
             TypeDesc[] parameters = new TypeDesc[sig.Length];
             for (int i = 0; i < sig.Length; i++)

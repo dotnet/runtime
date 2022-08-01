@@ -281,12 +281,13 @@ namespace System
                 // The caller is expected to validate this
                 Debug.Assert(thisPtr != null);
 
-                // thisArg is a raw data byref for valuetype instance methods
-                if (dynamicInvokeInfo.IsValueTypeInstanceMethod)
-                {
-                    thisArg = ref thisPtr.GetRawData();
-                }
-                else
+                // See TODO comment in DynamicInvokeMethodThunk.NormalizeSignature
+                // if (dynamicInvokeInfo.IsValueTypeInstanceMethod)
+                // {
+                //     // thisArg is a raw data byref for valuetype instance methods
+                //     thisArg = ref thisPtr.GetRawData();
+                // }
+                // else
                 {
                     thisArg = ref Unsafe.As<object?, byte>(ref thisPtr);
                 }

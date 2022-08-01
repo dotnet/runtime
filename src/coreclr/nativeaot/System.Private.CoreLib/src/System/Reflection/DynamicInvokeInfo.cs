@@ -39,8 +39,7 @@ namespace System.Reflection
 
             IsStatic = method.IsStatic;
 
-            Type? declaringType = method.DeclaringType;
-            IsValueTypeInstanceMethod = declaringType?.IsValueType ?? false;
+            // IsValueTypeInstanceMethod = method.DeclaringType?.IsValueType ?? false;
 
             ParameterInfo[] parameters = method.GetParametersNoCopy();
             ArgumentInfo[] arguments = (parameters.Length != 0) ? new ArgumentInfo[parameters.Length] : Array.Empty<ArgumentInfo>();
@@ -130,7 +129,7 @@ namespace System.Reflection
         public IntPtr InvokeThunk { get; }
 
         internal bool IsStatic { get; }
-        internal bool IsValueTypeInstanceMethod { get; }
+        // internal bool IsValueTypeInstanceMethod { get; }
         internal bool NeedsCopyBack { get; }
         internal DynamicInvokeTransform ReturnTransform { get; }
         internal EETypePtr ReturnType { get; }
