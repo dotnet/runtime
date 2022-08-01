@@ -133,18 +133,33 @@ namespace System.Net.Quic.Tests
         [InlineData(false)]
         public async Task ConnectWithUntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
+            int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
+
+            X509Certificate2Collection serverChain;
+            if (usePartialChain)
+            {
+                // give first few certificates without root CA
+                serverChain = new X509Certificate2Collection();
+                for (int i = 0; i < split; i++)
+                {
+                    serverChain.Add(_certificates.serverChain[i]);
+                }
+            }
+            else
+            {
+                serverChain = _certificates.serverChain;
+            }
+
             var listenerOptions = CreateQuicListenerOptions();
             listenerOptions.ConnectionOptionsCallback = (_, _, _) =>
             {
                 var serverOptions = CreateQuicServerOptions();
-                serverOptions.ServerAuthenticationOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, _certificates.serverChain);
+                serverOptions.ServerAuthenticationOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, serverChain);
                 serverOptions.ServerAuthenticationOptions.RemoteCertificateValidationCallback = null;
                 return ValueTask.FromResult(serverOptions);
             };
 
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
-
-            int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
 
             var clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
             var clientSslOptions = clientOptions.ClientAuthenticationOptions;

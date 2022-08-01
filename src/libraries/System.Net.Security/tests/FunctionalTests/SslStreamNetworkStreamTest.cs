@@ -791,7 +791,7 @@ namespace System.Net.Security.Tests
                 serverChain = _certificates.serverChain;
             }
 
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, _certificates.serverChain);
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, serverChain);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
