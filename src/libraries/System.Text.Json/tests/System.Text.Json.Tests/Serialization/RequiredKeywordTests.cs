@@ -57,7 +57,7 @@ namespace System.Text.Json.Serialization.Tests
         public RequiredKeywordTests_Node() : base(JsonSerializerWrapper.NodeSerializer) { }
     }
 
-    public abstract class RequiredKeywordTests : SerializerTests
+    public abstract partial class RequiredKeywordTests : SerializerTests
     {
         public RequiredKeywordTests(JsonSerializerWrapper serializer) : base(serializer)
         {
@@ -333,10 +333,13 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
-        public async void ClassWithRequiredKeywordAndSetsRequiredMembersOnCtorWorks()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async void ClassWithRequiredKeywordAndSetsRequiredMembersOnCtorWorks(bool useContext)
         {
-            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndSetsRequiredMembers>(JsonSerializerOptions.Default)
+            JsonSerializerOptions options = useContext ? SetsRequiredMembersTestsContext.Default.Options : JsonSerializerOptions.Default;
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndSetsRequiredMembers>(options)
                 /* no required members */);
 
             var obj = new PersonWithRequiredMembersAndSetsRequiredMembers()
@@ -345,11 +348,11 @@ namespace System.Text.Json.Serialization.Tests
                 LastName = "bar"
             };
 
-            string json = await Serializer.SerializeWrapper(obj);
+            string json = await Serializer.SerializeWrapper(obj, options);
             Assert.Equal("""{"FirstName":"foo","MiddleName":"","LastName":"bar"}""", json);
 
             json = """{"LastName":"bar"}""";
-            var deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSetsRequiredMembers>(json);
+            var deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSetsRequiredMembers>(json, options);
             Assert.Equal("", deserialized.FirstName);
             Assert.Equal("", deserialized.MiddleName);
             Assert.Equal("bar", deserialized.LastName);
@@ -369,18 +372,21 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
-        public async void ClassWithRequiredKeywordSmallParametrizedCtorAndSetsRequiredMembersOnCtorWorks()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async void ClassWithRequiredKeywordSmallParametrizedCtorAndSetsRequiredMembersOnCtorWorks(bool useContext)
         {
-            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndSmallParametrizedCtorAndSetsRequiredMembers>(JsonSerializerOptions.Default)
+            JsonSerializerOptions options = useContext ? SetsRequiredMembersTestsContext.Default.Options : JsonSerializerOptions.Default;
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndSmallParametrizedCtorAndSetsRequiredMembers>(options)
                 /* no required members */);
 
             var obj = new PersonWithRequiredMembersAndSmallParametrizedCtorAndSetsRequiredMembers("foo", "bar");
 
-            string json = await Serializer.SerializeWrapper(obj);
+            string json = await Serializer.SerializeWrapper(obj, options);
             Assert.Equal("""{"FirstName":"foo","MiddleName":"","LastName":"bar"}""", json);
 
-            var deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtorAndSetsRequiredMembers>(json);
+            var deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndSmallParametrizedCtorAndSetsRequiredMembers>(json, options);
             Assert.Equal("foo", deserialized.FirstName);
             Assert.Equal("", deserialized.MiddleName);
             Assert.Equal("bar", deserialized.LastName);
@@ -388,9 +394,9 @@ namespace System.Text.Json.Serialization.Tests
 
         private class PersonWithRequiredMembersAndSmallParametrizedCtorAndSetsRequiredMembers
         {
-            public required string FirstName { get; init; }
-            public string MiddleName { get; init; } = "";
-            public required string LastName { get; init; }
+            public required string FirstName { get; set; }
+            public string MiddleName { get; set; } = "";
+            public required string LastName { get; set; }
 
             [SetsRequiredMembers]
             public PersonWithRequiredMembersAndSmallParametrizedCtorAndSetsRequiredMembers(string firstName, string lastName)
@@ -400,18 +406,21 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
-        public async void ClassWithRequiredKeywordLargeParametrizedCtorAndSetsRequiredMembersOnCtorWorks()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async void ClassWithRequiredKeywordLargeParametrizedCtorAndSetsRequiredMembersOnCtorWorks(bool useContext)
         {
-            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndLargeParametrizedCtorAndSetsRequiredMembers>(JsonSerializerOptions.Default)
+            JsonSerializerOptions options = useContext ? SetsRequiredMembersTestsContext.Default.Options : JsonSerializerOptions.Default;
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndLargeParametrizedCtorAndSetsRequiredMembers>(options)
                 /* no required members */);
 
             var obj = new PersonWithRequiredMembersAndLargeParametrizedCtorAndSetsRequiredMembers("a", "b", "c", "d", "e", "f", "g");
 
-            string json = await Serializer.SerializeWrapper(obj);
+            string json = await Serializer.SerializeWrapper(obj, options);
             Assert.Equal("""{"A":"a","B":"b","C":"c","D":"d","E":"e","F":"f","G":"g"}""", json);
 
-            var deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtorAndSetsRequiredMembers>(json);
+            var deserialized = await Serializer.DeserializeWrapper<PersonWithRequiredMembersAndLargeParametrizedCtorAndSetsRequiredMembers>(json, options);
             Assert.Equal("a", deserialized.A);
             Assert.Equal("b", deserialized.B);
             Assert.Equal("c", deserialized.C);
@@ -443,6 +452,11 @@ namespace System.Text.Json.Serialization.Tests
                 G = g;
             }
         }
+
+        [JsonSerializable(typeof(PersonWithRequiredMembersAndSetsRequiredMembers))]
+        [JsonSerializable(typeof(PersonWithRequiredMembersAndSmallParametrizedCtorAndSetsRequiredMembers))]
+        [JsonSerializable(typeof(PersonWithRequiredMembersAndLargeParametrizedCtorAndSetsRequiredMembers))]
+        private partial class SetsRequiredMembersTestsContext : JsonSerializerContext { }
 
         [Fact]
         public async void RemovingPropertiesWithRequiredKeywordAllowsDeserialization()
