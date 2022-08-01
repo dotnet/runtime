@@ -1,4 +1,8 @@
-
+/**
+ * \file
+ * Copyright 2022 Microsoft
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
+ */
 #ifndef __MARSHAL_ILGEN_H__
 #define __MARSHAL_ILGEN_H__
 

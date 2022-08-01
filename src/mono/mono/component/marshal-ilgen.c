@@ -1,6 +1,9 @@
+
 #include "mono/metadata/debug-helpers.h"
 #include "metadata/marshal.h"
 #include "component/marshal-ilgen.h"
+#include "mono/component/marshal-ilgen.h"
+#include "mono/component/marshal-ilgen-noilgen.h"
 #include "metadata/marshal-lightweight.h"
 #include "metadata/marshal-shared.h"
 #include "metadata/method-builder-ilgen.h"
@@ -2740,6 +2743,7 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	return conv_arg;
 }
+
 
 static MonoMarshalILgenCallbacks *
 get_marshal_cb (void)
