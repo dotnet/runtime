@@ -7380,9 +7380,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
 #endif
 				interp_add_ins (td, MINT_LOCALLOC);
-				if (td->sp != td->stack + 1)
-					g_warning("CEE_LOCALLOC: stack not empty");
 				td->sp--;
+				if (td->sp != td->stack) {
+					mono_error_set_generic_error (error, "System", "InvalidProgramException", "");
+					goto exit;
+				}
 				interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 				push_simple_type (td, STACK_TYPE_MP);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
