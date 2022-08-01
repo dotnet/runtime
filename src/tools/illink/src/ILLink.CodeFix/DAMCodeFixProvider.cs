@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,25 +20,25 @@ using Microsoft.CodeAnalysis.Simplification;
 
 namespace ILLink.CodeFix
 {
-	public class DAMCodeFixProvider : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider
+	[ExportCodeFixProvider (LanguageNames.CSharp, Name = nameof (DAMCodeFixProvider)), Shared]
+	public sealed class DAMCodeFixProvider : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider
 	{
-		public static ImmutableArray<DiagnosticDescriptor> GetSupportedDiagnostics ()
+		private static ImmutableArray<DiagnosticDescriptor> GetSupportedDiagnostics ()
 		{
-			var diagDescriptorsArrayBuilder = ImmutableArray.CreateBuilder<DiagnosticDescriptor> ();
-			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter));
-			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter));
-			return diagDescriptorsArrayBuilder.ToImmutable ();
+			return ImmutableArray.Create (
+				DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter),
+				DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter));
 		}
 
 		public static ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => GetSupportedDiagnostics ();
 
 		public sealed override ImmutableArray<string> FixableDiagnosticIds => SupportedDiagnostics.Select (dd => dd.Id).ToImmutableArray ();
 
-		private protected static LocalizableString CodeFixTitle => new LocalizableResourceString (nameof (Resources.DynamicallyAccessedMembersCodeFixTitle), Resources.ResourceManager, typeof (Resources));
+		private static LocalizableString CodeFixTitle => new LocalizableResourceString (nameof (Resources.DynamicallyAccessedMembersCodeFixTitle), Resources.ResourceManager, typeof (Resources));
 
-		private protected static string FullyQualifiedAttributeName => DynamicallyAccessedMembersAnalyzer.FullyQualifiedDynamicallyAccessedMembersAttribute;
+		private static string FullyQualifiedAttributeName => DynamicallyAccessedMembersAnalyzer.FullyQualifiedDynamicallyAccessedMembersAttribute;
 
-		protected static SyntaxNode[] GetAttributeArguments (ISymbol targetSymbol, SyntaxGenerator syntaxGenerator, Diagnostic diagnostic)
+		private static SyntaxNode[] GetAttributeArguments (ISymbol targetSymbol, SyntaxGenerator syntaxGenerator, Diagnostic diagnostic)
 		{
 			object id = Enum.Parse (typeof (DiagnosticId), diagnostic.Id.Substring (2));
 			switch (id) {
@@ -61,7 +62,7 @@ namespace ILLink.CodeFix
 			var document = context.Document;
 			if (await document.GetSyntaxRootAsync (context.CancellationToken).ConfigureAwait (false) is not { } root)
 				return;
-			var diagnostic = context.Diagnostics.First ();
+			var diagnostic = context.Diagnostics[0];
 			SyntaxNode diagnosticNode = root.FindNode (diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
 			if (await document.GetSemanticModelAsync (context.CancellationToken).ConfigureAwait (false) is not { } model)
 				return;
