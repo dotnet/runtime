@@ -284,11 +284,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
-        foreach (var item in MibcProfilePath)
+        foreach (var path in MibcProfilePath)
         {
-            if (!File.Exists(item))
+            if (!File.Exists(path))
             {
-                Log.LogError($"MibcProfilePath '{item}' doesn't exist.");
+                Log.LogError($"MibcProfilePath '{path}' doesn't exist.");
                 return false;
             }
         }
@@ -760,9 +760,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (MibcProfilePath.Length > 0)
         {
             aotArgs.Add("profile-only");
-            foreach (var item in MibcProfilePath)
+            foreach (var path in MibcProfilePath)
             {
-                aotArgs.Add($"mibc-profile={item}");
+                aotArgs.Add($"mibc-profile={path}");
             }
         }
 

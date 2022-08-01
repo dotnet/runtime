@@ -279,7 +279,7 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     mono_jit_set_aot_mode(MONO_AOT_MODE_FULL);
 #else
     mono_jit_set_aot_mode(MONO_AOT_MODE_NORMAL);
-#endif // PROFILE_AOT
+#endif // FULL_AOT
 #endif // FORCE_INTERPRETER
 
     MonoDomain *domain = mono_jit_init_version ("dotnet.android", "mobile");

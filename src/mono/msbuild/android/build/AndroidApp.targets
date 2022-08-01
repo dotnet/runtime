@@ -77,7 +77,7 @@
   </Target>
 
   <Target Name="_AndroidPrepareProfiledAot"
-          Condition="'$(NetTracePath)' != '' and '$(ForceFullAOT)' != 'true'"
+          Condition="'$(NetTraceFilePath)' != '' and '$(ForceFullAOT)' != 'true'"
           DependsOnTargets="_AndroidBeforeAotCompileApp">
     <PropertyGroup>
       <_ToolPath>$([System.IO.Path]::GetDirectoryName('$(DotnetPgoToolPath)'))</_ToolPath>
@@ -88,15 +88,19 @@
       ToolPath="$(_ToolPath)"
       ToolExe="$(_ToolExe)"
       Assemblies="@(_AotInputAssemblies)"
-      NetTracePath="$(NetTracePath)"
+      NetTraceFilePath="$(NetTraceFilePath)"
       OutputDir="$(_MobileIntermediateOutputPath)">
-      <Output TaskParameter="MibcProfilePath" PropertyName="_MibcProfilePath" />
+      <Output TaskParameter="MibcFilePath" ItemName="ProfiledAOTProfilePaths" />
     </NetTraceToMibcConverter>
   </Target>
 
   <Target Name="_AndroidAotCompileApp"
           Condition="'$(RunAOTCompilation)' == 'true'"
           DependsOnTargets="_AndroidBeforeAotCompileApp">
+
+    <ItemGroup>
+      <ProfiledAOTProfilePaths Include="$(MibcFilePath)" />
+    </ItemGroup>
 
     <MonoAOTCompiler
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
@@ -106,7 +110,7 @@
         Assemblies="@(_AotInputAssemblies)"
         AotModulesTablePath="$(AndroidAppBundleDir)\modules.c"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
-        MibcProfilePath="$(_MibcProfilePath)"
+        MibcProfilePath="@(ProfiledAOTProfilePaths)"
         UseLLVM="$(MonoEnableLLVM)"
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="_AndroidAssembliesInternal" />

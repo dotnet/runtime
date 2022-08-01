@@ -42,7 +42,7 @@ public class NetTraceToMibcConverter : ToolTask
     /// The path to the mibc file generated from the converter.
     /// </summary>
     [Output]
-    public string? MibcFilePath { get; set; }
+    public string[] MibcFilePath { get; set; } = new string[1];
 
     protected override string ToolName { get; } = "NetTraceToMibcConverter";
 
@@ -97,7 +97,7 @@ public class NetTraceToMibcConverter : ToolTask
 
     protected override string GenerateCommandLineCommands()
     {
-        MibcFilePath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(NetTraceFilePath), ".mibc"));
+        MibcFilePath[0] = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(NetTraceFilePath), ".mibc"));
 
         StringBuilder mibcConverterArgsStr = new StringBuilder("create-mibc");
         mibcConverterArgsStr.Append($" --trace \"{NetTraceFilePath}\" ");
@@ -108,7 +108,7 @@ public class NetTraceToMibcConverter : ToolTask
             mibcConverterArgsStr.Append($" --reference \"{fullPath}\" ");
         }
 
-        mibcConverterArgsStr.Append($" --output \"{MibcFilePath}\"");
+        mibcConverterArgsStr.Append($" --output \"{MibcFilePath[0]}\"");
 
         return mibcConverterArgsStr.ToString();
     }
