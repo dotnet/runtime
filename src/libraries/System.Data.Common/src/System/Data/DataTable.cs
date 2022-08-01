@@ -2086,7 +2086,7 @@ namespace System.Data
                     }
                     else
                     {
-                        Debug.Assert(value != null, "Value shoud not be null ??");
+                        Debug.Assert(value != null, "Value should not be null ??");
                         Debug.Assert(value.ColumnMapping == MappingType.SimpleContent, "should be text node here");
                         if (value != Columns[value.ColumnName])
                         {
@@ -4384,7 +4384,7 @@ namespace System.Data
                 if ((-1 == currentRecord) && (-1 != proposedRecord) && (-1 != row._oldRecord) && (proposedRecord != row._oldRecord))
                 {
                     // the transition from DataRowState.Deleted -> DataRowState.Modified
-                    // with same orginal record but new current record
+                    // with same original record but new current record
                     // needs to raise an ItemChanged or ItemMoved instead of ItemAdded in the ListChanged event.
                     // for indexes/views listening for both DataViewRowState.Deleted | DataViewRowState.ModifiedCurrent
                     currentRecord = row._oldRecord;
@@ -4827,7 +4827,7 @@ namespace System.Data
             DataColumn[] pkey = PrimaryKey;
             if (pkey.Length == 1)
             {
-                // We have one-column primary key, so we can use it in our heirarchical relation
+                // We have one-column primary key, so we can use it in our hierarchical relation
                 return pkey[0];
             }
 
@@ -4869,7 +4869,7 @@ namespace System.Data
             Justification = "Expression is null and potential problem with data type has already been reported when constructing parentKey")]
         internal DataColumn AddForeignKey(DataColumn parentKey)
         {
-            Debug.Assert(parentKey != null, "AddForeignKey: Invalid paramter.. related primary key is null");
+            Debug.Assert(parentKey != null, "AddForeignKey: Invalid parameter.. related primary key is null");
 
             string keyName = XMLSchema.GenUniqueColumnName(parentKey.ColumnName, this);
             DataColumn foreignKey = new DataColumn(keyName, parentKey.DataType, null, MappingType.Hidden);
@@ -5140,7 +5140,7 @@ namespace System.Data
                     switch (dataRow.RowState)
                     {
                         case DataRowState.Unchanged:
-                            // let see if the incomming value has the same values as existing row, so compare records
+                            // let see if the incoming value has the same values as existing row, so compare records
                             foreach (DataColumn dc in dataRow.Table.Columns)
                             {
                                 if (0 != dc.Compare(dataRow._newRecord, recordNo))

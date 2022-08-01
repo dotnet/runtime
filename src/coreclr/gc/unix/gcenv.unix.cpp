@@ -463,7 +463,7 @@ void GCToOSInterface::Shutdown()
 }
 
 // Get numeric id of the current thread if possible on the
-// current platform. It is indended for logging purposes only.
+// current platform. It is intended for logging purposes only.
 // Return:
 //  Numeric id of the current thread, as best we can retrieve it.
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
@@ -764,7 +764,7 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     // TODO: This can fail, however the GC does not handle the failure gracefully
     // Explicitly calling mmap instead of mprotect here makes it
     // that much more clear to the operating system that we no
-    // longer need these pages. Also, GC depends on re-commited pages to
+    // longer need these pages. Also, GC depends on re-committed pages to
     // be zeroed-out.
     return mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != NULL;
 }

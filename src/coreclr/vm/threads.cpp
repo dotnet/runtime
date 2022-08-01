@@ -1153,8 +1153,8 @@ void InitThreadManager()
 
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
-    _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
+    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
+    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
 
     if (IsWriteBarrierCopyEnabled())
     {
@@ -2468,7 +2468,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
     {
         // TODO: we would prefer to use a GC Holder here, however it is hard
         //       to get the case where we're deleting this thread correct given
-        //       the current macros. We want to supress the release of the holder
+        //       the current macros. We want to suppress the release of the holder
         //       here which puts us in Preemptive mode, and also the switch to
         //       Cooperative mode below, but since both holders will be named
         //       the same thing (due to the generic nature of the macro) we can
@@ -4108,7 +4108,7 @@ void PendingSync::Restore(BOOL bRemoveFromSB)
     // {
     // a.Wait
     // }
-    // We need to make sure that the finally from lock is excuted with the lock owned.
+    // We need to make sure that the finally from lock is executed with the lock owned.
     DWORD state = 0;
     SyncBlock *psb = (SyncBlock*)((DWORD_PTR)pRealWaitEventLink->m_WaitSB & ~1);
     for (LONG i=0; i < m_EnterCount;)
@@ -4408,7 +4408,7 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
 
     if (m_LastThrownObjectHandle != NULL)
     {
-        // We'll somtimes use a handle for a preallocated exception object. We should never, ever destroy one of
+        // We'll sometimes use a handle for a preallocated exception object. We should never, ever destroy one of
         // these handles... they'll be destroyed when the Runtime shuts down.
         if (!CLRException::IsPreallocatedExceptionHandle(m_LastThrownObjectHandle))
         {
@@ -7644,7 +7644,7 @@ LPVOID Thread::GetStaticFieldAddress(FieldDesc *pFD)
     LPVOID result = (LPVOID)((PTR_BYTE)base + (DWORD)offset);
 
     // For value classes, the handle points at an OBJECTREF
-    // which holds the boxed value class, so derefernce and unbox.
+    // which holds the boxed value class, so dereference and unbox.
     if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
     {
         OBJECTREF obj = ObjectToOBJECTREF(*(Object**) result);
@@ -7702,7 +7702,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
     TADDR result = dac_cast<TADDR>(base) + (DWORD)offset;
 
     // For value classes, the handle points at an OBJECTREF
-    // which holds the boxed value class, so derefernce and unbox.
+    // which holds the boxed value class, so dereference and unbox.
     if (pFD->IsByValue())
     {
         _ASSERTE(result != NULL);
@@ -8305,7 +8305,7 @@ void Thread::StaticInitialize()
     InitializeSpecialUserModeApc();
 
     // When CET shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
-    _ASSERTE_ALL_BUILDS(__FILE__, !AreCetShadowStacksEnabled() || UseSpecialUserModeApc());
+    _ASSERTE_ALL_BUILDS(!AreCetShadowStacksEnabled() || UseSpecialUserModeApc());
 #endif
 }
 

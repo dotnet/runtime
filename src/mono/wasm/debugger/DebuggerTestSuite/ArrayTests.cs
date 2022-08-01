@@ -564,8 +564,6 @@ namespace DebuggerTests
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]
-        [Trait("Category", "windows-failing")] // https://github.com/dotnet/runtime/issues/65742
-        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/65742
         public async Task InvalidArrayId() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "DebuggerTests.Container.PlaceholderMethod",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
@@ -582,7 +580,7 @@ namespace DebuggerTests
 
                // Trying to access object as an array
                if (!DotnetObjectId.TryParse(c_obj_id, out var id) || id.Scheme != "object")
-                   Assert.True(false, "Unexpected object id format. Maybe this test is out of sync with the object id format in dotnet.cjs.lib.js?");
+                   Assert.True(false, "Unexpected object id format. Maybe this test is out of sync with the object id format in dotnet.es6.lib.js?");
 
                await GetProperties($"dotnet:array:{id.Value}", expect_ok: false);
            });
@@ -610,12 +608,12 @@ namespace DebuggerTests
                      X = TNumber(5)
                  }, "pf_arr0_props", num_fields: 4);
 
-                var invalid_accessors = new object[] { "NonExistant", "10000", "-2", 10000, -2, null, String.Empty };
+                var invalid_accessors = new object[] { "NonExistent", "10000", "-2", 10000, -2, null, String.Empty };
                 foreach (var invalid_accessor in invalid_accessors)
                 {
                     // var res = await InvokeGetter (JObject.FromObject (new { value = new { objectId = obj_id } }), invalid_accessor, expect_ok: true);
                     res = await InvokeGetter(pf_arr, invalid_accessor, expect_ok: true);
-                    AssertEqual("undefined", res.Value["result"]?["type"]?.ToString(), "Expected to get undefined result for non-existant accessor");
+                    AssertEqual("undefined", res.Value["result"]?["type"]?.ToString(), "Expected to get undefined result for non-existent accessor");
                 }
            });
 

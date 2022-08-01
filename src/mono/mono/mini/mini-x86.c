@@ -436,7 +436,7 @@ get_call_info_internal (CallInfo *cinfo, MonoMethodSignature *sig)
 		MonoType *ptype;
 
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
-			/* We allways pass the sig cookie on the stack for simplicity */
+			/* We always pass the sig cookie on the stack for simplicity */
 			/*
 			 * Prevent implicit arguments + the sig cookie from being passed
 			 * in registers.
@@ -2129,7 +2129,7 @@ mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 		 * Under Windows, it is necessary to allocate one page at a time,
 		 * "touching" stack after each successful sub-allocation. This is
 		 * because of the way stack growth is implemented - there is a
-		 * guard page before the lowest stack page that is currently commited.
+		 * guard page before the lowest stack page that is currently committed.
 		 * Stack normally grows sequentially so OS traps access to the
 		 * guard page and commits more pages when needed.
 		 */
@@ -3718,7 +3718,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* we need to exchange ST(0) with ST(1) */
 			x86_fxch (code, 1);
 
-			/* this requires a loop, because fprem somtimes
+			/* this requires a loop, because fprem sometimes
 			 * returns a partial remainder */
 			l1 = code;
 			/* looks like MS is using fprem instead of the IEEE compatible fprem1 */

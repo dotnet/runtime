@@ -28,6 +28,14 @@ internal struct ReceiveBuffers
         }
     }
 
+    public bool HasCapacity()
+    {
+        lock (_syncRoot)
+        {
+            return _buffer.ActiveMemory.Length < MaxBufferedBytes;
+        }
+    }
+
     public int CopyFrom(ReadOnlySpan<QUIC_BUFFER> quicBuffers, int totalLength, bool final)
     {
         lock (_syncRoot)

@@ -8299,6 +8299,11 @@ namespace System.Diagnostics.CodeAnalysis
         public NotNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+    public sealed class UnscopedRefAttribute : System.Attribute
+    {
+        public UnscopedRefAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false, AllowMultiple=false)]
     public sealed partial class RequiresAssemblyFilesAttribute : System.Attribute
     {
@@ -12131,6 +12136,11 @@ namespace System.Runtime
         public AssemblyTargetedPatchBandAttribute(string targetedPatchBand) { }
         public string TargetedPatchBand { get { throw null; } }
     }
+    public static partial class ControlledExecution
+    {
+        [System.ObsoleteAttribute("ControlledExecution.Run method may corrupt the process and should not be used in production code.", DiagnosticId = "SYSLIB0046", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        public static void Run(System.Action action, System.Threading.CancellationToken cancellationToken) { throw null; }
+    }
     public partial struct DependentHandle : System.IDisposable
     {
         private object _dummy;
@@ -12870,7 +12880,7 @@ namespace System.Runtime.CompilerServices
         [System.CLSCompliantAttribute(false)]
         public unsafe static ref T AsRef<T>(void* source) { throw null; }
         public static ref T AsRef<T>(scoped in T source) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("o")]
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("o")]
         public static T? As<T>(object? o) where T : class? { throw null; }
         public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }
         public static System.IntPtr ByteOffset<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref T origin, [System.Diagnostics.CodeAnalysis.AllowNull] ref T target) { throw null; }

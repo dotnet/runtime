@@ -5,11 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// TraceLogging: This is the implementation of the DataCollector

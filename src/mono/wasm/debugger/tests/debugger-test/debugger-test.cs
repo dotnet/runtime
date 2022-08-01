@@ -827,9 +827,9 @@ public class DebuggerAttribute
         HiddenMethod();
         HiddenMethodUserBreak();
     }
-    
+
     [System.Diagnostics.DebuggerStepThroughAttribute]
-    public static void StepThrougBp()
+    public static void StepThroughBp()
     {
         var a = 0;
         a++;
@@ -837,15 +837,15 @@ public class DebuggerAttribute
     }
 
     [System.Diagnostics.DebuggerStepThroughAttribute]
-    public static void StepThrougUserBp()
+    public static void StepThroughUserBp()
     {
         System.Diagnostics.Debugger.Break();
     }
 
     public static void RunStepThrough()
     {
-        StepThrougBp();
-        StepThrougUserBp();
+        StepThroughBp();
+        StepThroughUserBp();
     }
 
     [System.Diagnostics.DebuggerNonUserCode]
@@ -1004,7 +1004,7 @@ public interface IDefaultInterface
         DefaultInterfaceMethod.MethodForCallingFromDIM();
         return $"{localString} from IDefaultInterface";
     }
-    
+
     int DefaultMethodToOverride()
     {
         int retValue = 10;
@@ -1089,7 +1089,7 @@ public static class DefaultInterfaceMethod
         int overrideFromIExtend = extendDefaultInter.DefaultMethodToOverride();
         extendDefaultInter.DefaultMethod2(out string default2FromIExtend);
     }
-    
+
     public static async void EvaluateAsync()
     {
         IDefaultInterface defaultInter = new DIMClass();
@@ -1164,7 +1164,7 @@ public class AsyncGeneric
 {
     public static async void TestAsyncGeneric1Parm()
     {
-        var a = await GetAsyncMethod<int>(10); 
+        var a = await GetAsyncMethod<int>(10);
         Console.WriteLine(a);
     }
     protected static async System.Threading.Tasks.Task<K> GetAsyncMethod<K>(K parm)
@@ -1176,7 +1176,7 @@ public class AsyncGeneric
 
     public static async void TestKlassGenericAsyncGeneric()
     {
-        var a = await MyKlass<bool, char>.GetAsyncMethod<int>(10); 
+        var a = await MyKlass<bool, char>.GetAsyncMethod<int>(10);
         Console.WriteLine(a);
     }
     class MyKlass<T, L>
@@ -1197,7 +1197,7 @@ public class AsyncGeneric
 
     public static async void TestKlassGenericAsyncGeneric2()
     {
-        var a = await MyKlass<bool>.GetAsyncMethod<int>(10); 
+        var a = await MyKlass<bool>.GetAsyncMethod<int>(10);
         Console.WriteLine(a);
     }
     class MyKlass<T>
@@ -1227,22 +1227,22 @@ public class AsyncGeneric
 
     public static async void TestKlassGenericAsyncGeneric3()
     {
-        var a = await MyKlass<bool>.GetAsyncMethod2<int, char>(10); 
+        var a = await MyKlass<bool>.GetAsyncMethod2<int, char>(10);
         Console.WriteLine(a);
     }
     public static async void TestKlassGenericAsyncGeneric4()
     {
-        var a = await MyKlass<bool, double>.GetAsyncMethod2<int, char>(10); 
+        var a = await MyKlass<bool, double>.GetAsyncMethod2<int, char>(10);
         Console.WriteLine(a);
     }
     public static async void TestKlassGenericAsyncGeneric5()
     {
-        var a = await MyKlass<bool>.MyKlassNested<int>.GetAsyncMethod<char>('1'); 
+        var a = await MyKlass<bool>.MyKlassNested<int>.GetAsyncMethod<char>('1');
         Console.WriteLine(a);
     }
     public static async void TestKlassGenericAsyncGeneric6()
     {
-        var a = await MyKlass<MyKlass<int>>.GetAsyncMethod<char>('1'); 
+        var a = await MyKlass<MyKlass<int>>.GetAsyncMethod<char>('1');
         Console.WriteLine(a);
     }
 }

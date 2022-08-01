@@ -1,6 +1,6 @@
 # User Defined Type Marshalling for Source-Generated Interop
 
-For the V1 of our source-generator, we designed support for marshalling collection types and user-defined structure types based on the designs in [StructMarshalling.md](StructMarshalling.md) and [SpanMarshallers.md](SpanMarshallers.md). As the model was adopted throughout dotnet/runtime, ASP.NET Core, WinForms, and early adopters, we recieved substantial feedback that led us to reconsider some components of the design.
+For the V1 of our source-generator, we designed support for marshalling collection types and user-defined structure types based on the designs in [StructMarshalling.md](StructMarshalling.md) and [SpanMarshallers.md](SpanMarshallers.md). As the model was adopted throughout dotnet/runtime, ASP.NET Core, WinForms, and early adopters, we received substantial feedback that led us to reconsider some components of the design.
 
 Here are some of the main feedback points on the previous design:
 

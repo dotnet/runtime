@@ -377,7 +377,7 @@ namespace System.Management
             }
             else
             {
-                //Now create the constuctor which accepts the key values
+                //Now create the constructor which accepts the key values
                 GenerateConstructorWithKeys();
 
                 //Also generate a constructor which accepts a scope and keys
@@ -677,7 +677,7 @@ namespace System.Management
         /// <summary>
         /// This function will solve the naming collisions that might occur
         /// due to the collision between the local objects of the generated
-        /// class and the properties/methos of the original WMI Class.
+        /// class and the properties/methods of the original WMI Class.
         /// </summary>
         private void ProcessNamingCollisions()
         {
@@ -2131,7 +2131,7 @@ namespace System.Management
             cctor.Comments.Add(new CodeCommentStatement(SR.CommentConstructors));
         }
         /// <summary>
-        ///This function create the constuctor which accepts the key values.
+        ///This function create the constructor which accepts the key values.
         ///public cons(UInt32 key_Key1, String key_Key2) :this(null,&lt;ClassName&gt;.ConstructPath(&lt;key1,key2&gt;),null) {
         /// }
         ///</summary>
@@ -2189,7 +2189,7 @@ namespace System.Management
         }
 
         /// <summary>
-        ///This function create the constuctor which accepts a scope and key values.
+        ///This function create the constructor which accepts a scope and key values.
         ///public cons(ManagementScope scope,UInt32 key_Key1, String key_Key2) :this(scope,&lt;ClassName&gt;.ConstructPath(&lt;key1,key2&gt;),null) {
         /// }
         ///</summary>
@@ -2464,7 +2464,7 @@ namespace System.Management
 
                         try
                         {
-                            classobj.Qualifiers["priveleges"].ToString();
+                            classobj.Qualifiers["privileges"].ToString();
                         }
                         catch (ManagementException e)
                         {
@@ -2649,7 +2649,7 @@ namespace System.Management
 
             try
             {
-                classobj.Qualifiers["priveleges"].ToString();
+                classobj.Qualifiers["privileges"].ToString();
             }
             catch (ManagementException e)
             {
@@ -2725,7 +2725,7 @@ namespace System.Management
             if (bPrivileges)
             {
                 //Generate the statement
-                //    Boolean bPriveleges = PrivateLateBoundObject.Scope.Options.EnablePrivileges;
+                //    Boolean bPrivileges = PrivateLateBoundObject.Scope.Options.EnablePrivileges;
                 cpre = new CodePropertyReferenceExpression(new CodePropertyReferenceExpression(
                     new CodePropertyReferenceExpression(
                     new CodeVariableReferenceExpression(PrivateNamesUsed["LateBoundObject"].ToString()),
@@ -2779,7 +2779,7 @@ namespace System.Management
             string strClassObj = "classObj";
             bool bStatic = false;
             bool bPrivileges = false;
-            CodePropertyReferenceExpression cprePriveleges = null;
+            CodePropertyReferenceExpression cprePrivileges = null;
             CimType cimRetType = CimType.SInt8;                        // Initialized to remove warnings
             CodeTypeReference retRefType = null;
             bool isRetArray = false;
@@ -2877,8 +2877,8 @@ namespace System.Management
                 if (bPrivileges)
                 {
                     //Generate the statement
-                    //    Boolean bPriveleges = PrivateLateBoundObject.Scope.Options.EnablePrivileges;
-                    cprePriveleges = new CodePropertyReferenceExpression(new CodePropertyReferenceExpression(
+                    //    Boolean bPrivileges = PrivateLateBoundObject.Scope.Options.EnablePrivileges;
+                    cprePrivileges = new CodePropertyReferenceExpression(new CodePropertyReferenceExpression(
                         new CodePropertyReferenceExpression(
                         new CodeVariableReferenceExpression(bStatic ? strClassObj : PrivateNamesUsed["LateBoundObject"].ToString()),
                         PublicNamesUsed["ScopeProperty"].ToString()),
@@ -2886,9 +2886,9 @@ namespace System.Management
                         "EnablePrivileges");
 
                     cis.TrueStatements.Add(new CodeVariableDeclarationStatement("System.Boolean",
-                        PrivateNamesUsed["Privileges"].ToString(), cprePriveleges));
+                        PrivateNamesUsed["Privileges"].ToString(), cprePrivileges));
 
-                    cis.TrueStatements.Add(new CodeAssignStatement(cprePriveleges, new CodePrimitiveExpression(true)));
+                    cis.TrueStatements.Add(new CodeAssignStatement(cprePrivileges, new CodePrimitiveExpression(true)));
 
                 }
 
@@ -3179,7 +3179,7 @@ namespace System.Management
                 // Assign the privileges back
                 if (bPrivileges)
                 {
-                    cis.TrueStatements.Add(new CodeAssignStatement(cprePriveleges, new CodeVariableReferenceExpression(PrivateNamesUsed["Privileges"].ToString())));
+                    cis.TrueStatements.Add(new CodeAssignStatement(cprePrivileges, new CodeVariableReferenceExpression(PrivateNamesUsed["Privileges"].ToString())));
                 }
 
                 //Now check if there is a return value. If there is one then return it from the function
@@ -4531,7 +4531,7 @@ namespace System.Management
 
         /// <summary>
         /// This function will convert the given CIMTYPE to an acceptable .NET type.
-        /// Since CLS doen't support lotz of the basic types, we are using .NET helper
+        /// Since CLS doesn't support lotz of the basic types, we are using .NET helper
         /// classes here. We safely assume that there won't be any problem using them
         /// since .NET has to be there for the System.Management.Dll to work.
         /// </summary>
@@ -5175,7 +5175,7 @@ namespace System.Management
 
 
         /// <summary>
-        /// Converts a numberic value to appropriate type and adds it to array
+        /// Converts a numeric value to appropriate type and adds it to array
         /// </summary>
         private static string ConvertToNumericValueAndAddToArray(CimType cimType, string numericValue, ArrayList arrayToAdd, out string enumType)
         {
@@ -5269,7 +5269,7 @@ namespace System.Management
 
             CommentsString.Add("Name of the WMI class");    // IDS_COMMENT_CLASSNAME;
 
-            CommentsString.Add("Property pointing to a embeded object to get System properties of the WMI object"); // IDS_CommentSystemObject
+            CommentsString.Add("Property pointing to a embedded object to get System properties of the WMI object"); // IDS_CommentSystemObject
 
             CommentsString.Add("Underlying lateBound WMI object"); // IDS_CommentLateBoundObject
 
@@ -6147,7 +6147,7 @@ namespace System.Management
             {
                 if (bTimeSpanConversionFunctionsAdded == false)
                 {
-                    cc.Comments.Add(new CodeCommentStatement(SR.CommentTimeSpanConvertionFunction));
+                    cc.Comments.Add(new CodeCommentStatement(SR.CommentTimeSpanConversionFunction));
                     bTimeSpanConversionFunctionsAdded = true;
                     // Call this function to generate conversion function
                     GenerateTimeSpanConversionFunction();
@@ -6665,7 +6665,7 @@ namespace System.Management
 
                     OffsetToBeAdjusted = UTCOffset-OffsetMins;
 
-                    // We have to substract the minutes from the time
+                    // We have to subtract the minutes from the time
                     datetime = datetime.AddMinutes((System.Double)(OffsetToBeAdjusted));
 
                 }

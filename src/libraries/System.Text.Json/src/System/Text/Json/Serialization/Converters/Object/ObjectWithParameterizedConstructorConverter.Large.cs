@@ -24,6 +24,9 @@ namespace System.Text.Json.Serialization.Converters
             if (success && !(arg == null && jsonParameterInfo.IgnoreNullTokensOnRead))
             {
                 ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.ClrInfo.Position] = arg!;
+
+                // if this is required property IgnoreNullTokensOnRead will always be false because we don't allow for both to be true
+                state.Current.MarkRequiredPropertyAsRead(jsonParameterInfo.MatchingProperty);
             }
 
             return success;

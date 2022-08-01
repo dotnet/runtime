@@ -433,7 +433,7 @@ STATE_BLOCKING_SELF_SUSPENDED: Poll is a local state transition. No VM activitie
 Try to resume a suspended thread.
 
 Returns one of the following values:
-- Sucess: The thread was resumed.
+- Success: The thread was resumed.
 - Error: The thread was not suspended in the first place. [2]
 - InitSelfResume: The thread is blocked on self suspend and should be resumed
 - InitAsyncResume: The thread is blocked on async suspend and should be resumed
@@ -640,7 +640,7 @@ retry_state_change:
 				goto retry_state_change;
 			trace_state_change ("ABORT_ASYNC_SUSPEND", info, raw_state, STATE_RUNNING, no_safepoints, -1);
 		}
-		return TRUE; //aborting thread suspend request succeded, thread is running.
+		return TRUE; //aborting thread suspend request succeeded, thread is running.
 
 /*
 STATE_RUNNING: A thread cannot escape suspension once requested.
@@ -716,7 +716,7 @@ That state only works as long as the only managed state touched is blitable and 
 
 It returns the action the caller must perform:
 
-- Continue: Entered blocking state sucessfully;
+- Continue: Entered blocking state successfully;
 - PollAndRetry: Async suspend raced and won, try to suspend and then retry;
 
 */

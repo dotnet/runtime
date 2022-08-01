@@ -22,7 +22,7 @@ function sub(a, b) {
 
 try {
     const { MONO, RuntimeBuildInfo, IMPORTS } = await createDotnetRuntime(() => {
-        console.log('user code in createDotnetRuntime');
+        console.log('user code in createDotnetRuntime callback');
         return {
             configSrc: "./mono-config.json",
             preInit: () => { console.log('user code Module.preInit'); },
@@ -31,7 +31,7 @@ try {
             postRun: () => { console.log('user code Module.postRun'); },
         }
     });
-    console.log('after createDotnetRuntime');
+    console.log('user code after createDotnetRuntime()');
     IMPORTS.Sample = {
         Test: {
             add,
@@ -39,7 +39,7 @@ try {
         }
     };
 
-    const exports = await MONO.mono_wasm_get_assembly_exports("Wasm.Browser.ES6.Sample.dll");
+    const exports = await MONO.mono_wasm_get_assembly_exports("Wasm.Browser.Sample.dll");
     const meaning = exports.Sample.Test.TestMeaning();
     console.debug(`meaning: ${meaning}`);
     if (!exports.Sample.Test.IsPrime(meaning)) {
@@ -47,7 +47,7 @@ try {
         console.debug(`ret: ${meaning}`);
     }
 
-    let exit_code = await MONO.mono_run_main("Wasm.Browser.ES6.Sample.dll", []);
+    let exit_code = await MONO.mono_run_main("Wasm.Browser.Sample.dll", []);
     wasm_exit(exit_code);
 } catch (err) {
     wasm_exit(2, err);

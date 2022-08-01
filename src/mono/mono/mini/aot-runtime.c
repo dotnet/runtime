@@ -5641,7 +5641,7 @@ get_new_trampoline_from_page (int tramp_type)
 		page->trampolines += specific_trampoline_size;
 		mono_aot_page_unlock ();
 
-		/* Register the generic part at the beggining of the trampoline page */
+		/* Register the generic part at the beginning of the trampoline page */
 		gen_info = mono_tramp_info_create (NULL, (guint8*)taddr, amodule->info.tramp_page_code_offsets [tramp_type], NULL, NULL);
 		read_page_trampoline_uwinfo (gen_info, tramp_type, TRUE);
 		mono_aot_tramp_info_register (gen_info, NULL);
@@ -6189,7 +6189,7 @@ mono_aot_get_ftnptr_arg_trampoline (gpointer arg, gpointer addr)
 /*
  * mono_aot_set_make_unreadable:
  *
- *   Set whenever to make all mmaped memory unreadable. In conjuction with a
+ *   Set whenever to make all mmaped memory unreadable. In conjunction with a
  * SIGSEGV handler, this is useful to find out which pages the runtime tries to read.
  */
 void

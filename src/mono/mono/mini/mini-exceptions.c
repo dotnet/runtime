@@ -1119,7 +1119,8 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			method = jinfo_get_method (ji);
 		else
 			method = get_method_from_stack_frame (ji, generic_info);
-		if (jinfo_get_method (ji)->wrapper_type) {
+		int wrapper_type = jinfo_get_method (ji)->wrapper_type;
+		if (wrapper_type && wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD) {
 			char *s;
 
 			sf->method = NULL;
@@ -2490,7 +2491,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						jit_tls->resume_state.clause_index = i;
 						jit_tls->resume_state.il_state = frame.il_state;
 
-						/* Instruct the intepreter to unwind back to AOTed code */
+						/* Instruct the interpreter to unwind back to AOTed code */
 						mini_get_interp_callbacks ()->set_resume_state (jit_tls, ex_obj, ei, NULL, NULL);
 					}
 
@@ -2498,7 +2499,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						/*
 						 * ctx->pc points into the interpreter, after the call which transitioned to
 						 * JITted code. Store the unwind state into the
-						 * interpeter state, then resume, the interpreter will unwind itself until
+						 * interpreter state, then resume, the interpreter will unwind itself until
 						 * it reaches the target frame and will continue execution from there.
 						 * The resuming is kinda hackish, from the native code standpoint, it looks
 						 * like the call which transitioned to JITted code has succeeded, but the

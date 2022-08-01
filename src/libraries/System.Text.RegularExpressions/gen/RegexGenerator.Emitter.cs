@@ -348,7 +348,7 @@ namespace System.Text.RegularExpressions.Generator
             bool needsTryFind = false, needsTryMatch = false;
             RegexNode root = rm.Tree.Root.Child(0);
 
-            // We can alway emit our most general purpose scan loop, but there are common situations we can easily check
+            // We can always emit our most general purpose scan loop, but there are common situations we can easily check
             // for where we can emit simpler/better code instead.
             if (root.Kind is RegexNodeKind.Empty)
             {
@@ -1799,7 +1799,7 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                 string postYesDoneLabel = doneLabel;
-                if (postYesDoneLabel != originalDoneLabel)
+                if (postYesDoneLabel != originalDoneLabel || isInLoop)
                 {
                     writer.WriteLine($"{resumeAt} = 0;");
                 }
@@ -1821,7 +1821,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
-                    if (postNoDoneLabel != originalDoneLabel)
+                    if (postNoDoneLabel != originalDoneLabel || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 1;");
                     }
@@ -1831,7 +1831,7 @@ namespace System.Text.RegularExpressions.Generator
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (postYesDoneLabel != originalDoneLabel)
+                    if (postYesDoneLabel != originalDoneLabel || isInLoop)
                     {
                         writer.WriteLine($"{resumeAt} = 2;");
                     }
@@ -4512,9 +4512,7 @@ namespace System.Text.RegularExpressions.Generator
                 // (In the future, we could possibly extend the rm.Analysis to produce a known
                 // lower-bound and compare against that rather than always using 128 as the
                 // pivot point.)
-                return negate ?
-                    $"((ch = {chExpr}) < 128 || !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
-                    $"((ch = {chExpr}) >= 128 && RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+                return EmitContainsNoAscii();
             }
 
             if (analysis.AllAsciiContained)
@@ -4522,9 +4520,7 @@ namespace System.Text.RegularExpressions.Generator
                 // We determined that every ASCII character is in the class, for example
                 // if the class were the negated example from case 1 above:
                 // [^\p{IsGreek}\p{IsGreekExtended}].
-                return negate ?
-                    $"((ch = {chExpr}) >= 128 && !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
-                    $"((ch = {chExpr}) < 128 || RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+                return EmitAllAsciiContained();
             }
 
             // Now, our big hammer is to generate a lookup table that lets us quickly index by character into a yes/no
@@ -4553,6 +4549,15 @@ namespace System.Text.RegularExpressions.Generator
                     }
                 }
             });
+
+            // There's a chance that the class contains either no ASCII characters or all of them,
+            // and the analysis could not find it (for example if the class has a subtraction).
+            // We optimize away the bit vector in these trivial cases.
+            switch (bitVectorString)
+            {
+                case "\0\0\0\0\0\0\0\0": return EmitContainsNoAscii();
+                case "\uffff\uffff\uffff\uffff\uffff\uffff\uffff\uffff": return EmitAllAsciiContained();
+            }
 
             // We determined that the character class may contain ASCII, so we
             // output the lookup against the lookup table.
@@ -4583,6 +4588,20 @@ namespace System.Text.RegularExpressions.Generator
             return negate ?
                 $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) == 0 : !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
                 $"((ch = {chExpr}) < 128 ? ({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) != 0 : RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+
+            string EmitContainsNoAscii()
+            {
+                return negate ?
+                    $"((ch = {chExpr}) < 128 || !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
+                    $"((ch = {chExpr}) >= 128 && RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+            }
+
+            string EmitAllAsciiContained()
+            {
+                return negate ?
+                    $"((ch = {chExpr}) >= 128 && !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
+                    $"((ch = {chExpr}) < 128 || RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
+            }
         }
 
         /// <summary>
@@ -4682,7 +4701,7 @@ namespace System.Text.RegularExpressions.Generator
             };
         }
 
-        /// <summary>Gets an identifer to describe a capture group.</summary>
+        /// <summary>Gets an identifier to describe a capture group.</summary>
         private static string DescribeCapture(int capNum, RegexMethod rm)
         {
             // If we can get a capture name from the captures collection and it's not just a numerical representation of the group, use it.

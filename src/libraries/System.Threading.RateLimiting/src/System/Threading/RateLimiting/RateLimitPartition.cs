@@ -71,8 +71,15 @@ namespace System.Threading.RateLimiting
                 // We don't want individual TokenBucketRateLimiters to have timers. We will instead have our own internal Timer handling all of them
                 if (options.AutoReplenishment is true)
                 {
-                    options = new TokenBucketRateLimiterOptions(options.TokenLimit, options.QueueProcessingOrder, options.QueueLimit,
-                        options.ReplenishmentPeriod, options.TokensPerPeriod, autoReplenishment: false);
+                    options = new TokenBucketRateLimiterOptions
+                    {
+                        TokenLimit = options.TokenLimit,
+                        QueueProcessingOrder = options.QueueProcessingOrder,
+                        QueueLimit = options.QueueLimit,
+                        ReplenishmentPeriod = options.ReplenishmentPeriod,
+                        TokensPerPeriod = options.TokensPerPeriod,
+                        AutoReplenishment = false
+                    };
                 }
                 return new TokenBucketRateLimiter(options);
             });
@@ -98,8 +105,15 @@ namespace System.Threading.RateLimiting
                 // We don't want individual SlidingWindowRateLimiters to have timers. We will instead have our own internal Timer handling all of them
                 if (options.AutoReplenishment is true)
                 {
-                    options = new SlidingWindowRateLimiterOptions(options.PermitLimit, options.QueueProcessingOrder, options.QueueLimit,
-                        options.Window, options.SegmentsPerWindow, autoReplenishment: false);
+                    options = new SlidingWindowRateLimiterOptions
+                    {
+                        PermitLimit = options.PermitLimit,
+                        QueueProcessingOrder = options.QueueProcessingOrder,
+                        QueueLimit = options.QueueLimit,
+                        Window = options.Window,
+                        SegmentsPerWindow = options.SegmentsPerWindow,
+                        AutoReplenishment = false
+                    };
                 }
                 return new SlidingWindowRateLimiter(options);
             });
@@ -125,8 +139,14 @@ namespace System.Threading.RateLimiting
                 // We don't want individual FixedWindowRateLimiters to have timers. We will instead have our own internal Timer handling all of them
                 if (options.AutoReplenishment is true)
                 {
-                    options = new FixedWindowRateLimiterOptions(options.PermitLimit, options.QueueProcessingOrder, options.QueueLimit,
-                        options.Window, autoReplenishment: false);
+                    options = new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = options.PermitLimit,
+                        QueueProcessingOrder = options.QueueProcessingOrder,
+                        QueueLimit = options.QueueLimit,
+                        Window = options.Window,
+                        AutoReplenishment = false
+                    };
                 }
                 return new FixedWindowRateLimiter(options);
             });

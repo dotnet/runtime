@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(Options != null);
                 Debug.Assert(ShouldDeserialize);
-                return _jsonTypeInfo ??= Options.GetTypeInfoCached(PropertyType);
+                return _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
             }
             set
             {
@@ -53,8 +53,11 @@ namespace System.Text.Json.Serialization.Metadata
 
         public bool ShouldDeserialize { get; private set; }
 
+        public JsonPropertyInfo MatchingProperty { get; private set; } = null!;
+
         public virtual void Initialize(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty, JsonSerializerOptions options)
         {
+            MatchingProperty = matchingProperty;
             ClrInfo = parameterInfo;
             Options = options;
             ShouldDeserialize = true;

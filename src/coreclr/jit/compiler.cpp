@@ -344,12 +344,12 @@ Histogram loopExitCountTable(loopExitCountBuckets);
 //                of the BYTE[] returned from getClassGClayout()
 //
 // Return Value:
-//    The corresponsing enum value from the JIT's var_types
+//    The corresponding enum value from the JIT's var_types
 //
 // Notes:
 //   The gcLayout of each field of a struct is returned from getClassGClayout()
 //   as a BYTE[] but each BYTE element is actually a CorInfoGCType value
-//   Note when we 'know' that there is only one element in theis array
+//   Note when we 'know' that there is only one element in this array
 //   the JIT will often pass the address of a single BYTE, instead of a BYTE[]
 //
 
@@ -879,7 +879,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeSSE)
         {
             // If this is returned as a floating type, use that.
-            // Otherwise, leave as TYP_UNKONWN and we'll sort things out below.
+            // Otherwise, leave as TYP_UNKNOWN and we'll sort things out below.
             useType           = GetEightByteType(structDesc, 0);
             howToReturnStruct = SPK_PrimitiveType;
         }
@@ -2993,7 +2993,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 
         // If JitEarlyExpandMDArrays is non-zero, then early MD expansion is enabled.
-        // If JitEarlyExpandMDArrays is zero, then conditionally enable it for functions specfied by
+        // If JitEarlyExpandMDArrays is zero, then conditionally enable it for functions specified by
         // JitEarlyExpandMDArraysFilter.
         if (JitConfig.JitEarlyExpandMDArrays() == 0)
         {
@@ -4327,7 +4327,7 @@ void Compiler::EndPhase(Phases phase)
 //
 // Arguments:
 //   methodCodePtr [OUT] - address of generated code
-//   methodCodeSize [OUT] - size of the generated code (hot + cold setions)
+//   methodCodeSize [OUT] - size of the generated code (hot + cold sections)
 //   compileFlags [IN] - flags controlling jit behavior
 //
 // Notes:
@@ -6677,8 +6677,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
         if (compHasBackwardJump && (reason == nullptr) && (JitConfig.TC_OnStackReplacement() > 0))
         {
-            const char* noPatchpointReason = nullptr;
-            bool        canEscapeViaOSR    = compCanHavePatchpoints(&reason);
+            bool canEscapeViaOSR = compCanHavePatchpoints(&reason);
 
 #ifdef DEBUG
             if (canEscapeViaOSR)
@@ -6703,7 +6702,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
             }
             else
             {
-                JITDUMP("\nOSR disabled for this method: %s\n", noPatchpointReason);
+                JITDUMP("\nOSR disabled for this method: %s\n", reason);
                 assert(reason != nullptr);
             }
         }
@@ -9539,6 +9538,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[BOX_VALUE]");
                 }
+
+                if (tree->gtFlags & GTF_BOX_CLONED)
+                {
+                    chars += printf("[BOX_CLONED]");
+                }
                 break;
 
             case GT_ARR_ADDR:
@@ -9729,14 +9733,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[CALL_M_SPECIAL_INTRINSIC]");
                     }
 
-                    if (call->IsUnmanaged())
-                    {
-                        if (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
-                        {
-                            chars += printf("[CALL_M_UNMGD_THISCALL]");
-                        }
-                    }
-                    else if (call->IsVirtualStub())
+                    if (call->IsVirtualStub())
                     {
                         if (call->gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT)
                         {

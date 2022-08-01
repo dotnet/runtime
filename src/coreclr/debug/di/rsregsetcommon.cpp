@@ -226,7 +226,7 @@ HRESULT CordbRegisterSet::GetRegistersAvailableAdapter(
 // Returns S_OK on success.
 //-----------------------------------------------------------------------------
 
-// mask input requrest registers, which get written to regCount buffer.
+// mask input request registers, which get written to regCount buffer.
 HRESULT CordbRegisterSet::GetRegistersAdapter(
     ULONG32 maskCount, BYTE mask[],
     ULONG32 regCount, CORDB_REGISTER regBuffer[])
