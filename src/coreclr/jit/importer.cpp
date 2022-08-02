@@ -565,7 +565,15 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
             if (expr->OperIs(GT_ASG))
             {
                 // For assignments, limit the checking to what the RHS could modify/interfere with.
-                flags = expr->AsOp()->gtOp2->gtFlags & GTF_GLOB_EFFECT;
+                GenTree* rhs = expr->AsOp()->gtOp2;
+                flags        = rhs->gtFlags & GTF_GLOB_EFFECT;
+
+                // We don't mark indirections off of "aliased" locals with GLOB_REF, but they must still be
+                // considered as such in the interference checking.
+                if (((flags & GTF_GLOB_REF) == 0) && !impIsAddressInLocal(rhs) && gtHasLocalsWithAddrOp(rhs))
+                {
+                    flags |= GTF_GLOB_REF;
+                }
             }
         }
 
