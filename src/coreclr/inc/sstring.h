@@ -515,7 +515,7 @@ private:
     WCHAR *OpenUnicodeBuffer(COUNT_T maxCharCount);
     UTF8 *OpenUTF8Buffer(COUNT_T maxSingleCharCount);
 
-    //Returns the unicode string, the caller is reponsible for lifetime of the string
+    //Returns the unicode string, the caller is responsible for lifetime of the string
     WCHAR *GetCopyOfUnicodeString();
 
     // Get the max size that can be passed to OpenUnicodeBuffer without causing allocations.

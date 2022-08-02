@@ -13,6 +13,7 @@ namespace System.Runtime.InteropServices.Tests
     public class PtrToStructureTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void StructureToPtr_NonGenericType_ReturnsExpected()
         {
             var structure = new SequentialClass
@@ -64,6 +65,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void StructureToPtr_NonGenericObject_ReturnsExpected()
         {
             var structure = new SomeTestStruct
@@ -90,6 +92,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void StructureToPtr_GenericObject_ReturnsExpected()
         {
             var structure = new SomeTestStruct
@@ -146,6 +149,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public unsafe void PtrToStructure_GenericLayoutClass_Generic()
         {
             int i = 42;
@@ -156,6 +160,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public unsafe void PtrToStructure_GenericLayoutClass()
         {
             int i = 42;

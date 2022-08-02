@@ -3,7 +3,7 @@
 //!
 //! This is generated file, see src/mono/wasm/runtime/rollup.config.js
 
-//! This is not considered public API with backward compatibility guarantees. 
+//! This is not considered public API with backward compatibility guarantees.
 
 declare interface ManagedPointer {
     __brandManagedPointer: "ManagedPointer";
@@ -198,6 +198,7 @@ declare type MonoConfig = {
     globalization_mode?: GlobalizationMode;
     diagnostic_tracing?: boolean;
     remote_sources?: string[];
+    max_parallel_downloads?: number;
     environment_variables?: {
         [i: string]: string;
     };
@@ -552,7 +553,7 @@ declare class Span implements IMemoryView, IDisposable {
 /**
  * ArraySegment class is JS wrapper for System.ArraySegment<T>.
  * This wrapper would also pin the underlying array and hold GCHandleType.Pinned until this JS instance is collected.
- * User could dispose it manualy.
+ * User could dispose it manually.
  */
 declare class ArraySegment implements IMemoryView, IDisposable {
     dispose(): void;

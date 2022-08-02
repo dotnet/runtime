@@ -104,12 +104,12 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedRegexAttributeMessage">
         <source>The GeneratedRegexAttribute is malformed</source>
-        <target state="new">The GeneratedRegexAttribute is malformed</target>
+        <target state="translated">Atribut GeneratedRegexAttribute je poškozený.</target>
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidGeneratedRegexAttributeTitle">
         <source>Invalid GeneratedRegexAttribute usage</source>
-        <target state="new">Invalid GeneratedRegexAttribute usage</target>
+        <target state="translated">Neplatné použití GeneratedRegexAttribute</target>
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
@@ -124,12 +124,12 @@
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
         <source>The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
-        <target state="new">The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</target>
+        <target state="translated">Generátor regulárních výrazů nemohl vygenerovat úplnou zdrojovou implementaci pro zadaný regulární výraz z důvodu vnitřního omezení. Další podrobnosti najdete v vysvětlení vygenerovaného zdroje.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
         <source>Regex generator limitation reached.</source>
-        <target state="new">Regex generator limitation reached.</target>
+        <target state="translated">Bylo dosaženo omezení generátoru regulárních výrazů.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -154,7 +154,7 @@
       </trans-unit>
       <trans-unit id="MultipleGeneratedRegexAttributesMessage">
         <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
-        <target state="new">Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</target>
+        <target state="translated">Na stejnou metodu bylo použito několik atributů GeneratedRegexAttributes, ale je povolen pouze jeden.</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
@@ -199,7 +199,7 @@
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
-        <target state="new">GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</target>
+        <target state="translated">Metoda GeneratedRegexAttribute musí být částečná, bez parametrů, neobecná, neabstraktní a návratová metoda Regex.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -259,12 +259,12 @@
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
         <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="new">Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</target>
+        <target state="translated">K vygenerování implementace regulárního výrazu při kompilaci použijte GeneratedRegexAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
         <source>Convert to 'GeneratedRegexAttribute'.</source>
-        <target state="new">Convert to 'GeneratedRegexAttribute'.</target>
+        <target state="translated">Převést na GeneratedRegexAttribute.</target>
         <note />
       </trans-unit>
     </body>

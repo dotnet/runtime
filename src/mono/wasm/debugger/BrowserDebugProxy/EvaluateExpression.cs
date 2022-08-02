@@ -452,7 +452,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         internal static async Task<JObject> EvaluateSimpleExpression(
-            MemberReferenceResolver resolver, string compiledExpression, string orginalExpression, List<string> variableDefinitions, ILogger logger, CancellationToken token)
+            MemberReferenceResolver resolver, string compiledExpression, string originalExpression, List<string> variableDefinitions, ILogger logger, CancellationToken token)
         {
             Script<object> newScript = script;
             try
@@ -463,12 +463,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (CompilationErrorException cee)
             {
-                logger.LogDebug($"Cannot evaluate '{orginalExpression}'. Script used to compile it: {newScript.Code}{Environment.NewLine}{cee.Message}");
-                throw new ReturnAsErrorException($"Cannot evaluate '{orginalExpression}': {cee.Message}", "CompilationError");
+                logger.LogDebug($"Cannot evaluate '{originalExpression}'. Script used to compile it: {newScript.Code}{Environment.NewLine}{cee.Message}");
+                throw new ReturnAsErrorException($"Cannot evaluate '{originalExpression}': {cee.Message}", "CompilationError");
             }
             catch (Exception ex)
             {
-                throw new Exception($"Internal Error: Unable to run {orginalExpression}, error: {ex.Message}.", ex);
+                throw new Exception($"Internal Error: Unable to run {originalExpression}, error: {ex.Message}.", ex);
             }
         }
     }
