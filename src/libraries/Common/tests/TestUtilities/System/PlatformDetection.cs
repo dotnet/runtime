@@ -129,6 +129,16 @@ namespace System
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
+
+#if NETCOREAPP
+        public static bool IsBuiltInComEnabled => SupportsComInterop
+                                            && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
+                                                ? isEnabled
+                                                : true);
+#else
+        public static bool IsBuiltInComEnabled => SupportsComInterop;
+#endif
+
         public static bool SupportsSsl3 => GetSsl3Support();
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
