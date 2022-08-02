@@ -713,7 +713,7 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
     DWORD* pOffset          = (DWORD*) (pEndOfFunction)  - offsetNum;
     DWORD  offsetInFunc     = *pOffset;
 
-    _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/cGenAMD64.cpp", (offsetInFunc >= 0) && (offsetInFunc < functionSize));
+    _ASSERTE_ALL_BUILDS((offsetInFunc >= 0) && (offsetInFunc < functionSize));
 
     return offsetInFunc;
 }

@@ -1,6 +1,6 @@
 import Configuration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, Module, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, Module, runtimeHelpers } from "./imports";
 import { afterUpdateGlobalBufferAndViews } from "./memory";
 import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
 import { afterThreadInitTLS } from "./pthreads/worker";
@@ -195,7 +195,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
 }
 
 export async function init_polyfills_async(): Promise<void> {
-    if (ENVIRONMENT_IS_NODE && ENVIRONMENT_IS_ESM) {
+    if (ENVIRONMENT_IS_NODE) {
         // wait for locateFile setup on NodeJs
         INTERNAL.require = await runtimeHelpers.requirePromise;
         if (globalThis.performance === dummyPerformance) {
@@ -271,31 +271,6 @@ export function detectScriptDirectory(replacements: EarlyReplacements): string {
     if (ENVIRONMENT_IS_WORKER) {
         // Check worker, not web, since window could be polyfilled
         replacements.scriptUrl = self.location.href;
-    }
-    // when ENVIRONMENT_IS_ESM we have scriptUrl from import.meta.url from dotnet.es6.lib.js
-    if (!ENVIRONMENT_IS_ESM) {
-        if (ENVIRONMENT_IS_WEB) {
-            if (
-                (typeof (globalThis.document) === "object") &&
-                (typeof (globalThis.document.createElement) === "function")
-            ) {
-                // blazor injects a module preload link element for dotnet.[version].[sha].js
-                const blazorDotNetJS = Array.from(document.head.getElementsByTagName("link")).filter(elt => elt.rel !== undefined && elt.rel == "modulepreload" && elt.href !== undefined && elt.href.indexOf("dotnet") != -1 && elt.href.indexOf(".js") != -1);
-                if (blazorDotNetJS.length == 1) {
-                    replacements.scriptUrl = blazorDotNetJS[0].href;
-                } else {
-                    const temp = globalThis.document.createElement("a");
-                    temp.href = "dotnet.js";
-                    replacements.scriptUrl = temp.href;
-                }
-            }
-        }
-        if (ENVIRONMENT_IS_NODE) {
-            if (typeof __filename !== "undefined") {
-                // unix vs windows
-                replacements.scriptUrl = __filename;
-            }
-        }
     }
     if (!replacements.scriptUrl) {
         // probably V8 shell in non ES6

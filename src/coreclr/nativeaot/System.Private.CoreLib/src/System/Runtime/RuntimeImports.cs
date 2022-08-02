@@ -327,6 +327,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfInterface")]
         internal static extern unsafe object IsInstanceOfInterface(MethodTable* pTargetType, object obj);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfException")]
+        internal static extern unsafe bool IsInstanceOfException(MethodTable* pTargetType, object obj);
+
         internal static unsafe object IsInstanceOfInterface(EETypePtr pTargetType, object obj)
             => IsInstanceOfInterface(pTargetType.ToPointer(), obj);
 
@@ -387,6 +391,11 @@ namespace System.Runtime
         [SuppressGCTransition]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial void RhSpinWait(int iterations);
+
+        // Call RhSpinWait with a GC transition
+        [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void RhLongSpinWait(int iterations);
 
         // Yield the cpu to another thread ready to process, if one is available.
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhYield")]

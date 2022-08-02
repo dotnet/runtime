@@ -1317,7 +1317,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
             m_codePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData);
             FlushInstructionCache(GetCurrentProcess(), pData, GetOsPageSize());
 
-            // If the remaning bytes are large enough to allocate data of the allocation granularity, add them to the free
+            // If the remaining bytes are large enough to allocate data of the allocation granularity, add them to the free
             // block list.
             // Otherwise the remaining bytes that are available will be wasted.
             if (unusedRemainder >= m_dwGranularity)
@@ -1341,7 +1341,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     }
 
     // Need to allocate a new set of reserved pages that will be located likely at a nonconsecutive virtual address.
-    // If the remaning bytes are large enough to allocate data of the allocation granularity, add them to the free
+    // If the remaining bytes are large enough to allocate data of the allocation granularity, add them to the free
     // block list.
     // Otherwise the remaining bytes that are available will be wasted.
     size_t unusedRemainder = (size_t)(m_pPtrToEndOfCommittedRegion - m_pAllocPtr);

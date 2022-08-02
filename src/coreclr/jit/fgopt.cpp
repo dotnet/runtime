@@ -1002,7 +1002,7 @@ void Compiler::fgComputeDoms()
     for (block = fgFirstBB->bbNext; block != nullptr; block = block->bbNext)
     {
         // If any basic block has no predecessors then we flag it as processed and temporarily
-        // mark its precedessor list to be flRoot.  This makes the flowgraph connected,
+        // mark its predecessor list to be flRoot.  This makes the flowgraph connected,
         // a precondition that is needed by the dominance algorithm to operate properly.
         if (block->bbPreds == nullptr)
         {
@@ -1051,7 +1051,7 @@ void Compiler::fgComputeDoms()
                 continue;
             }
 
-            // Pick up the first processed predecesor of the current block.
+            // Pick up the first processed predecessor of the current block.
             for (first = block->bbPreds; first != nullptr; first = first->flNext)
             {
                 if (BlockSetOps::IsMember(this, processedBlks, first->getBlock()->bbNum))
@@ -4427,7 +4427,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 {
                     if (tmpbb == bPrevPrev)
                     {
-                        /* We found an ealier predecessor */
+                        /* We found an earlier predecessor */
                         bPrevPrev = pred->getBlock();
                         break;
                     }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.Compiler</AssemblyName>
@@ -366,6 +366,7 @@
     <Compile Include="Compiler\Dataflow\ValueNode.cs" />
     <Compile Include="Compiler\DebugInformationProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeMetadataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EmbeddedTrimmingDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DefaultConstructorMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
@@ -435,6 +436,7 @@
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\DelegateCreationInfo.cs" />
+    <Compile Include="Compiler\DescriptorMarker.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\BlockReflectionTypeMapNode.cs" />
@@ -514,6 +516,7 @@
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.GenericLookups.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.NativeLayout.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NonGCStaticsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ModuleUseBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64UnboxingStubNode.cs" />
@@ -569,6 +572,7 @@
     <Compile Include="Compiler\StackTraceEmissionPolicy.cs" />
     <Compile Include="Compiler\PreinitializationManager.cs" />
     <Compile Include="Compiler\TypePreinit.cs" />
+    <Compile Include="Compiler\TypePreserve.cs" />
     <Compile Include="Compiler\UsageBasedInteropStubManager.cs" />
     <Compile Include="Compiler\UsageBasedMetadataManager.cs" />
     <Compile Include="Compiler\UserDefinedTypeDescriptor.cs" />

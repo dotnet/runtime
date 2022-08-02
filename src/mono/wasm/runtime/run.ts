@@ -1,5 +1,5 @@
 import { INTERNAL, Module, runtimeHelpers } from "./imports";
-import { mono_call_assembly_entry_point } from "./method-calls";
+import { mono_call_assembly_entry_point } from "./net6-legacy/method-calls";
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { abort_startup, mono_wasm_set_main_args } from "./startup";
 

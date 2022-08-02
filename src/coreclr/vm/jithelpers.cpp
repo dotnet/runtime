@@ -2832,7 +2832,6 @@ HCIMPL2_IV(LPVOID, JIT_GetRefAny, CORINFO_CLASS_HANDLE type, TypedByRef typedByR
     FCALL_CONTRACT;
 
     TypeHandle clsHnd(type);
-
     // <TODO>@TODO right now we check for precisely the correct type.
     // do we want to allow inheritance?  (watch out since value
     // classes inherit from object but do not normal object layout).</TODO>
@@ -2841,6 +2840,16 @@ HCIMPL2_IV(LPVOID, JIT_GetRefAny, CORINFO_CLASS_HANDLE type, TypedByRef typedByR
     }
 
     return(typedByRef.data);
+}
+HCIMPLEND
+
+
+/*************************************************************/
+HCIMPL2(BOOL, JIT_IsInstanceOfException, CORINFO_CLASS_HANDLE type, Object* obj)
+{
+    FCALL_CONTRACT;
+    TypeHandle clsHnd(type);
+    return ExceptionIsOfRightType(clsHnd, obj->GetTypeHandle());
 }
 HCIMPLEND
 
@@ -3028,7 +3037,7 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
     if (g_pJitGenericHandleCache)
     {
         // It's not necessary to take the lock here because this function should only be called when EE is suspended,
-        // the lock is only taken to fullfill the threadsafety check and to be consistent. If the lock becomes a problem, we
+        // the lock is only taken to fulfill the threadsafety check and to be consistent. If the lock becomes a problem, we
         // could put it in a "ifdef _DEBUG" block
         CrstHolder lock(&g_pJitGenericHandleCacheCrst);
         EEHashTableIteration iter;
@@ -4789,8 +4798,7 @@ HCIMPL1_RAW(Object*, JIT_CheckObj, Object* obj)
     if (obj != 0) {
         MethodTable* pMT = obj->GetMethodTable();
         if (!pMT->ValidateWithPossibleAV()) {
-            _ASSERTE(!"Bad Method Table");
-            FreeBuildDebugBreak();
+            _ASSERTE_ALL_BUILDS(!"Bad Method Table");
         }
     }
     return obj;

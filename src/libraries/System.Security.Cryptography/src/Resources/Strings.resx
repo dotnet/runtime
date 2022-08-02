@@ -627,6 +627,12 @@
   <data name="Cryptography_X509_AKID_NoSKID" xml:space="preserve">
     <value>The provided certificate does not have a Subject Key Identifier extension.</value>
   </data>
+  <data name="Cryptography_X509_CDP_MustNotBuildEmpty" xml:space="preserve">
+    <value>The collection of distribution URIs must be non-empty.</value>
+  </data>
+  <data name="Cryptography_X509_CDP_NullValue" xml:space="preserve">
+    <value>One of the provided CRL Distribution Point URIs is a null value.</value>
+  </data>
   <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
     <value>Certificate '{0}' is corrupted.</value>
   </data>

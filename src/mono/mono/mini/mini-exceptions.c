@@ -2491,7 +2491,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						jit_tls->resume_state.clause_index = i;
 						jit_tls->resume_state.il_state = frame.il_state;
 
-						/* Instruct the intepreter to unwind back to AOTed code */
+						/* Instruct the interpreter to unwind back to AOTed code */
 						mini_get_interp_callbacks ()->set_resume_state (jit_tls, ex_obj, ei, NULL, NULL);
 					}
 
