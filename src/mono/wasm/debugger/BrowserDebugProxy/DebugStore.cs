@@ -1596,8 +1596,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        public IEnumerable<SourceLocation> FindBreakpointLocations(BreakpointRequest request)
+        public IEnumerable<SourceLocation> FindBreakpointLocations(BreakpointRequest request, bool ifNoneFoundThenFindNext = false)
         {
+            SourceLocation nextSeqPoint = null;
+            List<SourceLocation> locations = new List<SourceLocation>();
             request.TryResolve(this);
 
             AssemblyInfo asm = assemblies.FirstOrDefault(a => a.Name.Equals(request.Assembly, StringComparison.OrdinalIgnoreCase));
@@ -1608,39 +1610,29 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             foreach (MethodInfo method in sourceFile.Methods)
             {
-                if (!method.DebugInformation.SequencePointsBlob.IsNil)
-                {
-                    foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
-                    {
-                        if (!sequencePoint.IsHidden && Match(sequencePoint, request.Line, request.Column))
-                            yield return new SourceLocation(method, sequencePoint);
-                    }
-                }
-            }
-        }
-
-        public SourceLocation FindBreakpointNextLocation(BreakpointRequest request)
-        {
-            AssemblyInfo asm = assemblies.FirstOrDefault(a => a.Name.Equals(request.Assembly, StringComparison.OrdinalIgnoreCase));
-            SourceFile sourceFile = asm?.Sources?.SingleOrDefault(s => s.DebuggerFileName.Equals(request.File, StringComparison.OrdinalIgnoreCase));
-
-            if (sourceFile == null)
-                return null;
-
-            foreach (MethodInfo method in sourceFile.Methods)
-            {
                 if (method.DebugInformation.SequencePointsBlob.IsNil)
                     continue;
-
+                if (!(method.StartLocation.Line <= request.Line && request.Line <= method.EndLocation.Line))
+                    continue;
                 foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
                 {
-                    if (!sequencePoint.IsHidden && method.StartLocation.Line < request.Line && request.Line < method.EndLocation.Line && sequencePoint.StartLine > request.Line)
-                    {
-                        return new SourceLocation(method, sequencePoint);
-                    }
+                    if (sequencePoint.IsHidden)
+                        continue;
+                    if (Match(sequencePoint, request.Line, request.Column))
+                        locations.Add(new SourceLocation(method, sequencePoint));
+                    else if (ifNoneFoundThenFindNext && nextSeqPoint == null && sequencePoint.StartLine > request.Line)
+                        nextSeqPoint = new SourceLocation(method, sequencePoint);
                 }
             }
-            return null;
+            if (locations.Any())
+            {
+                foreach (var loc in locations)
+                    yield return loc;
+            }
+            else if (ifNoneFoundThenFindNext && nextSeqPoint != null)
+            {
+                yield return nextSeqPoint;
+            }
         }
 
         public string ToUrl(SourceLocation location) => location != null ? GetFileById(location.Id).Url : "";
