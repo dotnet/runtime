@@ -2846,7 +2846,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #ifdef TARGET_XARCH
             && !(andOp1->OperIs(GT_LSH) && andOp1->gtGetOp1()->IsIntegralConst(1))
 #endif
-        )
+                )
         {
             LIR::Use cmpUse;
             if ((genActualType(op1) == cmp->TypeGet()) && BlockRange().TryGetUse(cmp, &cmpUse) &&
