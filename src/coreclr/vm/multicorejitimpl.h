@@ -88,7 +88,7 @@ inline unsigned Pack8_24(unsigned up, unsigned low)
 //   m_JitInfoArray is an array of RecorderInfo (12 bytes on 32-bit systems, 16 bytes on 64-bit systems), with MAX_METHODS elements.
 //
 //   1. Modules.
-//     For modules RecorderInfo::data2 and RecorderInfo::ptr are set to 0. RecorderInfo::ptr == 0 is also a flag that RecorderInfo correponds to module.
+//     For modules RecorderInfo::data2 and RecorderInfo::ptr are set to 0. RecorderInfo::ptr == 0 is also a flag that RecorderInfo corresponds to module.
 //     RecorderInfo::data1 is non-zero and represents info for module.
 //
 //     Info for module includes module index and requested load level, with some additional data in higher bits (MULTICOREJIT_MODULEDEPENDENCY_RECORD_ID tag).

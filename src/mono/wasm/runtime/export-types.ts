@@ -37,9 +37,9 @@ declare class Span implements IMemoryView, IDisposable {
 }
 
 /**
- * ArraySegment class is JS wrapper for System.ArraySegment<T>. 
+ * ArraySegment class is JS wrapper for System.ArraySegment<T>.
  * This wrapper would also pin the underlying array and hold GCHandleType.Pinned until this JS instance is collected.
- * User could dispose it manualy.
+ * User could dispose it manually.
  */
 declare class ArraySegment implements IMemoryView, IDisposable {
     dispose(): void;

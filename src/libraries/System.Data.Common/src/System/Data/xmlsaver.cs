@@ -758,7 +758,7 @@ namespace System.Data
             _dsElement.RemoveChild(_constraintSeparator);
             rootSchema.AppendChild(_dsElement);
 
-            // Output all non-heirarchical relations without constraints
+            // Output all non-hierarchical relations without constraints
 
             DataRelation[] rels = Array.Empty<DataRelation>();
             if (ds != null && _tables.Count > 0)

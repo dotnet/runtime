@@ -12,6 +12,6 @@ internal static partial class Interop
         internal static partial int GetSignalForBreak();
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetSignalForBreak")]
-        internal static partial int SetSignalForBreak(int signalForBreak);
+        internal static partial int SetSignalForBreak(int signalForBreak, [MarshalAs(UnmanagedType.Bool)] bool distinguishNewLines);
     }
 }

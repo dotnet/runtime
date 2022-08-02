@@ -1110,6 +1110,13 @@ by Brian W. Kernighan and Rob Pike
 
 You may use this code for any purpose, as long as you leave the copyright notice and book citation attached.
 
+Notice for Euclidean Affine Functions and Applications to Calendar
+Algorithms
+-------------------------------
+
+Aspects of Date/Time processing based on algorithm described in "Euclidean Affine Functions and Applications to Calendar
+Algorithms", Cassio Neri and Lorenz Schneider. https://arxiv.org/pdf/2102.06959.pdf
+
 License notice for amd/aocl-libm-ose
 -------------------------------
 

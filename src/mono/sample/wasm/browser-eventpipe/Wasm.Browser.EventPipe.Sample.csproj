@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == ''">false</MonoDiagnosticsMock>
+    <MonoDiagnosticsMock Condition="('$(MonoDiagnosticsMock)' == '') and ('$(Configuration)' == 'Debug')">true</MonoDiagnosticsMock>
   </PropertyGroup>
 
   <ItemGroup>

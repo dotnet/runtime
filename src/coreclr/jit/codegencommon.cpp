@@ -942,7 +942,7 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
     if (isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block))
     {
         // x86/Linux requires stack frames to be 16-byte aligned, but SP may be unaligned
-        // at this point if a jump to this block is made in the middle of pushing arugments.
+        // at this point if a jump to this block is made in the middle of pushing arguments.
         //
         // Here we restore SP to prevent potential stack alignment issues.
         GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -genSPtoFPdelta());
@@ -1635,7 +1635,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 #endif // defined(TARGET_ARMARCH)
     }
 
-    // Jump to the block which will throw the expection
+    // Jump to the block which will throw the exception
 
     genJumpToThrowHlpBlk(jumpKind, SCK_OVERFLOW);
 }
@@ -6140,7 +6140,7 @@ void CodeGen::genFnProlog()
     {
         // The 'real' prolog ends here for non-interruptible methods.
         // For fully-interruptible methods, we extend the prolog so that
-        // we do not need to track GC inforation while shuffling the
+        // we do not need to track GC information while shuffling the
         // arguments.
         GetEmitter()->emitMarkPrologEnd();
     }
@@ -6598,12 +6598,12 @@ unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
     assert(IsHfa(hClass));
 #ifdef TARGET_ARM
     // A HFA of doubles is twice as large as an HFA of singles for ARM32
-    // (i.e. uses twice the number of single precison registers)
+    // (i.e. uses twice the number of single precision registers)
     return info.compCompHnd->getClassSize(hClass) / REGSIZE_BYTES;
 #else  // TARGET_ARM64
     var_types hfaType   = GetHfaType(hClass);
     unsigned  classSize = info.compCompHnd->getClassSize(hClass);
-    // Note that the retail build issues a warning about a potential divsion by zero without the Max function
+    // Note that the retail build issues a warning about a potential division by zero without the Max function
     unsigned elemSize = Max((unsigned)1, EA_SIZE_IN_BYTES(emitActualTypeSize(hfaType)));
     return classSize / elemSize;
 #endif // TARGET_ARM64
@@ -8312,7 +8312,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         else
         {
 #ifdef TARGET_LOONGARCH64
-            // should consider the pading field within a struct.
+            // should consider the padding field within a struct.
             offset = (offset % genTypeSize(srcType)) ? AlignUp(offset, genTypeSize(srcType)) : offset;
 #endif
             // Several fields could be passed in one register, copy using the register type.
@@ -8705,7 +8705,7 @@ CodeGenInterface::VariableLiveKeeper::LiveRangeListIterator CodeGenInterface::Va
 }
 
 //------------------------------------------------------------------------
-// hasLiveRangesToDump: Retutn wheter at least a "VariableLiveRange" was alive during
+// hasLiveRangesToDump: Retutn whether at least a "VariableLiveRange" was alive during
 //  the current "BasicBlock"'s code generation
 //
 // Return Value:
@@ -8959,7 +8959,7 @@ CodeGenInterface::VariableLiveKeeper::VariableLiveKeeper(unsigned int  totalLoca
     : m_LiveDscCount(totalLocalCount)
     , m_LiveArgsCount(argsCount)
     , m_Compiler(comp)
-    , m_LastBasicBlockHasBeenEmited(false)
+    , m_LastBasicBlockHasBeenEmitted(false)
 {
     if (m_LiveDscCount > 0)
     {
@@ -9107,7 +9107,7 @@ void CodeGenInterface::VariableLiveKeeper::siEndVariableLiveRange(unsigned int v
     // a valid IG so we don't report the close of a "VariableLiveRange" after code is
     // emitted.
 
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmited &&
+    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmitted &&
         m_vlrLiveDsc[varNum].hasVariableLiveRangeOpen())
     {
         // this variable live range is no longer valid from this point
@@ -9139,7 +9139,7 @@ void CodeGenInterface::VariableLiveKeeper::siUpdateVariableLiveRange(const LclVa
     // This method is being called when the prolog is being generated, and
     // the emitter has no longer a valid IG so we don't report the close of
     //  a "VariableLiveRange" after code is emitted.
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmited)
+    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmitted)
     {
         // Build the location of the variable
         CodeGenInterface::siVarLoc siVarLoc =
@@ -9186,7 +9186,7 @@ void CodeGenInterface::VariableLiveKeeper::siEndAllVariableLiveRange(VARSET_VALA
         }
     }
 
-    m_LastBasicBlockHasBeenEmited = true;
+    m_LastBasicBlockHasBeenEmitted = true;
 }
 
 //------------------------------------------------------------------------
