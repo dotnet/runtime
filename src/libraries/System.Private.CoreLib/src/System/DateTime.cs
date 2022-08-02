@@ -841,6 +841,23 @@ namespace System
             return AddTicks(value._ticks);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private DateTime AddUnits(double value, long maxUnitCount, long tickPerUnit)
+        {
+            if (Math.Abs(value) > maxUnitCount)
+            {
+                ThrowAddOutOfRange();
+            }
+
+            double integralPart = Math.Truncate(value);
+            double fractionalPart = value - integralPart;
+            long ticks = (long)(integralPart) * tickPerUnit;
+            ticks += (long)(fractionalPart * tickPerUnit);
+
+            return AddTicks(ticks);
+        }
+
+
         /// <summary>
         /// Returns a new <see cref="DateTime"/> that adds the specified number of days to the value of this instance.
         /// </summary>
@@ -848,20 +865,7 @@ namespace System
         /// <returns>
         /// An object whose value is the sum of the date and time represented by this instance and the number of days represented by value.
         /// </returns>
-        public DateTime AddDays(double value)
-        {
-            if (Math.Abs(value) > MaxDays)
-            {
-                ThrowAddOutOfRange();
-            }
-
-            double integralPart = Math.Truncate(value);
-            double fractionalPart = value - integralPart;
-            long ticks = (long)(integralPart) * TicksPerDay;
-            ticks += (long)(fractionalPart * TicksPerDay);
-
-            return AddTicks(ticks);
-        }
+        public DateTime AddDays(double value) => AddUnits(value, MaxDays, TicksPerDay);
 
         /// <summary>
         /// Returns a new <see cref="DateTime"/> that adds the specified number of hours to the value of this instance.
@@ -870,20 +874,7 @@ namespace System
         /// <returns>
         /// An object whose value is the sum of the date and time represented by this instance and the number of hours represented by value.
         /// </returns>
-        public DateTime AddHours(double value)
-        {
-            if (Math.Abs(value) > MaxHours)
-            {
-                ThrowAddOutOfRange();
-            }
-
-            double integralPart = Math.Truncate(value);
-            double fractionalPart = value - integralPart;
-            long ticks = (long)(integralPart) * TicksPerHour;
-            ticks += (long)(fractionalPart * TicksPerHour);
-
-            return AddTicks(ticks);
-        }
+        public DateTime AddHours(double value) => AddUnits(value, MaxHours, TicksPerHour);
 
         /// <summary>
         /// Returns a new <see cref="DateTime"/> that adds the specified number of milliseconds to the value of this instance.
@@ -892,20 +883,7 @@ namespace System
         /// <returns>
         /// An object whose value is the sum of the date and time represented by this instance and the number of milliseconds represented by value.
         /// </returns>
-        public DateTime AddMilliseconds(double value)
-        {
-            if (Math.Abs(value) > MaxMillis)
-            {
-                ThrowAddOutOfRange();
-            }
-
-            double integralPart = Math.Truncate(value);
-            double fractionalPart = value - integralPart;
-            long ticks = (long)(integralPart) * TicksPerMillisecond;
-            ticks += (long)(fractionalPart * TicksPerMillisecond);
-
-            return AddTicks(ticks);
-        }
+        public DateTime AddMilliseconds(double value) => AddUnits(value, MaxMillis, TicksPerMillisecond);
 
         /// <summary>
         /// Returns a new <see cref="DateTime"/> that adds the specified number of microseconds to the value of this instance.
@@ -931,20 +909,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// The resulting <see cref="DateTime"/> is less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>.
         /// </exception>
-        public DateTime AddMicroseconds(double value)
-        {
-            if (Math.Abs(value) > MaxMicroseconds)
-            {
-                ThrowAddOutOfRange();
-            }
-
-            double integralPart = Math.Truncate(value);
-            double fractionalPart = value - integralPart;
-            long ticks = (long)(integralPart) * TicksPerMicrosecond;
-            ticks += (long)(fractionalPart * TicksPerMicrosecond);
-
-            return AddTicks(ticks);
-        }
+        public DateTime AddMicroseconds(double value) => AddUnits(value, MaxMicroseconds, TicksPerMicrosecond);
 
         /// <summary>
         /// Returns a new <see cref="DateTime"/> that adds the specified number of minutes to the value of this instance.
@@ -953,20 +918,7 @@ namespace System
         /// <returns>
         /// An object whose value is the sum of the date and time represented by this instance and the number of minutes represented by value.
         /// </returns>
-        public DateTime AddMinutes(double value)
-        {
-            if (Math.Abs(value) > MaxMinutes)
-            {
-                ThrowAddOutOfRange();
-            }
-
-            double integralPart = Math.Truncate(value);
-            double fractionalPart = value - integralPart;
-            long ticks = (long)(integralPart) * TicksPerMinute;
-            ticks += (long)(fractionalPart * TicksPerMinute);
-
-            return AddTicks(ticks);
-        }
+        public DateTime AddMinutes(double value) => AddUnits(value, MaxMinutes, TicksPerMinute);
 
         // Returns the DateTime resulting from adding the given number of
         // months to this DateTime. The result is computed by incrementing
@@ -1010,20 +962,7 @@ namespace System
         /// <returns>
         /// An object whose value is the sum of the date and time represented by this instance and the number of seconds represented by value.
         /// </returns>
-        public DateTime AddSeconds(double value)
-        {
-            if (Math.Abs(value) > MaxSeconds)
-            {
-                ThrowAddOutOfRange();
-            }
-
-            double integralPart = Math.Truncate(value);
-            double fractionalPart = value - integralPart;
-            long ticks = (long)(integralPart) * TicksPerSecond;
-            ticks += (long)(fractionalPart * TicksPerSecond);
-
-            return AddTicks(ticks);
-        }
+        public DateTime AddSeconds(double value) => AddUnits(value, MaxSeconds, TicksPerSecond);
 
         // Returns the DateTime resulting from adding the given number of
         // 100-nanosecond ticks to this DateTime. The value argument
