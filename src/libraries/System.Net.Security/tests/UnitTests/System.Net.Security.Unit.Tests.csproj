@@ -130,6 +130,8 @@
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.PackageType.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.PackageType.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs"

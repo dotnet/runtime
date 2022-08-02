@@ -653,7 +653,7 @@ int LinearScan::BuildNode(GenTree* tree)
             //   - if the index is `native int` then we need to load the array
             //     length into a register to widen it to `native int`
             //   - if the index is `int` (or smaller) then we need to widen
-            //     it to `long` to peform the address calculation
+            //     it to `long` to perform the address calculation
             internalDef = buildInternalIntRegisterDefForNode(tree);
 #else  // !TARGET_64BIT
             assert(!varTypeIsLong(tree->AsIndexAddr()->Index()->TypeGet()));

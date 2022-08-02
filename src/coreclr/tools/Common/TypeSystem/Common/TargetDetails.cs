@@ -122,7 +122,7 @@ namespace Internal.TypeSystem
                     return 16;
                 }
 
-                // 256-bit vector is the type with the higest alignment we support
+                // 256-bit vector is the type with the highest alignment we support
                 return 32;
             }
         }

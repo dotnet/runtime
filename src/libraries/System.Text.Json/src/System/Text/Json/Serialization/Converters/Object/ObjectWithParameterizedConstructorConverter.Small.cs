@@ -71,6 +71,11 @@ namespace System.Text.Json.Serialization.Converters
                 ? (TArg?)info.DefaultValue! // Use default value specified on parameter, if any.
                 : value!;
 
+            if (success)
+            {
+                state.Current.MarkRequiredPropertyAsRead(jsonParameterInfo.MatchingProperty);
+            }
+
             return success;
         }
 

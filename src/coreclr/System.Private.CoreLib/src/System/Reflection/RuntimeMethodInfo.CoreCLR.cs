@@ -158,7 +158,7 @@ namespace System.Reflection
             return m_toString;
         }
 
-        public override int GetHashCode() => ValueType.GetHashCodeOfPtr(m_handle);
+        public override int GetHashCode() => RuntimeHelpers.GetHashCodeOfPtr(m_handle);
 
         public override bool Equals(object? obj)
         {

@@ -22,7 +22,7 @@ namespace Microsoft.Interop.Analyzers
         public static readonly DiagnosticDescriptor MarshallerEntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeRule =
             new DiagnosticDescriptor(
                 Ids.InvalidNativeMarshallingAttributeUsage,
-                GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
+                GetResourceString(nameof(SR.InvalidNativeMarshallingAttributeUsageTitle)),
                 GetResourceString(nameof(SR.EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -32,7 +32,7 @@ namespace Microsoft.Interop.Analyzers
         public static readonly DiagnosticDescriptor MarshallerEntryPointTypeMustBeNonNullRule =
             new DiagnosticDescriptor(
                 Ids.InvalidNativeMarshallingAttributeUsage,
-                GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
+                GetResourceString(nameof(SR.InvalidNativeMarshallingAttributeUsageTitle)),
                 GetResourceString(nameof(SR.EntryPointTypeMustBeNonNullMessage)),
                 Category,
                 DiagnosticSeverity.Error,
@@ -42,7 +42,7 @@ namespace Microsoft.Interop.Analyzers
         public static readonly DiagnosticDescriptor GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityRule =
             new DiagnosticDescriptor(
                 Ids.InvalidNativeMarshallingAttributeUsage,
-                GetResourceString(nameof(SR.InvalidMarshallerTypeTitle)),
+                GetResourceString(nameof(SR.InvalidNativeMarshallingAttributeUsageTitle)),
                 GetResourceString(nameof(SR.GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage)),
                 Category,
                 DiagnosticSeverity.Error,

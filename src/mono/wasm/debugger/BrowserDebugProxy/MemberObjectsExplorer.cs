@@ -302,7 +302,7 @@ namespace BrowserDebugProxy
             bool isOwn,
             CancellationToken token,
             Dictionary<string, JObject> allMembers,
-            bool includeStatic = false)
+            bool includeStatic)
         {
             using var retDebuggerCmdReader = await sdbHelper.GetTypePropertiesReader(typeId, token);
             if (retDebuggerCmdReader == null)
@@ -323,7 +323,8 @@ namespace BrowserDebugProxy
                 var attrs = (PropertyAttributes)retDebuggerCmdReader.ReadInt32(); //attrs
                 if (getMethodId == 0 || await sdbHelper.GetParamCount(getMethodId, token) != 0)
                     continue;
-                if (!includeStatic && await sdbHelper.MethodIsStatic(getMethodId, token))
+                bool isStatic = await sdbHelper.MethodIsStatic(getMethodId, token);
+                if (!includeStatic && isStatic)
                     continue;
 
                 MethodInfoWithDebugInformation getterInfo = await sdbHelper.GetMethodInfo(getMethodId, token);
@@ -336,7 +337,7 @@ namespace BrowserDebugProxy
                 if (!allMembers.TryGetValue(propName, out JObject existingMember))
                 {
                     // new member
-                    await AddProperty(getMethodId, state, propName, getterMemberAccessAttrs);
+                    await AddProperty(getMethodId, state, propName, getterMemberAccessAttrs, isStatic);
                     continue;
                 }
 
@@ -387,7 +388,7 @@ namespace BrowserDebugProxy
                 {
                     // hiding with a non-auto property, so nothing to adjust
                     // add the new property
-                    await AddProperty(getMethodId, state, overriddenOrHiddenPropName, getterMemberAccessAttrs);
+                    await AddProperty(getMethodId, state, overriddenOrHiddenPropName, getterMemberAccessAttrs, isStatic);
                     continue;
                 }
 
@@ -419,7 +420,7 @@ namespace BrowserDebugProxy
                     allMembers[evalue["name"].Value<string>()] = evalue;
             }
 
-            async Task AddProperty(int getMethodId, DebuggerBrowsableState? state, string propNameWithSufix, MethodAttributes getterAttrs)
+            async Task AddProperty(int getMethodId, DebuggerBrowsableState? state, string propNameWithSufix, MethodAttributes getterAttrs, bool isPropertyStatic)
             {
                 string returnTypeName = await sdbHelper.GetReturnType(getMethodId, token);
                 JObject propRet = null;
@@ -431,12 +432,12 @@ namespace BrowserDebugProxy
                     }
                     catch (Exception)
                     {
-                        propRet = GetNotAutoExpandableObject(getMethodId, propNameWithSufix);
+                        propRet = GetNotAutoExpandableObject(getMethodId, propNameWithSufix, isPropertyStatic);
                     }
                 }
                 else
                 {
-                    propRet = GetNotAutoExpandableObject(getMethodId, propNameWithSufix);
+                    propRet = GetNotAutoExpandableObject(getMethodId, propNameWithSufix, isPropertyStatic);
                 }
 
                 propRet["isOwn"] = isOwn;
@@ -461,11 +462,12 @@ namespace BrowserDebugProxy
                 }
             }
 
-            JObject GetNotAutoExpandableObject(int methodId, string propertyName)
+            JObject GetNotAutoExpandableObject(int methodId, string propertyName, bool isStatic)
             {
                 JObject methodIdArgs = JObject.FromObject(new
                 {
-                    containerId = objectId.Value,
+                    isStatic = isStatic,
+                    containerId = isStatic ? typeId : objectId.Value,
                     isValueType = isValueType,
                     methodId = methodId
                 });
@@ -563,7 +565,8 @@ namespace BrowserDebugProxy
                     isValueType: false,
                     isOwn,
                     token,
-                    allMembers);
+                    allMembers,
+                    includeStatic);
 
                 // ownProperties
                 // Note: ownProperties should mean that we return members of the klass itself,

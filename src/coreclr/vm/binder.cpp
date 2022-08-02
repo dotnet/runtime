@@ -407,7 +407,7 @@ Again:
 
 //------------------------------------------------------------------
 // Resolve type references in the hardcoded metasig.
-// Returns a new signature with type refences resolved.
+// Returns a new signature with type references resolved.
 //------------------------------------------------------------------
 void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigBuilder)
 {

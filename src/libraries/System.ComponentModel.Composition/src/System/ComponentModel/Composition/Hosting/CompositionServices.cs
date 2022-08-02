@@ -65,7 +65,7 @@ namespace System.ComponentModel.Composition.Hosting
             if ((memberType != null) && memberType.IsGenericType && specifiedContractType.IsGenericType)
             {
                 // if the member type is closed and the specified contract type is open and they have exatly the same number of parameters
-                // we will close the specfied contract type
+                // we will close the specified contract type
                 if (specifiedContractType.ContainsGenericParameters && !memberType.ContainsGenericParameters)
                 {
                     var typeGenericArguments = memberType.GetGenericArguments();

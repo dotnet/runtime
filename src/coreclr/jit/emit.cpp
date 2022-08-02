@@ -4729,8 +4729,10 @@ AGAIN:
                            jmp->idAddr()->iiaBBlabel->bbNum);
                 }
             }
-            assert(tgtIG);
 #endif // DEBUG
+
+            assert(jmp->idAddr()->iiaBBlabel->bbFlags & BBF_HAS_LABEL);
+            assert(tgtIG);
 
             /* Record the bound target */
 

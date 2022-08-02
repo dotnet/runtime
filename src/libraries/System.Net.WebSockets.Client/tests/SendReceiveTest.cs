@@ -324,53 +324,39 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_VaryingLengthBuffers_Success(Uri server)
         {
-            CancellationTokenSource ctsDefault = null;
-            try
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
-                using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+                var rand = new Random();
+                var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
+
+                // Values chosen close to boundaries in websockets message length handling as well
+                // as in vectors used in mask application.
+                foreach (int bufferSize in new int[] { 1, 3, 4, 5, 31, 32, 33, 125, 126, 127, 128, ushort.MaxValue - 1, ushort.MaxValue, ushort.MaxValue + 1, ushort.MaxValue * 2 })
                 {
-                    var rand = new Random();
-                    ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
+                    byte[] sendBuffer = new byte[bufferSize];
+                    rand.NextBytes(sendBuffer);
+                    await SendAsync(cws, new ArraySegment<byte>(sendBuffer), WebSocketMessageType.Binary, true, ctsDefault.Token);
 
-                    // Values chosen close to boundaries in websockets message length handling as well
-                    // as in vectors used in mask application.
-                    foreach (int bufferSize in new int[] { 1, 3, 4, 5, 31, 32, 33, 125, 126, 127, 128, ushort.MaxValue - 1, ushort.MaxValue, ushort.MaxValue + 1, ushort.MaxValue * 2 })
+                    byte[] receiveBuffer = new byte[bufferSize];
+                    int totalReceived = 0;
+                    while (true)
                     {
-                        byte[] sendBuffer = new byte[bufferSize];
-                        rand.NextBytes(sendBuffer);
-                        await SendAsync(cws, new ArraySegment<byte>(sendBuffer), WebSocketMessageType.Binary, true, ctsDefault.Token);
+                        WebSocketReceiveResult recvResult = await ReceiveAsync(
+                            cws,
+                            new ArraySegment<byte>(receiveBuffer, totalReceived, receiveBuffer.Length - totalReceived),
+                            ctsDefault.Token);
 
-                        byte[] receiveBuffer = new byte[bufferSize];
-                        int totalReceived = 0;
-                        while (true)
-                        {
-                            WebSocketReceiveResult recvResult = await ReceiveAsync(
-                                cws,
-                                new ArraySegment<byte>(receiveBuffer, totalReceived, receiveBuffer.Length - totalReceived),
-                                ctsDefault.Token);
+                        Assert.InRange(recvResult.Count, 0, receiveBuffer.Length - totalReceived);
+                        totalReceived += recvResult.Count;
 
-                            Assert.InRange(recvResult.Count, 0, receiveBuffer.Length - totalReceived);
-                            totalReceived += recvResult.Count;
-
-                            if (recvResult.EndOfMessage) break;
-                        }
-
-                        Assert.Equal(receiveBuffer.Length, totalReceived);
-                        Assert.Equal<byte>(sendBuffer, receiveBuffer);
+                        if (recvResult.EndOfMessage) break;
                     }
 
-                    await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SendReceive_VaryingLengthBuffers_Success", ctsDefault.Token);
+                    Assert.Equal(receiveBuffer.Length, totalReceived);
+                    Assert.Equal<byte>(sendBuffer, receiveBuffer);
                 }
-            }
-            catch (OperationCanceledException ex)
-            {
-                if (PlatformDetection.IsBrowser && ctsDefault != null && ex.CancellationToken == ctsDefault.Token)
-                {
-                    _output.WriteLine($"ActiveIssue https://github.com/dotnet/runtime/issues/53957");
-                    _output.WriteLine($"The test {nameof(SendReceive_VaryingLengthBuffers_Success)} took more than {TimeOutMilliseconds} to finish, it was canceled.");
-                    return;
-                }
-                throw;
+
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SendReceive_VaryingLengthBuffers_Success", ctsDefault.Token);
             }
         }
 
@@ -378,42 +364,28 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_Concurrent_Success(Uri server)
         {
-            CancellationTokenSource ctsDefault = null;
-            try
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
-                using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+                CancellationTokenSource ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
+
+                byte[] receiveBuffer = new byte[10];
+                byte[] sendBuffer = new byte[10];
+                for (int i = 0; i < sendBuffer.Length; i++)
                 {
-                    ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
-
-                    byte[] receiveBuffer = new byte[10];
-                    byte[] sendBuffer = new byte[10];
-                    for (int i = 0; i < sendBuffer.Length; i++)
-                    {
-                        sendBuffer[i] = (byte)i;
-                    }
-
-                    for (int i = 0; i < sendBuffer.Length; i++)
-                    {
-                        Task<WebSocketReceiveResult> receive = ReceiveAsync(cws, new ArraySegment<byte>(receiveBuffer, receiveBuffer.Length - i - 1, 1), ctsDefault.Token);
-                        Task send = SendAsync(cws, new ArraySegment<byte>(sendBuffer, i, 1), WebSocketMessageType.Binary, true, ctsDefault.Token);
-                        await Task.WhenAll(receive, send);
-                        Assert.Equal(1, receive.Result.Count);
-                    }
-                    await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SendReceive_Concurrent_Success", ctsDefault.Token);
-
-                    Array.Reverse(receiveBuffer);
-                    Assert.Equal<byte>(sendBuffer, receiveBuffer);
+                    sendBuffer[i] = (byte)i;
                 }
-            }
-            catch (OperationCanceledException ex)
-            {
-                if (PlatformDetection.IsBrowser && ctsDefault != null && ex.CancellationToken == ctsDefault.Token)
+
+                for (int i = 0; i < sendBuffer.Length; i++)
                 {
-                    _output.WriteLine($"ActiveIssue https://github.com/dotnet/runtime/issues/57519");
-                    _output.WriteLine($"The test {nameof(SendReceive_Concurrent_Success)} took more than {TimeOutMilliseconds} to finish, it was canceled.");
-                    return;
+                    Task<WebSocketReceiveResult> receive = ReceiveAsync(cws, new ArraySegment<byte>(receiveBuffer, receiveBuffer.Length - i - 1, 1), ctsDefault.Token);
+                    Task send = SendAsync(cws, new ArraySegment<byte>(sendBuffer, i, 1), WebSocketMessageType.Binary, true, ctsDefault.Token);
+                    await Task.WhenAll(receive, send);
+                    Assert.Equal(1, receive.Result.Count);
                 }
-                throw;
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SendReceive_Concurrent_Success", ctsDefault.Token);
+
+                Array.Reverse(receiveBuffer);
+                Assert.Equal<byte>(sendBuffer, receiveBuffer);
             }
         }
 

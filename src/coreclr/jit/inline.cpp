@@ -1674,7 +1674,7 @@ void InlineStrategy::FinalizeXml(FILE* file)
         fprintf(file, "</InlineForest>\n");
         fflush(file);
 
-        // Workaroud compShutdown getting called twice.
+        // Workaround compShutdown getting called twice.
         s_HasDumpedXmlHeader = false;
     }
 

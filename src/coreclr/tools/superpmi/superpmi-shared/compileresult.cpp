@@ -1239,7 +1239,7 @@ void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
 
     if (RecordCallSiteWithSignature == nullptr)
     {
-        // The most call site records have only `methodHandle`, so creating two separate maps give us better perfomance
+        // The most call site records have only `methodHandle`, so creating two separate maps give us better performance
         // and smaller memory consumption. Note: we are not reading values from these maps during a normal replay.
         RecordCallSiteWithSignature = new LightWeightMap<DWORD, Agnostic_RecordCallSite>();
         if (recordCallSitesWithoutSig)

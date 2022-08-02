@@ -375,6 +375,7 @@ mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, i
 	gboolean result = FALSE;
 	MONO_ENTER_GC_UNSAFE;
 	if (!debugger_enabled) {
+		PRINT_ERROR_MSG ("DEBUGGING IS NOT ENABLED\n");
 		mono_wasm_add_dbg_command_received (0, id, 0, 0);
 		result = TRUE;
 		goto done;
@@ -401,6 +402,7 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	gboolean result = FALSE;
 	MONO_ENTER_GC_UNSAFE;
 	if (!debugger_enabled) {
+		PRINT_ERROR_MSG ("DEBUGGING IS NOT ENABLED\n");
 		mono_wasm_add_dbg_command_received(0, id, 0, 0);
 		result = TRUE;
 		goto done;

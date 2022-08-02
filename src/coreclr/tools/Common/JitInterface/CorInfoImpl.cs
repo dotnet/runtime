@@ -737,24 +737,6 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method, sig: &methodInfo->args, methodIL);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
 
-#if READYTORUN
-            if ((methodInfo->options & CorInfoOptions.CORINFO_GENERICS_CTXT_MASK) != 0)
-            {
-                foreach (var region in exceptionRegions)
-                {
-                    if (region.Kind == ILExceptionRegionKind.Catch)
-                    {
-                        TypeDesc catchType = (TypeDesc)methodIL.GetObject(region.ClassToken);
-                        if (catchType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                        {
-                            methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_KEEP_ALIVE;
-                            break;
-                        }
-                    }
-                }
-            }
-#endif
-
             return true;
         }
 
@@ -2376,7 +2358,7 @@ namespace Internal.JitInterface
                     // To maintain backward compatibility, we are doing it for reference types only.
                     // We don't do this for interfaces though, as those don't have instance constructors.
                     // For instance methods of types with precise-initialization
-                    // semantics, we can assume that the .ctor triggerred the
+                    // semantics, we can assume that the .ctor triggered the
                     // type initialization.
                     // This does not hold for NULL "this" object. However, the spec does
                     // not require that case to work.

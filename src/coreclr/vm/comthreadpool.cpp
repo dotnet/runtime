@@ -205,7 +205,7 @@ FCIMPLEND
 FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorCanSetMinIOCompletionThreads, DWORD ioCompletionThreads)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(ThreadpoolMgr::UsePortableThreadPool());
 
     BOOL result = ThreadpoolMgr::CanSetMinIOCompletionThreads(ioCompletionThreads);
     FC_RETURN_BOOL(result);
@@ -216,7 +216,7 @@ FCIMPLEND
 FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorCanSetMaxIOCompletionThreads, DWORD ioCompletionThreads)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(ThreadpoolMgr::UsePortableThreadPool());
 
     BOOL result = ThreadpoolMgr::CanSetMaxIOCompletionThreads(ioCompletionThreads);
     FC_RETURN_BOOL(result);
@@ -227,7 +227,7 @@ FCIMPLEND
 FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorSetMaxThreads,DWORD workerThreads, DWORD completionPortThreads)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPoolForIO());
 
     BOOL bRet = FALSE;
     HELPER_METHOD_FRAME_BEGIN_RET_0();
@@ -242,7 +242,7 @@ FCIMPLEND
 FCIMPL2(VOID, ThreadPoolNative::CorGetMaxThreads,DWORD* workerThreads, DWORD* completionPortThreads)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPoolForIO());
 
     ThreadpoolMgr::GetMaxThreads(workerThreads,completionPortThreads);
     return;
@@ -253,7 +253,7 @@ FCIMPLEND
 FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorSetMinThreads,DWORD workerThreads, DWORD completionPortThreads)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPoolForIO());
 
     BOOL bRet = FALSE;
     HELPER_METHOD_FRAME_BEGIN_RET_0();
@@ -268,7 +268,7 @@ FCIMPLEND
 FCIMPL2(VOID, ThreadPoolNative::CorGetMinThreads,DWORD* workerThreads, DWORD* completionPortThreads)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPoolForIO());
 
     ThreadpoolMgr::GetMinThreads(workerThreads,completionPortThreads);
     return;
@@ -279,7 +279,7 @@ FCIMPLEND
 FCIMPL2(VOID, ThreadPoolNative::CorGetAvailableThreads,DWORD* workerThreads, DWORD* completionPortThreads)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPoolForIO());
 
     ThreadpoolMgr::GetAvailableThreads(workerThreads,completionPortThreads);
     return;
@@ -290,7 +290,7 @@ FCIMPLEND
 FCIMPL0(INT32, ThreadPoolNative::GetThreadCount)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPoolForIO());
 
     return ThreadpoolMgr::GetThreadCount();
 }
@@ -300,7 +300,7 @@ FCIMPLEND
 extern "C" INT64 QCALLTYPE ThreadPool_GetCompletedWorkItemCount()
 {
     QCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPoolForIO());
 
     INT64 result = 0;
 
@@ -316,7 +316,7 @@ extern "C" INT64 QCALLTYPE ThreadPool_GetCompletedWorkItemCount()
 FCIMPL0(INT64, ThreadPoolNative::GetPendingUnmanagedWorkItemCount)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPool());
 
     return PerAppDomainTPCountList::GetUnmanagedTPCount()->GetNumRequests();
 }
@@ -327,7 +327,7 @@ FCIMPLEND
 FCIMPL0(VOID, ThreadPoolNative::NotifyRequestProgress)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPool());
     _ASSERTE(ThreadpoolMgr::IsInitialized()); // can't be here without requesting a thread first
 
     ThreadpoolMgr::NotifyWorkItemCompleted();
@@ -352,7 +352,7 @@ FCIMPLEND
 FCIMPL1(VOID, ThreadPoolNative::ReportThreadStatus, CLR_BOOL isWorking)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPool());
 
     ThreadpoolMgr::ReportThreadStatus(isWorking);
 }
@@ -361,7 +361,7 @@ FCIMPLEND
 FCIMPL0(FC_BOOL_RET, ThreadPoolNative::NotifyRequestComplete)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPool());
     _ASSERTE(ThreadpoolMgr::IsInitialized()); // can't be here without requesting a thread first
 
     ThreadpoolMgr::NotifyWorkItemCompleted();
@@ -423,7 +423,7 @@ FCIMPLEND
 FCIMPL0(FC_BOOL_RET, ThreadPoolNative::GetEnableWorkerTracking)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPool());
 
     BOOL result = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_EnableWorkerTracking) ? TRUE : FALSE;
     FC_RETURN_BOOL(result);
@@ -511,7 +511,7 @@ FCIMPL5(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
                                         Object* registeredWaitObjectUNSAFE)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPool());
 
     HANDLE handle = 0;
     struct _gc
@@ -586,7 +586,7 @@ extern "C" BOOL QCALLTYPE ThreadPool_RequestWorkerThread()
 
     BEGIN_QCALL;
 
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPool());
 
     ThreadpoolMgr::EnsureInitialized();
     ThreadpoolMgr::SetAppDomainRequestsActive();
@@ -615,7 +615,7 @@ extern "C" BOOL QCALLTYPE ThreadPool_PerformGateActivities(INT32 cpuUtilization)
 
     BEGIN_QCALL;
 
-    _ASSERTE_ALL_BUILDS(__FILE__, ThreadpoolMgr::UsePortableThreadPool() && !ThreadpoolMgr::UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(ThreadpoolMgr::UsePortableThreadPool() && !ThreadpoolMgr::UsePortableThreadPoolForIO());
 
     ThreadpoolMgr::PerformGateActivities(cpuUtilization);
     needGateThread = ThreadpoolMgr::NeedGateThreadForIOCompletions();
@@ -630,7 +630,7 @@ extern "C" BOOL QCALLTYPE ThreadPool_PerformGateActivities(INT32 cpuUtilization)
 FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorUnregisterWait, LPVOID WaitHandle, Object* objectToNotify)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPool());
 
     BOOL retVal = false;
     SAFEHANDLEREF refSH = (SAFEHANDLEREF) ObjectToOBJECTREF(objectToNotify);
@@ -686,7 +686,7 @@ FCIMPLEND
 FCIMPL1(void, ThreadPoolNative::CorWaitHandleCleanupNative, LPVOID WaitHandle)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPool());
 
     HELPER_METHOD_FRAME_BEGIN_0();
 
@@ -791,7 +791,7 @@ void WINAPI BindIoCompletionCallbackStub(DWORD ErrorCode,
 FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorBindIoCompletionCallback, HANDLE fileHandle)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPoolForIO());
 
     BOOL retVal = FALSE;
 
@@ -823,7 +823,7 @@ FCIMPLEND
 FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorPostQueuedCompletionStatus, LPOVERLAPPED lpOverlapped)
 {
     FCALL_CONTRACT;
-    _ASSERTE_ALL_BUILDS(__FILE__, !ThreadpoolMgr::UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(!ThreadpoolMgr::UsePortableThreadPoolForIO());
 
     OVERLAPPEDDATAREF   overlapped = ObjectToOVERLAPPEDDATAREF(OverlappedDataObject::GetOverlapped(lpOverlapped));
 

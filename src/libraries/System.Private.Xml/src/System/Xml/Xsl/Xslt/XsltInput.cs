@@ -940,7 +940,7 @@ namespace System.Xml.Xsl.Xslt
             // List of Extension namespaces are maintaned by XsltInput's ScopeManager and is used by IsExtensionNamespace() in XsltLoader.LoadLiteralResultElement()
             // Both Extension and Exclusion namespaces will not be coppied by LiteralResultElement. Logic of copping namespaces are in QilGenerator.CompileLiteralElement().
             // At this time we will have different scope manager and need preserve all required information from load time to compile time.
-            // Each XslNode contains list of NsDecls (nsList) wich stores prefix+namespaces pairs for each namespace decls as well as exclusion namespaces.
+            // Each XslNode contains list of NsDecls (nsList) which stores prefix+namespaces pairs for each namespace decls as well as exclusion namespaces.
             // In addition it also contains Exclusion namespace. They are represented as (null+namespace). Special case is Exlusion "#all" represented as (null+null).
             //and Exclusion namespace
             if (MoveToLiteralAttribute(attExPrefixes))

@@ -487,6 +487,7 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeFlavor=$(RuntimeFlavor)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeVariant=$(RuntimeVariant)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:CLRTestBuildAllTargets=$(CLRTestBuildAllTargets)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:UseCodeFlowEnforcement=$(UseCodeFlowEnforcement)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__TestGroupToBuild=$(__TestGroupToBuild)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__SkipRestorePackages=1"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /nodeReuse:false</GroupBuildCmd>

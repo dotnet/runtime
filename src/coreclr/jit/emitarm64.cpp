@@ -2545,7 +2545,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     //    'elemWidth' is the number of bits that we will use for the ROR and Replicate operations
     //    'S'         is the number of consecutive 1 bits for the immediate
     //    'R'         is the number of bits that we will Rotate Right the immediate
-    //    'size'      selects the final size of the immedate that we return (64 or 32 bits)
+    //    'size'      selects the final size of the immediate that we return (64 or 32 bits)
 
     assert(S < elemWidth); // 'elemWidth' consecutive one's is a reserved encoding
 
@@ -3297,7 +3297,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 /*****************************************************************************
  *
  *  For the given 'datasize' and arrangement 'opts'
- *  returns true is the pair spcifies a valid arrangement
+ *  returns true is the pair specifies a valid arrangement
  */
 /*static*/ bool emitter::isValidArrangement(emitAttr datasize, insOpts opt)
 {

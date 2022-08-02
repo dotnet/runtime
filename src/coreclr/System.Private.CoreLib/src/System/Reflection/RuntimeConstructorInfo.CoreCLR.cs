@@ -127,7 +127,7 @@ namespace System.Reflection
                 MetadataToken == ci.MetadataToken &&
                 m_declaringType.Equals(ci.m_declaringType));
 
-        public override int GetHashCode() => ValueType.GetHashCodeOfPtr(m_handle);
+        public override int GetHashCode() => RuntimeHelpers.GetHashCodeOfPtr(m_handle);
         #endregion
 
         #region ICustomAttributeProvider
