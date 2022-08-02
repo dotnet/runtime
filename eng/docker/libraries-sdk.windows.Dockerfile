@@ -11,7 +11,7 @@ ARG CONFIGURATION=Release
 
 USER ContainerAdministrator
 
-RUN Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile .\dotnet-install.ps1
+RUN Invoke-WebRequest -Uri https://raw.githubusercontent.com/dotnet/install-scripts/main/src/dotnet-install.ps1 -OutFile .\dotnet-install.ps1
 RUN & .\dotnet-install.ps1 -Channel $env:_DOTNET_INSTALL_CHANNEL -Quality daily -InstallDir 'C:/Program Files/dotnet'
 
 USER ContainerUser
