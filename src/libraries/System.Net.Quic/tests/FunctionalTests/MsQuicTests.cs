@@ -1077,7 +1077,7 @@ namespace System.Net.Quic.Tests
                     var serverOptions = CreateQuicServerOptions();
                     serverOptions.MaxInboundBidirectionalStreams = 1;
                     serverOptions.MaxInboundUnidirectionalStreams = 1;
-                    serverOptions.IdleTimeout = TimeSpan.FromSeconds(5);
+                    serverOptions.IdleTimeout = TimeSpan.FromSeconds(1);
                     return ValueTask.FromResult(serverOptions);
                 }
             };
@@ -1086,18 +1086,19 @@ namespace System.Net.Quic.Tests
             await using (clientConnection)
             await using (serverConnection)
             {
-                using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
+                using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
                 await clientStream.WriteAsync(new byte[1]);
-                using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync();
+                using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+                await serverStream.ReadAsync(new byte[1]);
 
-                var acceptTask = serverConnection.AcceptInboundStreamAsync();
+                ValueTask<QuicStream> acceptTask = serverConnection.AcceptInboundStreamAsync();
 
-                // Wait for idle timeout
-                await Task.Delay(TimeSpan.FromSeconds(10));
+                // read attempts should block until idle timeout
+                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.ReadAsync(new byte[10])).WaitAsync(TimeSpan.FromSeconds(10));
 
-                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.ReadAsync(new byte[10]));
-                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.WriteAsync(new byte[10]));
-                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask);
+                // write and accept should throw as well
+                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.WriteAsync(new byte[10])).WaitAsync(TimeSpan.FromSeconds(10));
+                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask).WaitAsync(TimeSpan.FromSeconds(10));
             }
         }
     }
