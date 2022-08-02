@@ -125,31 +125,10 @@ declare type DotnetModuleConfig = {
     configSrc?: string;
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
-    imports?: DotnetModuleConfigImports;
+    imports?: any;
     exports?: string[];
-    downloadResource?: (request: ResourceRequest) => LoadingResource;
+    downloadResource?: (request: ResourceRequest) => LoadingResource | undefined;
 } & Partial<EmscriptenModule>;
-declare type DotnetModuleConfigImports = {
-    require?: (name: string) => any;
-    fetch?: (url: string) => Promise<Response>;
-    fs?: {
-        promises?: {
-            readFile?: (path: string) => Promise<string | Buffer>;
-        };
-        readFileSync?: (path: string, options: any | undefined) => string;
-    };
-    crypto?: {
-        randomBytes?: (size: number) => Buffer;
-    };
-    ws?: WebSocket & {
-        Server: any;
-    };
-    path?: {
-        normalize?: (path: string) => string;
-        dirname?: (path: string) => string;
-    };
-    url?: any;
-};
 interface LoadingResource {
     name: string;
     url: string;
@@ -213,18 +192,6 @@ interface IDisposable {
     dispose(): void;
     get isDisposed(): boolean;
 }
-declare class ManagedObject implements IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-    toString(): string;
-}
-declare class ManagedError extends Error implements IDisposable {
-    constructor(message: string);
-    get stack(): string | undefined;
-    dispose(): void;
-    get isDisposed(): boolean;
-    toString(): string;
-}
 declare const enum MemoryViewType {
     Byte = 0,
     Int32 = 1,
@@ -283,6 +250,23 @@ declare class ArraySegment implements IMemoryView, IDisposable {
     slice(start?: number | undefined, end?: number | undefined): TypedArray;
     get length(): number;
     get byteLength(): number;
+}
+/**
+ * Represents proxy to the System.Exception
+ */
+declare class ManagedError extends Error implements IDisposable {
+    get stack(): string | undefined;
+    dispose(): void;
+    get isDisposed(): boolean;
+    toString(): string;
+}
+/**
+ * Represents proxy to the System.Object
+ */
+declare class ManagedObject implements IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+    toString(): string;
 }
 
 export { APIType, ArraySegment, AssetBehaviours, AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, DotnetPublicAPI, EmscriptenModule, IMemoryView, LoadingResource, ManagedError, ManagedObject, MemoryViewType, MonoConfig, NativePointer, ResourceRequest, Span, createDotnetRuntime as default };

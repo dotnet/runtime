@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { APIType, DotnetPublicAPI } from "./exports";
-import { IDisposable, IMemoryView, ManagedError, ManagedObject, MemoryViewType } from "./marshal";
+import { IDisposable, IMemoryView, MemoryViewType } from "./marshal";
 import { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadingResource, MonoConfig, ResourceRequest } from "./types";
 import { EmscriptenModule, NativePointer, TypedArray } from "./types/emscripten";
 
@@ -49,6 +49,25 @@ declare class ArraySegment implements IMemoryView, IDisposable {
     slice(start?: number | undefined, end?: number | undefined): TypedArray;
     get length(): number;
     get byteLength(): number;
+}
+
+/**
+ * Represents proxy to the System.Exception
+ */
+declare class ManagedError extends Error implements IDisposable {
+    get stack(): string | undefined;
+    dispose(): void;
+    get isDisposed(): boolean;
+    toString(): string;
+}
+
+/**
+ * Represents proxy to the System.Object
+ */
+declare class ManagedObject implements IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+    toString(): string;
 }
 
 export {

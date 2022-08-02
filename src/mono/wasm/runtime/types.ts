@@ -215,9 +215,9 @@ export type DotnetModuleConfig = {
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
 
-    imports?: DotnetModuleConfigImports;
+    imports?: any;
     exports?: string[];
-    downloadResource?: (request: ResourceRequest) => LoadingResource
+    downloadResource?: (request: ResourceRequest) => LoadingResource | undefined
 } & Partial<EmscriptenModule>
 
 export type DotnetModuleConfigImports = {

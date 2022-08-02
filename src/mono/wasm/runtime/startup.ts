@@ -610,7 +610,8 @@ export function bindings_init(): void {
 
 function downloadResource(request: ResourceRequest): LoadingResource {
     if (typeof Module.downloadResource === "function") {
-        return Module.downloadResource(request);
+        const loading = Module.downloadResource(request);
+        if (loading) return loading;
     }
     const options: any = {};
     if (request.hash) {
