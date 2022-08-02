@@ -159,7 +159,7 @@ namespace System
             ulong[] values = Enum.InternalGetValues(this);
 
 #if MONO
-            switch (GetTypeCode(Enum.GetUnderlyingType(this)))
+            switch (RuntimeTypeHandle.GetCorElementType(Enum.InternalGetUnderlyingType(this)))
 #else
             switch (RuntimeTypeHandle.GetCorElementType(this))
 #endif
