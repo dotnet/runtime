@@ -81,12 +81,10 @@
           DependsOnTargets="_AndroidBeforeAotCompileApp">
     <PropertyGroup>
       <_ToolPath>$([System.IO.Path]::GetDirectoryName('$(DotnetPgoToolPath)'))</_ToolPath>
-      <_ToolExe>$([System.IO.Path]::GetFileName('$(DotnetPgoToolPath)'))</_ToolExe>
     </PropertyGroup>
 
     <NetTraceToMibcConverter
       ToolPath="$(_ToolPath)"
-      ToolExe="$(_ToolExe)"
       Assemblies="@(_AotInputAssemblies)"
       NetTraceFilePath="$(NetTraceFilePath)"
       OutputDir="$(_MobileIntermediateOutputPath)">

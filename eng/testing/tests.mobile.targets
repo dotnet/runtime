@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DotnetPgoToolDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)', 'dotnet-pgo'))</DotnetPgoToolDir>
+    <DotnetPgoToolDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRToolPath)', 'dotnet-pgo'))</DotnetPgoToolDir>
     <DotnetPgoToolPath>$([MSBuild]::NormalizePath('$(DotnetPgoToolDir)', 'dotnet-pgo'))</DotnetPgoToolPath>
   </PropertyGroup>
 
@@ -44,7 +44,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DiagnosticPorts Condition="'$(DiagnosticStartup)' != ''">$(DiagnosticPorts),$(DiagnosticStartup)</DiagnosticPorts>
+    <DiagnosticPorts Condition="'$(DiagnosticStartupMode)' != ''">$(DiagnosticPorts),$(DiagnosticStartupMode)</DiagnosticPorts>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
