@@ -259,7 +259,9 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingFromFileSupported))]
+        // In Mono AOT, loading assemblies can happen, but they need to be AOT'd and registered on startup.  That is not the case
+        // with TestAppOutsideOfTPA.exe
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonBundledAssemblyLoadingSupported))]
         public void ExecuteAssembly()
         {
             CopyTestAssemblies();
