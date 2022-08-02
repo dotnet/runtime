@@ -1395,7 +1395,7 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
 void FlushWriteBarrierInstructionCache()
 {
-    FlushInstructionCache(GetCurrentProcess(), GetWriteBarrierCodeLocation((BYTE*)JIT_PatchedWriteBarrierGroup),
-        (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup);
+    ClrFlushInstructionCache(GetWriteBarrierCodeLocation((BYTE*)JIT_PatchedWriteBarrierGroup),
+        (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup, /* hasCodeExecutedBefore */ true);
 }
 

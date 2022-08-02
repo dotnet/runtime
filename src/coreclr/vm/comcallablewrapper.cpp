@@ -566,7 +566,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
 #else
             *ppofsWriterHolder.GetRW() = ((UINT_PTR)pStub);
 #endif
-            FlushInstructionCache(GetCurrentProcess(), ppofs, sizeof(UINT_PTR));
+            ClrFlushInstructionCache(ppofs, sizeof(UINT_PTR), /* hasCodeExecutedBefore */ true);
 
             // Return the address of the prepad. The prepad will regenerate the hidden parameter and due
             // to the update above will execute the new stub code the second time around.

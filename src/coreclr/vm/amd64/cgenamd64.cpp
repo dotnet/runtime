@@ -575,7 +575,7 @@ void UMEntryThunkCode::Poison()
     pThisRW->m_movR10[1]  = 0xBF;
 #endif
 
-    FlushInstructionCache(GetCurrentProcess(), &m_movR10[0], &m_jmpRAX[3]-&m_movR10[0]);
+    ClrFlushInstructionCache(&m_movR10[0], &m_jmpRAX[3]-&m_movR10[0], /* hasCodeExecutedBefore */ true);
 }
 
 UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
