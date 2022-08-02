@@ -85,9 +85,6 @@ set(utils_common_sources
     mono-property-hash.c
     mono-value-hash.h
     mono-value-hash.c
-    freebsd-elf_common.h
-    freebsd-elf32.h
-    freebsd-elf64.h
     freebsd-dwarf.h
     dtrace.h
     mono-error.c
@@ -226,6 +223,12 @@ else()
 endif()
 
 addprefix(utils_sources ../utils/ "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
+
+set(utils_sources
+    ${utils_sources}
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf_common.h
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf32.h
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf64.h)
 
 if(ENABLE_DTRACE)
     find_program(DTRACE dtrace)

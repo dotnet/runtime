@@ -466,10 +466,12 @@ namespace ILCompiler
                 .UseILProvider(ilProvider)
                 .UsePreinitializationManager(preinitManager);
 
+#if DEBUG
             List<TypeDesc> scannerConstructedTypes = null;
             List<MethodDesc> scannerCompiledMethods = null;
-            int parallelism = Get(_command.Parallelism);
+#endif
 
+            int parallelism = Get(_command.Parallelism);
             if (useScanner)
             {
                 // Run the scanner in a separate stack frame so that there's no dangling references to

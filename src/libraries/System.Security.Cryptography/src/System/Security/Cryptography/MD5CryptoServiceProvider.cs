@@ -16,18 +16,14 @@ namespace System.Security.Cryptography
         public MD5CryptoServiceProvider()
         {
             _incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
-#pragma warning disable CA1416 // MD5.HashSizeInBits is unsupported on browser
             HashSizeValue = HashSizeInBits;
-#pragma warning restore CA1416
         }
 
         public override void Initialize()
         {
             if (_running)
             {
-#pragma warning disable CA1416 // MD5.HashSizeInBytes is unsupported on browser
                 Span<byte> destination = stackalloc byte[HashSizeInBytes];
-#pragma warning restore CA1416
 
                 if (!_incrementalHash.TryGetHashAndReset(destination, out _))
                 {

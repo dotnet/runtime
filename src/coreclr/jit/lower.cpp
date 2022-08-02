@@ -1805,7 +1805,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 
     // Args for tail call are setup in incoming arg area.  The gc-ness of args of
     // caller and callee (which being tail called) may not match.  Therefore, everything
-    // from arg setup until the epilog need to be non-interuptible by GC.  This is
+    // from arg setup until the epilog need to be non-interruptible by GC.  This is
     // achieved by inserting GT_START_NONGC before the very first GT_PUTARG_STK node
     // of call is setup.  Note that once a stack arg is setup, it cannot have nested
     // calls subsequently in execution order to setup other args, because the nested
@@ -1832,7 +1832,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     if (!putargs.Empty())
     {
         // Get the earliest operand of the first PUTARG_STK node. We will make
-        // the requred copies of args before this node.
+        // the required copies of args before this node.
         bool     unused;
         GenTree* insertionPoint = BlockRange().GetTreeRange(putargs.Bottom(), &unused).FirstNode();
         // Insert GT_START_NONGC node before we evaluate the PUTARG_STK args.
@@ -2588,7 +2588,7 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
         //
         // If the compare is signed then (x LT|GE y) can be transformed into ((x SUB y) LT|GE 0).
         // If the compare is unsigned we can still use SUB but we need to check the Carry flag,
-        // not the actual result. In both cases we can simply check the appropiate condition flags
+        // not the actual result. In both cases we can simply check the appropriate condition flags
         // and ignore the actual result:
         //     SUB_LO loSrc1, loSrc2
         //     SUB_HI hiSrc1, hiSrc2
@@ -2772,7 +2772,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             // doing so would produce incorrect results (e.g. RSZ, RSH).
             //
             // The below list of handled opers is conservative but enough to handle the most common
-            // situations. In particular this include CALL, sometimes the JIT unnecessarilly widens
+            // situations. In particular this include CALL, sometimes the JIT unnecessarily widens
             // the result of bool returning calls.
             //
             bool removeCast =
@@ -3159,7 +3159,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 //     A SETCC/JCC node or nullptr if `node` is not used.
 //
 // Notes:
-//     This simply replaces `node`'s use with an appropiate SETCC/JCC node,
+//     This simply replaces `node`'s use with an appropriate SETCC/JCC node,
 //     `node` is not actually changed, except by having its GTF_SET_FLAGS set.
 //     It's the caller's responsibility to change `node` such that it only
 //     sets the condition flags, without producing a boolean value.
@@ -3599,13 +3599,6 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             else
             {
                 assert(comp->info.compRetNativeType == ret->TypeGet());
-                GenTree* retVal = ret->gtGetOp1();
-                if (retVal->TypeGet() != ret->TypeGet())
-                {
-                    assert(retVal->OperIs(GT_LCL_VAR));
-                    LowerRetSingleRegStructLclVar(ret);
-                }
-                return;
             }
         }
     }
@@ -3626,19 +3619,22 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
     switch (retVal->OperGet())
     {
-        case GT_CALL:
-            assert(retVal->TypeIs(genActualType(nativeReturnType))); // Type should be changed during call processing.
-            break;
-
         case GT_CNS_INT:
-            // When we promote LCL_VAR single fields into return
-            // we could have all type of constans here.
+            // When we promote LCL_VAR single fields into return, we could have all types of constants here.
             if (varTypeUsesFloatReg(nativeReturnType))
             {
-                // Do not expect `initblock` for SIMD* types,
-                // only 'initobj'.
-                assert(retVal->AsIntCon()->IconValue() == 0);
-                retVal->BashToConst(0.0, TYP_FLOAT);
+                // ZeroObj assertion propagation can create INT zeros for DOUBLE returns.
+                assert((genTypeSize(retVal) == genTypeSize(nativeReturnType)) || retVal->IsIntegralConst(0));
+                int64_t value = retVal->AsIntCon()->IconValue();
+
+                if (nativeReturnType == TYP_FLOAT)
+                {
+                    retVal->BashToConst(*reinterpret_cast<float*>(&value));
+                }
+                else
+                {
+                    retVal->BashToConst(*reinterpret_cast<double*>(&value));
+                }
             }
             break;
 
@@ -3657,26 +3653,6 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         case GT_LCL_FLD:
             retVal->ChangeType(nativeReturnType);
             break;
-
-#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HWINTRINSIC:
-#endif // FEATURE_HW_INTRINSICS
-        {
-            assert(!retVal->TypeIs(TYP_STRUCT));
-            if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(retVal))
-            {
-                GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
-                ret->gtOp1       = bitcast;
-                BlockRange().InsertBefore(ret, bitcast);
-                ContainCheckBitCast(bitcast);
-            }
-        }
-        break;
-#endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
 
         default:
             assert(varTypeIsEnregisterable(retVal));
@@ -3721,7 +3697,6 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
     if (varDsc->lvDoNotEnregister)
     {
         lclVar->ChangeOper(GT_LCL_FLD);
-        lclVar->AsLclFld()->SetLclOffs(0);
 
         // We are returning as a primitive type and the lcl is of struct type.
         assert(comp->info.compRetNativeType != TYP_STRUCT);
@@ -3763,7 +3738,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerCallStruct: Lowers a call node that returns a stuct.
+// LowerCallStruct: Lowers a call node that returns a struct.
 //
 // Arguments:
 //     call - The call node to lower.
@@ -4700,8 +4675,8 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
     ContainCheckReturnTrap(tree->AsOp());
 
-    // Pop the frame if necessary. On 32-bit targets this only happens in the method epilog; on 64-bit targets thi
-    // happens after every PInvoke call in non-stubs. 32-bit targets instead mark the frame as inactive.
+    // Pop the frame if necessary. On 32-bit targets this only happens in the method epilog; on 64-bit targets
+    // this happens after every PInvoke call in non-stubs. 32-bit targets instead mark the frame as inactive.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
@@ -4774,7 +4749,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
     //     if (g_TrapReturningThreads)
     //         RareDisablePreemptiveGC();
     //
-    // Transistions using helpers:
+    // Transitions using helpers:
     //
     //     OpaqueFrame opaqueFrame;
     //
@@ -5682,7 +5657,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
 #ifdef TARGET_XARCH
         // force input transformation to RAX because the following MULHI will kill RDX:RAX anyway and LSRA often causes
-        // reduntant copies otherwise
+        // redundant copies otherwise
         if (firstNode && !simpleMul)
         {
             adjustedDividend->SetRegNum(REG_RAX);

@@ -126,7 +126,7 @@ PALTEST(file_io_GetFileAttributesExW_test1_paltest_getfileattributesexw_test1, "
         return FAIL;
     }
 
-    /* Test a Directroy */
+    /* Test a Directory */
     RunTest_GetFileAttributesExW_test1("normal_test_directory", FILE_ATTRIBUTE_DIRECTORY, IS_DIR);
 
 
@@ -134,7 +134,7 @@ PALTEST(file_io_GetFileAttributesExW_test1_paltest_getfileattributesexw_test1, "
 
     RunTest_GetFileAttributesExW_test1("normal_test_file", FILE_ATTRIBUTE_NORMAL, IS_FILE);
 
-    /* Test a Read-Only Directroy */
+    /* Test a Read-Only Directory */
 
     RunTest_GetFileAttributesExW_test1("ro_test_directory",
             FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_DIRECTORY, IS_DIR);
@@ -147,7 +147,7 @@ PALTEST(file_io_GetFileAttributesExW_test1_paltest_getfileattributesexw_test1, "
 
     RunTest_GetFileAttributesExW_test1(".hidden_file", FILE_ATTRIBUTE_HIDDEN, IS_FILE);
 
-    /* Test a Hidden Directroy */
+    /* Test a Hidden Directory */
 
     RunTest_GetFileAttributesExW_test1(".hidden_directory",
             FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_DIRECTORY, IS_DIR);

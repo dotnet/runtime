@@ -208,7 +208,7 @@ namespace System.Runtime
                 // disallow all exceptions leaking out of callbacks
             }
 
-            // The classlib's funciton should never return and should not throw. If it does, then we fail our way...
+            // The classlib's function should never return and should not throw. If it does, then we fail our way...
             FallbackFailFast(reason, unhandledException);
         }
 
@@ -847,7 +847,7 @@ namespace System.Runtime
             AssertNotRuntimeObject(pClauseType);
 #endif
 
-            return TypeCast.IsInstanceOfClass(pClauseType, exception) != null;
+            return TypeCast.IsInstanceOfException(pClauseType, exception);
         }
 
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart)

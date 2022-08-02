@@ -305,7 +305,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 3:
         print 'Error, incorrect number of arguments.'
         print 'Ex usage: python migrate-tags <new_listfile> <old_listfile>'
-        print 'Note this completely overwrites the exisiting new_listfile!'
+        print 'Note this completely overwrites the existing new_listfile!'
         exit(1)
 
     new_listfile = sys.argv[1]
@@ -322,7 +322,7 @@ if __name__ == '__main__':
 
     migrate_tags(new_data, old_data)
 
-    # Warning this completely overwrites the exisiting new_listfile
+    # Warning this completely overwrites the existing new_listfile
     write_list_file(new_listfile, new_data)
 
 

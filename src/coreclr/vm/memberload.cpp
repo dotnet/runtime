@@ -600,7 +600,7 @@ MethodDesc* MemberLoader::GetMethodDescFromMethodDef(Module *pModule,
         //
         // Normal IL code that uses generic code cannot use MethodDefs in this way: all calls
         // to generic code must be emitted as MethodRefs and MethodSpecs.  However, at other
-        // points in tthe codebase we need to resolve MethodDefs to generic uninstantiated
+        // points in the codebase we need to resolve MethodDefs to generic uninstantiated
         // method descriptors, and this is the best place to implement that.
         //
         mdTypeDef typeDef;

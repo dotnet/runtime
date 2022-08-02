@@ -1008,7 +1008,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (!strcmp (cmethod->name, "GetArrayDataReference")) {
 			// Logic below works for both SZARRAY and MDARRAY
 			int dreg = alloc_preg (cfg);
-			MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
+			MONO_EMIT_NEW_CHECK_THIS(cfg, args[0]->dreg);
+			//MONO_EMIT_NULL_CHECK (cfg, args [0]->dreg, FALSE);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoArray, vector));
 			return ins;
 		}

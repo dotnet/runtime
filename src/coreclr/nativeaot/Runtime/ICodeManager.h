@@ -53,10 +53,9 @@ C_ASSERT(PTFF_X1_IS_BYREF == ((uint64_t)GCRK_Scalar_Byref << 32));
 
 inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
 {
-    if (returnKind == GCRK_Scalar)
-        return 0;
-
-    return PTFF_SAVE_X0 | PTFF_SAVE_X1 | ((uint64_t)returnKind << 32);
+    // just need to report gc ref bits here.
+    // appropriate PTFF_SAVE_ bits will be added by the frame building routine.
+    return ((uint64_t)returnKind << 32);
 }
 
 inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
@@ -76,10 +75,9 @@ C_ASSERT(PTFF_RDX_IS_BYREF == ((uint64_t)GCRK_Scalar_Byref << 16));
 
 inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
 {
-    if (returnKind == GCRK_Scalar)
-        return 0;
-
-    return PTFF_SAVE_RAX | PTFF_SAVE_RDX | ((uint64_t)returnKind << 16);
+    // just need to report gc ref bits here.
+    // appropriate PTFF_SAVE_ bits will be added by the frame building routine.
+    return ((uint64_t)returnKind << 16);
 }
 
 inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)

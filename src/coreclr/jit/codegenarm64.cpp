@@ -3334,7 +3334,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                         checkDividend = false; // We statically know that the dividend is not -1
                     }
                 }
-                else // insert check for divison by zero
+                else // insert check for division by zero
                 {
                     // Check if the divisor is zero throw a DivideByZeroException
                     emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
@@ -3385,7 +3385,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
     }
 }
 
-// Generate code for CpObj nodes wich copy structs that have interleaved
+// Generate code for CpObj nodes which copy structs that have interleaved
 // GC pointers.
 // For this case we'll generate a sequence of loads/stores in the case of struct
 // slots that don't contain GC pointers.  The generated code will look like:
@@ -4486,7 +4486,7 @@ void CodeGen::genCodeForConditional(GenTreeConditional* tree)
 // integer/unsigned comparison against against a mask with a single bit set
 // which is used by a GT_JTRUE condition jump node.
 //
-// This node is repsonsible for consuming the register, and emitting the
+// This node is responsible for consuming the register, and emitting the
 // appropriate fused compare/test and branch instruction
 //
 // Two flags guide code generation
@@ -5063,7 +5063,7 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
     assert(genIsValidFloatReg(op2Reg));
     assert(genIsValidFloatReg(targetReg));
 
-    // TODO-ARM64-CQ Contain integer constants where posible
+    // TODO-ARM64-CQ Contain integer constants where possible
 
     instruction ins  = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
     emitAttr    attr = (simdNode->GetSimdSize() > 8) ? EA_16BYTE : EA_8BYTE;
@@ -5238,7 +5238,7 @@ void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
 
     regNumber operandReg = genConsumeReg(addr);
 
-    // Need an addtional int register to read upper 4 bytes, which is different from targetReg
+    // Need an additional int register to read upper 4 bytes, which is different from targetReg
     regNumber tmpReg = treeNode->GetSingleTempReg();
 
     // 8-byte read

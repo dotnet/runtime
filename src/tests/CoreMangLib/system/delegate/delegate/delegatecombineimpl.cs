@@ -4,7 +4,7 @@
 using System;
 using System.Globalization;
 using System.Collections;
-//create for delegate combine(delegate a,delagate b) testing
+//create for delegate combine(delegate a,delegate b) testing
 namespace DelegateTest
 {
     delegate bool booldelegate();
@@ -12,7 +12,7 @@ namespace DelegateTest
 
     public class DelegateCombineImpl
     {
-        const string c_StartWrok = "Start";
+        const string c_StartWork = "Start";
         const string c_Working = "Working";
         enum identify_null
         {
@@ -208,14 +208,14 @@ namespace DelegateTest
             {
                 delctor.starkWork = new booldelegate(testinstance.StartWork_Bool);
                 combineImpl += (booldelegate)delctor.starkWork;
-                sFlagAdd = c_StartWrok;
+                sFlagAdd = c_StartWork;
 
             }
             else if (start == identify_null.c_Start_null_false_duplicate )
             {
                 delctor.starkWork = new booldelegate(testinstance.StartWork_Bool);
                 combineImpl += (booldelegate)delctor.starkWork;
-                sFlagAdd = c_StartWrok;
+                sFlagAdd = c_StartWork;
                 //The invocation list can contain duplicate entries; that is, entries that refer to the same method on the same object.
                 combineImpl += (booldelegate)delctor.starkWork;
                 sFlagAdd += sFlagAdd;
@@ -248,7 +248,7 @@ namespace DelegateTest
                 //the filter is to get the delegate which is appended through equals method.
                 if (bd.Equals(delctor.starkWork))
                 {
-                    sFlag += c_StartWrok;
+                    sFlag += c_StartWork;
                 }
                 if (bd.Equals(delctor.working))
                 {
@@ -264,7 +264,7 @@ namespace DelegateTest
         }
     }
 
-    //create testclass for provding test method and test target.
+    //create testclass for providing test method and test target.
     class TestClass
     {
         public bool StartWork_Bool()

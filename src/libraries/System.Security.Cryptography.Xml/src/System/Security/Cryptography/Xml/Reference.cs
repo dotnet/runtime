@@ -335,7 +335,7 @@ namespace System.Security.Cryptography.Xml
             DigestValue = CalculateHashValue(document, refList);
         }
 
-        // What we want to do is pump the input throug the TransformChain and then
+        // What we want to do is pump the input through the TransformChain and then
         // hash the output of the chain document is the document context for resolving relative references
         internal byte[] CalculateHashValue(XmlDocument document, CanonicalXmlNodeList refList)
         {
@@ -393,7 +393,7 @@ namespace System.Security.Cryptography.Xml
                             string idref = Utils.GetIdFromLocalUri(_uri, out bool discardComments);
                             if (idref == "xpointer(/)")
                             {
-                                // This is a self referencial case
+                                // This is a self referential case
                                 if (document == null)
                                     throw new CryptographicException(SR.Format(SR.Cryptography_Xml_SelfReferenceRequiresContext, _uri));
 
