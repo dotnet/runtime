@@ -254,7 +254,7 @@ namespace System.Reflection
             }
 
             return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.ByRef)) != 0) ?
-                ReturnTranform(ref ret, wrapInTargetInvocationException) : returnObject;
+                ReturnTransform(ref ret, wrapInTargetInvocationException) : returnObject;
         }
 
         private unsafe ref byte InvokeWithManyArguments(
