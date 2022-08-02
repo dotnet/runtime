@@ -5232,7 +5232,8 @@ MONO_RESTORE_WARNING
 			continue;
 		}
 
-		if (m_class_is_valuetype (klass) && !mono_class_is_gtd (klass) && can_marshal_struct (klass) &&
+		if ((m_class_is_valuetype (klass) || ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT))
+			&& !mono_class_is_gtd (klass) && can_marshal_struct (klass) &&
 			!(m_class_get_nested_in (klass) && strstr (m_class_get_name (m_class_get_nested_in (klass)), "<PrivateImplementationDetails>") == m_class_get_name (m_class_get_nested_in (klass)))) {
 			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
 			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
