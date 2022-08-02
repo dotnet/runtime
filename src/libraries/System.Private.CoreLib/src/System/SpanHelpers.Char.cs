@@ -2013,8 +2013,8 @@ namespace System
                     //     +---------------------------------------------------------------+
                     //     | P | O | N | M | L | K | J | I | H | G | F | E | D | C | B | A |
                     //     +---------------------------------------------------------------+
-                    tempFirst = Vector256.Shuffle(tempFirst, Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8));
-                    tempLast = Vector256.Shuffle(tempLast, Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8));
+                    tempFirst = Vector256.Shuffle(tempFirst, Vector256.Create(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+                    tempLast = Vector256.Shuffle(tempLast, Vector256.Create(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
                     // Store the reversed vectors
                     tempLast.StoreUnsafe(ref bufShort, firstOffset);
