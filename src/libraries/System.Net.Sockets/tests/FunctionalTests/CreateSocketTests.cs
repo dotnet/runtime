@@ -631,19 +631,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private static int CloseSocketHandle(IntPtr handle)
-        {
-            return PlatformDetection.IsWindows ?
-                WinInterop.closesocket(handle) :
-                LibcInterop.close((int)handle);
-        }
-
-        private static class WinInterop
-        {
-            [DllImport("ws2_32.dll", SetLastError = true)]
-            internal static extern int closesocket(IntPtr socketHandle);
-        }
-
         private static class LibcInterop
         {
             [DllImport("libc")]
@@ -703,29 +690,24 @@ namespace System.Net.Sockets.Tests
             LibcInterop.close(ptr[1]);
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)] // Closing socket handle manually has side-effects in Unix SocketAsyncEngine.
         [InlineData(false)]
         [InlineData(true)]
-        public void Ctor_Dispose_HandleClosedIfOwnsHandle(bool ownsHandleOuter)
+        public void Ctor_Dispose_HandleClosedIfOwnsHandle(bool ownsHandle)
         {
-            // Since the handle is closed with a manual call, it won't be unregistered from SocektAsyncEngine on Unix,
-            // which can lead to handle-reuse errors in unrelated tests. Process-isolation should solve this.
-            RemoteExecutor.Invoke(static ownsHandleInner =>
-            {
-                bool ownsHandle = bool.Parse(ownsHandleInner);
-                Socket original = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                IntPtr handleValue = original.Handle;
+            Socket original = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            IntPtr handleValue = original.Handle;
 
-                SafeSocketHandle handleClone = new SafeSocketHandle(handleValue, ownsHandle: ownsHandle);
-                Socket socketClone = new Socket(handleClone);
-                socketClone.Dispose();
+            SafeSocketHandle handleClone = new SafeSocketHandle(handleValue, ownsHandle: ownsHandle);
+            Socket socketClone = new Socket(handleClone);
+            socketClone.Dispose();
 
-                bool manualCloseSucceeded = CloseSocketHandle(handleValue) == 0;
-                Assert.Equal(!ownsHandle, manualCloseSucceeded);
+            bool manualCloseSucceeded = closesocket(handleValue) == 0;
+            Assert.Equal(!ownsHandle, manualCloseSucceeded);
 
-                GC.SuppressFinalize(original.SafeHandle);
-                GC.SuppressFinalize(original);
-            }, ownsHandleOuter.ToString()).Dispose();
+            [DllImport("ws2_32.dll", SetLastError = true)]
+            static extern int closesocket(IntPtr socketHandle);
         }
 
         private static void AssertEqualOrSameException<T>(Func<T> expected, Func<T> actual)
