@@ -3849,20 +3849,32 @@ namespace System.Text.RegularExpressions
                         }
                         Sub();
                         Stloc(stackpos);
+
+                        // goto originalDoneLabel;
+                        BrFar(originalDoneLabel);
                     }
                     else
                     {
                         // The child has backtracking constructs.  If we have no successful iterations previously processed, just bail.
                         // If we do have successful iterations previously processed, however, we need to backtrack back into the last one.
 
-                        // if (iterationCount != 0) goto doneLabel;
+                        // if (iterationCount == 0) goto originalDoneLabel;
                         Ldloc(iterationCount);
                         Ldc(0);
-                        BneFar(doneLabel);
-                    }
+                        BeqFar(originalDoneLabel);
 
-                    // goto originalDoneLabel;
-                    BrFar(originalDoneLabel);
+                        if (iterationMayBeEmpty)
+                        {
+                            // If we saw empty, it must have been in the most recent iteration, as we wouldn't have
+                            // allowed additional iterations after one that was empty.  Thus, we reset it back to
+                            // false prior to backtracking / undoing that iteration.
+                            Ldc(0);
+                            Stloc(sawEmpty!);
+                        }
+
+                        // goto doneLabel;
+                        BrFar(doneLabel);
+                    }
 
                     MarkLabel(endLoop);
 
@@ -3938,10 +3950,20 @@ namespace System.Text.RegularExpressions
 
                     if (iterationMayBeEmpty)
                     {
-                        // if (sawEmpty != 0) goto doneLabel;
+                        // if (sawEmpty == 0) goto body;
                         Ldloc(sawEmpty!);
                         Ldc(0);
-                        BneFar(doneLabel);
+                        BeqFar(body);
+
+                        // We saw empty, and it must have been in the most recent iteration, as we wouldn't have
+                        // allowed additional iterations after one that was empty.  Thus, we reset it back to
+                        // false prior to backtracking / undoing that iteration.
+                        // sawEmpty = 0;
+                        Ldc(0);
+                        Stloc(sawEmpty!);
+
+                        // goto doneLabel;
+                        BrFar(doneLabel);
                     }
 
                     if (maxIterations != int.MaxValue)
