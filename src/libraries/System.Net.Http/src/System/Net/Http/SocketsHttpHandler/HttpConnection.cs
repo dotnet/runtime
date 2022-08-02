@@ -62,6 +62,7 @@ namespace System.Net.Http
         private int _readLength;
 
         private long _idleSinceTickCount;
+        private int _keepAliveTimeoutSeconds; // 0 == no timeout
         private bool _inUse;
         private bool _detachedFromPool;
         private bool _canRetry;
@@ -145,9 +146,14 @@ namespace System.Net.Http
 
         /// <summary>Prepare an idle connection to be used for a new request.</summary>
         /// <param name="async">Indicates whether the coming request will be sync or async.</param>
-        /// <returns>True if connection can be used, false if it is invalid due to receiving EOF or unexpected data.</returns>
+        /// <returns>True if connection can be used, false if it is invalid due to a timeout or receiving EOF or unexpected data.</returns>
         public bool PrepareForReuse(bool async)
         {
+            if (CheckKeepAliveTimeoutExceeded())
+            {
+                return false;
+            }
+
             // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
             // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
             if (_readAheadTask is not null)
@@ -193,9 +199,14 @@ namespace System.Net.Http
         }
 
         /// <summary>Check whether a currently idle connection is still usable, or should be scavenged.</summary>
-        /// <returns>True if connection can be used, false if it is invalid due to receiving EOF or unexpected data.</returns>
+        /// <returns>True if connection can be used, false if it is invalid due to a timeout or receiving EOF or unexpected data.</returns>
         public override bool CheckUsabilityOnScavenge()
         {
+            if (CheckKeepAliveTimeoutExceeded())
+            {
+                return false;
+            }
+
             // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
             if (_readAheadTask is null)
             {
@@ -221,6 +232,14 @@ namespace System.Net.Http
                 // We don't know for sure that the stream actually has data available, so we need to issue a real read now.
                 return await _stream.ReadAsync(new Memory<byte>(_readBuffer)).ConfigureAwait(false);
             }
+        }
+
+        private bool CheckKeepAliveTimeoutExceeded()
+        {
+            // We only honor a Keep-Alive timeout on HTTP/1.0 responses.
+            // If _keepAliveTimeoutSeconds is 0, no timeout has been set.
+            return _keepAliveTimeoutSeconds != 0 &&
+                GetIdleTicks(Environment.TickCount64) >= _keepAliveTimeoutSeconds * 1000;
         }
 
         private ValueTask<int>? ConsumeReadAheadTask()
@@ -647,6 +666,11 @@ namespace System.Net.Http
                         break;
                     }
                     ParseHeaderNameValue(this, line.Span, response, isFromTrailer: false);
+                }
+
+                if (response.Version.Minor == 0)
+                {
+                    ProcessHttp10KeepAliveHeader(response);
                 }
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
@@ -1108,6 +1132,45 @@ namespace System.Net.Http
                 response.Headers.TryAddWithoutValidation(
                     (descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor,
                     headerValue);
+            }
+        }
+
+        private void ProcessHttp10KeepAliveHeader(HttpResponseMessage response)
+        {
+            if (response.Headers.NonValidated.TryGetValues(KnownHeaders.KeepAlive.Name, out HeaderStringValues keepAliveValues))
+            {
+                string keepAlive = keepAliveValues.ToString();
+                var parsedValues = new ObjectCollection<NameValueHeaderValue>();
+
+                if (NameValueHeaderValue.GetNameValueListLength(keepAlive, 0, ',', parsedValues) == keepAlive.Length)
+                {
+                    foreach (NameValueHeaderValue nameValue in parsedValues)
+                    {
+                        if (string.Equals(nameValue.Name, "timeout", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (!string.IsNullOrEmpty(nameValue.Value) &&
+                                HeaderUtilities.TryParseInt32(nameValue.Value, out int timeout) &&
+                                timeout >= 0)
+                            {
+                                if (timeout == 0)
+                                {
+                                    _connectionClose = true;
+                                }
+                                else
+                                {
+                                    _keepAliveTimeoutSeconds = timeout;
+                                }
+                            }
+                        }
+                        else if (string.Equals(nameValue.Name, "max", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (nameValue.Value == "0")
+                            {
+                                _connectionClose = true;
+                            }
+                        }
+                    }
+                }
             }
         }
 
