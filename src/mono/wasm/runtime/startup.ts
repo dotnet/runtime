@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
 import { mono_assert, CharPtrNull, DotnetModule, MonoConfig, wasm_type_symbol, MonoObject, MonoConfigError, LoadingResource, AssetEntry, ResourceRequest, DotnetPublicAPI } from "./types";
-import { BINDING, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_SHELL, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
+import { BINDING, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -262,9 +261,6 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
 
     await init_polyfills_async();
-    if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
-        await mono_wasm_pthread_worker_init();
-    }
 
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
 }
@@ -948,11 +944,17 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
 /// 1. Emscripten skips a lot of initialization on the pthread workers, Module may not have everything you expect.
 /// 2. Emscripten does not run the preInit or preRun functions in the workers.
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
-async function mono_wasm_pthread_worker_init(): Promise<void> {
+export async function mono_wasm_pthread_worker_init(): Promise<void> {
+    console.debug("MONO_WASM: worker initializing essential C exports and APIs");
+    // FIXME: copy/pasted from mono_wasm_pre_init_essential - can we share this code? Any other global state that needs initialization?
+    init_c_exports();
+    // not initializing INTERNAL, MONO, or BINDING C wrappers here - those legacy APIs are not likely to be needed on pthread workers.
+
     // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
         console.debug("MONO_WASM: pthread created", ev.pthread_self.pthread_id);
     });
+
 }
 
 /**
