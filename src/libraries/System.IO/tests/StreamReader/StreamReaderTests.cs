@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Tests
 {
@@ -556,7 +557,6 @@ namespace System.IO.Tests
         [InlineData(1, true)]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51390", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ReadAsync_Canceled_ThrowsException(int method, bool precanceled)
         {
             Func<StreamReader, CancellationToken, Task<int>> func = method switch
@@ -565,8 +565,8 @@ namespace System.IO.Tests
                 1 => (sr, ct) => sr.ReadBlockAsync(new char[1], ct).AsTask(),
                 _ => throw new Exception("unknown mode")
             };
-
-            string pipeName = Guid.NewGuid().ToString("N");
+            string pipeName = $"/tmp/{Guid.NewGuid().ToString("N")}";
+            //string pipeName = PlatformDetection.IsInAppContainer ? @"LOCAL\" + Path.GetRandomFileName() : Path.GetRandomFileName();
             using (var serverStream = new NamedPipeServerStream(pipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             using (var clientStream = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous))
             {
