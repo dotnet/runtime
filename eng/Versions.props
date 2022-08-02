@@ -173,7 +173,7 @@
     <MicrosoftNETILLinkTasksVersion>7.0.100-1.22371.3</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>7.0.0-rc.1.22375.1</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>7.0.0-rc.1.22402.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <SystemNetMsQuicTransportVersion>7.0.0-alpha.1.22371.1</SystemNetMsQuicTransportVersion>
     <!-- Mono LLVM -->
