@@ -347,7 +347,6 @@ namespace BrowserDebugProxy
                 MethodAttributes getterMemberAccessAttrs = getterAttrs & MethodAttributes.MemberAccessMask;
                 MethodAttributes vtableLayout = getterAttrs & MethodAttributes.VtableLayoutMask;
                 bool isNewSlot = (vtableLayout & MethodAttributes.NewSlot) == MethodAttributes.NewSlot;
-                Console.WriteLine($"[ILONA] propName={propName} parentSuffix={parentSuffix} isNewSlot={isNewSlot}");
 
                 typePropertiesBrowsableInfo.TryGetValue(propName, out DebuggerBrowsableState? state);
 
@@ -358,7 +357,6 @@ namespace BrowserDebugProxy
                     await AddProperty(getMethodId, parentTypeId, state, propName, getterMemberAccessAttrs, isStatic, isNewSlot: isNewSlot);
                     continue;
                 }
-                Console.WriteLine($"[ILONA] existingMember={existingMember}");
 
                 bool isExistingMemberABackingField = existingMember["__isBackingField"]?.Value<bool>() == true;
                 if (isOwn && !isExistingMemberABackingField)

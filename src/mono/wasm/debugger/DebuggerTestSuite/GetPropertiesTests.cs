@@ -21,7 +21,6 @@ namespace DebuggerTests
         public static TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>, bool> ClassGetPropertiesTestData(bool is_async)
         {
             // FIXME: invoking getter on the hidden(base) properties - is that supported??
-            // FIXME: add case - v -> o -> n, v -> n -> o
             var data = new TheoryData<string, bool?, bool?, string[], Dictionary<string, (JObject, bool)>, bool>();
 
             var type_name = "DerivedClass2";
@@ -80,22 +79,22 @@ namespace DebuggerTests
 
             // default, all properties
             // n, n
-            // data.Add(type_name, null, null, all_props.Keys.ToArray(), all_props, is_async);
-            // // f, f
-            // data.Add(type_name, false, false, all_props.Keys.ToArray(), all_props, is_async);
-            // // f, n
-            // data.Add(type_name, false, null, all_props.Keys.ToArray(), all_props, is_async);
+            data.Add(type_name, null, null, all_props.Keys.ToArray(), all_props, is_async);
+            // f, f
+            data.Add(type_name, false, false, all_props.Keys.ToArray(), all_props, is_async);
+            // f, n
+            data.Add(type_name, false, null, all_props.Keys.ToArray(), all_props, is_async);
             // n, f
-            // data.Add(type_name, null, false, all_props.Keys.ToArray(), all_props, is_async);
+            data.Add(type_name, null, false, all_props.Keys.ToArray(), all_props, is_async);
 
-            // // all own
-            // // t, f
-            // // t, n
-            // foreach (bool? accessors in new bool?[] { false, null })
-            // {
-            //     // Breaking from JS behavior, we return *all* members irrespective of `ownMembers`
-            //     data.Add(type_name, true, accessors, all_props.Keys.ToArray(), all_props, is_async);
-            // }
+            // all own
+            // t, f
+            // t, n
+            foreach (bool? accessors in new bool?[] { false, null })
+            {
+                // Breaking from JS behavior, we return *all* members irrespective of `ownMembers`
+                data.Add(type_name, true, accessors, all_props.Keys.ToArray(), all_props, is_async);
+            }
 
             var all_accessors = new[]
             {
@@ -134,16 +133,16 @@ namespace DebuggerTests
             // t, t
 
             // Breaking from JS behavior, we return *all* members irrespective of `ownMembers`
-            data.Add(type_name, true, true, only_own_accessors, all_props, is_async); // FAILING
-            // data.Add(type_name, true, true, all_accessors, all_props, is_async);
+            // data.Add(type_name, true, true, only_own_accessors, all_props, is_async);
+            data.Add(type_name, true, true, all_accessors, all_props, is_async);
 
-            // // all accessors
-            // // f, t
-            // // n, t
-            // foreach (bool? own in new bool?[] { false, null })
-            // {
-            //     data.Add(type_name, own, true, all_accessors, all_props, is_async);
-            // }
+            // all accessors
+            // f, t
+            // n, t
+            foreach (bool? own in new bool?[] { false, null })
+            {
+                data.Add(type_name, own, true, all_accessors, all_props, is_async);
+            }
 
             return data;
         }
@@ -197,10 +196,10 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        // [MemberData(nameof(ClassGetPropertiesTestData), parameters: true)]
+        [MemberData(nameof(ClassGetPropertiesTestData), parameters: true)]
         [MemberData(nameof(ClassGetPropertiesTestData), parameters: false)]
-        // [MemberData(nameof(StructGetPropertiesTestData), parameters: true)]
-        // [MemberData(nameof(StructGetPropertiesTestData), parameters: false)]
+        [MemberData(nameof(StructGetPropertiesTestData), parameters: true)]
+        [MemberData(nameof(StructGetPropertiesTestData), parameters: false)]
         public async Task InspectTypeInheritedMembers(string type_name, bool? own_properties, bool? accessors_only, string[] expected_names, Dictionary<string, (JObject, bool)> all_props, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.GetPropertiesTests.{type_name}",
             $"InstanceMethod{(is_async ? "Async" : "")}", 1, $"DebuggerTests.GetPropertiesTests.{type_name}." + (is_async ? "InstanceMethodAsync" : "InstanceMethod"),
@@ -211,7 +210,7 @@ namespace DebuggerTests
                 var frame_locals = await GetProperties(frame_id);
                 var this_obj = GetAndAssertObjectWithName(frame_locals, "this");
                 var this_props = await GetProperties(this_obj["value"]?["objectId"]?.Value<string>(), own_properties: own_properties, accessors_only: accessors_only);
-                Console.WriteLine($"[ILONA TEST] {this_props}");
+
                 AssertHasOnlyExpectedProperties(expected_names, this_props.Values<JObject>());
                 await CheckExpectedProperties(expected_names, name => GetAndAssertObjectWithName(this_props, name), all_props);
 
