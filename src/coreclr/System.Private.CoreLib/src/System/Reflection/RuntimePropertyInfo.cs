@@ -56,8 +56,7 @@ namespace System.Reflection
             return
                 o is RuntimePropertyInfo m &&
                 m.m_token == m_token &&
-                RuntimeTypeHandle.GetModule(m_declaringType).Equals(
-                    RuntimeTypeHandle.GetModule(m.m_declaringType));
+                m_declaringType.Equals(m.m_declaringType);
         }
 
         internal Signature Signature
@@ -183,10 +182,7 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             obj == (object)this ||
-            (RuntimeTypeMetadataUpdateHandler.UpdateSupportedAndCacheCleared &&
-                obj is RuntimePropertyInfo pi &&
-                m_token == pi.m_token &&
-                m_declaringType.Equals(pi.m_declaringType));
+            (RuntimeTypeMetadataUpdateHandler.UpdateSupportedAndCacheCleared && CacheEquals(obj));
 
         public override int GetHashCode() => MetadataUpdater.IsSupported ?
             HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetHashCode()) : base.GetHashCode();
