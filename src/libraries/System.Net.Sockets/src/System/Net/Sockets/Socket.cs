@@ -2228,6 +2228,11 @@ namespace System.Net.Sockets
 
         private static int ToTimeoutMicroseconds(TimeSpan timeout)
         {
+            if (timeout == Timeout.InfiniteTimeSpan)
+            {
+                return -1;
+            }
+
             long totalMicroseconds = (long)timeout.TotalMicroseconds;
             if (totalMicroseconds < -1 || totalMicroseconds > int.MaxValue)
             {

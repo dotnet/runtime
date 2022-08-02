@@ -372,6 +372,15 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void Select_InfiniteTimeSpan_Ok()
+        {
+             var list = new List<Socket>();
+             list.Add(GetSocket());
+             Socket.Select(list, null, null, Timeout.InfiniteTimeSpan);
+             Socket.Select(list, null, null, -1);
+        }
+
+        [Fact]
         public void Select_LargeList_Throws_ArgumentOutOfRange()
         {
             var largeList = new LargeList();
