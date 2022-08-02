@@ -842,7 +842,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private DateTime AddUnits(double value, long maxUnitCount, long tickPerUnit)
+        private DateTime AddUnits(double value, long maxUnitCount, long ticksPerUnit)
         {
             if (Math.Abs(value) > maxUnitCount)
             {
@@ -851,12 +851,11 @@ namespace System
 
             double integralPart = Math.Truncate(value);
             double fractionalPart = value - integralPart;
-            long ticks = (long)(integralPart) * tickPerUnit;
-            ticks += (long)(fractionalPart * tickPerUnit);
+            long ticks = (long)(integralPart) * ticksPerUnit;
+            ticks += (long)(fractionalPart * ticksPerUnit);
 
             return AddTicks(ticks);
         }
-
 
         /// <summary>
         /// Returns a new <see cref="DateTime"/> that adds the specified number of days to the value of this instance.
