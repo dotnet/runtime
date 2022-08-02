@@ -115,10 +115,17 @@ internal static partial class TermInfo
                 }
 
                 byte[] data = new byte[(int)termInfoLength];
-                if (ConsolePal.Read(fd, data) != data.Length)
+                long fileOffset = 0;
+                do
                 {
-                    throw new InvalidOperationException(SR.IO_TermInfoInvalid);
-                }
+                    int bytesRead = RandomAccess.Read(fd, new Span<byte>(data, (int)fileOffset, (int)(termInfoLength - fileOffset)), fileOffset);
+                    if (bytesRead == 0)
+                    {
+                        throw new InvalidOperationException(SR.IO_TermInfoInvalid);
+                    }
+
+                    fileOffset += bytesRead;
+                } while (fileOffset < termInfoLength);
 
                 // Create the database from the data
                 return new Database(term, data);
