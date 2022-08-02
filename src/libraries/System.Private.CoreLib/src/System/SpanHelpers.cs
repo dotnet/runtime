@@ -431,8 +431,8 @@ namespace System
                     //     +-------------------------------+
                     //     | H | G | F | E | D | C | B | A |
                     //     +-------------------------------+
-                    tempFirst = Vector256.Shuffle(tempFirst, Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0));
-                    tempLast = Vector256.Shuffle(tempLast, Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0));
+                    tempFirst = Vector256.Shuffle(tempFirst, Vector256.Create(3, 2, 1, 0, 7, 6, 5, 4));
+                    tempLast = Vector256.Shuffle(tempLast, Vector256.Create(3, 2, 1, 0, 7, 6, 5, 4));
 
                     // Store the values into final location
                     tempLast.StoreUnsafe(ref buf, firstOffset);
