@@ -409,7 +409,8 @@ namespace System.Reflection
 
             for (int i = 0; i < arguments.Length; i++)
             {
-                ArgumentInfo argumentInfo = arguments[i];
+                ref readonly ArgumentInfo argumentInfo = ref arguments[i];
+
                 Transform transform = argumentInfo.Transform;
 
                 if ((transform & Transform.ByRef) == 0)
