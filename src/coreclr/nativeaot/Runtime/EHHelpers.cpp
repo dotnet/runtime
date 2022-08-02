@@ -184,6 +184,7 @@ EXTERN_C void REDHAWK_CALLCONV RhpFailFastForPInvokeExceptionCoop(intptr_t PInvo
                                                                   void* pExceptionRecord, void* pContextRecord);
 int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 
+// REVIEW: this is no longer used by pInvokes and use in hijack seems bogus. Remove?
 EXTERN_C int32_t __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExceptionRecord,
                                                   uintptr_t              EstablisherFrame,
                                                   PCONTEXT                pContextRecord,

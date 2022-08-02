@@ -333,6 +333,14 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     return TrailingEpilogueInstructionsCount(pvAddress) == 0;
 }
 
+// when stopped in an epilogue, returns the count of remaining stack-consuming instructions
+// otherwise returns
+//  0 - not in epilogue,
+// -1 - unknown.
+int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
+{
+#ifdef TARGET_AMD64
+
 #define SIZE64_PREFIX 0x48
 #define ADD_IMM8_OP 0x83
 #define ADD_IMM32_OP 0x81
@@ -348,14 +356,6 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 #define INT3_OP 0xcc
 
 #define IS_REX_PREFIX(x) (((x) & 0xf0) == 0x40)
-
-// when stopped in an epilogue, returns the count of remaining stack-consuming instructions
-// otherwise returns
-//  0 - not in epilogue,
-// -1 - unknown.
-int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
-{
-#ifdef TARGET_AMD64
 
     //
     // Everything below is inspired by the code in minkernel\ntos\rtl\amd64\exdsptch.c file from Windows
@@ -524,6 +524,66 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
         //
         return -1;
     }
+
+#elif defined(TARGET_ARM64)
+
+#define RET_LR       0xd65f03c0
+
+    uint32_t* pNextInstruction = (uint32_t*)pvAddress;
+
+    // HACK, HACK, HACK
+    // 
+    // detecting RET will handle nearly all cases of epilogs, but "nearly" is not enough.
+    // in complex cases epilogs can be fairly complex. (see: genPopCalleeSavedRegistersAndFreeLclFrame )
+    // 
+    // If we are in a region after restoring FP or LR and up to the subsequent RET,
+    // we cannot reliably hijack.
+    // 
+    // We need to add detection for such ranges.
+
+    if (*pNextInstruction == RET_LR)
+    {
+        return -1;
+    }
+
+    //
+    // TODO:   here is the idea. Let's search backwards for FP or LR restores.
+    //
+    // uint32_t* pInstr = (uint32_t*)pvAddress;
+    // uint32_t* start = get addr of the first instruction in the method
+    //
+    // // we can also limit search by the longest possible epilogue length
+    // for (uint32_t* pInstr = (uint32_t*)pvAddress; pInstr > start; pInstr--)
+    // {
+    //     uint32_t instr = *pInstr;
+    //
+    //     // check for common instructions that cannot be in epilogue  (ret, br, call)
+    //     // alternatively check for instructions that _can_ be in epilogue, if not too many
+    //     if (instr == RET_LR)
+    //     {
+    //         // did not see epilogue start ==> we are not in epilogue
+    //         break;
+    //     }
+    //
+    //     // check for brk - we do not expect debugger to insert brk in epilogue,
+    //     // so this must be actual brk in the code, which is not in epilogue either
+    //     if (instr is brk)
+    //     {
+    //         break;
+    //     }
+    //
+    //     // instructions that restore LR or FP
+    //     if (instr is ldp and either of operands is fp or lr)
+    //     {
+    //         return -1;
+    //     }
+    //
+    //     // restoring LR/FP not as a pair should be extremely uncommon, but in theory possible
+    //     if (instr == LDR_LR || instr == LDR_FP)
+    //     {
+    //         return -1;
+    //     }
+    // }
 
 #endif
 
