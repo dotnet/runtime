@@ -235,7 +235,7 @@ namespace System.Reflection
                 StackAllocedArguments argStorage = default;
                 StackAllocatedByRefs byrefStorage = default;
 
-                CheckArguments( ref argStorage._arg0!, (ByReference*)&byrefStorage, parameters, binderBundle);
+                CheckArguments(ref argStorage._arg0!, (ByReference*)&byrefStorage, parameters, binderBundle);
 
                 try
                 {
@@ -254,7 +254,7 @@ namespace System.Reflection
             }
 
             return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.ByRef)) != 0) ?
-                ReturnTranform( ref ret, wrapInTargetInvocationException) : returnObject;
+                ReturnTranform(ref ret, wrapInTargetInvocationException) : returnObject;
         }
 
         private unsafe ref byte InvokeWithManyArguments(
@@ -278,7 +278,7 @@ namespace System.Reflection
                 RuntimeImports.RhRegisterForGCReporting(&regArgStorage);
                 RuntimeImports.RhRegisterForGCReporting(&regByRefStorage);
 
-                CheckArguments( ref Unsafe.As<IntPtr, object>(ref *pStorage), pByRefStorage, parameters, binderBundle);
+                CheckArguments(ref Unsafe.As<IntPtr, object>(ref *pStorage), pByRefStorage, parameters, binderBundle);
 
                 try
                 {
@@ -435,7 +435,7 @@ namespace System.Reflection
             }
         }
 
-        private unsafe object ReturnTranform( ref byte byref, bool wrapInTargetInvocationException)
+        private unsafe object ReturnTransform( ref byte byref, bool wrapInTargetInvocationException)
         {
             if (Unsafe.IsNullRef(ref byref))
             {
