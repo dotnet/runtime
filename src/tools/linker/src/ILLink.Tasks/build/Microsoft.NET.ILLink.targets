@@ -93,6 +93,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <NoWarn>$(NoWarn);IL2118;IL2119;IL2120</NoWarn>
   </PropertyGroup>
 
+  <!-- Disable Redundant Warning Suppressions by default-->
+  <PropertyGroup Condition="'$(_TrimmerShowRedundantSuppressions)' != 'true'">
+    <NoWarn>$(NoWarn);IL2121</NoWarn>
+  </PropertyGroup>
+
   <!--
     ============================================================
                      ILLink

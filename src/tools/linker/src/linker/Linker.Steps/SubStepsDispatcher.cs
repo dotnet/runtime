@@ -51,7 +51,7 @@ namespace Mono.Linker.Steps
 			substeps.Add (substep);
 		}
 
-		void IStep.Process (LinkContext context)
+		public virtual void Process (LinkContext context)
 		{
 			InitializeSubSteps (context);
 

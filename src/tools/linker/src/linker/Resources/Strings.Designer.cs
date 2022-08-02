@@ -293,5 +293,14 @@ namespace Mono.Linker.Resources {
                 return ResourceManager.GetString("IL2103", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unused UnconditionalSuppressMessageAttribute suppressing the &apos;{0}&apos; warning found. Consider removing the unused warning suppression..
+        /// </summary>
+        internal static string IL2121 {
+            get {
+                return ResourceManager.GetString("IL2121", resourceCulture);
+            }
+        }
     }
 }

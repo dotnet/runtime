@@ -16,28 +16,36 @@ namespace Mono.Linker
 		internal const string TargetProperty = "Target";
 		internal const string MessageIdProperty = "MessageId";
 
+		public class Suppression
+		{
+			public SuppressMessageInfo SuppressMessageInfo { get; set; }
+			public bool Used { get; set; }
+		}
+
 		readonly LinkContext _context;
-		readonly Dictionary<ICustomAttributeProvider, Dictionary<int, SuppressMessageInfo>> _suppressions;
+		readonly Dictionary<ICustomAttributeProvider, Dictionary<int, Suppression>> _suppressions;
 		HashSet<AssemblyDefinition> InitializedAssemblies { get; }
 
 		public UnconditionalSuppressMessageAttributeState (LinkContext context)
 		{
 			_context = context;
-			_suppressions = new Dictionary<ICustomAttributeProvider, Dictionary<int, SuppressMessageInfo>> ();
+			_suppressions = new Dictionary<ICustomAttributeProvider, Dictionary<int, Suppression>> ();
 			InitializedAssemblies = new HashSet<AssemblyDefinition> ();
 		}
 
 		void AddSuppression (SuppressMessageInfo info, ICustomAttributeProvider provider)
 		{
+			var used = false;
 			if (!_suppressions.TryGetValue (provider, out var suppressions)) {
-				suppressions = new Dictionary<int, SuppressMessageInfo> ();
+				suppressions = new Dictionary<int, Suppression> ();
 				_suppressions.Add (provider, suppressions);
-			} else if (suppressions.ContainsKey (info.Id)) {
+			} else if (suppressions.TryGetValue (info.Id, out Suppression? value)) {
+				used = value.Used;
 				string? elementName = provider is MemberReference memberRef ? memberRef.GetDisplayName () : provider.ToString ();
 				_context.LogMessage ($"Element '{elementName}' has more than one unconditional suppression. Note that only the last one is used.");
 			}
 
-			suppressions[info.Id] = info;
+			suppressions[info.Id] = new Suppression { SuppressMessageInfo = info, Used = used };
 		}
 
 		public bool IsSuppressed (int id, MessageOrigin warningOrigin, out SuppressMessageInfo info)
@@ -67,6 +75,21 @@ namespace Mono.Linker
 			}
 
 			return false;
+		}
+
+		public void GatherSuppressions (ICustomAttributeProvider provider)
+		{
+			TryGetSuppressionsForProvider (provider, out _);
+		}
+
+		public IEnumerable<(ICustomAttributeProvider provider, SuppressMessageInfo suppressMessageInfo)> GetUnusedSuppressions ()
+		{
+			foreach (var (provider, suppressions) in _suppressions) {
+				foreach (var (_, suppression) in suppressions) {
+					if (!suppression.Used)
+						yield return (provider, suppression.SuppressMessageInfo);
+				}
+			}
 		}
 
 		bool IsSuppressed (int id, ICustomAttributeProvider warningOrigin, out SuppressMessageInfo info)
@@ -109,11 +132,27 @@ namespace Mono.Linker
 		bool IsSuppressedOnElement (int id, ICustomAttributeProvider? provider, out SuppressMessageInfo info)
 		{
 			info = default;
+
+			if (TryGetSuppressionsForProvider (provider, out var suppressions)) {
+				if (suppressions != null && suppressions.TryGetValue (id, out var suppression)) {
+					suppression.Used = true;
+					info = suppression.SuppressMessageInfo;
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		bool TryGetSuppressionsForProvider (ICustomAttributeProvider? provider, out Dictionary<int, Suppression>? suppressions)
+		{
+			suppressions = null;
 			if (provider == null)
 				return false;
 
-			if (_suppressions.TryGetValue (provider, out var suppressions))
-				return suppressions.TryGetValue (id, out info);
+			if (_suppressions.TryGetValue (provider, out suppressions))
+				return true;
+
 
 			// Populate the cache with suppressions for this member. We need to look for suppressions on the
 			// member itself, and on the assembly/module.
@@ -142,7 +181,7 @@ namespace Mono.Linker
 					AddSuppression (suppressionInfo, member);
 			}
 
-			return _suppressions.TryGetValue (provider, out suppressions) && suppressions.TryGetValue (id, out info);
+			return _suppressions.TryGetValue (provider, out suppressions);
 		}
 
 		static bool TryDecodeSuppressMessageAttributeData (CustomAttribute attribute, out SuppressMessageInfo info)
