@@ -402,6 +402,25 @@ public class KeyParserTests
         Assert.Equal(ConsoleModifiers.Shift, consoleKeyInfo.Modifiers);
     }
 
+    [Theory]
+    [InlineData("test123", "test123")] // no bracketed paste
+    [InlineData("\u001B[200~test123\u001B[201~", "test123")] // simple bracketed paste with both start and end tag
+    [InlineData("\u001B[200~test123", "test123")] // no end tag
+    [InlineData("test123\u001B[201~", "test123")] // no start tag
+    [InlineData("\u001B[200~", "")] // just start tag
+    // the test case above are based on manual testing and observations
+    // the test cases below were not reproduced during manual testing, but hypothetically are possible
+    [InlineData("\u001B[201~", "")] // just end tag
+    [InlineData("\u001B[201~\u001B[200~test123", "test123")] // end tag (from previous pasted content) and start tag from next one
+    [InlineData("\u001B[201~\u001B[200~", "")] // same, but with no content
+    // Terminals that were tested don't allow for pasting empty clipboard to the Terminal.
+    // In case some allow for that, an empty content is returned and the caller must re-try read() call
+    [InlineData("\u001B[200~\u001B[201~", "")]
+    public void BracketedPasteIsSupported(string input, string expectedOutput)
+    {
+        Assert.Equal(Encoding.UTF8.GetBytes(expectedOutput), KeyParser.RemoveBracketedPasteTags(Encoding.UTF8.GetBytes(input)).ToArray());
+    }
+
     private static ConsoleKeyInfo Parse(char[] chars, TerminalFormatStrings terminalFormatStrings, byte verase, int expectedStartIndex)
     {
         int startIndex = 0;

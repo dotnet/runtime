@@ -335,23 +335,45 @@ namespace System.IO
                 {
                     // Read in bytes
                     byte* bufPtr = stackalloc byte[BytesToBeRead];
-                    int result = ReadStdin(bufPtr, BytesToBeRead);
-                    if (result > 0)
+
+                    do
                     {
-                        // Append them
-                        AppendExtraBuffer(new ReadOnlySpan<byte>(bufPtr, result));
-                    }
-                    else
-                    {
-                        // Could be empty if EOL entered on its own.  Pick one of the EOL characters we have,
-                        // or just use 0 if none are available.
-                        return new ConsoleKeyInfo((char)
-                            (ConsolePal.s_veolCharacter != ConsolePal.s_posixDisableValue ? ConsolePal.s_veolCharacter :
-                             ConsolePal.s_veol2Character != ConsolePal.s_posixDisableValue ? ConsolePal.s_veol2Character :
-                             ConsolePal.s_veofCharacter != ConsolePal.s_posixDisableValue ? ConsolePal.s_veofCharacter :
-                             0),
-                            default(ConsoleKey), false, false, false);
-                    }
+                        int result = ReadStdin(bufPtr, BytesToBeRead);
+                        if (result > 0)
+                        {
+                            ReadOnlySpan<byte> receivedBytes = new (bufPtr, result);
+                            // The Bracketed Paste mode is enabled by printing "\u001B[?2004h" to STD OUT.
+                            // When it's enabled and the user pastes text to the Terminal, the pasted text
+                            // is wrapped with start tag ("\u001B[200~") and end tag ("\u001B[201~").
+                            // From read() sys-call perspective, we have multiple options:
+                            // 1. Bytes populated by read() contain both start and end tag. Example: "\u001B[200~test123\u001B[201~"
+                            // 2. The pasted content was larger than the buffer passed to read():
+                            //    a) The first read populates the buffer with start tag and part of the text.
+                            //    b) The last read populates the buffer with the remaining part of the text and the end tag.
+                            // 3. The pasted content was NOT larger than the buffer passed to read():
+                            //    a) The first read populates the buffer with JUST the start tag. This is very important scenario,
+                            //       as we basically need to call read() one more time to get the actual content! That is why we have loop here.
+                            //    b) The second read populates the buffer with the pasted text and the end tag.
+                            // We need to assume that other scenarios can happen. That is why once we remove the tags, the loop checks
+                            // whether the unprocessed buffer is still empty. If it is, the read() is performed again.
+                            ReadOnlySpan<byte> parsableBytes = useNet6KeyParser ? receivedBytes : KeyParser.RemoveBracketedPasteTags(receivedBytes);
+                            if (!parsableBytes.IsEmpty)
+                            {
+                                AppendExtraBuffer(parsableBytes);
+                            }
+                        }
+                        else
+                        {
+                            // Could be empty if EOL entered on its own.  Pick one of the EOL characters we have,
+                            // or just use 0 if none are available.
+                            return new ConsoleKeyInfo((char)
+                                (ConsolePal.s_veolCharacter != ConsolePal.s_posixDisableValue ? ConsolePal.s_veolCharacter :
+                                    ConsolePal.s_veol2Character != ConsolePal.s_posixDisableValue ? ConsolePal.s_veol2Character :
+                                    ConsolePal.s_veofCharacter != ConsolePal.s_posixDisableValue ? ConsolePal.s_veofCharacter :
+                                    0),
+                                default(ConsoleKey), false, false, false);
+                        }
+                    } while (IsUnprocessedBufferEmpty());
                 }
 
                 return useNet6KeyParser

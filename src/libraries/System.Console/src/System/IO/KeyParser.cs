@@ -15,6 +15,38 @@ internal static class KeyParser
     private const int MinimalSequenceLength = 3;
     private const int SequencePrefixLength = 2; // ^[[ ("^[" stands for Escape)
 
+    // if provided buffer contains Bracketed Paste Start or End tag, the buffer is sliced to pasted content only
+    // In theory, a single buffer can contain end tag from previous paste followed immediately by start tag from next.
+    internal static ReadOnlySpan<byte> RemoveBracketedPasteTags(ReadOnlySpan<byte> receivedBytes)
+    {
+        // The Terminal is configured to return from read() as soon as at least byte is available for reading.
+        // This is achieved by setting Termios.c_cc[VMIN] = 1 in the native initialization logic.
+        // So in the most common case, when bracketed paste is not enabled and the user presses a single key,
+        // the receivedBytes contains a single byte for simple ASCII chars and just a few bytes for escape sequences.
+        // So the expensive search performed below is not common.
+        const int TagLength = 6; // "\u001B[200~".Length
+        while (receivedBytes.Length >= TagLength)
+        {
+            if (IsTag(receivedBytes.Slice(0, TagLength)))
+            {
+                receivedBytes = receivedBytes.Slice(TagLength);
+            }
+            else if (IsTag(receivedBytes.Slice(receivedBytes.Length - TagLength)))
+            {
+                receivedBytes = receivedBytes.Slice(0, receivedBytes.Length - TagLength);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return receivedBytes;
+
+        static bool IsTag(ReadOnlySpan<byte> b)
+            => b[0] == '\u001B' && b[1] == '[' && b[2] == '2' && b[3] == '0' && (b[4] == '0' || b[4] == '1') && b[5] == '~';
+    }
+
     internal static ConsoleKeyInfo Parse(char[] buffer, TerminalFormatStrings terminalFormatStrings, byte posixDisableValue, byte veraseCharacter, ref int startIndex, int endIndex)
     {
         int length = endIndex - startIndex;
