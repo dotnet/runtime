@@ -543,12 +543,12 @@ public sealed partial class QuicStream
                 (shutdownByApp: true, closedRemotely: true) => ThrowHelper.GetConnectionAbortedException((long)data.ConnectionErrorCode),
                 // It's local shutdown by app, this side called QuicConnection.CloseAsync, throw QuicError.OperationAborted.
                 (shutdownByApp: true, closedRemotely: false) => ThrowHelper.GetOperationAbortedException(),
-                // It's remote shutdown by transport, (TODO: we should propagate transport error code), throw QuicError.InternalError.
+                // TODO: we should propagate transport error code
                 // https://github.com/dotnet/runtime/issues/72666
-                (shutdownByApp: false, closedRemotely: true) => ThrowHelper.GetExceptionForMsQuicStatus(QUIC_STATUS_INTERNAL_ERROR, $"Shutdown by transport {data.ConnectionErrorCode}"),
-                // It's local shutdown by transport, assuming idle connection (TODO: we should get Connection.CloseStatus), throw QuicError.ConnectionIdle.
+                (shutdownByApp: false, closedRemotely: true) => ThrowHelper.GetExceptionForMsQuicStatus(data.ConnectionCloseStatus, $"Shutdown by transport {data.ConnectionErrorCode}"),
+                // TODO: we should propagate transport error code
                 // https://github.com/dotnet/runtime/issues/72666
-                (shutdownByApp: false, closedRemotely: false) => ThrowHelper.GetExceptionForMsQuicStatus(QUIC_STATUS_CONNECTION_IDLE),
+                (shutdownByApp: false, closedRemotely: false) => ThrowHelper.GetExceptionForMsQuicStatus(data.ConnectionCloseStatus),
             };
             _startedTcs.TrySetException(exception);
             _receiveTcs.TrySetException(exception, final: true);
