@@ -13,8 +13,6 @@ namespace System.Formats.Tar
 
         private static UnixFileMode DetermineUMask()
         {
-            Debug.Assert(!OperatingSystem.IsWindows());
-
             // To determine the umask, we'll create a file with full permissions and see
             // what gets filtered out.
             // note: only the owner of a file, and root can change file permissions.
@@ -92,12 +90,9 @@ namespace System.Formats.Tar
                             File.SetUnixFileMode(fullPath, mode.Value & ~umask);
                         }
                     }
-                    else
+                    else if (overwriteMetadata || pendingModes.ContainsKey(fullPath))
                     {
-                        if (overwriteMetadata || pendingModes.ContainsKey(fullPath))
-                        {
                             pendingModes[fullPath] = mode.Value;
-                        }
                     }
                 }
                 return;
@@ -146,7 +141,7 @@ namespace System.Formats.Tar
             }
 
             UnixFileMode umask = UMask;
-            foreach (var dir in pendingModes)
+            foreach (KeyValuePair<string, UnixFileMode> dir in pendingModes)
             {
                 File.SetUnixFileMode(dir.Key, dir.Value & ~umask);
             }
