@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0003</DiagnosticId>
+    <Target>System.Reflection.Context, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</Target>
+    <Left>ref/net7.0/System.Reflection.Context.dll</Left>
+    <Right>lib/net7.0/System.Reflection.Context.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0003</DiagnosticId>
+    <Target>System.Reflection.Context, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</Target>
+    <Left>ref/net6.0/System.Reflection.Context.dll</Left>
+    <Right>lib/net6.0/System.Reflection.Context.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0003</DiagnosticId>
+    <Target>System.Reflection.Context, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</Target>
+    <Left>ref/netstandard2.1/System.Reflection.Context.dll</Left>
+    <Right>lib/netstandard2.1/System.Reflection.Context.dll</Right>
+  </Suppression>
+</Suppressions>
