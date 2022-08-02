@@ -499,7 +499,7 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             obj == (object)this ||
-                (RuntimeTypeMetadataUpdateHandler.UpdateSupportedAndCacheCleared &&
+                (MetadataUpdater.IsSupported &&
                     obj is RuntimeParameterInfo pi &&
                     m_tkParamDef == pi.m_tkParamDef &&
                     DefiningMethod.DeclaringType!.Equals(pi.DefiningMethod.DeclaringType));

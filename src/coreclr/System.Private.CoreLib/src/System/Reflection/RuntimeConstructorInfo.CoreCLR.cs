@@ -122,12 +122,12 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             obj == (object)this ||
-            (RuntimeTypeMetadataUpdateHandler.UpdateSupportedAndCacheCleared &&
+            (MetadataUpdater.IsSupported &&
                 obj is RuntimeConstructorInfo ci &&
                 MetadataToken == ci.MetadataToken &&
                 m_declaringType.Equals(ci.m_declaringType));
 
-        public override int GetHashCode() => m_handle.GetHashCode();
+        public override int GetHashCode() => ValueType.GetHashCodeOfPtr(m_handle);
         #endregion
 
         #region ICustomAttributeProvider

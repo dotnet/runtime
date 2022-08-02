@@ -158,14 +158,7 @@ namespace System.Reflection
             return m_toString;
         }
 
-        public override int GetHashCode()
-        {
-            // See RuntimeMethodInfo.Equals() below.
-            if (IsGenericMethod)
-                return ValueType.GetHashCodeOfPtr(m_handle);
-            else
-                return m_handle.GetHashCode();
-        }
+        public override int GetHashCode() => ValueType.GetHashCodeOfPtr(m_handle);
 
         public override bool Equals(object? obj)
         {
@@ -209,7 +202,7 @@ namespace System.Reflection
             }
 
             return obj == (object)this ||
-                (RuntimeTypeMetadataUpdateHandler.UpdateSupportedAndCacheCleared &&
+                (MetadataUpdater.IsSupported &&
                     obj is RuntimeMethodInfo m &&
                     m.MetadataToken == MetadataToken &&
                     m_declaringType.Equals(m.m_declaringType));

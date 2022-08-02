@@ -71,7 +71,7 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             obj == (object)this ||
-            (RuntimeTypeMetadataUpdateHandler.UpdateSupportedAndCacheCleared && CacheEquals(obj));
+            (MetadataUpdater.IsSupported && CacheEquals(obj));
 
         public override int GetHashCode() => MetadataUpdater.IsSupported ?
             HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetHashCode()) : base.GetHashCode();

@@ -13,7 +13,6 @@ namespace System.Reflection.Tests
         private static bool IsMetadataUpdateAndRemoteExecutorSupported => PlatformDetection.IsMetadataUpdateSupported && RemoteExecutor.IsSupported;
 
         private static readonly Type s_type = typeof(ReflectionCacheTests);
-        //private BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
 
         public string Property { get; set; }
 
@@ -96,7 +95,6 @@ namespace System.Reflection.Tests
                 AssertMembersAreNotNull(mi1, pi1, fi1, ei1, ci1, pai1);
 
                 clearCache(new[] { typeof(ReflectionCacheTests) });
-                Assert.True(CacheCleared());
 
                 MethodInfo mi2 = s_type.GetMethod(nameof(Method));
                 PropertyInfo pi2 = s_type.GetProperty(nameof(Property));
@@ -107,7 +105,7 @@ namespace System.Reflection.Tests
 
                 AssertMembersAreNotNull(mi2, pi2, fi2, ei2, ci2, pai2);
 
-                // After the Cache cleared the references of the same member of same type will be diffenet
+                // After the Cache cleared the references of the same members of the same type will be different
                 // But they should be evaluated as Equal so that there were no issue using the same member after hot reload
                 AssertMemberReferencesNotSameButEqual(mi1, pi1, fi1, ei1, ci1, pai1, mi2, pi2, fi2, ei2, ci2, pai2);
 
@@ -177,7 +175,7 @@ namespace System.Reflection.Tests
                 AssertMembersAreNotNull(mi1, pi1, fi1, ei1, ci1, pai1);
 
                 clearCache(null);
-                Assert.True(CacheCleared());
+
                 MethodInfo mi2 = s_type.GetMethod(nameof(Method));
                 PropertyInfo pi2 = s_type.GetProperty(nameof(Property));
                 FieldInfo fi2 = s_type.GetField(nameof(Field1));
@@ -187,7 +185,7 @@ namespace System.Reflection.Tests
 
                 AssertMembersAreNotNull(mi2, pi2, fi2, ei2, ci2, pai2);
 
-                // After the Cache cleared the references of the same member of same type will be diffenet
+                // After the Cache cleared the references of the same members of the same type will be different
                 // But they should be evaluated as Equal so that there were no issue using the same member after hot reload
                 AssertMemberReferencesNotSameButEqual(mi1, pi1, fi1, ei1, ci1, pai1, mi2, pi2, fi2, ei2, ci2, pai2);
 
@@ -203,14 +201,6 @@ namespace System.Reflection.Tests
             MethodInfo clearCache = updateHandler.GetMethod("ClearCache", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, new[] { typeof(Type[]) });
             Assert.NotNull(clearCache);
             return clearCache.CreateDelegate<Action<Type[]>>();
-        }
-
-        private static bool CacheCleared()
-        {
-            Type updateHandler = typeof(Type).Assembly.GetType("System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler", throwOnError: true, ignoreCase: false);
-            PropertyInfo metadataUpdaterSupportedAndCacheCleared = updateHandler.GetProperty("UpdateSupportedAndCacheCleared", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(metadataUpdaterSupportedAndCacheCleared);
-            return (bool)metadataUpdaterSupportedAndCacheCleared.GetValue(null);
         }
     }
 }
