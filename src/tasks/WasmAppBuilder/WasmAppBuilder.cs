@@ -54,7 +54,7 @@ public class WasmAppBuilder : Task
     // - Value: can be a number, bool, quoted string, or json string
     //
     // Examples:
-    //      <WasmExtraConfig Include="enable_profiler" Value="true" />
+    //      <WasmExtraConfig Include="enableProfiler" Value="true" />
     //      <WasmExtraConfig Include="json" Value="{ &quot;abc&quot;: 4 }" />
     //      <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
     //       <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />

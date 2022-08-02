@@ -169,7 +169,6 @@ export interface APIType {
     setEnvironmentVariable: (name: string, value: string) => void,
     getAssemblyExports(assemblyName: string): Promise<any>,
     getConfig: () => MonoConfig,
-    applyConfig: (config: MonoConfig) => void,
     memory: {
         setB32: (offset: NativePointer, value: number | boolean) => void,
         setU8: (offset: NativePointer, value: number) => void,

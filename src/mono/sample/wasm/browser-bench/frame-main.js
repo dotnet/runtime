@@ -12,22 +12,25 @@ class FrameApp {
     }
 
     reachedCallback() {
-        window.parent.resolveAppStartEvent("reached");
+        if (window.parent != window) {
+            window.parent.resolveAppStartEvent("reached");
+        }
     }
 }
 
+let mute = false;
 try {
     globalThis.frameApp = new FrameApp();
     globalThis.frameApp.ReachedCallback = globalThis.frameApp.reachedCallback.bind(globalThis.frameApp);
-
-    let mute = false;
-    window.addEventListener("pageshow", event => { window.parent.resolveAppStartEvent("pageshow"); })
+    if (window.parent != window) {
+        window.addEventListener("pageshow", event => { window.parent.resolveAppStartEvent("pageshow"); })
+    }
 
     window.muteErrors = () => {
         mute = true;
     }
 
-    const { MONO } = await createDotnetRuntime(() => ({
+    const { API } = await createDotnetRuntime(() => ({
         disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
         printErr: function () {
@@ -36,7 +39,9 @@ try {
             }
         },
         onConfigLoaded: () => {
-            window.parent.resolveAppStartEvent("onConfigLoaded");
+            if (window.parent != window) {
+                window.parent.resolveAppStartEvent("onConfigLoaded");
+            }
             // Module.config.diagnosticTracing = true;
         },
         onAbort: (error) => {
@@ -44,8 +49,10 @@ try {
         },
     }));
 
-    window.parent.resolveAppStartEvent("onDotnetReady");
-    await frameApp.init({ MONO });
+    if (window.parent != window) {
+        window.parent.resolveAppStartEvent("onDotnetReady");
+    }
+    await frameApp.init({ API });
 }
 catch (err) {
     if (!mute) {

@@ -10,7 +10,7 @@ import { AOTProfilerOptions, CoverageProfilerOptions } from "./types";
 // <METHODNAME> should be in the format <CLASS>::<METHODNAME>.
 // writeAt defaults to 'WebAssembly.Runtime::StopProfile'.
 // sendTo defaults to 'WebAssembly.Runtime::DumpAotProfileData'.
-// DumpAotProfileData stores the data into INTERNAL.aot_profile_data.
+// DumpAotProfileData stores the data into INTERNAL.aotProfileData.
 //
 export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
     if (options == null)

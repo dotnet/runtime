@@ -118,7 +118,7 @@ function instantiateWasm(
 
     wasm_module_imports = imports;
     wasm_success_callback = successCallback;
-    _instantiate_wasm_module();
+    instantiate_wasm_module();
     return []; // No exports
 }
 
@@ -384,14 +384,14 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
 }
 
 
-async function _instantiate_wasm_module(): Promise<void> {
+async function instantiate_wasm_module(): Promise<void> {
     // this is called so early that even Module exports like addRunDependency don't exist yet
     try {
         if (!config.assets && Module.configSrc) {
             // when we are starting with mono-config,json, it could have dotnet.wasm location in it, we have to wait for it
             await mono_wasm_load_config(Module.configSrc);
         }
-        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiateWasm");
+        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
         let assetToLoad: AssetEntry = {
             name: "dotnet.wasm",
             behavior: "dotnetwasm"
@@ -405,7 +405,7 @@ async function _instantiate_wasm_module(): Promise<void> {
 
         const pendingAsset = await start_asset_download(assetToLoad);
         await beforePreInit.promise;
-        Module.addRunDependency("_instantiate_wasm_module");
+        Module.addRunDependency("instantiate_wasm_module");
         mono_assert(pendingAsset && pendingAsset.pending, () => `Can't load ${assetToLoad.name}`);
 
         const response = await pendingAsset.pending.response;
@@ -413,20 +413,20 @@ async function _instantiate_wasm_module(): Promise<void> {
         let compiledInstance: WebAssembly.Instance;
         let compiledModule: WebAssembly.Module;
         if (typeof WebAssembly.instantiateStreaming === "function" && contentType === "application/wasm") {
-            if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_after_user_runtime_initialized streaming");
+            if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module streaming");
             const streamingResult = await WebAssembly.instantiateStreaming(response, wasm_module_imports!);
             compiledInstance = streamingResult.instance;
             compiledModule = streamingResult.module;
         } else {
             const arrayBuffer = await response.arrayBuffer();
-            if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_after_user_runtime_initialized streaming");
+            if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module buffered");
             const arrayBufferResult = await WebAssembly.instantiate(arrayBuffer, wasm_module_imports!);
             compiledInstance = arrayBufferResult.instance;
             compiledModule = arrayBufferResult.module;
         }
         ++instantiated_assets_count;
         wasm_success_callback!(compiledInstance, compiledModule);
-        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiateWasm done");
+        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module done");
         afterInstantiateWasm.promise_control.resolve(null);
         wasm_success_callback = null;
         wasm_module_imports = null;
@@ -435,7 +435,7 @@ async function _instantiate_wasm_module(): Promise<void> {
         abort_startup(err, true);
         throw err;
     }
-    Module.removeRunDependency("_instantiate_wasm_module");
+    Module.removeRunDependency("instantiate_wasm_module");
 }
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready

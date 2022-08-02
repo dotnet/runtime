@@ -16,10 +16,6 @@ export function export_api(): any {
         getConfig: (): MonoConfig => {
             return runtimeHelpers.config;
         },
-        applyConfig: (config: MonoConfig) => {
-            // merge
-            Object.assign(runtimeHelpers.config, config);
-        },
         memory: {
             setB32,
             setU8,

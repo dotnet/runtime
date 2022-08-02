@@ -3,7 +3,7 @@
 //!
 //! This is generated file, see src/mono/wasm/runtime/rollup.config.js
 
-//! This is not considered public API with backward compatibility guarantees.
+//! This is not considered public API with backward compatibility guarantees. 
 
 declare interface NativePointer {
     __brandNativePointer: "NativePointer";
@@ -207,7 +207,6 @@ interface APIType {
     setEnvironmentVariable: (name: string, value: string) => void;
     getAssemblyExports(assemblyName: string): Promise<any>;
     getConfig: () => MonoConfig;
-    applyConfig: (config: MonoConfig) => void;
     memory: {
         setB32: (offset: NativePointer, value: number | boolean) => void;
         setU8: (offset: NativePointer, value: number) => void;

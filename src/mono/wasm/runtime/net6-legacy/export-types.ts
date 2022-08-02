@@ -159,7 +159,7 @@ export type MONOType = {
      */
     mono_wasm_load_runtime: (unused: string, debugLevel: number) => void;
     /**
-     * @deprecated Please use API.applyConfig() instead
+     * @deprecated Please use API.getConfig() instead
      */
     config: any;
     /**

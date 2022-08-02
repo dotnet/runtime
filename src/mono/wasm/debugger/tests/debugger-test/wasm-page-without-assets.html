@@ -1,10 +1,15 @@
 <!doctype html>
 <html lang="en-us">
-	<head>
-	</head>
-	<body>
+
+<head>
+</head>
+
+<body>
 	<script type='text/javascript'>
-		function reload_wasm_page () {
+		var App = {
+			init: function () { },
+		};
+		function reload_wasm_page() {
 			window.location.replace("http://localhost:9400/debugger-driver.html");
 		}
 	</script>
@@ -12,5 +17,6 @@
 	<script type="text/javascript" src="other.js"></script>
 
 	Stuff goes here
-	</body>
+</body>
+
 </html>

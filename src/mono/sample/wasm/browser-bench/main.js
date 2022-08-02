@@ -94,14 +94,14 @@ try {
     globalThis.mainApp.FrameReachedManaged = globalThis.mainApp.frameReachedManaged.bind(globalThis.mainApp);
     globalThis.mainApp.PageShow = globalThis.mainApp.pageShow.bind(globalThis.mainApp);
 
-    const { MONO } = await createDotnetRuntime(() => ({
+    const { API } = await createDotnetRuntime(() => ({
         disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
         onAbort: (error) => {
             wasm_exit(1, error);
         }
     }));
-    await mainApp.init({ MONO });
+    await mainApp.init({ API });
 }
 catch (err) {
     wasm_exit(1, err);

@@ -9,7 +9,7 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args: s
         set_exit_code(result);
     } catch (error) {
         if (error instanceof runtimeHelpers.ExitStatus) {
-            return;
+            return;// FIXME: should this be re-throw ?
         }
         set_exit_code(1, error);
     }
