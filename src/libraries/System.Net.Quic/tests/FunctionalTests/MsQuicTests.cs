@@ -1096,6 +1096,7 @@ namespace System.Net.Quic.Tests
                 await Task.Delay(TimeSpan.FromSeconds(10));
 
                 await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.ReadAsync(new byte[10]));
+                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.WriteAsync(new byte[10]));
                 await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask);
             }
         }
