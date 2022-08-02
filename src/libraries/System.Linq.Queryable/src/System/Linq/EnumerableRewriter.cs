@@ -136,21 +136,11 @@ namespace System.Linq
                 return typeof(IEnumerable);
             return t;
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-                Justification = "The IGrouping<,> is kept since it's directly referenced here" +
-                    "and so it will also be preserved in all places where it's implemented." +
-                    "The GetInterfaces may return less after trimming but it will include" +
-                    "the IGrouping<,> if it was there before trimming, which is enough for this" +
-                    "method to work.")]
+            // IL2075
             static bool ImplementsIGrouping(Type type) =>
                 type.GetGenericTypeDefinition().GetInterfaces().Contains(typeof(IGrouping<,>));
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-                Justification = "The IEnumerable<> is kept since it's directly referenced here" +
-                    "and so it will also be preserved in all places where it's implemented." +
-                    "The GetInterfaces may return less after trimming but it will include" +
-                    "the IEnumerable<> if it was there before trimming, which is enough for this" +
-                    "method to work.")]
+            // IL2070
             static bool TryGetImplementedIEnumerable(Type type, [NotNullWhen(true)] out Type? interfaceType)
             {
                 foreach (Type iType in type.GetInterfaces())
@@ -257,9 +247,7 @@ namespace System.Linq
 
             return matchingMethods[0];
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-                Justification = "This method is intentionally hiding the Enumerable type from the trimmer so it doesn't preserve all Enumerable's methods. " +
-                "This is safe because all Queryable methods have a DynamicDependency to the corresponding Enumerable method.")]
+            // IL2070
             static MethodInfo[] GetEnumerableStaticMethods(Type type) =>
                 type.GetMethods(BindingFlags.Public | BindingFlags.Static);
             [RequiresDynamicCodeAttribute("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
