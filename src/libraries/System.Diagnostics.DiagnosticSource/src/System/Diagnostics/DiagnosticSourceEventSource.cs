@@ -1015,7 +1015,7 @@ namespace System.Diagnostics
                 Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                 "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-            [RequiresDynamicCode(DiagnosticSource.ValueTypeRequiresDynamicCode)]
+            [RequiresDynamicCode(DiagnosticSource.WriteRequiresDynamicCode)]
             public List<KeyValuePair<string, string?>> Morph(object? args)
             {
                 // Transform the args into a bag of key-value strings.
@@ -1197,7 +1197,7 @@ namespace System.Diagnostics
                 Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                 "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-            [RequiresDynamicCode(DiagnosticSource.ValueTypeRequiresDynamicCode)]
+            [RequiresDynamicCode(DiagnosticSource.WriteRequiresDynamicCode)]
             public KeyValuePair<string, string?> Morph(object? obj)
             {
                 for (PropertySpec? cur = _fetches; cur != null; cur = cur.Next)
@@ -1252,7 +1252,7 @@ namespace System.Diagnostics
                     Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                 [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-                [RequiresDynamicCode(DiagnosticSource.ValueTypeRequiresDynamicCode)]
+                [RequiresDynamicCode(DiagnosticSource.WriteRequiresDynamicCode)]
                 public object? Fetch(object? obj)
                 {
                     PropertyFetch? fetch = _fetchForExpectedType;
@@ -1299,7 +1299,7 @@ namespace System.Diagnostics
                         Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                         "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                     [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-                    [RequiresDynamicCode(DiagnosticSource.ValueTypeRequiresDynamicCode)]
+                    [RequiresDynamicCode(DiagnosticSource.WriteRequiresDynamicCode)]
                     public static PropertyFetch FetcherForProperty(Type? type, string propertyName)
                     {
                         if (propertyName == null)
