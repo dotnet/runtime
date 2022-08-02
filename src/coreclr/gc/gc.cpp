@@ -28421,6 +28421,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
             heap_segment* sseg = seg;
             do
             {
+                heap_segment_saved_allocated(seg) = 0;
                 uint8_t* start_unmarked = heap_segment_mem (seg);
 #ifndef USE_REGIONS
                 // shorten it to minimum
