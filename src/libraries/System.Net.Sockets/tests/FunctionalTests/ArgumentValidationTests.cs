@@ -374,10 +374,24 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Select_InfiniteTimeSpan_Ok()
         {
-             var list = new List<Socket>();
-             list.Add(GetSocket());
-             Socket.Select(list, null, null, Timeout.InfiniteTimeSpan);
-             Socket.Select(list, null, null, -1);
+            using (Socket host = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                host.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                host.Listen(1);
+                Task accept = host.AcceptAsync();
+
+                using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    s.Connect(new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)host.LocalEndPoint).Port));
+
+                    var list = new List<Socket>();
+                    list.Add(s);
+
+                    // should be writable
+                    Socket.Select(null, list, null, Timeout.InfiniteTimeSpan);
+                    Socket.Select(null, list, null, -1);
+                }
+            }
         }
 
         [Fact]
