@@ -164,6 +164,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				void LocalFunction () => RequiresUnreferencedCodeMethod ();
 			}
 
+			[UnconditionalSuppressMessage ("Test", "IL2121", Justification = "The IL2026 warning is issued only by the analyzer, for the linker this suppression is redundant.")]
 			[UnconditionalSuppressMessage ("Test", "IL2026")]
 			static void TestCallRUCMethodUnused ()
 			{
@@ -321,6 +322,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 					Outer (0);
 				}
 
+				[UnconditionalSuppressMessage ("Test", "IL2121")]
 				[UnconditionalSuppressMessage ("Test", "IL2026")]
 				static void Outer ()
 				{
@@ -482,6 +484,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 					Outer (0);
 				}
 
+				[UnconditionalSuppressMessage ("Test", "IL2121")]
 				[UnconditionalSuppressMessage ("Test", "IL2026")]
 				static void Outer ()
 				{
@@ -534,7 +537,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				}
 			}
 
-			[UnconditionalSuppressMessage ("Test", "IL2026")]
 			static async void TestIteratorLocalFunctionInAsync ()
 			{
 				await MethodAsync ();
