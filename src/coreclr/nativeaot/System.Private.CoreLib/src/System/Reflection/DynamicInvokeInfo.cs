@@ -249,7 +249,7 @@ namespace System.Reflection
                 finally
                 {
                     if (_needsCopyBack)
-                        CopyBack( ref argStorage._arg0!, parameters);
+                        CopyBack(ref argStorage._arg0!, parameters);
                 }
             }
 
@@ -292,7 +292,7 @@ namespace System.Reflection
                 finally
                 {
                     if (_needsCopyBack)
-                        CopyBack( ref Unsafe.As<IntPtr, object>(ref *pStorage), parameters);
+                        CopyBack(ref Unsafe.As<IntPtr, object>(ref *pStorage), parameters);
                 }
             }
             finally
@@ -403,7 +403,7 @@ namespace System.Reflection
             }
         }
 
-        private unsafe void CopyBack( ref object copyOfParameters, object?[] parameters)
+        private unsafe void CopyBack(ref object copyOfParameters, object?[] parameters)
         {
             ArgumentInfo[] arguments = _arguments;
 
@@ -435,7 +435,7 @@ namespace System.Reflection
             }
         }
 
-        private unsafe object ReturnTransform( ref byte byref, bool wrapInTargetInvocationException)
+        private unsafe object ReturnTransform(ref byte byref, bool wrapInTargetInvocationException)
         {
             if (Unsafe.IsNullRef(ref byref))
             {
