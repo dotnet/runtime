@@ -565,7 +565,7 @@ namespace System.IO.Tests
                 1 => (sr, ct) => sr.ReadBlockAsync(new char[1], ct).AsTask(),
                 _ => throw new Exception("unknown mode")
             };
-            string pipeName = GetNamedPipeServerStreamName();
+            string pipeName = $"/tmp/{Guid.NewGuid().ToString("N")}";
             //string pipeName = PlatformDetection.IsInAppContainer ? @"LOCAL\" + Path.GetRandomFileName() : Path.GetRandomFileName();
             using (var serverStream = new NamedPipeServerStream(pipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             using (var clientStream = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous))
