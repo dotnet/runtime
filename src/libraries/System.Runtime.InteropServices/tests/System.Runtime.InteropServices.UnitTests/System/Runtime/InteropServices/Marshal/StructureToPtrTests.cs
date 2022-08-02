@@ -257,7 +257,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73008", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void StructureToPtr_Flat_And_Nested_NonBlittableStructure_Success()
         {
             MarshalAndDestroy(new NonBlittableStruct_Flat
