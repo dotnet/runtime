@@ -374,7 +374,7 @@ namespace System.Transactions
                 LazyInitializer.EnsureInitialized(ref s_defaultTimeoutTicks, ref s_defaultTimeoutValidated, ref s_classSyncObject, () => DefaultSettingsSection.Timeout.Ticks);
 
                 long defaultTimeoutTicks = Interlocked.Read(ref s_defaultTimeoutTicks);
-                Interlocked.Exchange(ref s_defaultTimeoutTicks, ValidateTimeout(new TimeSpan(Interlocked.Read(ref s_defaultTimeoutTicks))).Ticks);
+                Interlocked.Exchange(ref s_defaultTimeoutTicks, ValidateTimeout(new TimeSpan(defaultTimeoutTicks)).Ticks);
                 if (Interlocked.Read(ref s_defaultTimeoutTicks) != defaultTimeoutTicks)
                 {
                     if (etwLog.IsEnabled())
