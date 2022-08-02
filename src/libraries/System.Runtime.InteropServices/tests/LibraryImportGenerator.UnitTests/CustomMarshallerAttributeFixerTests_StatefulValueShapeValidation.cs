@@ -64,8 +64,8 @@ namespace LibraryImportGenerator.UnitTests
                 VerifyCS.DiagnosticWithArguments(StatefulMarshallerRequiresFromUnmanagedRule, "MarshallerType", MarshalMode.UnmanagedToManagedIn, "ManagedType").WithLocation(1),
                 VerifyCS.DiagnosticWithArguments(StatefulMarshallerRequiresToManagedRule, "MarshallerType", MarshalMode.ManagedToUnmanagedOut, "ManagedType").WithLocation(0),
                 VerifyCS.DiagnosticWithArguments(StatefulMarshallerRequiresToManagedRule, "MarshallerType", MarshalMode.UnmanagedToManagedIn, "ManagedType").WithLocation(1),
-                VerifyCS.DiagnosticWithArguments(StatefulMarshallerRequiresFreeRule, "ManagedType").WithLocation(0),
-                VerifyCS.DiagnosticWithArguments(StatefulMarshallerRequiresFreeRule, "ManagedType").WithLocation(1));
+                VerifyCS.DiagnosticWithArguments(StatefulMarshallerRequiresFreeRule, "MarshallerType").WithLocation(0),
+                VerifyCS.DiagnosticWithArguments(StatefulMarshallerRequiresFreeRule, "MarshallerType").WithLocation(1));
         }
 
         [Fact]
