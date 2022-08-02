@@ -28245,9 +28245,9 @@ void gc_heap::add_plug_in_condemned_info (generation* gen, size_t plug_size)
 
 inline void save_allocated(heap_segment* seg)
 {
-#ifndef MULTIPLE_HEAP
+#ifndef MULTIPLE_HEAPS
     if (!heap_segment_saved_allocated(seg))
-#endif // !MULTIPLE_HEAP
+#endif // !MULTIPLE_HEAPS
     {
         heap_segment_saved_allocated (seg) = heap_segment_allocated (seg);
     }
