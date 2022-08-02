@@ -140,6 +140,12 @@
   <ItemGroup Condition="'$(UseTargetFrameworkPackage)' != 'false'">
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="$(MicrosoftDotNetBuildTasksTargetFrameworkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
+
+  <!-- Use the apicompat task package instead of the in-built SDK functionality to consume newer features. -->
+  <ItemGroup Condition="'$(EnablePackageValidation)' == 'true' or
+                        '$(ApiCompatValidateAssemblies)' == 'true'">
+    <PackageReference Include="Microsoft.DotNet.ApiCompat.Task" Version="$(MicrosoftDotNetApiCompatTaskVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
   
   <ItemGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true' or '$(IsPartialFacadeAssembly)' == 'true'">
     <PackageReference Include="Microsoft.DotNet.ApiCompat" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetApiCompatVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
