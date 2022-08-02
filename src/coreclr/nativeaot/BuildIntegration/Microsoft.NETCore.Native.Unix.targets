@@ -76,12 +76,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeFramework Include="GSS" />
     </ItemGroup>
 
-    <ItemGroup>
-      <PackagePaths Include="@(PackageDefinitions->'%(ResolvedPath)')"/>
-      <IlCompilerPackagePath Include="@(PackagePaths)" Condition="$([System.String]::Copy('%(Name)').Contains( 'Microsoft.DotNet.ILCompiler')) and !$([System.String]::Copy('%(Name)').Contains('runtime'))"/>
-    </ItemGroup>
-
-    <Exec Command="@(IlCompilerPackagePath)/shim_source_code/libs/System.Globalization.Native/build-nativeaot-shim-standalone.sh @(IlCompilerPackagePath) $(IntermediateOutputPath)" Condition="'$(LocalSystemGlobalizationNative)' != ''"/>
+    <Exec Command="$(IlcSdkPath)/../shim_source_code/libs/System.Globalization.Native/build-nativeaot-shim-standalone.sh $(IlcSdkPath)/../ $(IntermediateOutputPath)" Condition="'$(LocalSystemGlobalizationNative)' != ''"/>
 
     <ItemGroup>
       <LinkerArg Include="@(NativeLibrary)" />
