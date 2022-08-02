@@ -605,6 +605,38 @@ namespace System.Text.Json.Serialization.Tests
             public required Dictionary<string, JsonElement>? TestExtensionData { get; set; }
         }
 
+        [Fact]
+        public async void RequiredKeywordAndJsonRequiredCustomAttributeWorkCorrectlyTogether()
+        {
+            JsonSerializerOptions options = JsonSerializerOptions.Default;
+            JsonTypeInfo typeInfo = GetTypeInfo<ClassWithRequiredKeywordAndJsonRequiredCustomAttribute>(options);
+            AssertJsonTypeInfoHasRequiredProperties(typeInfo,
+                nameof(ClassWithRequiredKeywordAndJsonRequiredCustomAttribute.SomeProperty));
+
+            ClassWithRequiredKeywordAndJsonRequiredCustomAttribute obj = new()
+            {
+                SomeProperty = "foo"
+            };
+
+            string json = await Serializer.SerializeWrapper(obj, options);
+            Assert.Equal("""{"SomeProperty":"foo"}""", json);
+
+            var deserialized = await Serializer.DeserializeWrapper<ClassWithRequiredKeywordAndJsonRequiredCustomAttribute>(json, options);
+            Assert.Equal(obj.SomeProperty, deserialized.SomeProperty);
+
+            json = "{}";
+            JsonException exception = await Assert.ThrowsAsync<JsonException>(
+                async () => await Serializer.DeserializeWrapper<ClassWithRequiredKeywordAndJsonRequiredCustomAttribute>(json, options));
+
+            Assert.Contains(nameof(ClassWithRequiredKeywordAndJsonRequiredCustomAttribute.SomeProperty), exception.Message);
+        }
+
+        private class ClassWithRequiredKeywordAndJsonRequiredCustomAttribute
+        {
+            [JsonRequired]
+            public required string SomeProperty { get; set; }
+        }
+
         private static JsonTypeInfo GetTypeInfo<T>(JsonSerializerOptions options)
         {
             // For some variations of test (i.e. AsyncStreamWithSmallBuffer)

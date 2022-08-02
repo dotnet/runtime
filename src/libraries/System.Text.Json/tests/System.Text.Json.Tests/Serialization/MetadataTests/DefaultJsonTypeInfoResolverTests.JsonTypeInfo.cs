@@ -430,16 +430,18 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Null(property.ShouldSerialize);
                 Assert.Null(typeInfo.NumberHandling);
 
-                Assert.Throws<InvalidOperationException>(() => property.AttributeProvider = property.AttributeProvider);
-                Assert.Throws<InvalidOperationException>(() => property.CustomConverter = property.CustomConverter);
-                Assert.Throws<InvalidOperationException>(() => property.Name = property.Name);
-                Assert.Throws<InvalidOperationException>(() => property.Get = property.Get);
-                Assert.Throws<InvalidOperationException>(() => property.Set = property.Set);
-                Assert.Throws<InvalidOperationException>(() => property.ShouldSerialize = property.ShouldSerialize);
-                Assert.Throws<InvalidOperationException>(() => property.NumberHandling = property.NumberHandling);
-                Assert.Throws<InvalidOperationException>(() => property.Order = property.Order);
-                Assert.Throws<InvalidOperationException>(() => property.IsExtensionData = property.IsExtensionData);
-                Assert.Throws<InvalidOperationException>(() => property.IsRequired = property.IsRequired);
+                foreach (PropertyInfo propertyInfo in typeof(JsonPropertyInfo).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                {
+                    // We don't have any set only properties, if this ever changes we will need to update this code
+                    if (propertyInfo.GetSetMethod() == null)
+                    {
+                        continue;
+                    }
+
+                    TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() => propertyInfo.SetValue(property, propertyInfo.GetValue(property)));
+                    Assert.NotNull(exception.InnerException);
+                    Assert.IsType<InvalidOperationException>(exception.InnerException);
+                }
             }
         }
 

@@ -369,6 +369,147 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("SomeProperty", exception.Message);
         }
 
+        [Fact]
+        public void Polymorphic_BaseClassWithoutRequiredDerivedClassWithRequiredProperty()
+        {
+            JsonSerializerOptions options = CreateOptions();
+
+            BaseClassWithoutRequiredProperties obj = new DerivedClassWithRequiredProperty()
+            {
+                NonRequiredProperty = "non-required",
+                RequiredProperty = "required",
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"$type":"derived","RequiredProperty":"required","NonRequiredProperty":"non-required"}""", json);
+
+            var deserialized = JsonSerializer.Deserialize<BaseClassWithoutRequiredProperties>(json, options);
+            Assert.Equal(obj.NonRequiredProperty, deserialized.NonRequiredProperty);
+            Assert.Equal(((DerivedClassWithRequiredProperty)obj).RequiredProperty, ((DerivedClassWithRequiredProperty)deserialized).RequiredProperty);
+
+            json = """{"$type":"derived","NonRequiredProperty":"non-required"}""";
+            JsonException exception = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BaseClassWithoutRequiredProperties>(json, options));
+            Assert.Contains(nameof(DerivedClassWithRequiredProperty.RequiredProperty), exception.Message);
+            Assert.DoesNotContain(nameof(BaseClassWithoutRequiredProperties.NonRequiredProperty), exception.Message);
+
+            json = """{"NonRequiredProperty":"non-required"}""";
+            deserialized = JsonSerializer.Deserialize<BaseClassWithoutRequiredProperties>(json, options);
+            Assert.Equal(obj.NonRequiredProperty, deserialized.NonRequiredProperty);
+            Assert.IsNotType<DerivedClassWithRequiredProperty>(deserialized);
+        }
+
+        [Fact]
+        public void Polymorphic_BaseClassWithRequiredDerivedClassWithoutRequiredProperty()
+        {
+            JsonSerializerOptions options = CreateOptions();
+
+            BaseClassWithRequiredProperties obj = new DerivedClassWithoutRequiredProperty()
+            {
+                NonRequiredProperty = "non-required",
+                RequiredProperty = "required",
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"$type":"derived","NonRequiredProperty":"non-required","RequiredProperty":"required"}""", json);
+
+            var deserialized = JsonSerializer.Deserialize<BaseClassWithRequiredProperties>(json, options);
+            Assert.Equal(obj.RequiredProperty, deserialized.RequiredProperty);
+            Assert.Equal(((DerivedClassWithoutRequiredProperty)obj).NonRequiredProperty, ((DerivedClassWithoutRequiredProperty)deserialized).NonRequiredProperty);
+
+            json = """{"$type":"derived","NonRequiredProperty":"non-required"}""";
+            JsonException exception = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BaseClassWithRequiredProperties>(json, options));
+            Assert.Contains(nameof(BaseClassWithRequiredProperties.RequiredProperty), exception.Message);
+            Assert.DoesNotContain(nameof(DerivedClassWithoutRequiredProperty.NonRequiredProperty), exception.Message);
+
+            json = """{"RequiredProperty":"required"}""";
+            deserialized = JsonSerializer.Deserialize<BaseClassWithRequiredProperties>(json, options);
+            Assert.Equal(obj.RequiredProperty, deserialized.RequiredProperty);
+            Assert.IsNotType<DerivedClassWithoutRequiredProperty>(deserialized);
+
+            json = "{}";
+            exception = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BaseClassWithRequiredProperties>(json, options));
+            Assert.Contains(nameof(BaseClassWithRequiredProperties.RequiredProperty), exception.Message);
+        }
+
+        [Fact]
+        public void Polymorphic_BaseClassWithRequiredDerivedHidingRequiredPropertyWithNonRequired()
+        {
+            JsonSerializerOptions options = CreateOptions();
+
+            JsonTypeInfo? typeInfo = options.GetTypeInfo(typeof(DerivedClassHidingRequiredPropertyWithNonRequired));
+            Assert.NotNull(typeInfo);
+            Assert.Equal(1, typeInfo.Properties.Count);
+
+            JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
+            Assert.Equal(nameof(DerivedClassHidingRequiredPropertyWithNonRequired.RequiredProperty), propertyInfo.Name);
+            Assert.False(propertyInfo.IsRequired);
+
+            typeInfo = options.GetTypeInfo(typeof(BaseClassWithRequiredProperties));
+            Assert.NotNull(typeInfo);
+            Assert.Equal(1, typeInfo.Properties.Count);
+
+            propertyInfo = typeInfo.Properties[0];
+            Assert.Equal(nameof(BaseClassWithRequiredProperties.RequiredProperty), propertyInfo.Name);
+            Assert.True(propertyInfo.IsRequired);
+
+            BaseClassWithRequiredProperties obj = new DerivedClassHidingRequiredPropertyWithNonRequired()
+            {
+                RequiredProperty = "hidden-with-non-required",
+            };
+
+            obj.RequiredProperty = "base-required";
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"$type":"derived-hiding","RequiredProperty":"hidden-with-non-required"}""", json);
+
+            var deserialized = JsonSerializer.Deserialize<BaseClassWithRequiredProperties>(json, options);
+            Assert.Null(deserialized.RequiredProperty);
+            Assert.Equal(((DerivedClassHidingRequiredPropertyWithNonRequired)obj).RequiredProperty, ((DerivedClassHidingRequiredPropertyWithNonRequired)deserialized).RequiredProperty);
+
+            json = """{"$type":"derived-hiding"}""";
+            deserialized = JsonSerializer.Deserialize<BaseClassWithRequiredProperties>(json, options);
+            Assert.Null(deserialized.RequiredProperty);
+            Assert.Null(((DerivedClassHidingRequiredPropertyWithNonRequired)deserialized).RequiredProperty);
+
+            json = """{"RequiredProperty":"base-required"}""";
+            deserialized = JsonSerializer.Deserialize<BaseClassWithRequiredProperties>(json, options);
+            Assert.Equal(obj.RequiredProperty, deserialized.RequiredProperty);
+            Assert.IsNotType<DerivedClassHidingRequiredPropertyWithNonRequired>(deserialized);
+
+            json = "{}";
+            JsonException exception = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BaseClassWithRequiredProperties>(json, options));
+            Assert.Contains(nameof(BaseClassWithRequiredProperties.RequiredProperty), exception.Message);
+        }
+
+        [Fact]
+        public void StructWithRequiredPropertiesDoesWorkCorrectlyWithJsonRequiredCustomAttribute()
+        {
+            JsonSerializerOptions options = CreateOptions();
+
+            StructWithRequiredProperties obj = new()
+            {
+                PropertyA = 123,
+                PropertyB = 456,
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"PropertyA":123,"PropertyB":456}""", json);
+
+            var deserialized = JsonSerializer.Deserialize<StructWithRequiredProperties>(json, options);
+            Assert.Equal(obj.PropertyA, deserialized.PropertyA);
+            Assert.Equal(obj.PropertyB, deserialized.PropertyB);
+
+            json = """{"PropertyA":123}""";
+            JsonException exception = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StructWithRequiredProperties>(json, options));
+            Assert.DoesNotContain(nameof(StructWithRequiredProperties.PropertyA), exception.Message);
+            Assert.Contains(nameof(StructWithRequiredProperties.PropertyB), exception.Message);
+
+            json = "{}";
+            exception = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StructWithRequiredProperties>(json, options));
+            Assert.Contains(nameof(StructWithRequiredProperties.PropertyA), exception.Message);
+            Assert.Contains(nameof(StructWithRequiredProperties.PropertyB), exception.Message);
+        }
+
         public class ClassWithRequiredCustomAttributes
         {
             [JsonPropertyOrder(0)]
@@ -401,9 +542,51 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [JsonDerivedType(typeof(DerivedClassWithRequiredProperty), "derived")]
+        public class BaseClassWithoutRequiredProperties
+        {
+            public string NonRequiredProperty { get; set; }
+        }
+
+        public class DerivedClassWithRequiredProperty : BaseClassWithoutRequiredProperties
+        {
+            [JsonRequired]
+            public string RequiredProperty { get; set; }
+        }
+
+        [JsonDerivedType(typeof(DerivedClassWithoutRequiredProperty), "derived")]
+        [JsonDerivedType(typeof(DerivedClassHidingRequiredPropertyWithNonRequired), "derived-hiding")]
+        public class BaseClassWithRequiredProperties
+        {
+            [JsonRequired]
+            public string RequiredProperty { get; set; }
+        }
+
+        public class DerivedClassWithoutRequiredProperty : BaseClassWithRequiredProperties
+        {
+            public string NonRequiredProperty { get; set; }
+        }
+
+        public class DerivedClassHidingRequiredPropertyWithNonRequired : BaseClassWithRequiredProperties
+        {
+            public new string RequiredProperty { get; set; }
+        }
+
+        public struct StructWithRequiredProperties
+        {
+            [JsonRequired]
+            public int PropertyA { get; set; }
+
+            [JsonRequired]
+            public int PropertyB { get; set; }
+        }
+
         [JsonSerializable(typeof(ClassWithRequiredCustomAttributes))]
         [JsonSerializable(typeof(ClassWithRequiredCustomAttributeAndDataExtensionProperty))]
         [JsonSerializable(typeof(ClassWithRequiredCustomAttributeAndReadOnlyProperty))]
+        [JsonSerializable(typeof(BaseClassWithoutRequiredProperties))]
+        [JsonSerializable(typeof(BaseClassWithRequiredProperties))]
+        [JsonSerializable(typeof(StructWithRequiredProperties))]
         internal partial class Context : JsonSerializerContext
         {
         }
