@@ -158,18 +158,10 @@ namespace System
             // Get all of the values
             ulong[] values = Enum.InternalGetValues(this);
 
-#if MONO
             switch (RuntimeTypeHandle.GetCorElementType(Enum.InternalGetUnderlyingType(this)))
-#else
-            switch (RuntimeTypeHandle.GetCorElementType(this))
-#endif
             {
 
-#if MONO
-                case TypeCode.Byte:
-#else
                 case CorElementType.ELEMENT_TYPE_U1:
-#endif
                     {
                         var ret = new byte[values.Length];
                         for (int i = 0; i < values.Length; i++)
@@ -179,11 +171,7 @@ namespace System
                         return ret;
                     }
 
-#if MONO
-                case TypeCode.UInt16:
-#else
                 case CorElementType.ELEMENT_TYPE_U2:
-#endif
                     {
                         var ret = new ushort[values.Length];
                         for (int i = 0; i < values.Length; i++)
@@ -193,11 +181,7 @@ namespace System
                         return ret;
                     }
 
-#if MONO
-                case TypeCode.UInt32:
-#else
                 case CorElementType.ELEMENT_TYPE_U4:
-#endif
                     {
                         var ret = new uint[values.Length];
                         for (int i = 0; i < values.Length; i++)
@@ -207,20 +191,12 @@ namespace System
                         return ret;
                     }
 
-#if MONO
-                case TypeCode.UInt64:
-#else
                 case CorElementType.ELEMENT_TYPE_U8:
-#endif
                     {
                         return (Array)values.Clone();
                     }
 
-#if MONO
-                case TypeCode.SByte:
-#else
                 case CorElementType.ELEMENT_TYPE_I1:
-#endif
                     {
                         var ret = new sbyte[values.Length];
                         for (int i = 0; i < values.Length; i++)
@@ -230,11 +206,7 @@ namespace System
                         return ret;
                     }
 
-#if MONO
-                case TypeCode.Int16:
-#else
                 case CorElementType.ELEMENT_TYPE_I2:
-#endif
                     {
                         var ret = new short[values.Length];
                         for (int i = 0; i < values.Length; i++)
@@ -244,11 +216,7 @@ namespace System
                         return ret;
                     }
 
-#if MONO
-                case TypeCode.Int32:
-#else
                 case CorElementType.ELEMENT_TYPE_I4:
-#endif
                     {
                         var ret = new int[values.Length];
                         for (int i = 0; i < values.Length; i++)
@@ -258,11 +226,7 @@ namespace System
                         return ret;
                     }
 
-#if MONO
-                case TypeCode.Int64:
-#else
                 case CorElementType.ELEMENT_TYPE_I8:
-#endif
                     {
                         var ret = new long[values.Length];
                         for (int i = 0; i < values.Length; i++)
