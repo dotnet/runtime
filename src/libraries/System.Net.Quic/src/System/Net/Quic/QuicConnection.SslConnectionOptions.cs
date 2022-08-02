@@ -45,9 +45,12 @@ public partial class QuicConnection
         /// <summary>
         /// Configured via <see cref="SslServerAuthenticationOptions.CertificateChainPolicy"/> or <see cref="SslClientAuthenticationOptions.CertificateChainPolicy"/>.
         /// </summary>
-        private readonly X509ChainPolicy? _chainPolicy;
+        private readonly X509ChainPolicy? _certificateChainPolicy;
 
-        public SslConnectionOptions(QuicConnection connection, bool isClient, string? targetHost, bool certificateRequired, X509RevocationMode revocationMode, RemoteCertificateValidationCallback? validationCallback, X509ChainPolicy? chainPolicy)
+        public SslConnectionOptions(QuicConnection connection, bool isClient,
+            string? targetHost, bool certificateRequired, X509RevocationMode
+            revocationMode, RemoteCertificateValidationCallback? validationCallback,
+            X509ChainPolicy? certificateChainPolicy)
         {
             _connection = connection;
             _isClient = isClient;
@@ -55,7 +58,7 @@ public partial class QuicConnection
             _certificateRequired = certificateRequired;
             _revocationMode = revocationMode;
             _validationCallback = validationCallback;
-            _chainPolicy = chainPolicy;
+            _certificateChainPolicy = certificateChainPolicy;
         }
 
         public unsafe int ValidateCertificate(QUIC_BUFFER* certificatePtr, QUIC_BUFFER* chainPtr, out X509Certificate2? certificate)
@@ -71,9 +74,9 @@ public partial class QuicConnection
                 if (certificatePtr is not null)
                 {
                     chain = new X509Chain();
-                    if (_chainPolicy != null)
+                    if (_certificateChainPolicy != null)
                     {
-                        chain.ChainPolicy = _chainPolicy;
+                        chain.ChainPolicy = _certificateChainPolicy;
                     }
                     else
                     {
