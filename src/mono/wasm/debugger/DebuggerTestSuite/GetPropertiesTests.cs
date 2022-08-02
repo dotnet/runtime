@@ -33,6 +33,9 @@ namespace DebuggerTests
                 {"BaseBase_PropertyForVHO",                         (TGetter("BaseBase_PropertyForVHO", TString("Derived#BaseBase_PropertyForVHO")), true)},
                 {"BaseBase_PropertyForVOH",                         (TGetter("BaseBase_PropertyForVOH", TString("Derived#BaseBase_PropertyForVOH")), true)},
                 // {"BaseBase_PropertyForVOO",                         (TGetter("BaseBase_PropertyForVOO", TString("Derived#BaseBase_PropertyForVOO")), true)}, //FixMe: Issue #69788
+                {"BaseBase_AutoPropertyForVHO",                     (TString("Derived#BaseBase_AutoPropertyForVHO"), true)},
+                {"BaseBase_AutoPropertyForVOH",                     (TString("Derived#BaseBase_AutoPropertyForVOH"), true)},
+                // {"BaseBase_AutoPropertyForVOO",                  (TGetter("BaseBase_AutoPropertyForVOO", TString("Derived#BaseBase_AutoPropertyForVOO")), true)}, //FixMe: Issue #69788
 
                 // protected / internal:
                 {"BaseBase_AutoPropertyForHidingWithProperty",      (TGetter("BaseBase_AutoPropertyForHidingWithProperty", TString("Derived#BaseBase_AutoPropertyForHidingWithProperty")), true)},
@@ -52,6 +55,7 @@ namespace DebuggerTests
                 {"FirstName",                                               (TGetter("FirstName", TString("BaseClass#FirstName")), false)},
                 {"LastName",                                                (TGetter("LastName", TString("BaseClass#LastName")), false)},
                 {"BaseBase_PropertyForVOH (BaseClass2)",                    (TGetter("BaseBase_PropertyForVOH (BaseClass2)", TString("Base#BaseBase_PropertyForVOH")), false)},
+                {"BaseBase_AutoPropertyForVOH (BaseClass2)",                (TString("Base#BaseBase_AutoPropertyForVOH"), false)},
 
                 // protected / internal:
                 {"BaseBase_PropertyForHidingWithField (BaseClass2)",        (TNumber(110), false)},
@@ -75,6 +79,7 @@ namespace DebuggerTests
                 {"BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)",      (TGetter("BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForHidingWithAutoProperty")), false)},
                 {"BaseBase_AutoPropertyForHidingWithAutoProperty (BaseBaseClass2)",  (TString("BaseBase#BaseBase_AutoPropertyForHidingWithAutoProperty"), false)},
                 {"BaseBase_PropertyForVHO (BaseBaseClass2)",                         (TGetter("BaseBase_PropertyForVHO (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForVHO")), false)},
+                {"BaseBase_AutoPropertyForVHO (BaseBaseClass2)",                     (TString("BaseBase#BaseBase_AutoPropertyForVHO"), false)},
             };
 
             // default, all properties

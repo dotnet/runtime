@@ -377,14 +377,7 @@ namespace BrowserDebugProxy
                 var overriddenOrHiddenPropName = $"{propName} ({parentSuffix})";
                 if (isNewSlot)
                 {
-                    // we would have to check if backing field's child was a new slot - how? Missing testcases for this in VHO
-                    if (allMembers.TryGetValue(overriddenOrHiddenPropName, out JObject removableProp) && removableProp?["__isBackingField"]?.Value<bool>() == true)
-                    {
-                        allMembers.Remove(overriddenOrHiddenPropName);
-                        continue;
-                    }
-
-                    // direct child was not a new slot -> current item has a `new` keyword or was overridden:
+                    // this has `new` keyword if it is newSlot but direct child was not a newSlot:
                     var child = allMembers.FirstOrDefault(
                         kvp => (kvp.Key == propName || kvp.Key.StartsWith($"{propName} (")) && kvp.Value["__parentTypeId"]?.Value<int>() == typeId).Value;
                     bool wasOverriddenByDerivedType = child != null && child["__isNewSlot"]?.Value<bool>() != true;
