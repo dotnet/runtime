@@ -205,7 +205,6 @@ MembersMustExist : Member 'public void System.AppContext.remove_FirstChanceExcep
 MembersMustExist : Member 'public void System.AppContext.remove_ProcessExit(System.EventHandler)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public void System.AppContext.remove_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Array<T>' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'System.InvokeUtils' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.MDArray' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public void System.ModuleHandle..ctor(System.Reflection.Module)' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.RuntimeExceptionHelpers' does not exist in the reference but it does exist in the implementation.
@@ -226,7 +225,7 @@ CannotMakeMemberAbstract : Member 'public System.Boolean System.IO.FileSystemInf
 CannotMakeMemberAbstract : Member 'public System.String System.IO.FileSystemInfo.Name.get()' is abstract in the reference but is not abstract in the implementation.
 TypesMustExist : Type 'System.Reflection.AssemblyRuntimeNameHelpers' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Reflection.BinderBundle' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'System.Reflection.DelegateDynamicInvokeInfo' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.DynamicInvokeInfo' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Reflection.EnumInfo' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.Reflection.ParameterInfo[] System.Reflection.MethodBase.GetParametersNoCopy()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.Reflection.MethodBase System.Reflection.MethodBase.MetadataDefinitionMethod.get()' does not exist in the reference but it does exist in the implementation.
