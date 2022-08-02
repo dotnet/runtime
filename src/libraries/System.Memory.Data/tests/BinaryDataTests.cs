@@ -615,12 +615,28 @@ namespace System.Tests
         }
 
         [Fact]
-        public void IsBinaryDataMemberPropertyPopulated()
+        public void IsBinaryDataMemberPropertySerialized()
         {
-            TestModelWithBinaryDataProperty testModel = new TestModelWithBinaryDataProperty { B = new BinaryData("B test value") };
-            var jsonModel = JsonSerializer.Serialize(testModel);
-            TestModelWithBinaryDataProperty deserializedModel = JsonSerializer.Deserialize<TestModelWithBinaryDataProperty>(jsonModel);
-            Assert.True(string.Equals(testModel.B.ToString(), deserializedModel.B.ToString(), StringComparison.Ordinal));
+            var data = new BinaryData("A test value");
+            var dataBase64 = Convert.ToBase64String(data.ToArray());
+            var jsonTestModel = $"{{\"A\":\"{dataBase64}\"}}";
+            TestModelWithBinaryDataProperty testModel = new TestModelWithBinaryDataProperty { A = data };
+
+            var serializedTestModel = JsonSerializer.Serialize(testModel);
+
+            Assert.True(string.Equals(jsonTestModel, serializedTestModel, StringComparison.Ordinal));           
+        }
+
+        [Fact]
+        public void IsBinaryDataMemberPropertyDeserialized()
+        {
+            var data = new BinaryData("A test value");
+            var dataBase64 = Convert.ToBase64String(data.ToArray());
+            var jsonTestModel = $"{{\"A\":\"{dataBase64}\"}}";
+
+            TestModelWithBinaryDataProperty deserializedModel = JsonSerializer.Deserialize<TestModelWithBinaryDataProperty>(jsonTestModel);
+
+            Assert.True(string.Equals(data.ToString(), deserializedModel.A.ToString(), StringComparison.Ordinal));
         }
 
         internal class TestModel
@@ -673,7 +689,7 @@ namespace System.Tests
 
         internal class TestModelWithBinaryDataProperty
         {
-            public BinaryData B { get; set; }
+            public BinaryData A { get; set; }
         }
     }
 }
