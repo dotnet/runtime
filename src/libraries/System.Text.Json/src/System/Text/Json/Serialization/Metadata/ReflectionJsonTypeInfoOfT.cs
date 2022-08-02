@@ -71,11 +71,7 @@ namespace System.Text.Json.Serialization.Metadata
             // Walk through the inheritance hierarchy, starting from the most derived type upward.
             for (Type? currentType = Type; currentType != null; currentType = currentType.BaseType)
             {
-                var bindingFlags = BindingFlagsDeclaredOnly;
-                if (currentType.IsInterface && !this.Options.OnlyDeclaredPropertiesOnInterfaces)
-                    bindingFlags = BindingFlagsAll;
-
-                PropertyInfo[] properties = currentType.GetProperties(bindingFlags);
+                PropertyInfo[] properties = currentType.IsInterface ? currentType.GetProperties(BindingFlagsAll) : currentType.GetProperties(BindingFlagsDeclaredOnly);
 
                 // PropertyCache is not accessed by other threads until the current JsonTypeInfo instance
                 // is finished initializing and added to the cache in JsonSerializerOptions.
@@ -115,7 +111,7 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                 }
 
-                foreach (FieldInfo fieldInfo in currentType.GetFields(BindingFlags))
+                foreach (FieldInfo fieldInfo in currentType.GetFields(BindingFlagsDeclaredOnly))
                 {
                     string fieldName = fieldInfo.Name;
 

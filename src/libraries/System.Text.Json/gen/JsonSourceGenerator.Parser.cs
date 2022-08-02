@@ -656,14 +656,6 @@ namespace System.Text.Json.SourceGeneration
                                 }
                             }
                             break;
-                        case nameof(JsonSourceGenerationOptionsAttribute.OnlyDeclaredPropertiesOnInterfaces):
-                            {
-                                if (bool.TryParse(propertyValueStr, out bool value))
-                                {
-                                    options.OnlyDeclaredPropertiesOnInterfaces = value;
-                                }
-                            }
-                            break;
                         case nameof(JsonSourceGenerationOptionsAttribute.PropertyNamingPolicy):
                             {
                                 if (Enum.TryParse<JsonKnownNamingPolicy>(propertyValueStr, out JsonKnownNamingPolicy value))
@@ -1039,11 +1031,7 @@ namespace System.Text.Json.SourceGeneration
                         {
                             PropertyGenerationSpec spec;
 
-                            var bindingFlags = BindingFlagsDeclaredOnly;
-                            if (currentType.IsInterface)
-                                bindingFlags = BindingFlagsAll;
-
-                            foreach (PropertyInfo propertyInfo in currentType.GetProperties(bindingFlags))
+                            foreach (PropertyInfo propertyInfo in (currentType.IsInterface ? currentType.GetProperties(BindingFlagsAll) : currentType.GetProperties(BindingFlagsDeclaredOnly)))
                             {
                                 bool isVirtual = propertyInfo.IsVirtual();
 
@@ -1057,7 +1045,7 @@ namespace System.Text.Json.SourceGeneration
                                 CacheMemberHelper(propertyInfo.GetDiagnosticLocation());
                             }
 
-                            foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
+                            foreach (FieldInfo fieldInfo in currentType.GetFields(BindingFlagsDeclaredOnly))
                             {
                                 if (PropertyIsOverriddenAndIgnored(fieldInfo.Name, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
                                 {
