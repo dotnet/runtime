@@ -1,12 +1,13 @@
 import { App } from './app-support.mjs'
 
 App.main = async function (applicationArguments) {
-
-    App.IMPORTS.node = {
-        process: {
-            version: () => globalThis.process.version
+    App.API.setModuleImports("main.mjs", {
+        node: {
+            process: {
+                version: () => globalThis.process.version
+            }
         }
-    };
+    });
 
     const exports = await App.API.getAssemblyExports("console.0.dll");
     const text = exports.MyClass.Greeting();

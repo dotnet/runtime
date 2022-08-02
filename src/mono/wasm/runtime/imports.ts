@@ -13,8 +13,6 @@ export let Module: EmscriptenModule & DotnetModule;
 export let MONO: MONOType;
 export let BINDING: BINDINGType;
 export let INTERNAL: any;
-export let EXPORTS: any;
-export let IMPORTS: any;
 
 // these are imported and re-exported from emscripten internals
 export let ENVIRONMENT_IS_NODE: boolean;
@@ -32,9 +30,6 @@ export function set_imports_exports(
     BINDING = exports.binding;
     INTERNAL = exports.internal;
     Module = exports.module;
-
-    EXPORTS = exports.marshaled_exports; // [JSExport]
-    IMPORTS = exports.marshaled_imports; // [JSImport]
 
     ENVIRONMENT_IS_NODE = imports.isNode;
     ENVIRONMENT_IS_SHELL = imports.isShell;

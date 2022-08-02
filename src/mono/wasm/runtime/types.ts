@@ -325,8 +325,6 @@ export type EarlyExports = {
     binding: any,
     internal: any,
     module: any,
-    marshaled_exports: any,
-    marshaled_imports: any
 };
 export type EarlyReplacements = {
     fetch: any,

@@ -16,7 +16,6 @@ import { export_internal } from "./exports-internal";
 import { export_linker } from "./exports-linker";
 import { init_polyfills } from "./polyfills";
 import { EmscriptenModule, NativePointer } from "./types/emscripten";
-import { Diagnostics } from "./diagnostics";
 import { export_api } from "./export-api";
 
 export const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
@@ -52,8 +51,6 @@ function initializeImportsAndExports(
         MONO: exports.mono,
         BINDING: exports.binding,
         INTERNAL: exports.internal,
-        EXPORTS: exports.marshaled_exports,
-        IMPORTS: exports.marshaled_imports,
         Module: module,
         RuntimeBuildInfo: {
             ProductVersion,
@@ -171,12 +168,11 @@ export function get_dotnet_instance(): DotnetPublicAPI {
 }
 
 export interface APIType {
-    // TODO: do we need synchronous version ?
-    // TODO: how do we pass runtime setup ?
     runMain: (mainAssemblyName: string, args: string[]) => Promise<number>,
     runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<void>,
     setEnvironmentVariable: (name: string, value: string) => void,
     getAssemblyExports(assemblyName: string): Promise<any>,
+    setModuleImports(moduleName: string, moduleImports: any): void,
     getConfig: () => MonoConfig,
     memory: {
         setB32: (offset: NativePointer, value: number | boolean) => void,
@@ -204,7 +200,6 @@ export interface APIType {
         getF32: (offset: NativePointer) => number,
         getF64: (offset: NativePointer) => number,
     },
-    diagnostics: Diagnostics;
 }
 
 // this represents visibility in the javascript
@@ -220,8 +215,6 @@ export interface DotnetPublicAPI {
      */
     BINDING: any,
     INTERNAL: any,
-    EXPORTS: any,
-    IMPORTS: any,
     Module: EmscriptenModule,
     RuntimeId: number,
     RuntimeBuildInfo: {

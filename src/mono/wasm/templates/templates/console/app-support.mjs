@@ -125,7 +125,7 @@ try {
     initRunArgs();
     mergeArguments();
 
-    createDotnetRuntime(({ API, INTERNAL, IMPORTS, Module }) => ({
+    createDotnetRuntime(({ API, INTERNAL, Module }) => ({
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
@@ -159,7 +159,7 @@ try {
             if (runArgs.runtimeArgs.length > 0)
                 INTERNAL.mono_wasm_set_runtime_options(runArgs.runtimeArgs);
 
-            Object.assign(App, { API, INTERNAL, IMPORTS, Module, runArgs });
+            Object.assign(App, { API, INTERNAL, Module, runArgs });
 
             try {
                 if (App.main) {

@@ -25,7 +25,7 @@ function sub(a, b) {
     return a - b;
 }
 try {
-    const { API, RuntimeBuildInfo, IMPORTS } = await createDotnetRuntimeTyped(({ API, Module }) => {
+    const { API, RuntimeBuildInfo } = await createDotnetRuntimeTyped(({ API, Module }) => {
         // this callback usually needs no statements, the API objects are only empty shells here and are populated later
         return {
             configSrc: "./mono-config.json",
@@ -53,12 +53,14 @@ try {
     // we could use the APIs returned and resolved from createDotnetRuntime promise
     // both exports are receiving the same object instances, i.e. same `API` instance.    
     console.log('user code after createDotnetRuntime()');
-    IMPORTS.Sample = {
-        Test: {
-            add,
-            sub
+    API.setModuleImports("main.js", {
+        Sample: {
+            Test: {
+                add,
+                sub
+            }
         }
-    };
+    });
 
     const exports = await API.getAssemblyExports("Wasm.Browser.Sample.dll");
     const meaning = exports.Sample.Test.TestMeaning();

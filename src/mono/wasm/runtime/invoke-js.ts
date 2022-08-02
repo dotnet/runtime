@@ -8,7 +8,7 @@ import { setI32 } from "./memory";
 import { conv_string_root, js_string_to_mono_string_root } from "./strings";
 import { mono_assert, JSHandle, MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments } from "./types";
 import { Int32Ptr } from "./types/emscripten";
-import { IMPORTS, INTERNAL, Module, runtimeHelpers } from "./imports";
+import { INTERNAL, Module, runtimeHelpers } from "./imports";
 import { generate_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root, WasmRoot } from "./roots";
 import { mono_wasm_symbolicate_string } from "./debug";
@@ -103,10 +103,16 @@ export function mono_wasm_invoke_bound_function(bound_function_js_handle: JSHand
     bound_fn(args);
 }
 
+export function mono_wasm_set_module_imports(module_name: string, moduleImports: any) {
+    importedModules.set(module_name, moduleImports);
+    if (runtimeHelpers.diagnosticTracing)
+        console.debug(`MONO_WASM: added module imports '${module_name}'`);
+}
+
 function mono_wasm_lookup_function(function_name: string, js_module_name: string): Function {
     mono_assert(function_name && typeof function_name === "string", "function_name must be string");
 
-    let scope: any = IMPORTS;
+    let scope: any = {};
     const parts = function_name.split(".");
     if (js_module_name) {
         scope = importedModules.get(js_module_name);

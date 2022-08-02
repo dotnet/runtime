@@ -343,7 +343,7 @@ if (typeof globalThis.crypto === 'undefined') {
 Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntime]) => {
     applyArguments();
 
-    return createDotnetRuntime(({ API, MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module }) => ({
+    return createDotnetRuntime(({ API, MONO, INTERNAL, BINDING, Module }) => ({
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: runArgs.configSrc || "./mono-config.json",
@@ -412,7 +412,7 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
 
             Module.FS.chdir(runArgs.workingDirectory);
 
-            App.init({ API, MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs });
+            App.init({ API, MONO, INTERNAL, BINDING, Module, runArgs });
         },
         onAbort: (error) => {
             set_exit_code(1, stringify_as_error_with_stack(new Error()));
@@ -423,8 +423,8 @@ Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntim
 });
 
 const App = {
-    init: async function ({ API, MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs }) {
-        Object.assign(App, { API, MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs });
+    init: async function ({ API, MONO, INTERNAL, BINDING, Module, runArgs }) {
+        Object.assign(App, { API, MONO, INTERNAL, BINDING, Module, runArgs });
         console.info("Initializing.....");
 
         for (let i = 0; i < runArgs.profilers.length; ++i) {
@@ -504,16 +504,12 @@ const App = {
         args.push("MONO");
         args.push("BINDING");
         args.push("INTERNAL");
-        args.push("IMPORTS");
-        args.push("EXPORTS");
 
         const userFunction = new Function(...args, code);
         return function (...args) {
             args[arg_count + 0] = globalThis.App.MONO;
             args[arg_count + 1] = globalThis.App.BINDING;
             args[arg_count + 2] = globalThis.App.INTERNAL;
-            args[arg_count + 3] = globalThis.App.IMPORTS;
-            args[arg_count + 4] = globalThis.App.EXPORTS;
             return userFunction(...args);
         };
     },
