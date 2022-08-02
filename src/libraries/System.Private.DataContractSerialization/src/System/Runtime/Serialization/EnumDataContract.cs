@@ -402,6 +402,43 @@ namespace System.Runtime.Serialization.DataContracts
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override bool Equals(object? other, HashSet<DataContractPairKey>? checkedContracts)
+        {
+            if (IsEqualOrChecked(other, checkedContracts))
+                return true;
+
+            if (base.Equals(other, null))
+            {
+                if (other is EnumDataContract enumContract)
+                {
+                    if (Members.Count != enumContract.Members.Count || Values?.Count != enumContract.Values?.Count)
+                        return false;
+                    string[] memberNames1 = new string[Members.Count], memberNames2 = new string[Members.Count];
+                    for (int i = 0; i < Members.Count; i++)
+                    {
+                        memberNames1[i] = Members[i].Name;
+                        memberNames2[i] = enumContract.Members[i].Name;
+                    }
+                    Array.Sort(memberNames1);
+                    Array.Sort(memberNames2);
+                    for (int i = 0; i < Members.Count; i++)
+                    {
+                        if (memberNames1[i] != memberNames2[i])
+                            return false;
+                    }
+
+                    return (IsFlags == enumContract.IsFlags);
+                }
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             WriteEnumValue(xmlWriter, obj);

@@ -37,6 +37,8 @@ namespace System.Runtime.Serialization
         }
     }
 
+    internal enum SchemaDefinedEnum { SchemaDefinedEnumValue };
+
     internal static class SchemaHelper
     {
         internal static bool NamespacesEqual(string? ns1, string? ns2)

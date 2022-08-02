@@ -935,15 +935,13 @@ namespace System.Runtime.Serialization
         {
             XmlQualifiedName typeName = dataContract.XmlName;
 
-            Debug.Assert(element.Name != null);
-
             if (element.MinOccurs > 1)
                 ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.ElementMinOccursMustBe, element.Name));
             if (element.MaxOccurs != 1)
                 ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.ElementMaxOccursMustBe, element.Name));
 
             DataContract? memberTypeContract = null;
-            string memberName = element.Name;
+            string? memberName = element.Name;
             bool memberIsRequired = (element.MinOccurs > 0);
             bool memberIsNullable = element.IsNillable;
             bool memberEmitDefaultValue;
@@ -987,6 +985,7 @@ namespace System.Runtime.Serialization
                 memberEmitDefaultValue = emitDefaultValueFromAnnotation != null ? emitDefaultValueFromAnnotation.Value : Globals.DefaultEmitDefaultValue;
 
             Debug.Assert(dataContract.Members != null); // This method is only called from ImportClass() after that method has initialized the Members collection.
+            Debug.Assert(memberName != null);   // At this point, elements without a name should have been handled.
 
             int prevMemberIndex = dataContract.Members.Count - 1;
             if (prevMemberIndex >= 0)
@@ -1179,7 +1178,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private EnumDataContract ImportEnum(XmlQualifiedName typeName, XmlSchemaSimpleTypeRestriction restriction, bool isFlags, XmlSchemaAnnotation? annotation)
         {
-            EnumDataContract dataContract = new EnumDataContract(Globals.TypeOfSchemaDefinedType);
+            EnumDataContract dataContract = new EnumDataContract(Globals.TypeOfSchemaDefinedEnum);
             dataContract.XmlName = typeName;
             dataContract.BaseContractName = ImportActualType(annotation, SchemaExporter.DefaultEnumBaseTypeName, typeName);
             dataContract.IsFlags = isFlags;

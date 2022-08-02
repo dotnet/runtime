@@ -92,8 +92,7 @@ namespace System.Runtime.Serialization.DataContracts
         {
             if (dataContract.IsBuiltInDataContract)
                 return;
-            if (dataContract is DataContract dataContractInternal)
-                InternalAdd(name, dataContractInternal);
+            InternalAdd(name, dataContract);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -167,16 +166,19 @@ namespace System.Runtime.Serialization.DataContracts
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddCollectionDataContract(CollectionDataContract collectionDataContract)
         {
-            if (collectionDataContract.IsDictionary)
+            if (collectionDataContract.UnderlyingType != Globals.TypeOfSchemaDefinedType)
             {
-                ClassDataContract keyValueContract = (collectionDataContract.ItemContract as ClassDataContract)!;
-                AddClassDataContract(keyValueContract);
-            }
-            else
-            {
-                DataContract itemContract = GetItemTypeDataContract(collectionDataContract);
-                if (itemContract != null)
-                    Add(itemContract.XmlName, itemContract);
+                if (collectionDataContract.IsDictionary)
+                {
+                    ClassDataContract keyValueContract = (collectionDataContract.ItemContract as ClassDataContract)!;
+                    AddClassDataContract(keyValueContract);
+                }
+                else
+                {
+                    DataContract itemContract = GetItemTypeDataContract(collectionDataContract);
+                    if (itemContract != null)
+                        Add(itemContract.XmlName, itemContract);
+                }
             }
             AddKnownDataContracts(collectionDataContract.KnownDataContracts);
         }

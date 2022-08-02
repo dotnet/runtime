@@ -298,7 +298,7 @@ namespace System.Runtime.Serialization.DataContracts
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal bool Equals(object? other, HashSet<DataContractPairKey> checkedContracts)
+        internal bool Equals(object? other, HashSet<DataContractPairKey>? checkedContracts)
         {
             if (this == other)
                 return true;

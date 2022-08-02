@@ -1381,7 +1381,7 @@
     <value>Simple type restriction must specify a base type.</value>
   </data>
   <data name="SimpleTypeUnionNotSupported" xml:space="preserve">
-    <value>=Simple types with &lt;union&gt; content are not supported.</value>
+    <value>Simple types with &lt;union&gt; content are not supported.</value>
   </data>
   <data name="SpecifiedTypeNotFoundInSchema" xml:space="preserve">
     <value>Invalid type specified. Type with name '{0}' not found in schema with namespace '{1}'.</value>

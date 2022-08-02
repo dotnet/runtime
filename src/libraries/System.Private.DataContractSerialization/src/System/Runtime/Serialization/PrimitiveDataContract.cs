@@ -119,7 +119,7 @@ namespace System.Runtime.Serialization.DataContracts
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal override bool Equals(object? other, HashSet<DataContractPairKey> checkedContracts)
+        internal override bool Equals(object? other, HashSet<DataContractPairKey>? checkedContracts)
         {
             if (other is PrimitiveDataContract)
             {

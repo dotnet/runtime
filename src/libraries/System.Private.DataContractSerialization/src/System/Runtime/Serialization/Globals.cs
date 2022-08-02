@@ -320,6 +320,12 @@ namespace System.Runtime.Serialization
         internal static Type TypeOfSchemaDefinedType =>
             s_typeOfSchemaDefinedType ??= typeof(SchemaDefinedType);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
+        private static Type? s_typeOfSchemaDefinedEnum;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicFields)]
+        internal static Type TypeOfSchemaDefinedEnum =>
+            s_typeOfSchemaDefinedEnum ??= typeof(SchemaDefinedEnum);
+
         private static MemberInfo? s_schemaMemberInfoPlaceholder;
         internal static MemberInfo SchemaMemberInfoPlaceholder =>
             s_schemaMemberInfoPlaceholder ??= TypeOfSchemaDefinedType.GetField("_xmlName", BindingFlags.NonPublic | BindingFlags.Instance)!;

@@ -2057,7 +2057,7 @@ namespace System.Runtime.Serialization.DataContracts
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal virtual bool Equals(object? other, HashSet<DataContractPairKey> checkedContracts)
+        internal virtual bool Equals(object? other, HashSet<DataContractPairKey>? checkedContracts)
         {
             if (other is DataContract dataContract)
             {
@@ -2066,7 +2066,7 @@ namespace System.Runtime.Serialization.DataContracts
             return false;
         }
 
-        internal bool IsEqualOrChecked(object? other, HashSet<DataContractPairKey> checkedContracts)
+        internal bool IsEqualOrChecked(object? other, HashSet<DataContractPairKey>? checkedContracts)
         {
             if (other == null)
                 return false;
@@ -2074,10 +2074,13 @@ namespace System.Runtime.Serialization.DataContracts
             if ((object)this == other)
                 return true;
 
-            DataContractPairKey contractPairKey = new DataContractPairKey(this, other);
-            if (checkedContracts.Contains(contractPairKey))
-                return true;
-            checkedContracts.Add(contractPairKey);
+            if (checkedContracts != null)
+            {
+                DataContractPairKey contractPairKey = new DataContractPairKey(this, other);
+                if (checkedContracts.Contains(contractPairKey))
+                    return true;
+                checkedContracts.Add(contractPairKey);
+            }
 
             return false;
         }
