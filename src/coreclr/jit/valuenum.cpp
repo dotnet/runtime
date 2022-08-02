@@ -8735,15 +8735,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             ValueNumPair op1VNPx;
                             vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1VNP, &op1VNPx);
 
-                            // If we are fetching the array length for an array ref that came from global memory
-                            // then for CSE safety we must use the conservative value number for both
-                            //
-                            if (tree->OperIsArrLength() && ((tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF) != 0))
-                            {
-                                // use the conservative value number for both when computing the VN for the ARR_LENGTH
-                                op1VNP.SetBoth(op1VNP.GetConservative());
-                            }
-
                             tree->gtVNPair =
                                 vnStore->VNPWithExc(vnStore->VNPairForFunc(tree->TypeGet(), vnf, op1VNP), op1VNPx);
                         }
