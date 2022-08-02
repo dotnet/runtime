@@ -15,7 +15,7 @@ internal static partial class TermInfo
         /// The default locations in which to search for terminfo databases.
         /// This is the ordering of well-known locations used by ncurses.
         /// </summary>
-        private static readonly string[] _terminfoLocations = new string[] {
+        internal static readonly string[] s_terminfoLocations = {
             "/etc/terminfo",
             "/lib/terminfo",
             "/usr/share/terminfo",
@@ -34,7 +34,7 @@ internal static partial class TermInfo
         /// <summary>Read the database for the specified terminal.</summary>
         /// <param name="term">The identifier for the terminal.</param>
         /// <returns>The database, or null if it could not be found.</returns>
-        private static Database? ReadDatabase(string term)
+        internal static Database? ReadDatabase(string term)
         {
             // This follows the same search order as prescribed by ncurses.
             Database? db;
@@ -54,7 +54,7 @@ internal static partial class TermInfo
             }
 
             // Then try a set of well-known locations.
-            foreach (string terminfoLocation in _terminfoLocations)
+            foreach (string terminfoLocation in s_terminfoLocations)
             {
                 if ((db = ReadDatabase(term, terminfoLocation)) != null)
                 {
@@ -88,7 +88,7 @@ internal static partial class TermInfo
         /// <param name="term">The identifier for the terminal.</param>
         /// <param name="directoryPath">The path to the directory containing terminfo database files.</param>
         /// <returns>The database, or null if it could not be found.</returns>
-        private static Database? ReadDatabase(string? term, string? directoryPath)
+        internal static Database? ReadDatabase(string? term, string? directoryPath)
         {
             if (string.IsNullOrEmpty(term) || string.IsNullOrEmpty(directoryPath))
             {
