@@ -412,17 +412,11 @@ namespace System.Data
     }
     public static partial class DataRowExtensions
     {
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Native code for this instance might be available at runtime since it can be a value type.")]
         public static T? Field<T>(this System.Data.DataRow row, System.Data.DataColumn column) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Native code for this instance might be available at runtime since it can be a value type.")]
         public static T? Field<T>(this System.Data.DataRow row, System.Data.DataColumn column, System.Data.DataRowVersion version) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Native code for this instance might be available at runtime since it can be a value type.")]
         public static T? Field<T>(this System.Data.DataRow row, int columnIndex) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Native code for this instance might be available at runtime since it can be a value type.")]
         public static T? Field<T>(this System.Data.DataRow row, int columnIndex, System.Data.DataRowVersion version) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Native code for this instance might be available at runtime since it can be a value type.")]
         public static T? Field<T>(this System.Data.DataRow row, string columnName) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Native code for this instance might be available at runtime since it can be a value type.")]
         public static T? Field<T>(this System.Data.DataRow row, string columnName, System.Data.DataRowVersion version) { throw null; }
         public static void SetField<T>(this System.Data.DataRow row, System.Data.DataColumn column, T? value) { }
         public static void SetField<T>(this System.Data.DataRow row, int columnIndex, T? value) { }

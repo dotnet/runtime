@@ -10,8 +10,6 @@ namespace System.Data
     /// </summary>
     public static class DataRowExtensions
     {
-        internal const string UnboxDynamicCodeMessage = "Native code for this instance might be available at runtime since it can be a value type.";
-
         /// <summary>
         /// This method provides access to the values in each of the columns in a given row.
         /// This method makes casts unnecessary when accessing columns.
@@ -21,11 +19,10 @@ namespace System.Data
         /// <param name="row">The input DataRow</param>
         /// <param name="columnName">The input column name specifying which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
-        [RequiresDynamicCode(UnboxDynamicCodeMessage)]
         public static T? Field<T>(this DataRow row, string columnName)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            return UnboxT<T>.s_unbox(row[columnName]);
+            return UnboxT<T>(row[columnName]);
         }
 
         /// <summary>
@@ -37,11 +34,10 @@ namespace System.Data
         /// <param name="row">The input DataRow</param>
         /// <param name="column">The input DataColumn specifying which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
-        [RequiresDynamicCode(UnboxDynamicCodeMessage)]
         public static T? Field<T>(this DataRow row, DataColumn column)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            return UnboxT<T>.s_unbox(row[column]);
+            return UnboxT<T>(row[column]);
         }
 
         /// <summary>
@@ -53,11 +49,10 @@ namespace System.Data
         /// <param name="row">The input DataRow</param>
         /// <param name="columnIndex">The input ordinal specifying which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
-        [RequiresDynamicCode(UnboxDynamicCodeMessage)]
         public static T? Field<T>(this DataRow row, int columnIndex)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            return UnboxT<T>.s_unbox(row[columnIndex]);
+            return UnboxT<T>(row[columnIndex]);
         }
 
         /// <summary>
@@ -70,11 +65,10 @@ namespace System.Data
         /// <param name="columnIndex">The input ordinal specifying which row value to retrieve.</param>
         /// <param name="version">The DataRow version for which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
-        [RequiresDynamicCode(UnboxDynamicCodeMessage)]
         public static T? Field<T>(this DataRow row, int columnIndex, DataRowVersion version)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            return UnboxT<T>.s_unbox(row[columnIndex, version]);
+            return UnboxT<T>(row[columnIndex, version]);
         }
 
         /// <summary>
@@ -87,11 +81,10 @@ namespace System.Data
         /// <param name="columnName">The input column name specifying which row value to retrieve.</param>
         /// <param name="version">The DataRow version for which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
-        [RequiresDynamicCode(UnboxDynamicCodeMessage)]
         public static T? Field<T>(this DataRow row, string columnName, DataRowVersion version)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            return UnboxT<T>.s_unbox(row[columnName, version]);
+            return UnboxT<T>(row[columnName, version]);
         }
 
         /// <summary>
@@ -104,11 +97,10 @@ namespace System.Data
         /// <param name="column">The input DataColumn specifying which row value to retrieve.</param>
         /// <param name="version">The DataRow version for which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
-        [RequiresDynamicCode(UnboxDynamicCodeMessage)]
         public static T? Field<T>(this DataRow row, DataColumn column, DataRowVersion version)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            return UnboxT<T>.s_unbox(row[column, version]);
+            return UnboxT<T>(row[column, version]);
         }
 
         /// <summary>
@@ -147,39 +139,15 @@ namespace System.Data
             row[column] = (object?)value ?? DBNull.Value;
         }
 
-        private static class UnboxT<T>
+        private static T? UnboxT<T>(object value)
         {
-            [UnconditionalSuppressMessage("AOT analysis", "IL3050:RequiresDynamicCode",
-                Justification = "Cannot annotate a field, annotating callers instead")]
-            internal static readonly Converter<object, T?> s_unbox = Create();
-
-            [RequiresDynamicCode(UnboxDynamicCodeMessage)]
-            private static Converter<object, T?> Create()
+            if (value == DBNull.Value)
             {
-                if (typeof(T).IsValueType)
-                {
-                    return typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(Nullable<>)
-                        ? (Converter<object, T>)Delegate.CreateDelegate(
-                            typeof(Converter<object, T>),
-                                typeof(UnboxT<T>)
-                                    .GetMethod("NullableField", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
-                                    .MakeGenericMethod(typeof(T).GetGenericArguments()[0]))
-                        : ValueField;
-                }
-
-                return ReferenceField;
+                if (default(T) is null)
+                    return default(T);
+                throw DataSetUtil.InvalidCast(SR.Format(SR.DataSetLinq_NonNullableCast, typeof(T)));
             }
-
-            private static T? ReferenceField(object value)
-                => value == DBNull.Value ? default : (T)value;
-
-            private static T ValueField(object value)
-                => value == DBNull.Value
-                    ? throw DataSetUtil.InvalidCast(SR.Format(SR.DataSetLinq_NonNullableCast, typeof(T)))
-                    : (T)value;
-
-            private static Nullable<TElem> NullableField<TElem>(object value) where TElem : struct
-                => value == DBNull.Value ? default : new Nullable<TElem>((TElem)value);
+            return (T)value;
         }
     }
 }
