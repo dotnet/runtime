@@ -5,13 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="System\Runtime\Serialization\Schema\Import.cs" />
-    <Compile Include="System\Runtime\Serialization\Schema\Contracts.cs" />
-    <Compile Include="System\Runtime\Serialization\Schema\Export.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Expected.ImportedType.cs" CopyToOutputDirectory="Always" />
+    <Compile Include="System\Runtime\Serialization\Schema\Import\SurrogateTests.cs" />
+    <Compile Include="System\Runtime\Serialization\Schema\RoundTripTest.cs" />
+    <Compile Include="System\Runtime\Serialization\Schema\Import\ImporterTests.cs" />
+    <Compile Include="System\Runtime\Serialization\Schema\DataContracts.cs" />
+    <Compile Include="System\Runtime\Serialization\Schema\Import\ImportOptionsTests.cs" />
+    <Compile Include="System\Runtime\Serialization\Schema\SchemaUtils.cs" />
   </ItemGroup>
 
   <ItemGroup>
