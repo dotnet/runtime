@@ -17,8 +17,9 @@ namespace System.Diagnostics
     public abstract partial class DiagnosticSource
     {
         internal const string WriteRequiresUnreferencedCode = "The type of object being written to DiagnosticSource cannot be discovered statically.";
-        internal const string WriteRequiresDynamicCode = "The type might not be available at runtime";
+        internal const string WriteRequiresDynamicCode = "The object parameter might contain an instance of a ValueType that might not be available during runtime";
         internal const string UsesTypesThatMightNotBeAvailable = "This class uses instances of ValueTypes that might not be available during runtime";
+        internal const string ValueTypeRequiresDynamicCode = "Property members of the object parameter might contain an instance of a ValueType that might not be available during runtime";
 
         /// <summary>
         /// Write is a generic way of logging complex payloads.  Each notification
