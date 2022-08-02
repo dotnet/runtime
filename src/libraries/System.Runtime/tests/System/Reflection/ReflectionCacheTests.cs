@@ -208,7 +208,7 @@ namespace System.Reflection.Tests
         private static bool CacheCleared()
         {
             Type updateHandler = typeof(Type).Assembly.GetType("System.Reflection.Metadata.RuntimeTypeMetadataUpdateHandler", throwOnError: true, ignoreCase: false);
-            PropertyInfo metadataUpdaterSupportedAndCacheCleared = updateHandler.GetProperty("MetadataUpdaterSupportedAndCacheCleared", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            PropertyInfo metadataUpdaterSupportedAndCacheCleared = updateHandler.GetProperty("UpdateSupportedAndCacheCleared", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             Assert.NotNull(metadataUpdaterSupportedAndCacheCleared);
             return (bool)metadataUpdaterSupportedAndCacheCleared.GetValue(null);
         }

@@ -499,12 +499,13 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             obj == (object)this ||
-                (RuntimeTypeMetadataUpdateHandler.MetadataUpdaterSupportedAndCacheCleared &&
-                    obj is RuntimeParameterInfo m &&
-                    m_tkParamDef == m.m_tkParamDef &&
-                    GetRuntimeModule()!.Equals(m.GetRuntimeModule()));
+                (RuntimeTypeMetadataUpdateHandler.UpdateSupportedAndCacheCleared &&
+                    obj is RuntimeParameterInfo pi &&
+                    m_tkParamDef == pi.m_tkParamDef &&
+                    DefiningMethod.DeclaringType!.Equals(pi.DefiningMethod.DeclaringType));
 
-        public override int GetHashCode() => HashCode.Combine(m_tkParamDef.GetHashCode(), GetRuntimeModule()!.GetHashCode());
+        public override int GetHashCode() => MetadataUpdater.IsSupported ?
+            HashCode.Combine(m_tkParamDef.GetHashCode(), DefiningMethod.DeclaringType!.GetHashCode()) : base.GetHashCode();
         #endregion
 
         #region ICustomAttributeProvider

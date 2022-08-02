@@ -72,9 +72,13 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             obj == (object)this ||
-            (RuntimeTypeMetadataUpdateHandler.MetadataUpdaterSupportedAndCacheCleared && CacheEquals(obj));
+            (RuntimeTypeMetadataUpdateHandler.UpdateSupportedAndCacheCleared &&
+                obj is RuntimeEventInfo ei &&
+                m_token == ei.m_token &&
+                m_declaringType.Equals(ei.m_declaringType));
 
-        public override int GetHashCode() => HashCode.Combine(m_token.GetHashCode(), RuntimeTypeHandle.GetModule(m_declaringType).GetHashCode());
+        public override int GetHashCode() => MetadataUpdater.IsSupported ?
+            HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetHashCode()) : base.GetHashCode();
         #endregion
 
         #region ICustomAttributeProvider

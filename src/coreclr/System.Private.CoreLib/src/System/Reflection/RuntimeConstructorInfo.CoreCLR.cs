@@ -122,10 +122,10 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             obj == (object)this ||
-                (RuntimeTypeMetadataUpdateHandler.MetadataUpdaterSupportedAndCacheCleared &&
-                    obj is RuntimeConstructorInfo m &&
-                    MetadataToken == m.MetadataToken &&
-                    RuntimeTypeHandle.GetModule(m_declaringType).Equals(RuntimeTypeHandle.GetModule(m.m_declaringType)));
+            (RuntimeTypeMetadataUpdateHandler.UpdateSupportedAndCacheCleared &&
+                obj is RuntimeConstructorInfo ci &&
+                MetadataToken == ci.MetadataToken &&
+                m_declaringType.Equals(ci.m_declaringType));
 
         public override int GetHashCode() => m_handle.GetHashCode();
         #endregion

@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata
     internal static class RuntimeTypeMetadataUpdateHandler
     {
         private static bool s_cacheCleared;
-        public static bool MetadataUpdaterSupportedAndCacheCleared => MetadataUpdater.IsSupported && s_cacheCleared;
+        public static bool UpdateSupportedAndCacheCleared => MetadataUpdater.IsSupported && s_cacheCleared;
 
         /// <summary>Clear type caches in response to an update notification.</summary>
         /// <param name="types">The specific types to be cleared, or null to clear everything.</param>
