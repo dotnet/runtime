@@ -466,6 +466,8 @@
     <!-- Looks like our xunit runner doesn't respect tests that don't want to be multithreaded -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NameResolution\tests\FunctionalTests\System.Net.NameResolution.Functional.Tests.csproj"
                       Condition="'$(TargetOS)' == 'windows'"/>
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Functional\System.Net.Mail.Functional.Tests.csproj"
+                      Condition="'$(TargetOS)' == 'windows'"/>
 
     <!-- Timing out on Linux. GC suspension? -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent\tests\System.Collections.Concurrent.Tests.csproj"
