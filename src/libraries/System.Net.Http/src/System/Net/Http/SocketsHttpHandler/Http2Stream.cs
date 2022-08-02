@@ -157,7 +157,7 @@ namespace System.Net.Http
 
             public Http2Connection Connection => _connection;
 
-            public bool WebSocketEstablished { get; private set; }
+            public bool ConnectProtocolEstablished { get; private set; }
 
             public HttpResponseMessage GetAndClearResponse()
             {
@@ -639,7 +639,7 @@ namespace System.Net.Http
                     {
                         if (statusCode == 200 && _response.RequestMessage!.IsWebSocketH2Request())
                         {
-                            WebSocketEstablished = true;
+                            ConnectProtocolEstablished = true;
                         }
 
                         _responseProtocolState = ResponseProtocolState.ExpectingHeaders;
@@ -1042,7 +1042,7 @@ namespace System.Net.Http
                     MoveTrailersToResponseMessage(_response);
                     responseContent.SetStream(EmptyReadStream.Instance);
                 }
-                else if (WebSocketEstablished)
+                else if (ConnectProtocolEstablished)
                 {
                     responseContent.SetStream(new Http2ReadWriteStream(this));
                 }
