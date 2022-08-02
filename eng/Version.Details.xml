@@ -66,9 +66,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>11672d906390046e77a34b6406d9e02229fd7e45</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.GenAPI" Version="7.0.0-beta.22372.1">
+    <Dependency Name="Microsoft.DotNet.GenAPI" Version="7.0.0-beta.22401.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>11672d906390046e77a34b6406d9e02229fd7e45</Sha>
+      <Sha>aa90e21c63248b4d6d61e8de14a0d8e7a9275130</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.GenFacades" Version="7.0.0-beta.22372.1">
       <Uri>https://github.com/dotnet/arcade</Uri>

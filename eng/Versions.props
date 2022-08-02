@@ -57,7 +57,7 @@
     <MicrosoftDotNetApiCompatVersion>7.0.0-beta.22372.1</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>7.0.0-beta.22372.1</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>7.0.0-beta.22372.1</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenAPIVersion>7.0.0-beta.22372.1</MicrosoftDotNetGenAPIVersion>
+    <MicrosoftDotNetGenAPIVersion>7.0.0-beta.22401.3</MicrosoftDotNetGenAPIVersion>
     <MicrosoftDotNetGenFacadesVersion>7.0.0-beta.22372.1</MicrosoftDotNetGenFacadesVersion>
     <MicrosoftDotNetXUnitExtensionsVersion>7.0.0-beta.22372.1</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.22372.1</MicrosoftDotNetXUnitConsoleRunnerVersion>
