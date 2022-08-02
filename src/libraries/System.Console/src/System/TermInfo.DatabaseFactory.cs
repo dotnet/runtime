@@ -106,8 +106,7 @@ internal static partial class TermInfo
             using (fd)
             {
                 // Read in all of the terminfo data
-                long termInfoLength = Interop.CheckIo(Interop.Sys.LSeek(fd, 0, Interop.Sys.SeekWhence.SEEK_END)); // jump to the end to get the file length
-                Interop.CheckIo(Interop.Sys.LSeek(fd, 0, Interop.Sys.SeekWhence.SEEK_SET)); // reset back to beginning
+                long termInfoLength = RandomAccess.GetLength(fd);
                 const int MaxTermInfoLength = 4096; // according to the term and tic man pages, 4096 is the terminfo file size max
                 const int HeaderLength = 12;
                 if (termInfoLength <= HeaderLength || termInfoLength > MaxTermInfoLength)

@@ -194,8 +194,6 @@
              Link="Common\Interop\Unix\Interop.GetControlCharacters.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsATty.cs"
              Link="Common\Interop\Unix\Interop.IsATty.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LSeek.cs"
-             Link="Common\Interop\Unix\Interop.LSeek.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs"
              Link="Common\Interop\Unix\Interop.Open.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs"
