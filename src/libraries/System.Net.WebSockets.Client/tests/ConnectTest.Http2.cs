@@ -19,34 +19,11 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public ConnectTest_Http2(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
-        public async Task ConnectAsync_VersionNotSupported_Throws()
-        {
-            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
-            {
-                using (var clientSocket = new ClientWebSocket())
-                using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
-                {
-                    clientSocket.Options.HttpVersion = HttpVersion.Version20;
-                    clientSocket.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
-                    using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
-                    Task t = clientSocket.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
-                    var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
-                    Assert.IsType<HttpRequestException>(ex.InnerException);
-                    Assert.True(ex.InnerException.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL"));
-                }
-            },
-            async server =>
-            {
-                Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 0 });
-            }, new Http2Options() { WebSocketEndpoint = true }
-            );
-        }
-
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
-        public async Task ConnectAsync_VersionSupported_Success()
+        public async Task ConnectAsync_VersionNotSupported_Throws(bool useHandler)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -55,16 +32,59 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     cws.Options.HttpVersion = HttpVersion.Version20;
                     cws.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
-                    using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
-                    await cws.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
+                    Task t;
+                    if (useHandler)
+                    {
+                        using var handler = new SocketsHttpHandler();
+                        t = cws.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
+                    }
+                    else
+                    {
+                        t = cws.ConnectAsync(uri, cts.Token);
+                    }
+                    var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
+                    Assert.IsType<HttpRequestException>(ex.InnerException);
+                    Assert.True(ex.InnerException.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL"));
+                }
+            },
+            async server =>
+            {
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 0 });
+            }, new Http2Options() { WebSocketEndpoint = true, UseSsl = false }
+            );
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
+        public async Task ConnectAsync_VersionSupported_Success(bool useHandler)
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var cws = new ClientWebSocket())
+                using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+                {
+                    cws.Options.HttpVersion = HttpVersion.Version20;
+                    cws.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
+                    if (useHandler)
+                    {
+                        using var handler = new SocketsHttpHandler();
+                        await cws.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
+                    }
+                    else
+                    {
+                        await cws.ConnectAsync(uri, cts.Token);
+                    }
+
                 }
             },
             async server =>
             {
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
-                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : false);
+                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
                 await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.OK);
-            }, new Http2Options() { WebSocketEndpoint = true }
+            }, new Http2Options() { WebSocketEndpoint = true, UseSsl = false }
             );
         }
     }
