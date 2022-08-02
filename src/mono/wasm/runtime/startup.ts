@@ -2,18 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { mono_assert, CharPtrNull, DotnetModule, MonoConfig, wasm_type_symbol, MonoObject, MonoConfigError, LoadingResource, AssetEntry, ResourceRequest } from "./types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_SHELL, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
-import cwraps from "./cwraps";
+import { mono_assert, CharPtrNull, DotnetModule, MonoConfig, wasm_type_symbol, MonoObject, MonoConfigError, LoadingResource, AssetEntry, ResourceRequest, DotnetPublicAPI } from "./types";
+import { BINDING, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_SHELL, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
+import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
-import { mono_wasm_load_bytes_into_heap } from "./buffers";
-import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
 import { find_corlib_class } from "./class-loader";
 import { VoidPtr, CharPtr } from "./types/emscripten";
-import { DotnetPublicAPI } from "./exports";
 import { mono_on_abort, set_exit_code } from "./run";
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
@@ -24,9 +21,14 @@ import * as pthreads_worker from "./pthreads/worker";
 import { createPromiseController } from "./promise-controller";
 import { string_decoder } from "./strings";
 import { mono_wasm_init_diagnostics } from "./diagnostics/index";
+import { init_managed_exports } from "./managed-exports";
+import { init_legacy_exports } from "./net6-legacy/corebindings";
+import { mono_wasm_load_bytes_into_heap } from "./memory";
+import { cwraps_internal } from "./exports-internal";
+import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 
 let all_assets_loaded_in_memory: Promise<void> | null = null;
-const loaded_files: { url?: string, file: string }[] = [];
+const loaded_files: { url: string, file: string }[] = [];
 const loaded_assets: { [id: string]: [VoidPtr, number] } = Object.create(null);
 let instantiated_assets_count = 0;
 let downloded_assets_count = 0;
@@ -248,6 +250,10 @@ function mono_wasm_pre_init_essential(): void {
 
     // init_polyfills() is already called from export.ts
     init_crypto();
+    init_c_exports();
+    cwraps_internal(INTERNAL);
+    cwraps_mono_api(MONO);
+    cwraps_binding_api(BINDING);
 
     Module.removeRunDependency("mono_wasm_pre_init_essential");
 }
@@ -594,49 +600,11 @@ export function bindings_init(): void {
         runtimeHelpers._class_uint32 = find_corlib_class("System", "UInt32");
         runtimeHelpers._class_double = find_corlib_class("System", "Double");
         runtimeHelpers._class_boolean = find_corlib_class("System", "Boolean");
-        runtimeHelpers.bind_runtime_method = bind_runtime_method;
 
-        const bindingAssembly = INTERNAL.BINDING_ASM;
-        const binding_fqn_asm = bindingAssembly.substring(bindingAssembly.indexOf("[") + 1, bindingAssembly.indexOf("]")).trim();
-        const binding_fqn_class = bindingAssembly.substring(bindingAssembly.indexOf("]") + 1).trim();
-
-        const binding_module = cwraps.mono_wasm_assembly_load(binding_fqn_asm);
-        if (!binding_module)
-            throw "Can't find bindings module assembly: " + binding_fqn_asm;
-
-        if (binding_fqn_class && binding_fqn_class.length) {
-            runtimeHelpers.runtime_interop_exports_classname = binding_fqn_class;
-            if (binding_fqn_class.indexOf(".") != -1) {
-                const idx = binding_fqn_class.lastIndexOf(".");
-                runtimeHelpers.runtime_interop_namespace = binding_fqn_class.substring(0, idx);
-                runtimeHelpers.runtime_interop_exports_classname = binding_fqn_class.substring(idx + 1);
-            }
-        }
-
-        runtimeHelpers.runtime_interop_exports_class = cwraps.mono_wasm_assembly_find_class(binding_module, runtimeHelpers.runtime_interop_namespace, runtimeHelpers.runtime_interop_exports_classname);
-        if (!runtimeHelpers.runtime_interop_exports_class)
-            throw "Can't find " + binding_fqn_class + " class";
-
-        runtimeHelpers.get_call_sig_ref = get_method("GetCallSignatureRef");
-        if (!runtimeHelpers.get_call_sig_ref)
-            throw "Can't find GetCallSignatureRef method";
-
-        runtimeHelpers.complete_task_method = get_method("CompleteTask");
-        if (!runtimeHelpers.complete_task_method)
-            throw "Can't find CompleteTask method";
-
-        runtimeHelpers.create_task_method = get_method("CreateTaskCallback");
-        if (!runtimeHelpers.create_task_method)
-            throw "Can't find CreateTaskCallback method";
-
-        runtimeHelpers.call_delegate = get_method("CallDelegate");
-        if (!runtimeHelpers.call_delegate)
-            throw "Can't find CallDelegate method";
-
+        init_managed_exports();
+        init_legacy_exports();
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();
-
-        _create_primitive_converters();
 
         runtimeHelpers._box_root = mono_wasm_new_root<MonoObject>();
         runtimeHelpers._null_root = mono_wasm_new_root<MonoObject>();

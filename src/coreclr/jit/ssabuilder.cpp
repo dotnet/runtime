@@ -1396,7 +1396,7 @@ void SsaBuilder::RenameVariables()
     }
 
     // Initialize the memory ssa numbers for unreachable blocks. ValueNum expects
-    // memory ssa numbers to have some intitial value.
+    // memory ssa numbers to have some initial value.
     for (BasicBlock* const block : m_pCompiler->Blocks())
     {
         if (block->bbIDom == nullptr)

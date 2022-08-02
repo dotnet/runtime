@@ -255,6 +255,7 @@ namespace Internal.ReadyToRunConstants
         GenericGcTlsBase            = 0x66,
         GenericNonGcTlsBase         = 0x67,
         VirtualFuncPtr              = 0x68,
+        IsInstanceOfException       = 0x69,
 
         // Long mul/div/shift ops
         LMul                        = 0xC0,

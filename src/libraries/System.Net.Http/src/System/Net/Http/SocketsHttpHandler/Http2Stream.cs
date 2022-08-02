@@ -45,6 +45,7 @@ namespace System.Net.Http
             private StreamCompletionState _requestCompletionState;
             private StreamCompletionState _responseCompletionState;
             private ResponseProtocolState _responseProtocolState;
+            private bool _responseHeadersReceived;
 
             // If this is not null, then we have received a reset from the server
             // (i.e. RST_STREAM or general IO error processing the connection)
@@ -776,6 +777,7 @@ namespace System.Net.Http
 
                         case ResponseProtocolState.ExpectingHeaders:
                             _responseProtocolState = endStream ? ResponseProtocolState.Complete : ResponseProtocolState.ExpectingData;
+                            _responseHeadersReceived = true;
                             break;
 
                         case ResponseProtocolState.ExpectingTrailingHeaders:
@@ -989,24 +991,16 @@ namespace System.Net.Http
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
-                    CheckResponseBodyState();
-
-                    if (_responseProtocolState == ResponseProtocolState.ExpectingHeaders || _responseProtocolState == ResponseProtocolState.ExpectingIgnoredHeaders || _responseProtocolState == ResponseProtocolState.ExpectingStatus)
+                    if (!_responseHeadersReceived)
                     {
+                        CheckResponseBodyState();
                         Debug.Assert(!_hasWaiter);
                         _hasWaiter = true;
                         _waitSource.Reset();
                         return (true, false);
                     }
-                    else if (_responseProtocolState == ResponseProtocolState.ExpectingData || _responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
-                    {
-                        return (false, false);
-                    }
-                    else
-                    {
-                        Debug.Assert(_responseProtocolState == ResponseProtocolState.Complete);
-                        return (false, _responseBuffer.IsEmpty);
-                    }
+
+                    return (false, _responseProtocolState == ResponseProtocolState.Complete && _responseBuffer.IsEmpty);
                 }
             }
 

@@ -10,9 +10,10 @@ import {
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
     get_arg_b8, get_arg_date, get_arg_length, set_js_handle, get_arg, set_arg_type,
     get_signature_arg2_type, get_signature_arg1_type, get_signature_type, cs_to_js_marshalers, js_to_cs_marshalers,
-    get_signature_res_type, JavaScriptMarshalerArgSize, set_gc_handle, is_args_exception, get_arg_u16, array_element_size, get_string_root, ArraySegment, Span, MemoryViewType, get_signature_arg3_type, MarshalerType, get_arg_i64_big, get_arg_intptr, get_arg_element_type
+    get_signature_res_type, get_arg_u16, array_element_size, get_string_root,
+    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, MarshalerType, get_arg_i64_big, get_arg_intptr, get_arg_element_type
 } from "./marshal";
-import { conv_string, conv_string_root } from "./strings";
+import { conv_string_root } from "./strings";
 import { mono_assert, JSHandleNull, GCHandleNull } from "./types";
 import { TypedArray } from "./types/emscripten";
 
@@ -239,48 +240,14 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, 
         return null;
     }
 
-    const anyModule = Module as any;
     const gc_handle = get_arg_gc_handle(arg);
     let result = _lookup_js_owned_object(gc_handle);
     if (result === null || result === undefined) {
         // this will create new Function for the C# delegate
-        result = (arg1_js: any, arg2_js: any, arg3_js: any) => {
-
-            const sp = anyModule.stackSave();
-            try {
-                const args = anyModule.stackAlloc(JavaScriptMarshalerArgSize * 5);
-                const exc = get_arg(args, 0);
-                set_arg_type(exc, MarshalerType.None);
-                const res = get_arg(args, 1);
-                set_arg_type(res, MarshalerType.None);
-                set_gc_handle(res, <any>gc_handle);
-                const arg1 = get_arg(args, 2);
-                const arg2 = get_arg(args, 3);
-                const arg3 = get_arg(args, 4);
-
-                if (arg1_converter) {
-                    arg1_converter(arg1, arg1_js);
-                }
-                if (arg2_converter) {
-                    arg2_converter(arg2, arg2_js);
-                }
-                if (arg3_converter) {
-                    arg3_converter(arg3, arg3_js);
-                }
-
-                const fail = cwraps.mono_wasm_invoke_method_bound(runtimeHelpers.call_delegate, args);
-                if (fail) throw new Error("ERR23: Unexpected error: " + conv_string(fail));
-                if (is_args_exception(args)) throw marshal_exception_to_js(exc);
-
-                if (res_converter) {
-                    return res_converter(res);
-                }
-
-            } finally {
-                anyModule.stackRestore(sp);
-            }
+        result = (arg1_js: any, arg2_js: any, arg3_js: any): any => {
+            // arg numbers are shifted by one, the real first is a gc handle of the callback
+            return runtimeHelpers.javaScriptExports._call_delegate(gc_handle, arg1_js, arg2_js, arg3_js, res_converter, arg1_converter, arg2_converter, arg3_converter);
         };
-
         setup_managed_proxy(result, gc_handle);
     }
 

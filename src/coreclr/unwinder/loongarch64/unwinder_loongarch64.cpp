@@ -642,7 +642,7 @@ Return Value:
     ULONG UnwindWords;
 
     //
-    // Unless a special frame is enountered, assume that any unwinding
+    // Unless a special frame is encountered, assume that any unwinding
     // will return us to the return address of a call and set the flag
     // appropriately (it will be cleared again if the special cases apply).
     //

@@ -4603,7 +4603,7 @@ inline void LclVarDsc::setLvRefCnt(unsigned short newValue, RefCountState state)
 }
 
 //------------------------------------------------------------------------------
-// lvRefCntWtd: access wighted reference count for this local var
+// lvRefCntWtd: access weighted reference count for this local var
 //
 // Arguments:
 //    state: the requestor's expected ref count state; defaults to RCS_NORMAL
@@ -4702,6 +4702,10 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
     else if (opts.IsReversePInvoke())
     {
         whyNot = "OSR can't handle reverse pinvoke";
+    }
+    else if (!info.compIsStatic && !lvaIsOriginalThisReadOnly())
+    {
+        whyNot = "OSR can't handle modifiable this";
     }
 #else
     whyNot = "OSR feature not defined in build";
