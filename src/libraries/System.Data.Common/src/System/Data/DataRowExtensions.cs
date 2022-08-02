@@ -10,6 +10,8 @@ namespace System.Data
     /// </summary>
     public static class DataRowExtensions
     {
+        internal const string UnboxDynamicCodeMessage = "Native code for this instance might be available at runtime since it can be a value type.";
+
         /// <summary>
         /// This method provides access to the values in each of the columns in a given row.
         /// This method makes casts unnecessary when accessing columns.
@@ -19,6 +21,7 @@ namespace System.Data
         /// <param name="row">The input DataRow</param>
         /// <param name="columnName">The input column name specifying which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
+        [RequiresDynamicCode(UnboxDynamicCodeMessage)]
         public static T? Field<T>(this DataRow row, string columnName)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
@@ -34,6 +37,7 @@ namespace System.Data
         /// <param name="row">The input DataRow</param>
         /// <param name="column">The input DataColumn specifying which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
+        [RequiresDynamicCode(UnboxDynamicCodeMessage)]
         public static T? Field<T>(this DataRow row, DataColumn column)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
@@ -49,6 +53,7 @@ namespace System.Data
         /// <param name="row">The input DataRow</param>
         /// <param name="columnIndex">The input ordinal specifying which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
+        [RequiresDynamicCode(UnboxDynamicCodeMessage)]
         public static T? Field<T>(this DataRow row, int columnIndex)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
@@ -65,6 +70,7 @@ namespace System.Data
         /// <param name="columnIndex">The input ordinal specifying which row value to retrieve.</param>
         /// <param name="version">The DataRow version for which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
+        [RequiresDynamicCode(UnboxDynamicCodeMessage)]
         public static T? Field<T>(this DataRow row, int columnIndex, DataRowVersion version)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
@@ -81,6 +87,7 @@ namespace System.Data
         /// <param name="columnName">The input column name specifying which row value to retrieve.</param>
         /// <param name="version">The DataRow version for which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
+        [RequiresDynamicCode(UnboxDynamicCodeMessage)]
         public static T? Field<T>(this DataRow row, string columnName, DataRowVersion version)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
@@ -97,6 +104,7 @@ namespace System.Data
         /// <param name="column">The input DataColumn specifying which row value to retrieve.</param>
         /// <param name="version">The DataRow version for which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns>
+        [RequiresDynamicCode(UnboxDynamicCodeMessage)]
         public static T? Field<T>(this DataRow row, DataColumn column, DataRowVersion version)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
@@ -141,8 +149,11 @@ namespace System.Data
 
         private static class UnboxT<T>
         {
+            [UnconditionalSuppressMessage("AOT analysis", "IL3050:RequiresDynamicCode",
+                Justification = "Cannot annotate a field, annotating callers instead")]
             internal static readonly Converter<object, T?> s_unbox = Create();
 
+            [RequiresDynamicCode(UnboxDynamicCodeMessage)]
             private static Converter<object, T?> Create()
             {
                 if (typeof(T).IsValueType)
