@@ -11,8 +11,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public partial class GetComInterfaceForObjectTests
     {
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetComInterfaceForObject_GenericWithValidClass_ReturnsExpected()
         {
             var o = new ClassWithInterface();
@@ -27,8 +26,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetComInterfaceForObject_GenericWithValidStruct_ReturnsExpected()
         {
             var o = new StructWithInterface();
@@ -43,8 +41,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetComInterfaceForObject_NonGenericWithValidClass_ReturnsExpected()
         {
             var o = new ClassWithInterface();
@@ -59,8 +56,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetComInterfaceForObject_NonGenericWithValidStruct_ReturnsExpected()
         {
             var o = new StructWithInterface();
@@ -75,12 +71,11 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [InlineData(CustomQueryInterfaceMode.Allow)]
         [InlineData(CustomQueryInterfaceMode.Ignore)]
         [InlineData(CustomQueryInterfaceMode.Allow + 1)]
         [InlineData(CustomQueryInterfaceMode.Ignore - 1)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetComInterfaceForObject_NonGenericCustomQueryInterfaceModeWithValidClass_ReturnsExpected(CustomQueryInterfaceMode mode)
         {
             var o = new ClassWithInterface();
@@ -95,12 +90,11 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [InlineData(CustomQueryInterfaceMode.Allow)]
         [InlineData(CustomQueryInterfaceMode.Ignore)]
         [InlineData(CustomQueryInterfaceMode.Allow + 1)]
         [InlineData(CustomQueryInterfaceMode.Ignore - 1)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetComInterfaceForObject_NonGenericCustomQueryInterfaceModeWithValidStruct_ReturnsExpected(CustomQueryInterfaceMode mode)
         {
             var o = new StructWithInterface();
@@ -127,8 +121,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetComInterfaceForObject<int, int>(1));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetComInterfaceForObject_NullObject_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("o", () => Marshal.GetComInterfaceForObject(null, typeof(INonGenericInterface)));
@@ -136,8 +129,7 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentNullException>("o", () => Marshal.GetComInterfaceForObject<string, string>(null));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetComInterfaceForObject_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("T", () => Marshal.GetComInterfaceForObject(new object(), null));
@@ -178,9 +170,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { collectibleType };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetComInterfaceForObject_InvalidType_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetComInterfaceForObject_InvalidType_ThrowsArgumentException(Type type)
         {
             AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetComInterfaceForObject(new object(), type));
@@ -193,9 +184,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new GenericStruct<string>() };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetComInterfaceForObject_InvalidObject_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetComInterfaceForObject_InvalidObject_ThrowsArgumentException(object o)
         {
             AssertExtensions.Throws<ArgumentException>("o", () => Marshal.GetComInterfaceForObject(o, typeof(INonGenericInterface)));
@@ -203,8 +193,7 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>("o", () => Marshal.GetComInterfaceForObject<object, INonGenericInterface>(o));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetTypedObjectForIUnknown_UncastableType_ThrowsInvalidCastException()
         {
             Assert.Throws<InvalidCastException>(() => Marshal.GetComInterfaceForObject(new object(), typeof(INonGenericInterface)));

@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(ManagedClassWithComVisibleTrue), true };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(IsTypeVisibleFromCom_Windows_TestData))]
         public void IsTypeVisibleFromCom_Windows_ReturnsExpected(Type value, bool expected)
         {

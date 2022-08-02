@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.Tests
             VerifyDelegate(functionDelegate, targetMethod);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GetDelegateForFunctionPointer_CollectibleType_ReturnsExpected()
         {
             MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
@@ -132,7 +132,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(GenericDelegate<string>) };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(GetDelegateForFunctionPointer_InvalidType_TestData))]
         public void GetDelegateForFunctionPointer_InvalidType_ThrowsArgumentException(Type t)
         {

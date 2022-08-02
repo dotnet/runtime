@@ -13,8 +13,7 @@ namespace System.Runtime.InteropServices.Tests
         private const string TestProgID = "LargeInteger";
         private const string TestServerName = "____NonExistingServer____";
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetTypeFromCLSID_NoSuchCLSIDExists_ReturnsExpected()
         {
             Type type = Marshal.GetTypeFromCLSID(Guid.Empty);
@@ -27,8 +26,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<COMException>(() => Activator.CreateInstance(type));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetTypeFromCLSID_CLSIDExists_ReturnsExpected()
         {
             Type type = Marshal.GetTypeFromCLSID(TestCLSID);
@@ -46,8 +44,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.NotNull(Activator.CreateInstance(type));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetTypeFromCLSID_CLSIDExists_Server_ReturnsExpected()
         {
             Type type = Type.GetTypeFromCLSID(TestCLSID, server: TestServerName, throwOnError: true);

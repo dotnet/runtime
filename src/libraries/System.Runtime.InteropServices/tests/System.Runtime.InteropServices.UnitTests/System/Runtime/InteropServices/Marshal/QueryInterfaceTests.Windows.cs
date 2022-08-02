@@ -42,7 +42,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new IUnknownComObject(), IID_IDISPATCH };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(QueryInterface_ValidComObjectInterface_TestData))]
         public void QueryInterface_ValidComObjectInterface_Success(object o, string iidString)
         {
@@ -98,7 +98,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new AutoDualComObjectEmpty(), IID_CUSTOMINTERFACE };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(QueryInterface_NoSuchComObjectInterface_TestData))]
         public void QueryInterface_NoSuchComObjectInterface_Success(object o, string iidString)
         {

@@ -87,7 +87,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(int[]), null };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/mono/mono/issues/15087", TestRuntimes.Mono)]
         [MemberData(nameof(SizeOf_InvalidType_TestData))]
         public void SizeOf_InvalidType_ThrowsArgumentException(Type type, string paramName)

@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { collectibleType };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(GenerateGuidForType_Valid_TestData))]
         public void GenerateGuidForType_ValidType_ReturnsExpected(Type type)
         {
@@ -72,7 +72,7 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentNullException>("type", () => Marshal.GenerateGuidForType(null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GenerateGuidForType_NotRuntimeType_ThrowsArgumentException()
         {
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.Run);

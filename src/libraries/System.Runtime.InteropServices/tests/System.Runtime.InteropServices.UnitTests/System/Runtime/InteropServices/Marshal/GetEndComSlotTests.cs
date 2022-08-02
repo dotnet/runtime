@@ -18,15 +18,13 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetEndComSlot(null));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetEndComSlot_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>(null, () => Marshal.GetEndComSlot(null));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetEndComSlot_NotRuntimeType_ThrowsArgumentException()
         {
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.Run);
@@ -41,9 +39,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(GenericClass<>).GetTypeInfo().GenericTypeParameters[0] };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetStartComSlot_InvalidGenericType_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetEndComSlot_InvalidGenericType_ThrowsArgumentNullException(Type type)
         {
             AssertExtensions.Throws<ArgumentNullException>(null, () => Marshal.GetEndComSlot(type));
@@ -70,9 +67,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { collectibleType };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(GetStartComSlot_NotComVisibleType_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetEndComSlot_NotComVisibleType_ThrowsArgumentException(Type type)
         {
             AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetEndComSlot(type));
