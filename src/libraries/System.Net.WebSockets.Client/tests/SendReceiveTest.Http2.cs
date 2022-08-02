@@ -15,7 +15,7 @@ using static System.Net.Http.Functional.Tests.TestHelper;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public abstract class SendReceiveTest_Http2 : ClientWebSocketTestBase
+    public class SendReceiveTest_Http2 : ClientWebSocketTestBase
     {
         public SendReceiveTest_Http2(ITestOutputHelper output) : base(output) { }
 
