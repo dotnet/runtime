@@ -181,7 +181,7 @@ namespace System.Reflection
         public override bool IsCollectible => m_declaringType.IsCollectible;
 
         public override bool Equals(object? obj) =>
-            obj == (object)this ||
+            object.ReferenceEquals(this, obj) ||
             (MetadataUpdater.IsSupported && CacheEquals(obj));
 
         public override int GetHashCode() => MetadataUpdater.IsSupported ?

@@ -201,8 +201,8 @@ namespace System.Reflection
                 return true;
             }
 
-            return obj == (object)this ||
-                (MetadataUpdater.IsSupported &&
+            return object.ReferenceEquals(this, obj) ||
+                   (MetadataUpdater.IsSupported &&
                     obj is RuntimeMethodInfo m &&
                     m.MetadataToken == MetadataToken &&
                     m_declaringType.Equals(m.m_declaringType));
