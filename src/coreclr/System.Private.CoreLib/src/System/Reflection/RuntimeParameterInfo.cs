@@ -498,14 +498,14 @@ namespace System.Reflection
         }
 
         public override bool Equals(object? obj) =>
-            object.ReferenceEquals(this, obj) ||
+            ReferenceEquals(this, obj) ||
                 (MetadataUpdater.IsSupported &&
                     obj is RuntimeParameterInfo pi &&
                     m_tkParamDef == pi.m_tkParamDef &&
-                    DefiningMethod.DeclaringType!.Equals(pi.DefiningMethod.DeclaringType));
+                    ReferenceEquals(DefiningMethod.DeclaringType, pi.DefiningMethod.DeclaringType));
 
         public override int GetHashCode() => MetadataUpdater.IsSupported ?
-            HashCode.Combine(m_tkParamDef.GetHashCode(), DefiningMethod.DeclaringType!.GetHashCode()) : base.GetHashCode();
+            HashCode.Combine(m_tkParamDef.GetHashCode(), DefiningMethod.DeclaringType?.GetHashCode()) : base.GetHashCode();
         #endregion
 
         #region ICustomAttributeProvider

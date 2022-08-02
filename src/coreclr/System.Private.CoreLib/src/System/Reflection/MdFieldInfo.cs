@@ -33,7 +33,7 @@ namespace System.Reflection
             return
                 o is MdFieldInfo m &&
                 m.m_tkField == m_tkField &&
-                m_declaringType.Equals(m.m_declaringType);
+                ReferenceEquals(m_declaringType, m.m_declaringType);
         }
         #endregion
 

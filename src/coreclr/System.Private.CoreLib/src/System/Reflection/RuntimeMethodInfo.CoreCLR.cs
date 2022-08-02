@@ -162,51 +162,7 @@ namespace System.Reflection
 
         public override bool Equals(object? obj)
         {
-            if (IsGenericMethod)
-            {
-                // We cannot do simple object identity comparisons for generic methods.
-                // Equals will be called in CerHashTable when RuntimeType+RuntimeTypeCache.GetGenericMethodInfo()
-                // retrieve items from and insert items into s_methodInstantiations which is a CerHashtable.
-
-                RuntimeMethodInfo? mi = obj as RuntimeMethodInfo;
-
-                if (mi == null || !mi.IsGenericMethod)
-                    return false;
-
-                // now we know that both operands are generic methods
-
-                IRuntimeMethodInfo handle1 = RuntimeMethodHandle.StripMethodInstantiation(this);
-                IRuntimeMethodInfo handle2 = RuntimeMethodHandle.StripMethodInstantiation(mi);
-                if (handle1.Value.Value != handle2.Value.Value)
-                    return false;
-
-                Type[] lhs = GetGenericArguments();
-                Type[] rhs = mi.GetGenericArguments();
-
-                if (lhs.Length != rhs.Length)
-                    return false;
-
-                for (int i = 0; i < lhs.Length; i++)
-                {
-                    if (lhs[i] != rhs[i])
-                        return false;
-                }
-
-                if (DeclaringType != mi.DeclaringType)
-                    return false;
-
-                if (ReflectedType != mi.ReflectedType)
-                    return false;
-
-                return true;
-            }
-
-            return object.ReferenceEquals(this, obj) ||
-                   (MetadataUpdater.IsSupported &&
-                    obj is RuntimeMethodInfo m &&
-                    m.MetadataToken == MetadataToken &&
-                    m_declaringType.Equals(m.m_declaringType));
-
+            return obj is RuntimeMethodInfo m && m_handle == m.m_handle;
         }
         #endregion
 

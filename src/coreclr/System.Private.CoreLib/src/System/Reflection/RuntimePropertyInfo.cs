@@ -56,7 +56,7 @@ namespace System.Reflection
             return
                 o is RuntimePropertyInfo m &&
                 m.m_token == m_token &&
-                m_declaringType.Equals(m.m_declaringType);
+                ReferenceEquals(m_declaringType, m.m_declaringType);
         }
 
         internal Signature Signature
@@ -181,7 +181,7 @@ namespace System.Reflection
         public override bool IsCollectible => m_declaringType.IsCollectible;
 
         public override bool Equals(object? obj) =>
-            object.ReferenceEquals(this, obj) ||
+            ReferenceEquals(this, obj) ||
             (MetadataUpdater.IsSupported && CacheEquals(obj));
 
         public override int GetHashCode() => MetadataUpdater.IsSupported ?
