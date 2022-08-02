@@ -2182,7 +2182,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     // about the possible values or types.
     //
     // For inlinees we do this over in impInlineFetchLocal and
-    // impInlineFetchArg (here args are included as we somtimes get
+    // impInlineFetchArg (here args are included as we sometimes get
     // new information about the types of inlinee args).
     if (!isInlining)
     {
@@ -2210,7 +2210,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 // Notes:
 //    Modifies lvaArg0Var to refer to a temp if the value of 'this' can
 //    change. The original this (info.compThisArg) then remains
-//    unmodified in the method.  fgAddInternal is reponsible for
+//    unmodified in the method.  fgAddInternal is responsible for
 //    adding the code to copy the initial this into the temp.
 
 void Compiler::fgAdjustForAddressExposedOrWrittenThis()
@@ -2692,7 +2692,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
             case CEE_VOLATILE:
             case CEE_UNALIGNED:
                 // fgFindJumpTargets should have ruled out this possibility
-                //   (i.e. a prefix opcodes as last intruction in a block)
+                //   (i.e. a prefix opcodes as last instruction in a block)
                 noway_assert(codeAddr < codeEndp);
 
                 if (jumpTarget->bitVectTest((UINT)(codeAddr - codeBegp)))

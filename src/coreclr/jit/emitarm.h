@@ -353,7 +353,7 @@ inline bool emitIsCondJump(instrDesc* jmp)
 
 /*****************************************************************************
  *
- *  Given an instrDesc, return true if it's a comapre and jump.
+ *  Given an instrDesc, return true if it's a compare and jump.
  */
 
 inline bool emitIsCmpJump(instrDesc* jmp)

@@ -2141,7 +2141,7 @@ VarToRegMap LinearScan::setInVarToRegMap(unsigned int bbNum, VarToRegMap srcVarT
 //    that is no longer necessary, and this method is simply retained as a check.
 //    The exception to the check-only behavior is when LSRA_EXTEND_LIFETIMES if set via
 //    COMPlus_JitStressRegs. In that case, this method is required, because even though
-//    the RefPositions will not be marked lastUse in that case, we still need to correclty
+//    the RefPositions will not be marked lastUse in that case, we still need to correctly
 //    mark the last uses on the tree nodes, which is done by this method.
 //
 #ifdef DEBUG
@@ -2934,7 +2934,7 @@ void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
     // For a double register, we has following four cases.
     // Case 1: doubleRegRecLo is assigned to TYP_DOUBLE interval
     // Case 2: doubleRegRecLo and doubleRegRecHi are assigned to different TYP_FLOAT intervals
-    // Case 3: doubelRegRecLo is assgined to TYP_FLOAT interval and doubleRegRecHi is nullptr
+    // Case 3: doubleRegRecLo is assigned to TYP_FLOAT interval and doubleRegRecHi is nullptr
     // Case 4: doubleRegRecordLo is nullptr, and doubleRegRecordHi is assigned to a TYP_FLOAT interval
     if (doubleRegRecordLo->assignedInterval != nullptr)
     {
@@ -2946,7 +2946,7 @@ void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
         else
         {
             // Case 2: doubleRegRecLo and doubleRegRecHi are assigned to different TYP_FLOAT intervals
-            // Case 3: doubelRegRecLo is assgined to TYP_FLOAT interval and doubleRegRecHi is nullptr
+            // Case 3: doubleRegRecLo is assigned to TYP_FLOAT interval and doubleRegRecHi is nullptr
             assert(doubleRegRecordLo->assignedInterval->registerType == TYP_FLOAT);
             unassignPhysReg(doubleRegRecordLo, doubleRegRecordLo->assignedInterval->recentRefPosition);
 
@@ -3697,7 +3697,7 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
             // The importer will assign a GC type to the rhs of an assignment if the lhs type is a GC type,
             // even if the rhs is not. See the CEE_STLOC* case in impImportBlockCode(). As a result,
             // we can have a 'GT_LCL_VAR' node with a GC type, when the lclVar itself is an integer type.
-            // The emitter will mark this register as holding a GC type. Therfore we must spill this value.
+            // The emitter will mark this register as holding a GC type. Therefore, we must spill this value.
             // This was exposed on Arm32 with EH write-thru.
             if ((assignedInterval->recentRefPosition != nullptr) &&
                 (assignedInterval->recentRefPosition->treeNode != nullptr))
@@ -7959,7 +7959,7 @@ void LinearScan::resolveEdges()
 
     // The resolutionCandidateVars set was initialized with all the lclVars that are live-in to
     // any block. We now intersect that set with any lclVars that ever spilled or split.
-    // If there are no candidates for resoultion, simply return.
+    // If there are no candidates for resolution, simply return.
 
     VarSetOps::IntersectionD(compiler, resolutionCandidateVars, splitOrSpilledVars);
     if (VarSetOps::IsEmpty(compiler, resolutionCandidateVars))
@@ -9004,7 +9004,7 @@ static const char* getRefTypeShortName(RefType refType)
 }
 
 //------------------------------------------------------------------------
-// getScoreName: Returns the texual name of register score
+// getScoreName: Returns the textual name of register score
 const char* LinearScan::getScoreName(RegisterScore score)
 {
     switch (score)

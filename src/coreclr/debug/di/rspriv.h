@@ -1561,7 +1561,7 @@ _____Neuter_Status_Already_Marked = 0; \
 // 1) it means that we have no synchronization (can't take the Stop-Go lock)
 // 2) none of our backpointers are usable (they may be nulled out at anytime by another thread).
 //    - this also means we absolutely can't send IPC events (since that requires a CordbProcess)
-// 3) The only safe data are blittalbe embedded fields (eg, a pid or stack range)
+// 3) The only safe data are blittable embedded fields (eg, a pid or stack range)
 //
 // Any usage of this macro should clearly specify why this is safe.
 #define OK_IF_NEUTERED(pThis) \
@@ -11203,7 +11203,7 @@ public:
     void NotifyTakeLock(RSLock * pLock);
     void NotifyReleaseLock(RSLock * pLock);
 
-    // Used to map other resources (like thread access) into the lock hierachy.
+    // Used to map other resources (like thread access) into the lock hierarchy.
     // Note this only effects lock leveling checks and doesn't effect HoldsAnyLock().
     void TakeVirtualLock(RSLock::ERSLockLevel level);
     void ReleaseVirtualLock(RSLock::ERSLockLevel level);

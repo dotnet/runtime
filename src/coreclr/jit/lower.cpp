@@ -1832,7 +1832,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     if (!putargs.Empty())
     {
         // Get the earliest operand of the first PUTARG_STK node. We will make
-        // the requred copies of args before this node.
+        // the required copies of args before this node.
         bool     unused;
         GenTree* insertionPoint = BlockRange().GetTreeRange(putargs.Bottom(), &unused).FirstNode();
         // Insert GT_START_NONGC node before we evaluate the PUTARG_STK args.
@@ -2772,7 +2772,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             // doing so would produce incorrect results (e.g. RSZ, RSH).
             //
             // The below list of handled opers is conservative but enough to handle the most common
-            // situations. In particular this include CALL, sometimes the JIT unnecessarilly widens
+            // situations. In particular this include CALL, sometimes the JIT unnecessarily widens
             // the result of bool returning calls.
             //
             bool removeCast =
@@ -3620,7 +3620,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
     switch (retVal->OperGet())
     {
         case GT_CNS_INT:
-            // When we promote LCL_VAR single fields into return we could have all type of constans here.
+            // When we promote LCL_VAR single fields into return, we could have all types of constants here.
             if (varTypeUsesFloatReg(nativeReturnType))
             {
                 // ZeroObj assertion propagation can create INT zeros for DOUBLE returns.
@@ -3738,7 +3738,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerCallStruct: Lowers a call node that returns a stuct.
+// LowerCallStruct: Lowers a call node that returns a struct.
 //
 // Arguments:
 //     call - The call node to lower.
@@ -4675,8 +4675,8 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
     ContainCheckReturnTrap(tree->AsOp());
 
-    // Pop the frame if necessary. On 32-bit targets this only happens in the method epilog; on 64-bit targets thi
-    // happens after every PInvoke call in non-stubs. 32-bit targets instead mark the frame as inactive.
+    // Pop the frame if necessary. On 32-bit targets this only happens in the method epilog; on 64-bit targets
+    // this happens after every PInvoke call in non-stubs. 32-bit targets instead mark the frame as inactive.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
@@ -4749,7 +4749,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
     //     if (g_TrapReturningThreads)
     //         RareDisablePreemptiveGC();
     //
-    // Transistions using helpers:
+    // Transitions using helpers:
     //
     //     OpaqueFrame opaqueFrame;
     //
@@ -5657,7 +5657,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
 #ifdef TARGET_XARCH
         // force input transformation to RAX because the following MULHI will kill RDX:RAX anyway and LSRA often causes
-        // reduntant copies otherwise
+        // redundant copies otherwise
         if (firstNode && !simpleMul)
         {
             adjustedDividend->SetRegNum(REG_RAX);

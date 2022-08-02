@@ -858,7 +858,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     // push ebp
     // mov ebp, esp
     // [if there are register arguments in ecx or edx, push them]
-    // ecx := addr of InterpretMethodInfo for the method to be intepreted.
+    // ecx := addr of InterpretMethodInfo for the method to be interpreted.
     // edx = esp  /*pointer to argument structure*/
     // call to Interpreter::InterpretMethod
     // [if we pushed register arguments, increment esp by the right amount.]

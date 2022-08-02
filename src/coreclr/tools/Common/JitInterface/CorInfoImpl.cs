@@ -2358,7 +2358,7 @@ namespace Internal.JitInterface
                     // To maintain backward compatibility, we are doing it for reference types only.
                     // We don't do this for interfaces though, as those don't have instance constructors.
                     // For instance methods of types with precise-initialization
-                    // semantics, we can assume that the .ctor triggerred the
+                    // semantics, we can assume that the .ctor triggered the
                     // type initialization.
                     // This does not hold for NULL "this" object. However, the spec does
                     // not require that case to work.
