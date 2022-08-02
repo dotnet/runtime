@@ -198,6 +198,7 @@ declare type MonoConfig = {
     globalization_mode?: GlobalizationMode;
     diagnostic_tracing?: boolean;
     remote_sources?: string[];
+    max_parallel_downloads?: number;
     environment_variables?: {
         [i: string]: string;
     };
