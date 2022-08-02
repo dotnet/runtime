@@ -497,15 +497,6 @@ namespace System.Reflection
                 m_signature.GetCustomModifiers(PositionImpl + 1, false);
         }
 
-        public override bool Equals(object? obj) =>
-            ReferenceEquals(this, obj) ||
-                (MetadataUpdater.IsSupported &&
-                    obj is RuntimeParameterInfo pi &&
-                    m_tkParamDef == pi.m_tkParamDef &&
-                    ReferenceEquals(DefiningMethod.DeclaringType, pi.DefiningMethod.DeclaringType));
-
-        public override int GetHashCode() => MetadataUpdater.IsSupported ?
-            HashCode.Combine(m_tkParamDef.GetHashCode(), DefiningMethod.DeclaringType?.GetHashCode()) : base.GetHashCode();
         #endregion
 
         #region ICustomAttributeProvider
