@@ -1061,7 +1061,7 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 #ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_INTERPRETER
-// Methods of IntepreterFrame.
+// Methods of InterpreterFrame.
 InterpreterFrame::InterpreterFrame(Interpreter* interp)
   : Frame(), m_interp(interp)
 {
@@ -1840,7 +1840,7 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
     else if (!initialInit &&
              (m_Attribs & Frame::FRAME_ATTR_CAPTURE_DEPTH_2) != 0)
     {
-        // explictly told depth
+        // explicitly told depth
         LazyMachState::unwindLazyState(lazy, &unwound, threadId, 2);
     }
     else

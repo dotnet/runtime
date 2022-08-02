@@ -10,6 +10,8 @@ namespace System
         /// <summary>Whether to output ansi color strings.</summary>
         private static volatile int s_emitAnsiColorCodes = -1;
 
+        private static volatile int s_useNet6KeyParser = -1;
+
         /// <summary>Get whether to emit ANSI color codes.</summary>
         public static bool EmitAnsiColorCodes
         {
@@ -47,6 +49,32 @@ namespace System
                 // Store and return the computed answer.
                 s_emitAnsiColorCodes = Convert.ToInt32(enabled);
                 return enabled;
+            }
+        }
+
+        internal static bool UseNet6KeyParser
+        {
+            get
+            {
+                int useNet6KeyParser = s_useNet6KeyParser;
+
+                if (useNet6KeyParser == -1)
+                {
+                    useNet6KeyParser = s_useNet6KeyParser = GetNet6CompatReadKeySetting() ? 1 : 0;
+                }
+
+                return useNet6KeyParser == 1;
+
+                static bool GetNet6CompatReadKeySetting()
+                {
+                    if (AppContext.TryGetSwitch("System.Console.UseNet6CompatReadKey", out bool fileConfig))
+                    {
+                        return fileConfig;
+                    }
+
+                    string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_USENET6COMPATREADKEY");
+                    return envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
+                }
             }
         }
     }

@@ -428,7 +428,7 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
         break;
 
     default:
-        _ASSERTE_ALL_BUILDS(__FILE__, false); // shouldn't get here
+        _ASSERTE_ALL_BUILDS(false); // shouldn't get here
     }
 }
 
@@ -858,7 +858,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     // push ebp
     // mov ebp, esp
     // [if there are register arguments in ecx or edx, push them]
-    // ecx := addr of InterpretMethodInfo for the method to be intepreted.
+    // ecx := addr of InterpretMethodInfo for the method to be interpreted.
     // edx = esp  /*pointer to argument structure*/
     // call to Interpreter::InterpretMethod
     // [if we pushed register arguments, increment esp by the right amount.]
@@ -1095,7 +1095,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                 case CORINFO_TYPE_UNDEF:
                 case CORINFO_TYPE_VOID:
                 case CORINFO_TYPE_VAR:
-                    _ASSERTE_ALL_BUILDS(__FILE__, false);  // Should not happen;
+                    _ASSERTE_ALL_BUILDS(false);  // Should not happen;
                     break;
 
                     // One integer slot arguments:
@@ -1363,7 +1363,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         break;
 
     default:
-        _ASSERTE_ALL_BUILDS(__FILE__, false); // shouldn't get here
+        _ASSERTE_ALL_BUILDS(false); // shouldn't get here
     }
 
     delete[] argPerm;
@@ -8722,7 +8722,7 @@ void Interpreter::Unbox()
                 CorElementType type1 = pMT1->GetInternalCorElementType();
                 CorElementType type2 = pMT2->GetInternalCorElementType();
 
-                // we allow enums and their primitive type to be interchangable
+                // we allow enums and their primitive type to be interchangeable
                 if (type1 == type2)
                 {
                     if ((pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&

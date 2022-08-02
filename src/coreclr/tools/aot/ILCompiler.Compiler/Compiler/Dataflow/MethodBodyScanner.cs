@@ -993,18 +993,7 @@ namespace ILCompiler.Dataflow
             StackSlot valueToStore = PopUnknown(currentStack, 1, methodBody, offset);
             StackSlot destination = PopUnknown(currentStack, 1, methodBody, offset);
 
-            foreach (var uniqueDestination in destination.Value)
-            {
-                if (uniqueDestination is FieldValue fieldDestination)
-                {
-                    HandleStoreField(methodBody, offset, fieldDestination, valueToStore.Value);
-                }
-                else if (uniqueDestination is MethodParameterValue parameterDestination)
-                {
-                    HandleStoreParameter(methodBody, offset, parameterDestination, valueToStore.Value);
-                }
-            }
-
+            StoreInReference(destination.Value, valueToStore.Value, methodBody, offset, locals, curBasicBlock);
         }
 
         /// <summary>
@@ -1236,6 +1225,14 @@ namespace ILCompiler.Dataflow
             SingleValue? newObjValue;
             ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodBody, isNewObj,
                                                              offset, out newObjValue);
+
+            // Multi-dimensional array access is represented as a call to a special Get method on the array (runtime provided method)
+            // We don't track multi-dimensional arrays in any way, so return unknown value.
+            if (calledMethod is ArrayMethod { Kind: ArrayMethodKind.Get or ArrayMethodKind.Address })
+            {
+                currentStack.Push(new StackSlot(UnknownValue.Instance));
+                return;
+            }
 
             var dereferencedMethodParams = new List<MultiValue>();
             foreach (var argument in methodArguments)

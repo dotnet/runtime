@@ -769,7 +769,7 @@ INST2(abs,         "abs",          0,      IF_EN2K,   0x0E20B800,  0x5E20B800)
 
 INST2(cmle,        "cmle",         0,      IF_EN2K,   0x2E209800,  0x7E209800)
                                    //  cmle    Vd,Vn,#0             DV_2M  0Q101110XX100000 100110nnnnnddddd   2E20 9800   Vd,Vn,#0 (vector - with zero)
-                                   //  cmle    Vd,Vn,#0             DV_2L  01111110XX100000 100110nnnnnddddd   7E20 9800   Vd,Vn,#0 (scalar - wtih zero)
+                                   //  cmle    Vd,Vn,#0             DV_2L  01111110XX100000 100110nnnnnddddd   7E20 9800   Vd,Vn,#0 (scalar - with zero)
 
 INST2(cmlt,        "cmlt",         0,      IF_EN2K,   0x0E20A800,  0x5E20A800)
                                    //  cmlt    Vd,Vn,#0             DV_2M  0Q101110XX100000 101010nnnnnddddd   0E20 A800   Vd,Vn,#0 (vector - with zero)

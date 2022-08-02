@@ -111,7 +111,7 @@ namespace System.Net
 
         internal void SetServerTimeout(int[] timeouts, uint minSendBytesPerSecond)
         {
-            ValidateV2Property(); // CheckDispose and initilize HttpListener in the case of app.config timeouts
+            ValidateV2Property(); // CheckDispose and initialize HttpListener in the case of app.config timeouts
 
             Interop.HttpApi.HTTP_TIMEOUT_LIMIT_INFO timeoutinfo = default;
 
@@ -132,7 +132,7 @@ namespace System.Net
 
             SetUrlGroupProperty(
                 Interop.HttpApi.HTTP_SERVER_PROPERTY.HttpServerTimeoutsProperty,
-                infoptr, (uint)Marshal.SizeOf(typeof(Interop.HttpApi.HTTP_TIMEOUT_LIMIT_INFO)));
+                infoptr, (uint)sizeof(Interop.HttpApi.HTTP_TIMEOUT_LIMIT_INFO));
         }
 
         public HttpListenerTimeoutManager TimeoutManager
@@ -310,7 +310,7 @@ namespace System.Net
             IntPtr infoptr = new IntPtr(&info);
 
             SetUrlGroupProperty(Interop.HttpApi.HTTP_SERVER_PROPERTY.HttpServerBindingProperty,
-                infoptr, (uint)Marshal.SizeOf(typeof(Interop.HttpApi.HTTP_BINDING_INFO)));
+                infoptr, (uint)sizeof(Interop.HttpApi.HTTP_BINDING_INFO));
         }
 
         private void DetachRequestQueueFromUrlGroup()
@@ -332,7 +332,7 @@ namespace System.Net
 
             uint statusCode = Interop.HttpApi.HttpSetUrlGroupProperty(_urlGroupId,
                 Interop.HttpApi.HTTP_SERVER_PROPERTY.HttpServerBindingProperty,
-                infoptr, (uint)Marshal.SizeOf(typeof(Interop.HttpApi.HTTP_BINDING_INFO)));
+                infoptr, (uint)sizeof(Interop.HttpApi.HTTP_BINDING_INFO));
 
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
             {

@@ -19,13 +19,13 @@ module.exports = {
     "ignorePatterns": [
         "node_modules/**/*.*",
         "bin/**/*.*",
-        "cjs/*.js",
         "es6/*.js",
     ],
     "rules": {
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/ban-types": "off",
+        "@typescript-eslint/no-loss-of-precision": "off",
         "indent": [
             "error",
             4,

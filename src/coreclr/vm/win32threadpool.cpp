@@ -898,7 +898,7 @@ BOOL ThreadpoolMgr::QueueUserWorkItem(LPTHREAD_START_ROUTINE Function,
     }
     CONTRACTL_END;
 
-    _ASSERTE_ALL_BUILDS(__FILE__, !UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!UsePortableThreadPool());
 
     EnsureInitialized();
 
@@ -1738,7 +1738,7 @@ DWORD WINAPI ThreadpoolMgr::WorkerThreadStart(LPVOID lpArgs)
     }
     CONTRACTL_END;
 
-    _ASSERTE_ALL_BUILDS(__FILE__, !UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!UsePortableThreadPool());
 
     Thread *pThread = NULL;
     DWORD dwSwitchCount = 0;
@@ -2413,7 +2413,7 @@ DWORD WINAPI ThreadpoolMgr::WaitThreadStart(LPVOID lpArgs)
 
     ClrFlsSetThreadType (ThreadType_Wait);
 
-    _ASSERTE_ALL_BUILDS(__FILE__, !UsePortableThreadPool());
+    _ASSERTE_ALL_BUILDS(!UsePortableThreadPool());
 
     ThreadCB* threadCB = (ThreadCB*) lpArgs;
     Thread* pThread = SetupThreadNoThrow();
@@ -3070,7 +3070,7 @@ DWORD WINAPI ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
     }
     CONTRACTL_END;
 
-    _ASSERTE_ALL_BUILDS(__FILE__, !UsePortableThreadPoolForIO());
+    _ASSERTE_ALL_BUILDS(!UsePortableThreadPoolForIO());
 
     DWORD numBytes=0;
     size_t key=0;

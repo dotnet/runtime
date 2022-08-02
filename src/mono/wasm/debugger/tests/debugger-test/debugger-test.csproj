@@ -42,7 +42,7 @@
       <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>debugger-main.js</WasmMainJSPath>
-      <!-- like is used on blazor -->
+      <!-- -1 enabled debugging and disables debug logging. -->
       <WasmDebugLevel Condition="'$(WasmDebugLevel)'==''">-1</WasmDebugLevel>
 
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>

@@ -66,7 +66,7 @@ function Get-Help() {
   Write-Host "  -restore                Restore dependencies."
   Write-Host "  -sign                   Sign build outputs."
   Write-Host "  -test (-t)              Incrementally builds and runs tests."
-  Write-Host "                          Use in conjuction with -testnobuild to only run tests."
+  Write-Host "                          Use in conjunction with -testnobuild to only run tests."
   Write-Host ""
 
   Write-Host "Libraries settings:"
@@ -216,7 +216,7 @@ if ($vs) {
     # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
   }
-  
+
   # Launch Visual Studio with the locally defined environment variables
   ."$vs"
 

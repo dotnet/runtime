@@ -38,9 +38,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(16, HelperMarshal._byteBuffer.Length);
         }
 
-
-
-
         [Fact]
         public static void MarshalStringToCS()
         {
@@ -279,7 +276,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._intValue = 0;
             Utils.InvokeJS(@$"
-                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (200);
             ");
 
@@ -291,7 +288,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._intPtrValue = IntPtr.Zero;
             Utils.InvokeJS(@$"
-                var invoke_int_ptr = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeIntPtr"");
+                var invoke_int_ptr = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeIntPtr"");
                 invoke_int_ptr (42);
             ");
             Assert.Equal(42, (int)HelperMarshal._intPtrValue);
@@ -302,23 +299,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._marshaledIntPtrValue = IntPtr.Zero;
             Utils.InvokeJS(@$"
-                var invokeMarshalIntPtr = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeMarshalIntPtr"");
+                var invokeMarshalIntPtr = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeMarshalIntPtr"");
                 var r = invokeMarshalIntPtr ();
 
                 if (r != 42) throw `Invalid int_ptr value`;
             ");
             Assert.Equal(42, (int)HelperMarshal._marshaledIntPtrValue);
-        }
-
-        [Fact]
-        public static void InvokeStaticMethod()
-        {
-            HelperMarshal._intValue = 0;
-            Utils.InvokeJS(@$"
-                INTERNAL.call_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"", [ 300 ]);
-            ");
-
-            Assert.Equal(300, HelperMarshal._intValue);
         }
 
         [Fact]
@@ -407,6 +393,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(16, HelperMarshal._byteBuffer.Length);
         }
 
+        [Fact]
+        public static void MarshalUri()
+        {
+            HelperMarshal._blobURI = null;
+            Utils.InvokeJS(@"
+                App.call_test_method (""SetBlobAsUri"", [ ""https://dotnet.microsoft.com/en-us/"" ]);
+            ");
+
+            Assert.NotNull(HelperMarshal._blobURI);
+        }
+
         private static void RunMarshalTypedArrayJS(string type)
         {
             Utils.InvokeJS(@"
@@ -425,8 +422,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(115, HelperMarshal._taByte[HelperMarshal._taByte.Length - 1]);
             Assert.Equal("hic sunt dracones", System.Text.Encoding.Default.GetString(HelperMarshal._taByte));
         }
-
-
 
         [Fact]
         public static void TestFunctionSum()
@@ -455,7 +450,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._intValue = 1;
             var ex = Assert.Throws<JSException>(() => Utils.InvokeJS(@$"
-                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int ();
             "));
             Assert.Contains("Value is not an integer: undefined (undefined)", ex.Message);
@@ -467,7 +462,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._intValue = 0;
             Utils.InvokeJS(@$"
-                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (200, 400);
             ");
             Assert.Equal(200, HelperMarshal._intValue);
@@ -479,7 +474,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._intValue = 0;
             // no numbers bigger than 32 bits
             var ex = Assert.Throws<JSException>(() => Utils.InvokeJS(@$"
-                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (Number.MAX_SAFE_INTEGER);
             "));
             Assert.Contains("Overflow: value 9007199254740991 is out of -2147483648 2147483647 range", ex.Message);
@@ -492,7 +487,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._intValue = 0;
             // no floating point rounding
             var ex = Assert.Throws<JSException>(() => Utils.InvokeJS(@$"
-                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (3.14);
             "));
             Assert.Contains("Value is not an integer: 3.14 (number)", ex.Message);
@@ -505,7 +500,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._intValue = 0;
             // no string conversion
             var ex = Assert.Throws<JSException>(() => Utils.InvokeJS(@$"
-                var invoke_int = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
+                var invoke_int = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeInt"");
                 invoke_int (""200"");
             "));
             Assert.Contains("Value is not an integer: 200 (string)", ex.Message);
@@ -517,7 +512,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._uintValue = 0;
             Utils.InvokeJS(@$"
-                var invoke_uint = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeUInt"");
+                var invoke_uint = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeUInt"");
                 invoke_uint (0xFFFFFFFE);
             ");
 
@@ -530,9 +525,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._uintValue = 0;
             HelperMarshal._enumValue = TestEnum.BigValue;
             Utils.InvokeJS(@$"
-                var get_value = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetEnumValue"");
+                var get_value = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetEnumValue"");
                 var e = get_value ();
-                var invoke_uint = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeUInt"");
+                var invoke_uint = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}InvokeUInt"");
                 invoke_uint (e);
             ");
             Assert.Equal((uint)TestEnum.BigValue, HelperMarshal._uintValue);
@@ -543,7 +538,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             HelperMarshal._enumValue = TestEnum.Zero;
             Utils.InvokeJS(@$"
-                var set_enum = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
+                var set_enum = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
                 set_enum (0xFFFFFFFE);
             ");
             Assert.Equal(TestEnum.BigValue, HelperMarshal._enumValue);
@@ -555,7 +550,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._enumValue = TestEnum.Zero;
             var exc = Assert.Throws<JSException>(() =>
                Utils.InvokeJS(@$"
-                    var set_enum = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
+                    var set_enum = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}SetEnumValue"", ""j"");
                     set_enum (""BigValue"");
                 ")
             );
@@ -567,7 +562,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             var exc = Assert.Throws<JSException>(() =>
                Utils.InvokeJS(@$"
-                    var get_u64 = INTERNAL.mono_bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetUInt64"", """");
+                    var get_u64 = BINDING.bind_static_method (""{HelperMarshal.INTEROP_CLASS}GetUInt64"", """");
                     var u64 = get_u64();
                 ")
             );
@@ -679,8 +674,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
             var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:StoreArgumentAndReturnLiteral";
             Utils.InvokeJS(
-                $"var a = INTERNAL.mono_bind_static_method('{fqn}')('test');\r\n" +
-                $"var b = INTERNAL.mono_bind_static_method('{fqn}')(a);\r\n" +
+                $"var a = BINDING.bind_static_method('{fqn}')('test');\r\n" +
+                $"var b = BINDING.bind_static_method('{fqn}')(a);\r\n" +
                 "App.call_test_method ('InvokeString2', [ b ]);"
             );
             Assert.Equal("s: 1 length: 1", HelperMarshal._stringResource);
@@ -721,7 +716,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 @"globalThis.__test_promise_completed = false; " +
                 @"globalThis.__test_promise_resolved = false; " +
                 @"globalThis.__test_promise_failed = false; " +
-                $@"var t = App.call_test_method ('{helperMethodName}', [ {helperMethodArgs} ], 'i'); " +
+                $@"var t = App.call_test_method ('{helperMethodName}', [ {helperMethodArgs} ]); " +
                 "t.then(result => { globalThis.__test_promise_resolved = true; " + resolvedBody + " })" +
                 " .catch(e => { globalThis.__test_promise_failed = true; })" +
                 " .finally(result => { globalThis.__test_promise_completed = true; }); " +
