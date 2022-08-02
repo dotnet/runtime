@@ -18,8 +18,8 @@ commands:
 #    cmake -DCMAKE_BUILD_TYPE=Release .
 #    cmake --build .
 #    ./mono_test_app
-  - ./build.sh -subset libs.tests -test -a x64 -c release -ci -ninja
-  - command: ./src/tests/build.sh x64 release ci
+  - ./build.sh -subset libs.tests -test /p:RunSmokeTestsOnly=true -a x64 -c release -ci -ninja
+  - command: ./src/tests/build.sh x64 release ci -tree:GC -tree:JIT -tree:baseservices -tree:interop -tree:reflection
     retries: 1
   - ./src/tests/run.sh x64 release
   - ./build.sh clr.paltests
