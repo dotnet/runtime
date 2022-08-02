@@ -67,6 +67,7 @@ declare type MonoConfig = {
      * debugLevel < 0 enabled debugging and disables debug logging.
      */
     debugLevel?: number;
+    maxParallelDownloads?: number;
     globalizationMode?: GlobalizationMode;
     diagnosticTracing?: boolean;
     remoteSources?: string[];

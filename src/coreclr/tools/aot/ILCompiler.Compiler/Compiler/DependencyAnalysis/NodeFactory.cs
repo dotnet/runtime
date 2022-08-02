@@ -290,11 +290,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeGVMEntriesNode(type);
             });
 
-            _dynamicInvokeTemplates = new NodeCache<MethodDesc, DynamicInvokeTemplateNode>(method =>
-            {
-                return new DynamicInvokeTemplateNode(method);
-            });
-
             _reflectableMethods = new NodeCache<MethodDesc, ReflectableMethodNode>(method =>
             {
                 return new ReflectableMethodNode(method);
@@ -893,12 +888,6 @@ namespace ILCompiler.DependencyAnalysis
         internal ObjectGetTypeFlowDependenciesNode ObjectGetTypeFlowDependencies(MetadataType type)
         {
             return _objectGetTypeFlowDependencies.GetOrAdd(type);
-        }
-
-        private NodeCache<MethodDesc, DynamicInvokeTemplateNode> _dynamicInvokeTemplates;
-        internal DynamicInvokeTemplateNode DynamicInvokeTemplate(MethodDesc method)
-        {
-            return _dynamicInvokeTemplates.GetOrAdd(method);
         }
 
         private NodeCache<MethodKey, IMethodNode> _shadowConcreteMethods;

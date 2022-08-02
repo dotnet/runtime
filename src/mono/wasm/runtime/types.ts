@@ -72,6 +72,7 @@ export type MonoConfig = {
      * debugLevel < 0 enabled debugging and disables debug logging.
      */
     debugLevel?: number,
+    maxParallelDownloads?: number, // we are throttling parallel downloads in order to avoid net::ERR_INSUFFICIENT_RESOURCES on chrome
     globalizationMode?: GlobalizationMode, // configures the runtime's globalization mode
     diagnosticTracing?: boolean // enables diagnostic log messages during startup
     remoteSources?: string[], // additional search locations for assets. Sources will be checked in sequential order until the asset is found. The string "./" indicates to load from the application directory (as with the files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates that asset loads can be attempted from a remote server. Sources must end with a "/".
@@ -148,6 +149,7 @@ export type RuntimeHelpers = {
     mono_wasm_bindings_is_ready: boolean;
 
     loaded_files: string[];
+    maxParallelDownloads: number;
     config: MonoConfig;
     diagnosticTracing: boolean;
     waitForDebugger?: number;
