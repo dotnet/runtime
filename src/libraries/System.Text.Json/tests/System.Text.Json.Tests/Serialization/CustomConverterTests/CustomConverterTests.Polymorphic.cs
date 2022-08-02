@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -213,6 +214,60 @@ namespace System.Text.Json.Serialization.Tests
                 Customer[] customers = JsonSerializer.Deserialize<Customer[]>(arrayJson, options);
                 Assert.Equal(100, customers[0].CreditLimit);
                 Assert.Equal("C", customers[0].Name);
+            }
+        }
+
+        [Fact]
+        public static void PolymorphicConverter_ShouldWorkInAllContexts()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/46522
+
+            var value = new SampleRepro();
+            string expectedJson = "\"string\"";
+
+            string json = JsonSerializer.Serialize(value);
+            Assert.Equal(expectedJson, json);
+
+            json = JsonSerializer.Serialize(new { Value = value });
+            Assert.Equal($@"{{""Value"":{expectedJson}}}", json);
+
+            json = JsonSerializer.Serialize(new[] { value });
+            Assert.Equal($"[{expectedJson}]", json);
+
+            json = JsonSerializer.Serialize(new Dictionary<string, SampleRepro> { ["key"] = value });
+            Assert.Equal($@"{{""key"":{expectedJson}}}", json);
+        }
+
+        public interface IRepro<T>
+        {
+            T Value { get; }
+        }
+
+        [JsonConverter(typeof(ReproJsonConverter))]
+        public class SampleRepro : IRepro<object>
+        {
+            public object Value => "string";
+        }
+
+        public sealed class ReproJsonConverter : JsonConverter<IRepro<object>>
+        {
+            public override bool CanConvert(Type typeToConvert)
+            {
+                return typeof(IRepro<object>).IsAssignableFrom(typeToConvert);
+            }
+
+            public override IRepro<object> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
+
+            public override void Write(Utf8JsonWriter writer, IRepro<object> value, JsonSerializerOptions options)
+            {
+                if (value is null)
+                {
+                    writer.WriteNullValue();
+                }
+                else
+                {
+                    JsonSerializer.Serialize(writer, value.Value, options);
+                }
             }
         }
     }
