@@ -237,6 +237,8 @@ jobs:
       timeoutInMinutes: 510
     ${{ if eq(parameters.testGroup, 'jitstress-isas-x86') }}:
       timeoutInMinutes: 960
+    ${{ if and( eq(parameters.runtimeFlavor, 'mono'), eq(parameters.runtimeVariant, 'llvmfullaot') }}:
+      timeoutInMinutes: 400
 
     steps:
 
