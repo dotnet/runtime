@@ -122,17 +122,20 @@ namespace System.Runtime.InteropServices.Tests
 
             yield return new object[] { typeof(GenericClass<>).GetTypeInfo().GenericTypeParameters[0] };
 
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.Run);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            yield return new object[] { typeBuilder };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.Run);
+                ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
+                TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
+                yield return new object[] { typeBuilder };
+            }
 
             yield return new object[] { typeof(Delegate) };
             yield return new object[] { typeof(GenericDelegate<>) };
             yield return new object[] { typeof(GenericDelegate<string>) };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [Theory]
         [MemberData(nameof(GetDelegateForFunctionPointer_InvalidType_TestData))]
         public void GetDelegateForFunctionPointer_InvalidType_ThrowsArgumentException(Type t)
         {

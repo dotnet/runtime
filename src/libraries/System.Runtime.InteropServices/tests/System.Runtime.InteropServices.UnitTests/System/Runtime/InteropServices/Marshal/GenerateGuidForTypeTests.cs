@@ -34,14 +34,17 @@ namespace System.Runtime.InteropServices.Tests
 
             yield return new object[] { typeof(ClassWithGuidAttribute) };
 
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type collectibleType = typeBuilder.CreateType();
-            yield return new object[] { collectibleType };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
+                ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
+                TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
+                Type collectibleType = typeBuilder.CreateType();
+                yield return new object[] { collectibleType };
+            }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [Theory]
         [MemberData(nameof(GenerateGuidForType_Valid_TestData))]
         public void GenerateGuidForType_ValidType_ReturnsExpected(Type type)
         {
