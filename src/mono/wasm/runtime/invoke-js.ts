@@ -5,13 +5,13 @@ import { mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle } from "./g
 import { marshal_exception_to_cs, generate_arg_marshal_to_cs } from "./marshal-to-cs";
 import { get_signature_argument_count, JSMarshalerArguments as JSMarshalerArguments, JavaScriptMarshalerArgSize, JSFunctionSignature as JSFunctionSignature, bound_js_function_symbol, JSMarshalerTypeSize, get_sig, JSMarshalerSignatureHeaderSize, get_signature_version, MarshalerType, get_signature_type } from "./marshal";
 import { setI32 } from "./memory";
-import { wrap_error_root } from "./method-calls";
-import { conv_string_root } from "./strings";
+import { conv_string_root, js_string_to_mono_string_root } from "./strings";
 import { mono_assert, JSHandle, MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "./types";
 import { Int32Ptr } from "./types/emscripten";
-import { IMPORTS, INTERNAL, runtimeHelpers } from "./imports";
+import { IMPORTS, INTERNAL, Module, runtimeHelpers } from "./imports";
 import { generate_arg_marshal_to_js } from "./marshal-to-js";
-import { mono_wasm_new_external_root } from "./roots";
+import { mono_wasm_new_external_root, WasmRoot } from "./roots";
+import { mono_wasm_symbolicate_string } from "./debug";
 
 export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_name: MonoStringRef, signature: JSFunctionSignature, function_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const function_name_root = mono_wasm_new_external_root<MonoString>(function_name),
@@ -189,3 +189,31 @@ export async function dynamic_import(module_name: string, module_url: string): P
 }
 
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
+    let res = "unknown exception";
+    if (ex) {
+        res = ex.toString();
+        const stack = ex.stack;
+        if (stack) {
+            // Some JS runtimes insert the error message at the top of the stack, some don't,
+            //  so normalize it by using the stack as the result if it already contains the error
+            if (stack.startsWith(res))
+                res = stack;
+            else
+                res += "\n" + stack;
+        }
+
+        res = mono_wasm_symbolicate_string(res);
+    }
+    if (is_exception) {
+        Module.setValue(is_exception, 1, "i32");
+    }
+    return res;
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: WasmRoot<MonoObject>): void {
+    const res = _wrap_error_flag(is_exception, ex);
+    js_string_to_mono_string_root(res, <any>result);
+}

@@ -56,7 +56,7 @@ usage()
   echo "  --restore (-r)             Restore dependencies."
   echo "  --sign                     Sign build outputs."
   echo "  --test (-t)                Incrementally builds and runs tests."
-  echo "                             Use in conjuction with --testnobuild to only run tests."
+  echo "                             Use in conjunction with --testnobuild to only run tests."
   echo ""
 
   echo "Libraries settings:"

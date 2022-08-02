@@ -43,6 +43,8 @@ CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatform
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MinWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.IO.FileStream.Lock(System.Int64, System.Int64)' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("freebsd")]' in the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.IO.FileStream.Unlock(System.Int64, System.Int64)' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("freebsd")]' in the implementation.
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute' exists on 'System.Linq.EnumerableQuery<T>..ctor(System.Collections.Generic.IEnumerable<T>)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute' exists on 'System.Linq.EnumerableQuery<T>..ctor(System.Linq.Expressions.Expression)' in the contract but not the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Net.Http.HttpClientHandler.Proxy' changed from '[UnsupportedOSPlatformAttribute("browser")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.CopyTo(System.Span<System.Byte>)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.CopyTo(System.Span<T>)' in the contract but not the implementation.
@@ -107,6 +109,8 @@ CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatform
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MinWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Security.Cryptography.X509Certificates.PublicKey.GetDSAPublicKey()' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
 Compat issues with assembly System.Core:
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute' exists on 'System.Linq.EnumerableQuery<T>..ctor(System.Collections.Generic.IEnumerable<T>)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute' exists on 'System.Linq.EnumerableQuery<T>..ctor(System.Linq.Expressions.Expression)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.Aes' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AesManaged' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.ECCurve' in the contract but not the implementation.
@@ -121,6 +125,9 @@ CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatform
 Compat issues with assembly System.IO.FileSystem:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.IO.FileStream.Lock(System.Int64, System.Int64)' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("freebsd")]' in the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.IO.FileStream.Unlock(System.Int64, System.Int64)' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("freebsd")]' in the implementation.
+Compat issues with assembly System.Linq.Queryable:
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute' exists on 'System.Linq.EnumerableQuery<T>..ctor(System.Collections.Generic.IEnumerable<T>)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute' exists on 'System.Linq.EnumerableQuery<T>..ctor(System.Linq.Expressions.Expression)' in the contract but not the implementation.
 Compat issues with assembly System.Net.Http:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Net.Http.HttpClientHandler.Proxy' changed from '[UnsupportedOSPlatformAttribute("browser")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
 Compat issues with assembly System.Net.Security:
@@ -196,4 +203,4 @@ Compat issues with assembly System.Security.Cryptography.X509Certificates:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Security.Cryptography.X509Certificates.PublicKey.GetDSAPublicKey()' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
 Compat issues with assembly System.Text.Json:
 CannotMakeTypeAbstract : Type 'System.Text.Json.Serialization.Metadata.JsonTypeInfo' is abstract in the implementation but is not abstract in the contract.
-Total Issues: 184
+Total Issues: 190

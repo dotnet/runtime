@@ -154,6 +154,8 @@ namespace Wasm.Build.Tests
             }
 
             bundleDir ??= Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config, targetFramework: targetFramework), "AppBundle");
+            if (host is RunHost.V8 && OperatingSystem.IsWindows())
+                throw new InvalidOperationException("Running tests with V8 on windows isn't supported");
 
             // Use wasm-console.log to get the xharness output for non-browser cases
             (string testCommand, string extraXHarnessArgs, bool useWasmConsoleOutput) = host switch

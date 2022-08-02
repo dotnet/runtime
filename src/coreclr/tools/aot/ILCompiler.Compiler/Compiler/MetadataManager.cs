@@ -404,6 +404,11 @@ namespace ILCompiler
             }
         }
 
+        internal virtual void GetDependenciesDueToModuleUse(ref DependencyList dependencies, NodeFactory factory, ModuleDesc module)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by using a module
+        }
+
         protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
@@ -854,7 +859,7 @@ namespace ILCompiler
         {
         }
 
-        public virtual DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue)
+        public virtual DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue, TypeSystemEntity parent)
         {
             return null;
         }

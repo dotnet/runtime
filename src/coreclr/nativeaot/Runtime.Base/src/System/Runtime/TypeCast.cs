@@ -908,6 +908,43 @@ assigningNull:
                 return IsInstanceOfClass(pTargetType, obj);
         }
 
+        [RuntimeExport("RhTypeCast_IsInstanceOfException")]
+        public static unsafe bool IsInstanceOfException(MethodTable* pTargetType, object? obj)
+        {
+            // Based on IsInstanceOfClass_Helper
+
+            if (obj == null)
+                return false;
+
+            MethodTable* pObjType = obj.GetMethodTable();
+
+            if (pTargetType->IsCloned)
+                pTargetType = pTargetType->CanonicalEEType;
+
+            if (pObjType->IsCloned)
+                pObjType = pObjType->CanonicalEEType;
+
+            if (pObjType == pTargetType)
+                return true;
+
+            // arrays can be cast to System.Object and System.Array
+            if (pObjType->IsArray)
+                return WellKnownEETypes.IsSystemObject(pTargetType) || WellKnownEETypes.IsSystemArray(pTargetType);
+
+            while (true)
+            {
+                pObjType = pObjType->NonClonedNonArrayBaseType;
+                if (pObjType == null)
+                    return false;
+
+                if (pObjType->IsCloned)
+                    pObjType = pObjType->CanonicalEEType;
+
+                if (pObjType == pTargetType)
+                    return true;
+            }
+        }
+
         [RuntimeExport("RhTypeCast_CheckCast")]
         public static unsafe object CheckCast(MethodTable* pTargetType, object obj)
         {

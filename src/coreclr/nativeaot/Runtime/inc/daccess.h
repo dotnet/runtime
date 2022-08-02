@@ -2243,7 +2243,7 @@ typedef void** PTR_PTR_VOID;
 //             dac_cast<PTR_AppDomain>(pBD)
 //             dac_cast<PTR_BaseDomain>(pAD)
 //
-// Example comparsions of some old and new syntax, where
+// Example comparisons of some old and new syntax, where
 //    h is a host pointer, such as "Foo *h;"
 //    p is a DPTR, such as "PTR_Foo p;"
 //

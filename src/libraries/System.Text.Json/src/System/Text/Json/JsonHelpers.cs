@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -146,6 +147,20 @@ namespace System.Text.Json
             {
                 ThrowHelper.ThrowOutOfMemoryException(length);
             }
+        }
+
+        public static bool AllBitsEqual(this BitArray bitArray, bool value)
+        {
+            // Optimize this when https://github.com/dotnet/runtime/issues/72999 is fixed
+            for (int i = 0; i < bitArray.Count; i++)
+            {
+                if (bitArray[i] != value)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

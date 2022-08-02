@@ -1597,7 +1597,7 @@ typedef struct _XMM_SAVE_AREA32 {
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to construct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -1843,7 +1843,7 @@ typedef struct _NEON128 {
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to construct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -2025,7 +2025,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to construct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -2161,7 +2161,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 #elif defined(HOST_LOONGARCH64)
 
-//Please refence "src/pal/src/arch/loongarch64/asmconstants.h"
+// Please refer to src/coreclr/pal/src/arch/loongarch64/asmconstants.h
 #define CONTEXT_LOONGARCH64   0x00800000
 
 #define CONTEXT_CONTROL (CONTEXT_LOONGARCH64 | 0x1)
@@ -2202,7 +2202,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to construct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -2436,8 +2436,8 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
     DWORD ContextFlags;
 
-    // 
-    // Integer  Registers 
+    //
+    // Integer  Registers
     //
 
     DWORD64 R0;
@@ -2550,7 +2550,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
     PDWORD64 R30;
     PDWORD64 R31;
 
-    // 
+    //
     // Need to add Floating point non-volatile registers.
     //
 

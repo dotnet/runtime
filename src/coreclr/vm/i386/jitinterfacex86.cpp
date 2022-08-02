@@ -1034,8 +1034,8 @@ void InitJITHelpers1()
 
     // All write barrier helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (BYTE*)JIT_WriteBarrierGroup_End - (BYTE*)JIT_WriteBarrierGroup < (ptrdiff_t)GetOsPageSize());
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup < (ptrdiff_t)GetOsPageSize());
+    _ASSERTE_ALL_BUILDS((BYTE*)JIT_WriteBarrierGroup_End - (BYTE*)JIT_WriteBarrierGroup < (ptrdiff_t)GetOsPageSize());
+    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup < (ptrdiff_t)GetOsPageSize());
 
     // Copy the write barriers to their final resting place.
     for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
@@ -1136,35 +1136,35 @@ void ValidateWriteBarrierHelpers()
 
     // ephemeral region
     DWORD* pLocation = reinterpret_cast<DWORD*>(&pWriteBarrierFunc[AnyGrow_EphemeralLowerBound]);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", *pLocation == 0xf0f0f0f0);
+    _ASSERTE_ALL_BUILDS((reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
+    _ASSERTE_ALL_BUILDS(*pLocation == 0xf0f0f0f0);
 
     // card table
     pLocation = reinterpret_cast<DWORD*>(&pWriteBarrierFunc[PreGrow_CardTableFirstLocation]);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", *pLocation == 0xf0f0f0f0);
+    _ASSERTE_ALL_BUILDS((reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
+    _ASSERTE_ALL_BUILDS(*pLocation == 0xf0f0f0f0);
     pLocation = reinterpret_cast<DWORD*>(&pWriteBarrierFunc[PreGrow_CardTableSecondLocation]);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", *pLocation == 0xf0f0f0f0);
+    _ASSERTE_ALL_BUILDS((reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
+    _ASSERTE_ALL_BUILDS(*pLocation == 0xf0f0f0f0);
 
     // now validate the PostGrow helper
     pWriteBarrierFunc = reinterpret_cast<BYTE*>(JIT_WriteBarrierReg_PostGrow);
 
     // ephemeral region
     pLocation = reinterpret_cast<DWORD*>(&pWriteBarrierFunc[AnyGrow_EphemeralLowerBound]);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", *pLocation == 0xf0f0f0f0);
+    _ASSERTE_ALL_BUILDS((reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
+    _ASSERTE_ALL_BUILDS(*pLocation == 0xf0f0f0f0);
     pLocation = reinterpret_cast<DWORD*>(&pWriteBarrierFunc[PostGrow_EphemeralUpperBound]);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", *pLocation == 0xf0f0f0f0);
+    _ASSERTE_ALL_BUILDS((reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
+    _ASSERTE_ALL_BUILDS(*pLocation == 0xf0f0f0f0);
 
     // card table
     pLocation = reinterpret_cast<DWORD*>(&pWriteBarrierFunc[PostGrow_CardTableFirstLocation]);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", *pLocation == 0xf0f0f0f0);
+    _ASSERTE_ALL_BUILDS((reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
+    _ASSERTE_ALL_BUILDS(*pLocation == 0xf0f0f0f0);
     pLocation = reinterpret_cast<DWORD*>(&pWriteBarrierFunc[PostGrow_CardTableSecondLocation]);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", (reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
-    _ASSERTE_ALL_BUILDS("clr/src/VM/i386/JITinterfaceX86.cpp", *pLocation == 0xf0f0f0f0);
+    _ASSERTE_ALL_BUILDS((reinterpret_cast<DWORD>(pLocation) & 0x3) == 0);
+    _ASSERTE_ALL_BUILDS(*pLocation == 0xf0f0f0f0);
 }
 
 #endif //CODECOVERAGE

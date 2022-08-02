@@ -965,7 +965,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector3_op_Division:
                 {
                     // Vector2/3 div: since the top-most elements will be zero, we end up
-                    // perfoming 0/0 which is a NAN. Therefore, post division we need to set the
+                    // performing 0/0 which is a NAN. Therefore, post division we need to set the
                     // top-most elements to zero. This is achieved by left logical shift followed
                     // by right logical shift of the result.
 

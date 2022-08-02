@@ -4827,7 +4827,7 @@ namespace System.Data
             DataColumn[] pkey = PrimaryKey;
             if (pkey.Length == 1)
             {
-                // We have one-column primary key, so we can use it in our heirarchical relation
+                // We have one-column primary key, so we can use it in our hierarchical relation
                 return pkey[0];
             }
 

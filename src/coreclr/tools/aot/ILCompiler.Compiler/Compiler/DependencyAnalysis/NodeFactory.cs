@@ -13,6 +13,7 @@ using Internal.IL;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -386,6 +387,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DataflowAnalyzedMethodNode(il.MethodIL);
             });
 
+            _embeddedTrimmingDescriptors = new NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode>((module) =>
+            {
+                return new EmbeddedTrimmingDescriptorNode(module);
+            });
+
             _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, EmbeddedObjectNode>((TypeDesc type) =>
             {
                 return DispatchMapTable.NewNodeWithSymbol(InterfaceDispatchMap(type));
@@ -691,6 +697,13 @@ namespace ILCompiler.DependencyAnalysis
         public DataflowAnalyzedMethodNode DataflowAnalyzedMethod(MethodIL methodIL)
         {
             return _dataflowAnalyzedMethods.GetOrAdd(new MethodILKey(methodIL));
+        }
+
+        private NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode> _embeddedTrimmingDescriptors;
+
+        public EmbeddedTrimmingDescriptorNode EmbeddedTrimmingDescriptor(EcmaModule module)
+        {
+            return _embeddedTrimmingDescriptors.GetOrAdd(module);
         }
 
         private NodeCache<GCPointerMap, GCStaticEETypeNode> _GCStaticEETypes;

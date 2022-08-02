@@ -1495,7 +1495,7 @@ start_debugger_thread (MonoError *error)
 	thread = mono_thread_create_internal ((MonoThreadStart)debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
 	return_if_nok (error);
 
-	/* Is it possible for the thread to be dead alreay ? */
+	/* Is it possible for the thread to be dead already ? */
 	debugger_thread_handle = mono_threads_open_thread_handle (thread->handle);
 	g_assert (debugger_thread_handle);
 
@@ -9465,6 +9465,9 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	err = get_object (objid, (MonoObject**)&arr);
 	if (err != ERR_NONE)
 		return err;
+
+	if (m_class_get_rank (arr->obj.vtable->klass) == 0)
+		return ERR_INVALID_OBJECT;
 
 	switch (command) {
 	case CMD_ARRAY_REF_GET_TYPE: {
