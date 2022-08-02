@@ -2026,7 +2026,7 @@ namespace System.Runtime.Serialization.DataContracts
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static void CheckAndAdd(Type type, Dictionary<Type, Type> typesChecked, [NotNullIfNotNull("nameToDataContractTable")] ref DataContractDictionary? nameToDataContractTable)
+        internal static void CheckAndAdd(Type type, Dictionary<Type, Type> typesChecked, [NotNullIfNotNull(nameof(nameToDataContractTable))] ref DataContractDictionary? nameToDataContractTable)
         {
             type = DataContract.UnwrapNullableType(type);
             DataContract dataContract = DataContract.GetDataContract(type);

@@ -13,7 +13,7 @@ namespace MS.Internal.Xml.XPath
         protected string prefix;
         protected string name;
         protected XsltContext? xsltContext;
-        private ResetableIterator? _queryIterator;
+        private ResettableIterator? _queryIterator;
 
         public ExtensionQuery(string prefix, string name) : base()
         {
@@ -25,7 +25,7 @@ namespace MS.Internal.Xml.XPath
             this.prefix = other.prefix;
             this.name = other.name;
             this.xsltContext = other.xsltContext;
-            _queryIterator = (ResetableIterator?)Clone(other._queryIterator);
+            _queryIterator = (ResettableIterator?)Clone(other._queryIterator);
         }
 
         public override void Reset()
@@ -88,12 +88,12 @@ namespace MS.Internal.Xml.XPath
                 return this; // We map null to NodeSet to let $null/foo work well.
             }
 
-            ResetableIterator? resetable = value as ResetableIterator;
-            if (resetable != null)
+            ResettableIterator? resettable = value as ResettableIterator;
+            if (resettable != null)
             {
                 // We need Clone() value because variable may be used several times
                 // and they shouldn't
-                _queryIterator = (ResetableIterator)resetable.Clone();
+                _queryIterator = (ResettableIterator)resettable.Clone();
                 return this;
             }
             XPathNodeIterator? nodeIterator = value as XPathNodeIterator;

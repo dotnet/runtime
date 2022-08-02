@@ -4,11 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// TraceLogging: used when implementing a custom TraceLoggingTypeInfo.

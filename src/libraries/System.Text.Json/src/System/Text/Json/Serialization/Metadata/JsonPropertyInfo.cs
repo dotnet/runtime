@@ -10,7 +10,7 @@ using System.Text.Json.Reflection;
 namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
-    /// Provides JSON serialization-related metadata about a property or field.
+    /// Provides JSON serialization-related metadata about a property or field defined in an object.
     /// </summary>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public abstract class JsonPropertyInfo
@@ -23,30 +23,22 @@ namespace System.Text.Json.Serialization.Metadata
         internal ConverterStrategy ConverterStrategy { get; private protected set; }
 
         /// <summary>
-        /// Converter resolved from PropertyType and not taking in consideration any custom attributes or custom settings.
-        /// - for reflection we store the original value since we need it in order to construct typed JsonPropertyInfo
-        /// - for source gen it remains null, we will initialize it only if someone used resolver to remove CustomConverter
-        /// </summary>
-        internal JsonConverter? DefaultConverterForType
-        {
-            get => _defaultConverterForType;
-            set
-            {
-                _defaultConverterForType = value;
-                ConverterStrategy = value?.ConverterStrategy ?? default;
-            }
-        }
-
-        private JsonConverter? _defaultConverterForType;
-
-        /// <summary>
         /// Converter after applying CustomConverter (i.e. JsonConverterAttribute)
         /// </summary>
         internal abstract JsonConverter EffectiveConverter { get; }
 
         /// <summary>
-        /// Custom converter override at the property level, equivalent to <see cref="JsonConverterAttribute" /> annotation.
+        /// Gets or sets a custom converter override for the current property.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        /// </exception>
+        /// <remarks>
+        /// It is possible to use <see cref="JsonConverterFactory"/> instances with this property.
+        ///
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/>, the value of
+        /// <see cref="CustomConverter"/> will be mapped from <see cref="JsonConverterAttribute" /> annotations.
+        /// </remarks>
         public JsonConverter? CustomConverter
         {
             get => _customConverter;
@@ -62,6 +54,9 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Gets or sets a getter delegate for the property.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        /// </exception>
         /// <remarks>
         /// Setting to <see langword="null"/> will result in the property being skipped on serialization.
         /// </remarks>
@@ -78,6 +73,9 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Gets or sets a setter delegate for the property.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        /// </exception>
         /// <remarks>
         /// Setting to <see langword="null"/> will result in the property being skipped on deserialization.
         /// </remarks>
@@ -102,13 +100,16 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Gets or sets a predicate deciding whether the current property value should be serialized.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        /// </exception>
         /// <remarks>
         /// The first parameter denotes the parent object, the second parameter denotes the property value.
         ///
         /// Setting the predicate to <see langword="null"/> is equivalent to always serializing the property value.
         ///
-        /// When serializing using <see cref="DefaultJsonTypeInfoResolver"/>, the value of
-        /// <see cref="JsonIgnoreAttribute.Condition"/> will map to this predicate.
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/>,
+        /// the value of <see cref="JsonIgnoreAttribute.Condition"/> will map to this predicate.
         /// </remarks>
         public Func<object, object?, bool>? ShouldSerialize
         {
@@ -144,6 +145,9 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Gets or sets a custom attribute provider for the current property.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        /// </exception>
         /// <remarks>
         /// When resolving metadata via <see cref="DefaultJsonTypeInfoResolver"/> this
         /// will be populated with the underlying <see cref="MemberInfo" /> of the serialized property or field.
@@ -170,9 +174,16 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Specifies whether the current property is a special extension data property.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        ///
+        /// -or-
+        ///
+        /// The current <see cref="PropertyType"/> is not valid for use with extension data.
+        /// </exception>
         /// <remarks>
-        /// Properties annotated with <see cref="JsonExtensionDataAttribute"/>
-        /// will appear here when using <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>.
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// the value of this property will be mapped from <see cref="JsonExtensionDataAttribute"/> annotations.
         /// </remarks>
         public bool IsExtensionData
         {
@@ -181,7 +192,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (value && !JsonTypeInfo.IsValidExtensionDataProperty(this))
+                if (value && !JsonTypeInfo.IsValidExtensionDataProperty(PropertyType))
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(this);
                 }
@@ -191,6 +202,18 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         private bool _isExtensionDataProperty;
+
+        internal bool IsRequired
+        {
+            get => _isRequired;
+            set
+            {
+                VerifyMutable();
+                _isRequired = value;
+            }
+        }
+
+        private bool _isRequired;
 
         internal JsonPropertyInfo(Type declaringType, Type propertyType, JsonTypeInfo? declaringTypeInfo, JsonSerializerOptions options)
         {
@@ -216,7 +239,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Gets the type of the current property metadata.
+        /// Gets the type of the current property.
         /// </summary>
         public Type PropertyType { get; }
 
@@ -255,7 +278,8 @@ namespace System.Text.Json.Serialization.Metadata
                 CacheNameAsUtf8BytesAndEscapedNameSection();
             }
 
-            DetermineEffectiveConverter();
+            _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType, ensureConfigured: false);
+            DetermineEffectiveConverter(_jsonTypeInfo);
 
             if (IsForTypeInfo)
             {
@@ -267,9 +291,24 @@ namespace System.Text.Json.Serialization.Metadata
                 DetermineIgnoreCondition();
                 DetermineSerializationCapabilities();
             }
+
+            if (IsRequired)
+            {
+                if (!CanDeserialize)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndNotDeserializable(this);
+                }
+
+                if (IsExtensionData)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndExtensionData(this);
+                }
+
+                Debug.Assert(!IgnoreNullTokensOnRead);
+            }
         }
 
-        private protected abstract void DetermineEffectiveConverter();
+        private protected abstract void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo);
         private protected abstract void DetermineMemberAccessors(MemberInfo memberInfo);
 
         private void DeterminePoliciesFromMember(MemberInfo memberInfo)
@@ -329,7 +368,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
                 if (PropertyTypeCanBeNull)
                 {
-                    IgnoreNullTokensOnRead = !_isUserSpecifiedSetter;
+                    IgnoreNullTokensOnRead = !_isUserSpecifiedSetter && !IsRequired;
                     IgnoreDefaultValuesOnWrite = ShouldSerialize is null;
                 }
             }
@@ -406,12 +445,15 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineNumberHandlingForProperty()
         {
+            Debug.Assert(!IsConfigured, "Should not be called post-configuration.");
+            Debug.Assert(_jsonTypeInfo != null, "Must have already been determined on configuration.");
+
             bool numberHandlingIsApplicable = NumberHandingIsApplicable();
 
             if (numberHandlingIsApplicable)
             {
                 // Priority 1: Get handling from attribute on property/field, its parent class type or property type.
-                JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeNumberHandling ?? JsonTypeInfo.NumberHandling;
+                JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeNumberHandling ?? _jsonTypeInfo.NumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
                 if (!handling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
@@ -462,6 +504,14 @@ namespace System.Text.Json.Serialization.Metadata
                 potentialNumberType == JsonTypeInfo.ObjectType;
         }
 
+        private void DetermineIsRequired(MemberInfo memberInfo, bool shouldCheckForRequiredKeyword)
+        {
+            if (shouldCheckForRequiredKeyword && memberInfo.HasRequiredMemberAttribute())
+            {
+                IsRequired = true;
+            }
+        }
+
         internal abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
         internal abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
 
@@ -489,7 +539,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool HasGetter => _untypedGet is not null;
         internal bool HasSetter => _untypedSet is not null;
 
-        internal void InitializeUsingMemberReflection(MemberInfo memberInfo, JsonConverter? customConverter, JsonIgnoreCondition? ignoreCondition)
+        internal void InitializeUsingMemberReflection(MemberInfo memberInfo, JsonConverter? customConverter, JsonIgnoreCondition? ignoreCondition, bool shouldCheckForRequiredKeyword)
         {
             Debug.Assert(AttributeProvider == null);
 
@@ -516,6 +566,7 @@ namespace System.Text.Json.Serialization.Metadata
             CustomConverter = customConverter;
             DeterminePoliciesFromMember(memberInfo);
             DeterminePropertyNameFromMember(memberInfo);
+            DetermineIsRequired(memberInfo, shouldCheckForRequiredKeyword);
 
             if (ignoreCondition != JsonIgnoreCondition.Always)
             {
@@ -550,20 +601,30 @@ namespace System.Text.Json.Serialization.Metadata
 
         // There are 3 copies of the property name:
         // 1) Name. The unescaped property name.
-        // 2) NameAsUtf8Bytes. The Utf8 version of Name. Used during during deserialization for property lookup.
+        // 2) NameAsUtf8Bytes. The Utf8 version of Name. Used during deserialization for property lookup.
         // 3) EscapedNameSection. The escaped version of NameAsUtf8Bytes plus the wrapping quotes and a trailing colon. Used during serialization.
 
         /// <summary>
         /// Gets or sets the JSON property name used when serializing the property.
         /// </summary>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        /// </exception>
         /// <remarks>
-        /// This typically reflects the underlying .NET member name,
-        /// the name derived from <see cref="JsonSerializerOptions.PropertyNamingPolicy" />,
-        /// or the value specified in <see cref="JsonPropertyNameAttribute" />,
+        /// The value of <see cref="Name"/> cannot conflict with that of other <see cref="JsonPropertyInfo"/> defined in the declaring <see cref="JsonTypeInfo"/>.
+        ///
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// the value typically reflects the underlying .NET member name, the name derived from <see cref="JsonSerializerOptions.PropertyNamingPolicy" />,
+        /// or the value specified in <see cref="JsonPropertyNameAttribute" />.
         /// </remarks>
         public string Name
         {
-            get => _name;
+            get
+            {
+                Debug.Assert(_name != null);
+                return _name;
+            }
             set
             {
                 VerifyMutable();
@@ -577,7 +638,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private string _name = null!;
+        private string? _name;
 
         /// <summary>
         /// Utf8 version of Name.
@@ -590,16 +651,19 @@ namespace System.Text.Json.Serialization.Metadata
         internal byte[] EscapedNameSection { get; set; } = null!;
 
         /// <summary>
-        /// Options associated with JsonPropertyInfo
+        /// Gets the <see cref="JsonSerializerOptions"/> value associated with the current contract instance.
         /// </summary>
         public JsonSerializerOptions Options { get; }
 
         /// <summary>
         /// Gets or sets the serialization order for the current property.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        /// </exception>
         /// <remarks>
-        /// When using <see cref="DefaultJsonTypeInfoResolver"/>, properties annotated
-        /// with the <see cref="JsonPropertyOrderAttribute"/> will map to this value.
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// the value of this property will be mapped from <see cref="JsonPropertyOrderAttribute"/> annotations.
         /// </remarks>
         public int Order
         {
@@ -664,7 +728,7 @@ namespace System.Text.Json.Serialization.Metadata
                     // Slower path for non-generic types that implement IDictionary<,>.
                     // It is possible to cache this converter on JsonTypeInfo if we assume the property value
                     // will always be the same type for all instances.
-                    converter = Options.GetConverterFromTypeInfo(dictionaryValueType);
+                    converter = Options.GetConverterInternal(dictionaryValueType);
                 }
 
                 Debug.Assert(converter != null);
@@ -686,7 +750,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return true;
             }
 
-            JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverterFromTypeInfo(typeof(JsonElement));
+            JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)Options.GetConverterInternal(typeof(JsonElement));
             if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement jsonElement))
             {
                 // JsonElement is a struct that must be read in full.
@@ -717,31 +781,20 @@ namespace System.Text.Json.Serialization.Metadata
         {
             get
             {
-                if (_jsonTypeInfo != null)
-                {
-                    // We should not call it on set as it's usually called during initialization
-                    // which is too early to `lock` the JsonTypeInfo
-                    // If this property ever becomes public we should move this to callsites
-                    _jsonTypeInfo.EnsureConfigured();
-                }
-                else
-                {
-                    // GetOrAddJsonTypeInfo already ensures it's configured.
-                    _jsonTypeInfo = Options.GetTypeInfoCached(PropertyType);
-                }
-
+                Debug.Assert(IsConfigured);
+                Debug.Assert(_jsonTypeInfo != null);
+                _jsonTypeInfo.EnsureConfigured();
                 return _jsonTypeInfo;
             }
             set
             {
-                // Used by JsonMetadataServices.
                 // This could potentially be double initialized
                 Debug.Assert(_jsonTypeInfo == null || _jsonTypeInfo == value);
+                // Ensure the right strategy is surfaced in PropertyInfoForTypeInfo early
+                ConverterStrategy = value?.Converter.ConverterStrategy ?? default;
                 _jsonTypeInfo = value;
             }
         }
-
-        internal abstract void SetExtensionDictionaryAsObject(object obj, object? extensionDict);
 
         internal bool IsIgnored => _ignoreCondition == JsonIgnoreCondition.Always;
 
@@ -770,8 +823,15 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonNumberHandling? DeclaringTypeNumberHandling { get; set; }
 
         /// <summary>
-        /// Number handling specific to this property, i.e. set by attribute
+        /// Gets or sets the <see cref="JsonNumberHandling"/> applied to the current property.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        /// </exception>
+        /// <remarks>
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// the value of this property will be mapped from <see cref="JsonNumberHandlingAttribute"/> annotations.
+        /// </remarks>
         public JsonNumberHandling? NumberHandling
         {
             get => _numberHandling;
@@ -797,7 +857,30 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         internal abstract object? DefaultValue { get; }
 
+        /// <summary>
+        /// Required property index on the list of JsonTypeInfo properties.
+        /// It is used as a unique identifier for required properties.
+        /// It is set just before property is configured and does not change afterward.
+        /// It is not equivalent to index on the properties list
+        /// </summary>
+        internal int RequiredPropertyIndex
+        {
+            get
+            {
+                Debug.Assert(_isConfigured);
+                Debug.Assert(IsRequired);
+                return _index;
+            }
+            set
+            {
+                Debug.Assert(!_isConfigured);
+                _index = value;
+            }
+        }
+
+        private int _index;
+
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"MemberInfo={AttributeProvider as MemberInfo}";
+        private string DebuggerDisplay => $"PropertyType = {PropertyType}, Name = {Name}, DeclaringType = {DeclaringType}";
     }
 }

@@ -188,7 +188,6 @@ namespace System.Text.Json.Serialization.Metadata
             SrcGen_IsPublic = propertyInfo.IsPublic;
             SrcGen_HasJsonInclude = propertyInfo.HasJsonInclude;
             IsExtensionData = propertyInfo.IsExtensionData;
-            DefaultConverterForType = propertyInfo.PropertyTypeInfo?.Converter as JsonConverter<T>;
             CustomConverter = propertyInfo.Converter;
 
             if (propertyInfo.IgnoreCondition != JsonIgnoreCondition.Always)
@@ -202,12 +201,11 @@ namespace System.Text.Json.Serialization.Metadata
             NumberHandling = propertyInfo.NumberHandling;
         }
 
-        private protected override void DetermineEffectiveConverter()
+        private protected override void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo)
         {
             JsonConverter converter =
                 Options.ExpandConverterFactory(CustomConverter, PropertyType)
-                ?? DefaultConverterForType
-                ?? Options.GetConverterFromTypeInfo(PropertyType);
+                ?? jsonTypeInfo.Converter;
 
             TypedEffectiveConverter = converter is JsonConverter<T> typedConv ? typedConv : converter.CreateCastingConverter<T>();
             ConverterStrategy = TypedEffectiveConverter.ConverterStrategy;
@@ -344,6 +342,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 success = true;
+                state.Current.MarkRequiredPropertyAsRead(this);
             }
             else if (TypedEffectiveConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
@@ -358,6 +357,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 success = true;
+                state.Current.MarkRequiredPropertyAsRead(this);
             }
             else
             {
@@ -368,6 +368,7 @@ namespace System.Text.Json.Serialization.Metadata
                     if (success)
                     {
                         Set!(obj, value!);
+                        state.Current.MarkRequiredPropertyAsRead(this);
                     }
                 }
             }
@@ -408,13 +409,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             return success;
-        }
-
-        internal override void SetExtensionDictionaryAsObject(object obj, object? extensionDict)
-        {
-            Debug.Assert(HasSetter);
-            T typedValue = (T)extensionDict!;
-            Set!(obj, typedValue);
         }
 
         private protected override void ConfigureIgnoreCondition(JsonIgnoreCondition? ignoreCondition)

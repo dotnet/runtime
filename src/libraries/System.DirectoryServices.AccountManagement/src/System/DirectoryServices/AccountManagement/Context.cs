@@ -1130,7 +1130,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
 
-                // If we can't determine the OS vesion so we must fall back to lowest level of functionality
+                // If we can't determine the OS version so we must fall back to lowest level of functionality
                 if (searchResponse.Entries[0].Attributes.Contains("domainControllerFunctionality"))
                 {
                     properties.OsVersion = (DomainControllerMode)Convert.ToInt32(searchResponse.Entries[0].Attributes["domainControllerFunctionality"][0], CultureInfo.InvariantCulture);

@@ -10,14 +10,14 @@ namespace System.Composition.Hosting.Core.Tests
 {
     public class ExportDescriptorPromiseTests
     {
-        public static IEnumerable<object[]> Ctor_Depedencies()
+        public static IEnumerable<object[]> Ctor_DependenciesData()
         {
             yield return new object[] { null, null, false, Enumerable.Empty<CompositionDependency>() };
             yield return new object[] { new CompositionContract(typeof(int)), "Origin", true, Enumerable.Empty<CompositionDependency>() };
         }
 
         [Theory]
-        [MemberData(nameof(Ctor_Depedencies))]
+        [MemberData(nameof(Ctor_DependenciesData))]
         public void Ctor_Dependencies(CompositionContract contract, string origin, bool isShared, IEnumerable<CompositionDependency> dependencies)
         {
             int calledDependencies = 0;

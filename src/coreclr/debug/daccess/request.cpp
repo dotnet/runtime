@@ -134,7 +134,7 @@ BOOL DacValidateEEClass(EEClass *pEEClass)
 
 }
 
-BOOL DacValidateMethodTable(MethodTable *pMT, BOOL &bIsFree)
+BOOL DacValidateMethodTable(PTR_MethodTable pMT, BOOL &bIsFree)
 {
     // Verify things are right.
     BOOL retval = FALSE;
@@ -440,7 +440,7 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
 
     SOSDacEnter();
 
-    MethodTable* mTable = PTR_MethodTable(TO_TADDR(mt));
+    PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!DacValidateMethodTable(mTable, bIsFree))
     {
@@ -1465,7 +1465,7 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
     SOSDacEnter();
 
     TADDR mtTADDR = DACGetMethodTableFromObjectPointer(TO_TADDR(obj), m_pTarget);
-    MethodTable *mt = PTR_MethodTable(mtTADDR);
+    PTR_MethodTable mt = PTR_MethodTable(mtTADDR);
 
     // Object must be a string
     BOOL bFree = FALSE;
@@ -1515,7 +1515,7 @@ ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, _Inou
 
     // Don't turn the Object into a pointer, it is too costly on
     // scans of the gc heap.
-    MethodTable *mt = NULL;
+    PTR_MethodTable mt = NULL;
     TADDR mtTADDR = DACGetMethodTableFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(obj), m_pTarget);
     if (mtTADDR != NULL)
         mt = PTR_MethodTable(mtTADDR);
@@ -1732,7 +1732,7 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
 
     SOSDacEnter();
 
-    MethodTable* pMT = PTR_MethodTable(TO_TADDR(mt));
+    PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!DacValidateMethodTable(pMT, bIsFree))
     {
@@ -1775,7 +1775,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout
 
     SOSDacEnter();
 
-    MethodTable *pMT = PTR_MethodTable(TO_TADDR(mt));
+    PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL free = FALSE;
 
     if (mt == HOST_CDADDR(g_pFreeObjectMethodTable))
@@ -1936,7 +1936,7 @@ ClrDataAccess::GetMethodTableFieldData(CLRDATA_ADDRESS mt, struct DacpMethodTabl
 
     SOSDacEnter();
 
-    MethodTable* pMT = PTR_MethodTable(TO_TADDR(mt));
+    PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!pMT || !DacValidateMethodTable(pMT, bIsFree))
     {
@@ -1966,7 +1966,7 @@ ClrDataAccess::GetMethodTableCollectibleData(CLRDATA_ADDRESS mt, struct DacpMeth
 
     SOSDacEnter();
 
-    MethodTable* pMT = PTR_MethodTable(TO_TADDR(mt));
+    PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!pMT || !DacValidateMethodTable(pMT, bIsFree))
     {
@@ -1993,7 +1993,7 @@ ClrDataAccess::GetMethodTableTransparencyData(CLRDATA_ADDRESS mt, struct DacpMet
 
     SOSDacEnter();
 
-    MethodTable *pMT = PTR_MethodTable(TO_TADDR(mt));
+    PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!DacValidateMethodTable(pMT, bIsFree))
     {
@@ -2177,7 +2177,7 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
         hr = E_INVALIDARG;
 
     BOOL bFree = FALSE;
-    MethodTable *mt = NULL;
+    PTR_MethodTable mt = NULL;
     if (SUCCEEDED(hr))
     {
         mt = PTR_MethodTable(mtTADDR);
@@ -5125,7 +5125,7 @@ HRESULT ClrDataAccess::IsTrackedType(
         hr = E_INVALIDARG;
 
     BOOL bFree = FALSE;
-    MethodTable *mt = NULL;
+    PTR_MethodTable mt = NULL;
     if (SUCCEEDED(hr))
     {
         mt = PTR_MethodTable(mtTADDR);

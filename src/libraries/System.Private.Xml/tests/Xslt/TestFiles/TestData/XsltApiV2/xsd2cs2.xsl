@@ -1,5 +1,5 @@
-<stylesheet version="1.0" 
-	xmlns="http://www.w3.org/1999/XSL/Transform" 
+<stylesheet version="1.0"
+	xmlns="http://www.w3.org/1999/XSL/Transform"
 	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
 	xmlns:msxsl="urn:schemas-microsoft-com:xslt"
 	xmlns:ext="urn:my_extensions"
@@ -310,7 +310,7 @@
         <if test="@fixed">
             <value-of select="$varName"/>.FixedValue = "<value-of select="@fixed"/>";
         </if>
-        <if test="@defalut">
+        <if test="@default">
             <value-of select="$varName"/>.DefaultValue = "<value-of select="@default"/>";
         </if>
         <if test="@type">

@@ -1537,7 +1537,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
     }
     else
     {
-        // Collectible types requires that for shared generic code, if we use the generic context paramter
+        // Collectible types requires that for shared generic code, if we use the generic context parameter
         // that we report it. (This is a conservative approach, we could detect some cases particularly when the
         // context parameter is this that we don't need the eager reporting logic.)
         lvaGenericsContextInUse = true;
@@ -2589,6 +2589,10 @@ private:
 void Compiler::fgAddInternal()
 {
     noway_assert(!compIsForInlining());
+
+    // For runtime determined Exception types we're going to emit a fake EH filter with isinst for this
+    // type with a runtime lookup
+    fgCreateFiltersForGenericExceptions();
 
     // The backend requires a scratch BB into which it can safely insert a P/Invoke method prolog if one is
     // required. Similarly, we need a scratch BB for poisoning. Create it here.

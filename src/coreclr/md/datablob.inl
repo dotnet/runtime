@@ -6,7 +6,7 @@
 
 //
 // Class code:MetaData::DataBlob provides secure access to a block of memory from MetaData (i.e. with fixed
-// endianess).
+// endianness).
 //
 // ======================================================================================
 

@@ -491,7 +491,7 @@ namespace System.Runtime.Serialization
             return _rootType;
         }
 
-        [return: NotNullIfNotNull("oldObj")]
+        [return: NotNullIfNotNull(nameof(oldObj))]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static object? SurrogateToDataContractType(ISerializationSurrogateProvider serializationSurrogateProvider, object? oldObj, Type surrogatedDeclaredType, ref Type objType)
         {

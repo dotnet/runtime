@@ -1785,7 +1785,7 @@ void Thread::RemoveAbortRequestBit()
 }
 
 // Make sure that when AbortRequest bit is cleared, we also dec TrapReturningThreads count.
-void Thread::UnmarkThreadForAbort()
+void Thread::UnmarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType /* = EEPolicy::TA_Rude */)
 {
     CONTRACTL
     {
@@ -1794,10 +1794,13 @@ void Thread::UnmarkThreadForAbort()
     }
     CONTRACTL_END;
 
-    // Switch to COOP (for ClearAbortReason) before acquiring AbortRequestLock
-    GCX_COOP();
-
     AbortRequestLockHolder lh(this);
+
+    if (m_AbortType > (DWORD)abortType)
+    {
+        // Aborting at a higher level
+        return;
+    }
 
     m_AbortType = EEPolicy::TA_None;
     m_AbortEndTime = MAXULONGLONG;
@@ -5073,7 +5076,7 @@ static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo, ReturnKind *pRetur
 //
 // Race #1: failure to hijack a thread in HandledJITCase.
 //
-// In HandledJITCase, if we see that a thread's Eip is in managed code at an interruptable point, we will attempt
+// In HandledJITCase, if we see that a thread's Eip is in managed code at an interruptible point, we will attempt
 // to move the thread to a hijack in order to stop it's execution for a variety of reasons (GC, debugger, user-mode
 // supension, etc.) We do this by suspending the thread, inspecting Eip, changing Eip to the address of the hijack
 // routine, and resuming the thread.
@@ -5177,7 +5180,7 @@ BOOL ThreadCaughtInKernelModeExceptionHandling(Thread *pThread, CONTEXT *ctx)
     // 32-bit platforms, this should be fine.
     _ASSERTE(sizeof(DWORD) == sizeof(void*));
 
-    // There are cases where the ESP is just decremented but the page is not touched, thus the page is not commited or
+    // There are cases where the ESP is just decremented but the page is not touched, thus the page is not committed or
     // still has page guard bit set. We can't hit the race in such case so we just leave. Besides, we can't access the
     // memory with page guard flag or not committed.
     MEMORY_BASIC_INFORMATION mbi;

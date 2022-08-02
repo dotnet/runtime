@@ -258,7 +258,7 @@ mono_llmult_ovf (gint64 a, gint64 b)
 	gint64 res, t1;
 	gint32 sign;
 
-	/* need to work with absoulte values, so find out what the
+	/* need to work with absolute values, so find out what the
 	   resulting sign will be and convert any negative numbers
 	   from two's complement
 	*/
