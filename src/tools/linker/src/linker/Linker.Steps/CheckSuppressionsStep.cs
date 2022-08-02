@@ -12,7 +12,8 @@ namespace Mono.Linker.Steps
 				return SubStepTargets.Type |
 					SubStepTargets.Field |
 					SubStepTargets.Method |
-					SubStepTargets.Property;
+					SubStepTargets.Property |
+					SubStepTargets.Event;
 			}
 		}
 
