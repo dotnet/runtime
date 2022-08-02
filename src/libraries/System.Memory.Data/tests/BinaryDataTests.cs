@@ -614,6 +614,15 @@ namespace System.Tests
             Assert.Equal(string.Empty, BinaryData.Empty.ToString());
         }
 
+        [Fact]
+        public void IsBinaryDataMemberPropertyPopulated()
+        {
+            TestModelWithBinaryDataProperty testModel = new TestModelWithBinaryDataProperty { B = new BinaryData("B test value") };
+            var jsonModel = JsonSerializer.Serialize(testModel);
+            TestModelWithBinaryDataProperty deserializedModel = JsonSerializer.Deserialize<TestModelWithBinaryDataProperty>(jsonModel);
+            Assert.True(string.Equals(testModel.B.ToString(), deserializedModel.B.ToString(), StringComparison.Ordinal));
+        }
+
         internal class TestModel
         {
             public string A { get; set; }
@@ -660,6 +669,11 @@ namespace System.Tests
         {
             public NonSeekableStream(byte[] buffer) : base(buffer) { }
             public override bool CanSeek => false;
+        }
+
+        internal class TestModelWithBinaryDataProperty
+        {
+            public BinaryData B { get; set; }
         }
     }
 }
