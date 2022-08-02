@@ -120,9 +120,9 @@ steps:
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
-      ./dotnet-install.sh --channel 7.0.1xx --quality daily --install-dir .
+      ./dotnet-install.sh --version 7.0.100-preview.7.22354.2 --install-dir .
       ./dotnet --info
-      ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/net7.0.json --configfile NuGet.config
+      ./dotnet workload install maui --from-rollback-file https://maui.blob.core.windows.net/metadata/rollbacks/7.0.0/preview.7.json --configfile NuGet.config
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
 
