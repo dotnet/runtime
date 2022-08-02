@@ -14,7 +14,6 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new ComImportObject() };
 
             yield return new object[] { new DualComObject() };
-            yield return new object[] { new IUnknownComObject() };
             yield return new object[] { new IDispatchComObject() };
             yield return new object[] { new IInspectableComObject() };
 
@@ -27,7 +26,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new AutoDualComObjectEmpty() };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport))]
         [MemberData(nameof(GetIDispatchForObject_ComObject_TestData))]
         public void GetIDispatchForObject_DispatchObject_Success(object obj)
         {
@@ -43,8 +42,9 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
-        public void GetIDispatchForObject_ManagedIInspectableObject_Fail()
+        public void GetIDispatchForObject_NonIDispatchObject_Fail()
         {
+            Assert.Throws<InvalidCastException>(() => Marshal.GetIDispatchForObject(new IUnknownComObject()));
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetIDispatchForObject(new IInspectableManagedObject()));
         }
     }

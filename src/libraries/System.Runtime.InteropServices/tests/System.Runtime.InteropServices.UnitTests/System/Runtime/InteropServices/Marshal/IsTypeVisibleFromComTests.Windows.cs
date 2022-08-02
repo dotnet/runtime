@@ -11,19 +11,23 @@ namespace System.Runtime.InteropServices.Tests
     {
         public static IEnumerable<object[]> IsTypeVisibleFromCom_Windows_TestData()
         {
-            yield return new object[] { typeof(ComImportObject), true };
-            yield return new object[] { typeof(InterfaceAndComImportObject), true };
+            yield return new object[] { typeof(InterfaceOnComImportObject), true };
             yield return new object[] { typeof(InterfaceComImportObject), true };
 
-            yield return new object[] { typeof(IsTypeVisibleFromComTests), true };
-            yield return new object[] { typeof(PrivateType), false };
-            yield return new object[] { typeof(ProtectedType), false };
-            yield return new object[] { typeof(InternalType), false };
-            yield return new object[] { typeof(InnerManagedInterface), false};
-            yield return new object[] { typeof(INonGenericInterface), true };
-            yield return new object[] { typeof(NonGenericStruct), true };
-            yield return new object[] { typeof(ManagedClassWithComVisibleFalse), false };
-            yield return new object[] { typeof(ManagedClassWithComVisibleTrue), true };
+            if (PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport)
+            {
+                yield return new object[] { typeof(ComImportObject), true };
+
+                yield return new object[] { typeof(IsTypeVisibleFromComTests), true };
+                yield return new object[] { typeof(PrivateType), false };
+                yield return new object[] { typeof(ProtectedType), false };
+                yield return new object[] { typeof(InternalType), false };
+                yield return new object[] { typeof(InnerManagedInterface), false};
+                yield return new object[] { typeof(INonGenericInterface), true };
+                yield return new object[] { typeof(NonGenericStruct), true };
+                yield return new object[] { typeof(ManagedClassWithComVisibleFalse), false };
+                yield return new object[] { typeof(ManagedClassWithComVisibleTrue), true };
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]

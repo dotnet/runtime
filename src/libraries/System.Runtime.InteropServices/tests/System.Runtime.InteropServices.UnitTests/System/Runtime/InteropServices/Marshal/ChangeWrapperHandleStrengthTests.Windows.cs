@@ -11,19 +11,23 @@ namespace System.Runtime.InteropServices.Tests
     {
         public static IEnumerable<object[]> ChangeWrapperHandleStrength_ComObject_TestData()
         {
-            yield return new object[] { new ComImportObject() };
-
-            yield return new object[] { new DualComObject() };
             yield return new object[] { new IUnknownComObject() };
-            yield return new object[] { new IDispatchComObject() };
 
-            yield return new object[] { new NonDualComObject() };
-            yield return new object[] { new AutoDispatchComObject() };
-            yield return new object[] { new AutoDualComObject() };
+            if (PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport)
+            {
+                yield return new object[] { new ComImportObject() };
 
-            yield return new object[] { new NonDualComObjectEmpty() };
-            yield return new object[] { new AutoDispatchComObjectEmpty() };
-            yield return new object[] { new AutoDualComObjectEmpty() };
+                yield return new object[] { new DualComObject() };
+                yield return new object[] { new IDispatchComObject() };
+
+                yield return new object[] { new NonDualComObject() };
+                yield return new object[] { new AutoDispatchComObject() };
+                yield return new object[] { new AutoDualComObject() };
+
+                yield return new object[] { new NonDualComObjectEmpty() };
+                yield return new object[] { new AutoDispatchComObjectEmpty() };
+                yield return new object[] { new AutoDualComObjectEmpty() };
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]

@@ -14,32 +14,32 @@ namespace System.Runtime.InteropServices.Tests
 
         public static IEnumerable<object[]> QueryInterface_ValidComObjectInterface_TestData()
         {
-            yield return new object[] { new ComImportObject(), IID_IUNKNOWN };
-            yield return new object[] { new ComImportObject(), IID_IDISPATCH };
-
-            yield return new object[] { new DualComObject(), IID_IUNKNOWN };
-            yield return new object[] { new DualComObject(), IID_IDISPATCH };
             yield return new object[] { new IUnknownComObject(), IID_IUNKNOWN };
-            yield return new object[] { new IUnknownComObject(), IID_IDISPATCH };
-            yield return new object[] { new IDispatchComObject(), IID_IUNKNOWN };
-            yield return new object[] { new IDispatchComObject(), IID_IDISPATCH };
 
-            yield return new object[] { new NonDualComObject(), IID_IUNKNOWN };
-            yield return new object[] { new NonDualComObject(), IID_IDISPATCH };
-            yield return new object[] { new AutoDispatchComObject(), IID_IUNKNOWN };
-            yield return new object[] { new AutoDispatchComObject(), IID_IDISPATCH };
-            yield return new object[] { new AutoDualComObject(), IID_IUNKNOWN };
-            yield return new object[] { new AutoDualComObject(), IID_IDISPATCH };
+            if (PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport)
+            {
+                yield return new object[] { new ComImportObject(), IID_IUNKNOWN };
+                yield return new object[] { new ComImportObject(), IID_IDISPATCH };
 
-            yield return new object[] { new NonDualComObjectEmpty(), IID_IUNKNOWN };
-            yield return new object[] { new NonDualComObjectEmpty(), IID_IDISPATCH };
-            yield return new object[] { new AutoDispatchComObjectEmpty(), IID_IUNKNOWN };
-            yield return new object[] { new AutoDispatchComObjectEmpty(), IID_IDISPATCH };
-            yield return new object[] { new AutoDualComObjectEmpty(), IID_IUNKNOWN };
-            yield return new object[] { new AutoDualComObjectEmpty(), IID_IDISPATCH };
+                yield return new object[] { new DualComObject(), IID_IUNKNOWN };
+                yield return new object[] { new DualComObject(), IID_IDISPATCH };
+                yield return new object[] { new IDispatchComObject(), IID_IUNKNOWN };
+                yield return new object[] { new IDispatchComObject(), IID_IDISPATCH };
 
-            yield return new object[] { new IUnknownComObject(), IID_IUNKNOWN };
-            yield return new object[] { new IUnknownComObject(), IID_IDISPATCH };
+                yield return new object[] { new NonDualComObject(), IID_IUNKNOWN };
+                yield return new object[] { new NonDualComObject(), IID_IDISPATCH };
+                yield return new object[] { new AutoDispatchComObject(), IID_IUNKNOWN };
+                yield return new object[] { new AutoDispatchComObject(), IID_IDISPATCH };
+                yield return new object[] { new AutoDualComObject(), IID_IUNKNOWN };
+                yield return new object[] { new AutoDualComObject(), IID_IDISPATCH };
+
+                yield return new object[] { new NonDualComObjectEmpty(), IID_IUNKNOWN };
+                yield return new object[] { new NonDualComObjectEmpty(), IID_IDISPATCH };
+                yield return new object[] { new AutoDispatchComObjectEmpty(), IID_IUNKNOWN };
+                yield return new object[] { new AutoDispatchComObjectEmpty(), IID_IDISPATCH };
+                yield return new object[] { new AutoDualComObjectEmpty(), IID_IUNKNOWN };
+                yield return new object[] { new AutoDualComObjectEmpty(), IID_IDISPATCH };
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
@@ -69,33 +69,37 @@ namespace System.Runtime.InteropServices.Tests
 
         public static IEnumerable<object[]> QueryInterface_NoSuchComObjectInterface_TestData()
         {
-            const string IID_CUSTOMINTERFACE = "927971f5-0939-11d1-8be1-00c04fd8d503";
+            const string IID_CUSTOMINTERFACE = "ED53244F-0514-49D1-9A85-E14B33E71CDF";
 
-            yield return new object[] { new ComImportObject(), IID_IINSPECTABLE };
-            yield return new object[] { new ComImportObject(), IID_CUSTOMINTERFACE };
-
-            yield return new object[] { new DualComObject(), IID_IINSPECTABLE };
-            yield return new object[] { new DualComObject(), IID_CUSTOMINTERFACE };
             yield return new object[] { new IUnknownComObject(), IID_IINSPECTABLE };
             yield return new object[] { new IUnknownComObject(), IID_CUSTOMINTERFACE };
-            yield return new object[] { new IDispatchComObject(), IID_IINSPECTABLE };
-            yield return new object[] { new IDispatchComObject(), IID_CUSTOMINTERFACE };
-            yield return new object[] { new IInspectableComObject(), IID_IINSPECTABLE };
-            yield return new object[] { new IInspectableComObject(), IID_CUSTOMINTERFACE };
 
-            yield return new object[] { new NonDualComObject(), IID_IINSPECTABLE };
-            yield return new object[] { new NonDualComObject(), IID_CUSTOMINTERFACE };
-            yield return new object[] { new AutoDispatchComObject(), IID_IINSPECTABLE };
-            yield return new object[] { new AutoDispatchComObject(), IID_CUSTOMINTERFACE };
-            yield return new object[] { new AutoDualComObject(), IID_IINSPECTABLE };
-            yield return new object[] { new AutoDualComObject(), IID_CUSTOMINTERFACE };
+            if (PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport)
+            {
+                yield return new object[] { new ComImportObject(), IID_IINSPECTABLE };
+                yield return new object[] { new ComImportObject(), IID_CUSTOMINTERFACE };
 
-            yield return new object[] { new NonDualComObjectEmpty(), IID_IINSPECTABLE };
-            yield return new object[] { new NonDualComObjectEmpty(), IID_CUSTOMINTERFACE };
-            yield return new object[] { new AutoDispatchComObjectEmpty(), IID_IINSPECTABLE };
-            yield return new object[] { new AutoDispatchComObjectEmpty(), IID_CUSTOMINTERFACE };
-            yield return new object[] { new AutoDualComObjectEmpty(), IID_IINSPECTABLE };
-            yield return new object[] { new AutoDualComObjectEmpty(), IID_CUSTOMINTERFACE };
+                yield return new object[] { new DualComObject(), IID_IINSPECTABLE };
+                yield return new object[] { new DualComObject(), IID_CUSTOMINTERFACE };
+                yield return new object[] { new IDispatchComObject(), IID_IINSPECTABLE };
+                yield return new object[] { new IDispatchComObject(), IID_CUSTOMINTERFACE };
+                yield return new object[] { new IInspectableComObject(), IID_IINSPECTABLE };
+                yield return new object[] { new IInspectableComObject(), IID_CUSTOMINTERFACE };
+
+                yield return new object[] { new NonDualComObject(), IID_IINSPECTABLE };
+                yield return new object[] { new NonDualComObject(), IID_CUSTOMINTERFACE };
+                yield return new object[] { new AutoDispatchComObject(), IID_IINSPECTABLE };
+                yield return new object[] { new AutoDispatchComObject(), IID_CUSTOMINTERFACE };
+                yield return new object[] { new AutoDualComObject(), IID_IINSPECTABLE };
+                yield return new object[] { new AutoDualComObject(), IID_CUSTOMINTERFACE };
+
+                yield return new object[] { new NonDualComObjectEmpty(), IID_IINSPECTABLE };
+                yield return new object[] { new NonDualComObjectEmpty(), IID_CUSTOMINTERFACE };
+                yield return new object[] { new AutoDispatchComObjectEmpty(), IID_IINSPECTABLE };
+                yield return new object[] { new AutoDispatchComObjectEmpty(), IID_CUSTOMINTERFACE };
+                yield return new object[] { new AutoDualComObjectEmpty(), IID_IINSPECTABLE };
+                yield return new object[] { new AutoDualComObjectEmpty(), IID_CUSTOMINTERFACE };
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]

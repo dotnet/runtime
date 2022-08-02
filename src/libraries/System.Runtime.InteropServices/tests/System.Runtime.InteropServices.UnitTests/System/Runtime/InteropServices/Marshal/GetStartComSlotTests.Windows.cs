@@ -11,24 +11,28 @@ namespace System.Runtime.InteropServices.Tests
     {
         public static IEnumerable<object[]> GetStartComSlot_TestData()
         {
-            yield return new object[] { typeof(ComImportObject), -1 };
-            yield return new object[] { typeof(SubComImportObject), -1 };
-            yield return new object[] { typeof(InterfaceComImportObject), -1 };
-            yield return new object[] { typeof(InterfaceAndComImportObject), 7 };
-            yield return new object[] { typeof(IComImportObject), 7 };
-
-            yield return new object[] { typeof(DualInterface), 7};
-            yield return new object[] { typeof(IUnknownInterface), 3};
-            yield return new object[] { typeof(IDispatchInterface), 7};
-            yield return new object[] { typeof(DualComObject), 7};
             yield return new object[] { typeof(IUnknownComObject), 3};
-            yield return new object[] { typeof(IDispatchComObject), 7};
-            yield return new object[] { typeof(NonDualComObject), 7};
-            yield return new object[] { typeof(AutoDispatchComObject), 7};
-            yield return new object[] { typeof(AutoDualComObject), 7};
-            yield return new object[] { typeof(NonDualComObjectEmpty), -1};
-            yield return new object[] { typeof(AutoDispatchComObjectEmpty), -1};
-            yield return new object[] { typeof(AutoDualComObjectEmpty), -1};
+            yield return new object[] { typeof(IUnknownInterface), 3};
+            yield return new object[] { typeof(InterfaceOnComImportObject), 7 };
+            yield return new object[] { typeof(InterfaceComImportObject), -1 };
+
+            if (PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport)
+            {
+                yield return new object[] { typeof(ComImportObject), -1 };
+                yield return new object[] { typeof(SubComImportObject), -1 };
+                yield return new object[] { typeof(IComImportObject), 7 };
+
+                yield return new object[] { typeof(DualInterface), 7};
+                yield return new object[] { typeof(IDispatchInterface), 7};
+                yield return new object[] { typeof(DualComObject), 7};
+                yield return new object[] { typeof(IDispatchComObject), 7};
+                yield return new object[] { typeof(NonDualComObject), 7};
+                yield return new object[] { typeof(AutoDispatchComObject), 7};
+                yield return new object[] { typeof(AutoDualComObject), 7};
+                yield return new object[] { typeof(NonDualComObjectEmpty), -1};
+                yield return new object[] { typeof(AutoDispatchComObjectEmpty), -1};
+                yield return new object[] { typeof(AutoDualComObjectEmpty), -1};
+            }
 
             yield return new object[] { typeof(ManagedInterfaceSupportIUnknown), 3 };
             yield return new object[] { typeof(ManagedInterfaceSupportIUnknownWithMethods), 3 };

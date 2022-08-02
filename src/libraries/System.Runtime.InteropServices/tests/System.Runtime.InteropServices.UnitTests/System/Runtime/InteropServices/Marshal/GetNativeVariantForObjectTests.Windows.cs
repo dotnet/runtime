@@ -12,20 +12,24 @@ namespace System.Runtime.InteropServices.Tests
         public static IEnumerable<object[]> GetNativeVariantForObject_ComObject_TestData()
         {
             // Objects.
-            yield return new object[] { new ComImportObject(), VarEnum.VT_DISPATCH };
+            yield return new object[] { new IUnknownComObject(), VarEnum.VT_UNKNOWN };
 
-            yield return new object[] { new DualComObject(), VarEnum.VT_DISPATCH };
-            yield return new object[] { new IUnknownComObject(), VarEnum.VT_DISPATCH };
-            yield return new object[] { new IDispatchComObject(), VarEnum.VT_DISPATCH };
-            yield return new object[] { new IInspectableComObject(), VarEnum.VT_DISPATCH };
+            if (PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport)
+            {
+                yield return new object[] { new ComImportObject(), VarEnum.VT_DISPATCH };
 
-            yield return new object[] { new NonDualComObject(), VarEnum.VT_DISPATCH };
-            yield return new object[] { new AutoDispatchComObject(), VarEnum.VT_DISPATCH };
-            yield return new object[] { new AutoDualComObject(), VarEnum.VT_DISPATCH };
+                yield return new object[] { new DualComObject(), VarEnum.VT_DISPATCH };
+                yield return new object[] { new IDispatchComObject(), VarEnum.VT_DISPATCH };
+                yield return new object[] { new IInspectableComObject(), VarEnum.VT_DISPATCH };
 
-            yield return new object[] { new NonDualComObjectEmpty(), VarEnum.VT_DISPATCH };
-            yield return new object[] { new AutoDispatchComObjectEmpty(), VarEnum.VT_DISPATCH };
-            yield return new object[] { new AutoDualComObjectEmpty(), VarEnum.VT_DISPATCH };
+                yield return new object[] { new NonDualComObject(), VarEnum.VT_DISPATCH };
+                yield return new object[] { new AutoDispatchComObject(), VarEnum.VT_DISPATCH };
+                yield return new object[] { new AutoDualComObject(), VarEnum.VT_DISPATCH };
+
+                yield return new object[] { new NonDualComObjectEmpty(), VarEnum.VT_DISPATCH };
+                yield return new object[] { new AutoDispatchComObjectEmpty(), VarEnum.VT_DISPATCH };
+                yield return new object[] { new AutoDualComObjectEmpty(), VarEnum.VT_DISPATCH };
+            }
         }
 
         public static IEnumerable<object[]> GetNativeVariantForObject_ComObjectArray_TestData()
@@ -59,32 +63,35 @@ namespace System.Runtime.InteropServices.Tests
 
         public static IEnumerable<object[]> GetNativeVariantForObject_WrappedComObject_TestData()
         {
-            var empty = new ComImportObject();
-            var dual = new DualComObject();
             var iUnknown = new IUnknownComObject();
-            var iDispatch = new IDispatchComObject();
-            var iInspectable = new IInspectableComObject();
-            var nonDual = new NonDualComObject();
-            var autoDispatch = new AutoDispatchComObject();
-            var autoDual = new AutoDualComObject();
-
-            yield return new object[] { new UnknownWrapper(empty), empty, VarEnum.VT_UNKNOWN };
-            yield return new object[] { new UnknownWrapper(dual), dual, VarEnum.VT_UNKNOWN };
             yield return new object[] { new UnknownWrapper(iUnknown), iUnknown, VarEnum.VT_UNKNOWN };
-            yield return new object[] { new UnknownWrapper(iDispatch), iDispatch, VarEnum.VT_UNKNOWN };
-            yield return new object[] { new UnknownWrapper(iInspectable), iInspectable, VarEnum.VT_UNKNOWN };
-            yield return new object[] { new UnknownWrapper(nonDual), nonDual, VarEnum.VT_UNKNOWN };
-            yield return new object[] { new UnknownWrapper(autoDispatch), autoDispatch, VarEnum.VT_UNKNOWN };
-            yield return new object[] { new UnknownWrapper(autoDual), autoDual, VarEnum.VT_UNKNOWN };
 
-            yield return new object[] { new DispatchWrapper(empty), empty, VarEnum.VT_DISPATCH };
-            yield return new object[] { new DispatchWrapper(dual), dual, VarEnum.VT_DISPATCH };
-            yield return new object[] { new DispatchWrapper(iUnknown), iUnknown, VarEnum.VT_DISPATCH };
-            yield return new object[] { new DispatchWrapper(iDispatch), iDispatch, VarEnum.VT_DISPATCH };
-            yield return new object[] { new DispatchWrapper(iInspectable), iInspectable, VarEnum.VT_DISPATCH };
-            yield return new object[] { new DispatchWrapper(nonDual), nonDual, VarEnum.VT_DISPATCH };
-            yield return new object[] { new DispatchWrapper(autoDispatch), autoDispatch, VarEnum.VT_DISPATCH };
-            yield return new object[] { new DispatchWrapper(autoDual), autoDual, VarEnum.VT_DISPATCH };
+            if (PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport)
+            {
+                var empty = new ComImportObject();
+                var dual = new DualComObject();
+                var iDispatch = new IDispatchComObject();
+                var iInspectable = new IInspectableComObject();
+                var nonDual = new NonDualComObject();
+                var autoDispatch = new AutoDispatchComObject();
+                var autoDual = new AutoDualComObject();
+
+                yield return new object[] { new UnknownWrapper(empty), empty, VarEnum.VT_UNKNOWN };
+                yield return new object[] { new UnknownWrapper(dual), dual, VarEnum.VT_UNKNOWN };
+                yield return new object[] { new UnknownWrapper(iDispatch), iDispatch, VarEnum.VT_UNKNOWN };
+                yield return new object[] { new UnknownWrapper(iInspectable), iInspectable, VarEnum.VT_UNKNOWN };
+                yield return new object[] { new UnknownWrapper(nonDual), nonDual, VarEnum.VT_UNKNOWN };
+                yield return new object[] { new UnknownWrapper(autoDispatch), autoDispatch, VarEnum.VT_UNKNOWN };
+                yield return new object[] { new UnknownWrapper(autoDual), autoDual, VarEnum.VT_UNKNOWN };
+
+                yield return new object[] { new DispatchWrapper(empty), empty, VarEnum.VT_DISPATCH };
+                yield return new object[] { new DispatchWrapper(dual), dual, VarEnum.VT_DISPATCH };
+                yield return new object[] { new DispatchWrapper(iDispatch), iDispatch, VarEnum.VT_DISPATCH };
+                yield return new object[] { new DispatchWrapper(iInspectable), iInspectable, VarEnum.VT_DISPATCH };
+                yield return new object[] { new DispatchWrapper(nonDual), nonDual, VarEnum.VT_DISPATCH };
+                yield return new object[] { new DispatchWrapper(autoDispatch), autoDispatch, VarEnum.VT_DISPATCH };
+                yield return new object[] { new DispatchWrapper(autoDual), autoDual, VarEnum.VT_DISPATCH };
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
@@ -96,12 +103,16 @@ namespace System.Runtime.InteropServices.Tests
 
         public static IEnumerable<object[]> GetNativeVariantForObject_InvalidArrayType_TestData()
         {
-            yield return new object[] { new DualComObject[] { new DualComObject() } };
             yield return new object[] { new IUnknownComObject[] { new IUnknownComObject(), null } };
-            yield return new object[] { new IDispatchComObject[] { new IDispatchComObject(), null } };
-            yield return new object[] { new NonDualComObject[] { new NonDualComObject(), null } };
-            yield return new object[] { new AutoDispatchComObject[] { new AutoDispatchComObject(), null } };
-            yield return new object[] { new AutoDualComObject[] { new AutoDualComObject(), null } };
+
+            if (PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport)
+            {
+                yield return new object[] { new DualComObject[] { new DualComObject() } };
+                yield return new object[] { new IDispatchComObject[] { new IDispatchComObject(), null } };
+                yield return new object[] { new NonDualComObject[] { new NonDualComObject(), null } };
+                yield return new object[] { new AutoDispatchComObject[] { new AutoDispatchComObject(), null } };
+                yield return new object[] { new AutoDualComObject[] { new AutoDualComObject(), null } };
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]

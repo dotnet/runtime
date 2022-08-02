@@ -6,7 +6,7 @@
 namespace System.Runtime.InteropServices.Tests.Common
 {
     [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    [Guid("293E13A4-2791-4121-9714-14D37CF5DCD4")]
     public interface IComImportObject { }
 
     [ComImport]
@@ -31,31 +31,42 @@ namespace System.Runtime.InteropServices.Tests.Common
 
     public class InterfaceComImportObject : IComImportObject { }
 
-    [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
-    public class InterfaceAndComImportObject : IComImportObject { }
+    public static class ComServers
+    {
+        // Represents an IUnknown only server that exists on all Windows SKUs.
+        public const string IUnknownOnlyComServer = "0340F119-A598-4ed9-B0AC-6F6A12D3E755";
+
+        // Represents a COM server that exists on all Windows skus that support IDispatch.
+        // See System.DirectoryServices.AccountManagement.ADsLargeInteger.
+        public const string IDispatchSupportedComServer = "927971f5-0939-11d1-8be1-00c04fd8d503";
+        public const string IDispatchSupportedComServerProgId = "LargeInteger";
+    }
 
     [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    [Guid(ComServers.IUnknownOnlyComServer)]
+    public class InterfaceOnComImportObject : IComImportObject { }
+
+    [ComImport]
+    [Guid(ComServers.IDispatchSupportedComServer)]
     public class ComImportObject { }
 
     [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    [Guid(ComServers.IDispatchSupportedComServer)]
     [ClassInterface(ClassInterfaceType.None)]
     public class DualComObject : DualInterface { }
 
     [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    [Guid(ComServers.IUnknownOnlyComServer)]
     [ClassInterface(ClassInterfaceType.None)]
     public class IUnknownComObject : IUnknownInterface { }
 
     [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    [Guid(ComServers.IDispatchSupportedComServer)]
     [ClassInterface(ClassInterfaceType.None)]
     public class IDispatchComObject : IDispatchInterface { }
 
     [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    [Guid(ComServers.IDispatchSupportedComServer)]
     [ClassInterface(ClassInterfaceType.None)]
     public class IInspectableComObject : IInspectableInterface { }
 
@@ -66,32 +77,32 @@ namespace System.Runtime.InteropServices.Tests.Common
     public class GenericSubComImportObject<T> : ComImportObject { }
 
     [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    [Guid(ComServers.IDispatchSupportedComServer)]
     [ClassInterface(ClassInterfaceType.None)]
     public class NonDualComObject : IComImportObject { }
 
     [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    [Guid(ComServers.IDispatchSupportedComServer)]
     [ClassInterface(ClassInterfaceType.None)]
     public class NonDualComObjectEmpty { }
 
     [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    [Guid(ComServers.IDispatchSupportedComServer)]
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
     public class AutoDispatchComObject : IComImportObject { }
 
     [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    [Guid(ComServers.IDispatchSupportedComServer)]
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
     public class AutoDispatchComObjectEmpty { }
 
     [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    [Guid(ComServers.IDispatchSupportedComServer)]
     [ClassInterface(ClassInterfaceType.AutoDual)]
     public class AutoDualComObject : IComImportObject { }
 
     [ComImport]
-    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    [Guid(ComServers.IDispatchSupportedComServer)]
     [ClassInterface(ClassInterfaceType.AutoDual)]
     public class AutoDualComObjectEmpty { }
 
