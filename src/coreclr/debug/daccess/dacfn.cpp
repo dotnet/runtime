@@ -1455,7 +1455,7 @@ void DacEnumCodeForStackwalk(TADDR taCallEnd)
     // Note that this only handles absolute indirect calls (ModR/M byte of 0x15), all the other forms of
     // indirect calls are register-relative, and so we'd have to do a much more complicated decoding based
     // on the register context.  Regardless, it seems like this is fundamentally error-prone because it's
-    // aways possible that the call instruction was not 6 bytes long, and we could have some other instructions
+    // always possible that the call instruction was not 6 bytes long, and we could have some other instructions
     // that happen to match the pattern we're looking for.
     PTR_BYTE callCode = PTR_BYTE(taCallEnd - 6);
     PTR_BYTE callMrm = PTR_BYTE(taCallEnd - 5);

@@ -593,11 +593,11 @@ void emitter::emitIns(instruction ins)
  *  Special notes for LoongArch64:
  *    The parameter `offs` has special info.
  *    The real value of `offs` is positive.
- *    If the `offs` is negtive which its real value abs(offs),
- *    the negtive `offs` is special for optimizing the large offset which >2047.
+ *    If the `offs` is negative which its real value abs(offs),
+ *    the negative `offs` is special for optimizing the large offset which >2047.
  *    when offs >2047 we can't encode one instruction to load/store the data,
  *    if there are several load/store at this case, you have to repeat the similar
- *    large offs with reduntant instructions and maybe eat up the `SC_IG_BUFFER_SIZE`.
+ *    large offs with redundant instructions and maybe eat up the `SC_IG_BUFFER_SIZE`.
  *
  *    Optimize the following:
  *      lu12i.w  x0, 0x0
@@ -2107,7 +2107,7 @@ void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 // NOTE:
 //  For loongarch64, emitIns_J is just only jump, not include the condition branch!
 //  The condition branch is the emitIns_J_cond_la().
-//  If using "BasicBlock* dst" lable as target, the INS_OPTS_J is a short jump while long jump will be replace by
+//  If using "BasicBlock* dst" label as target, the INS_OPTS_J is a short jump while long jump will be replace by
 //  INS_OPTS_JIRL.
 //
 //  The arg "instrCount" is two regs's encoding when ins is beq/bne/blt/bltu/bge/bgeu/beqz/bnez.

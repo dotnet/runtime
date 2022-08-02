@@ -123,7 +123,7 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
             }
-            if (CompileAllPossibleCrossModuleCode)
+            if (CompileAllPossibleCrossModuleCode || _compileGenericDependenciesFromVersionBubbleModuleSet)
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_UnrelatedR2RCode;
             }
