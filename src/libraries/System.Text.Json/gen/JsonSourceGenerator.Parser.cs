@@ -40,6 +40,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonNumberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonNumberHandlingAttribute";
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
             private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
+            private const string JsonRequiredAttributeFullName = "System.Text.Json.Serialization.JsonRequiredAttribute";
             private const string JsonSerializerContextFullName = "System.Text.Json.Serialization.JsonSerializerContext";
             private const string JsonSourceGenerationOptionsAttributeFullName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
 
@@ -1197,7 +1198,8 @@ namespace System.Text.Json.SourceGeneration
                     out string? converterInstantiationLogic,
                     out int order,
                     out bool hasFactoryConverter,
-                    out bool isExtensionData);
+                    out bool isExtensionData,
+                    out bool isRequired);
 
                 ProcessMember(
                     memberInfo,
@@ -1229,6 +1231,7 @@ namespace System.Text.Json.SourceGeneration
                     IsProperty = memberInfo.MemberType == MemberTypes.Property,
                     IsPublic = isPublic,
                     IsVirtual = isVirtual,
+                    IsRequired = isRequired,
                     JsonPropertyName = jsonPropertyName,
                     RuntimePropertyName = runtimePropertyName,
                     PropertyNameVarName = propertyNameVarName,
@@ -1275,7 +1278,8 @@ namespace System.Text.Json.SourceGeneration
                 out string? converterInstantiationLogic,
                 out int order,
                 out bool hasFactoryConverter,
-                out bool isExtensionData)
+                out bool isExtensionData,
+                out bool isRequired)
             {
                 hasJsonInclude = false;
                 jsonPropertyName = null;
@@ -1284,6 +1288,7 @@ namespace System.Text.Json.SourceGeneration
                 converterInstantiationLogic = null;
                 order = 0;
                 isExtensionData = false;
+                isRequired = false;
 
                 bool foundDesignTimeCustomConverter = false;
                 hasFactoryConverter = false;
@@ -1348,6 +1353,11 @@ namespace System.Text.Json.SourceGeneration
                             case JsonExtensionDataAttributeFullName:
                                 {
                                     isExtensionData = true;
+                                }
+                                break;
+                            case JsonRequiredAttributeFullName:
+                                {
+                                    isRequired = true;
                                 }
                                 break;
                             default:

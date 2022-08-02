@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tests
     {
         // To avoid interactions between tests when they are run in parallel, we run all these tests in their
         // own sub-process using RemoteExecutor.Invoke()  However this makes it very inconvenient to debug the test.
-        // By seting this #if to true you stub out RemoteInvoke and the code will run in-proc which is useful
+        // By setting this #if to true you stub out RemoteInvoke and the code will run in-proc which is useful
         // in debugging.
 #if false
         class NullDispose : IDisposable

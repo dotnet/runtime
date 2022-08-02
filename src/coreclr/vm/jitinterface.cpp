@@ -3737,7 +3737,7 @@ CorInfoInitClassResult CEEInfo::initClass(
         if (!pMD->IsCtor() && !pTypeToInitMT->IsValueType() && !pTypeToInitMT->IsInterface())
         {
             // For instance methods of types with precise-initialization
-            // semantics, we can assume that the .ctor triggerred the
+            // semantics, we can assume that the .ctor triggered the
             // type initialization.
             // This does not hold for NULL "this" object. However, the spec does
             // not require that case to work.

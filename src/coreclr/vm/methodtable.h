@@ -3378,7 +3378,7 @@ private:
         // low WORD of flags is reserved for the component size.
 
         // The following bits describe mutually exclusive locations of the type
-        // in the type hiearchy.
+        // in the type hierarchy.
         enum_flag_Category_Mask             = 0x000F0000,
 
         enum_flag_Category_Class            = 0x00000000,

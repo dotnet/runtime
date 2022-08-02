@@ -276,7 +276,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             break;
 
         case GT_MEMORYBARRIER:
-            // Simliar to any Volatile indirection, we must handle this as a definition of GcHeap/ByrefExposed
+            // Similar to any Volatile indirection, we must handle this as a definition of GcHeap/ByrefExposed
             fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
             break;
 
@@ -623,7 +623,7 @@ void Compiler::fgMarkInScope(BasicBlock* block, VARSET_VALARG_TP inScope)
 
     VarSetOps::UnionD(this, block->bbVarUse, inScope);
 
-    /* Artifically mark all vars in scope as alive */
+    /* Artificially mark all vars in scope as alive */
 
     VarSetOps::UnionD(this, block->bbLiveIn, inScope);
     VarSetOps::UnionD(this, block->bbLiveOut, inScope);

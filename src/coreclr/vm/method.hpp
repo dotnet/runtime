@@ -363,7 +363,7 @@ public:
     BOOL IsTypicalSharedInstantiation();
 
 
-    // True if and only if this is a method desriptor for :
+    // True if and only if this is a method descriptor for:
     // 1. a non-generic method or a generic method at its typical method instantiation
     // 2. in a non-generic class or a typical instantiation of a generic class
     // This method can be called on a non-restored method desc
@@ -658,7 +658,7 @@ public:
     inline DWORD IsGenericComPlusCall();
     inline void SetupGenericComPlusCall();
 #else // !FEATURE_COMINTEROP
-     // hardcoded to return FALSE to improve code readibility
+     // hardcoded to return FALSE to improve code readability
     inline DWORD IsComPlusCall()
     {
         LIMITED_METHOD_CONTRACT;
@@ -674,7 +674,7 @@ public:
     // Update flags in a thread safe manner.
     WORD InterlockedUpdateFlags(WORD wMask, BOOL fSet);
 
-    // If the method is in an Edit and Contine (EnC) module, then
+    // If the method is in an Edit and Continue (EnC) module, then
     // we DON'T want to backpatch this, ever.  We MUST always call
     // through the precode so that we can update the method.
     inline DWORD IsEnCMethod()

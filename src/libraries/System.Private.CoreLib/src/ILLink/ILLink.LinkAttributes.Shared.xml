@@ -289,6 +289,15 @@
     <type fullname="System.Runtime.InteropServices.LibraryImportAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshallerAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
     <type fullname="System.Runtime.InteropServices.Marshalling.MarshalUsingAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
