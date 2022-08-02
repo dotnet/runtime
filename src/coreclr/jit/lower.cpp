@@ -2839,6 +2839,30 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
         }
 
+        // Transform ((x AND 1) NE 0) into (x AND 1), unless x is a LSH(1, y) and we're
+        // targeting XARCH, as it will be transformed into a BT further down.
+        // The compiler requires jumps to have relop operands, so we do not fold that case either.
+        if ((op2Value == 0) && cmp->OperIs(GT_NE) && andOp2->IsIntegralConst(1)
+#ifdef TARGET_XARCH
+            && !(andOp1->OperIs(GT_LSH) && andOp1->gtGetOp1()->IsIntegralConst(1))
+#endif
+        )
+        {
+            LIR::Use cmpUse;
+            if ((genActualType(op1) == cmp->TypeGet()) && BlockRange().TryGetUse(cmp, &cmpUse) &&
+                !cmpUse.User()->OperIs(GT_JTRUE))
+            {
+                GenTree* next = cmp->gtNext;
+
+                cmpUse.ReplaceWith(op1);
+
+                BlockRange().Remove(cmp->gtGetOp2());
+                BlockRange().Remove(cmp);
+
+                return next;
+            }
+        }
+
         if (op2Value == 0)
         {
             BlockRange().Remove(op1);
@@ -2931,19 +2955,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             }
 
             return cmp->gtNext;
-        }
-        // Transform TEST_NE(x, 1) into AND(x, 1).
-        // The compiler requires jumps to have relop operands, so we do not fold that case.
-        else if (cmp->OperIs(GT_TEST_NE) && lsh->IsIntegralConst(1) && (genActualType(lsh) == cmp->TypeGet()))
-        {
-            if (BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE))
-            {
-                cmp->SetOper(GT_AND);
-                lsh->AsIntCon()->SetIntegralValue(1);
-                ContainCheckBinary(cmp->AsOp()); // Containment is cleared when converting to TEST_*.
-
-                return cmp->gtNext;
-            }
         }
 #endif // TARGET_XARCH
     }
