@@ -1423,11 +1423,18 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
-            // Try to read in whole array, but don't fail if not possible
-            BufferReader.GetBuffer(actual * ValueHandleLength.Guid, out _, out _);
-            foreach (ref Guid item in array.AsSpan(offset, actual))
+            if (BitConverter.IsLittleEndian)
             {
-                item = BufferReader.ReadGuid();
+                BufferReader.ReadRawArrayBytes(array.AsSpan(offset, actual));
+            }
+            else
+            {
+                // Try to read in whole array, but don't fail if not possible
+                BufferReader.GetBuffer(actual * ValueHandleLength.Guid, out _, out _);
+                foreach (ref Guid item in array.AsSpan(offset, actual))
+                {
+                    item = BufferReader.ReadGuid();
+                }
             }
             SkipArrayElements(actual);
             return actual;
