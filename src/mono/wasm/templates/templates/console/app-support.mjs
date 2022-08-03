@@ -111,70 +111,72 @@ function mergeArguments() {
     is_debugging = runArgs.debugging === true;
 }
 
-
-try {
+App.run = async function run(main) {
     try {
-        if (await stat('./runArgs.json')) {
-            const argsJson = await readFile('./runArgs.json', { encoding: "utf8" });
-            runArgs = JSON.parse(argsJson);
-            console.debug(`runArgs: ${JSON.stringify(runArgs)}`);
+        try {
+            if (await stat('./runArgs.json')) {
+                const argsJson = await readFile('./runArgs.json', { encoding: "utf8" });
+                runArgs = JSON.parse(argsJson);
+                console.debug(`runArgs: ${JSON.stringify(runArgs)}`);
+            }
+        } catch (err) {
+            console.debug(`could not load ./runArgs.json: ${err}. Ignoring`);
         }
-    } catch (err) {
-        console.debug(`could not load ./runArgs.json: ${err}. Ignoring`);
+        initRunArgs();
+        mergeArguments();
+
+        const runtime = await createDotnetRuntime(({ Module, INTERNAL }) => ({
+            disableDotnet6Compatibility: true,
+            config: null,
+            configSrc: "./mono-config.json",
+            onConfigLoaded: (config) => {
+                if (!config) {
+                    const err = new Error("Could not find ./mono-config.json. Cancelling run");
+                    set_exit_code(1);
+                    throw err;
+                }
+                // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
+                for (let variable in runArgs.environmentVariables) {
+                    config.environmentVariables[variable] = runArgs.environmentVariables[variable];
+                }
+                config.diagnosticTracing = !!runArgs.diagnosticTracing;
+                if (is_debugging) {
+                    if (config.debugLevel == 0)
+                        config.debugLevel = -1;
+
+                    config.waitForDebugger = -1;
+                }
+            },
+            onDotnetReady: async () => {
+                let wds = Module.FS.stat(runArgs.workingDirectory);
+                if (wds === undefined || !Module.FS.isDir(wds.mode)) {
+                    set_exit_code(1, `Could not find working directory ${runArgs.working_dir}`);
+                    return;
+                }
+
+                Module.FS.chdir(runArgs.workingDirectory);
+
+                if (runArgs.runtimeArgs.length > 0)
+                    INTERNAL.mono_wasm_set_runtime_options(runArgs.runtimeArgs);
+
+            },
+            onAbort: (error) => {
+                set_exit_code(1, error);
+            },
+        }));
+        App.runtime = runtime;
+        App.runArgs = runArgs;
+        App.main = main;
+
+        if (App.main) {
+            let exit_code = await App.main(runArgs.applicationArguments);
+            set_exit_code(exit_code ?? 0);
+        }
+        else {
+            set_exit_code(1, "WASM ERROR: no App.main defined");
+        }
     }
-    initRunArgs();
-    mergeArguments();
-
-    const runtime = await createDotnetRuntime(({ Module, INTERNAL }) => ({
-        disableDotnet6Compatibility: true,
-        config: null,
-        configSrc: "./mono-config.json",
-        onConfigLoaded: (config) => {
-            if (!config) {
-                const err = new Error("Could not find ./mono-config.json. Cancelling run");
-                set_exit_code(1);
-                throw err;
-            }
-            // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-            for (let variable in runArgs.environmentVariables) {
-                config.environmentVariables[variable] = runArgs.environmentVariables[variable];
-            }
-            config.diagnosticTracing = !!runArgs.diagnosticTracing;
-            if (is_debugging) {
-                if (config.debugLevel == 0)
-                    config.debugLevel = -1;
-
-                config.waitForDebugger = -1;
-            }
-        },
-        onDotnetReady: async () => {
-            let wds = Module.FS.stat(runArgs.workingDirectory);
-            if (wds === undefined || !Module.FS.isDir(wds.mode)) {
-                set_exit_code(1, `Could not find working directory ${runArgs.working_dir}`);
-                return;
-            }
-
-            Module.FS.chdir(runArgs.workingDirectory);
-
-            if (runArgs.runtimeArgs.length > 0)
-                INTERNAL.mono_wasm_set_runtime_options(runArgs.runtimeArgs);
-
-        },
-        onAbort: (error) => {
-            set_exit_code(1, error);
-        },
-    }));
-    App.runtime = runtime;
-    App.runArgs = runArgs;
-
-    if (App.main) {
-        let exit_code = await App.main(runArgs.applicationArguments);
-        set_exit_code(exit_code ?? 0);
+    catch (err) {
+        set_exit_code(2, err);
     }
-    else {
-        set_exit_code(1, "WASM ERROR: no App.main defined");
-    }
-}
-catch (err) {
-    set_exit_code(2, err);
 }

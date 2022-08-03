@@ -1,6 +1,6 @@
 import { App } from './app-support.js'
 
-App.main = async function (applicationArguments) {
+async function main(applicationArguments) {
     App.runtime.setModuleImports("main.js", {
         window: {
             location: {
@@ -14,3 +14,5 @@ App.main = async function (applicationArguments) {
 
     await App.runtime.runMain("browser.0.dll", applicationArguments);
 }
+
+App.run(main);

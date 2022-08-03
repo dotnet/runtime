@@ -1,6 +1,6 @@
 import { App } from './app-support.mjs'
 
-App.main = async function (applicationArguments) {
+async function main(applicationArguments) {
     App.runtime.setModuleImports("main.mjs", {
         node: {
             process: {
@@ -15,3 +15,5 @@ App.main = async function (applicationArguments) {
 
     return await App.runtime.runMain("console.0.dll", applicationArguments);
 }
+
+App.run(main);
