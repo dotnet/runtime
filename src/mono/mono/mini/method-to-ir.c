@@ -9570,23 +9570,42 @@ calli_end:
 			guint32 i32166_token;
 			if((callvirt_ip = il_read_callvirt(next_ip, end, &i32166_token)) && ip_in_bb(cfg, cfg->cbb, callvirt_ip)) 
 			{
-				printf("\n*** JITting %s", mono_method_get_full_name(method));
-
 				MonoMethod* iface_method = mini_get_method(cfg, method, i32166_token, NULL, generic_context);
 				MonoMethodSignature* iface_method_sig = mono_method_signature_internal(iface_method);
 
-				if(	(val->flags & MONO_INST_INDIRECT) && // we have the address on stack (not the value itself)
+				if(	val &&
+					(val->type == STACK_VTYPE || val->type == STACK_OBJ) && // we have the address on stack (not the value itself)
+					val->flags != MONO_INST_FAULT && // not null
 					iface_method_sig != NULL && // callee signture is healthy
 					iface_method_sig->hasthis && // the callee is a method of what's on stack
 					iface_method_sig->param_count == 0) // the callee has no args (other than this)
 				{
-					MonoMethod* struct_method = mono_class_get_virtual_method(klass, iface_method, error);
+					// is this needed?
+					if (!m_class_is_inited (iface_method->klass))
+						if (!mono_class_init_internal (iface_method->klass))
+							TYPE_LOAD_ERROR (iface_method->klass);
 
+					printf("\n*** %s (val t:%i f:%i)", 
+						mono_method_get_full_name(method),
+						val->type, val->flags);
+
+					MonoMethod* struct_method = mono_class_get_virtual_method(klass, iface_method, error);
+					
 					if(is_ok(error)) {
-						*(sp++) = val;
+						if(val->flags & MONO_INST_INDIRECT) {
+							*sp++ = val;
+						} else {
+							MonoInst* srcvar = get_vreg_to_inst(cfg, val->dreg);
+							if (!srcvar)
+								srcvar = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (klass), OP_LOCAL, val->dreg);
+
+							EMIT_NEW_VARLOADA (cfg, ins, srcvar, m_class_get_byval_arg(klass));
+							*sp++= ins;
+						}
+						
 						cmethod_override = struct_method;
 
-						printf ("\n*** box+callvirt optimization (%s) ===> (%s)", 
+						printf ("\n... box+callvirt optimization (%s) ===> (%s)", 
 							mono_method_get_full_name(iface_method),
 							mono_method_get_full_name(struct_method));
 
