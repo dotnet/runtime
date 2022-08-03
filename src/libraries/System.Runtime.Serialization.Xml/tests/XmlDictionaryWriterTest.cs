@@ -322,7 +322,7 @@ public static class XmlDictionaryWriterTest
     }
 
     [Fact]
-    public static void BinaryWritel_WriteString()
+    public static void XmlBaseWriter_WriteString()
     {
         const byte Chars8Text = 152;
         const byte Chars16Text = 154;
