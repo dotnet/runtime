@@ -41,7 +41,7 @@ namespace System.Threading.RateLimiting
 
         /// <summary>
         /// Defines a partition that will not have a rate limiter.
-        /// This means any calls to <see cref="PartitionedRateLimiter{TResource}.Acquire(TResource, int)"/> or <see cref="PartitionedRateLimiter{TResource}.WaitAndAcquireAsync(TResource, int, CancellationToken)"/> will always succeed for the given <paramref name="partitionKey"/>.
+        /// This means any calls to <see cref="PartitionedRateLimiter{TResource}.AttemptAcquire(TResource, int)"/> or <see cref="PartitionedRateLimiter{TResource}.AcquireAsync(TResource, int, CancellationToken)"/> will always succeed for the given <paramref name="partitionKey"/>.
         /// </summary>
         /// <typeparam name="TKey">The type to distinguish partitions with.</typeparam>
         /// <param name="partitionKey">The specific key for this partition.</param>
