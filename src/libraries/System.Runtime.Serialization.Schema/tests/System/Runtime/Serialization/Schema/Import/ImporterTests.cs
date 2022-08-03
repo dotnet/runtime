@@ -109,14 +109,16 @@ namespace System.Runtime.Serialization.Schema.Tests
         }
         public static IEnumerable<object[]> Import_MemberData()
         {
+            int newlineSize = Environment.NewLine.Length;
+
             // Import(XmlSchemaSet)
-            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas), 5396 };
+            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas), 5060 + (168 * newlineSize) };   // 168 lines
 
             // Import(XmlSchemaSet, ICollection<XmlQualifiedName>)
-            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas, new XmlQualifiedName[] { SchemaUtils.ValidTypeNames[0] }), 1615 };
+            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas, new XmlQualifiedName[] { SchemaUtils.ValidTypeNames[0] }), 1515 + (50 * newlineSize) }; // 50 lines
 
             // Import(XmlSchemaSet, XmlQualifiedName)
-            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas, SchemaUtils.ValidTypeNames[0]), 1615 };
+            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas, SchemaUtils.ValidTypeNames[0]), 1515 + (50 * newlineSize) }; // 50 lines
 
             // Import(XmlSchemaSet, XmlSchemaElement)
             // TODO
