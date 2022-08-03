@@ -586,35 +586,39 @@ void emitter::emitIns(instruction ins)
 }
 
 /*****************************************************************************
+ *  emitter::emitIns_S_R() and emitter::emitIns_R_S():
  *
  *  Add an Load/Store instruction(s): base+offset and base-addr-computing if needed.
  *  For referencing a stack-based local variable and a register
  *
  *  Special notes for LoongArch64:
  *    The parameter `offs` has special info.
- *    The real value of `offs` is positive.
- *    If the `offs` is negtive which its real value abs(offs),
- *    the negtive `offs` is special for optimizing the large offset which >2047.
- *    when offs >2047 we can't encode one instruction to load/store the data,
- *    if there are several load/store at this case, you have to repeat the similar
- *    large offs with reduntant instructions and maybe eat up the `SC_IG_BUFFER_SIZE`.
  *
- *    Optimize the following:
+ *    (1) The real value of `offs` is positive. `offs` = `offs`.
+ *
+ *    (2) If the `offs` is negtive, `offs` = -(offs),
+ *        the negtive `offs` is special for optimizing the large offset which >2047.
+ *        when offs >2047 we can't encode one instruction to load/store the data,
+ *        if there are several load/store at this case, you have to repeat the similar
+ *        large offs with reduntant instructions and maybe eat up the `SC_IG_BUFFER_SIZE`.
+ *
+ *    Before optimizing the following instructions:
  *      lu12i.w  x0, 0x0
  *      ori  x0, x0, 0x9ac
  *      add.d  x0, x0, fp
  *      fst.s  fa0, x0, 0
  *
- *    For the offs within range [0,0x7ff], using one instruction:
- *      ori  x0, x0, offs
- *    For the offs within range [0x1000,0xffffffff], using two instruction
- *      lu12i.w  x0, offs-hi-20bits
- *      ori  x0, x0, offs-low-12bits
+ *    After optimized the instructions:
+ *      For the offs within range [0,0x7ff], using one instruction:
+ *        ori  x0, x0, offs
+ *      For the offs within range [0x1000,0xffffffff], using two instruction
+ *        lu12i.w  x0, offs-hi-20bits
+ *        ori  x0, x0, offs-low-12bits
  *
- *    Store/Load the data:
- *      fstx.s  fa0, x0, fp
+ *      Then Store/Load the data:
+ *        fstx.s  fa0, x0, fp
  *
- *    If the store/load are repeated,
+ *    If storing/loading the second field of a struct,
  *      addi_d  x0,x0,sizeof(type)
  *      fstx.s  fa0, x0, fp
  *

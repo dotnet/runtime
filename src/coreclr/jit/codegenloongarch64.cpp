@@ -7138,14 +7138,16 @@ void CodeGen::genCall(GenTreeCall* call)
         else if (abiInfo.IsSplit())
         {
             assert(compFeatureArgSplit());
-            genConsumeArgSplitStruct(argNode->AsPutArgSplit());
+
+            GenTreePutArgSplit* splitNode = argNode->AsPutArgSplit();
+            genConsumeArgSplitStruct(splitNode);
 
             regNumber argReg   = abiInfo.GetRegNum();
-            regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(0);
-            var_types regType  = argNode->AsPutArgSplit()->GetRegType(0);
+            regNumber allocReg = splitNode->GetRegNumByIdx(0);
+            var_types regType  = splitNode->GetRegType(0);
 
             // For LA64's ABI, the split is only using the A7 and stack for passing arg.
-            assert(emitter::isGeneralRegister(argReg));
+            assert(argReg == REG_A7);
             assert(emitter::isGeneralRegister(allocReg));
             assert(abiInfo.NumRegs == 1);
 
@@ -8448,6 +8450,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
         regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
         regSet.verifyRegistersUsed(killMask);
 
+        // NOTE: here is just defining an `empty` label which will create a new IGroup for updating the gcInfo.
         genDefineTempLabel(skipLabel);
     }
 }
@@ -9167,7 +9170,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
         }
 
         var_types storeType = TYP_UNDEF;
-        unsigned  slotSize  = TARGET_POINTER_SIZE;
+        int       slotSize  = TARGET_POINTER_SIZE;
 
         if (varTypeIsStruct(varDsc))
         {
@@ -9187,7 +9190,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     storeType = varDsc->GetLayout()->GetGCPtrType(0);
                 }
             }
-            slotSize = (unsigned)emitActualTypeSize(storeType);
+            slotSize = (int)emitActualTypeSize(storeType);
 
 #if FEATURE_MULTIREG_ARGS
             // Must be <= MAX_PASS_MULTIREG_BYTES or else it wouldn't be passed in registers
@@ -9221,47 +9224,42 @@ void CodeGen::genFnPrologCalleeRegArgs()
         {
             assert(srcRegNum != varDsc->GetOtherArgReg());
 
-            int       tmp_offset = 0;
-            regNumber tmp_reg    = REG_NA;
+            regNumber tmp_reg = REG_NA;
 
             bool FPbased;
-            int  baseOffset = 0;
-            int  base       = compiler->lvaFrameAddress(varNum, &FPbased);
+            int  baseOffset = compiler->lvaFrameAddress(varNum, &FPbased);
 
-            base += baseOffset;
-
-            if (emitter::isValidSimm12(base))
+            // First store the `varDsc->GetArgReg()` on stack.
+            if (emitter::isValidSimm12(baseOffset))
             {
-                GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, baseOffset);
+                GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, 0);
             }
             else
             {
                 assert(tmp_reg == REG_NA);
 
-                tmp_offset = base;
                 tmp_reg    = REG_R21;
-                GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, base);
-                // NOTE: `REG_R21` will be used within `emitIns_S_R`.
-                // Details see the comment for `emitIns_S_R`.
+                GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, baseOffset);
+                // The last parameter `int offs` of the `emitIns_S_R` is negtive,
+                // it means the offset imm had been stored within the `REG_R21`.
                 GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum, -8);
             }
 
             regArgMaskLive &= ~genRegMask(srcRegNum);
 
-            // Check if we are writing past the end of the struct
+            // Then check if varDsc is a struct arg
             if (varTypeIsStruct(varDsc))
             {
                 if (emitter::isFloatReg(varDsc->GetOtherArgReg()))
                 {
-                    baseOffset = (int)EA_SIZE(emitActualTypeSize(storeType));
-                    storeType  = varDsc->lvIs4Field2 ? TYP_FLOAT : TYP_DOUBLE;
-                    size       = EA_SIZE(emitActualTypeSize(storeType));
-                    baseOffset = baseOffset < (int)size ? (int)size : baseOffset;
-                    srcRegNum  = varDsc->GetOtherArgReg();
+                    srcRegNum = varDsc->GetOtherArgReg();
+                    storeType = varDsc->lvIs4Field2 ? TYP_FLOAT : TYP_DOUBLE;
+                    size      = EA_SIZE(emitActualTypeSize(storeType));
+
+                    slotSize = slotSize < (int)size ? (int)size : slotSize;
                 }
                 else if (emitter::isGeneralRegister(varDsc->GetOtherArgReg()))
                 {
-                    baseOffset = (int)EA_SIZE(slotSize);
                     if (varDsc->lvIs4Field2)
                     {
                         storeType = TYP_INT;
@@ -9270,69 +9268,69 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     {
                         storeType = varDsc->GetLayout()->GetGCPtrType(1);
                     }
-                    size = emitActualTypeSize(storeType);
-                    if (baseOffset < (int)EA_SIZE(size))
-                    {
-                        baseOffset = (int)EA_SIZE(size);
-                    }
-                    srcRegNum = varDsc->GetOtherArgReg();
-                }
 
+                    srcRegNum = varDsc->GetOtherArgReg();
+                    size      = emitActualTypeSize(storeType);
+
+                    slotSize = slotSize < (int)EA_SIZE(size) ? (int)EA_SIZE(size) : slotSize;
+                }
+                baseOffset += slotSize;
+
+                // if the struct passed by two register, then store the second register `varDsc->GetOtherArgReg()`.
                 if (srcRegNum == varDsc->GetOtherArgReg())
                 {
-                    base += baseOffset;
-
-                    if (emitter::isValidSimm12(base))
+                    if (emitter::isValidSimm12(baseOffset))
                     {
-                        GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, baseOffset);
+                        GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, slotSize);
                     }
                     else
                     {
                         if (tmp_reg == REG_NA)
                         {
-                            tmp_offset = base;
                             tmp_reg    = REG_R21;
-                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, base);
-                            // NOTE: `REG_R21` will be used within `emitIns_S_R`.
-                            // Details see the comment for `emitIns_S_R`.
+                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, baseOffset);
+                            // The last parameter `int offs` of the `emitIns_S_R` is negtive,
+                            // it means the offset imm had been stored within the `REG_R21`.
                             GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum, -8);
                         }
                         else
                         {
-                            baseOffset = -(base - tmp_offset) - 8;
-                            GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R21, 8);
-                            GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum, baseOffset);
+                            GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R21, TARGET_POINTER_SIZE);
+                            GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum, -8);
                         }
                     }
                     regArgMaskLive &= ~genRegMask(srcRegNum); // maybe do this later is better!
                 }
                 else if (varDsc->lvIsSplit)
                 {
+                    // the struct is a split struct.
                     assert(varDsc->GetArgReg() == REG_ARG_LAST && varDsc->GetOtherArgReg() == REG_STK);
-                    baseOffset = 8;
-                    base += 8;
 
+                    // For the LA's ABI, the split struct arg will be passed via `A7` and a stack slot on caller.
+                    // But if the `A7` is stored on stack on the callee side, the whole split struct should be
+                    // stored continuous on the stack on the callee side.
+                    // So, after we save `A7` on the stack in prolog, it has to copy the stack slot of the split struct
+                    // which was passed by the caller. Here we load the stack slot to `REG_SCRATCH`, and save it
+                    // on the stack following the `A7` in prolog.
                     GetEmitter()->emitIns_R_R_Imm(INS_ld_d, size, REG_SCRATCH, REG_SPBASE, genTotalFrameSize());
-                    if (emitter::isValidSimm12(base))
+                    if (emitter::isValidSimm12(baseOffset))
                     {
-                        GetEmitter()->emitIns_S_R(INS_st_d, size, REG_SCRATCH, varNum, baseOffset);
+                        GetEmitter()->emitIns_S_R(INS_st_d, size, REG_SCRATCH, varNum, TARGET_POINTER_SIZE);
                     }
                     else
                     {
                         if (tmp_reg == REG_NA)
                         {
-                            tmp_offset = base;
                             tmp_reg    = REG_R21;
-                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, base);
-                            // NOTE: `REG_R21` will be used within `emitIns_S_R`.
-                            // Details see the comment for `emitIns_S_R`.
+                            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, baseOffset);
+                            // The last parameter `int offs` of the `emitIns_S_R` is negtive,
+                            // it means the offset imm had been stored within the `REG_R21`.
                             GetEmitter()->emitIns_S_R(INS_stx_d, size, REG_SCRATCH, varNum, -8);
                         }
                         else
                         {
-                            baseOffset = -(base - tmp_offset) - 8;
-                            GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R21, 8);
-                            GetEmitter()->emitIns_S_R(INS_stx_d, size, REG_SCRATCH, varNum, baseOffset);
+                            GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R21, TARGET_POINTER_SIZE);
+                            GetEmitter()->emitIns_S_R(INS_stx_d, size, REG_SCRATCH, varNum, -8);
                         }
                     }
                 }

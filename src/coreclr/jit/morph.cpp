@@ -3788,7 +3788,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
 #ifdef TARGET_LOONGARCH64
     // For LoongArch64's ABI, the struct {long a; float b;} may be passed
-    // by Integer register and float register while must be considered the padding here.
+    // by integer and float registers and it needs to include the padding here.
     assert(roundUp(structSize, TARGET_POINTER_SIZE) == roundUp(loadExtent, TARGET_POINTER_SIZE));
 #else
     if (argValue->IsLocal())
@@ -3938,7 +3938,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 #ifndef TARGET_LOONGARCH64
             // Make sure we loaded exactly the required amount of bytes.
             // But for LoongArch64's ABI, the struct {long a; float b;} may be passed
-            // by Integer register and float register while must be considered the padding here.
+            // by integer and float registers and it needs to include the padding here.
             assert(structSize == (lastElem.Offset + genTypeSize(lastElem.Type)));
 #endif
         }
