@@ -9707,10 +9707,6 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = call_intrins (ctx, intrins, args, "");
 			break;
 		}
-		case OP_WASM_SIMD_V128_CONST: {
-			values [ins->dreg] = values [ins->sreg1];
-			break;
-		}
 		case OP_WASM_SIMD_SHUFFLE: {
 			/* FIXME: this crashes 'WebAssembly Instruction Selection' pass in some cases */
 			LLVMValueRef args [18] = { lhs, rhs };

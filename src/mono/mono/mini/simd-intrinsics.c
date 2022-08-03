@@ -4041,7 +4041,7 @@ emit_wasmbase_intrinsics (
 		case SN_CompareNotEqual:
 			return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_NE, arg0_type, fsig, args);
 		case SN_Constant:
-			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_V128_CONST, 0, arg0_type, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass, OP_XMOVE, 0, arg0_type, fsig, args);
 		case SN_ExtractLane: {
 			int extract_op = type_to_xextract_op (arg0_type);
 			return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
