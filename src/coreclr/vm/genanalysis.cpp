@@ -76,33 +76,8 @@ bool gcGenAnalysisDump = false;
 
 /* static */ void GenAnalysis::EnableGenerationalAwareSession()
 {
-    LPCWSTR outputPath = nullptr;
-    outputPath = GENAWARE_TRACE_FILE_NAME;
-    
-    // if the string "{pid}" occurs in the logFilename,
-    // replace it by the PID of our process
-    // only the first occurrence will be replaced
-
-    WCHAR fileName[MAX_PATH];
-    const WCHAR* pidLit =  W("{pid}");
-    const WCHAR* pidPtr = wcsstr(outputPath, pidLit);
-    if (pidPtr != nullptr)
-    {
-        // copy the file name up to the "{pid}" occurrence
-        ptrdiff_t pidInx = pidPtr - outputPath;
-        wcsncpy_s(fileName, MAX_PATH, outputPath, pidInx);
-
-        // append the string representation of the PID
-        DWORD pid = GetCurrentProcessId();
-        WCHAR pidStr[20];
-        _itow_s(pid, pidStr, ARRAY_SIZE(pidStr), 10);
-        wcscat_s(fileName, MAX_PATH, pidStr);
-
-        // append the rest of the filename
-        wcscat_s(fileName, MAX_PATH, outputPath + pidInx + wcslen(pidLit));
-
-        outputPath = fileName;
-    }
+    WCHAR outputPath[MAX_PATH];
+    AppendPid(GENAWARE_TRACE_FILE_NAME, outputPath, MAX_PATH);
 
     NewArrayHolder<COR_PRF_EVENTPIPE_PROVIDER_CONFIG> pProviders;
     int providerCnt = 1;
