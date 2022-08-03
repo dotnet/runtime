@@ -20,7 +20,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 		[KeptMember (".ctor()")]
 		class B
 		{
-			[Kept] // FIXME: Needs to be removed
 			public void Foo ()
 			{
 			}

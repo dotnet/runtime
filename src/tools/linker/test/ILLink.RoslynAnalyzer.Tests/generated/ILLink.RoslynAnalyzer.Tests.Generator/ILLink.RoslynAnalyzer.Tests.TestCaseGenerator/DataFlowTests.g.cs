@@ -20,6 +20,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task StaticInterfaceMethodDataflow ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task UnsafeDataFlow ()
 		{
 			return RunTest (allowMissingWarnings: true);

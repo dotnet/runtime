@@ -64,6 +64,7 @@ namespace Mono.Linker.Steps
 		readonly List<AttributeProviderPair> _ivt_attributes;
 		protected Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> _lateMarkedAttributes;
 		protected List<(TypeDefinition, MarkScopeStack.Scope)> _typesWithInterfaces;
+		protected HashSet<(OverrideInformation, MarkScopeStack.Scope)> _interfaceOverrides;
 		protected HashSet<AssemblyDefinition> _dynamicInterfaceCastableImplementationTypesDiscovered;
 		protected List<TypeDefinition> _dynamicInterfaceCastableImplementationTypes;
 		protected List<(MethodBody, MarkScopeStack.Scope)> _unreachableBodies;
@@ -228,6 +229,7 @@ namespace Mono.Linker.Steps
 			_ivt_attributes = new List<AttributeProviderPair> ();
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> ();
 			_typesWithInterfaces = new List<(TypeDefinition, MarkScopeStack.Scope)> ();
+			_interfaceOverrides = new HashSet<(OverrideInformation, MarkScopeStack.Scope)> ();
 			_dynamicInterfaceCastableImplementationTypesDiscovered = new HashSet<AssemblyDefinition> ();
 			_dynamicInterfaceCastableImplementationTypes = new List<TypeDefinition> ();
 			_unreachableBodies = new List<(MethodBody, MarkScopeStack.Scope)> ();
@@ -576,6 +578,11 @@ namespace Mono.Linker.Steps
 			}
 		}
 
+		/// <summary>
+		/// Handles marking of interface implementations, and the marking of methods that implement interfaces
+		/// once the linker knows whether a type is instantiated or relevant to variant casting,
+		/// and after interfaces and interface methods have been marked.
+		/// </summary>
 		void ProcessMarkedTypesWithInterfaces ()
 		{
 			// We may mark an interface type later on.  Which means we need to reprocess any time with one or more interface implementations that have not been marked
@@ -589,12 +596,30 @@ namespace Mono.Linker.Steps
 				// interface type is marked
 				// UnusedInterfaces optimization is turned off mark all interface implementations
 				bool unusedInterfacesOptimizationEnabled = Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type);
-				if (!Annotations.IsInstantiated (type) && !Annotations.IsRelevantToVariantCasting (type) &&
-					unusedInterfacesOptimizationEnabled)
-					continue;
 
 				using (ScopeStack.PushScope (scope)) {
-					MarkInterfaceImplementations (type);
+					if (Annotations.IsInstantiated (type) || Annotations.IsRelevantToVariantCasting (type) ||
+						!unusedInterfacesOptimizationEnabled) {
+						MarkInterfaceImplementations (type);
+					}
+					// OverrideInformation for interfaces in PreservedScope aren't added yet
+					foreach (var method in type.Methods) {
+						var bases = Annotations.GetBaseMethods (method);
+						if (bases is null)
+							continue;
+						foreach (var @base in bases) {
+							if (@base.DeclaringType.IsInterface && IgnoreScope (@base.DeclaringType.Scope))
+								_interfaceOverrides.Add ((new OverrideInformation (@base, method, Context), ScopeStack.CurrentScope));
+						}
+					}
+				}
+			}
+
+			var interfaceOverrides = _interfaceOverrides.ToArray ();
+			foreach ((var overrideInformation, var scope) in interfaceOverrides) {
+				using (ScopeStack.PushScope (scope)) {
+					if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (overrideInformation))
+						MarkMethod (overrideInformation.Override, new DependencyInfo (DependencyKind.Override, overrideInformation.Base), scope.Origin);
 				}
 			}
 		}
@@ -708,10 +733,11 @@ namespace Mono.Linker.Steps
 
 			var isInstantiated = Annotations.IsInstantiated (method.DeclaringType);
 
-			// We don't need to mark overrides until it is possible that the type could be instantiated
-			// Note : The base type is interface check should be removed once we have base type sweeping
-			if (IsInterfaceOverrideThatDoesNotNeedMarked (overrideInformation, isInstantiated))
+			// Handle interface methods once we know more about whether the type is instantiated or relevant to variant casting
+			if (overrideInformation.IsOverrideOfInterfaceMember) {
+				_interfaceOverrides.Add ((overrideInformation, ScopeStack.CurrentScope));
 				return;
+			}
 
 			// Interface static veitual methods will be abstract and will also by pass this check to get marked
 			if (!isInstantiated && !@base.IsAbstract && Context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval, method))
@@ -731,27 +757,10 @@ namespace Mono.Linker.Steps
 				ProcessVirtualMethod (method);
 		}
 
-		bool IsInterfaceOverrideThatDoesNotNeedMarked (OverrideInformation overrideInformation, bool isInstantiated)
-		{
-			if (!overrideInformation.IsOverrideOfInterfaceMember || isInstantiated)
-				return false;
-
-			// This is a static interface method and these checks should all be true
-			if (overrideInformation.Override.IsStatic && overrideInformation.Base.IsStatic && overrideInformation.Base.IsAbstract && !overrideInformation.Override.IsVirtual)
-				return false;
-
-			if (overrideInformation.MatchingInterfaceImplementation != null)
-				return !Annotations.IsMarked (overrideInformation.MatchingInterfaceImplementation);
-
-			var interfaceType = overrideInformation.InterfaceType;
-			var overrideDeclaringType = overrideInformation.Override.DeclaringType;
-
-			if (interfaceType == null || !IsInterfaceImplementationMarkedRecursively (overrideDeclaringType, interfaceType))
-				return true;
-
-			return false;
-		}
-
+		/// <summary>
+		/// Returns true if <paramref name="type"/> implements <paramref name="interfaceType"/> and the interface implementation is marked,
+		/// or if any marked interface implementations on <paramref name="type"/> are interfaces that implement <paramref name="interfaceType"/> and that interface implementation is marked
+		/// </summary>
 		bool IsInterfaceImplementationMarkedRecursively (TypeDefinition type, TypeDefinition interfaceType)
 		{
 			if (type.HasInterfaces) {
@@ -2356,8 +2365,10 @@ namespace Mono.Linker.Steps
 		/// </remarks>
 		bool IsMethodNeededByTypeDueToPreservedScope (MethodDefinition method)
 		{
-			// Static methods may also have base methods in static interface methods. These methods are not captured by IsVirtual and must be checked separately
-			if (!(method.IsVirtual || method.IsStatic))
+			if (Annotations.IsMarked (method))
+				return false;
+			// All methods we care about here will be virtual
+			if (!method.IsVirtual)
 				return false;
 
 			var base_list = Annotations.GetBaseMethods (method);
@@ -2365,25 +2376,65 @@ namespace Mono.Linker.Steps
 				return false;
 
 			foreach (MethodDefinition @base in base_list) {
-				// Just because the type is marked does not mean we need interface methods.
-				// if the type is never instantiated, interfaces will be removed - but only if the optimization is enabled
-				if (@base.DeclaringType.IsInterface && Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, method.DeclaringType))
+				// Skip interface methods, they will be captured later by IsInterfaceImplementationMethodNeededByTypeDueToInterface
+				if (@base.DeclaringType.IsInterface)
+					continue;
+
+				if (!IgnoreScope (@base.DeclaringType.Scope) && !IsMethodNeededByTypeDueToPreservedScope (@base))
 					continue;
 
 				// If the type is marked, we need to keep overrides of abstract members defined in assemblies
-				// that are copied.  However, if the base method is virtual, then we don't need to keep the override
+				// that are copied to keep the IL valid.
+				// However, if the base method is a non-abstract virtual (has an implementation on the base type), then we don't need to keep the override
 				// until the type could be instantiated
 				if (!@base.IsAbstract)
 					continue;
 
-				if (IgnoreScope (@base.DeclaringType.Scope))
-					return true;
-
-				if (IsMethodNeededByTypeDueToPreservedScope (@base))
-					return true;
+				return true;
 			}
 
 			return false;
+		}
+
+		/// <summary>
+		/// Returns true if the override method is required due to the interface that the base method is declared on. See doc at <see href="docs/methods-kept-by-interface.md"/> for explanation of logic.
+		/// </summary>
+		bool IsInterfaceImplementationMethodNeededByTypeDueToInterface (OverrideInformation overrideInformation)
+		{
+			var @base = overrideInformation.Base;
+			var method = overrideInformation.Override;
+			if (Annotations.IsMarked (method))
+				return false;
+
+			if (!@base.DeclaringType.IsInterface)
+				return false;
+
+			// If the interface implementation is not marked, do not mark the implementation method
+			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
+			InterfaceImplementation? iface = overrideInformation.MatchingInterfaceImplementation;
+			if (!((iface is not null && Annotations.IsMarked (iface))
+				|| IsInterfaceImplementationMarkedRecursively (method.DeclaringType, @base.DeclaringType)))
+				return false;
+
+			// If the interface method is not marked and the interface doesn't come from a preserved scope, do not mark the implementation method
+			// Unmarked interface methods from link assemblies will be removed so the implementing method does not need to be kept.
+			if (!Annotations.IsMarked (@base) && !IgnoreScope (@base.DeclaringType.Scope))
+				return false;
+
+			// If the interface method is abstract, mark the implementation method
+			// The method is needed for valid IL.
+			if (@base.IsAbstract)
+				return true;
+
+			// If the method is static and the implementing type is relevant to variant casting, mark the implementation method.
+			// A static method may only be called through a constrained call if the type is relevant to variant casting.
+			if (@base.IsStatic)
+				return Annotations.IsRelevantToVariantCasting (method.DeclaringType)
+					|| IgnoreScope (@base.DeclaringType.Scope);
+
+			// If the implementing type is marked as instantiated, mark the implementation method.
+			// If the type is not instantiated, do not mark the implementation method
+			return Annotations.IsInstantiated (method.DeclaringType);
 		}
 
 		/// <summary>
@@ -3102,9 +3153,15 @@ namespace Mono.Linker.Steps
 			}
 
 			if (method.HasOverrides) {
-				foreach (MethodReference ov in method.Overrides) {
-					MarkMethod (ov, new DependencyInfo (DependencyKind.MethodImplOverride, method), ScopeStack.CurrentScope.Origin);
-					MarkExplicitInterfaceImplementation (method, ov);
+				foreach (MethodReference @base in method.Overrides) {
+					// Method implementing a static interface method will have an override to it - note instance methods usually don't unless they're explicit.
+					// Calling the implementation method directly has no impact on the interface, and as such it should not mark the interface or its method.
+					// Only if the interface method is referenced, then all the methods which implemented must be kept, but not the other way round.
+					if (Context.Resolve (@base) is MethodDefinition baseDefinition
+						&& new OverrideInformation.OverridePair (baseDefinition, method).IsStaticInterfaceMethodPair ())
+						continue;
+					MarkMethod (@base, new DependencyInfo (DependencyKind.MethodImplOverride, method), ScopeStack.CurrentScope.Origin);
+					MarkExplicitInterfaceImplementation (method, @base);
 				}
 			}
 

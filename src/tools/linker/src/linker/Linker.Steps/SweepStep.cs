@@ -453,6 +453,8 @@ namespace Mono.Linker.Steps
 
 				SweepCustomAttributes (method.MethodReturnType);
 
+				SweepOverrides (method);
+
 				if (!method.HasParameters)
 					continue;
 
@@ -465,6 +467,37 @@ namespace Mono.Linker.Steps
 					SweepCustomAttributes (parameter);
 				}
 			}
+		}
+		void SweepOverrides (MethodDefinition method)
+		{
+			for (int i = 0; i < method.Overrides.Count;) {
+				// We can't rely on the context resolution cache anymore, since it may remember methods which are already removed
+				// So call the direct Resolve here and avoid the cache.
+				// We want to remove a method from the list of Overrides if:
+				//	Resolve() is null
+				//		This can happen for a couple of reasons, but it indicates the method isn't in the final assembly.
+				//		Resolve also may return a removed value if method.Overrides[i] is a MethodDefinition. In this case, Resolve short circuits and returns `this`.
+				//	OR
+				//	ov.DeclaringType is null
+				//		ov.DeclaringType may be null if Resolve short circuited and returned a removed method. In this case, we want to remove the override.
+				//	OR
+				//	ov is in a `link` scope and is unmarked
+				//		ShouldRemove returns true if the method is unmarked, but we also We need to make sure the override is in a link scope.
+				//		Only things in a link scope are marked, so ShouldRemove is only valid for items in a `link` scope.
+				if (method.Overrides[i].Resolve () is not MethodDefinition ov || ov.DeclaringType is null || (IsLinkScope (ov.DeclaringType.Scope) && ShouldRemove (ov)))
+					method.Overrides.RemoveAt (i);
+				else
+					i++;
+			}
+		}
+
+		/// <summary>
+		/// Returns true if the assembly of the <paramref name="scope"></paramref> is set to link
+		/// </summary>
+		private bool IsLinkScope (IMetadataScope scope)
+		{
+			AssemblyDefinition? assembly = Context.Resolve (scope);
+			return assembly != null && Annotations.GetAction (assembly) == AssemblyAction.Link;
 		}
 
 		void SweepDebugInfo (Collection<MethodDefinition> methods)
