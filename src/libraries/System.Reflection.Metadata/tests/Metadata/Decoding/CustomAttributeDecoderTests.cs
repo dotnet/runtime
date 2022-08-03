@@ -43,7 +43,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                     foreach (CustomAttributeTypedArgument<string> arguments in value.FixedArguments)
                     {
                         Type t = reflectionAttribute.ConstructorArguments[j].ArgumentType;
-                        Assert.True(TypeToString(t).Equals(arguments.Type), $"{i} {j} {arguments.Type} : {t}");
+                        Assert.Equal(TypeToString(t), arguments.Type);
                         if (t.IsArray && arguments.Value is not null)
                         {   
                             ImmutableArray<CustomAttributeTypedArgument<string>> array = (ImmutableArray<CustomAttributeTypedArgument<string>>)(arguments.Value);
@@ -60,7 +60,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                                     {
                                         if (refInnerArray[a].Value?.ToString() != el.Value?.ToString())
                                         {
-                                            Assert.True(refInnerArray[a].Value.Equals(el.Value), $"{i} {j} {a} {refInnerArray[a].Value} : {el.Value}");
+                                            Assert.Equal(refInnerArray[a].Value, el.Value);
                                         }
                                         a++;
                                     }
@@ -73,7 +73,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                                     }
                                     else
                                     {
-                                        Assert.True(refArray[k].Value.Equals(element.Value), $"{i} {j} {k} {refArray[k].Value} : {element.Value}");
+                                        Assert.Equal(refArray[k].Value, element.Value);
                                     }
                                 }
                                 k++;
@@ -87,7 +87,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                             }
                             else
                             {
-                                Assert.True(reflectionAttribute.ConstructorArguments[j].Value.Equals(arguments.Value), $"{i} {j} {reflectionAttribute.ConstructorArguments[j].Value} : {arguments.Value}");
+                                Assert.Equal(reflectionAttribute.ConstructorArguments[j].Value, arguments.Value);
                             }
                         }
                         j++;
@@ -96,7 +96,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
                     foreach (CustomAttributeNamedArgument<string> arguments in value.NamedArguments)
                     {
                         Type t = reflectionAttribute.NamedArguments[j].TypedValue.ArgumentType;
-                        Assert.True(TypeToString(t).Equals(arguments.Type), $"{i} {j} {t} : {arguments.Type}");
+                        Assert.Equal(TypeToString(t), arguments.Type);
                         if (t.IsArray && arguments.Value is not null)
                         {
                             ImmutableArray<CustomAttributeTypedArgument<string>> array = (ImmutableArray<CustomAttributeTypedArgument<string>>)(arguments.Value);
@@ -106,20 +106,20 @@ namespace System.Reflection.Metadata.Decoding.Tests
                             {
                                 if (refArray[k].Value?.ToString() != element.Value?.ToString())
                                 {
-                                    Assert.True(refArray[k].Value.Equals(element.Value), $"{i} {j} {k} {element}");
+                                    Assert.Equal(refArray[k].Value, element.Value);
                                 }
                                 k++;
                             }
                         }
                         else if (reflectionAttribute.NamedArguments[j].TypedValue.Value?.ToString() != arguments.Value?.ToString())
                         {
-                            if (reflectionAttribute.NamedArguments[j].TypedValue.ArgumentType == typeof(Type)) // typeof operator used for named parameter, like [Test(TypeField = typeof(string))]
+                            if (reflectionAttribute.NamedArguments[j].TypedValue.ArgumentType == typeof(Type)) // typeof operator used for named parameter, like [Test(TypeField = typeof(string))], check if it is expected
                             {
                                 Assert.Contains(reflectionAttribute.NamedArguments[j].TypedValue.Value.ToString(), arguments.Value.ToString());
                             }
                             else
                             {
-                                Assert.True(reflectionAttribute.NamedArguments[j].TypedValue.Value.Equals(arguments.Value), $"{i} {j} {reflectionAttribute.NamedArguments[j].TypedValue.Value} : {arguments.Value}");
+                                Assert.Equal(reflectionAttribute.NamedArguments[j].TypedValue.Value, arguments.Value);
                             }
                         }
                         j++;
