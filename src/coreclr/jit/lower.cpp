@@ -2839,14 +2839,9 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
         }
 
-        // Transform ((x AND 1) NE 0) into (x AND 1), unless x is a LSH(1, y) and we're
-        // targeting XARCH, as it will be transformed into a BT further down.
-        // The compiler requires jumps to have relop operands, so we do not fold that case either.
-        if ((op2Value == 0) && cmp->OperIs(GT_NE) && andOp2->IsIntegralConst(1)
-#ifdef TARGET_XARCH
-            && !(andOp1->OperIs(GT_LSH) && andOp1->gtGetOp1()->IsIntegralConst(1))
-#endif
-                )
+        // Transform ((x AND 1) NE 0) into (x AND 1)
+        // The compiler requires jumps to have relop operands, so we do not fold that case.
+        if ((op2Value == 0) && cmp->OperIs(GT_NE) && andOp2->IsIntegralConst(1))
         {
             LIR::Use cmpUse;
             if ((genActualType(op1) == cmp->TypeGet()) && BlockRange().TryGetUse(cmp, &cmpUse) &&
