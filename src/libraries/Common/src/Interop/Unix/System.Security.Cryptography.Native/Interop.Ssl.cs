@@ -282,7 +282,7 @@ internal static partial class Interop
 
         internal static string? GetOpenSslCipherSuiteName(SafeSslHandle ssl, TlsCipherSuite cipherSuite, out bool isTls12OrLower)
         {
-            string? ret = Marshal.PtrToStringAnsi(GetOpenSslCipherSuiteName(ssl, (int)cipherSuite, out int isTls12OrLowerInt));
+            string? ret = Marshal.PtrToStringUTF8(GetOpenSslCipherSuiteName(ssl, (int)cipherSuite, out int isTls12OrLowerInt));
             isTls12OrLower = isTls12OrLowerInt != 0;
             return ret;
         }

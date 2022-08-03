@@ -709,6 +709,13 @@ namespace System.Text.Json
             throw new NotSupportedException(SR.Format(SR.NoMetadataForType, type, resolver?.GetType().FullName ?? "<null>"));
         }
 
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_ConstructorContainsNullParameterNames(Type declaringType)
+        {
+            throw new NotSupportedException(SR.Format(SR.ConstructorContainsNullParameterNames, declaringType));
+        }
+
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_NoMetadataForType(Type type, IJsonTypeInfoResolver? resolver)
         {
