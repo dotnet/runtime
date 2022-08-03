@@ -596,6 +596,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@$"^{aOptional}{{0,2}}b", "aab", RegexOptions.None, 0, 3, true, "aab");
                 yield return (@$"^{aOptional}{{1,2}}?b", "aab", RegexOptions.None, 0, 3, true, "aab");
                 yield return (@$"^{aOptional}{{1,2}}b", "aab", RegexOptions.None, 0, 3, true, "aab");
+                yield return (@$"^{aOptional}{{1,2}}?b", "aaab", RegexOptions.None, 0, 4, false, "");
                 yield return (@$"^{aOptional}{{2}}b", "aab", RegexOptions.None, 0, 3, true, "aab");
             }
             if (!RegexHelpers.IsNonBacktracking(engine))
