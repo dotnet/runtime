@@ -4,9 +4,9 @@
 import { GCHandle, MonoMethod, mono_assert } from "./types";
 import cwraps from "./cwraps";
 import { Module, runtimeHelpers } from "./imports";
-import { alloc_stack_frame, get_arg, get_arg_gc_handle, MarshalerToCs, MarshalerToJs, MarshalerType, set_arg_intptr, set_arg_type, set_gc_handle } from "./marshal";
+import { alloc_stack_frame, get_arg, get_arg_gc_handle, MarshalerToCs, MarshalerToJs, MarshalerType, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_method_and_handle_exception } from "./invoke-cs";
-import { marshal_array_to_cs_impl, marshal_exception_to_cs } from "./marshal-to-cs";
+import { marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
 import { marshal_int32_to_js, marshal_task_to_js } from "./marshal-to-js";
 
 // in all the exported internals methods, we use the same data structures for stack frame as normal full blow interop
@@ -56,7 +56,7 @@ export function init_managed_exports(): void {
             const res = get_arg(args, 1);
             const arg1 = get_arg(args, 2);
             const arg2 = get_arg(args, 3);
-            set_arg_intptr(arg1, <any>entry_point);
+            marshal_intptr_to_cs(arg1, entry_point);
             if (program_args && program_args.length == 0) {
                 program_args = undefined;
             }
@@ -77,6 +77,7 @@ export function init_managed_exports(): void {
         try {
             const args = alloc_stack_frame(3);
             const arg1 = get_arg(args, 2);
+            set_arg_type(arg1, MarshalerType.Object);
             set_gc_handle(arg1, gc_handle);
             invoke_method_and_handle_exception(release_js_owned_object_by_gc_handle_method, args);
         } finally {
@@ -99,6 +100,7 @@ export function init_managed_exports(): void {
         try {
             const args = alloc_stack_frame(5);
             const arg1 = get_arg(args, 2);
+            set_arg_type(arg1, MarshalerType.Object);
             set_gc_handle(arg1, holder_gc_handle);
             const arg2 = get_arg(args, 3);
             if (error) {
@@ -120,6 +122,7 @@ export function init_managed_exports(): void {
             const args = alloc_stack_frame(6);
 
             const arg1 = get_arg(args, 2);
+            set_arg_type(arg1, MarshalerType.Object);
             set_gc_handle(arg1, callback_gc_handle);
             // payload arg numbers are shifted by one, the real first is a gc handle of the callback
 

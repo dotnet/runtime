@@ -32,7 +32,7 @@ export function initialize_marshalers_to_cs(): void {
         js_to_cs_marshalers.set(MarshalerType.BigInt64, _marshal_bigint64_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Double, _marshal_double_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Single, _marshal_float_to_cs);
-        js_to_cs_marshalers.set(MarshalerType.IntPtr, _marshal_intptr_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.IntPtr, marshal_intptr_to_cs);
         js_to_cs_marshalers.set(MarshalerType.DateTime, _marshal_date_time_to_cs);
         js_to_cs_marshalers.set(MarshalerType.DateTimeOffset, _marshal_date_time_offset_to_cs);
         js_to_cs_marshalers.set(MarshalerType.String, _marshal_string_to_cs);
@@ -238,7 +238,7 @@ function _marshal_float_to_cs(arg: JSMarshalerArgument, value: any): void {
     }
 }
 
-function _marshal_intptr_to_cs(arg: JSMarshalerArgument, value: any): void {
+export function marshal_intptr_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     }
