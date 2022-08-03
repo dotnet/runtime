@@ -16,26 +16,24 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// When overridden, constructs a new <see cref="JsonConverter{T}"/> instance.
         /// </summary>
-        protected internal JsonConverter()
-        {
-            Initialize();
-        }
+        protected internal JsonConverter() : this(initialize: true)
+        { }
 
         internal JsonConverter(bool initialize)
         {
+            IsValueType = typeof(T).IsValueType;
+            IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
+
             // Initialize uses abstract members, in order for them to be initialized correctly
-            // without throwing we need to delay call to Initialize
+            // without throwing we might need to delay call to Initialize
             if (initialize)
             {
                 Initialize();
             }
         }
 
-        internal void Initialize()
+        private protected void Initialize()
         {
-            IsValueType = typeof(T).IsValueType;
-            IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
-
             if (HandleNull)
             {
                 HandleNullOnRead = true;
@@ -76,9 +74,23 @@ namespace System.Text.Json.Serialization
 
         internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
         {
+            if (this is JsonConverter<TTarget> conv)
+            {
+                return conv;
+            }
+
             JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(this, typeof(TTarget));
-            return new CastingConverter<TTarget, T>(this);
+
+            // Avoid layering casting converters by consulting any source converters directly.
+            return
+                SourceConverterForCastingConverter?.CreateCastingConverter<TTarget>()
+                ?? new CastingConverter<TTarget, T>(this);
         }
+
+        /// <summary>
+        /// Set if this converter is itself a casting converter.
+        /// </summary>
+        internal virtual JsonConverter? SourceConverterForCastingConverter => null;
 
         internal override Type? KeyType => null;
 

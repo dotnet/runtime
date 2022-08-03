@@ -217,25 +217,30 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
-        public static void PolymorphicConverter_ShouldWorkInAllContexts()
+        [Theory]
+        [MemberData(nameof(PolymorphicConverter_ShouldRoundtripInAllContexts_GetTestData))]
+        public static void PolymorphicConverter_ShouldRoundtripInAllContexts<T>(T value, string expectedJson)
         {
             // Regression test for https://github.com/dotnet/runtime/issues/46522
-
-            var value = new SampleRepro();
-            string expectedJson = "\"string\"";
-
             string json = JsonSerializer.Serialize(value);
             Assert.Equal(expectedJson, json);
 
-            json = JsonSerializer.Serialize(new { Value = value });
-            Assert.Equal($@"{{""Value"":{expectedJson}}}", json);
+            T deserializedValue = JsonSerializer.Deserialize<T>(json);
+            json = JsonSerializer.Serialize(deserializedValue);
+            Assert.Equal(expectedJson, json);
+        }
 
-            json = JsonSerializer.Serialize(new[] { value });
-            Assert.Equal($"[{expectedJson}]", json);
+        public static IEnumerable<object[]> PolymorphicConverter_ShouldRoundtripInAllContexts_GetTestData()
+        {
+            var value = new SampleRepro { Value = "string" };
+            string expectedJson = "\"string\"";
 
-            json = JsonSerializer.Serialize(new Dictionary<string, SampleRepro> { ["key"] = value });
-            Assert.Equal($@"{{""key"":{expectedJson}}}", json);
+            yield return WrapArgs(value, expectedJson);
+            yield return WrapArgs(new { Value = value }, $@"{{""Value"":{expectedJson}}}");
+            yield return WrapArgs(new[] { value }, $"[{expectedJson}]");
+            yield return WrapArgs(new Dictionary<string, SampleRepro> { ["key"] = value }, $@"{{""key"":{expectedJson}}}");
+
+            static object[] WrapArgs<T>(T value, string expectedJson) => new object[] { value, expectedJson };
         }
 
         public interface IRepro<T>
@@ -246,7 +251,7 @@ namespace System.Text.Json.Serialization.Tests
         [JsonConverter(typeof(ReproJsonConverter))]
         public class SampleRepro : IRepro<object>
         {
-            public object Value => "string";
+            public object Value { get; set; }
         }
 
         public sealed class ReproJsonConverter : JsonConverter<IRepro<object>>
@@ -256,7 +261,10 @@ namespace System.Text.Json.Serialization.Tests
                 return typeof(IRepro<object>).IsAssignableFrom(typeToConvert);
             }
 
-            public override IRepro<object> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
+            public override IRepro<object> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return new SampleRepro { Value = JsonSerializer.Deserialize<object>(ref reader, options) };
+            }
 
             public override void Write(Utf8JsonWriter writer, IRepro<object> value, JsonSerializerOptions options)
             {
