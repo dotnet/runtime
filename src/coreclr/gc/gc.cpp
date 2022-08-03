@@ -21378,7 +21378,7 @@ void gc_heap::gc1()
 #ifdef USE_REGIONS
             distribute_free_regions();
             verify_region_to_generation_map ();
-            compute_gc_and_ephemeral_range (settings.condemned_generation);
+            compute_gc_and_ephemeral_range (settings.condemned_generation, true);
             stomp_write_barrier_ephemeral (ephemeral_low, ephemeral_high,
                                            map_region_to_generation_skewed, (uint8_t)min_segment_size_shr);
 #endif //USE_REGIONS
@@ -21446,7 +21446,7 @@ void gc_heap::gc1()
 #ifdef USE_REGIONS
         distribute_free_regions();
         verify_region_to_generation_map ();
-        compute_gc_and_ephemeral_range (settings.condemned_generation);
+        compute_gc_and_ephemeral_range (settings.condemned_generation, true);
         stomp_write_barrier_ephemeral (ephemeral_low, ephemeral_high,
                                         map_region_to_generation_skewed, (uint8_t)min_segment_size_shr);
         if (settings.condemned_generation == max_generation)
@@ -25886,36 +25886,56 @@ void gc_heap::verify_region_to_generation_map()
 
 // recompute ephemeral range - it may have become too large because of temporary allocation
 // and deallocation of regions
-void gc_heap::compute_gc_and_ephemeral_range (int condemned_gen_number)
+void gc_heap::compute_gc_and_ephemeral_range (int condemned_gen_number, bool end_of_gc_p)
 {
     ephemeral_low = MAX_PTR;
     ephemeral_high = nullptr;
     gc_low = MAX_PTR;
     gc_high = nullptr;
-    if (condemned_gen_number >= soh_gen2)
+    if (condemned_gen_number >= soh_gen2 || end_of_gc_p)
     {
         gc_low = g_gc_lowest_address;
         gc_high = g_gc_highest_address;
     }
-    for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
+    if (end_of_gc_p)
     {
-#ifdef MULTIPLE_HEAPS
-        for (int i = 0; i < n_heaps; i++)
+        // scan our address space for a region that is either free
+        // or in an ephemeral generation
+        uint8_t* addr = g_gc_lowest_address;
+        while (true)
         {
-            gc_heap* hp = g_heaps[i];
-#else //MULTIPLE_HEAPS
+            heap_segment* region = get_region_info (addr);
+            if (is_free_region (region))
+                break;
+            if (heap_segment_gen_num (region) <= soh_gen1)
+                break;
+            addr += ((size_t)1) << min_segment_size_shr;
+        }
+        ephemeral_low = addr;
+        ephemeral_high = g_gc_highest_address;
+    }
+    else
+    {
+        for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
         {
-            gc_heap* hp = pGenGCHeap;
-#endif //MULTIPLE_HEAPS
-            generation *gen = hp->generation_of (gen_number);
-            for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
+    #ifdef MULTIPLE_HEAPS
+            for (int i = 0; i < n_heaps; i++)
             {
-                ephemeral_low = min (ephemeral_low, get_region_start (region));
-                ephemeral_high = max (ephemeral_high, heap_segment_reserved (region));
-                if (gen_number <= condemned_gen_number)
+                gc_heap* hp = g_heaps[i];
+    #else //MULTIPLE_HEAPS
+            {
+                gc_heap* hp = pGenGCHeap;
+    #endif //MULTIPLE_HEAPS
+                generation *gen = hp->generation_of (gen_number);
+                for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
                 {
-                    gc_low = min (gc_low, get_region_start (region));
-                    gc_high = max (gc_high, heap_segment_reserved (region));
+                    ephemeral_low = min (ephemeral_low, get_region_start (region));
+                    ephemeral_high = max (ephemeral_high, heap_segment_reserved (region));
+                    if (gen_number <= condemned_gen_number)
+                    {
+                        gc_low = min (gc_low, get_region_start (region));
+                        gc_high = max (gc_high, heap_segment_reserved (region));
+                    }
                 }
             }
         }
@@ -26058,7 +26078,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         region_count = global_region_allocator.get_used_region_count();
         grow_mark_list_piece();
         verify_region_to_generation_map();
-        compute_gc_and_ephemeral_range (condemned_gen_number);
+        compute_gc_and_ephemeral_range (condemned_gen_number, false);
 #endif //USE_REGIONS
 
         GCToEEInterface::BeforeGcScanRoots(condemned_gen_number, /* is_bgc */ false, /* is_concurrent */ false);
@@ -30526,6 +30546,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //MULTIPLE_HEAPS
             }
 #endif //!USE_REGIONS
+
+#ifdef USE_REGIONS
+            verify_region_to_generation_map ();
+#endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
             //join all threads to make sure they are synchronized

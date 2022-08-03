@@ -1459,7 +1459,7 @@ public:
     void verify_region_to_generation_map();
 
     PER_HEAP_ISOLATED
-    void compute_gc_and_ephemeral_range (int condemned_gen_number);
+    void compute_gc_and_ephemeral_range (int condemned_gen_number, bool end_of_gc_p);
 #ifdef STRESS_REGIONS
     PER_HEAP
     void pin_by_gc (uint8_t* object);
