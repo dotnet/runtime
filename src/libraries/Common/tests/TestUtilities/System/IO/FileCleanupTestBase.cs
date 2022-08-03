@@ -169,8 +169,8 @@ namespace System.IO
             }
 
             const int MinUdsPathLength = 104; // required min is 92, but every platform we currently target is at least 104
-            const int MinAvailableForSufficientRandomness = 5; // we want enough randomness in the name to avoid conflicts between concurrent tests
-            string prefix = Path.Combine(Path.GetTempPath(), "FxPipe");
+            const int MinAvailableForSufficientRandomness = 4; // we want enough randomness in the name to avoid conflicts between concurrent tests
+            string prefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
             int availableLength = MinUdsPathLength - prefix.Length - 1; // 1 - for possible null terminator
             Assert.True(availableLength >= MinAvailableForSufficientRandomness, $"UDS prefix {prefix} length {prefix.Length} is too long");
 
