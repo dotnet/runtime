@@ -82,7 +82,6 @@ export type MonoConfig = {
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     coverageProfilerOptions?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
-    diagnosticOptions?: DiagnosticOptions, // dictionary-style Object. If omitted, diagnostics will not be initialized.
     ignorePdbLoadErrors?: boolean,
     waitForDebugger?: number
 };

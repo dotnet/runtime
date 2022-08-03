@@ -77,7 +77,6 @@ declare type MonoConfig = {
     runtimeOptions?: string[];
     aotProfilerOptions?: AOTProfilerOptions;
     coverageProfilerOptions?: CoverageProfilerOptions;
-    diagnosticOptions?: DiagnosticOptions;
     ignorePdbLoadErrors?: boolean;
     waitForDebugger?: number;
 };
@@ -106,18 +105,6 @@ declare type AOTProfilerOptions = {
 declare type CoverageProfilerOptions = {
     writeAt?: string;
     sendTo?: string;
-};
-declare type DiagnosticOptions = {
-    sessions?: EventPipeSessionOptions[];
-    server?: DiagnosticServerOptions;
-};
-interface EventPipeSessionOptions {
-    collectRundownEvents?: boolean;
-    providers: string;
-}
-declare type DiagnosticServerOptions = {
-    connectUrl: string;
-    suspend: string | boolean;
 };
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;

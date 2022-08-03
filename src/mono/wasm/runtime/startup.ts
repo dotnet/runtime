@@ -19,7 +19,6 @@ import { init_polyfills_async } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
 import { createPromiseController, PromiseAndController } from "./promise-controller";
 import { string_decoder } from "./strings";
-import { mono_wasm_init_diagnostics } from "./diagnostics/index";
 import { delay } from "./promise-utils";
 import { init_managed_exports } from "./managed-exports";
 import { init_legacy_exports } from "./net6-legacy/corebindings";
@@ -535,9 +534,7 @@ async function _apply_configuration_from_args() {
     if (config.coverageProfilerOptions)
         mono_wasm_init_coverage_profiler(config.coverageProfilerOptions);
 
-    if (config.diagnosticOptions) {
-        await mono_wasm_init_diagnostics(config.diagnosticOptions);
-    }
+    // FIXME await mono_wasm_init_diagnostics(config.diagnosticOptions);
 }
 
 export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): void {
