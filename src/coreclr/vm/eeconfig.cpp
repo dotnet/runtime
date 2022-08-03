@@ -480,7 +480,10 @@ HRESULT EEConfig::sync()
     }
 
     pReadyToRunExcludeList = NULL;
+
 #if defined(FEATURE_READYTORUN)
+    fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
+
     if (g_pConfig->ReadyToRun())
     {
         NewArrayHolder<WCHAR> wszReadyToRunExcludeList;
@@ -698,10 +701,6 @@ HRESULT EEConfig::sync()
 
 #if defined(FEATURE_PGO)
     fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
-#endif
-
-#if defined(FEATURE_READYTORUN)
-    fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
 #endif
 
 #if defined(FEATURE_TIERED_COMPILATION)
