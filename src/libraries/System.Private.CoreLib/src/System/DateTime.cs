@@ -1439,22 +1439,8 @@ namespace System
         // Returns the day-of-year part of this DateTime. The returned value
         // is an integer between 1 and 366.
         //
-        public int DayOfYear
-        {
-            get
-            {
-                // y100 = number of whole 100-year periods since 3/1/0000
-                // r1 = (day number within 100-year period) * 4
-                (uint y100, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
-                ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
-                ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
-
-                int year = (int)(100 * y100 + (uint)(u2 >> 32)) + (daySinceMarch1 >= March1BasedDayOfNewYear ? 1 : 0);
-                return daySinceMarch1 >= March1BasedDayOfNewYear            // DatePartDayOfYear case
-                    ? daySinceMarch1 - March1BasedDayOfNewYear + 1          // rollover December 31
-                    : daySinceMarch1 + (366 - March1BasedDayOfNewYear) + (IsLeapYear(year) ? 1 : 0);
-            }
-        }
+        public int DayOfYear =>
+            1 + ((((int)(UTicks / TicksPer6Hours) | 3) % DaysPer400Years) | 3) % DaysPer4Years / 4;
 
         // Returns the hash code for this DateTime.
         //
