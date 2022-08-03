@@ -288,8 +288,8 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
         public static nuint TrailingZeroCount(nuint value) => (nuint)BitOperations.TrailingZeroCount(value);
 
-        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(Span{byte}, bool, out TSelf)" />
-        static bool IBinaryInteger<nuint>.TryReadBigEndian(Span<byte> source, bool isUnsigned, out nuint value)
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<nuint>.TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out nuint value)
         {
             nuint result = default;
 
@@ -345,8 +345,8 @@ namespace System
             return true;
         }
 
-        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(Span{byte}, bool, out TSelf)" />
-        static bool IBinaryInteger<nuint>.TryReadLittleEndian(Span<byte> source, bool isUnsigned, out nuint value)
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<nuint>.TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out nuint value)
         {
             nuint result = default;
 

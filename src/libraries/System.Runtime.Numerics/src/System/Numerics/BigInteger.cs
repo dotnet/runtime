@@ -3520,15 +3520,15 @@ namespace System.Numerics
             return result;
         }
 
-        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(Span{byte}, bool, out TSelf)" />
-        static bool IBinaryInteger<BigInteger>.TryReadBigEndian(Span<byte> source, bool isUnsigned, out BigInteger value)
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<BigInteger>.TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out BigInteger value)
         {
             value = new BigInteger(source, isUnsigned, isBigEndian: true);
             return true;
         }
 
-        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(Span{byte}, bool, out TSelf)" />
-        static bool IBinaryInteger<BigInteger>.TryReadLittleEndian(Span<byte> source, bool isUnsigned, out BigInteger value)
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<BigInteger>.TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out BigInteger value)
         {
             value = new BigInteger(source, isUnsigned, isBigEndian: false);
             return true;

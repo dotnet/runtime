@@ -47,9 +47,9 @@ namespace System
 
         public static TSelf TrailingZeroCount(TSelf value) => TSelf.TrailingZeroCount(value);
 
-        public static bool TryReadBigEndian(Span<byte> source, bool isUnsigned, out TSelf value) => TSelf.TryReadBigEndian(source, isUnsigned, out value);
+        public static bool TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out TSelf value) => TSelf.TryReadBigEndian(source, isUnsigned, out value);
 
-        public static bool TryReadLittleEndian(Span<byte> source, bool isUnsigned, out TSelf value) => TSelf.TryReadLittleEndian(source, isUnsigned, out value);
+        public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out TSelf value) => TSelf.TryReadLittleEndian(source, isUnsigned, out value);
 
         public static int GetByteCount(TSelf value) => value.GetByteCount();
 
