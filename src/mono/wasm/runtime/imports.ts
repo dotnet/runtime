@@ -13,6 +13,7 @@ export let Module: EmscriptenModule & DotnetModule;
 export let MONO: MONOType;
 export let BINDING: BINDINGType;
 export let INTERNAL: any;
+export let IMPORTS: any;
 
 // these are imported and re-exported from emscripten internals
 export let ENVIRONMENT_IS_NODE: boolean;

@@ -1,10 +1,10 @@
-const API = {}, MONO = {}, BINDING = {}, INTERNAL = {};
+const API = {}, MONO = {}, BINDING = {}, INTERNAL = {}, IMPORTS = {};
 let ENVIRONMENT_IS_GLOBAL = false;
 var require = require || undefined;
 var __dirname = __dirname || '';
 if (typeof createDotnetRuntime === "function") {
     Module = { ready: Module.ready };
-    const extension = createDotnetRuntime({ API, MONO, BINDING, INTERNAL, Module })
+    const extension = createDotnetRuntime({ API, MONO, BINDING, INTERNAL, Module, IMPORTS })
     if (extension.ready) {
         throw new Error("MONO_WASM: Module.ready couldn't be redefined.")
     }

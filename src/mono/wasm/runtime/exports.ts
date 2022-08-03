@@ -51,6 +51,7 @@ function initializeImportsAndExports(
         MONO: exports.mono,
         BINDING: exports.binding,
         INTERNAL: exports.internal,
+        IMPORTS: exports.marshaled_imports,
         Module: module,
         RuntimeBuildInfo: {
             ProductVersion,
