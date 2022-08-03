@@ -55,8 +55,20 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else if (method.ReturnType == typeof(Task))
                 {
-                    method.Invoke(null, argsToPass);
-                    result = null;
+                    Task result1 = (Task)method.Invoke(null, argsToPass)!;
+                    TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
+                    result = tcs.Task;
+                    result1.ContinueWith((t) =>
+                    {
+                        if (t.IsFaulted)
+                        {
+                            tcs.SetException(t.Exception!);
+                        }
+                        else
+                        {
+                            tcs.SetResult(0);
+                        }
+                    }, TaskScheduler.Default);
                 }
                 else if (method.ReturnType == typeof(Task<int>))
                 {
