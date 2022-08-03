@@ -1,6 +1,5 @@
 import cwraps from "../cwraps";
 import { mono_wasm_runtime_ready } from "../debug";
-import diagnostics from "../diagnostics";
 import { mono_wasm_load_icu_data } from "../icu";
 import { runtimeHelpers } from "../imports";
 import { mono_wasm_get_assembly_exports } from "../invoke-cs";
@@ -66,9 +65,6 @@ export function export_mono_api(): MONOType {
         getU32,
         getF32,
         getF64,
-
-        // Diagnostics
-        diagnostics
     };
 }
 

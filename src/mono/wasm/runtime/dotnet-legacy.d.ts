@@ -434,10 +434,6 @@ declare type MONOType = {
      * @deprecated Please use getHeapF64
      */
     getF64: typeof getF64;
-    /**
-     * @deprecated Please use diagnostics
-     */
-    diagnostics: any;
 };
 
 export { BINDINGType, MONOType };
