@@ -227,6 +227,10 @@ namespace ILLink.Shared.TrimAnalysis
             if (type.IsWellKnownType(WellKnownType.String))
                 return true;
 
+            // ByRef over an interesting type is itself interesting
+            if (type is ByRefType byRefType)
+                type = byRefType.ParameterType;
+
             if (!type.IsDefType)
                 return false;
 
@@ -584,7 +588,7 @@ namespace ILLink.Shared.TrimAnalysis
                         {
                             if (typeGenericParameterAnnotations == null)
                                 typeGenericParameterAnnotations = new DynamicallyAccessedMemberTypes[ecmaType.Instantiation.Length];
-                            typeGenericParameterAnnotations[genericParameter.Index] = annotation;
+                            typeGenericParameterAnnotations[genericParameterIndex] = annotation;
                         }
                     }
                 }

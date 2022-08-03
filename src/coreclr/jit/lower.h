@@ -377,17 +377,36 @@ private:
     //     Otherwise, it returns the underlying operation that was being casted
     GenTree* TryRemoveCastIfPresent(var_types expectedType, GenTree* op)
     {
-        if (!op->OperIs(GT_CAST))
+        if (!op->OperIs(GT_CAST) || !comp->opts.OptimizationEnabled())
         {
             return op;
         }
 
-        GenTree* castOp = op->AsCast()->CastOp();
+        GenTreeCast* cast = op->AsCast();
 
-        if (genTypeSize(castOp->gtType) >= genTypeSize(expectedType))
+        // FP <-> INT casts should be kept
+        if (varTypeIsFloating(cast->CastFromType()) ^ varTypeIsFloating(expectedType))
         {
+            return op;
+        }
+
+        // Keep casts which can overflow
+        if (cast->gtOverflow())
+        {
+            return op;
+        }
+
+        if (genTypeSize(cast->CastToType()) >= genTypeSize(expectedType))
+        {
+#ifndef TARGET_64BIT
+            // Don't expose TYP_LONG on 32bit
+            if (varTypeIsLong(cast->CastFromType()))
+            {
+                return op;
+            }
+#endif
             BlockRange().Remove(op);
-            return castOp;
+            return cast->CastOp();
         }
 
         return op;

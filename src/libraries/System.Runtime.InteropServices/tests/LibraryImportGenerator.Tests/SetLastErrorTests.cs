@@ -19,7 +19,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
         public static int ConvertToManaged(int i )
         {
-            // Explicity set the last error to something else on unmarshalling
+            // Explicitly set the last error to something else on unmarshalling
             Marshal.SetLastPInvokeError(i * 2);
             return i;
         }

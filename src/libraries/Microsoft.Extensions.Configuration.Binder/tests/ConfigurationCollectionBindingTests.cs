@@ -212,6 +212,77 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void GetSByteDictionary()
+        {
+            GetIntDictionaryT<sbyte>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetByteDictionary()
+        {
+            GetIntDictionaryT<byte>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetShortDictionary()
+        {
+            GetIntDictionaryT<short>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetUShortDictionary()
+        {
+            GetIntDictionaryT<ushort>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetIntDictionary()
+        {
+            GetIntDictionaryT<int>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetUIntDictionary()
+        {
+            GetIntDictionaryT<uint>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetLongDictionary()
+        {
+            GetIntDictionaryT<long>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetULongDictionary()
+        {
+            GetIntDictionaryT<ulong>(0, 1, 2);
+        }
+
+        private void GetIntDictionaryT<T>(T k1, T k2, T k3)
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"IntegerKeyDictionary:0", "val_0"},
+                {"IntegerKeyDictionary:1", "val_1"},
+                {"IntegerKeyDictionary:2", "val_2"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new Dictionary<T, string>();
+            config.GetSection("IntegerKeyDictionary").Bind(options);
+
+            Assert.Equal(3, options.Count);
+
+            Assert.Equal("val_0", options[k1]);
+            Assert.Equal("val_1", options[k2]);
+            Assert.Equal("val_2", options[k3]);
+        }
+
+        [Fact]
         public void GetStringList()
         {
             var input = new Dictionary<string, string>

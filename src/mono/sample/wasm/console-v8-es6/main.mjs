@@ -1,6 +1,6 @@
 import createDotnetRuntime from './dotnet.js'
 
-const dllName = "Wasm.Console.V8.ES6.Sample.dll";
+const dllName = "Wasm.Console.V8.Sample.dll";
 const app_args = Array.from(arguments);
 
 async function main() {
