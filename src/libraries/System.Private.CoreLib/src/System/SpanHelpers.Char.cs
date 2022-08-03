@@ -527,7 +527,7 @@ namespace System
             {
                 // Input isn't char aligned, we won't be able to align it to a Vector
             }
-            else if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported)
+            else if (Sse2.IsSupported || AdvSimd.Arm64.IsSupported || WasmBase.IsSupported)
             {
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
                 // Needs to be double length to allow us to align the data first.
@@ -674,7 +674,7 @@ namespace System
                     }
                 }
             }
-            else if (Sse2.IsSupported)
+            else if (Sse2.IsSupported || WasmBase.IsSupported)
             {
                 if (offset < length)
                 {
@@ -691,7 +691,12 @@ namespace System
                             Vector128<ushort> search = LoadVector128(ref searchSpace, offset);
 
                             // Same method as above
-                            int matches = Sse2.MoveMask(Sse2.CompareEqual(values, search).AsByte());
+                            int matches;
+                            if (Sse2.IsSupported)
+                                matches = Sse2.MoveMask(Sse2.CompareEqual(values, search).AsByte());
+                            else
+                                matches = WasmBase.Bitmask(WasmBase.CompareEqual(values, search).AsByte());
+
                             if (matches == 0)
                             {
                                 // Zero flags set so no matches
