@@ -33,9 +33,9 @@ namespace System.Runtime.Tests
 
         // Tests that catch blocks are not aborted. The action catches the ThreadAbortException and throws an exception of a different type.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72703", TestPlatforms.AnyUnix)]
         public void CancelOnTimeout_ThrowFromCatch()
         {
+            Console.WriteLine("CancelOnTimeout_ThrowFromCatch");
             var cts = new CancellationTokenSource();
             cts.CancelAfter(200);
             RunTest(LengthyAction_ThrowFromCatch, cts.Token);
@@ -48,9 +48,9 @@ namespace System.Runtime.Tests
 
         // Tests that finally blocks are not aborted. The action throws an exception from a finally block.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72703", TestPlatforms.AnyUnix)]
         public void CancelOnTimeout_ThrowFromFinally()
         {
+            Console.WriteLine("CancelOnTimeout_ThrowFromFinally");
             var cts = new CancellationTokenSource();
             cts.CancelAfter(200);
             RunTest(LengthyAction_ThrowFromFinally, cts.Token);
@@ -61,9 +61,9 @@ namespace System.Runtime.Tests
 
         // Tests that finally blocks are not aborted. The action throws an exception from a try block.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72703", TestPlatforms.AnyUnix)]
         public void CancelOnTimeout_Finally()
         {
+            Console.WriteLine("CancelOnTimeout_Finally");
             var cts = new CancellationTokenSource();
             cts.CancelAfter(200);
             RunTest(LengthyAction_Finally, cts.Token);
@@ -75,9 +75,9 @@ namespace System.Runtime.Tests
 
         // Tests cancellation before calling the Run method
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72703", TestPlatforms.AnyUnix)]
         public void CancelBeforeRun()
         {
+            Console.WriteLine("CancelBeforeRun");
             var cts = new CancellationTokenSource();
             cts.Cancel();
             Thread.Sleep(100);
@@ -88,9 +88,9 @@ namespace System.Runtime.Tests
 
         // Tests cancellation by the action itself
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72703", TestPlatforms.AnyUnix)]
         public void CancelItself()
         {
+            Console.WriteLine("CancelItself");
             _cts = new CancellationTokenSource();
             RunTest(Action_CancelItself, _cts.Token);
 
