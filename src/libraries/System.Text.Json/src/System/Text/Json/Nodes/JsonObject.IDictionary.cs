@@ -10,7 +10,7 @@ namespace System.Text.Json.Nodes
 {
     public partial class JsonObject : IDictionary<string, JsonNode?>
     {
-        private JsonPropertyDictionary<JsonNode>? _dictionary;
+        private JsonPropertyDictionary<JsonNode?>? _dictionary;
 
         /// <summary>
         ///   Adds an element with the provided property name and value to the <see cref="JsonObject"/>.
@@ -267,7 +267,7 @@ namespace System.Text.Json.Nodes
             }
 
             bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
-            var dictionary = new JsonPropertyDictionary<JsonNode>(caseInsensitive);
+            var dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive);
             if (_jsonElement.HasValue)
             {
                 JsonElement jElement = _jsonElement.Value;

@@ -113,10 +113,7 @@ namespace System.Xml.Serialization
 
         internal static string GenerateKey(Type type, XmlRootAttribute? root, string? ns)
         {
-            if (root == null)
-            {
-                root = (XmlRootAttribute?)XmlAttributes.GetAttr(type, typeof(XmlRootAttribute));
-            }
+            root ??= (XmlRootAttribute?)XmlAttributes.GetAttr(type, typeof(XmlRootAttribute));
             return $"{type.FullName}:{(root == null ? string.Empty : root.GetKey())}:{ns ?? string.Empty}";
         }
 

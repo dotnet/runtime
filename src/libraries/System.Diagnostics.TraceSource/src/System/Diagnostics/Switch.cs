@@ -55,11 +55,8 @@ namespace System.Diagnostics
 
         protected Switch(string displayName, string? description, string defaultSwitchValue)
         {
-            // displayName is used as a hashtable key, so it can never
-            // be null.
-            if (displayName == null) displayName = string.Empty;
-
-            _displayName = displayName;
+            // displayName is used as a hashtable key, so it can never be null.
+            _displayName = displayName ?? string.Empty;
             _description = description;
 
             // Add a weakreference to this switch and cleanup invalid references

@@ -3,7 +3,7 @@
 //!
 //! This is generated file, see src/mono/wasm/runtime/rollup.config.js
 
-//! This is not considered public API with backward compatibility guarantees. 
+//! This is not considered public API with backward compatibility guarantees.
 
 declare interface ManagedPointer {
     __brandManagedPointer: "ManagedPointer";
@@ -50,16 +50,18 @@ declare interface EmscriptenModule {
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
     ready: Promise<unknown>;
+    instantiateWasm?: (imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => any;
     preInit?: (() => any)[];
     preRun?: (() => any)[];
+    onRuntimeInitialized?: () => any;
     postRun?: (() => any)[];
     onAbort?: {
         (error: any): void;
     };
-    onRuntimeInitialized?: () => any;
-    instantiateWasm: (imports: any, successCallback: Function) => any;
 }
 declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
+
+declare function mono_wasm_runtime_ready(): void;
 
 /**
  * Allocates a block of memory that can safely contain pointers into the managed heap.
@@ -128,6 +130,47 @@ interface WasmRoot<T extends MonoObject> {
     toString(): string;
 }
 
+interface IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+}
+declare class ManagedObject implements IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+    toString(): string;
+}
+declare class ManagedError extends Error implements IDisposable {
+    constructor(message: string);
+    get stack(): string | undefined;
+    dispose(): void;
+    get isDisposed(): boolean;
+    toString(): string;
+}
+declare const enum MemoryViewType {
+    Byte = 0,
+    Int32 = 1,
+    Double = 2
+}
+interface IMemoryView {
+    /**
+     * copies elements from provided source to the wasm memory.
+     * target has to have the elements of the same type as the underlying C# array.
+     * same as TypedArray.set()
+     */
+    set(source: TypedArray, targetOffset?: number): void;
+    /**
+     * copies elements from wasm memory to provided target.
+     * target has to have the elements of the same type as the underlying C# array.
+     */
+    copyTo(target: TypedArray, sourceOffset?: number): void;
+    /**
+     * same as TypedArray.slice()
+     */
+    slice(start?: number, end?: number): TypedArray;
+    get length(): number;
+    get byteLength(): number;
+}
+
 interface MonoObject extends ManagedPointer {
     __brandMonoObject: "MonoObject";
 }
@@ -141,20 +184,28 @@ interface MonoObjectRef extends ManagedPointer {
     __brandMonoObjectRef: "MonoObjectRef";
 }
 declare type MonoConfig = {
-    isError: false;
-    assembly_root: string;
-    assets: AllAssetEntryTypes[];
+    isError?: false;
+    assembly_root?: string;
+    assets?: AssetEntry[];
+    /**
+     * Either this or enable_debugging needs to be set
+     * debug_level > 0 enables debugging and sets the debug log level to debug_level
+     * debug_level == 0 disables debugging and enables interpreter optimizations
+     * debug_level < 0 enabled debugging and disables debug logging.
+     */
     debug_level?: number;
     enable_debugging?: number;
-    globalization_mode: GlobalizationMode;
+    globalization_mode?: GlobalizationMode;
     diagnostic_tracing?: boolean;
     remote_sources?: string[];
+    max_parallel_downloads?: number;
     environment_variables?: {
         [i: string]: string;
     };
     runtime_options?: string[];
     aot_profiler_options?: AOTProfilerOptions;
     coverage_profiler_options?: CoverageProfilerOptions;
+    diagnostic_options?: DiagnosticOptions;
     ignore_pdb_load_errors?: boolean;
     wait_for_debugger?: number;
 };
@@ -163,43 +214,24 @@ declare type MonoConfigError = {
     message: string;
     error: any;
 };
-declare type AllAssetEntryTypes = AssetEntry | AssemblyEntry | SatelliteAssemblyEntry | VfsEntry | IcuData;
-declare type AssetEntry = {
+interface ResourceRequest {
     name: string;
     behavior: AssetBehaviours;
+    resolvedUrl?: string;
+    hash?: string;
+}
+interface AssetEntry extends ResourceRequest {
     virtual_path?: string;
     culture?: string;
     load_remote?: boolean;
     is_optional?: boolean;
     buffer?: ArrayBuffer;
-};
-interface AssemblyEntry extends AssetEntry {
-    name: "assembly";
+    pending?: LoadingResource;
 }
-interface SatelliteAssemblyEntry extends AssetEntry {
-    name: "resource";
-    culture: string;
-}
-interface VfsEntry extends AssetEntry {
-    name: "vfs";
-    virtual_path: string;
-}
-interface IcuData extends AssetEntry {
-    name: "icu";
-    load_remote: boolean;
-}
-declare const enum AssetBehaviours {
-    Resource = "resource",
-    Assembly = "assembly",
-    Heap = "heap",
-    ICU = "icu",
-    VFS = "vfs"
-}
-declare const enum GlobalizationMode {
-    ICU = "icu",
-    INVARIANT = "invariant",
-    AUTO = "auto"
-}
+declare type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm";
+declare type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
+"invariant" | //  operate in invariant globalization mode.
+"auto";
 declare type AOTProfilerOptions = {
     write_at?: string;
     send_to?: string;
@@ -208,18 +240,27 @@ declare type CoverageProfilerOptions = {
     write_at?: string;
     send_to?: string;
 };
+declare type DiagnosticOptions = {
+    sessions?: EventPipeSessionOptions[];
+    server?: DiagnosticServerOptions;
+};
 interface EventPipeSessionOptions {
     collectRundownEvents?: boolean;
     providers: string;
 }
+declare type DiagnosticServerOptions = {
+    connect_url: string;
+    suspend: string | boolean;
+};
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
-    config?: MonoConfig | MonoConfigError;
+    config?: MonoConfig;
     configSrc?: string;
-    onConfigLoaded?: (config: MonoConfig) => Promise<void>;
-    onDotnetReady?: () => void;
+    onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
+    onDotnetReady?: () => void | Promise<void>;
     imports?: DotnetModuleConfigImports;
     exports?: string[];
+    downloadResource?: (request: ResourceRequest) => LoadingResource;
 } & Partial<EmscriptenModule>;
 declare type DotnetModuleConfigImports = {
     require?: (name: string) => any;
@@ -242,14 +283,26 @@ declare type DotnetModuleConfigImports = {
     };
     url?: any;
 };
-
-declare type EventPipeSessionID = bigint;
-interface EventPipeSession {
-    get sessionID(): EventPipeSessionID;
-    start(): void;
-    stop(): void;
-    getTraceBlob(): Blob;
+interface LoadingResource {
+    name: string;
+    url: string;
+    response: Promise<Response>;
 }
+declare type EventPipeSessionID = bigint;
+interface DotnetPublicAPI {
+    MONO: MONOType;
+    BINDING: BINDINGType;
+    INTERNAL: any;
+    EXPORTS: any;
+    IMPORTS: any;
+    Module: EmscriptenModule;
+    RuntimeId: number;
+    RuntimeBuildInfo: {
+        ProductVersion: string;
+        Configuration: string;
+    };
+}
+
 declare const eventLevel: {
     readonly LogAlways: 0;
     readonly Critical: 1;
@@ -280,59 +333,24 @@ declare class SessionOptionsBuilder {
     addSampleProfilerProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
     build(): EventPipeSessionOptions;
 }
+
+interface EventPipeSession {
+    get sessionID(): EventPipeSessionID;
+    start(): void;
+    stop(): void;
+    getTraceBlob(): Blob;
+}
+
 interface Diagnostics {
     EventLevel: EventLevel;
     SessionOptionsBuilder: typeof SessionOptionsBuilder;
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
+    getStartupSessions(): (EventPipeSession | null)[];
 }
-
-declare function mono_wasm_runtime_ready(): void;
-
-declare function mono_wasm_setenv(name: string, value: string): void;
-declare function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoConfigError | undefined): Promise<void>;
-declare function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): boolean;
-/**
- * Loads the mono config file (typically called mono-config.json) asynchroniously
- * Note: the run dependencies are so emsdk actually awaits it in order.
- *
- * @param {string} configFilePath - relative path to the config file
- * @throws Will throw an error if the config file loading fails
- */
-declare function mono_wasm_load_config(configFilePath: string): Promise<void>;
 
 declare function mono_wasm_load_icu_data(offset: VoidPtr): boolean;
 
-/**
- * @deprecated Not GC or thread safe
- */
-declare function conv_string(mono_obj: MonoString): string | null;
-declare function conv_string_root(root: WasmRoot<MonoString>): string | null;
-declare function js_string_to_mono_string_root(string: string, result: WasmRoot<MonoString>): void;
-/**
- * @deprecated Not GC or thread safe
- */
-declare function js_string_to_mono_string(string: string): MonoString;
-
-/**
- * @deprecated Not GC or thread safe. For blazor use only
- */
-declare function js_to_mono_obj(js_obj: any): MonoObject;
-declare function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean): void;
-declare function js_typed_array_to_array_root(js_obj: any, result: WasmRoot<MonoArray>): void;
-/**
- * @deprecated Not GC or thread safe
- */
-declare function js_typed_array_to_array(js_obj: any): MonoArray;
-
-declare function unbox_mono_obj(mono_obj: MonoObject): any;
-declare function unbox_mono_obj_root(root: WasmRoot<any>): any;
-declare function mono_array_to_js_array(mono_array: MonoArray): any[] | null;
-declare function mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): any[] | null;
-
-declare function mono_bind_static_method(fqn: string, signature?: string): Function;
-declare function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: string): number;
-
-declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
+declare function mono_wasm_get_assembly_exports(assembly: string): Promise<any>;
 
 declare type _MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
 declare type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
@@ -372,56 +390,59 @@ declare function getU52(offset: _MemOffset): number;
 declare function getI64Big(offset: _MemOffset): bigint;
 declare function getF32(offset: _MemOffset): number;
 declare function getF64(offset: _MemOffset): number;
+declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
 
 declare function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void>;
 declare function mono_run_main(main_assembly_name: string, args: string[]): Promise<number>;
 
-declare const MONO: {
-    mono_wasm_setenv: typeof mono_wasm_setenv;
-    mono_wasm_load_bytes_into_heap: typeof mono_wasm_load_bytes_into_heap;
-    mono_wasm_load_icu_data: typeof mono_wasm_load_icu_data;
-    mono_wasm_runtime_ready: typeof mono_wasm_runtime_ready;
-    mono_wasm_load_data_archive: typeof mono_wasm_load_data_archive;
-    mono_wasm_load_config: typeof mono_wasm_load_config;
-    mono_load_runtime_and_bcl_args: typeof mono_load_runtime_and_bcl_args;
-    mono_wasm_new_root_buffer: typeof mono_wasm_new_root_buffer;
-    mono_wasm_new_root: typeof mono_wasm_new_root;
-    mono_wasm_new_external_root: typeof mono_wasm_new_external_root;
-    mono_wasm_release_roots: typeof mono_wasm_release_roots;
-    mono_run_main: typeof mono_run_main;
-    mono_run_main_and_exit: typeof mono_run_main_and_exit;
-    mono_wasm_add_assembly: (name: string, data: VoidPtr, size: number) => number;
-    mono_wasm_load_runtime: (unused: string, debug_level: number) => void;
-    config: MonoConfig | MonoConfigError;
-    loaded_files: string[];
-    setB32: typeof setB32;
-    setI8: typeof setI8;
-    setI16: typeof setI16;
-    setI32: typeof setI32;
-    setI52: typeof setI52;
-    setU52: typeof setU52;
-    setI64Big: typeof setI64Big;
-    setU8: typeof setU8;
-    setU16: typeof setU16;
-    setU32: typeof setU32;
-    setF32: typeof setF32;
-    setF64: typeof setF64;
-    getB32: typeof getB32;
-    getI8: typeof getI8;
-    getI16: typeof getI16;
-    getI32: typeof getI32;
-    getI52: typeof getI52;
-    getU52: typeof getU52;
-    getI64Big: typeof getI64Big;
-    getU8: typeof getU8;
-    getU16: typeof getU16;
-    getU32: typeof getU32;
-    getF32: typeof getF32;
-    getF64: typeof getF64;
-    diagnostics: Diagnostics;
-};
-declare type MONOType = typeof MONO;
-declare const BINDING: {
+declare function mono_wasm_setenv(name: string, value: string): void;
+declare function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): boolean;
+/**
+ * Loads the mono config file (typically called mono-config.json) asynchroniously
+ * Note: the run dependencies are so emsdk actually awaits it in order.
+ *
+ * @param {string} configFilePath - relative path to the config file
+ * @throws Will throw an error if the config file loading fails
+ */
+declare function mono_wasm_load_config(configFilePath: string): Promise<void>;
+/**
+* @deprecated
+*/
+declare function mono_load_runtime_and_bcl_args(cfg?: MonoConfig | MonoConfigError | undefined): Promise<void>;
+
+/**
+ * @deprecated Not GC or thread safe
+ */
+declare function conv_string(mono_obj: MonoString): string | null;
+declare function conv_string_root(root: WasmRoot<MonoString>): string | null;
+declare function js_string_to_mono_string_root(string: string, result: WasmRoot<MonoString>): void;
+/**
+ * @deprecated Not GC or thread safe
+ */
+declare function js_string_to_mono_string(string: string): MonoString;
+
+declare function unbox_mono_obj(mono_obj: MonoObject): any;
+declare function unbox_mono_obj_root(root: WasmRoot<any>): any;
+declare function mono_array_to_js_array(mono_array: MonoArray): any[] | null;
+declare function mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): any[] | null;
+
+/**
+ * @deprecated Not GC or thread safe. For blazor use only
+ */
+declare function js_to_mono_obj(js_obj: any): MonoObject;
+declare function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean): void;
+declare function js_typed_array_to_array_root(js_obj: any, result: WasmRoot<MonoArray>): void;
+/**
+ * @deprecated Not GC or thread safe
+ */
+declare function js_typed_array_to_array(js_obj: any): MonoArray;
+
+declare function mono_bind_static_method(fqn: string, signature?: string): Function;
+declare function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: string): number;
+
+declare type BINDINGType = {
+    bind_static_method: typeof mono_bind_static_method;
+    call_assembly_entry_point: typeof mono_call_assembly_entry_point;
     /**
      * @deprecated Not GC or thread safe
      */
@@ -454,10 +475,6 @@ declare const BINDING: {
      * @deprecated Not GC or thread safe
      */
     unbox_mono_obj: typeof unbox_mono_obj;
-    /**
-     * @deprecated Renamed to conv_string_root
-     */
-    conv_string_rooted: typeof conv_string_root;
     mono_obj_array_new_ref: (size: number, result: MonoObjectRef) => void;
     mono_obj_array_set_ref: (array: MonoObjectRef, idx: number, obj: MonoObjectRef) => void;
     js_string_to_mono_string_root: typeof js_string_to_mono_string_root;
@@ -466,21 +483,52 @@ declare const BINDING: {
     conv_string_root: typeof conv_string_root;
     unbox_mono_obj_root: typeof unbox_mono_obj_root;
     mono_array_root_to_js_array: typeof mono_array_root_to_js_array;
-    bind_static_method: typeof mono_bind_static_method;
-    call_assembly_entry_point: typeof mono_call_assembly_entry_point;
 };
-declare type BINDINGType = typeof BINDING;
-interface DotnetPublicAPI {
-    MONO: typeof MONO;
-    BINDING: typeof BINDING;
-    INTERNAL: any;
-    Module: EmscriptenModule;
-    RuntimeId: number;
-    RuntimeBuildInfo: {
-        ProductVersion: string;
-        Configuration: string;
-    };
-}
+declare type MONOType = {
+    mono_wasm_setenv: typeof mono_wasm_setenv;
+    mono_wasm_load_bytes_into_heap: typeof mono_wasm_load_bytes_into_heap;
+    mono_wasm_load_icu_data: typeof mono_wasm_load_icu_data;
+    mono_wasm_runtime_ready: typeof mono_wasm_runtime_ready;
+    mono_wasm_load_data_archive: typeof mono_wasm_load_data_archive;
+    mono_wasm_load_config: typeof mono_wasm_load_config;
+    mono_load_runtime_and_bcl_args: typeof mono_load_runtime_and_bcl_args;
+    mono_wasm_new_root_buffer: typeof mono_wasm_new_root_buffer;
+    mono_wasm_new_root: typeof mono_wasm_new_root;
+    mono_wasm_new_external_root: typeof mono_wasm_new_external_root;
+    mono_wasm_release_roots: typeof mono_wasm_release_roots;
+    mono_run_main: typeof mono_run_main;
+    mono_run_main_and_exit: typeof mono_run_main_and_exit;
+    mono_wasm_get_assembly_exports: typeof mono_wasm_get_assembly_exports;
+    mono_wasm_add_assembly: (name: string, data: VoidPtr, size: number) => number;
+    mono_wasm_load_runtime: (unused: string, debug_level: number) => void;
+    config: MonoConfig | MonoConfigError;
+    loaded_files: string[];
+    setB32: typeof setB32;
+    setI8: typeof setI8;
+    setI16: typeof setI16;
+    setI32: typeof setI32;
+    setI52: typeof setI52;
+    setU52: typeof setU52;
+    setI64Big: typeof setI64Big;
+    setU8: typeof setU8;
+    setU16: typeof setU16;
+    setU32: typeof setU32;
+    setF32: typeof setF32;
+    setF64: typeof setF64;
+    getB32: typeof getB32;
+    getI8: typeof getI8;
+    getI16: typeof getI16;
+    getI32: typeof getI32;
+    getI52: typeof getI52;
+    getU52: typeof getU52;
+    getI64Big: typeof getI64Big;
+    getU8: typeof getU8;
+    getU16: typeof getU16;
+    getU32: typeof getU32;
+    getF32: typeof getF32;
+    getF64: typeof getF64;
+    diagnostics: Diagnostics;
+};
 
 declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: DotnetPublicAPI) => DotnetModuleConfig)): Promise<DotnetPublicAPI>;
 declare type CreateDotnetRuntimeType = typeof createDotnetRuntime;
@@ -488,4 +536,33 @@ declare global {
     function getDotnetRuntime(runtimeId: number): DotnetPublicAPI | undefined;
 }
 
-export { BINDINGType, CreateDotnetRuntimeType, DotnetModuleConfig, DotnetPublicAPI, EmscriptenModule, MONOType, MonoArray, MonoObject, MonoString, VoidPtr, createDotnetRuntime as default };
+/**
+ * Span class is JS wrapper for System.Span<T>. This view doesn't own the memory, nor pin the underlying array.
+ * It's ideal to be used on call from C# with the buffer pinned there or with unmanaged memory.
+ * It is disposed at the end of the call to JS.
+ */
+declare class Span implements IMemoryView, IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+    set(source: TypedArray, targetOffset?: number | undefined): void;
+    copyTo(target: TypedArray, sourceOffset?: number | undefined): void;
+    slice(start?: number | undefined, end?: number | undefined): TypedArray;
+    get length(): number;
+    get byteLength(): number;
+}
+/**
+ * ArraySegment class is JS wrapper for System.ArraySegment<T>.
+ * This wrapper would also pin the underlying array and hold GCHandleType.Pinned until this JS instance is collected.
+ * User could dispose it manually.
+ */
+declare class ArraySegment implements IMemoryView, IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+    set(source: TypedArray, targetOffset?: number | undefined): void;
+    copyTo(target: TypedArray, sourceOffset?: number | undefined): void;
+    slice(start?: number | undefined, end?: number | undefined): TypedArray;
+    get length(): number;
+    get byteLength(): number;
+}
+
+export { ArraySegment, AssetBehaviours, AssetEntry, BINDINGType, CreateDotnetRuntimeType, DotnetModuleConfig, DotnetPublicAPI, EmscriptenModule, IMemoryView, LoadingResource, MONOType, ManagedError, ManagedObject, MemoryViewType, MonoArray, MonoConfig, MonoObject, MonoString, ResourceRequest, Span, VoidPtr, createDotnetRuntime as default };

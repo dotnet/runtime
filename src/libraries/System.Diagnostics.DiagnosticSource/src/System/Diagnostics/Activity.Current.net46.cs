@@ -27,9 +27,17 @@ namespace System.Diagnostics
 
         private static void SetCurrent(Activity? activity)
         {
-            Activity? previous = s_current.Value;
-            s_current.Value = activity;
-            CurrentChanged?.Invoke(null, new ActivityChangedEventArgs(previous, activity));
+            EventHandler<ActivityChangedEventArgs>? handler = CurrentChanged;
+            if (handler is null)
+            {
+                s_current.Value = activity;
+            }
+            else
+            {
+                Activity? previous = s_current.Value;
+                s_current.Value = activity;
+                handler.Invoke(null, new ActivityChangedEventArgs(previous, activity));
+            }
         }
     }
 }

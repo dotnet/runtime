@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 
 namespace System.Text.Json
 {
+    [StructLayout(LayoutKind.Auto)]
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStack
     {
@@ -91,6 +93,12 @@ namespace System.Text.Json
         /// </summary>
         public bool IsContinuation => _continuationCount != 0;
 
+        /// <summary>
+        /// Indicates that the root-level JsonTypeInfo is the result of
+        /// polymorphic dispatch from the internal System.Object converter.
+        /// </summary>
+        public bool IsPolymorphicRootValue;
+
         // The bag of preservable references.
         public ReferenceResolver ReferenceResolver;
 
@@ -125,24 +133,16 @@ namespace System.Text.Json
             {
                 _stack = new WriteStackFrame[4];
             }
-            else if (_count - 1 == _stack.Length)
+            else if (_count - _indexOffset == _stack.Length)
             {
                 Array.Resize(ref _stack, 2 * _stack.Length);
             }
         }
 
-        /// <summary>
-        /// Initialize the state without delayed initialization of the JsonTypeInfo.
-        /// </summary>
-        public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation, bool supportAsync)
+        internal void Initialize(JsonTypeInfo jsonTypeInfo)
         {
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(type);
-            return Initialize(jsonTypeInfo, supportContinuation, supportAsync);
-        }
-
-        internal JsonConverter Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation, bool supportAsync)
-        {
-            Debug.Assert(!supportAsync || supportContinuation, "supportAsync implies supportContinuation.");
+            Debug.Assert(!IsContinuation);
+            Debug.Assert(CurrentDepth == 0);
 
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
@@ -154,11 +154,6 @@ namespace System.Text.Json
                 Debug.Assert(options.ReferenceHandler != null);
                 ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: true);
             }
-
-            SupportContinuation = supportContinuation;
-            SupportAsync = supportAsync;
-
-            return jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
         }
 
         /// <summary>
@@ -404,13 +399,10 @@ namespace System.Text.Json
 
             static void AppendStackFrame(StringBuilder sb, ref WriteStackFrame frame)
             {
-                // Append the property name.
-                string? propertyName = frame.JsonPropertyInfo?.ClrName;
-                if (propertyName == null)
-                {
-                    // Attempt to get the JSON property name from the property name specified in re-entry.
-                    propertyName = frame.JsonPropertyNameAsString;
-                }
+                // Append the property name. Or attempt to get the JSON property name from the property name specified in re-entry.
+                string? propertyName =
+                    frame.JsonPropertyInfo?.MemberName ??
+                    frame.JsonPropertyNameAsString;
 
                 AppendPropertyName(sb, propertyName);
             }

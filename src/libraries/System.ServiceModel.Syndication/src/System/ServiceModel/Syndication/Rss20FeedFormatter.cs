@@ -1004,10 +1004,7 @@ namespace System.ServiceModel.Syndication
             {
                 if (item.Links[i].RelationshipType == Atom10Constants.AlternateTag)
                 {
-                    if (firstAlternateLink == null)
-                    {
-                        firstAlternateLink = item.Links[i];
-                    }
+                    firstAlternateLink ??= item.Links[i];
                     if (guid == FeedUtils.GetUriString(item.Links[i].Uri))
                     {
                         isPermalink = true;

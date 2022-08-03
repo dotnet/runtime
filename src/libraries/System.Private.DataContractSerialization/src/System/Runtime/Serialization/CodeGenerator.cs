@@ -91,17 +91,8 @@ namespace System.Runtime.Serialization
         private Type _delegateType = null!; // initialized in BeginMethod
 
         private static Module? s_serializationModule;
-        private static Module SerializationModule
-        {
-            get
-            {
-                if (s_serializationModule == null)
-                {
-                    s_serializationModule = typeof(CodeGenerator).Module;   // could to be replaced by different dll that has SkipVerification set to false
-                }
-                return s_serializationModule;
-            }
-        }
+        private static Module SerializationModule => s_serializationModule ??= typeof(CodeGenerator).Module;   // could to be replaced by different dll that has SkipVerification set to false
+
         private DynamicMethod _dynamicMethod = null!; // initialized in BeginMethod
 
         private ILGenerator _ilGen = null!; // initialized in BeginMethod
@@ -1470,8 +1461,7 @@ namespace System.Runtime.Serialization
         internal void CallStringFormat(string msg, params object[] values)
         {
             NewArray(typeof(object), values.Length);
-            if (_stringFormatArray == null)
-                _stringFormatArray = DeclareLocal(typeof(object[]), "stringFormatArray");
+            _stringFormatArray ??= DeclareLocal(typeof(object[]), "stringFormatArray");
             Stloc(_stringFormatArray);
             for (int i = 0; i < values.Length; i++)
                 StoreArrayElement(_stringFormatArray, i, values[i]);

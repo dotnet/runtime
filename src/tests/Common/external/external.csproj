@@ -14,7 +14,7 @@
     <OutputPath>$(TargetingPackPath)</OutputPath>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <RuntimeIdentifiers>win7-x86;win7-x64</RuntimeIdentifiers>
-    <XUnitRunnerTargetFramework>netcoreapp3.1</XUnitRunnerTargetFramework>
+    <XUnitRunnerTargetFramework>net7.0</XUnitRunnerTargetFramework>
     <CLRTestKind>SharedLibrary</CLRTestKind>
     <IsTestProject>false</IsTestProject>
     <GenerateDependencyFile>false</GenerateDependencyFile>
@@ -68,20 +68,20 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="1.1.1" />
     <PackageReference Include="CommandLineParser" Version="2.1.1-beta" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
-    <PackageReference Include="Newtonsoft.Json.Bson" Version="1.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+    <PackageReference Include="Newtonsoft.Json.Bson" Version="$(NewtonsoftJsonBsonVersion)" />
     <PackageReference Include="xunit" Version="$(XUnitVersion)" />
-    <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" GeneratePathProperty="True" />
+    <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.runner.utility" Version="$(XUnitVersion)" />
   </ItemGroup>
 
   <Target Name="AddXunitConsoleRunner" BeforeTargets="ResolveReferences">
-    <Error Condition="!Exists('$(PkgMicrosoft_DotNet_XunitConsoleRunner)\tools\$(XUnitRunnerTargetFramework)\xunit.console.dll')"
-            Text="Error: looks the package $(PkgMicrosoft_DotNet_XunitConsoleRunner) not restored or missing xunit.console.dll."
+    <Error Condition="!Exists('$(XunitConsoleNetCore21AppPath)')"
+            Text="Error: looks the package Microsoft.DotNet.XUnitConsoleRunner is not restored or missing xunit.console.dll."
     />
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(PkgMicrosoft_DotNet_XunitConsoleRunner)\tools\$(XUnitRunnerTargetFramework)\*.*">
+      <ReferenceCopyLocalPaths Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsoleNetCore21AppPath)'))\*.*">
         <Private>false</Private>
         <NuGetPackageId>Microsoft.DotNet.XUnitConsoleRunner</NuGetPackageId>
         <NuGetPackageVersion>$(MicrosoftDotNetXUnitConsoleRunnerVersion)</NuGetPackageVersion>

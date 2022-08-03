@@ -109,12 +109,11 @@ static int
 inst_check_context_used (MonoGenericInst *inst)
 {
 	int context_used = 0;
-	int i;
 
 	if (!inst)
 		return 0;
 
-	for (i = 0; i < inst->type_argc; ++i)
+	for (guint i = 0; i < inst->type_argc; ++i)
 		context_used |= type_check_context_used (inst->type_argv [i], TRUE);
 
 	return context_used;
@@ -995,7 +994,7 @@ class_type_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoRgctxInfo
 
 		if (size != 1 && size != 2 && size != 4 && size != 8)
 			size = 0;
-		if (align < size)
+		if (align < GINT_TO_UINT32(size))
 			size = 0;
 
 		if (info_type == MONO_RGCTX_INFO_MEMCPY) {
@@ -1326,7 +1325,6 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 		MonoGenericContext *orig_ctx;
 		MonoGenericInst *inst;
 		MonoType *args [16];
-		int i;
 
 		if (!MONO_TYPE_ISSTRUCT (t))
 			return get_wrapper_shared_type (mono_get_object_type ());
@@ -1339,14 +1337,14 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 		inst = orig_ctx->class_inst;
 		if (inst) {
 			g_assert (inst->type_argc < 16);
-			for (i = 0; i < inst->type_argc; ++i)
+			for (guint i = 0; i < inst->type_argc; ++i)
 				args [i] = get_wrapper_shared_type_full (inst->type_argv [i], TRUE);
 			ctx.class_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
 		}
 		inst = orig_ctx->method_inst;
 		if (inst) {
 			g_assert (inst->type_argc < 16);
-			for (i = 0; i < inst->type_argc; ++i)
+			for (guint i = 0; i < inst->type_argc; ++i)
 				args [i] = get_wrapper_shared_type_full (inst->type_argv [i], TRUE);
 			ctx.method_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
 		}
@@ -2417,8 +2415,10 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 			method = mono_marshal_get_synchronized_wrapper (method);
 
 		if (!virtual_) {
+			/* This might return NULL in llvmonly mode for non aot-ed methods */
 			addr = mono_compile_method_checked (method, error);
-			return_val_if_nok (error, NULL);
+			if (!mono_llvm_only)
+				return_val_if_nok (error, NULL);
 		} else
 			addr = NULL;
 
@@ -2440,8 +2440,13 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		}
 
 		// FIXME: This loads information in the AOT case
-		callee_ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (addr));
-		callee_gsharedvt = ji_is_gsharedvt (callee_ji);
+		if (addr) {
+			callee_ji = mini_jit_info_table_find (mono_get_addr_from_ftnptr (addr));
+			callee_gsharedvt = ji_is_gsharedvt (callee_ji);
+		} else {
+			callee_ji = NULL;
+			callee_gsharedvt = FALSE;
+		}
 
 		/*
 		 * For gsharedvt calls made out of gsharedvt methods, the callee could end up being a gsharedvt method, or a normal
@@ -2468,13 +2473,16 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 					g_assert (!virtual_);
 
 					sig = mono_method_signature_internal (jinfo_get_method (callee_ji));
+
 					gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, sig, gsig, -1, FALSE);
 					MonoFtnDesc *out_wrapper_arg = mini_llvmonly_create_ftndesc (method, jinfo_get_ftnptr (callee_ji), mini_method_get_rgctx (method));
 
 					/* Returns an ftndesc */
 					addr = mini_llvmonly_create_ftndesc (method, out_wrapper, out_wrapper_arg);
 				} else {
-					addr = mini_llvmonly_create_ftndesc (method, addr, mini_method_get_rgctx (method));
+					gpointer out_arg = NULL;
+					addr = mini_llvmonly_load_method (method, FALSE, FALSE, &out_arg, error);
+					addr = mini_llvmonly_create_ftndesc (method, addr, out_arg);
 				}
 			} else {
 				addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, vcall_offset, FALSE);
@@ -2525,7 +2533,9 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 
 					addr = mini_llvmonly_create_ftndesc (method, in_wrapper, in_wrapper_arg);
 				} else {
-					addr = mini_llvmonly_create_ftndesc (method, addr, mini_method_get_rgctx (method));
+					gpointer out_arg = NULL;
+					addr = mini_llvmonly_load_method (method, FALSE, FALSE, &out_arg, error);
+					addr = mini_llvmonly_create_ftndesc (method, addr, out_arg);
 				}
 			} else if (call_sig == mono_method_signature_internal (method)) {
 			} else {
@@ -3031,7 +3041,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 		for (i = 0; ; ++i) {
 			int offset = 0;
 
-			if (slot < first_slot + size - 1) {
+			if (slot < first_slot + size - 1u) {
 				rgctx_index = slot - first_slot + 1 + offset;
 				info = (MonoRuntimeGenericContext*)rgctx [rgctx_index];
 				if (info)
@@ -3054,7 +3064,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 			if (i == 0)
 				offset = MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
 
-			if (slot < first_slot + size - 1) {
+			if (slot < first_slot + size - 1u) {
 				rgctx_index = slot - first_slot + 1 + offset;
 				info = (MonoRuntimeGenericContext*)rgctx [rgctx_index];
 				if (info)
@@ -3092,7 +3102,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 		else
 			offset = 0;
 
-		if (slot < first_slot + size - 1) {
+		if (slot < first_slot + size - 1u) {
 			rgctx_index = slot - first_slot + 1 + offset;
 			info = (MonoRuntimeGenericContext*)rgctx [rgctx_index];
 			if (info) {
@@ -3290,9 +3300,7 @@ gboolean
 mini_generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
 						  gboolean allow_partial)
 {
-	int i;
-
-	for (i = 0; i < inst->type_argc; ++i) {
+	for (guint i = 0; i < inst->type_argc; ++i) {
 		if (!type_is_sharable (inst->type_argv [i], allow_type_vars, allow_partial))
 			return FALSE;
 	}
@@ -3308,10 +3316,9 @@ mini_generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
 gboolean
 mono_is_partially_sharable_inst (MonoGenericInst *inst)
 {
-	int i;
 	gboolean has_refs = FALSE, has_non_refs = FALSE;
 
-	for (i = 0; i < inst->type_argc; ++i) {
+	for (guint i = 0; i < inst->type_argc; ++i) {
 		if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
 			has_refs = TRUE;
 		else
@@ -3755,8 +3762,6 @@ mono_method_check_context_used (MonoMethod *method)
 static gboolean
 generic_inst_equal (MonoGenericInst *inst1, MonoGenericInst *inst2)
 {
-	int i;
-
 	if (!inst1) {
 		g_assert (!inst2);
 		return TRUE;
@@ -3767,7 +3772,7 @@ generic_inst_equal (MonoGenericInst *inst1, MonoGenericInst *inst2)
 	if (inst1->type_argc != inst2->type_argc)
 		return FALSE;
 
-	for (i = 0; i < inst1->type_argc; ++i)
+	for (guint i = 0; i < inst1->type_argc; ++i)
 		if (!mono_metadata_type_equal (inst1->type_argv [i], inst2->type_argv [i]))
 			return FALSE;
 
@@ -4220,10 +4225,9 @@ get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGeneri
 {
 	MonoGenericInst *res;
 	MonoType **type_argv;
-	int i;
 
 	type_argv = g_new0 (MonoType*, inst->type_argc);
-	for (i = 0; i < inst->type_argc; ++i) {
+	for (guint i = 0; i < inst->type_argc; ++i) {
 		if (use_gsharedvt) {
 			type_argv [i] = get_gsharedvt_type (shared_inst->type_argv [i]);
 		} else {
@@ -4466,8 +4470,6 @@ mono_set_generic_sharing_vt_supported (gboolean supported)
 gboolean
 mini_is_gsharedvt_type (MonoType *t)
 {
-	int i;
-
 	if (m_type_is_byref (t))
 		return FALSE;
 	if ((t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && t->data.generic_param->gshared_constraint && t->data.generic_param->gshared_constraint->type == MONO_TYPE_VALUETYPE)
@@ -4479,13 +4481,13 @@ mini_is_gsharedvt_type (MonoType *t)
 
 		inst = context->class_inst;
 		if (inst) {
-			for (i = 0; i < inst->type_argc; ++i)
+			for (guint i = 0; i < inst->type_argc; ++i)
 				if (mini_is_gsharedvt_type (inst->type_argv [i]))
 					return TRUE;
 		}
 		inst = context->method_inst;
 		if (inst) {
-			for (i = 0; i < inst->type_argc; ++i)
+			for (guint i = 0; i < inst->type_argc; ++i)
 				if (mini_is_gsharedvt_type (inst->type_argv [i]))
 					return TRUE;
 		}
@@ -4530,20 +4532,19 @@ mini_is_gsharedvt_variable_type (MonoType *t)
 		MonoGenericClass *gclass = t->data.generic_class;
 		MonoGenericContext *context = &gclass->context;
 		MonoGenericInst *inst;
-		int i;
 
 		if (m_class_get_byval_arg (t->data.generic_class->container_class)->type != MONO_TYPE_VALUETYPE || m_class_is_enumtype  (t->data.generic_class->container_class))
 			return FALSE;
 
 		inst = context->class_inst;
 		if (inst) {
-			for (i = 0; i < inst->type_argc; ++i)
+			for (guint i = 0; i < inst->type_argc; ++i)
 				if (mini_is_gsharedvt_variable_type (inst->type_argv [i]))
 					return TRUE;
 		}
 		inst = context->method_inst;
 		if (inst) {
-			for (i = 0; i < inst->type_argc; ++i)
+			for (guint i = 0; i < inst->type_argc; ++i)
 				if (mini_is_gsharedvt_variable_type (inst->type_argv [i]))
 					return TRUE;
 		}
@@ -4556,8 +4557,6 @@ mini_is_gsharedvt_variable_type (MonoType *t)
 static gboolean
 is_variable_size (MonoType *t)
 {
-	int i;
-
 	if (m_type_is_byref (t))
 		return FALSE;
 
@@ -4577,13 +4576,13 @@ is_variable_size (MonoType *t)
 
 		inst = context->class_inst;
 		if (inst) {
-			for (i = 0; i < inst->type_argc; ++i)
+			for (guint i = 0; i < inst->type_argc; ++i)
 				if (is_variable_size (inst->type_argv [i]))
 					return TRUE;
 		}
 		inst = context->method_inst;
 		if (inst) {
-			for (i = 0; i < inst->type_argc; ++i)
+			for (guint i = 0; i < inst->type_argc; ++i)
 				if (is_variable_size (inst->type_argv [i]))
 					return TRUE;
 		}
@@ -4595,10 +4594,9 @@ is_variable_size (MonoType *t)
 gboolean
 mini_is_gsharedvt_sharable_inst (MonoGenericInst *inst)
 {
-	int i;
 	gboolean has_vt = FALSE;
 
-	for (i = 0; i < inst->type_argc; ++i) {
+	for (guint i = 0; i < inst->type_argc; ++i) {
 		MonoType *type = inst->type_argv [i];
 
 		if ((MONO_TYPE_IS_REFERENCE (type) || type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && !mini_is_gsharedvt_type (type)) {
@@ -4613,9 +4611,7 @@ mini_is_gsharedvt_sharable_inst (MonoGenericInst *inst)
 gboolean
 mini_is_gsharedvt_inst (MonoGenericInst *inst)
 {
-	int i;
-
-	for (i = 0; i < inst->type_argc; ++i) {
+	for (guint i = 0; i < inst->type_argc; ++i) {
 		MonoType *type = inst->type_argv [i];
 
 		if (mini_is_gsharedvt_type (type))

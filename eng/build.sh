@@ -56,7 +56,7 @@ usage()
   echo "  --restore (-r)             Restore dependencies."
   echo "  --sign                     Sign build outputs."
   echo "  --test (-t)                Incrementally builds and runs tests."
-  echo "                             Use in conjuction with --testnobuild to only run tests."
+  echo "                             Use in conjunction with --testnobuild to only run tests."
   echo ""
 
   echo "Libraries settings:"
@@ -392,7 +392,7 @@ while [[ $# > 0 ]]; do
         echo "No cmake args supplied." 1>&2
         exit 1
       fi
-      cmakeargs="${cmakeargs} ${opt} $2"
+      cmakeargs="${cmakeargs} $2"
       shift 2
       ;;
 

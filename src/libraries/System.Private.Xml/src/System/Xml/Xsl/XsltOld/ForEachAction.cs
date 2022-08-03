@@ -111,10 +111,7 @@ namespace System.Xml.Xsl.XsltOld
                         if (Ref.Equal(input.NamespaceURI, input.Atoms.UriXsl) &&
                             Ref.Equal(input.LocalName, input.Atoms.Sort))
                         {
-                            if (_sortContainer == null)
-                            {
-                                _sortContainer = new ContainerAction();
-                            }
+                            _sortContainer ??= new ContainerAction();
                             _sortContainer.AddAction(compiler.CreateSortAction());
                             continue;
                         }

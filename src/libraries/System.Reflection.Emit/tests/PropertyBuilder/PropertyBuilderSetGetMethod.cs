@@ -53,7 +53,7 @@ namespace System.Reflection.Emit.Tests
             methodILGenerator.Emit(OpCodes.Ldfld, field);
             methodILGenerator.Emit(OpCodes.Ret);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Throws<InvalidOperationException>(() => property.SetGetMethod(method));
         }
     }

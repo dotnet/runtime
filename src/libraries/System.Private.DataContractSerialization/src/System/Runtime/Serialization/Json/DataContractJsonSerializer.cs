@@ -73,10 +73,7 @@ namespace System.Runtime.Serialization.Json
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type, DataContractJsonSerializerSettings? settings)
         {
-            if (settings == null)
-            {
-                settings = new DataContractJsonSerializerSettings();
-            }
+            settings ??= new DataContractJsonSerializerSettings();
 
             XmlDictionaryString? rootName = (settings.RootName == null) ? null : new XmlDictionary(1).Add(settings.RootName);
             Initialize(type, rootName, settings.KnownTypes, settings.MaxItemsInObjectGraph, settings.IgnoreExtensionDataObject,
@@ -344,7 +341,7 @@ namespace System.Runtime.Serialization.Json
             return XmlConvert.DecodeName(xmlName);
         }
 
-        [return: NotNullIfNotNull("xmlName")]
+        [return: NotNullIfNotNull(nameof(xmlName))]
         internal static XmlDictionaryString? ConvertXmlNameToJsonName(XmlDictionaryString? xmlName)
         {
             return (xmlName == null) ? null : new XmlDictionary().Add(ConvertXmlNameToJsonName(xmlName.Value));

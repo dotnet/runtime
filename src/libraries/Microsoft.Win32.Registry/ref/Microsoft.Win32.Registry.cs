@@ -57,7 +57,9 @@ namespace Microsoft.Win32
         public System.Security.AccessControl.RegistrySecurity GetAccessControl(System.Security.AccessControl.AccessControlSections includeSections) { throw null; }
         public string[] GetSubKeyNames() { throw null; }
         public object? GetValue(string? name) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("defaultValue")]
         public object? GetValue(string? name, object? defaultValue) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("defaultValue")]
         public object? GetValue(string? name, object? defaultValue, Microsoft.Win32.RegistryValueOptions options) { throw null; }
         public Microsoft.Win32.RegistryValueKind GetValueKind(string? name) { throw null; }
         public string[] GetValueNames() { throw null; }

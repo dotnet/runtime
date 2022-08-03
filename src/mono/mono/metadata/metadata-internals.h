@@ -816,6 +816,9 @@ enum MonoEnCDeltaOrigin {
 MONO_COMPONENT_API void
 mono_image_load_enc_delta (int delta_origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb, uint32_t dpdb_len, MonoError *error);
 
+MONO_COMPONENT_API const char*
+mono_enc_capabilities (void);
+
 gboolean
 mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo);
 

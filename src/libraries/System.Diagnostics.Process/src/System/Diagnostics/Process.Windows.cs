@@ -596,6 +596,14 @@ namespace System.Diagnostics
                         throw CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, workingDirectory);
                     }
                 }
+                catch
+                {
+                    parentInputPipeHandle?.Dispose();
+                    parentOutputPipeHandle?.Dispose();
+                    parentErrorPipeHandle?.Dispose();
+                    procSH.Dispose();
+                    throw;
+                }
                 finally
                 {
                     childInputPipeHandle?.Dispose();
@@ -624,7 +632,10 @@ namespace System.Diagnostics
             commandLine.Dispose();
 
             if (procSH.IsInvalid)
+            {
+                procSH.Dispose();
                 return false;
+            }
 
             SetProcessHandle(procSH);
             SetProcessId((int)processInfo.dwProcessId);
@@ -720,10 +731,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                if (hToken != null)
-                {
-                    hToken.Dispose();
-                }
+                hToken?.Dispose();
             }
         }
 
@@ -864,7 +872,6 @@ namespace System.Diagnostics
             {
                 if (_processName == null)
                 {
-                    EnsureState(State.HaveNonExitedId);
                     // If we already have the name via a populated ProcessInfo
                     // then use that one.
                     if (_processInfo?.ProcessName != null)
@@ -873,12 +880,16 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        // If we don't have a populated ProcessInfo, then get and cache the process name.
+                        // Ensure that the process is not yet exited
+                        EnsureState(State.HaveNonExitedId);
                         _processName = ProcessManager.GetProcessName(_processId, _machineName);
 
+                        // Fallback to slower ProcessInfo implementation if optimized way did not return a
+                        // process name (e.g. in case of missing permissions for Non-Admin users)
                         if (_processName == null)
                         {
-                            throw new InvalidOperationException(SR.NoProcessInfo);
+                            EnsureState(State.HaveProcessInfo);
+                            _processName = _processInfo!.ProcessName;
                         }
                     }
                 }

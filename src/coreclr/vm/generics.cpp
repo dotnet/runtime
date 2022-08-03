@@ -187,9 +187,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         TypeString::AppendTypeKeyDebug(debugTypeKeyName, pTypeKey);
         LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: New instantiation requested: %S\n", debugTypeKeyName.GetUnicode()));
 
-        StackScratchBuffer buf;
-        if (g_pConfig->ShouldBreakOnInstantiation(debugTypeKeyName.GetUTF8(buf)))
-            CONSISTENCY_CHECK_MSGF(false, ("BreakOnInstantiation: typename '%s' ", debugTypeKeyName.GetUTF8(buf)));
+        if (g_pConfig->ShouldBreakOnInstantiation(debugTypeKeyName.GetUTF8()))
+            CONSISTENCY_CHECK_MSGF(false, ("BreakOnInstantiation: typename '%s' ", debugTypeKeyName.GetUTF8()));
     }
 #endif // _DEBUG
 
@@ -311,7 +310,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // Note: Memory allocated on loader heap is zero filled
     pMT->SetWriteableData(pMTWriteableData);
 
-    // This also disables IBC logging until the type is sufficiently intitialized so
+    // This also disables IBC logging until the type is sufficiently initialized so
     // it needs to be done early
     pMTWriteableData->SetIsNotFullyLoadedForBuildMethodTable();
 
@@ -474,8 +473,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // Name for debugging
     StackSString debug_ClassNameString;
     TypeString::AppendTypeKey(debug_ClassNameString, pTypeKey, TypeString::FormatNamespace | TypeString::FormatAngleBrackets | TypeString::FormatFullInst);
-    StackScratchBuffer debug_ClassNameBuffer;
-    const char *debug_szClassNameBuffer = debug_ClassNameString.GetUTF8(debug_ClassNameBuffer);
+    const char *debug_szClassNameBuffer = debug_ClassNameString.GetUTF8();
     S_SIZE_T safeLen = S_SIZE_T(strlen(debug_szClassNameBuffer)) + S_SIZE_T(1);
     if (safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
 

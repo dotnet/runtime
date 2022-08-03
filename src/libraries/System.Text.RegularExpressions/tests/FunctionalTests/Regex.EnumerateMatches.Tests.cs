@@ -151,15 +151,24 @@ namespace System.Text.RegularExpressions.Tests
     {
         [Theory]
         [MemberData(nameof(Count_ReturnsExpectedCount_TestData))]
-        public void EnumerateMatches_ReturnsExpectedCount(RegexEngine engine, string pattern, string input, RegexOptions options, int expectedCount)
+        public void EnumerateMatches_ReturnsExpectedCount(RegexEngine engine, string pattern, string input, int startat, RegexOptions options, int expectedCount)
         {
             Regex r = RegexHelpers.GetRegexAsync(engine, pattern, options).GetAwaiter().GetResult();
-            int count = 0;
-            foreach (ValueMatch _ in r.EnumerateMatches(input))
+
+            int count;
+
+            count = 0;
+            foreach (ValueMatch _ in r.EnumerateMatches(input, startat))
             {
                 count++;
             }
             Assert.Equal(expectedCount, count);
+
+            bool isDefaultStartAt = startat == ((options & RegexOptions.RightToLeft) != 0 ? input.Length : 0);
+            if (!isDefaultStartAt)
+            {
+                return;
+            }
 
             if (options == RegexOptions.None && engine == RegexEngine.Interpreter)
             {

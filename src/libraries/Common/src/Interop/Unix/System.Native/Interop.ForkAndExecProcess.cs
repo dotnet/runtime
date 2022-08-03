@@ -49,32 +49,28 @@ internal static partial class Interop
 
         private static unsafe void AllocNullTerminatedArray(string[] arr, ref byte** arrPtr)
         {
-            int arrLength = arr.Length + 1; // +1 is for null termination
+            nuint arrLength = (nuint)arr.Length + 1; // +1 is for null termination
 
             // Allocate the unmanaged array to hold each string pointer.
             // It needs to have an extra element to null terminate the array.
-            arrPtr = (byte**)Marshal.AllocHGlobal(sizeof(IntPtr) * arrLength);
-            Debug.Assert(arrPtr != null);
-
             // Zero the memory so that if any of the individual string allocations fails,
             // we can loop through the array to free any that succeeded.
             // The last element will remain null.
-            for (int i = 0; i < arrLength; i++)
-            {
-                arrPtr[i] = null;
-            }
+            arrPtr = (byte**)NativeMemory.AllocZeroed(arrLength, (nuint)sizeof(byte*));
 
             // Now copy each string to unmanaged memory referenced from the array.
             // We need the data to be an unmanaged, null-terminated array of UTF8-encoded bytes.
             for (int i = 0; i < arr.Length; i++)
             {
-                byte[] byteArr = Encoding.UTF8.GetBytes(arr[i]);
+                string str = arr[i];
 
-                arrPtr[i] = (byte*)Marshal.AllocHGlobal(byteArr.Length + 1); //+1 for null termination
-                Debug.Assert(arrPtr[i] != null);
+                int byteLength = Encoding.UTF8.GetByteCount(str);
+                arrPtr[i] = (byte*)NativeMemory.Alloc((nuint)byteLength + 1); //+1 for null termination
 
-                Marshal.Copy(byteArr, 0, (IntPtr)arrPtr[i], byteArr.Length); // copy over the data from the managed byte array
-                arrPtr[i][byteArr.Length] = (byte)'\0'; // null terminate
+                int bytesWritten = Encoding.UTF8.GetBytes(str, new Span<byte>(arrPtr[i], byteLength));
+                Debug.Assert(bytesWritten == byteLength);
+
+                arrPtr[i][bytesWritten] = (byte)'\0'; // null terminate
             }
         }
 
@@ -85,15 +81,11 @@ internal static partial class Interop
                 // Free each element of the array
                 for (int i = 0; i < length; i++)
                 {
-                    if (arr[i] != null)
-                    {
-                        Marshal.FreeHGlobal((IntPtr)arr[i]);
-                        arr[i] = null;
-                    }
+                    NativeMemory.Free(arr[i]);
                 }
 
                 // And then the array itself
-                Marshal.FreeHGlobal((IntPtr)arr);
+                NativeMemory.Free(arr);
             }
         }
     }

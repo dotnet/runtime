@@ -19,6 +19,11 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
+        internal Pkcs9ContentType(ReadOnlySpan<byte> rawData)
+            : base(Oids.ContentTypeOid.CopyOid(), rawData)
+        {
+        }
+
         //
         // Public properties.
         //
@@ -41,7 +46,7 @@ namespace System.Security.Cryptography.Pkcs
         // Private methods.
         //
 
-        [return: NotNullIfNotNull("rawData")]
+        [return: NotNullIfNotNull(nameof(rawData))]
         private static Oid? Decode(byte[]? rawData)
         {
             if (rawData == null)

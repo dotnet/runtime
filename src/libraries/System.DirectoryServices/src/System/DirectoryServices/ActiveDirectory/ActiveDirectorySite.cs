@@ -159,8 +159,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (de != null)
-                    de.Dispose();
+                de?.Dispose();
             }
 
             _subnets = new ActiveDirectorySubnetCollection(context, "CN=" + siteName + "," + _siteDN);
@@ -1090,11 +1089,8 @@ namespace System.DirectoryServices.ActiveDirectory
             if (disposing)
             {
                 // free other state (managed objects)
-                if (cachedEntry != null)
-                    cachedEntry.Dispose();
-
-                if (_ntdsEntry != null)
-                    _ntdsEntry.Dispose();
+                cachedEntry?.Dispose();
+                _ntdsEntry?.Dispose();
             }
 
             // free your own state (unmanaged objects)

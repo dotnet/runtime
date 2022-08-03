@@ -174,18 +174,16 @@ namespace System.Net.Http
             ConnectionClosed(versionMajor: 3, versionMinor: 0);
         }
 
-#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Parameters to this method are primitive and are trimmer safe")]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, int arg3, string? arg4, byte arg5, byte arg6, HttpVersionPolicy arg7)
         {
             if (IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
-                if (arg2 == null) arg2 = "";
-                if (arg4 == null) arg4 = "";
+                arg1 ??= "";
+                arg2 ??= "";
+                arg4 ??= "";
 
                 fixed (char* arg1Ptr = arg1)
                 fixed (char* arg2Ptr = arg2)
@@ -235,10 +233,8 @@ namespace System.Net.Http
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Parameters to this method are primitive and are trimmer safe")]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, double arg1, byte arg2, byte arg3)
         {
@@ -267,10 +263,8 @@ namespace System.Net.Http
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Parameters to this method are primitive and are trimmer safe")]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, byte arg1, byte arg2)
         {

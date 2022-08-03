@@ -117,11 +117,11 @@ protected:
 
     // Command parameters for create case.
     // Note that we must always physically call CreateProcess on the debuggee so that we get the proper out-parameters
-    // from create-process (eg, target's handle, startup info, etc). So we always attach the auxillary debugger
+    // from create-process (eg, target's handle, startup info, etc). So we always attach the auxiliary debugger
     // even in the create case. Use "-pr -pb" in Windbg to attach to a create-suspended process.
     //
     // Common Windbg options:
-    // -WX disable automatic workspace loading. This gaurantees the newly created windbg has a clean
+    // -WX disable automatic workspace loading. This guarantees the newly created windbg has a clean
     // environment and is not tainted with settings that will break the extension dll.
     // -pr option will tell real Debugger to resume main thread. This goes with the CREATE_SUSPENDED flag we passed to CreateProcess.
     // -pb option is required when attaching to newly created suspended process. It tells the debugger

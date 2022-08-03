@@ -2,9 +2,6 @@
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>main.js</WasmMainJSPath>
-    <!--
-    <WasmEnableES6>true</WasmEnableES6>
-    -->
   </PropertyGroup>
 
   <ItemGroup>

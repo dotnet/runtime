@@ -933,11 +933,17 @@ namespace System.Collections.Immutable
 
                 if (Count > 1)
                 {
+#if NET6_0_OR_GREATER
+                    // MemoryExtensions.Sort is not available in .NET Framework / Standard 2.0.
+                    // But the overload with a Comparison argument doesn't allocate.
+                    _elements.AsSpan(0, _count).Sort(comparison);
+#else
                     // Array.Sort does not have an overload that takes both bounds and a Comparison.
                     // We could special case _count == _elements.Length in order to try to avoid
                     // the IComparer allocation, but the Array.Sort overload that takes a Comparison
                     // allocates such an IComparer internally, anyway.
                     Array.Sort(_elements, 0, _count, Comparer<T>.Create(comparison));
+#endif
                 }
             }
 

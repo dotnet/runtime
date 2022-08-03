@@ -99,7 +99,7 @@ namespace System.Reflection
         public sealed override string GetEnumName(object value) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override string[] GetEnumNames() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Type GetEnumUnderlyingType() => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use Enum.GetValues<TEnum> instead.")]
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetEnumValues<TEnum> overload or the GetEnumValuesAsUnderlyingType method instead.")]
         public sealed override Array GetEnumValues() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Guid GUID => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override TypeCode GetTypeCodeImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);

@@ -827,15 +827,12 @@ namespace System.Xml.Serialization
 
         protected bool GetNullAttr()
         {
-            string? isNull = _r.GetAttribute(_nilID, _instanceNsID);
-            if (isNull == null)
-                isNull = _r.GetAttribute(_nullID, _instanceNsID);
-            if (isNull == null)
-            {
-                isNull = _r.GetAttribute(_nullID, _instanceNs2000ID);
-                if (isNull == null)
-                    isNull = _r.GetAttribute(_nullID, _instanceNs1999ID);
-            }
+            string? isNull =
+                _r.GetAttribute(_nilID, _instanceNsID) ??
+                _r.GetAttribute(_nullID, _instanceNsID) ??
+                _r.GetAttribute(_nullID, _instanceNs2000ID) ??
+                _r.GetAttribute(_nullID, _instanceNs1999ID);
+
             if (isNull == null || !XmlConvert.ToBoolean(isNull)) return false;
             return true;
         }
@@ -881,7 +878,7 @@ namespace System.Xml.Serialization
             return doc;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected string? CollapseWhitespace(string? value)
         {
             if (value == null)
@@ -912,7 +909,7 @@ namespace System.Xml.Serialization
             return node;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static byte[]? ToByteArrayBase64(string? value)
         {
             return XmlCustomFormatter.ToByteArrayBase64(value);
@@ -927,7 +924,7 @@ namespace System.Xml.Serialization
             return ReadByteArray(true); //means use Base64
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static byte[]? ToByteArrayHex(string? value)
         {
             return XmlCustomFormatter.ToByteArrayHex(value);
@@ -1109,25 +1106,25 @@ namespace System.Xml.Serialization
             return XmlCustomFormatter.ToEnum(value, h, typeName, true);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static string? ToXmlName(string? value)
         {
             return XmlCustomFormatter.ToXmlName(value);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static string? ToXmlNCName(string? value)
         {
             return XmlCustomFormatter.ToXmlNCName(value);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static string? ToXmlNmToken(string? value)
         {
             return XmlCustomFormatter.ToXmlNmToken(value);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected static string? ToXmlNmTokens(string? value)
         {
             return XmlCustomFormatter.ToXmlNmTokens(value);
@@ -1365,13 +1362,13 @@ namespace System.Xml.Serialization
             return b;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected string? ReadString(string? value)
         {
             return ReadString(value, false);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         protected string? ReadString(string? value, bool trim)
         {
             string str = _r.ReadString();
@@ -1446,14 +1443,13 @@ namespace System.Xml.Serialization
         {
             if (id == null)
             {
-                if (_targetsWithoutIds == null)
-                    _targetsWithoutIds = new ArrayList();
+                _targetsWithoutIds ??= new ArrayList();
                 if (o != null)
                     _targetsWithoutIds.Add(o);
             }
             else
             {
-                if (_targets == null) _targets = new Hashtable();
+                _targets ??= new Hashtable();
                 if (!_targets.Contains(id))
                     _targets.Add(id, o);
             }
@@ -1461,13 +1457,13 @@ namespace System.Xml.Serialization
 
         protected void AddFixup(Fixup? fixup)
         {
-            if (_fixups == null) _fixups = new ArrayList();
+            _fixups ??= new ArrayList();
             _fixups.Add(fixup);
         }
 
         protected void AddFixup(CollectionFixup? fixup)
         {
-            if (_collectionFixups == null) _collectionFixups = new ArrayList();
+            _collectionFixups ??= new ArrayList();
             _collectionFixups.Add(fixup);
         }
 
@@ -1485,7 +1481,7 @@ namespace System.Xml.Serialization
         protected void Referenced(object? o)
         {
             if (o == null) return;
-            if (_referencedTargets == null) _referencedTargets = new Hashtable();
+            _referencedTargets ??= new Hashtable();
             _referencedTargets[o] = o;
         }
 
@@ -1900,7 +1896,7 @@ namespace System.Xml.Serialization
                 }
                 XmlAttribute xmlAttribute = (XmlAttribute)Document.ReadNode(_r)!;
                 xmlNodeList.Add(xmlAttribute);
-                if (unknownElement != null) unknownElement.SetAttributeNode(xmlAttribute);
+                unknownElement?.SetAttributeNode(xmlAttribute);
             }
 
             // If the node is referenced (or in case of paramStyle = bare) and if xsi:type is not
@@ -1936,7 +1932,7 @@ namespace System.Xml.Serialization
                 {
                     XmlNode xmlNode = Document.ReadNode(_r)!;
                     xmlNodeList.Add(xmlNode);
-                    if (unknownElement != null) unknownElement.AppendChild(xmlNode);
+                    unknownElement?.AppendChild(xmlNode);
                     Reader.MoveToContent();
                 }
                 ReadEndElement();
@@ -2040,17 +2036,7 @@ namespace System.Xml.Serialization
         private int _nextCreateMethodNumber;
         private int _nextIdNumber;
 
-        internal Hashtable Enums
-        {
-            get
-            {
-                if (_enums == null)
-                {
-                    _enums = new Hashtable();
-                }
-                return _enums;
-            }
-        }
+        internal Hashtable Enums => _enums ??= new Hashtable();
 
         private sealed class CreateCollectionInfo
         {
@@ -3662,12 +3648,7 @@ namespace System.Xml.Serialization
 
         private void WriteID(string? name)
         {
-            if (name == null)
-            {
-                //Writer.Write("null");
-                //return;
-                name = "";
-            }
+            name ??= "";
             string? idName = (string?)_idNames[name];
             if (idName == null)
             {

@@ -74,7 +74,20 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(destination.Length >= encryptedData.Length);
 
-            if (!Helpers.HasSymmetricEncryption)
+            // Don't check that algorithmIdentifier.Parameters is set here.
+            // Maybe some future PBES3 will have one with a default.
+
+            if (algorithmIdentifier.Algorithm == Oids.PasswordBasedEncryptionScheme2)
+            {
+                return Pbes2Decrypt(
+                    algorithmIdentifier.Parameters,
+                    password,
+                    passwordBytes,
+                    encryptedData,
+                    destination);
+            }
+
+            if (!Helpers.HasNonAesSymmetricEncryption)
             {
                 throw new CryptographicException(
                     SR.Format(
@@ -82,11 +95,8 @@ namespace System.Security.Cryptography
                         algorithmIdentifier.Algorithm));
             }
 
-            // Don't check that algorithmIdentifier.Parameters is set here.
-            // Maybe some future PBES3 will have one with a default.
-
             HashAlgorithmName digestAlgorithmName;
-            SymmetricAlgorithm? cipher = null;
+            SymmetricAlgorithm cipher;
 
             bool pkcs12 = false;
 
@@ -131,13 +141,6 @@ namespace System.Security.Cryptography
                     cipher.KeySize = 40;
                     pkcs12 = true;
                     break;
-                case Oids.PasswordBasedEncryptionScheme2:
-                    return Pbes2Decrypt(
-                        algorithmIdentifier.Parameters,
-                        password,
-                        passwordBytes,
-                        encryptedData,
-                        destination);
                 default:
                     throw new CryptographicException(
                         SR.Format(
@@ -146,7 +149,6 @@ namespace System.Security.Cryptography
             }
 
             Debug.Assert(digestAlgorithmName.Name != null);
-            Debug.Assert(cipher != null);
 
             using (cipher)
             {
@@ -169,7 +171,7 @@ namespace System.Security.Cryptography
                 using (IncrementalHash hasher = IncrementalHash.CreateHash(digestAlgorithmName))
                 {
                     Span<byte> buf = stackalloc byte[128];
-                    ReadOnlySpan<byte> effectivePasswordBytes = stackalloc byte[0];
+                    scoped ReadOnlySpan<byte> effectivePasswordBytes = default;
                     byte[]? rented = null;
                     System.Text.Encoding? encoding = null;
 
@@ -237,14 +239,6 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(pbeParameters != null);
 
-            if (!Helpers.HasSymmetricEncryption)
-            {
-                throw new CryptographicException(
-                    SR.Format(
-                        SR.Cryptography_UnknownAlgorithmIdentifier,
-                        pbeParameters.EncryptionAlgorithm));
-            }
-
             isPkcs12 = false;
 
             switch (pbeParameters.EncryptionAlgorithm)
@@ -264,7 +258,7 @@ namespace System.Security.Cryptography
                     cipher.KeySize = 256;
                     encryptionAlgorithmOid = Oids.Aes256Cbc;
                     break;
-                case PbeEncryptionAlgorithm.TripleDes3KeyPkcs12:
+                case PbeEncryptionAlgorithm.TripleDes3KeyPkcs12 when Helpers.HasNonAesSymmetricEncryption:
                     cipher = TripleDES.Create();
                     cipher.KeySize = 192;
                     encryptionAlgorithmOid = Oids.Pkcs12PbeWithShaAnd3Key3Des;
@@ -393,12 +387,6 @@ namespace System.Security.Cryptography
                         Debug.Assert(pwdTmpBytes!.Length == 0);
                     }
 
-                    if (!Helpers.HasHMAC)
-                    {
-                        throw new CryptographicException(
-                            SR.Format(SR.Cryptography_AlgorithmNotSupported, "HMAC" + prf.Name));
-                    }
-
                     using (var pbkdf2 = new Rfc2898DeriveBytes(pwdTmpBytes, salt.ToArray(), iterationCount, prf))
                     {
                         derivedKey = pbkdf2.GetBytes(keySizeBytes);
@@ -464,7 +452,7 @@ namespace System.Security.Cryptography
             Span<byte> destination)
         {
             Span<byte> buf = stackalloc byte[128];
-            ReadOnlySpan<byte> effectivePasswordBytes = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> effectivePasswordBytes = default;
             byte[]? rented = null;
             System.Text.Encoding? encoding = null;
 
@@ -540,8 +528,6 @@ namespace System.Security.Cryptography
             Rfc2898DeriveBytes pbkdf2 =
                 OpenPbkdf2(password, pbes2Params.KeyDerivationFunc.Parameters, out int? requestedKeyLength);
 
-            Debug.Assert(Helpers.HasHMAC);
-
             using (pbkdf2)
             {
                 // The biggest block size (for IV) we support is AES (128-bit / 16 byte)
@@ -580,12 +566,6 @@ namespace System.Security.Cryptography
         {
             string? algId = encryptionScheme.Algorithm;
 
-            if (!Helpers.HasSymmetricEncryption)
-            {
-                throw new CryptographicException(
-                    SR.Format(SR.Cryptography_AlgorithmNotSupported, algId));
-            }
-
             if (algId == Oids.Aes128Cbc ||
                 algId == Oids.Aes192Cbc ||
                 algId == Oids.Aes256Cbc)
@@ -622,6 +602,12 @@ namespace System.Security.Cryptography
                 Aes aes = Aes.Create();
                 aes.KeySize = correctKeySize * 8;
                 return aes;
+            }
+
+            if (!Helpers.HasNonAesSymmetricEncryption)
+            {
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_AlgorithmNotSupported, algId));
             }
 
             if (algId == Oids.TripleDesCbc)
@@ -775,12 +761,6 @@ namespace System.Security.Cryptography
             if (!pbkdf2Params.Prf.HasNullEquivalentParameters())
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-            }
-
-            if (!Helpers.HasHMAC)
-            {
-                throw new CryptographicException(
-                    SR.Format(SR.Cryptography_AlgorithmNotSupported, "HMAC" + prf.Name));
             }
 
             int iterationCount = NormalizeIterationCount(pbkdf2Params.IterationCount);

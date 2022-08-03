@@ -257,15 +257,7 @@ namespace System.Speech.Recognition
         public string Name
         {
             get { return _grammarName; }
-            set
-            {
-#pragma warning disable 6507
-#pragma warning disable 6526
-                if (value == null) { value = string.Empty; }
-                _grammarName = value;
-#pragma warning restore 6507
-#pragma warning restore 6526
-            }
+            set { _grammarName = value ?? string.Empty; }
         }
         public string RuleName
         {
@@ -561,10 +553,7 @@ namespace System.Speech.Recognition
         /// </summary>
         internal void AddRuleRef(Grammar ruleRef, uint grammarId)
         {
-            if (_ruleRefs == null)
-            {
-                _ruleRefs = new Collection<Grammar>();
-            }
+            _ruleRefs ??= new Collection<Grammar>();
             _ruleRefs.Add(ruleRef);
             _sapiGrammarId = grammarId;
         }

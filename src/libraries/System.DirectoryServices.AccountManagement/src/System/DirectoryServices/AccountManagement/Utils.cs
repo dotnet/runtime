@@ -357,6 +357,7 @@ namespace System.DirectoryServices.AccountManagement
                     if ((error = Marshal.GetLastWin32Error()) == 1008) // ERROR_NO_TOKEN
                     {
                         Debug.Assert(tokenHandle.IsInvalid);
+                        tokenHandle.Dispose();
 
                         // Current thread doesn't have a token, try the process
                         if (!Interop.Advapi32.OpenProcessToken(
@@ -449,8 +450,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (tokenHandle != null)
-                    tokenHandle.Dispose();
+                tokenHandle?.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     Marshal.FreeHGlobal(pBuffer);
@@ -521,8 +521,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (policyHandle != null)
-                    policyHandle.Dispose();
+                policyHandle?.Dispose();
 
                 if (pBuffer != IntPtr.Zero)
                     Interop.Advapi32.LsaFreeMemory(pBuffer);

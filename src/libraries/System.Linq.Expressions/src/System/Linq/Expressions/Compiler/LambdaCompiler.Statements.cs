@@ -714,9 +714,7 @@ namespace System.Linq.Expressions.Compiler
             // if (switchValue == null) {
             //     switchIndex = nullCase;
             // } else {
-            //     if (_dictField == null) {
-            //         _dictField = new Dictionary<string, int>(count) { { ... }, ... };
-            //     }
+            //     _dictField ??= new Dictionary<string, int>(count) { { ... }, ... };
             //     if (!_dictField.TryGetValue(switchValue, out switchIndex)) {
             //         switchIndex = -1;
             //     }

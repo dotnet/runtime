@@ -45,7 +45,6 @@ namespace System.Net.Http
         private static readonly byte[] s_spaceHttp10NewlineAsciiBytes = " HTTP/1.0\r\n"u8.ToArray();
         private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = " HTTP/1.1\r\n"u8.ToArray();
         private static readonly byte[] s_httpSchemeAndDelimiter = "http://"u8.ToArray();
-        private static readonly byte[] s_http1DotBytes = "HTTP/1."u8.ToArray();
         private static readonly ulong s_http10Bytes = BitConverter.ToUInt64("HTTP/1.0"u8);
         private static readonly ulong s_http11Bytes = BitConverter.ToUInt64("HTTP/1.1"u8);
 
@@ -68,6 +67,7 @@ namespace System.Net.Http
         private int _readLength;
 
         private long _idleSinceTickCount;
+        private int _keepAliveTimeoutSeconds; // 0 == no timeout
         private bool _inUse;
         private bool _detachedFromPool;
         private bool _canRetry;
@@ -149,9 +149,14 @@ namespace System.Net.Http
 
         /// <summary>Prepare an idle connection to be used for a new request.</summary>
         /// <param name="async">Indicates whether the coming request will be sync or async.</param>
-        /// <returns>True if connection can be used, false if it is invalid due to receiving EOF or unexpected data.</returns>
+        /// <returns>True if connection can be used, false if it is invalid due to a timeout or receiving EOF or unexpected data.</returns>
         public bool PrepareForReuse(bool async)
         {
+            if (CheckKeepAliveTimeoutExceeded())
+            {
+                return false;
+            }
+
             // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
             // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
             if (_readAheadTask is not null)
@@ -197,16 +202,18 @@ namespace System.Net.Http
         }
 
         /// <summary>Check whether a currently idle connection is still usable, or should be scavenged.</summary>
-        /// <returns>True if connection can be used, false if it is invalid due to receiving EOF or unexpected data.</returns>
+        /// <returns>True if connection can be used, false if it is invalid due to a timeout or receiving EOF or unexpected data.</returns>
         public override bool CheckUsabilityOnScavenge()
         {
-            // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
-            if (_readAheadTask is null)
+            if (CheckKeepAliveTimeoutExceeded())
             {
-#pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
-                _readAheadTask = ReadAheadWithZeroByteReadAsync();
-#pragma warning restore CA2012
+                return false;
             }
+
+            // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
+#pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
+            _readAheadTask ??= ReadAheadWithZeroByteReadAsync();
+#pragma warning restore CA2012
 
             // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
             return !_readAheadTask.Value.IsCompleted;
@@ -225,6 +232,14 @@ namespace System.Net.Http
                 // We don't know for sure that the stream actually has data available, so we need to issue a real read now.
                 return await _stream.ReadAsync(new Memory<byte>(_readBuffer)).ConfigureAwait(false);
             }
+        }
+
+        private bool CheckKeepAliveTimeoutExceeded()
+        {
+            // We only honor a Keep-Alive timeout on HTTP/1.0 responses.
+            // If _keepAliveTimeoutSeconds is 0, no timeout has been set.
+            return _keepAliveTimeoutSeconds != 0 &&
+                GetIdleTicks(Environment.TickCount64) >= _keepAliveTimeoutSeconds * 1000;
         }
 
         private ValueTask<int>? ConsumeReadAheadTask()
@@ -650,6 +665,11 @@ namespace System.Net.Http
                     ParseHeaderNameValue(this, line.Span, response, isFromTrailer: false);
                 }
 
+                if (response.Version.Minor == 0)
+                {
+                    ProcessHttp10KeepAliveHeader(response);
+                }
+
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
 
                 if (allowExpect100ToContinue != null)
@@ -980,8 +1000,7 @@ namespace System.Net.Http
             else
             {
                 byte minorVersion = line[7];
-                if (IsDigit(minorVersion) &&
-                    line.Slice(0, 7).SequenceEqual(s_http1DotBytes))
+                if (IsDigit(minorVersion) && line.StartsWith("HTTP/1."u8))
                 {
                     response.SetVersionWithoutValidation(new Version(1, minorVersion - '0'));
                 }
@@ -1008,7 +1027,7 @@ namespace System.Net.Http
             {
                 ReadOnlySpan<byte> reasonBytes = line.Slice(MinStatusLineLength + 1);
                 string? knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
-                if (knownReasonPhrase != null && EqualsOrdinal(knownReasonPhrase, reasonBytes))
+                if (knownReasonPhrase != null && ByteArrayHelpers.EqualsOrdinalAscii(knownReasonPhrase, reasonBytes))
                 {
                     response.SetReasonPhraseWithoutValidation(knownReasonPhrase);
                 }
@@ -1110,6 +1129,45 @@ namespace System.Net.Http
                 response.Headers.TryAddWithoutValidation(
                     (descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor,
                     headerValue);
+            }
+        }
+
+        private void ProcessHttp10KeepAliveHeader(HttpResponseMessage response)
+        {
+            if (response.Headers.NonValidated.TryGetValues(KnownHeaders.KeepAlive.Name, out HeaderStringValues keepAliveValues))
+            {
+                string keepAlive = keepAliveValues.ToString();
+                var parsedValues = new UnvalidatedObjectCollection<NameValueHeaderValue>();
+
+                if (NameValueHeaderValue.GetNameValueListLength(keepAlive, 0, ',', parsedValues) == keepAlive.Length)
+                {
+                    foreach (NameValueHeaderValue nameValue in parsedValues)
+                    {
+                        if (string.Equals(nameValue.Name, "timeout", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (!string.IsNullOrEmpty(nameValue.Value) &&
+                                HeaderUtilities.TryParseInt32(nameValue.Value, out int timeout) &&
+                                timeout >= 0)
+                            {
+                                if (timeout == 0)
+                                {
+                                    _connectionClose = true;
+                                }
+                                else
+                                {
+                                    _keepAliveTimeoutSeconds = timeout;
+                                }
+                            }
+                        }
+                        else if (string.Equals(nameValue.Name, "max", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (nameValue.Value == "0")
+                            {
+                                _connectionClose = true;
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -2079,28 +2137,8 @@ namespace System.Net.Http
                 _idleSinceTickCount = Environment.TickCount64;
 
                 // Put connection back in the pool.
-                _pool.ReturnHttp11Connection(this, isNewConnection: false);
+                _pool.RecycleHttp11Connection(this);
             }
-        }
-
-        private static bool EqualsOrdinal(string left, ReadOnlySpan<byte> right)
-        {
-            Debug.Assert(left != null, "Expected non-null string");
-
-            if (left.Length != right.Length)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < left.Length; i++)
-            {
-                if (left[i] != right[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         public sealed override string ToString() => $"{nameof(HttpConnection)}({_pool})"; // Description for diagnostic purposes

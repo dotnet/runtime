@@ -4,7 +4,6 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -16,7 +15,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
-using Microsoft.CodeAnalysis.Text;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -42,9 +40,11 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonNumberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonNumberHandlingAttribute";
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
             private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
+            private const string JsonRequiredAttributeFullName = "System.Text.Json.Serialization.JsonRequiredAttribute";
             private const string JsonSerializerContextFullName = "System.Text.Json.Serialization.JsonSerializerContext";
-            private const string JsonSerializableAttributeFullName = "System.Text.Json.Serialization.JsonSerializableAttribute";
             private const string JsonSourceGenerationOptionsAttributeFullName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
+
+            internal const string JsonSerializableAttributeFullName = "System.Text.Json.Serialization.JsonSerializableAttribute";
 
             private const string DateOnlyFullName = "System.DateOnly";
             private const string TimeOnlyFullName = "System.TimeOnly";
@@ -467,7 +467,7 @@ namespace System.Text.Json.SourceGeneration
                         }
 
                         declarationElements[tokenCount] = "class";
-                        declarationElements[tokenCount + 1] = currentSymbol.Name;
+                        declarationElements[tokenCount + 1] = GetClassDeclarationName(currentSymbol);
 
                         (classDeclarationList ??= new List<string>()).Add(string.Join(" ", declarationElements));
                     }
@@ -477,6 +477,38 @@ namespace System.Text.Json.SourceGeneration
 
                 Debug.Assert(classDeclarationList.Count > 0);
                 return true;
+            }
+
+            private static string GetClassDeclarationName(INamedTypeSymbol typeSymbol)
+            {
+                if (typeSymbol.TypeArguments.Length == 0)
+                {
+                    return typeSymbol.Name;
+                }
+
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append(typeSymbol.Name);
+                sb.Append('<');
+
+                bool first = true;
+                foreach (ITypeSymbol typeArg in typeSymbol.TypeArguments)
+                {
+                    if (!first)
+                    {
+                        sb.Append(", ");
+                    }
+                    else
+                    {
+                        first = false;
+                    }
+
+                    sb.Append(typeArg.Name);
+                }
+
+                sb.Append('>');
+
+                return sb.ToString();
             }
 
             private TypeGenerationSpec? GetRootSerializableType(
@@ -550,38 +582,6 @@ namespace System.Text.Json.SourceGeneration
                 typeGenerationSpec.AttributeLocation = attributeSyntax.GetLocation();
 
                 return typeGenerationSpec;
-            }
-
-            internal static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { AttributeLists: { Count: > 0 }, BaseList: { Types : {Count : > 0 } } };
-
-            internal static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context, CancellationToken cancellationToken)
-            {
-                var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
-
-                foreach (AttributeListSyntax attributeListSyntax in classDeclarationSyntax.AttributeLists)
-                {
-                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax, cancellationToken).Symbol as IMethodSymbol;
-                        if (attributeSymbol == null)
-                        {
-                            continue;
-                        }
-
-                        INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
-                        string fullName = attributeContainingTypeSymbol.ToDisplayString();
-
-                        if (fullName == JsonSerializableAttributeFullName)
-                        {
-                            return classDeclarationSyntax;
-                        }
-                    }
-
-                }
-
-                return null;
             }
 
             private static JsonSourceGenerationMode? GetJsonSourceGenerationModeEnumVal(SyntaxNode propertyValueMode)
@@ -1032,7 +1032,7 @@ namespace System.Text.Json.SourceGeneration
                                 bool isVirtual = propertyInfo.IsVirtual();
 
                                 if (propertyInfo.GetIndexParameters().Length > 0 ||
-                                    PropertyIsOverridenAndIgnored(propertyInfo.Name, propertyInfo.PropertyType, isVirtual, ignoredMembers))
+                                    PropertyIsOverriddenAndIgnored(propertyInfo.Name, propertyInfo.PropertyType, isVirtual, ignoredMembers))
                                 {
                                     continue;
                                 }
@@ -1043,7 +1043,7 @@ namespace System.Text.Json.SourceGeneration
 
                             foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
                             {
-                                if (PropertyIsOverridenAndIgnored(fieldInfo.Name, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
+                                if (PropertyIsOverriddenAndIgnored(fieldInfo.Name, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
                                 {
                                     continue;
                                 }
@@ -1094,7 +1094,7 @@ namespace System.Text.Json.SourceGeneration
 
                         if (propertyOrderSpecified)
                         {
-                            propGenSpecList.Sort((p1, p2) => p1.Order.CompareTo(p2.Order));
+                            propGenSpecList.StableSortByKey(p => p.Order);
                         }
                     }
                 }
@@ -1164,7 +1164,7 @@ namespace System.Text.Json.SourceGeneration
             private static bool PropertyIsConstructorParameter(PropertyGenerationSpec propSpec, ParameterGenerationSpec[]? paramGenSpecArray)
                 => paramGenSpecArray != null && paramGenSpecArray.Any(paramSpec => propSpec.ClrName.Equals(paramSpec.ParameterInfo.Name, StringComparison.OrdinalIgnoreCase));
 
-            private static bool PropertyIsOverridenAndIgnored(
+            private static bool PropertyIsOverriddenAndIgnored(
                 string currentMemberName,
                 Type currentMemberType,
                 bool currentMemberIsVirtual,
@@ -1198,7 +1198,8 @@ namespace System.Text.Json.SourceGeneration
                     out string? converterInstantiationLogic,
                     out int order,
                     out bool hasFactoryConverter,
-                    out bool isExtensionData);
+                    out bool isExtensionData,
+                    out bool isRequired);
 
                 ProcessMember(
                     memberInfo,
@@ -1230,6 +1231,7 @@ namespace System.Text.Json.SourceGeneration
                     IsProperty = memberInfo.MemberType == MemberTypes.Property,
                     IsPublic = isPublic,
                     IsVirtual = isVirtual,
+                    IsRequired = isRequired,
                     JsonPropertyName = jsonPropertyName,
                     RuntimePropertyName = runtimePropertyName,
                     PropertyNameVarName = propertyNameVarName,
@@ -1276,7 +1278,8 @@ namespace System.Text.Json.SourceGeneration
                 out string? converterInstantiationLogic,
                 out int order,
                 out bool hasFactoryConverter,
-                out bool isExtensionData)
+                out bool isExtensionData,
+                out bool isRequired)
             {
                 hasJsonInclude = false;
                 jsonPropertyName = null;
@@ -1285,6 +1288,7 @@ namespace System.Text.Json.SourceGeneration
                 converterInstantiationLogic = null;
                 order = 0;
                 isExtensionData = false;
+                isRequired = false;
 
                 bool foundDesignTimeCustomConverter = false;
                 hasFactoryConverter = false;
@@ -1349,6 +1353,11 @@ namespace System.Text.Json.SourceGeneration
                             case JsonExtensionDataAttributeFullName:
                                 {
                                     isExtensionData = true;
+                                }
+                                break;
+                            case JsonRequiredAttributeFullName:
+                                {
+                                    isRequired = true;
                                 }
                                 break;
                             default:
@@ -1473,11 +1482,11 @@ namespace System.Text.Json.SourceGeneration
 
                     if (forType)
                     {
-                        return $"{Emitter.GetConverterFromFactoryMethodName}(typeof({type.GetCompilableName()}), new {converterType.GetCompilableName()}())";
+                        return $"{Emitter.GetConverterFromFactoryMethodName}({OptionsLocalVariableName}, typeof({type.GetCompilableName()}), new {converterType.GetCompilableName()}())";
                     }
                     else
                     {
-                        return $"{Emitter.JsonContextVarName}.{Emitter.GetConverterFromFactoryMethodName}<{type.GetCompilableName()}>(new {converterType.GetCompilableName()}())";
+                        return $"{Emitter.GetConverterFromFactoryMethodName}<{type.GetCompilableName()}>({OptionsLocalVariableName}, new {converterType.GetCompilableName()}())";
                     }
                 }
 

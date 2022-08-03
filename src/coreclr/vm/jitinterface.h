@@ -473,6 +473,8 @@ protected:
         CORINFO_EH_CLAUSE*      clause,
         COR_ILMETHOD_DECODER*   pILHeader);
 
+    void freeArrayInternal(void* array);
+
 public:
 
     void* getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method, void **ppIndirection);
@@ -527,7 +529,7 @@ private:
 
 #ifdef _DEBUG
     InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuff;
-    ScratchBuffer<MAX_CLASSNAME_LENGTH> ssClsNameBuffScratch;
+    InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuffUTF8;
 #endif
 
 public:
@@ -699,19 +701,29 @@ public:
         m_pCodeHeap = NULL;
 
         if (m_pOffsetMapping != NULL)
-            delete [] ((BYTE*) m_pOffsetMapping);
+            freeArrayInternal(m_pOffsetMapping);
 
         if (m_pNativeVarInfo != NULL)
-            delete [] ((BYTE*) m_pNativeVarInfo);
+            freeArrayInternal(m_pNativeVarInfo);
 
         m_iOffsetMapping = 0;
         m_pOffsetMapping = NULL;
         m_iNativeVarInfo = 0;
         m_pNativeVarInfo = NULL;
 
+        if (m_inlineTreeNodes != NULL)
+            freeArrayInternal(m_inlineTreeNodes);
+        if (m_richOffsetMappings != NULL)
+            freeArrayInternal(m_richOffsetMappings);
+
+        m_inlineTreeNodes = NULL;
+        m_numInlineTreeNodes = 0;
+        m_richOffsetMappings = NULL;
+        m_numRichOffsetMappings = 0;
+
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         if (m_pPatchpointInfoFromJit != NULL)
-            delete [] ((BYTE*) m_pPatchpointInfoFromJit);
+            freeArrayInternal(m_pPatchpointInfoFromJit);
 
         m_pPatchpointInfoFromJit = NULL;
 #endif
@@ -789,7 +801,7 @@ public:
     }
 #endif
 
-    CEEJitInfo(MethodDesc* fd,  COR_ILMETHOD_DECODER* header,
+    CEEJitInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header,
                EEJitManager* jm, bool allowInlining = true)
         : CEEInfo(fd, allowInlining),
           m_jitManager(jm),
@@ -822,6 +834,10 @@ public:
           m_pOffsetMapping(NULL),
           m_iNativeVarInfo(0),
           m_pNativeVarInfo(NULL),
+          m_inlineTreeNodes(NULL),
+          m_numInlineTreeNodes(0),
+          m_richOffsetMappings(NULL),
+          m_numRichOffsetMappings(0),
 #ifdef FEATURE_ON_STACK_REPLACEMENT
           m_pPatchpointInfoFromJit(NULL),
           m_pPatchpointInfoFromRuntime(NULL),
@@ -852,14 +868,14 @@ public:
         }
 
         if (m_pOffsetMapping != NULL)
-            delete [] ((BYTE*) m_pOffsetMapping);
+            freeArrayInternal(m_pOffsetMapping);
 
         if (m_pNativeVarInfo != NULL)
-            delete [] ((BYTE*) m_pNativeVarInfo);
+            freeArrayInternal(m_pNativeVarInfo);
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         if (m_pPatchpointInfoFromJit != NULL)
-            delete [] ((BYTE*) m_pPatchpointInfoFromJit);
+            freeArrayInternal(m_pPatchpointInfoFromJit);
 #endif
 #ifdef FEATURE_PGO
         if (m_foundPgoData != NULL)
@@ -881,6 +897,12 @@ public:
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars) override final;
     void CompressDebugInfo();
+
+    void reportRichMappings(
+        ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
+        uint32_t                          numInlineTreeNodes,
+        ICorDebugInfo::RichOffsetMapping* mappings,
+        uint32_t                          numMappings) override final;
 
     void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
                        void **            ppIndirection) override final;  /* OUT */
@@ -975,6 +997,11 @@ protected :
 
     ULONG32                 m_iNativeVarInfo;
     ICorDebugInfo::NativeVarInfo * m_pNativeVarInfo;
+
+    ICorDebugInfo::InlineTreeNode    *m_inlineTreeNodes;
+    ULONG32                           m_numInlineTreeNodes;
+    ICorDebugInfo::RichOffsetMapping *m_richOffsetMappings;
+    ULONG32                           m_numRichOffsetMappings;
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     PatchpointInfo        * m_pPatchpointInfoFromJit;

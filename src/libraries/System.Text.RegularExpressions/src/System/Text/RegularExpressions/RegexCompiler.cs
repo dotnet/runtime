@@ -1884,7 +1884,7 @@ namespace System.Text.RegularExpressions
                 EmitNode(yesBranch);
                 TransferSliceStaticPosToPos();
                 Label postYesDoneLabel = doneLabel;
-                if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                 {
                     // resumeAt = 0;
                     Ldc(0);
@@ -1907,7 +1907,7 @@ namespace System.Text.RegularExpressions
                     EmitNode(noBranch);
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
-                    if (!isAtomic && postNoDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postNoDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         // resumeAt = 1;
                         Ldc(1);
@@ -1919,7 +1919,7 @@ namespace System.Text.RegularExpressions
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         // resumeAt = 2;
                         Ldc(2);
@@ -5472,14 +5472,8 @@ namespace System.Text.RegularExpressions
             Label doneLabel = DefineLabel();
             Label comparisonLabel = DefineLabel();
 
-            if (analysis.ContainsNoAscii)
+            void EmitContainsNoAscii()
             {
-                // We determined that the character class contains only non-ASCII,
-                // for example if the class were [\u1000-\u2000\u3000-\u4000\u5000-\u6000].
-                // (In the future, we could possibly extend the analysis to produce a known
-                // lower-bound and compare against that rather than always using 128 as the
-                // pivot point.)
-
                 // ch >= 128 && RegexRunner.CharInClass(ch, "...")
                 Ldloc(tempLocal);
                 Ldc(128);
@@ -5491,15 +5485,10 @@ namespace System.Text.RegularExpressions
                 Stloc(resultLocal);
                 MarkLabel(doneLabel);
                 Ldloc(resultLocal);
-                return;
             }
 
-            if (analysis.AllAsciiContained)
+            void EmitAllAsciiContained()
             {
-                // We determined that every ASCII character is in the class, for example
-                // if the class were the negated example from case 1 above:
-                // [^\p{IsGreek}\p{IsGreekExtended}].
-
                 // ch < 128 || RegexRunner.CharInClass(ch, "...")
                 Ldloc(tempLocal);
                 Ldc(128);
@@ -5511,6 +5500,27 @@ namespace System.Text.RegularExpressions
                 Stloc(resultLocal);
                 MarkLabel(doneLabel);
                 Ldloc(resultLocal);
+            }
+
+            if (analysis.ContainsNoAscii)
+            {
+                // We determined that the character class contains only non-ASCII,
+                // for example if the class were [\u1000-\u2000\u3000-\u4000\u5000-\u6000].
+                // (In the future, we could possibly extend the analysis to produce a known
+                // lower-bound and compare against that rather than always using 128 as the
+                // pivot point.)
+
+                EmitContainsNoAscii();
+                return;
+            }
+
+            if (analysis.AllAsciiContained)
+            {
+                // We determined that every ASCII character is in the class, for example
+                // if the class were the negated example from case 1 above:
+                // [^\p{IsGreek}\p{IsGreekExtended}].
+
+                EmitAllAsciiContained();
                 return;
             }
 
@@ -5540,6 +5550,19 @@ namespace System.Text.RegularExpressions
                     }
                 }
             });
+
+            // There's a chance that the class contains either no ASCII characters or all of them,
+            // and the analysis could not find it (for example if the class has a subtraction).
+            // We optimize away the bit vector in these trivial cases.
+            switch (bitVectorString)
+            {
+                case "\0\0\0\0\0\0\0\0":
+                    EmitContainsNoAscii();
+                    return;
+                case "\uffff\uffff\uffff\uffff\uffff\uffff\uffff\uffff":
+                    EmitAllAsciiContained();
+                    return;
+            }
 
             // We determined that the character class may contain ASCII, so we
             // output the lookup against the lookup table.

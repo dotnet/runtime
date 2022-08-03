@@ -268,27 +268,27 @@ namespace System
         /// </remarks>
         public static bool IsAsciiLetterOrDigit(char c) => IsAsciiLetter(c) | IsBetween(c, '0', '9');
 
-        /// <summary>Indicates whether a character is categorized as an ASCII hexademical digit.</summary>
+        /// <summary>Indicates whether a character is categorized as an ASCII hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a hexademical digit; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is a hexadecimal digit; otherwise, false.</returns>
         /// <remarks>
         /// This determines whether the character is in the range '0' through '9', inclusive,
         /// 'A' through 'F', inclusive, or 'a' through 'f', inclusive.
         /// </remarks>
         public static bool IsAsciiHexDigit(char c) => HexConverter.IsHexChar(c);
 
-        /// <summary>Indicates whether a character is categorized as an ASCII upper-case hexademical digit.</summary>
+        /// <summary>Indicates whether a character is categorized as an ASCII upper-case hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a hexademical digit; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is a hexadecimal digit; otherwise, false.</returns>
         /// <remarks>
         /// This determines whether the character is in the range '0' through '9', inclusive,
         /// or 'A' through 'F', inclusive.
         /// </remarks>
         public static bool IsAsciiHexDigitUpper(char c) => HexConverter.IsHexUpperChar(c);
 
-        /// <summary>Indicates whether a character is categorized as an ASCII lower-case hexademical digit.</summary>
+        /// <summary>Indicates whether a character is categorized as an ASCII lower-case hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a lower-case hexademical digit; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is a lower-case hexadecimal digit; otherwise, false.</returns>
         /// <remarks>
         /// This determines whether the character is in the range '0' through '9', inclusive,
         /// or 'a' through 'f', inclusive.
@@ -591,7 +591,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -606,7 +606,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -626,7 +626,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -647,7 +647,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -667,8 +667,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -710,7 +709,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -743,7 +742,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -788,7 +787,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -813,7 +812,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -845,7 +844,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -865,7 +864,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -885,7 +884,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -911,7 +910,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -935,7 +934,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -957,7 +956,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -979,7 +978,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -996,7 +995,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
-            if (((uint)index) >= ((uint)s.Length))
+            if ((uint)index >= (uint)s.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
@@ -1226,6 +1225,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static char IBinaryNumber<char>.AllBitsSet => (char)0xFFFF;
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         static bool IBinaryNumber<char>.IsPow2(char value) => ushort.IsPow2(value);
 
@@ -1252,17 +1254,17 @@ namespace System
         // IComparisonOperators
         //
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
-        static bool IComparisonOperators<char, char>.operator <(char left, char right) => left < right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
+        static bool IComparisonOperators<char, char, bool>.operator <(char left, char right) => left < right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
-        static bool IComparisonOperators<char, char>.operator <=(char left, char right) => left <= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<char, char, bool>.operator <=(char left, char right) => left <= right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
-        static bool IComparisonOperators<char, char>.operator >(char left, char right) => left > right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
+        static bool IComparisonOperators<char, char, bool>.operator >(char left, char right) => left > right;
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
-        static bool IComparisonOperators<char, char>.operator >=(char left, char right) => left >= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<char, char, bool>.operator >=(char left, char right) => left >= right;
 
         //
         // IDecrementOperators
@@ -1285,11 +1287,11 @@ namespace System
         // IEqualityOperators
         //
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
-        static bool IEqualityOperators<char, char>.operator ==(char left, char right) => left == right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
+        static bool IEqualityOperators<char, char, bool>.operator ==(char left, char right) => left == right;
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
-        static bool IEqualityOperators<char, char>.operator !=(char left, char right) => left != right;
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
+        static bool IEqualityOperators<char, char, bool>.operator !=(char left, char right) => left != right;
 
         //
         // IIncrementOperators
@@ -1860,14 +1862,14 @@ namespace System
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static char IShiftOperators<char, char>.operator <<(char value, int shiftAmount) => (char)(value << shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
+        static char IShiftOperators<char, int, char>.operator <<(char value, int shiftAmount) => (char)(value << shiftAmount);
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static char IShiftOperators<char, char>.operator >>(char value, int shiftAmount) => (char)(value >> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
+        static char IShiftOperators<char, int, char>.operator >>(char value, int shiftAmount) => (char)(value >> shiftAmount);
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        static char IShiftOperators<char, char>.operator >>>(char value, int shiftAmount) => (char)(value >>> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
+        static char IShiftOperators<char, int, char>.operator >>>(char value, int shiftAmount) => (char)(value >>> shiftAmount);
 
         //
         // ISpanParsable

@@ -46,6 +46,11 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/firefox/firefox" />
     </ItemGroup>
 
+    <ItemGroup Label="Don't log to console on CI" Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SKIP_LOG_TO_CONSOLE=1" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SKIP_LOG_TO_CONSOLE=1" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_DotnetCommand Condition="'$(OS)' != 'Windows_NT'">dotnet</_DotnetCommand>
       <_DotnetCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</_DotnetCommand>

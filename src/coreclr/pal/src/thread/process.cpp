@@ -756,7 +756,7 @@ CorUnix::InternalCreateProcess(
 
     if (NO_ERROR != palError)
     {
-        ERROR("Unable to allocate object for new proccess\n");
+        ERROR("Unable to allocate object for new process\n");
         goto InternalCreateProcessExit;
     }
 
@@ -983,7 +983,7 @@ CorUnix::InternalCreateProcess(
         pobjFileErr = NULL;
     }
 
-    /* fill PROCESS_INFORMATION strucutre */
+    /* fill PROCESS_INFORMATION structure */
     lpProcessInformation->hProcess = hProcess;
     lpProcessInformation->hThread = hDummyThread;
     lpProcessInformation->dwProcessId = processId;
@@ -2459,7 +2459,7 @@ PROCCreateCrashDump(
         int result = waitpid(childpid, &wstatus, 0);
         if (result != childpid)
         {
-            ERROR("PROCCreateCrashDump: waitpid() FAILED result %d wstatus %d errno %s (%d)\n",
+            fprintf(stderr, "Problem waiting for createdump: waitpid() FAILED result %d wstatus %d errno %s (%d)\n",
                 result, wstatus, strerror(errno), errno);
             return false;
         }
@@ -2797,6 +2797,9 @@ FlushProcessWriteBuffers()
             {
                 CHECK_MACH("thread_get_register_pointer_values()", machret);
             }
+
+            machret = mach_port_deallocate(mach_task_self(), pThreads[i]);
+            CHECK_MACH("mach_port_deallocate()", machret);
         }
         // Deallocate the thread list now we're done with it.
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
@@ -3813,7 +3816,7 @@ Abstract:
 
 Parameters:
     IN  lpCommandLine: second parameter from CreateProcessW (an unicode string)
-    IN  lpAppPath: cannonical name of the application to launched
+    IN  lpAppPath: canonical name of the application to launched
     OUT lppArgv: array of arguments to be passed to the new process
 
 Return:
@@ -3871,7 +3874,7 @@ buildArgv(
 
     pChar = lpAsciiCmdLine;
 
-    /* put the cannonical name of the application as the first parameter */
+    /* put the canonical name of the application as the first parameter */
     if ((strcpy_s(lpAsciiCmdLine, iLength, "\"") != SAFECRT_SUCCESS) ||
         (strcat_s(lpAsciiCmdLine, iLength, lpAppPath) != SAFECRT_SUCCESS) ||
         (strcat_s(lpAsciiCmdLine, iLength,  "\"") != SAFECRT_SUCCESS) ||
