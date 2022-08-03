@@ -31,6 +31,11 @@ namespace System.Text.Json.SourceGeneration
         public bool IsVirtual { get; init; }
 
         /// <summary>
+        /// The property has JsonRequiredAttribute.
+        /// </summary>
+        public bool IsRequired { get; init; }
+
+        /// <summary>
         /// The property name specified via JsonPropertyNameAttribute, if available.
         /// </summary>
         public string? JsonPropertyName { get; init; }

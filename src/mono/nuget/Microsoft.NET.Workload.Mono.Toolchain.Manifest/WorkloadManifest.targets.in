@@ -40,12 +40,6 @@
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
         <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
     </ImportGroup>
-    <!--
-    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'macOS' and $([MSBuild]::IsOSPlatform('osx'))">
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.osx-arm64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.osx-x64" />
-    </ImportGroup>
-    -->
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'ios'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
@@ -94,6 +88,9 @@
     <ItemGroup Condition="'$(_MonoWorkloadTargetsMobile)' == 'true'">
       <KnownRuntimePack Update="@(KnownRuntimePack)">
         <LatestRuntimeFrameworkVersion Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetCoreAppCurrent}' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">**FromWorkload**</LatestRuntimeFrameworkVersion>
+        <!-- Overrides for wasm threading support -->
+        <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreading)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
+        <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablePerfTrace)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.perftrace.**RID**</RuntimePackNamePatterns>
       </KnownRuntimePack>
     </ItemGroup>
 
@@ -113,5 +110,11 @@
 
       <Error Condition="@(NativeFileReference->Count()) > 0"
              Text="WebAssembly workloads, required for linking native files (from %40(NativeFileReference)), are only supported for projects targeting net6.0+ ." />
+    </Target>
+
+    <Target Name="_ErrorDualWasmThreadProps"
+            Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(BrowserWorkloadDisabled)' != 'true' and '$(WasmEnableThreading)' == 'true' and '$(WasmEnablePerfTrace)' == 'true'"
+            BeforeTargets="Build">
+        <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreading or WasmEnablePerfTrace to true, but not both." />
     </Target>
 </Project>

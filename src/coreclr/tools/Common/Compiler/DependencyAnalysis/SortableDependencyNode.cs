@@ -73,7 +73,6 @@ namespace ILCompiler.DependencyAnalysis
             ResourceIndexNode,
             TypeMetadataMapNode,
             ClassConstructorContextMap,
-            DynamicInvokeTemplateDataNode,
             ReflectionInvokeMapNode,
             DelegateMarshallingStubMapNode,
             StructMarshallingStubMapNode,

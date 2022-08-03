@@ -268,27 +268,27 @@ namespace System
         /// </remarks>
         public static bool IsAsciiLetterOrDigit(char c) => IsAsciiLetter(c) | IsBetween(c, '0', '9');
 
-        /// <summary>Indicates whether a character is categorized as an ASCII hexademical digit.</summary>
+        /// <summary>Indicates whether a character is categorized as an ASCII hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a hexademical digit; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is a hexadecimal digit; otherwise, false.</returns>
         /// <remarks>
         /// This determines whether the character is in the range '0' through '9', inclusive,
         /// 'A' through 'F', inclusive, or 'a' through 'f', inclusive.
         /// </remarks>
         public static bool IsAsciiHexDigit(char c) => HexConverter.IsHexChar(c);
 
-        /// <summary>Indicates whether a character is categorized as an ASCII upper-case hexademical digit.</summary>
+        /// <summary>Indicates whether a character is categorized as an ASCII upper-case hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a hexademical digit; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is a hexadecimal digit; otherwise, false.</returns>
         /// <remarks>
         /// This determines whether the character is in the range '0' through '9', inclusive,
         /// or 'A' through 'F', inclusive.
         /// </remarks>
         public static bool IsAsciiHexDigitUpper(char c) => HexConverter.IsHexUpperChar(c);
 
-        /// <summary>Indicates whether a character is categorized as an ASCII lower-case hexademical digit.</summary>
+        /// <summary>Indicates whether a character is categorized as an ASCII lower-case hexadecimal digit.</summary>
         /// <param name="c">The character to evaluate.</param>
-        /// <returns>true if <paramref name="c"/> is a lower-case hexademical digit; otherwise, false.</returns>
+        /// <returns>true if <paramref name="c"/> is a lower-case hexadecimal digit; otherwise, false.</returns>
         /// <remarks>
         /// This determines whether the character is in the range '0' through '9', inclusive,
         /// or 'a' through 'f', inclusive.

@@ -724,7 +724,7 @@ namespace System.Data
                 }
                 // we should not write it also
                 setRootNStoDataSet = true;
-                //incase of Root is not mapped to DataSet and is mapped to DataTable instead; to be backward compatable
+                //incase of Root is not mapped to DataSet and is mapped to DataTable instead; to be backward compatible
                 // we need to set the Namespace of Root to DataSet's namespace also(it would be NS of First DataTable in collection)
             }
 

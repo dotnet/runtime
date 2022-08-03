@@ -2080,7 +2080,7 @@ interface IXCLRDataFrame : IUnknown
 
     /*
      * Return an argument by (0-based) index.
-     * The name parameter is filled in if name information is availble.
+     * The name parameter is filled in if name information is available.
      */
     HRESULT GetArgumentByIndex([in] ULONG32 index,
                                [out] IXCLRDataValue** arg,
@@ -2095,7 +2095,7 @@ interface IXCLRDataFrame : IUnknown
 
     /*
      * Return a local variable by (0-based) index.
-     * The name parameter is filled in if name information is availble.
+     * The name parameter is filled in if name information is available.
      */
     HRESULT GetLocalVariableByIndex([in] ULONG32 index,
                                     [out] IXCLRDataValue** localVariable,

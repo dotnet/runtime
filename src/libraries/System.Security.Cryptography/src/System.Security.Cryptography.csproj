@@ -418,6 +418,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRequest.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.Build.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.CdpExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateRevocationListBuilder.Load.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\DSACertificateExtensions.cs" />

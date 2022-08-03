@@ -921,8 +921,8 @@ namespace System.Net.Http
                     throw new HttpRequestException("QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnSameOrNextProxy);
                 }
 #endif
-
-                http3Connection = new Http3Connection(this, _originAuthority, authority, quicConnection);
+                // if the authority was sent as an option through alt-svc then include alt-used header
+                http3Connection = new Http3Connection(this, _originAuthority, authority, quicConnection, includeAltUsedHeader: _http3Authority == authority);
                 _http3Connection = http3Connection;
 
                 if (NetEventSource.Log.IsEnabled())
@@ -2324,7 +2324,7 @@ namespace System.Net.Http
 
                 if (!connection.CheckUsabilityOnScavenge())
                 {
-                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"Scavenging connection. Unexpected data or EOF received.");
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"Scavenging connection. Keep-Alive timeout exceeded, unexpected data or EOF received.");
                     return false;
                 }
 

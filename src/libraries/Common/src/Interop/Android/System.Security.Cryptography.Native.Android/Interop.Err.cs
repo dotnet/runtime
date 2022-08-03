@@ -34,7 +34,7 @@ internal static partial class Interop
             fixed (byte* buf = &buffer[0])
             {
                 ErrErrorStringN(error, buf, buffer.Length);
-                return Marshal.PtrToStringAnsi((IntPtr)buf)!;
+                return Marshal.PtrToStringUTF8((IntPtr)buf)!;
             }
         }
 

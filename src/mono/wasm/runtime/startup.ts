@@ -1,19 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
-import { mono_assert, CharPtrNull, DotnetModule, MonoConfig, wasm_type_symbol, MonoObject, MonoConfigError, LoadingResource, AssetEntry, ResourceRequest } from "./types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_SHELL, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
-import cwraps from "./cwraps";
+import { mono_assert, CharPtrNull, DotnetModule, MonoConfig, wasm_type_symbol, MonoObject, MonoConfigError, LoadingResource, AssetEntry, ResourceRequest, DotnetPublicAPI } from "./types";
+import { BINDING, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
+import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
-import { mono_wasm_load_bytes_into_heap } from "./buffers";
-import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
 import { find_corlib_class } from "./class-loader";
 import { VoidPtr, CharPtr } from "./types/emscripten";
-import { DotnetPublicAPI } from "./exports";
 import { mono_on_abort, set_exit_code } from "./run";
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
@@ -21,29 +17,32 @@ import { mono_wasm_new_root } from "./roots";
 import { init_crypto } from "./crypto-worker";
 import { init_polyfills_async } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
-import { createPromiseController } from "./promise-controller";
+import { createPromiseController, PromiseAndController } from "./promise-controller";
 import { string_decoder } from "./strings";
 import { mono_wasm_init_diagnostics } from "./diagnostics/index";
+import { delay } from "./promise-utils";
+import { init_managed_exports } from "./managed-exports";
+import { init_legacy_exports } from "./net6-legacy/corebindings";
+import { mono_wasm_load_bytes_into_heap } from "./memory";
+import { cwraps_internal } from "./exports-internal";
+import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 
 let all_assets_loaded_in_memory: Promise<void> | null = null;
-const loaded_files: { url?: string, file: string }[] = [];
+const loaded_files: { url: string, file: string }[] = [];
 const loaded_assets: { [id: string]: [VoidPtr, number] } = Object.create(null);
 let instantiated_assets_count = 0;
 let downloded_assets_count = 0;
-const max_parallel_downloads = 100;
 // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
 let parallel_count = 0;
-let throttling_promise: Promise<void> | undefined = undefined;
-let throttling_promise_resolve: Function | undefined = undefined;
 let config: MonoConfig = undefined as any;
 
-const afterInstantiateWasm = createPromiseController();
-const beforePreInit = createPromiseController();
-const afterPreInit = createPromiseController();
-const afterPreRun = createPromiseController();
-const beforeOnRuntimeInitialized = createPromiseController();
-const afterOnRuntimeInitialized = createPromiseController();
-const afterPostRun = createPromiseController();
+const afterInstantiateWasm = createPromiseController<void>();
+const beforePreInit = createPromiseController<void>();
+const afterPreInit = createPromiseController<void>();
+const afterPreRun = createPromiseController<void>();
+const beforeOnRuntimeInitialized = createPromiseController<void>();
+const afterOnRuntimeInitialized = createPromiseController<void>();
+const afterPostRun = createPromiseController<void>();
 
 // we are making emscripten startup async friendly
 // emscripten is executing the events without awaiting it and so we need to block progress via PromiseControllers above
@@ -108,7 +107,7 @@ function instantiateWasm(
 
     if (userInstantiateWasm) {
         const exports = userInstantiateWasm(imports, (instance: WebAssembly.Instance, module: WebAssembly.Module) => {
-            afterInstantiateWasm.promise_control.resolve(null);
+            afterInstantiateWasm.promise_control.resolve();
             successCallback(instance, module);
         });
         return exports;
@@ -125,7 +124,7 @@ function preInit(isCustomStartup: boolean, userPreInit: (() => void)[]) {
     try {
         mono_wasm_pre_init_essential();
         if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: preInit");
-        beforePreInit.promise_control.resolve(null);
+        beforePreInit.promise_control.resolve();
         // all user Module.preInit callbacks
         userPreInit.forEach(fn => fn());
     } catch (err) {
@@ -149,7 +148,7 @@ function preInit(isCustomStartup: boolean, userPreInit: (() => void)[]) {
             throw err;
         }
         // signal next stage
-        afterPreInit.promise_control.resolve(null);
+        afterPreInit.promise_control.resolve();
         Module.removeRunDependency("mono_pre_init");
     })();
 }
@@ -169,7 +168,7 @@ async function preRunAsync(userPreRun: (() => void)[]) {
         throw err;
     }
     // signal next stage
-    afterPreRun.promise_control.resolve(null);
+    afterPreRun.promise_control.resolve();
     Module.removeRunDependency("mono_pre_run_async");
 }
 
@@ -178,7 +177,7 @@ async function onRuntimeInitializedAsync(isCustomStartup: boolean, userOnRuntime
     await afterPreRun.promise;
     if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: onRuntimeInitialized");
     // signal this stage, this will allow pending assets to allocate memory
-    beforeOnRuntimeInitialized.promise_control.resolve(null);
+    beforeOnRuntimeInitialized.promise_control.resolve();
     try {
         if (!isCustomStartup) {
             // wait for all assets in memory
@@ -207,7 +206,7 @@ async function onRuntimeInitializedAsync(isCustomStartup: boolean, userOnRuntime
         throw err;
     }
     // signal next stage
-    afterOnRuntimeInitialized.promise_control.resolve(null);
+    afterOnRuntimeInitialized.promise_control.resolve();
 }
 
 async function postRunAsync(userpostRun: (() => void)[]) {
@@ -223,7 +222,7 @@ async function postRunAsync(userpostRun: (() => void)[]) {
         throw err;
     }
     // signal next stage
-    afterPostRun.promise_control.resolve(null);
+    afterPostRun.promise_control.resolve();
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -248,6 +247,10 @@ function mono_wasm_pre_init_essential(): void {
 
     // init_polyfills() is already called from export.ts
     init_crypto();
+    init_c_exports();
+    cwraps_internal(INTERNAL);
+    cwraps_mono_api(MONO);
+    cwraps_binding_api(BINDING);
 
     Module.removeRunDependency("mono_wasm_pre_init_essential");
 }
@@ -258,9 +261,6 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
 
     await init_polyfills_async();
-    if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
-        await mono_wasm_pthread_worker_init();
-    }
 
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
 }
@@ -421,7 +421,7 @@ async function _instantiate_wasm_module(): Promise<void> {
         ++instantiated_assets_count;
         wasm_success_callback!(compiledInstance, compiledModule);
         if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: instantiateWasm done");
-        afterInstantiateWasm.promise_control.resolve(null);
+        afterInstantiateWasm.promise_control.resolve();
         wasm_success_callback = null;
         wasm_module_imports = null;
     } catch (err) {
@@ -594,49 +594,11 @@ export function bindings_init(): void {
         runtimeHelpers._class_uint32 = find_corlib_class("System", "UInt32");
         runtimeHelpers._class_double = find_corlib_class("System", "Double");
         runtimeHelpers._class_boolean = find_corlib_class("System", "Boolean");
-        runtimeHelpers.bind_runtime_method = bind_runtime_method;
 
-        const bindingAssembly = INTERNAL.BINDING_ASM;
-        const binding_fqn_asm = bindingAssembly.substring(bindingAssembly.indexOf("[") + 1, bindingAssembly.indexOf("]")).trim();
-        const binding_fqn_class = bindingAssembly.substring(bindingAssembly.indexOf("]") + 1).trim();
-
-        const binding_module = cwraps.mono_wasm_assembly_load(binding_fqn_asm);
-        if (!binding_module)
-            throw "Can't find bindings module assembly: " + binding_fqn_asm;
-
-        if (binding_fqn_class && binding_fqn_class.length) {
-            runtimeHelpers.runtime_interop_exports_classname = binding_fqn_class;
-            if (binding_fqn_class.indexOf(".") != -1) {
-                const idx = binding_fqn_class.lastIndexOf(".");
-                runtimeHelpers.runtime_interop_namespace = binding_fqn_class.substring(0, idx);
-                runtimeHelpers.runtime_interop_exports_classname = binding_fqn_class.substring(idx + 1);
-            }
-        }
-
-        runtimeHelpers.runtime_interop_exports_class = cwraps.mono_wasm_assembly_find_class(binding_module, runtimeHelpers.runtime_interop_namespace, runtimeHelpers.runtime_interop_exports_classname);
-        if (!runtimeHelpers.runtime_interop_exports_class)
-            throw "Can't find " + binding_fqn_class + " class";
-
-        runtimeHelpers.get_call_sig_ref = get_method("GetCallSignatureRef");
-        if (!runtimeHelpers.get_call_sig_ref)
-            throw "Can't find GetCallSignatureRef method";
-
-        runtimeHelpers.complete_task_method = get_method("CompleteTask");
-        if (!runtimeHelpers.complete_task_method)
-            throw "Can't find CompleteTask method";
-
-        runtimeHelpers.create_task_method = get_method("CreateTaskCallback");
-        if (!runtimeHelpers.create_task_method)
-            throw "Can't find CreateTaskCallback method";
-
-        runtimeHelpers.call_delegate = get_method("CallDelegate");
-        if (!runtimeHelpers.call_delegate)
-            throw "Can't find CallDelegate method";
-
+        init_managed_exports();
+        init_legacy_exports();
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();
-
-        _create_primitive_converters();
 
         runtimeHelpers._box_root = mono_wasm_new_root<MonoObject>();
         runtimeHelpers._null_root = mono_wasm_new_root<MonoObject>();
@@ -659,9 +621,7 @@ function downloadResource(request: ResourceRequest): LoadingResource {
         name: request.name, url: request.resolvedUrl!, response
     };
 }
-
-async function start_asset_download(asset: AssetEntry): Promise<AssetEntry | undefined> {
-    // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
+async function start_asset_download_sources(asset: AssetEntry): Promise<AssetEntry> {
     if (asset.buffer) {
         ++downloded_assets_count;
         const buffer = asset.buffer;
@@ -683,23 +643,8 @@ async function start_asset_download(asset: AssetEntry): Promise<AssetEntry | und
         return asset;
     }
 
-    while (throttling_promise) {
-        await throttling_promise;
-    }
-    ++parallel_count;
-    if (parallel_count == max_parallel_downloads) {
-        if (runtimeHelpers.diagnostic_tracing)
-            console.debug("MONO_WASM: Throttling further parallel downloads");
-
-        throttling_promise = new Promise((resolve) => {
-            throttling_promise_resolve = resolve;
-        });
-    }
-
     const sourcesList = asset.load_remote && config.remote_sources ? config.remote_sources : [""];
-
-    let error = undefined;
-    let result: AssetEntry | undefined = undefined;
+    let response: Response | undefined = undefined;
     for (let sourcePrefix of sourcesList) {
         sourcePrefix = sourcePrefix.trim();
         // HACK: Special-case because MSBuild doesn't allow "" as an attribute
@@ -739,63 +684,102 @@ async function start_asset_download(asset: AssetEntry): Promise<AssetEntry | und
                 hash: asset.hash,
                 behavior: asset.behavior
             });
-            const response = await loadingResource.response;
+            response = await loadingResource.response;
             if (!response.ok) {
-                error = new Error(`MONO_WASM: download '${attemptUrl}' for ${asset.name} failed ${response.status} ${response.statusText}`);
                 continue;// next source
             }
             asset.pending = loadingResource;
-            result = asset;
             ++downloded_assets_count;
-            error = undefined;
+            return asset;
         }
         catch (err) {
-            error = new Error(`MONO_WASM: download '${attemptUrl}' for ${asset.name} failed ${err}`);
             continue; //next source
         }
-
-        if (!error) {
-            break; // this source worked, stop searching
-        }
     }
-
-    --parallel_count;
-    if (throttling_promise && parallel_count == ((max_parallel_downloads / 2) | 0)) {
-        if (runtimeHelpers.diagnostic_tracing)
-            console.debug("MONO_WASM: Resuming more parallel downloads");
-        throttling_promise_resolve!();
-        throttling_promise = undefined;
-    }
-
-    if (error) {
-        const isOkToFail = asset.is_optional || (asset.name.match(/\.pdb$/) && config.ignore_pdb_load_errors);
-        if (!isOkToFail)
-            throw error;
-    }
-
-    return result;
+    throw response;
 }
 
+let throttling: PromiseAndController<void> | undefined;
+async function start_asset_download_throttle(asset: AssetEntry): Promise<AssetEntry | undefined> {
+    // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
+    while (throttling) {
+        await throttling.promise;
+    }
+    try {
+        ++parallel_count;
+        if (parallel_count == runtimeHelpers.max_parallel_downloads) {
+            if (runtimeHelpers.diagnostic_tracing)
+                console.debug("MONO_WASM: Throttling further parallel downloads");
+            throttling = createPromiseController<void>();
+        }
+        return await start_asset_download_sources(asset);
+    }
+    catch (response: any) {
+        const isOkToFail = asset.is_optional || (asset.name.match(/\.pdb$/) && config.ignore_pdb_load_errors);
+        if (!isOkToFail) {
+            const err: any = new Error(`MONO_WASM: download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+            err.status = response.status;
+            throw err;
+        }
+    }
+    finally {
+        --parallel_count;
+        if (throttling && parallel_count == runtimeHelpers.max_parallel_downloads - 1) {
+            if (runtimeHelpers.diagnostic_tracing)
+                console.debug("MONO_WASM: Resuming more parallel downloads");
+            const old_throttling = throttling;
+            throttling = undefined;
+            old_throttling.promise_control.resolve();
+        }
+    }
+}
+
+async function start_asset_download(asset: AssetEntry): Promise<AssetEntry | undefined> {
+    try {
+        return await start_asset_download_throttle(asset);
+    } catch (err: any) {
+        if (err && err.status == 404) {
+            throw err;
+        }
+        // second attempt only after all first attempts are queued
+        await allDownloadsQueued.promise;
+        try {
+            return await start_asset_download_throttle(asset);
+        } catch (err) {
+            // third attempt after small delay
+            await delay(100);
+            return await start_asset_download_throttle(asset);
+        }
+    }
+}
+
+const allDownloadsQueued = createPromiseController<void>();
 async function mono_download_assets(): Promise<void> {
     if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_download_assets");
+    runtimeHelpers.max_parallel_downloads = runtimeHelpers.config.max_parallel_downloads || runtimeHelpers.max_parallel_downloads;
     try {
-        const asset_promises: Promise<void>[] = [];
-
+        const download_promises: Promise<AssetEntry | undefined>[] = [];
         // start fetching and instantiating all assets in parallel
         for (const asset of config.assets || []) {
             if (asset.behavior != "dotnetwasm") {
-                const downloadedAsset = await start_asset_download(asset);
-                if (downloadedAsset) {
-                    asset_promises.push((async () => {
-                        const url = downloadedAsset.pending!.url;
-                        const response = await downloadedAsset.pending!.response;
-                        downloadedAsset.pending = undefined; //GC
-                        const buffer = await response.arrayBuffer();
-                        await beforeOnRuntimeInitialized.promise;
-                        // this is after onRuntimeInitialized
-                        _instantiate_asset(downloadedAsset, url, new Uint8Array(buffer));
-                    })());
-                }
+                download_promises.push(start_asset_download(asset));
+            }
+        }
+        allDownloadsQueued.promise_control.resolve();
+
+        const asset_promises: Promise<void>[] = [];
+        for (const downloadPromise of download_promises) {
+            const downloadedAsset = await downloadPromise;
+            if (downloadedAsset) {
+                asset_promises.push((async () => {
+                    const url = downloadedAsset.pending!.url;
+                    const response = await downloadedAsset.pending!.response;
+                    downloadedAsset.pending = undefined; //GC
+                    const buffer = await response.arrayBuffer();
+                    await beforeOnRuntimeInitialized.promise;
+                    // this is after onRuntimeInitialized
+                    _instantiate_asset(downloadedAsset, url, new Uint8Array(buffer));
+                })());
             }
         }
 
@@ -960,11 +944,17 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
 /// 1. Emscripten skips a lot of initialization on the pthread workers, Module may not have everything you expect.
 /// 2. Emscripten does not run the preInit or preRun functions in the workers.
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
-async function mono_wasm_pthread_worker_init(): Promise<void> {
+export async function mono_wasm_pthread_worker_init(): Promise<void> {
+    console.debug("MONO_WASM: worker initializing essential C exports and APIs");
+    // FIXME: copy/pasted from mono_wasm_pre_init_essential - can we share this code? Any other global state that needs initialization?
+    init_c_exports();
+    // not initializing INTERNAL, MONO, or BINDING C wrappers here - those legacy APIs are not likely to be needed on pthread workers.
+
     // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
         console.debug("MONO_WASM: pthread created", ev.pthread_self.pthread_id);
     });
+
 }
 
 /**

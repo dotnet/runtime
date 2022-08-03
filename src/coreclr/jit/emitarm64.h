@@ -266,7 +266,7 @@ static code_t insEncodeReg_Va(regNumber reg);
 // Returns an encoding for the imm which represents the condition code.
 static code_t insEncodeCond(insCond cond);
 
-// Returns an encoding for the imm whioch represents the 'condition code'
+// Returns an encoding for the imm which represents the 'condition code'
 //  with the lowest bit inverted (marked by invert(<cond>) in the architecture manual.
 static code_t insEncodeInvertedCond(insCond cond);
 

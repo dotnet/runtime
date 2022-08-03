@@ -212,30 +212,74 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void GetStringList()
+        public void GetSByteDictionary()
+        {
+            GetIntDictionaryT<sbyte>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetByteDictionary()
+        {
+            GetIntDictionaryT<byte>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetShortDictionary()
+        {
+            GetIntDictionaryT<short>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetUShortDictionary()
+        {
+            GetIntDictionaryT<ushort>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetIntDictionary()
+        {
+            GetIntDictionaryT<int>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetUIntDictionary()
+        {
+            GetIntDictionaryT<uint>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetLongDictionary()
+        {
+            GetIntDictionaryT<long>(0, 1, 2);
+        }
+
+        [Fact]
+        public void GetULongDictionary()
+        {
+            GetIntDictionaryT<ulong>(0, 1, 2);
+        }
+
+        private void GetIntDictionaryT<T>(T k1, T k2, T k3)
         {
             var input = new Dictionary<string, string>
             {
-                {"StringList:0", "val0"},
-                {"StringList:1", "val1"},
-                {"StringList:2", "val2"},
-                {"StringList:x", "valx"}
+                {"IntegerKeyDictionary:0", "val_0"},
+                {"IntegerKeyDictionary:1", "val_1"},
+                {"IntegerKeyDictionary:2", "val_2"}
             };
 
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(input);
             var config = configurationBuilder.Build();
-            var options = new OptionsWithLists();
-            config.Bind(options);
 
-            var list = options.StringList;
+            var options = new Dictionary<T, string>();
+            config.GetSection("IntegerKeyDictionary").Bind(options);
 
-            Assert.Equal(4, list.Count);
+            Assert.Equal(3, options.Count);
 
-            Assert.Equal("val0", list[0]);
-            Assert.Equal("val1", list[1]);
-            Assert.Equal("val2", list[2]);
-            Assert.Equal("valx", list[3]);
+            Assert.Equal("val_0", options[k1]);
+            Assert.Equal("val_1", options[k2]);
+            Assert.Equal("val_2", options[k3]);
         }
 
         [Fact]
@@ -263,34 +307,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", list[1]);
             Assert.Equal("val2", list[2]);
             Assert.Equal("valx", list[3]);
-        }
-
-        [Fact]
-        public void GetIntList()
-        {
-            var input = new Dictionary<string, string>
-            {
-                {"IntList:0", "42"},
-                {"IntList:1", "43"},
-                {"IntList:2", "44"},
-                {"IntList:x", "45"}
-            };
-
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(input);
-            var config = configurationBuilder.Build();
-
-            var options = new OptionsWithLists();
-            config.Bind(options);
-
-            var list = options.IntList;
-
-            Assert.Equal(4, list.Count);
-
-            Assert.Equal(42, list[0]);
-            Assert.Equal(43, list[1]);
-            Assert.Equal(44, list[2]);
-            Assert.Equal(45, list[3]);
         }
 
         [Fact]
@@ -1188,6 +1204,34 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", array[1]);
             Assert.Equal("val2", array[2]);
             Assert.Equal("valx", array[3]);
+        }
+
+        [Fact]
+        public void CanBindUninitializedIList()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"IList:0", "val0"},
+                {"IList:1", "val1"},
+                {"IList:2", "val2"},
+                {"IList:x", "valx"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new UninitializedCollectionsOptions();
+            config.Bind(options);
+
+            IList<string> list = options.IList;
+
+            Assert.Equal(4, list.Count);
+
+            Assert.Equal("val0", list[0]);
+            Assert.Equal("val1", list[1]);
+            Assert.Equal("val2", list[2]);
+            Assert.Equal("valx", list[3]);
         }
 
         [Fact]

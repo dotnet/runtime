@@ -22,7 +22,7 @@ namespace Wasm.Build.Tests
 
         public static IEnumerable<object?[]> NonNativeDebugRebuildData()
             => ConfigWithAOTData(aot: false, config: "Debug")
-                    .WithRunHosts(RunHost.V8)
+                    .WithRunHosts(RunHost.Chrome)
                     .UnwrapItemsAsArrays().ToList();
 
         [Theory]

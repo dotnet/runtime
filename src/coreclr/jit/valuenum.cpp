@@ -1012,7 +1012,7 @@ ValueNumPair ValueNumStore::VNPExcSetSingleton(ValueNumPair xp)
 //
 // Return Value:
 //                   - Returns true when the next value is greater than 'item'
-//                   - or whne we have an empty list remaining.
+//                   - or when we have an empty list remaining.
 //
 // Note:  - Duplicates items aren't allowed in an exception set
 //          Used to verify that exception sets are in ascending order when processing them.
@@ -4783,7 +4783,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeq* fldSeq, ssize_t offs
 //
 // Arguments:
 //    storeNode  - The node performing the store
-//    lclDefNode - The local node representating the SSA definition
+//    lclDefNode - The local node representing the SSA definition
 //    offset     - The offset, relative to the local, of the target location
 //    storeSize  - The number of bytes being stored
 //    value      - (VN of) the value being stored
@@ -5246,7 +5246,7 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 //    vrk - whether the new vn should swap, reverse, or both
 //
 // Returns:
-//    vn for related comparsion, or NoVN.
+//    vn for related comparison, or NoVN.
 //
 // Note:
 //    If "vn" corresponds to (x > y), the resulting VN corresponds to
@@ -10426,7 +10426,7 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
 }
 
 //--------------------------------------------------------------------------------
-// fgValueNumberAddExceptionSetForDivison
+// fgValueNumberAddExceptionSetForDivision
 //         - Adds the exception sets for the current tree node
 //           which is performing an integer division operation
 //

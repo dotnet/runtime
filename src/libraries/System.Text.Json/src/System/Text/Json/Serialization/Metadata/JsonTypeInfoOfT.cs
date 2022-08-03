@@ -16,6 +16,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         private Func<T>? _typedCreateObject;
 
+        internal JsonConverter<T> EffectiveConverter { get; }
+
         /// <summary>
         /// Gets or sets a parameterless factory to be used on deserialization.
         /// </summary>
@@ -81,7 +83,9 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
             : base(typeof(T), converter, options)
-        { }
+        {
+            EffectiveConverter = converter is JsonConverter<T> jsonConverter ? jsonConverter : converter.CreateCastingConverter<T>();
+        }
 
         /// <summary>
         /// Serializes an instance of <typeparamref name="T"/> using
@@ -99,7 +103,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(!IsConfigured, "We should not mutate configured JsonTypeInfo");
                 _serialize = value;
-                HasSerializeHandler = value != null;
+                CanUseSerializeHandler = value != null;
             }
         }
 

@@ -4201,7 +4201,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        // Whenver we have async callbacks from native code, there is an ugly issue where
+        // Whenever we have async callbacks from native code, there is an ugly issue where
         // during .NET shutdown native code could be calling the callback, but the CLR
         // has already prohibited callbacks to managed code in the appdomain, causing the CLR
         // to throw a COMPLUS_BOOT_EXCEPTION.   The guideline we give is that you must unregister

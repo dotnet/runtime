@@ -24,7 +24,7 @@ namespace System.Reflection
     /// can do so in a way that can be distinguished from valid data) and refrains from judging whether it's "executable."
     /// This is both for performance reasons (checks cost time) and its intended role as metadata inspection tool.
     /// Examples of things that MetadataLoadContexts let go unchecked include creating generic instances that violate generic
-    /// parameter constraints, and loading type hierachies that would be unloadable in an actual runtime (deriving from sealed classes,
+    /// parameter constraints, and loading type hierarchies that would be unloadable in an actual runtime (deriving from sealed classes,
     /// overriding members that don't exist in the ancestor classes, failing to implement all abstract methods, etc.)
     ///
     /// You cannot invoke methods, set or get field or property values or instantiate objects using

@@ -377,6 +377,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData("SHA256")]
         [InlineData("SHA384")]
         [InlineData("SHA512")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72906", TestPlatforms.Android)]
         public static void BuildEmptyRsaPss(string hashName)
         {
             BuildRsaCertificateAndRun(
