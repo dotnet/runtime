@@ -323,7 +323,7 @@ namespace System.Net.Sockets.Tests
                 await disposeTask;
 
                 SocketError? localSocketError = null;
-                bool disposedException = false;
+
                 try
                 {
                     await acceptTask;
@@ -332,17 +332,8 @@ namespace System.Net.Sockets.Tests
                 {
                     localSocketError = se.SocketErrorCode;
                 }
-                catch (ObjectDisposedException)
-                {
-                    disposedException = true;
-                }
 
-                if (UsesApm)
-                {
-                    Assert.Null(localSocketError);
-                    Assert.True(disposedException);
-                }
-                else if (UsesSync)
+                if (UsesSync)
                 {
                     Assert.Equal(SocketError.Interrupted, localSocketError);
                 }

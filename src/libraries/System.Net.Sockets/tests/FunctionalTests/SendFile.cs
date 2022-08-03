@@ -268,7 +268,7 @@ namespace System.Net.Sockets.Tests
                     await disposeTask;
 
                     SocketError? localSocketError = null;
-                    bool disposedException = false;
+
                     try
                     {
                         await socketOperation;
@@ -277,17 +277,8 @@ namespace System.Net.Sockets.Tests
                     {
                         localSocketError = se.SocketErrorCode;
                     }
-                    catch (ObjectDisposedException)
-                    {
-                        disposedException = true;
-                    }
 
-                    if (UsesApm)
-                    {
-                        Assert.Null(localSocketError);
-                        Assert.True(disposedException);
-                    }
-                    else if (UsesSync)
+                    if (UsesSync)
                     {
                         Assert.Equal(SocketError.ConnectionAborted, localSocketError);
                     }
@@ -454,7 +445,6 @@ namespace System.Net.Sockets.Tests
             s.Dispose();
             Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null));
             Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
-            Assert.Throws<ObjectDisposedException>(() => s.EndSendFile(null));
         }
 
         [Fact]

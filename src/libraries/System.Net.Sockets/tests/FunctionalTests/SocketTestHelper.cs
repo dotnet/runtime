@@ -37,7 +37,6 @@ namespace System.Net.Sockets.Tests
         public virtual bool UsesSync => false;
         public virtual bool UsesApm => false;
         public virtual bool UsesEap => false;
-        public virtual bool DisposeDuringOperationResultsInDisposedException => false;
         public virtual bool ConnectAfterDisconnectResultsInInvalidOperationException => false;
         public virtual bool SupportsMultiConnect => true;
         public virtual bool SupportsAcceptIntoExistingSocket => true;
@@ -119,7 +118,6 @@ namespace System.Net.Sockets.Tests
 
     public sealed class SocketHelperApm : SocketHelperBase
     {
-        public override bool DisposeDuringOperationResultsInDisposedException => true;
         public override bool SupportsAcceptReceive => true;
 
         public override Task<Socket> AcceptAsync(Socket s) =>
@@ -453,7 +451,6 @@ namespace System.Net.Sockets.Tests
         public bool UsesSync => _socketHelper.UsesSync;
         public bool UsesApm => _socketHelper.UsesApm;
         public bool UsesEap => _socketHelper.UsesEap;
-        public bool DisposeDuringOperationResultsInDisposedException => _socketHelper.DisposeDuringOperationResultsInDisposedException;
         public bool ConnectAfterDisconnectResultsInInvalidOperationException => _socketHelper.ConnectAfterDisconnectResultsInInvalidOperationException;
         public bool SupportsMultiConnect => _socketHelper.SupportsMultiConnect;
         public bool SupportsAcceptIntoExistingSocket => _socketHelper.SupportsAcceptIntoExistingSocket;

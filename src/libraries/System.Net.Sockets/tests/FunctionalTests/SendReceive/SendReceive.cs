@@ -815,17 +815,10 @@ namespace System.Net.Sockets.Tests
 
                     client.Dispose();
 
-                    if (DisposeDuringOperationResultsInDisposedException)
-                    {
-                        await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask);
-                    }
-                    else
-                    {
-                        var se = await Assert.ThrowsAsync<SocketException>(() => receiveTask);
-                        Assert.True(
-                            se.SocketErrorCode == SocketError.OperationAborted || se.SocketErrorCode == SocketError.ConnectionAborted,
-                            $"Expected {nameof(SocketError.OperationAborted)} or {nameof(SocketError.ConnectionAborted)}, got {se.SocketErrorCode}");
-                    }
+                    var se = await Assert.ThrowsAsync<SocketException>(() => receiveTask);
+                    Assert.True(
+                        se.SocketErrorCode == SocketError.OperationAborted || se.SocketErrorCode == SocketError.ConnectionAborted,
+                        $"Expected {nameof(SocketError.OperationAborted)} or {nameof(SocketError.ConnectionAborted)}, got {se.SocketErrorCode}");
                 }
             }
         }
@@ -957,7 +950,7 @@ namespace System.Net.Sockets.Tests
                 await disposeTask;
 
                 SocketError? localSocketError = null;
-                bool disposedException = false;
+
                 try
                 {
                     await receiveTask;
@@ -966,17 +959,8 @@ namespace System.Net.Sockets.Tests
                 {
                     localSocketError = se.SocketErrorCode;
                 }
-                catch (ObjectDisposedException)
-                {
-                    disposedException = true;
-                }
 
-                if (UsesApm)
-                {
-                    Assert.Null(localSocketError);
-                    Assert.True(disposedException);
-                }
-                else if (UsesSync)
+                if (UsesSync)
                 {
                     Assert.Equal(SocketError.Interrupted, localSocketError);
                 }
@@ -1047,7 +1031,6 @@ namespace System.Net.Sockets.Tests
                               .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
 
                     SocketError? localSocketError = null;
-                    bool disposedException = false;
                     try
                     {
                         await socketOperation
@@ -1057,17 +1040,8 @@ namespace System.Net.Sockets.Tests
                     {
                         localSocketError = se.SocketErrorCode;
                     }
-                    catch (ObjectDisposedException)
-                    {
-                        disposedException = true;
-                    }
 
-                    if (UsesApm)
-                    {
-                        Assert.Null(localSocketError);
-                        Assert.True(disposedException);
-                    }
-                    else if (UsesSync)
+                    if (UsesSync)
                     {
                         Assert.Equal(SocketError.ConnectionAborted, localSocketError);
                     }
