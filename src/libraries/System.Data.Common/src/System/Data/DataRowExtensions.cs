@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Data
 {
@@ -22,7 +23,7 @@ namespace System.Data
         public static T? Field<T>(this DataRow row, string columnName)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            return UnboxT<T>(row[columnName]);
+            return UnboxT<T>.s_unbox(row[columnName]);
         }
 
         /// <summary>
@@ -37,7 +38,7 @@ namespace System.Data
         public static T? Field<T>(this DataRow row, DataColumn column)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            return UnboxT<T>(row[column]);
+            return UnboxT<T>.s_unbox(row[column]);
         }
 
         /// <summary>
@@ -52,7 +53,7 @@ namespace System.Data
         public static T? Field<T>(this DataRow row, int columnIndex)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            return UnboxT<T>(row[columnIndex]);
+            return UnboxT<T>.s_unbox(row[columnIndex]);
         }
 
         /// <summary>
@@ -68,7 +69,7 @@ namespace System.Data
         public static T? Field<T>(this DataRow row, int columnIndex, DataRowVersion version)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            return UnboxT<T>(row[columnIndex, version]);
+            return UnboxT<T>.s_unbox(row[columnIndex, version]);
         }
 
         /// <summary>
@@ -84,7 +85,7 @@ namespace System.Data
         public static T? Field<T>(this DataRow row, string columnName, DataRowVersion version)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            return UnboxT<T>(row[columnName, version]);
+            return UnboxT<T>.s_unbox(row[columnName, version]);
         }
 
         /// <summary>
@@ -100,7 +101,7 @@ namespace System.Data
         public static T? Field<T>(this DataRow row, DataColumn column, DataRowVersion version)
         {
             DataSetUtil.CheckArgumentNull(row, nameof(row));
-            return UnboxT<T>(row[column, version]);
+            return UnboxT<T>.s_unbox(row[column, version]);
         }
 
         /// <summary>
@@ -139,15 +140,61 @@ namespace System.Data
             row[column] = (object?)value ?? DBNull.Value;
         }
 
-        private static T? UnboxT<T>(object value)
+        private static class UnboxT<T>
         {
-            if (value == DBNull.Value)
+            internal static readonly Func<object, T?> s_unbox = Create();
+
+            private static Func<object, T?> Create()
             {
-                if (default(T) is null)
-                    return default(T);
-                throw DataSetUtil.InvalidCast(SR.Format(SR.DataSetLinq_NonNullableCast, typeof(T)));
+                if (typeof(T).IsValueType && default(T) == null)
+                {
+                    if (!RuntimeFeature.IsDynamicCodeSupported)
+                        return NullableFieldUsingReflection;
+
+#pragma warning disable IL3050 // There is a path that is safe for AOT executed when IsDynamicCodeSupported is false.
+                    return typeof(UnboxT<T>)
+                        .GetMethod("NullableField", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
+                        .MakeGenericMethod(Nullable.GetUnderlyingType(typeof(T))!)
+                        .CreateDelegate<Func<object, T>>();
+#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
+                }
+                return NonNullableField;
             }
-            return (T)value;
+
+            private static T? NonNullableField(object value)
+            {
+                if (value == DBNull.Value)
+                {
+                    if (default(T) is null)
+                        return default;
+                    throw DataSetUtil.InvalidCast(SR.Format(SR.DataSetLinq_NonNullableCast, typeof(T)));
+                }
+                return (T)value;
+            }
+
+            private static T? NullableFieldUsingReflection(object value)
+            {
+                if (value == null || value == DBNull.Value)
+                    return default;
+
+                // Try regular cast first
+                if (value is T t)
+                    return t;
+
+                Type valueType = value.GetType();
+                Type nullableType = Nullable.GetUnderlyingType(typeof(T))!;
+
+                // Convert does all sorts of conversions. We are only interested in conversions for enums.
+                Type fromType = valueType.IsEnum ? Enum.GetUnderlyingType(valueType) : valueType;
+                Type toType = nullableType.IsEnum ? Enum.GetUnderlyingType(nullableType) : nullableType;
+                if (fromType == toType)
+                    value = nullableType.IsEnum ? Enum.ToObject(nullableType, value) : Convert.ChangeType(value, nullableType, null);
+
+                return (T)value;
+            }
+
+            private static Nullable<TElem> NullableField<TElem>(object value) where TElem : struct
+                => value == DBNull.Value ? default : new Nullable<TElem>((TElem)value);
         }
     }
 }
