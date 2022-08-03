@@ -51,7 +51,7 @@ export function _teardown_after_call(
 }
 
 export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMarshalString*/): Function {
-    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Expected binding to be initialized later during startup sequence.");
+    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
 
     const key = `${fqn}-${signature}`;
     let js_method = boundMethodsByFqn.get(key);
@@ -82,7 +82,7 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: str
 }
 
 export function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: string/*ArgsMarshalString*/): number {
-    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Expected binding to be initialized later during startup sequence.");
+    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
     if (!args) {
         args = [[]];
     }

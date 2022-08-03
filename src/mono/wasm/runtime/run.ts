@@ -34,7 +34,7 @@ export async function mono_run_main(main_assembly_name: string, args: string[]):
 }
 
 export function find_entry_point(assembly: string) {
-    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Expected binding to be initialized later during startup sequence.");
+    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
     const asm = assembly_load(assembly);
     if (!asm)
         throw new Error("Could not find assembly: " + assembly);

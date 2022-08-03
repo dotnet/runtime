@@ -49,7 +49,7 @@ export function init_managed_exports(): void {
     mono_assert(complete_task_method, "Can't find CompleteTask method");
     const call_delegate_method = get_method("CallDelegate");
     mono_assert(call_delegate_method, "Can't find CallDelegate method");
-    runtimeHelpers.javaScriptExports.call_entry_point = async (entry_point: MonoMethod, program_args?: string[]) => {
+    runtimeHelpers.javaScriptExports.call_entry_point = (entry_point: MonoMethod, program_args?: string[]) => {
         const sp = anyModule.stackSave();
         try {
             const args = alloc_stack_frame(4);
@@ -64,9 +64,9 @@ export function init_managed_exports(): void {
             invoke_method_and_handle_exception(call_entry_point, args);
             const promise = marshal_task_to_js(res, undefined, marshal_int32_to_js);
             if (!promise) {
-                return 0;
+                return Promise.resolve(0);
             }
-            return await promise;
+            return promise;
         } finally {
             anyModule.stackRestore(sp);
         }

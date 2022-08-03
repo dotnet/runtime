@@ -23,13 +23,20 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 arg_1.ToManaged(out IntPtr entrypointPtr);
-                arg_2.ToManaged(out string?[]? args);
+                if (entrypointPtr == IntPtr.Zero)
+                {
+                    throw new MissingMethodException("Missing entrypoint");
+                }
+
                 RuntimeMethodHandle methodHandle = JSHostImplementation.GetMethodHandleFromIntPtr(entrypointPtr);
+                // this would not work for generic types. But Main() could not be generic, so we are fine.
                 MethodInfo? method = MethodBase.GetMethodFromHandle(methodHandle) as MethodInfo;
                 if (method == null)
                 {
-                    throw new InvalidOperationException("Missing entrypoint");
+                    throw new InvalidProgramException("Can't resolve entrypoint handle");
                 }
+
+                arg_2.ToManaged(out string?[]? args);
                 object[] argsToPass= System.Array.Empty<object>();
                 Task<int>? result = null;
                 var parameterInfos = method.GetParameters();
