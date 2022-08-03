@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using static Microsoft.Interop.Analyzers.CustomMarshallerAttributeAnalyzer;
@@ -59,7 +60,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource,
                 VerifyCS.Diagnostic(StatefulMarshallerRequiresFromManagedRule).WithLocation(0).WithArguments("MarshallerType", MarshalMode.ManagedToUnmanagedIn, "ManagedType"),
@@ -111,7 +112,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource,
                 VerifyCS.Diagnostic(StatefulMarshallerRequiresFromUnmanagedRule).WithLocation(0).WithArguments("MarshallerType", MarshalMode.ManagedToUnmanagedOut, "ManagedType"),
@@ -178,6 +179,7 @@ namespace LibraryImportGenerator.UnitTests
                     {
                         throw new System.NotImplementedException();
                     }
+
                     public void FromUnmanaged(nint unmanaged)
                     {
                         throw new System.NotImplementedException();
@@ -195,7 +197,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource,
                 VerifyCS.Diagnostic(StatefulMarshallerRequiresFreeRule).WithLocation(0).WithArguments("MarshallerType"),
@@ -319,6 +321,7 @@ namespace LibraryImportGenerator.UnitTests
                     {
                         throw new System.NotImplementedException();
                     }
+
                     public void FromUnmanaged(nint unmanaged)
                     {
                         throw new System.NotImplementedException();
@@ -336,7 +339,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource,
                 VerifyCS.Diagnostic(StatefulMarshallerRequiresFreeRule).WithLocation(0).WithArguments("MarshallerType"),
@@ -375,26 +378,37 @@ namespace LibraryImportGenerator.UnitTests
                 [CustomMarshaller(typeof(ManagedType), MarshalMode.ManagedToUnmanagedIn, typeof({|#0:MarshallerType|}))]
                 struct MarshallerType
                 {
-                    public static int BufferSize
-                    {
-                        get
-                        {
-                            throw new System.NotImplementedException();
-                        }
-                    }
-
                     public void FromManaged(ManagedType m, Span<byte> b) {}
 
                     public int ToUnmanaged() => default;
 
                     public void Free() {}
+
+                    public static int BufferSize
+                    {
+                        get
+                        {
+                            throw new NotImplementedException();
+                        }
+                    }
                 }
                 """;
 
-            await VerifyCS.VerifyCodeFixAsync(
+            await VerifyCodeFixAsync(
                 source,
                 fixedSource,
                 VerifyCS.Diagnostic(CallerAllocFromManagedMustHaveBufferSizeRule).WithLocation(0).WithArguments("MarshallerType", "byte"));
+        }
+        private static async Task VerifyCodeFixAsync(string source, string fixedSource, params DiagnosticResult[] expected)
+        {
+            var test = new CustomMarshallerAttributeFixerTest
+            {
+                TestCode = source,
+                FixedCode = fixedSource,
+            };
+
+            test.ExpectedDiagnostics.AddRange(expected);
+            await test.RunAsync(CancellationToken.None);
         }
     }
 }
