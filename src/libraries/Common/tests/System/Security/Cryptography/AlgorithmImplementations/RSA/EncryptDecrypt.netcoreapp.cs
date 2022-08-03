@@ -6,8 +6,19 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
+
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public sealed class EncryptDecrypt_Span : EncryptDecrypt
+    public sealed class EncryptDecrypt_AllocatingSpan : EncryptDecrypt
+    {
+        protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
+            rsa.Encrypt(new ReadOnlySpan<byte>(data), padding);
+
+        protected override byte[] Decrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
+            rsa.Decrypt(new ReadOnlySpan<byte>(data), padding);
+    }
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    public sealed class EncryptDecrypt_TrySpan : EncryptDecrypt
     {
         protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
             TryWithOutputArray(dest => rsa.TryEncrypt(data, dest, padding, out int bytesWritten) ? (true, bytesWritten) : (false, 0));

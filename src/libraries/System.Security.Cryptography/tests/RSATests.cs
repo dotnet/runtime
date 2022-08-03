@@ -372,6 +372,580 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Fact]
+        public static void SignData_SpanData_StandardKeySize()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TrySignData(
+                ReadOnlySpan<byte> data,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                Assert.Equal(KeySizeInBits / 8, signature.Length);
+                signature.Fill(0xCC);
+                bytesWritten = signature.Length;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignDataDelegate = TrySignData;
+
+                ReadOnlySpan<byte> data = new byte[] { 1, 2, 3 };
+                byte[] signature = rsa.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+
+                Assert.Equal(KeySizeInBits / 8, signature.Length);
+                AssertExtensions.FilledWith<byte>(0xCC, signature);
+            }
+        }
+
+        [Fact]
+        public static void SignData_SpanData_TrySignDataProducesSmallSignatures()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TrySignData(
+                ReadOnlySpan<byte> data,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                Assert.Equal(KeySizeInBits / 8, signature.Length);
+                signature.Fill(0xCC);
+
+                // This RSA implementation for some reason generates smaller signatures.
+                bytesWritten = signature.Length - 5;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignDataDelegate = TrySignData;
+
+                ReadOnlySpan<byte> data = new byte[] { 1, 2, 3 };
+                byte[] signature = rsa.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+
+                Assert.Equal(KeySizeInBits / 8 - 5, signature.Length);
+                AssertExtensions.FilledWith<byte>(0xCC, signature);
+            }
+        }
+
+        [Fact]
+        public static void SignData_SpanData_UnusualKeySizeRoundsUp()
+        {
+            const int KeySizeInBits = 2049;
+
+            static bool TrySignData(
+                ReadOnlySpan<byte> data,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                Assert.Equal(257, signature.Length);
+                signature.Fill(0xCC);
+
+                bytesWritten = signature.Length;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignDataDelegate = TrySignData;
+
+                ReadOnlySpan<byte> data = new byte[] { 1, 2, 3 };
+                byte[] signature = rsa.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+
+                Assert.Equal(257, signature.Length);
+                AssertExtensions.FilledWith<byte>(0xCC, signature);
+            }
+        }
+
+        [Fact]
+        public static void SignData_SpanData_ImpossibleBytesWritten()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TrySignData(
+                ReadOnlySpan<byte> data,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                Assert.Equal(256, signature.Length);
+
+                // This implementation somehow writes more data than possible.
+                bytesWritten = signature.Length + 1;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignDataDelegate = TrySignData;
+
+                Assert.Throws<CryptographicException>(() =>
+                    rsa.SignData((ReadOnlySpan<byte>)new byte[] { 1, 2, 3 }, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
+            }
+        }
+
+        [Theory]
+        [InlineData(8192)] // power-of-two
+        [InlineData(6144)] // not a power-of-two
+        public static void SignData_SpanData_Oversized(int signatureSizeInBits)
+        {
+            const int KeySizeInBits = 2048;
+
+            bool TrySignData(
+                ReadOnlySpan<byte> data,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                if (signature.Length <= signatureSizeInBits / 8)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                signature.Fill(0xCC);
+                bytesWritten = signatureSizeInBits / 8;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignDataDelegate = TrySignData;
+
+                ReadOnlySpan<byte> data = new byte[] { 1, 2, 3 };
+                byte[] signature = rsa.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+
+                Assert.Equal(signatureSizeInBits / 8, signature.Length);
+                AssertExtensions.FilledWith<byte>(0xCC, signature);
+            }
+        }
+
+        [Fact]
+        public static void SignData_SpanData_BrokenTrySignDataGivesUp()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TrySignData(
+                ReadOnlySpan<byte> data,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                // This RSA implementation for some reason claims it produces at least 2 GB signatures.
+                bytesWritten = 0;
+                return false;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignDataDelegate = TrySignData;
+
+                Assert.Throws<OverflowException>(() =>
+                    rsa.SignData((ReadOnlySpan<byte>)new byte[] { 1, 2, 3 }, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
+            }
+        }
+
+        [Fact]
+        public static void SignData_SpanData_NonAllocating_BufferExact()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TrySignData(
+                ReadOnlySpan<byte> data,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                signature.Fill(0xCC);
+                bytesWritten = KeySizeInBits / 8;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignDataDelegate = TrySignData;
+
+                ReadOnlySpan<byte> data = new byte[] { 1, 2, 3 };
+                Span<byte> buffer = new byte[KeySizeInBits / 8];
+                int written = rsa.SignData(data, buffer, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+                Assert.Equal(KeySizeInBits / 8, written);
+                AssertExtensions.FilledWith<byte>(0xCC, buffer);
+            }
+        }
+
+        [Fact]
+        public static void SignData_SpanData_NonAllocating_BufferLarger()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TrySignData(
+                ReadOnlySpan<byte> data,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                bytesWritten = KeySizeInBits / 8 - 7;
+                signature.Slice(0, bytesWritten).Fill(0xCC);
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignDataDelegate = TrySignData;
+
+                ReadOnlySpan<byte> data = new byte[] { 1, 2, 3 };
+                Span<byte> buffer = new byte[KeySizeInBits / 8];
+                int written = rsa.SignData(data, buffer, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+                Assert.Equal(KeySizeInBits / 8 - 7, written);
+                AssertExtensions.FilledWith<byte>(0xCC, buffer.Slice(0, written));
+                AssertExtensions.FilledWith<byte>(0x00, buffer.Slice(written));
+            }
+        }
+
+        [Fact]
+        public static void SignData_SpanData_NonAllocating_TooSmall()
+        {
+            static bool TrySignData(
+                ReadOnlySpan<byte> data,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = 2048;
+                rsa.TrySignDataDelegate = TrySignData;
+
+                Assert.Throws<ArgumentException>("destination", () =>
+                    rsa.SignData(new byte[] { 1, 2, 3 }, Span<byte>.Empty, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
+            }
+        }
+
+        [Fact]
+        public static void SignHash_SpanHash_StandardKeySize()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TrySignHash(
+                ReadOnlySpan<byte> hash,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                Assert.Equal(KeySizeInBits / 8, signature.Length);
+                signature.Fill(0xCC);
+                bytesWritten = signature.Length;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignHashDelegate = TrySignHash;
+
+                ReadOnlySpan<byte> hash = new byte[]
+                {
+                    01, 02, 03, 04, 05, 06, 07, 08, 09, 10,
+                    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                };
+                byte[] signature = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+
+                Assert.Equal(KeySizeInBits / 8, signature.Length);
+                AssertExtensions.FilledWith<byte>(0xCC, signature);
+            }
+        }
+
+        [Fact]
+        public static void SignHash_SpanHash_TrySignHashProducesSmallSignatures()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TrySignHash(
+                ReadOnlySpan<byte> hash,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                Assert.Equal(KeySizeInBits / 8, signature.Length);
+                signature.Fill(0xCC);
+
+                // This RSA implementation for some reason generates smaller signatures.
+                bytesWritten = signature.Length - 5;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignHashDelegate = TrySignHash;
+
+                ReadOnlySpan<byte> hash = new byte[]
+                {
+                    01, 02, 03, 04, 05, 06, 07, 08, 09, 10,
+                    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                };
+                byte[] signature = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+
+                Assert.Equal(KeySizeInBits / 8 - 5, signature.Length);
+                AssertExtensions.FilledWith<byte>(0xCC, signature);
+            }
+        }
+
+        [Fact]
+        public static void SignHash_SpanHash_UnusualKeySizeRoundsUp()
+        {
+            const int KeySizeInBits = 2049;
+
+            static bool TrySignHash(
+                ReadOnlySpan<byte> hash,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                Assert.Equal(257, signature.Length);
+                signature.Fill(0xCC);
+
+                bytesWritten = signature.Length;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignHashDelegate = TrySignHash;
+
+                ReadOnlySpan<byte> hash = new byte[]
+                {
+                    01, 02, 03, 04, 05, 06, 07, 08, 09, 10,
+                    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                };
+                byte[] signature = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+
+                Assert.Equal(257, signature.Length);
+                AssertExtensions.FilledWith<byte>(0xCC, signature);
+            }
+        }
+
+        [Fact]
+        public static void SignHash_SpanHash_ImpossibleBytesWritten()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TrySignHash(
+                ReadOnlySpan<byte> hash,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                Assert.Equal(256, signature.Length);
+
+                // This implementation somehow writes more data than possible.
+                bytesWritten = signature.Length + 1;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignHashDelegate = TrySignHash;
+
+                Assert.Throws<CryptographicException>(() =>
+                    rsa.SignHash((ReadOnlySpan<byte>)new byte[20], HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1));
+            }
+        }
+
+        [Theory]
+        [InlineData(8192)] // power-of-two
+        [InlineData(6144)] // not a power-of-two
+        public static void SignHash_SpanHash_Oversized(int signatureSizeInBits)
+        {
+            const int KeySizeInBits = 2048;
+
+            bool TrySignHash(
+                ReadOnlySpan<byte> hash,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                if (signature.Length <= signatureSizeInBits / 8)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                signature.Fill(0xCC);
+                bytesWritten = signatureSizeInBits / 8;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignHashDelegate = TrySignHash;
+
+                ReadOnlySpan<byte> hash = new byte[]
+                {
+                    01, 02, 03, 04, 05, 06, 07, 08, 09, 10,
+                    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                };
+                byte[] signature = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+
+                Assert.Equal(signatureSizeInBits / 8, signature.Length);
+                AssertExtensions.FilledWith<byte>(0xCC, signature);
+            }
+        }
+
+        [Fact]
+        public static void SignHash_SpanHash_BrokenTrySignHashGivesUp()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TrySignHash(
+                ReadOnlySpan<byte> hash,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                // This RSA implementation for some reason claims it produces at least 2 GB signatures.
+                bytesWritten = 0;
+                return false;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignHashDelegate = TrySignHash;
+
+                Assert.Throws<OverflowException>(() =>
+                    rsa.SignHash((ReadOnlySpan<byte>)new byte[20], HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1));
+            }
+        }
+
+        [Fact]
+        public static void SignHash_SpanHash_NonAllocating_BufferExact()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TrySignHash(
+                ReadOnlySpan<byte> hash,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                signature.Fill(0xCC);
+                bytesWritten = KeySizeInBits / 8;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignHashDelegate = TrySignHash;
+
+                ReadOnlySpan<byte> hash = new byte[]
+                {
+                    01, 02, 03, 04, 05, 06, 07, 08, 09, 10,
+                    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                };
+                Span<byte> buffer = new byte[KeySizeInBits / 8];
+                int written = rsa.SignHash(hash, buffer, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+                Assert.Equal(KeySizeInBits / 8, written);
+                AssertExtensions.FilledWith<byte>(0xCC, buffer);
+            }
+        }
+
+        [Fact]
+        public static void SignHash_SpanHash_NonAllocating_BufferLarger()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TrySignHash(
+                ReadOnlySpan<byte> hash,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                bytesWritten = KeySizeInBits / 8 - 7;
+                signature.Slice(0, bytesWritten).Fill(0xCC);
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TrySignHashDelegate = TrySignHash;
+
+                ReadOnlySpan<byte> hash = new byte[]
+                {
+                    01, 02, 03, 04, 05, 06, 07, 08, 09, 10,
+                    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+                };
+                Span<byte> buffer = new byte[KeySizeInBits / 8];
+                int written = rsa.SignHash(hash, buffer, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+                Assert.Equal(KeySizeInBits / 8 - 7, written);
+                AssertExtensions.FilledWith<byte>(0xCC, buffer.Slice(0, written));
+                AssertExtensions.FilledWith<byte>(0x00, buffer.Slice(written));
+            }
+        }
+
+        [Fact]
+        public static void SignHash_SpanHash_NonAllocating_TooSmall()
+        {
+            static bool TrySignHash(
+                ReadOnlySpan<byte> hash,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = 2048;
+                rsa.TrySignHashDelegate = TrySignHash;
+
+                Assert.Throws<ArgumentException>("destination", () =>
+                    rsa.SignHash(new byte[20], Span<byte>.Empty, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1));
+            }
+        }
+
         private sealed class EmptyRSA : RSA
         {
             public override RSAParameters ExportParameters(bool includePrivateParameters) => throw new NotImplementedException();
@@ -382,6 +956,26 @@ namespace System.Security.Cryptography.Tests
 
         private sealed class DelegateRSA : RSA
         {
+            public DelegateRSA()
+            {
+                LegalKeySizesValue = new[]
+                {
+                    new KeySizes(1, 16_384, 1), // Every "reasonable" key size is legal.
+                };
+            }
+
+            public delegate bool TrySignDataFunc(
+                ReadOnlySpan<byte> data,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten);
+            public delegate bool TrySignHashFunc(
+                ReadOnlySpan<byte> hash,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten);
             public delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
             public Func<byte[], RSAEncryptionPadding, byte[]> DecryptDelegate;
             public Func<byte[], RSAEncryptionPadding, byte[]> EncryptDelegate;
@@ -393,6 +987,8 @@ namespace System.Security.Cryptography.Tests
             public TryExportFunc TryExportRSAPublicKeyDelegate = null;
             public Func<byte[]> ExportRSAPrivateKeyDelegate = null;
             public TryExportFunc TryExportRSAPrivateKeyDelegate = null;
+            public TrySignDataFunc TrySignDataDelegate = null;
+            public TrySignHashFunc TrySignHashDelegate = null;
 
             public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding) =>
                 EncryptDelegate(data, padding);
@@ -420,6 +1016,36 @@ namespace System.Security.Cryptography.Tests
 
             public override bool TryExportRSAPrivateKey(Span<byte> destination, out int bytesWritten) =>
                 TryExportRSAPrivateKeyDelegate(destination, out bytesWritten);
+
+            public override bool TrySignData(
+                ReadOnlySpan<byte> data,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                if (TrySignDataDelegate is not null)
+                {
+                    return TrySignDataDelegate(data, signature, hashAlgorithm, padding, out bytesWritten);
+                }
+
+                return base.TrySignData(data, signature, hashAlgorithm, padding, out bytesWritten);
+            }
+
+            public override bool TrySignHash(
+                ReadOnlySpan<byte> hash,
+                Span<byte> signature,
+                HashAlgorithmName hashAlgorithm,
+                RSASignaturePadding padding,
+                out int bytesWritten)
+            {
+                if (TrySignHashDelegate is not null)
+                {
+                    return TrySignHashDelegate(hash, signature, hashAlgorithm, padding, out bytesWritten);
+                }
+
+                return base.TrySignHash(hash, signature, hashAlgorithm, padding, out bytesWritten);
+            }
 
             public new bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
                 base.TryHashData(source, destination, hashAlgorithm, out bytesWritten);

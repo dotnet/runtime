@@ -101,6 +101,66 @@ namespace System.Security.Cryptography
             return false;
         }
 
+        /// <summary>
+        ///   Encrypts the input data using the specified padding mode.
+        /// </summary>
+        /// <param name="data">The data to encrypt.</param>
+        /// <param name="padding">The padding mode.</param>
+        /// <returns>The encrypted data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="padding" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <paramref name="padding" /> is unknown, or not supported by this implementation.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The length of data is too long for the combination of <see cref="KeySize" /> and the selected padding.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The encryption operation failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="NotImplementedException">
+        ///   This implementation has not implemented one of <see cref="Encrypt(byte[], RSASignaturePadding)" /> or
+        ///   <see cref="TryEncrypt" />.
+        /// </exception>
+        public byte[] Encrypt(ReadOnlySpan<byte> data, RSAEncryptionPadding padding)
+        {
+            ArgumentNullException.ThrowIfNull(padding);
+
+            static bool TryWithEncrypt(
+                RSA rsa,
+                ReadOnlySpan<byte> input,
+                byte[] destination,
+                RSAEncryptionPadding padding,
+                out int bytesWritten)
+            {
+                return rsa.TryEncrypt(input, destination, padding, out bytesWritten);
+            }
+
+            return TryWithKeyBuffer(data, padding, TryWithEncrypt);
+        }
+
+        public byte[] Decrypt(ReadOnlySpan<byte> data, RSAEncryptionPadding padding)
+        {
+            ArgumentNullException.ThrowIfNull(padding);
+
+            static bool TryWithDecrypt(
+                RSA rsa,
+                ReadOnlySpan<byte> input,
+                byte[] destination,
+                RSAEncryptionPadding padding,
+                out int bytesWritten)
+            {
+                return rsa.TryDecrypt(input, destination, padding, out bytesWritten);
+            }
+
+            return TryWithKeyBuffer(data, padding, TryWithDecrypt);
+        }
+
         protected virtual bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
             // If this is an algorithm that we ship, then we can use the hash one-shot.
@@ -212,6 +272,214 @@ namespace System.Security.Cryptography
 
             bytesWritten = 0;
             return false;
+        }
+
+        /// <summary>
+        ///   Computes the hash value of the specified data and signs it.
+        /// </summary>
+        /// <param name="data">The input data to hash and sign.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to create the hash value.</param>
+        /// <param name="padding">The padding mode.</param>
+        /// <returns>The RSA signature for the specified data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="padding" /> or <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is an empty string.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <paramref name="padding" /> is unknown, or not supported by this implementation.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     This instance represents only a public key.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     An error occurred creating the signature.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="NotImplementedException">
+        ///   This implementation has not implemented one of <see cref="TrySignData" />, <see cref="TrySignHash" />,
+        ///   or <see cref="SignHash(byte[], HashAlgorithmName, RSASignaturePadding)" />.
+        /// </exception>
+        public byte[] SignData(ReadOnlySpan<byte> data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
+
+            static bool TryWithSignData(
+                RSA rsa,
+                ReadOnlySpan<byte> input,
+                byte[] destination,
+                (HashAlgorithmName HashAlgorithm, RSASignaturePadding Padding) state,
+                out int bytesWritten)
+            {
+                return rsa.TrySignData(input, destination, state.HashAlgorithm, state.Padding, out bytesWritten);
+            }
+
+            return TryWithKeyBuffer(
+                data,
+                (HashAlgorithm: hashAlgorithm, Padding: padding),
+                TryWithSignData);
+        }
+
+        /// <summary>
+        ///   Computes the hash of the provided data with the specified algorithm
+        ///   and sign the hash with the current key, writing the signature into a provided buffer.
+        /// </summary>
+        /// <param name="data">The input data to hash and sign.</param>
+        /// <param name="destination">The buffer to receive the RSA signature.</param>
+        /// <param name="hashAlgorithm">The hash algorithm to use to create the hash value.</param>
+        /// <param name="padding">The padding mode.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="padding" /> or <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is an empty string.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The buffer in <paramref name="destination"/> is too small to hold the signature.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <paramref name="padding" /> is unknown, or not supported by this implementation.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     This instance represents only a public key.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     An error occurred creating the signature.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="NotImplementedException">
+        ///   This implementation has not implemented one of <see cref="TrySignData" />, <see cref="TrySignHash" />,
+        ///   or <see cref="SignHash(byte[], HashAlgorithmName, RSASignaturePadding)" />.
+        /// </exception>
+        public int SignData(
+            ReadOnlySpan<byte> data,
+            Span<byte> destination,
+            HashAlgorithmName hashAlgorithm,
+            RSASignaturePadding padding)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
+
+            if (TrySignData(data, destination, hashAlgorithm, padding, out int written))
+            {
+                return written;
+            }
+
+            throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+        }
+
+        /// <summary>
+        ///   Computes the signature for the specified hash value using the specified padding.
+        /// </summary>
+        /// <param name="hash">The hash value of the data to be signed.</param>
+        /// <param name="hashAlgorithm">The hash algorithm used to create the hash of <paramref name="hash" />.</param>
+        /// <param name="padding">The padding mode.</param>
+        /// <returns>The RSA signature for the specified hash value.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="padding" /> or <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is an empty string.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <paramref name="padding" /> is unknown, or not supported by this implementation.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     This instance represents only a public key.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     An error occurred creating the signature.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="NotImplementedException">
+        ///   This implementation has not implemented one of <see cref="TrySignHash" />
+        ///   or <see cref="SignHash(byte[], HashAlgorithmName, RSASignaturePadding)" />.
+        /// </exception>
+        public byte[] SignHash(ReadOnlySpan<byte> hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
+
+            static bool TryWithSignHash(
+                RSA rsa,
+                ReadOnlySpan<byte> input,
+                byte[] destination,
+                (HashAlgorithmName HashAlgorithm, RSASignaturePadding Padding) state,
+                out int bytesWritten)
+            {
+                return rsa.TrySignHash(input, destination, state.HashAlgorithm, state.Padding, out bytesWritten);
+            }
+
+            return TryWithKeyBuffer(hash, (hashAlgorithm, padding), TryWithSignHash);
+        }
+
+        /// <summary>
+        ///   Sign the hash with the current key, writing the signature into a provided buffer.
+        /// </summary>
+        /// <param name="hash">The hash value of the data to be signed.</param>
+        /// <param name="destination">The buffer to receive the RSA signature.</param>
+        /// <param name="hashAlgorithm">The hash algorithm used to create the hash of <paramref name="hash" />.</param>
+        /// <param name="padding">The padding mode.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="padding" /> or <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is an empty string.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The buffer in <paramref name="destination"/> is too small to hold the signature.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <paramref name="padding" /> is unknown, or not supported by this implementation.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     This instance represents only a public key.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     An error occurred creating the signature.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="NotImplementedException">
+        ///   This implementation has not implemented one of <see cref="TrySignHash" />
+        ///   or <see cref="SignHash(byte[], HashAlgorithmName, RSASignaturePadding)" />.
+        /// </exception>
+        public int SignHash(
+            ReadOnlySpan<byte> hash,
+            Span<byte> destination,
+            HashAlgorithmName hashAlgorithm,
+            RSASignaturePadding padding)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
+
+            if (TrySignHash(hash, destination, hashAlgorithm, padding, out int written))
+            {
+                return written;
+            }
+
+            throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
         }
 
         public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
@@ -978,6 +1246,60 @@ namespace System.Security.Cryptography
             CryptographicOperations.ZeroMemory(rsaParameters.DP);
             CryptographicOperations.ZeroMemory(rsaParameters.DQ);
             CryptographicOperations.ZeroMemory(rsaParameters.InverseQ);
+        }
+
+        private delegate bool TryFunc<TState>(RSA rsa, ReadOnlySpan<byte> input, byte[] destination, TState state, out int bytesWritten);
+
+        private byte[] TryWithKeyBuffer<TState>(
+            ReadOnlySpan<byte> input,
+            TState state,
+            TryFunc<TState> callback)
+        {
+            // In normal circumstances, the signing and encryption size is the key size.
+            // In the case of decryption, it will be at most the size of the key, but the final output size is not
+            // deterministic, so start with the key size.
+            int resultSize = (KeySize + 7) / 8;
+            byte[] result = new byte[resultSize];
+            int written;
+
+            if (callback(this, input, result, state, out written))
+            {
+                if (written <= resultSize)
+                {
+                    // In a typical sign or encrypt scenario, Resize won't do anything so we return the array as-is.
+                    // On the offchance some implementation returns less than what we expected, shrink the result.
+                    // For decryption, this will account for removed padding.
+                    Array.Resize(ref result, written);
+                    return result;
+                }
+
+                // The Try virtual returned a bogus value for written. It returned a written value larger
+                // than the buffer passed in. This means the Try implementation is not reliable, so throw
+                // the best exception we can.
+                throw new CryptographicException(SR.Argument_DestinationTooShort);
+            }
+
+            // If we are here, then Try is trying to return a signature larger than the KeySize. For decryption, we should
+            // not get here under normal cirumstances, unless the implementation is doing something non-standard.
+            for (int i = checked(resultSize * 2); ; i = checked(i * 2))
+            {
+                // Use ArrayPool instead of CryptoPool since we are handing this out to a virtual.
+                byte[] rented = ArrayPool<byte>.Shared.Rent(i);
+                byte[]? rentResult = null;
+
+                if (callback(this, input, rented, state, out written))
+                {
+                    rentResult = rented.AsSpan(0, written).ToArray();
+                }
+
+                CryptographicOperations.ZeroMemory(rented.AsSpan(0, written));
+                ArrayPool<byte>.Shared.Return(rented);
+
+                if (rentResult is not null)
+                {
+                    return rentResult;
+                }
+            }
         }
 
         public override string? KeyExchangeAlgorithm => "RSA";
