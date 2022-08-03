@@ -706,6 +706,11 @@ namespace System.Net.Sockets.Tests
             bool manualCloseSucceeded = closesocket(handleValue) == 0;
             Assert.Equal(!ownsHandle, manualCloseSucceeded);
 
+#if DEBUG   // The finalizer will fail to close the handle which leads to an assertion failure in Debug builds.
+            GC.SuppressFinalize(original);
+            GC.SuppressFinalize(original.SafeHandle);
+#endif
+
             [DllImport("ws2_32.dll", SetLastError = true)]
             static extern int closesocket(IntPtr socketHandle);
         }
