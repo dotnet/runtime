@@ -18,6 +18,11 @@ namespace System.Text.Json
 
         private const int MinimumBufferSize = 256;
 
+        private PooledByteBufferWriter()
+        {
+            _rentedBuffer = null!;
+        }
+
         public PooledByteBufferWriter(int initialCapacity)
         {
             Debug.Assert(initialCapacity > 0);
@@ -68,6 +73,16 @@ namespace System.Text.Json
             ClearHelper();
         }
 
+        public void ClearAndReturnBuffers()
+        {
+            Debug.Assert(_rentedBuffer != null);
+
+            ClearHelper();
+            byte[] toReturn = _rentedBuffer;
+            _rentedBuffer = null!;
+            ArrayPool<byte>.Shared.Return(toReturn);
+        }
+
         private void ClearHelper()
         {
             Debug.Assert(_rentedBuffer != null);
@@ -90,6 +105,17 @@ namespace System.Text.Json
             _rentedBuffer = null!;
             ArrayPool<byte>.Shared.Return(toReturn);
         }
+
+        public void InitializeEmptyInstance(int initialCapacity)
+        {
+            Debug.Assert(initialCapacity > 0);
+            Debug.Assert(_rentedBuffer is null);
+
+            _rentedBuffer = ArrayPool<byte>.Shared.Rent(initialCapacity);
+            _index = 0;
+        }
+
+        public static PooledByteBufferWriter CreateEmptyInstanceForCaching() => new PooledByteBufferWriter();
 
         public void Advance(int count)
         {

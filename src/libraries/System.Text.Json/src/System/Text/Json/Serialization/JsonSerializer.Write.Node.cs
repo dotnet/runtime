@@ -113,28 +113,14 @@ namespace System.Text.Json
 
         private static JsonNode? WriteNode<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            Debug.Assert(jsonTypeInfo.IsConfigured);
-            JsonSerializerOptions options = jsonTypeInfo.Options;
-
-            // For performance, share the same buffer across serialization and deserialization.
-            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
-            using var writer = new Utf8JsonWriter(output, options.GetWriterOptions());
-
-            WriteCore(writer, value, jsonTypeInfo);
-            return JsonNode.Parse(output.WrittenMemory.Span, options.GetNodeOptions(), options.GetDocumentOptions());
+            JsonDocument jsonDocument = WriteDocument(value, jsonTypeInfo);
+            return JsonNode.FromJsonElement(jsonDocument.RootElement);
         }
 
         private static JsonNode? WriteNodeAsObject(object? value, JsonTypeInfo jsonTypeInfo)
         {
-            Debug.Assert(jsonTypeInfo.IsConfigured);
-            JsonSerializerOptions options = jsonTypeInfo.Options;
-
-            // For performance, share the same buffer across serialization and deserialization.
-            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
-            using var writer = new Utf8JsonWriter(output, options.GetWriterOptions());
-
-            WriteCoreAsObject(writer, value, jsonTypeInfo);
-            return JsonNode.Parse(output.WrittenMemory.Span, options.GetNodeOptions(), options.GetDocumentOptions());
+            JsonDocument jsonDocument = WriteDocumentAsObject(value, jsonTypeInfo);
+            return JsonNode.FromJsonElement(jsonDocument.RootElement);
         }
     }
 }

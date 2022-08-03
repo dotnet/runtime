@@ -111,29 +111,9 @@ namespace System.Text.Json
         }
 
         private static JsonElement WriteElement<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
-        {
-            Debug.Assert(jsonTypeInfo.IsConfigured);
-            JsonSerializerOptions options = jsonTypeInfo.Options;
-
-            // For performance, share the same buffer across serialization and deserialization.
-            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
-            using var writer = new Utf8JsonWriter(output, options.GetWriterOptions());
-
-            WriteCore(writer, value, jsonTypeInfo);
-            return JsonElement.ParseValue(output.WrittenMemory.Span, options.GetDocumentOptions());
-        }
+            => WriteDocument(value, jsonTypeInfo).RootElement;
 
         private static JsonElement WriteElementAsObject(object? value, JsonTypeInfo jsonTypeInfo)
-        {
-            JsonSerializerOptions options = jsonTypeInfo.Options;
-            Debug.Assert(options != null);
-
-            // For performance, share the same buffer across serialization and deserialization.
-            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
-            using var writer = new Utf8JsonWriter(output, options.GetWriterOptions());
-
-            WriteCoreAsObject(writer, value, jsonTypeInfo);
-            return JsonElement.ParseValue(output.WrittenMemory.Span, options.GetDocumentOptions());
-        }
+            => WriteDocumentAsObject(value, jsonTypeInfo).RootElement;
     }
 }
