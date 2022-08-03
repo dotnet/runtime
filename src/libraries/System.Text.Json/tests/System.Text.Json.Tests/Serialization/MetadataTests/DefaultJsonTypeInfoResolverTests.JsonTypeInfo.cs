@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -429,12 +430,18 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Null(property.ShouldSerialize);
                 Assert.Null(typeInfo.NumberHandling);
 
-                Assert.Throws<InvalidOperationException>(() => property.CustomConverter = property.CustomConverter);
-                Assert.Throws<InvalidOperationException>(() => property.Name = property.Name);
-                Assert.Throws<InvalidOperationException>(() => property.Get = property.Get);
-                Assert.Throws<InvalidOperationException>(() => property.Set = property.Set);
-                Assert.Throws<InvalidOperationException>(() => property.ShouldSerialize = property.ShouldSerialize);
-                Assert.Throws<InvalidOperationException>(() => property.NumberHandling = property.NumberHandling);
+                foreach (PropertyInfo propertyInfo in typeof(JsonPropertyInfo).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                {
+                    // We don't have any set only properties, if this ever changes we will need to update this code
+                    if (propertyInfo.GetSetMethod() == null)
+                    {
+                        continue;
+                    }
+
+                    TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() => propertyInfo.SetValue(property, propertyInfo.GetValue(property)));
+                    Assert.NotNull(exception.InnerException);
+                    Assert.IsType<InvalidOperationException>(exception.InnerException);
+                }
             }
         }
 
@@ -671,6 +678,23 @@ namespace System.Text.Json.Serialization.Tests
         ref struct RefStruct
         {
             public int Foo { get; set; }
+        }
+
+        [Fact]
+        public static void CreateJsonTypeInfo_ThrowingConverterFactory_DoesNotWrapException()
+        {
+            var options = new JsonSerializerOptions { Converters = { new ClassWithThrowingConverterFactory.Converter() } };
+            // Should not be wrapped in TargetInvocationException.
+            Assert.Throws<NotFiniteNumberException>(() => JsonTypeInfo.CreateJsonTypeInfo(typeof(ClassWithThrowingConverterFactory), options));
+        }
+
+        public class ClassWithThrowingConverterFactory
+        {
+            public class Converter : JsonConverterFactory
+            {
+                public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(ClassWithThrowingConverterFactory);
+                public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options) => throw new NotFiniteNumberException();
+            }
         }
 
         [Fact]
@@ -923,6 +947,23 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("foo", deserialized.B);
             Assert.Equal("bar", deserialized.C);
             Assert.True(deserialized.E);
+        }
+
+        [Theory]
+        [InlineData(typeof(ICollection<string>))]
+        [InlineData(typeof(IList))]
+        [InlineData(typeof(IList<bool>))]
+        [InlineData(typeof(IDictionary))]
+        [InlineData(typeof(IDictionary<string, bool>))]
+        [InlineData(typeof(ISet<Guid>))]
+        public static void AbstractCollectionMetadata_SurfacesCreateObjectWhereApplicable(Type type)
+        {
+            var options = new JsonSerializerOptions();
+            var resolver = new DefaultJsonTypeInfoResolver();
+
+            JsonTypeInfo metadata = resolver.GetTypeInfo(type, options);
+            Assert.NotNull(metadata.CreateObject);
+            Assert.IsAssignableFrom(type, metadata.CreateObject());
         }
 
         private class ClassWithLargeParameterizedConstructor

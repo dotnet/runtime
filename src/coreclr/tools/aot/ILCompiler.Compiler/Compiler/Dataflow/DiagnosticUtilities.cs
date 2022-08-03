@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
-using ILCompiler.Logging;
 using ILLink.Shared;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -71,7 +70,7 @@ namespace ILCompiler.Dataflow
                     decoded = ecmaMethod.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
                     break;
                 case MetadataType type:
-                    var ecmaType = type as EcmaType;
+                    var ecmaType = type.GetTypeDefinition() as EcmaType;
                     if (ecmaType == null)
                         return false;
                     decoded = ecmaType.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
@@ -200,5 +199,9 @@ namespace ILCompiler.Dataflow
                 _ => false
             };
         }
+
+        internal const string RequiresUnreferencedCodeAttribute = nameof(RequiresUnreferencedCodeAttribute);
+        internal const string RequiresDynamicCodeAttribute = nameof(RequiresDynamicCodeAttribute);
+        internal const string RequiresAssemblyFilesAttribute = nameof(RequiresAssemblyFilesAttribute);
     }
 }

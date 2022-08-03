@@ -1241,7 +1241,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                         if (!duplicateModuleAnalysis.TryGetValue(simpleName, out HashSet<string> candidatePaths))
                         {
-                            duplicateModuleAnalysis[simpleName] = candidatePaths = new HashSet<string>();
+                            duplicateModuleAnalysis[simpleName] = candidatePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                         }
                         candidatePaths.Add(candidateFilePath);
                     }

@@ -6189,7 +6189,7 @@ mono_aot_get_ftnptr_arg_trampoline (gpointer arg, gpointer addr)
 /*
  * mono_aot_set_make_unreadable:
  *
- *   Set whenever to make all mmaped memory unreadable. In conjuction with a
+ *   Set whenever to make all mmaped memory unreadable. In conjunction with a
  * SIGSEGV handler, this is useful to find out which pages the runtime tries to read.
  */
 void

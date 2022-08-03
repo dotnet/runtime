@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { BINDINGType, DotnetPublicAPI, MONOType } from "./exports";
+import { BINDINGType, MONOType } from "./net6-legacy/exports-legacy";
 import { IDisposable, IMemoryView, ManagedError, ManagedObject, MemoryViewType } from "./marshal";
-import { DotnetModuleConfig, MonoArray, MonoObject, MonoString } from "./types";
+import { AssetBehaviours, AssetEntry, DotnetModuleConfig, DotnetPublicAPI, LoadingResource, MonoArray, MonoConfig, MonoObject, MonoString, ResourceRequest } from "./types";
 import { EmscriptenModule, TypedArray, VoidPtr } from "./types/emscripten";
 
 // -----------------------------------------------------------
@@ -37,9 +37,9 @@ declare class Span implements IMemoryView, IDisposable {
 }
 
 /**
- * ArraySegment class is JS wrapper for System.ArraySegment<T>. 
+ * ArraySegment class is JS wrapper for System.ArraySegment<T>.
  * This wrapper would also pin the underlying array and hold GCHandleType.Pinned until this JS instance is collected.
- * User could dispose it manualy.
+ * User could dispose it manually.
  */
 declare class ArraySegment implements IMemoryView, IDisposable {
     dispose(): void;
@@ -55,7 +55,8 @@ export {
     VoidPtr,
     MonoObject, MonoString, MonoArray,
     BINDINGType, MONOType, EmscriptenModule,
-    DotnetPublicAPI, DotnetModuleConfig, CreateDotnetRuntimeType,
+    DotnetPublicAPI, DotnetModuleConfig, CreateDotnetRuntimeType, MonoConfig,
+    AssetEntry, ResourceRequest, LoadingResource, AssetBehaviours,
     IMemoryView, MemoryViewType, ManagedObject, ManagedError, Span, ArraySegment
 };
 

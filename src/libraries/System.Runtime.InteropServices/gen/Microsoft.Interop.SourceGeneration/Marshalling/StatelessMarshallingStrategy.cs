@@ -441,7 +441,7 @@ namespace Microsoft.Interop
 
         protected override InvocationExpressionSyntax GetManagedValuesSource(TypePositionInfo info, StubCodeContext context)
         {
-            // <marshallerType>.GetManagedValuesSource(<managedIdentifer>)
+            // <marshallerType>.GetManagedValuesSource(<managedIdentifier>)
             string managedIdentifier = context.GetIdentifiers(info).managed;
             return InvocationExpression(
                 MemberAccessExpression(
@@ -673,7 +673,7 @@ namespace Microsoft.Interop
 
         protected override InvocationExpressionSyntax GetManagedValuesSource(TypePositionInfo info, StubCodeContext context)
         {
-            // <marshallerType>.GetManagedValuesSource(<managedIdentifer>)
+            // <marshallerType>.GetManagedValuesSource(<managedIdentifier>)
             string managedIdentifier = context.GetIdentifiers(info).managed;
             return InvocationExpression(
                 MemberAccessExpression(

@@ -38,7 +38,8 @@ namespace System
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
         public static bool IsNotAndroid => !IsAndroid;
-        public static bool IsNotAndroidX86 => !(IsAndroid && IsX86Process);
+        public static bool IsAndroidX86 => IsAndroid && IsX86Process;
+        public static bool IsNotAndroidX86 => !IsAndroidX86;
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
@@ -82,12 +83,13 @@ namespace System
         public static int SlowRuntimeTimeoutModifier = (PlatformDetection.IsDebugRuntime ? 5 : 1);
 
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 
 #if NETCOREAPP
-        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS && !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
-                                                                     && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
+        public static bool FileCreateCaseSensitive => IsCaseSensitiveOS && !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                                                                        && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
 #else
-        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
+        public static bool FileCreateCaseSensitive => IsCaseSensitiveOS;
 #endif
 
         public static bool IsThreadingSupported => !IsBrowser;
@@ -138,6 +140,7 @@ namespace System
 #endif
 
         public static bool IsInvokingStaticConstructorsSupported => !IsNativeAot;
+        public static bool IsInvokingFinalizersSupported => !IsNativeAot;
 
         public static bool IsMetadataUpdateSupported => !IsNativeAot;
 
@@ -150,6 +153,7 @@ namespace System
         public static bool IsNotIntMaxValueArrayIndexSupported => s_largeArrayIsNotSupported.Value;
 
         public static bool IsAssemblyLoadingSupported => !IsNativeAot;
+        public static bool IsNonBundledAssemblyLoadingSupported => IsAssemblyLoadingSupported && !IsMonoAOT;
         public static bool IsMethodBodySupported => !IsNativeAot;
         public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);

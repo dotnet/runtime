@@ -117,7 +117,7 @@ struct _DiagnosticsEnvironmentInfoPayload {
 #else
 struct _DiagnosticsEnvironmentInfoPayload_Internal {
 #endif
-	// The environemnt is sent back as an optional continuation stream of data.
+	// The environment is sent back as an optional continuation stream of data.
 	// It is encoded in the typical length-prefixed array format as defined in
 	// the Diagnostics IPC Spec: https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
 	uint32_t incoming_bytes;

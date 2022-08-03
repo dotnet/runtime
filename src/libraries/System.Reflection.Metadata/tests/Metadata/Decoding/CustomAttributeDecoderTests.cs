@@ -17,7 +17,6 @@ namespace System.Reflection.Metadata.Decoding.Tests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Type assembly name is different on .NET Framework.")]
         public void TestCustomAttributeDecoder()
         {
             Type type = typeof(HasAttributes);
@@ -606,12 +605,12 @@ namespace System.Reflection.Metadata.Decoding.Tests
         {
             public string GetSystemType()
             {
-                return "[System.Runtime]System.Type";
+                return $"[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.Type";
             }
 
             public bool IsSystemType(string type)
             {
-                return type == "[System.Runtime]System.Type"  // encountered as typeref
+                return type == $"[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.Type"  // encountered as typeref
                     || Type.GetType(type) == typeof(Type);    // encountered as serialized to reflection notation
             }
 

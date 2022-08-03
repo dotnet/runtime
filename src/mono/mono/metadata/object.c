@@ -3309,7 +3309,7 @@ mono_field_static_get_value_checked (MonoVTable *vt, MonoClassField *field, void
  * mono_property_set_value:
  * \param prop MonoProperty to set
  * \param obj instance object on which to act
- * \param params parameters to pass to the propery
+ * \param params parameters to pass to the property
  * \param exc optional exception
  * Invokes the property's set method with the given arguments on the
  * object instance obj (or NULL for static properties).
@@ -3338,7 +3338,7 @@ mono_property_set_value (MonoProperty *prop, void *obj, void **params, MonoObjec
  * mono_property_set_value_handle:
  * \param prop \c MonoProperty to set
  * \param obj instance object on which to act
- * \param params parameters to pass to the propery
+ * \param params parameters to pass to the property
  * \param error set on error
  * Invokes the property's set method with the given arguments on the
  * object instance \p obj (or NULL for static properties).
@@ -3363,7 +3363,7 @@ mono_property_set_value_handle (MonoProperty *prop, MonoObjectHandle obj, void *
  * mono_property_get_value:
  * \param prop \c MonoProperty to fetch
  * \param obj instance object on which to act
- * \param params parameters to pass to the propery
+ * \param params parameters to pass to the property
  * \param exc optional exception
  * Invokes the property's \c get method with the given arguments on the
  * object instance \p obj (or NULL for static properties).
@@ -3396,7 +3396,7 @@ mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObjec
  * mono_property_get_value_checked:
  * \param prop \c MonoProperty to fetch
  * \param obj instance object on which to act
- * \param params parameters to pass to the propery
+ * \param params parameters to pass to the property
  * \param error set on error
  * Invokes the property's \c get method with the given arguments on the
  * object instance obj (or NULL for static properties).

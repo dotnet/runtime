@@ -1743,13 +1743,13 @@ namespace SerializationTypes
         public string Name { get; set; }
     }
 
-    public class SimpleTypeWihtMoreProperties
+    public class SimpleTypeWithMoreProperties
     {
         public string StringProperty { get; set; }
         public int IntProperty { get; set; }
         public MyEnum EnumProperty { get; set; }
         public List<string> CollectionProperty { get; set; }
-        public List<SimpleTypeWihtMoreProperties> SimpleTypeList { get; set; }
+        public List<SimpleTypeWithMoreProperties> SimpleTypeList { get; set; }
     }
 
     public class TypeWith2DArrayProperty1
@@ -3198,7 +3198,7 @@ public class TypeWithSerializableEnum
 }
 
 [DataContract]
-public class Poseesions
+public class Posessions
 {
     [DataMember]
     public string ItemName;
