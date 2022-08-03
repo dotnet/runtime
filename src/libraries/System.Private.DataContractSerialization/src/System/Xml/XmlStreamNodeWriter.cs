@@ -395,10 +395,10 @@ namespace System.Xml
                     byte* bytesMax = &bytes[buffer.Length - offset];
                     char* charsMax = &chars[charCount];
 
-                    if (Sse41.IsSupported && charCount >= Vector128<ushort>.Count)
+                    if (Sse41.IsSupported && charCount >= Vector128<short>.Count)
                     {
                         Vector128<short> mask = Vector128.Create(unchecked((short)0xff80));
-                        char* simdLast = chars + charCount - Vector128<ushort>.Count;
+                        char* simdLast = chars + charCount - Vector128<short>.Count;
 
                         while (chars < simdLast)
                         {
@@ -407,8 +407,8 @@ namespace System.Xml
                                 goto NonAscii;
 
                             Sse2.StoreScalar((long*)bytes, Sse2.PackUnsignedSaturate(v, v).AsInt64());
-                            bytes += Vector128<ushort>.Count;
-                            chars += Vector128<ushort>.Count;
+                            bytes += Vector128<short>.Count;
+                            chars += Vector128<short>.Count;
                         }
 
                         Vector128<short> v2 = Sse2.LoadVector128((short*)simdLast);
@@ -418,7 +418,7 @@ namespace System.Xml
                         Sse2.StoreScalar((long*)(bytesMax - sizeof(long)), Sse2.PackUnsignedSaturate(v2, v2).AsInt64());
                         return charCount;
                     }
-                    // Directly jump to system encoding for larger strings, since it is faster even for the all Ascii case
+                    // Fast path for small strings, skip and use Encoding.GetBytes for larger strings since it is faster even for the all Ascii case
                     else if (charCount < 16)
                     {
                         while (chars < charsMax)
