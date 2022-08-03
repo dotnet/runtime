@@ -559,7 +559,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         relopValue = relopIsFalse ? 0 : 1;
                         break;
                     }
-                    else
+                    else if (!falseReaches && !trueReaches)
                     {
                         // No apparent path from the dominating BB.
                         //
@@ -572,7 +572,14 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         //
                         // No point in looking further up the tree.
                         //
+                        JITDUMP("inference failed -- no apparent path, will stop looking\n");
                         break;
+                    }
+                    else
+                    {
+                        // Keep looking up the dom tree
+                        //
+                        JITDUMP("inference failed -- will keep looking higher\n");
                     }
                 }
             }
