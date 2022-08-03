@@ -8456,8 +8456,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
         // we cannot inline a P/Invoke for reasons above. If the handler is a fault or finally handler,
         // we can inline a P/Invoke into this block in the try since the code will not resume execution
         // in the same method after throwing an exception if only fault or finally handlers are executed.
-        EHblkDsc::NO_ENCLOSING_INDEX;
-        for (unsigned int ehIndex = ehGetIndex(ehGetBlockTryDsc(block)); ehIndex != EHblkDsc::NO_ENCLOSING_INDEX;
+        for (unsigned int ehIndex = block->getTryIndex(); ehIndex != EHblkDsc::NO_ENCLOSING_INDEX;
              ehIndex              = ehGetEnclosingTryIndex(ehIndex))
         {
             if (ehGetDsc(ehIndex)->HasCatchHandler())
