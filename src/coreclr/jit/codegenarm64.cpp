@@ -2579,6 +2579,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
 
         // Move the result from flags into a register.
         genTreeOps opCond = GT_EQ;
+        bool isUnsigned = false;
         switch (cond)
         {
             case INS_COND_EQ:
@@ -2599,10 +2600,26 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
             case INS_COND_LE:
                 opCond = GT_LE;
                 break;
+            case INS_COND_HS:
+                isUnsigned = true;
+                opCond = GT_GE;
+                break;
+            case INS_COND_HI:
+                isUnsigned = true;
+                opCond = GT_GT;
+                break;
+            case INS_COND_LO:
+                isUnsigned = true;
+                opCond = GT_LT;
+                break;
+            case INS_COND_LS:
+                isUnsigned = true;
+                opCond = GT_LE;
+                break;
             default:
                 assert(!"Unexpected cond");
         }
-        inst_SETCC(GenCondition::FromIntegralRelop(opCond, false), tree->TypeGet(), targetReg);
+        inst_SETCC(GenCondition::FromIntegralRelop(opCond, isUnsigned), tree->TypeGet(), targetReg);
         genProduceReg(tree);
         return;
     }
@@ -10603,13 +10620,13 @@ insCond CodeGen::InsCondForCompareOp(GenTree* tree)
         case GT_TEST_NE:
             return INS_COND_NE;
         case GT_GE:
-            return INS_COND_GE;
+            return tree->IsUnsigned() ? INS_COND_HS : INS_COND_GE;
         case GT_GT:
-            return INS_COND_GT;
+            return tree->IsUnsigned() ? INS_COND_HI : INS_COND_GT;
         case GT_LT:
-            return INS_COND_LT;
+            return tree->IsUnsigned() ? INS_COND_LO : INS_COND_LT;
         case GT_LE:
-            return INS_COND_LE;
+            return tree->IsUnsigned() ? INS_COND_LS : INS_COND_LE;
         default:
             assert(false && "Invalid condition");
             return INS_COND_EQ;
@@ -10638,6 +10655,14 @@ insCond CodeGen::InvertInsCond(insCond cond)
             return INS_COND_GE;
         case INS_COND_LE:
             return INS_COND_GT;
+        case INS_COND_HS:
+            return INS_COND_LO;
+        case INS_COND_HI:
+            return INS_COND_LS;
+        case INS_COND_LO:
+            return INS_COND_HS;
+        case INS_COND_LS:
+            return INS_COND_HI;
         default:
             assert(false && "Invalid condition");
             return INS_COND_EQ;
@@ -10673,6 +10698,14 @@ insCflags CodeGen::InsCflagsForCcmp(insCond cond)
             return INS_FLAGS_NC;
         case INS_COND_LE:
             return INS_FLAGS_NZC;
+        case INS_COND_HS:
+            return INS_FLAGS_C;
+        case INS_COND_HI:
+            return INS_FLAGS_C;
+        case INS_COND_LO:
+            return INS_FLAGS_NONE;
+        case INS_COND_LS:
+            return INS_FLAGS_Z;
         default:
             assert(false && "Invalid condition");
             return INS_FLAGS_NONE;
