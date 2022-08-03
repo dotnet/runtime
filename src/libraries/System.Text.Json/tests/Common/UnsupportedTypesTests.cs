@@ -165,8 +165,9 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Regression test for https://github.com/dotnet/runtime/issues/58690
             Type type = Assembly.GetExecutingAssembly().GetType("System.Runtime.CompilerServices.NullableContextAttribute")!;
-            object value = Activator.CreateInstance(type, (byte)0)!;
-            Assert.NotNull(value);
+            ConstructorInfo ctorInfo = type.GetConstructor(new Type[] { typeof(byte) });
+            Assert.True(string.IsNullOrEmpty(ctorInfo.GetParameters()[0].Name));
+            object value = ctorInfo.Invoke(new object[] { (byte)0 });
 
             await Assert.ThrowsAnyAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value));
             await Assert.ThrowsAnyAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));

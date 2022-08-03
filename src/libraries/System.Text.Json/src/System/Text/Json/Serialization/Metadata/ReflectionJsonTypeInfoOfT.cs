@@ -239,7 +239,8 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 ParameterInfo reflectionInfo = parameters[i];
 
-                if (reflectionInfo.Name is null)
+                // Trimmed parameter names are reported as null in CoreCLR or "" in Mono.
+                if (string.IsNullOrEmpty(reflectionInfo.Name))
                 {
                     Debug.Assert(Converter.ConstructorInfo.DeclaringType != null);
                     ThrowHelper.ThrowNotSupportedException_BaseConverterDoesNotSupportMetadata(Converter.ConstructorInfo.DeclaringType);
