@@ -221,6 +221,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     EmitPointerTypeSignature((PointerType)typeDesc, context);
                     return;
 
+                case TypeFlags.FunctionPointer:
+                    EmitFunctionPointerTypeSignature((FunctionPointerType)typeDesc, context);
+                    return;
+
                 case TypeFlags.ByRef:
                     EmitByRefTypeSignature((ByRefType)typeDesc, context);
                     break;
@@ -364,6 +368,35 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             EmitElementType(CorElementType.ELEMENT_TYPE_PTR);
             EmitTypeSignature(type.ParameterType, context);
+        }
+
+        private void EmitFunctionPointerTypeSignature(FunctionPointerType type, SignatureContext context)
+        {
+            CorCallingConvention callingConvention = (type.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) switch
+            {
+                MethodSignatureFlags.None => CorCallingConvention.IMAGE_CEE_CS_CALLCONV_DEFAULT,
+                MethodSignatureFlags.UnmanagedCallingConventionCdecl => CorCallingConvention.IMAGE_CEE_CS_CALLCONV_C,
+                MethodSignatureFlags.UnmanagedCallingConventionStdCall => CorCallingConvention.IMAGE_CEE_CS_CALLCONV_STDCALL,
+                MethodSignatureFlags.UnmanagedCallingConventionThisCall => CorCallingConvention.IMAGE_CEE_CS_CALLCONV_THISCALL,
+                MethodSignatureFlags.CallingConventionVarargs => CorCallingConvention.IMAGE_CEE_CS_CALLCONV_VARARG,
+                MethodSignatureFlags.UnmanagedCallingConvention => CorCallingConvention.IMAGE_CEE_CS_CALLCONV_UNMANAGED,
+                _ => throw new NotSupportedException()
+            };
+
+            if ((type.Signature.Flags & MethodSignatureFlags.Static) == 0)
+            {
+                callingConvention |= CorCallingConvention.IMAGE_CEE_CS_CALLCONV_HASTHIS | CorCallingConvention.IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS;
+            }
+
+            EmitElementType(CorElementType.ELEMENT_TYPE_FNPTR);
+            EmitUInt((byte)callingConvention);
+            EmitUInt((uint)type.Signature.Length);
+
+            EmitTypeSignature(type.Signature.ReturnType, context);
+            for (int argIndex = 0; argIndex < type.Signature.Length; argIndex++)
+            {
+                EmitTypeSignature(type.Signature[argIndex], context);
+            }
         }
 
         private void EmitByRefTypeSignature(ByRefType type, SignatureContext context)
