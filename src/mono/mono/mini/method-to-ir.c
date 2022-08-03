@@ -3702,7 +3702,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	if (target_method_context_used || invoke_context_used) {
 		tramp_ins = emit_get_rgctx_dele_tramp (cfg, target_method_context_used | invoke_context_used, klass, method, virtual_, MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
 
-		//This is emited as a constant store for the non-shared case.
+		//This is emitted as a constant store for the non-shared case.
 		//We copy from the delegate trampoline info as it's faster than a rgctx fetch
 		dreg = alloc_preg (cfg);
 		if (!cfg->llvm_only) {
@@ -9335,7 +9335,7 @@ calli_end:
 			 *   <push int/long>
 			 *   box MyFlags
 			 *   constrained. MyFlags
-			 *   callvirt instace bool class [mscorlib] System.Enum::HasFlag (class [mscorlib] System.Enum)
+			 *   callvirt instance bool class [mscorlib] System.Enum::HasFlag (class [mscorlib] System.Enum)
 			 *
 			 * If we find this sequence and the operand types on box and constrained
 			 * are equal, we can emit a specialized instruction sequence instead of

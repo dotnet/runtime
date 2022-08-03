@@ -162,12 +162,12 @@ namespace LibraryImportGenerator.UnitTests
             await VerifyCS.VerifyCodeFixAsync(
                 source,
                 fixedSource,
-                VerifyCS.Diagnostic(StatelessValueInRequiresConvertToUnmanagedRule).WithLocation(0).WithArguments("MarshallerType", MarshalMode.ManagedToUnmanagedRef, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessValueInRequiresConvertToUnmanagedRule).WithLocation(1).WithArguments("MarshallerType", MarshalMode.UnmanagedToManagedRef, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessValueInRequiresConvertToUnmanagedRule).WithLocation(2).WithArguments("MarshallerType", MarshalMode.ElementRef, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessRequiresConvertToManagedRule).WithLocation(0).WithArguments("MarshallerType", MarshalMode.ManagedToUnmanagedRef, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessRequiresConvertToManagedRule).WithLocation(1).WithArguments("MarshallerType", MarshalMode.UnmanagedToManagedRef, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessRequiresConvertToManagedRule).WithLocation(2).WithArguments("MarshallerType", MarshalMode.ElementRef, "ManagedType"));
+                VerifyCS.DiagnosticWithArguments(StatelessValueInRequiresConvertToUnmanagedRule, "MarshallerType", MarshalMode.ManagedToUnmanagedRef, "ManagedType").WithLocation(0),
+                VerifyCS.DiagnosticWithArguments(StatelessValueInRequiresConvertToUnmanagedRule, "MarshallerType", MarshalMode.UnmanagedToManagedRef, "ManagedType").WithLocation(1),
+                VerifyCS.DiagnosticWithArguments(StatelessValueInRequiresConvertToUnmanagedRule, "MarshallerType", MarshalMode.ElementRef, "ManagedType").WithLocation(2),
+                VerifyCS.DiagnosticWithArguments(StatelessRequiresConvertToManagedRule, "MarshallerType", MarshalMode.ManagedToUnmanagedRef, "ManagedType").WithLocation(0),
+                VerifyCS.DiagnosticWithArguments(StatelessRequiresConvertToManagedRule, "MarshallerType", MarshalMode.UnmanagedToManagedRef, "ManagedType").WithLocation(1),
+                VerifyCS.DiagnosticWithArguments(StatelessRequiresConvertToManagedRule, "MarshallerType", MarshalMode.ElementRef, "ManagedType").WithLocation(2));
         }
 
         [Fact]

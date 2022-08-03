@@ -4108,7 +4108,7 @@ void PendingSync::Restore(BOOL bRemoveFromSB)
     // {
     // a.Wait
     // }
-    // We need to make sure that the finally from lock is excuted with the lock owned.
+    // We need to make sure that the finally from lock is executed with the lock owned.
     DWORD state = 0;
     SyncBlock *psb = (SyncBlock*)((DWORD_PTR)pRealWaitEventLink->m_WaitSB & ~1);
     for (LONG i=0; i < m_EnterCount;)
@@ -4408,7 +4408,7 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
 
     if (m_LastThrownObjectHandle != NULL)
     {
-        // We'll somtimes use a handle for a preallocated exception object. We should never, ever destroy one of
+        // We'll sometimes use a handle for a preallocated exception object. We should never, ever destroy one of
         // these handles... they'll be destroyed when the Runtime shuts down.
         if (!CLRException::IsPreallocatedExceptionHandle(m_LastThrownObjectHandle))
         {

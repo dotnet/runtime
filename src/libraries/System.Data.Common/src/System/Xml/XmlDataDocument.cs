@@ -2956,7 +2956,7 @@ namespace System.Xml
             DataRow parentRow = parentRowElem.Row;
             // We should set it only if there is a nested relationship between this child and parent regions
             DataRelation[] relations = childRow.Table.NestedParentRelations;
-            if (relations.Length != 0 && relations[0].ParentTable == parentRow.Table) // just backward compatable
+            if (relations.Length != 0 && relations[0].ParentTable == parentRow.Table) // just backward compatible
             {
                 SetNestedParentRow(childRow, parentRow);
             }

@@ -66,12 +66,12 @@ namespace LibraryImportGenerator.UnitTests
             await VerifyCS.VerifyCodeFixAsync(
                 source,
                 fixedSource,
-                VerifyCS.Diagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule).WithLocation(0).WithArguments("MarshallerType<T>", MarshalMode.ManagedToUnmanagedIn, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule).WithLocation(1).WithArguments("MarshallerType<T>", MarshalMode.UnmanagedToManagedOut, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule).WithLocation(2).WithArguments("MarshallerType<T>", MarshalMode.ElementIn, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule).WithLocation(0).WithArguments("MarshallerType<T>", MarshalMode.ManagedToUnmanagedIn, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule).WithLocation(1).WithArguments("MarshallerType<T>", MarshalMode.UnmanagedToManagedOut, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessLinearCollectionInRequiresCollectionMethodsRule).WithLocation(2).WithArguments("MarshallerType<T>", MarshalMode.ElementIn, "ManagedType"));
+                VerifyCS.DiagnosticWithArguments(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule, "MarshallerType<T>", MarshalMode.ManagedToUnmanagedIn, "ManagedType").WithLocation(0),
+                VerifyCS.DiagnosticWithArguments(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule, "MarshallerType<T>", MarshalMode.UnmanagedToManagedOut, "ManagedType").WithLocation(1),
+                VerifyCS.DiagnosticWithArguments(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule, "MarshallerType<T>", MarshalMode.ElementIn, "ManagedType").WithLocation(2),
+                VerifyCS.DiagnosticWithArguments(StatelessLinearCollectionInRequiresCollectionMethodsRule, "MarshallerType<T>", MarshalMode.ManagedToUnmanagedIn, "ManagedType").WithLocation(0),
+                VerifyCS.DiagnosticWithArguments(StatelessLinearCollectionInRequiresCollectionMethodsRule, "MarshallerType<T>", MarshalMode.UnmanagedToManagedOut, "ManagedType").WithLocation(1),
+                VerifyCS.DiagnosticWithArguments(StatelessLinearCollectionInRequiresCollectionMethodsRule, "MarshallerType<T>", MarshalMode.ElementIn, "ManagedType").WithLocation(2));
         }
 
         [Fact]
@@ -365,12 +365,12 @@ namespace LibraryImportGenerator.UnitTests
             await VerifyCS.VerifyCodeFixAsync(
                 source,
                 fixedSource,
-                VerifyCS.Diagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule).WithLocation(0).WithArguments("MarshallerType<T>", MarshalMode.ManagedToUnmanagedOut, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule).WithLocation(1).WithArguments("MarshallerType<T>", MarshalMode.UnmanagedToManagedIn, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule).WithLocation(2).WithArguments("MarshallerType<T>", MarshalMode.ElementOut, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule).WithLocation(0).WithArguments("MarshallerType<T>", MarshalMode.ManagedToUnmanagedOut, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule).WithLocation(1).WithArguments("MarshallerType<T>", MarshalMode.UnmanagedToManagedIn, "ManagedType"),
-                VerifyCS.Diagnostic(StatelessLinearCollectionOutRequiresCollectionMethodsRule).WithLocation(2).WithArguments("MarshallerType<T>", MarshalMode.ElementOut, "ManagedType"));
+                VerifyCS.DiagnosticWithArguments(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule, "MarshallerType<T>", MarshalMode.ManagedToUnmanagedOut, "ManagedType").WithLocation(0),
+                VerifyCS.DiagnosticWithArguments(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule, "MarshallerType<T>", MarshalMode.UnmanagedToManagedIn, "ManagedType").WithLocation(1),
+                VerifyCS.DiagnosticWithArguments(StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule, "MarshallerType<T>", MarshalMode.ElementOut, "ManagedType").WithLocation(2),
+                VerifyCS.DiagnosticWithArguments(StatelessLinearCollectionOutRequiresCollectionMethodsRule, "MarshallerType<T>", MarshalMode.ManagedToUnmanagedOut, "ManagedType").WithLocation(0),
+                VerifyCS.DiagnosticWithArguments(StatelessLinearCollectionOutRequiresCollectionMethodsRule, "MarshallerType<T>", MarshalMode.UnmanagedToManagedIn, "ManagedType").WithLocation(1),
+                VerifyCS.DiagnosticWithArguments(StatelessLinearCollectionOutRequiresCollectionMethodsRule, "MarshallerType<T>", MarshalMode.ElementOut, "ManagedType").WithLocation(2));
         }
 
         [Fact]

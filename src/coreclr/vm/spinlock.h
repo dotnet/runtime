@@ -267,7 +267,7 @@ class SpinLockProfiler
     // Pointer to spinlock names.
     //
     static ULONG    s_ulBackOffs;
-    static ULONG    s_ulCollisons [LOCK_TYPE_DEFAULT + 1];
+    static ULONG    s_ulCollisions [LOCK_TYPE_DEFAULT + 1];
     static ULONG    s_ulSpins [LOCK_TYPE_DEFAULT + 1];
 
 public:

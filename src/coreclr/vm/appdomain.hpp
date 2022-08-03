@@ -1220,7 +1220,7 @@ public:
 #endif // DACCESS_COMPILE
 
 private:
-    // I have yet to figure out an efficent way to get the number of handles
+    // I have yet to figure out an efficient way to get the number of handles
     // of a particular type that's currently used by the process without
     // spending more time looking at the handle table code. We know that
     // our only customer (asp.net) in Dev10 is not going to create many of

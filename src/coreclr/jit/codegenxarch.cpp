@@ -5981,7 +5981,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         // then emit call through that indir cell. This means we generate e.g.
         // lea r11, [addr of cell]
         // call [r11]
-        // which is more efficent than
+        // which is more efficient than
         // lea r11, [addr of cell]
         // call [addr of cell]
         regNumber indirCellReg = getCallIndirectionCellReg(call);
