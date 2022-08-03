@@ -4003,6 +4003,10 @@ emit_amd64_intrinsics (const char *class_ns, const char *class_name, MonoCompile
 #ifdef TARGET_WASM
 
 static SimdIntrinsic wasmbase_methods [] = {
+	{SN_And},
+	{SN_Bitmask},
+	{SN_CompareEqual},
+	{SN_CompareNotEqual},
 	{SN_Constant},
 	{SN_ExtractLane},
 	{SN_ReplaceLane},
@@ -4023,7 +4027,18 @@ emit_wasmbase_intrinsics (
 	const SimdIntrinsic *info, int id, MonoTypeEnum arg0_type,
 	gboolean is_64bit)
 {
+	if (!is_element_type_primitive (fsig->params [0]))
+		return NULL;
+
 	switch (id) {
+		case SN_And:
+			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_AND, arg0_type, fsig, args);
+		case SN_Bitmask:
+			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_BITMASK, -1, -1, fsig, args);
+		case SN_CompareEqual:
+			return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_EQ, arg0_type, fsig, args);
+		case SN_CompareNotEqual:
+			return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_NE, arg0_type, fsig, args);
 		case SN_Constant:
 			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_V128_CONST, 0, arg0_type, fsig, args);
 		case SN_ExtractLane: {
