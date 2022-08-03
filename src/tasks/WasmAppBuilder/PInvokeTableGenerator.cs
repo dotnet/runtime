@@ -459,6 +459,9 @@ internal sealed class PInvokeTableGenerator
 
     private static bool IsBlittable(Type type)
     {
+        if (type.Assembly.GetCustomAttributesData().Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute"))
+            return true;
+
         if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
             return true;
         else

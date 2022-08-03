@@ -116,6 +116,44 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(host: RunHost.Chrome)]
+        public void UnmanagedStructsAreConsideredBlittable(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string code = 
+            """
+            using System;
+            using System.Runtime.InteropServices;
+
+            [assembly: DisableRuntimeMarshalling]
+
+            public class Test
+            {
+                public static int Main()
+                {
+                    var x = new A.S { Value = 5 };
+            
+                    Console.WriteLine("Main running " + x.Value);
+                    return 42;
+                }
+
+                public struct S { public int Value; }
+
+                [UnmanagedCallersOnly]
+                public static void M(S myStruct) { }
+            }
+            """;
+
+            (buildArgs, string output) = BuildForVariadicFunctionTests(code,
+                                                          buildArgs with { ProjectName = $"fnptr_variadic_{buildArgs.Config}_{id}" },
+                                                          id);
+            Assert.Matches("warning.*Skipping.*because.*function pointer", output);
+            Assert.Matches("warning.*using_sum_one", output);
+
+            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("Main running 5", output);
+        }
+
+        [Theory]
         [BuildAndRun(host: RunHost.Chrome, parameters: new object[] { "tr_TR.UTF-8" })]
         public void BuildNativeInNonEnglishCulture(BuildArgs buildArgs, string culture, RunHost host, string id)
         {
