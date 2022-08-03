@@ -203,12 +203,16 @@ namespace System.Runtime.Serialization.Xml.Tests
         }
 
         [Fact]
-        public static void BinaryXml_Arrays()
+        public static void BinaryXml_Array_RoundTrip()
         {
             int[] ints = new int[] { -1, 0x01020304, 0x11223344, -1 };
             TimeSpan[] timespans = new[] { TimeSpan.FromTicks(0x0102030405060708), TimeSpan.FromTicks(0x1011121314151617) };
             // Write more than 4 kb in a single call to ensure we hit path for reading (and writing happens on 512b) large arrays
             long[] longs = Enumerable.Range(0x01020304, 513).Select(i => (long)i | (long)(~i << 32)).ToArray();
+            Guid[] guids = new[] {
+                new Guid(new ReadOnlySpan<byte>(new byte[] {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 })),
+                new Guid(new ReadOnlySpan<byte>(new byte[] {10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160 }))
+            };
 
             using var ms = new MemoryStream();
             using var writer = XmlDictionaryWriter.CreateBinaryWriter(ms);
@@ -216,6 +220,7 @@ namespace System.Runtime.Serialization.Xml.Tests
             writer.WriteArray(null, "ints", null, ints, 1, 2);
             writer.WriteArray(null, "timespans", null, timespans, 0, timespans.Length);
             writer.WriteArray(null, "longs", null, longs, 0, longs.Length);
+            writer.WriteArray(null, "guids", null, guids, 0, guids.Length);
             writer.WriteEndElement();
             writer.WriteEndDocument();
             writer.Flush();
@@ -228,6 +233,7 @@ namespace System.Runtime.Serialization.Xml.Tests
             int intsRead = reader.ReadArray("ints", string.Empty, actualInts, 1, 3);
             TimeSpan[] actualTimeSpans = reader.ReadTimeSpanArray("timespans", string.Empty);
             long[] actualLongs = reader.ReadInt64Array("longs", string.Empty);
+            Guid[] actualGuids = reader.ReadGuidArray("guids", string.Empty);
             reader.ReadEndElement();
 
             Assert.Equal(XmlNodeType.None, reader.NodeType); // Should be at end
@@ -236,6 +242,7 @@ namespace System.Runtime.Serialization.Xml.Tests
             AssertExtensions.SequenceEqual(ints, actualInts);
             AssertExtensions.SequenceEqual(actualLongs, longs);
             AssertExtensions.SequenceEqual(actualTimeSpans, timespans);
+            AssertExtensions.SequenceEqual(actualGuids, guids);
         }
 
         private static void AssertReadContentFromBinary<T>(T expected, XmlBinaryNodeType nodeType, ReadOnlySpan<byte> bytes)
