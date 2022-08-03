@@ -233,6 +233,10 @@ namespace System.Net.WebSockets
             _buffer = buffer;
         }
 
+        /// <summary>
+        /// Gets or sets the collecting upgrade response details.
+        /// When true, <see cref="ClientWebSocket"/> provides response headers and status code.
+        /// </summary>
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool CollectHttpResponseDetails
         {

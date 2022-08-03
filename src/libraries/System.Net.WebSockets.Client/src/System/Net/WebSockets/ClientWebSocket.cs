@@ -52,9 +52,15 @@ namespace System.Net.WebSockets
             }
         }
 
+        /// <summary>
+        /// Gets upgrade response status code if <see cref="ClientWebSocketOptions.CollectHttpResponseDetails" /> is set to true.
+        /// </summary>
         public System.Net.HttpStatusCode HttpStatusCode => _innerWebSocket?.HttpStatusCode ?? 0;
 
-        // setter to clean up when not needed anymore
+        /// <summary>
+        /// Gets upgrade response headers if <see cref="ClientWebSocketOptions.CollectHttpResponseDetails" /> is set to true.
+        /// Sets might be used to clean up when headers are not needed anymore.
+        /// </summary>
         public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders
         {
             get => _innerWebSocket?.HttpResponseHeaders;
