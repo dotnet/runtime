@@ -243,7 +243,7 @@ namespace System.Text.Json.Serialization.Metadata
                 if (string.IsNullOrEmpty(reflectionInfo.Name))
                 {
                     Debug.Assert(Converter.ConstructorInfo.DeclaringType != null);
-                    ThrowHelper.ThrowNotSupportedException_BaseConverterDoesNotSupportMetadata(Converter.ConstructorInfo.DeclaringType);
+                    ThrowHelper.ThrowNotSupportedException_ConstructorContainsNullParameterNames(Converter.ConstructorInfo.DeclaringType);
                 }
 
                 JsonParameterInfoValues jsonInfo = new()
