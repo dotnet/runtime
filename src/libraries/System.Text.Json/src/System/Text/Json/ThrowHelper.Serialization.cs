@@ -23,6 +23,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowArgumentException_SerializerDoesNotSupportComments(string paramName)
+        {
+            throw new ArgumentException(SR.JsonSerializerDoesNotSupportComments, paramName);
+        }
+
+        [DoesNotReturn]
         public static void ThrowNotSupportedException_SerializationNotSupported(Type propertyType)
         {
             throw new NotSupportedException(SR.Format(SR.SerializationNotSupportedType, propertyType));
@@ -701,6 +707,13 @@ namespace System.Text.Json
         public static void ThrowNotSupportedException_NoMetadataForType(Type type, IJsonTypeInfoResolver? resolver)
         {
             throw new NotSupportedException(SR.Format(SR.NoMetadataForType, type, resolver?.GetType().FullName ?? "<null>"));
+        }
+
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_ConstructorContainsNullParameterNames(Type declaringType)
+        {
+            throw new NotSupportedException(SR.Format(SR.ConstructorContainsNullParameterNames, declaringType));
         }
 
         [DoesNotReturn]

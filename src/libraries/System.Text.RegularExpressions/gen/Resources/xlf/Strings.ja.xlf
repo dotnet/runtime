@@ -104,12 +104,12 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedRegexAttributeMessage">
         <source>The GeneratedRegexAttribute is malformed</source>
-        <target state="new">The GeneratedRegexAttribute is malformed</target>
+        <target state="translated">GeneratedRegexAttribute が不正です</target>
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidGeneratedRegexAttributeTitle">
         <source>Invalid GeneratedRegexAttribute usage</source>
-        <target state="new">Invalid GeneratedRegexAttribute usage</target>
+        <target state="translated">GeneratedRegexAttribute の使用法が無効です</target>
         <note>{Locked="GeneratedRegexAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
@@ -124,12 +124,12 @@
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
         <source>The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</source>
-        <target state="new">The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</target>
+        <target state="translated">内部制限により、正規表現ジェネレーターは指定された正規表現の完全なソース実装を生成できませんでした。詳細については、生成されたソースの説明を参照してください。</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
         <source>Regex generator limitation reached.</source>
-        <target state="new">Regex generator limitation reached.</target>
+        <target state="translated">正規表現ジェネレーターの制限に達しました。</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -154,7 +154,7 @@
       </trans-unit>
       <trans-unit id="MultipleGeneratedRegexAttributesMessage">
         <source>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</source>
-        <target state="new">Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</target>
+        <target state="translated">複数の GeneratedRegexAttributes が同じメソッドに適用されましたが、許可されているのは 1 つだけです。</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
@@ -199,7 +199,7 @@
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
-        <target state="new">GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</target>
+        <target state="translated">GeneratedRegexAttribute メソッドは、部分、パラメーターなし、非ジェネリック、非抽象、および正規表現を返す必要があります。</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -259,12 +259,12 @@
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
         <source>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</source>
-        <target state="new">Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</target>
+        <target state="translated">コンパイル時に正規表現の実装を生成するには、'GeneratedRegexAttribute' を使用します。</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
         <source>Convert to 'GeneratedRegexAttribute'.</source>
-        <target state="new">Convert to 'GeneratedRegexAttribute'.</target>
+        <target state="translated">'GeneratedRegexAttribute' に変換します。</target>
         <note />
       </trans-unit>
     </body>

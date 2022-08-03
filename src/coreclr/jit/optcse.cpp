@@ -143,7 +143,7 @@ bool Compiler::optUnmarkCSE(GenTree* tree)
             }
         }
 
-        // 2. Unmark the CSE infomation in the node
+        // 2. Unmark the CSE information in the node
 
         tree->gtCSEnum = NO_CSE;
         return true;
@@ -1356,7 +1356,7 @@ void Compiler::optValnumCSE_DataFlow()
 }
 
 //---------------------------------------------------------------------------
-// optValnumCSE_Availablity:
+// optValnumCSE_Availability:
 //
 //     Using the information computed by CSE_DataFlow determine for each
 //     CSE whether the CSE is a definition (if the CSE was not available)
@@ -1389,7 +1389,7 @@ void Compiler::optValnumCSE_DataFlow()
 //             e1 = (m.a + q.b)  :: e1 and e2 have different exception sets.
 //             e2 = (p.a + q.b)     but both compute the same normal value
 //
-void Compiler::optValnumCSE_Availablity()
+void Compiler::optValnumCSE_Availability()
 {
 #ifdef DEBUG
     if (verbose)
@@ -1670,7 +1670,7 @@ void Compiler::optValnumCSE_Availablity()
                     }
                 }
 
-                // In order to determine if a CSE is live across a call, we model availablity using two bits and
+                // In order to determine if a CSE is live across a call, we model availability using two bits and
                 // kill all of the cseAvailCrossCallBit for each CSE whenever we see a GT_CALL (unless the call
                 // generates a CSE).
                 //
@@ -2809,7 +2809,7 @@ public:
         var_types cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
         if (varTypeIsStruct(cseLclVarTyp))
         {
-            // Retrieve the struct handle that we recorded while bulding the list of CSE candidates.
+            // Retrieve the struct handle that we recorded while building the list of CSE candidates.
             // If all occurrences were in GT_IND nodes it could still be NO_CLASS_HANDLE
             //
             CORINFO_CLASS_HANDLE structHnd = successfulCandidate->CseDsc()->csdStructHnd;
@@ -2986,7 +2986,7 @@ public:
             /* Advance to the next node in the list */
             lst = lst->tslNext;
 
-            // We may have cleared this CSE in optValuenumCSE_Availablity
+            // We may have cleared this CSE in optValuenumCSE_Availability
             // due to different exception sets.
             //
             // Ignore this node if the gtCSEnum value has been cleared
@@ -3469,7 +3469,7 @@ void Compiler::optOptimizeValnumCSEs()
     {
         optValnumCSE_InitDataFlow();
         optValnumCSE_DataFlow();
-        optValnumCSE_Availablity();
+        optValnumCSE_Availability();
         optValnumCSE_Heuristic();
     }
 

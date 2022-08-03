@@ -386,9 +386,6 @@
   <data name="ADP_OdbcNoTypesFromProvider" xml:space="preserve">
     <value>The ODBC provider did not return results from SQLGETTYPEINFO.</value>
   </data>
-  <data name="OdbcConnection_ConnectionStringTooLong" xml:space="preserve">
-    <value>Connection string exceeds maximum allowed length of {0}.</value>
-  </data>
   <data name="Odbc_UnknownSQLType" xml:space="preserve">
     <value>Unknown SQL type - {0}.</value>
   </data>

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Reflection;
 
 using Internal.Runtime.Augments;
@@ -15,6 +16,13 @@ namespace System
     //
     public abstract partial class Type
     {
+        internal EETypePtr GetEEType()
+        {
+            RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);
+            Debug.Assert(!typeHandle.IsNull);
+            return typeHandle.ToEETypePtr();
+        }
+
         internal bool TryGetEEType(out EETypePtr eeType)
         {
             RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);

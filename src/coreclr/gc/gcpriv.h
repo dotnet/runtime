@@ -386,7 +386,7 @@ enum set_pause_mode_status
  in the future.
 
  +----------+--------------------+---------------------------------------+
- | Level    | Optimization Goals | Latency Charactaristics               |
+ | Level    | Optimization Goals | Latency Characteristics               |
  +==========+====================+=======================================+
  | 0        | memory footprint   | pauses can be long and more frequent  |
  +----------+--------------------+---------------------------------------+
@@ -1099,9 +1099,9 @@ struct snoop_stats_data
     size_t busy_count;
     // how many interlocked exchange operations we did
     size_t interlocked_count;
-    // numer of times parent objects stolen
+    // number of times parent objects stolen
     size_t partial_mark_parent_count;
-    // numer of times we look at a normal stolen entry,
+    // number of times we look at a normal stolen entry,
     // or the beginning/ending PM pair.
     size_t stolen_or_pm_count;
     // number of times we see 2 for the entry.

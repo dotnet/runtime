@@ -5293,7 +5293,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 {
                     // In an ASG(IND(addr), ...), the "IND" is a pure syntactical element,
                     // the actual indirection will only be realized at the point of the ASG
-                    // itself. As such, we can disard any side effects "induced" by it in
+                    // itself. As such, we can discard any side effects "induced" by it in
                     // this logic.
                     //
                     // Note that for local "addr"s, liveness depends on seeing the defs and
@@ -5413,7 +5413,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 break;
         }
 
-        /* We need to evalutate constants later as many places in codegen
+        /* We need to evaluate constants later as many places in codegen
            can't handle op1 being a constant. This is normally naturally
            enforced as constants have the least level of 0. However,
            sometimes we end up with a tree like "cns1 < nop(cns2)". In
@@ -7765,7 +7765,7 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
         gtFlags |= GTF_DIV_BY_CNS_OPT;
 
         // Now set DONT_CSE on the GT_CNS_INT divisor, note that
-        // with ValueNumbering we can have a non GT_CNS_INT divisior
+        // with ValueNumbering we can have a non GT_CNS_INT divisor
         GenTree* divisor = gtGetOp2()->gtEffectiveVal(/*commaOnly*/ true);
         if (divisor->OperIs(GT_CNS_INT))
         {
@@ -9551,7 +9551,7 @@ void GenTreeUseEdgeIterator::SetEntryStateForBinOp()
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::AdvanceMultiOp: produces the next operand of a multi-op node and advances the state.
 //
-// Takes advantage of the fact that GenTreeMultiOp stores the operands in a contigious array, simply
+// Takes advantage of the fact that GenTreeMultiOp stores the operands in a contiguous array, simply
 // incrementing the "m_edge" pointer, unless the end, stored in "m_statePtr", has been reached.
 //
 void GenTreeUseEdgeIterator::AdvanceMultiOp()
@@ -9568,9 +9568,9 @@ void GenTreeUseEdgeIterator::AdvanceMultiOp()
 
 //------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::AdvanceReversedMultiOp: produces the next operand of a multi-op node
-//                                                 marked with GTF_REVRESE_OPS and advances the state.
+//                                                 marked with GTF_REVERSE_OPS and advances the state.
 //
-// Takes advantage of the fact that GenTreeMultiOp stores the operands in a contigious array, simply
+// Takes advantage of the fact that GenTreeMultiOp stores the operands in a contiguous array, simply
 // decrementing the "m_edge" pointer, unless the beginning, stored in "m_statePtr", has been reached.
 //
 void GenTreeUseEdgeIterator::AdvanceReversedMultiOp()
@@ -12747,7 +12747,7 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
             return tree;
     }
 
-    /* The node has beeen folded into 'cons' */
+    /* The node has been folded into 'cons' */
 
     JITDUMP("\nFolding comparison with identical operands:\n");
     DISPTREE(tree);
@@ -12925,7 +12925,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
         GenTree* compare = gtCreateHandleCompare(oper, op1ClassFromHandle, op2ClassFromHandle, inliningKind);
 
-        // Drop any now-irrelvant flags
+        // Drop any now-irrelevant flags
         compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
 
         return compare;
@@ -12965,7 +12965,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
         GenTree* compare = gtCreateHandleCompare(oper, arg1, arg2, inliningKind);
 
-        // Drop any now-irrelvant flags
+        // Drop any now-irrelevant flags
         compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
 
         return compare;
@@ -13440,7 +13440,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
 DONE_FOLD:
 
-    /* The node has beeen folded into 'op' */
+    /* The node has been folded into 'op' */
 
     // If there was an assignment update, we just morphed it into
     // a use, update the flags appropriately
@@ -13568,7 +13568,7 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
 //    side effects that can be removed if the box result is not used.
 //
 //    By default (options == BR_REMOVE_AND_NARROW) this method will
-//    try and remove unnecessary trees and will try and reduce remaning
+//    try and remove unnecessary trees and will try and reduce remaining
 //    operations to the minimal set, possibly narrowing the width of
 //    loads from the box source if it is a struct.
 //
@@ -14993,7 +14993,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                 // float a = float.MaxValue;
                 // float b = a*a;   This will produce +inf in single precision and 1.1579207543382391e+077 in double
                 //                  precision.
-                // flaot c = b/b;   This will produce NaN in single precision and 1 in double precision.
+                // float c = b/b;   This will produce NaN in single precision and 1 in double precision.
                 case GT_ADD:
                     if (op1->TypeIs(TYP_FLOAT))
                     {
@@ -16306,7 +16306,7 @@ bool GenTree::IsPartialLclFld(Compiler* comp)
 //    comp        - the compiler instance
 //    pLclVarTree - [out] parameter for the local representing the definition
 //    pIsEntire   - optional [out] parameter for whether the store represents
-//                  a "full" definition (overwites the entire variable)
+//                  a "full" definition (overwrites the entire variable)
 //    pOffset     - optional [out] parameter for the offset, relative to the
 //                  local, at which the store is performed
 //
@@ -22836,7 +22836,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             // We should have an hfa struct type
             assert(varTypeIsValidHfaType(hfaType));
 
-            // Note that the retail build issues a warning about a potential divsion by zero without this Max function
+            // Note that the retail build issues a warning about a potential division by zero without this Max function
             unsigned elemSize = Max((unsigned)1, EA_SIZE_IN_BYTES(emitActualTypeSize(hfaType)));
 
             // The size of this struct should be evenly divisible by elemSize

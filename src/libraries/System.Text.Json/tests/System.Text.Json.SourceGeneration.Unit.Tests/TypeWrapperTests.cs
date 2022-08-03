@@ -11,10 +11,11 @@ using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
+    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
     public class TypeWrapperTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void MetadataLoadFilePathHandle()
         {
             // Create a MetadataReference from new code.
@@ -80,7 +81,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void CanGetAttributes()
         {
             string source = @"
@@ -200,7 +200,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void VariousGenericSerializableTypesAreSupported()
         {
             string source = @"

@@ -29,6 +29,7 @@ namespace System.Text.Json.SourceGeneration
             private const string DefaultContextBackingStaticVarName = "s_defaultContext";
             internal const string GetConverterFromFactoryMethodName = "GetConverterFromFactory";
             private const string InfoVarName = "info";
+            private const string PropertyInfoVarName = "propertyInfo";
             internal const string JsonContextVarName = "jsonContext";
             private const string NumberHandlingPropName = "NumberHandling";
             private const string ObjectCreatorPropName = "ObjectCreator";
@@ -709,6 +710,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerO
                     string memberTypeCompilableName = memberTypeMetadata.TypeRef;
 
                     string infoVarName = $"{InfoVarName}{i}";
+                    string propertyInfoVarName = $"{PropertyInfoVarName}{i}";
 
                     sb.Append($@"
     {JsonPropertyInfoValuesTypeRef}<{memberTypeCompilableName}> {infoVarName} = new {JsonPropertyInfoValuesTypeRef}<{memberTypeCompilableName}>()
@@ -728,7 +730,16 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerO
         JsonPropertyName = {jsonPropertyNameValue}
     }};
 
-    {PropVarName}[{i}] = {JsonMetadataServicesTypeRef}.CreatePropertyInfo<{memberTypeCompilableName}>({OptionsLocalVariableName}, {infoVarName});
+    {JsonPropertyInfoTypeRef} {propertyInfoVarName} = {JsonMetadataServicesTypeRef}.CreatePropertyInfo<{memberTypeCompilableName}>({OptionsLocalVariableName}, {infoVarName});");
+
+                    if (memberMetadata.IsRequired)
+                    {
+                        sb.Append($@"
+    {propertyInfoVarName}.IsRequired = true;");
+                    }
+
+                    sb.Append($@"
+    {PropVarName}[{i}] = {propertyInfoVarName};
 ");
                 }
 

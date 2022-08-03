@@ -15,8 +15,10 @@ namespace System.Net.Http.Json
     public static partial class HttpContentJsonExtensions
     {
         internal const string SerializationUnreferencedCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.";
+        internal const string SerializationDynamicCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext.";
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationDynamicCodeMessage)]
         public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (content is null)
@@ -30,6 +32,7 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationDynamicCodeMessage)]
         public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (content is null)
@@ -43,6 +46,7 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationDynamicCodeMessage)]
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
             using (Stream contentStream = await GetContentStream(content, sourceEncoding, cancellationToken).ConfigureAwait(false))
@@ -54,11 +58,14 @@ namespace System.Net.Http.Json
                 Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
                 Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresDynamicCode.")]
             static ValueTask<object?> DeserializeAsyncHelper(Stream contentStream, Type returnType, JsonSerializerOptions? options, CancellationToken cancellationToken)
                 => JsonSerializer.DeserializeAsync(contentStream, returnType, options, cancellationToken);
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationDynamicCodeMessage)]
         private static async Task<T?> ReadFromJsonAsyncCore<T>(HttpContent content, Encoding? sourceEncoding, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
             using (Stream contentStream = await GetContentStream(content, sourceEncoding, cancellationToken).ConfigureAwait(false))
@@ -71,6 +78,8 @@ namespace System.Net.Http.Json
             Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
             Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresDynamicCode.")]
         private static ValueTask<TValue?> DeserializeAsyncHelper<TValue>(Stream contentStream, JsonSerializerOptions? options, CancellationToken cancellationToken)
             => JsonSerializer.DeserializeAsync<TValue>(contentStream, options, cancellationToken);
 

@@ -1942,7 +1942,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
 // Arguments:
 //      * thAsAddr - Type to batch
 //      * typeLogBehavior - Reminder of whether the type system log lock is held
-//          (useful if we need to recurively call back into TypeSystemLog), and whether
+//          (useful if we need to recursively call back into TypeSystemLog), and whether
 //          we even care to check if the type was already logged
 //
 
@@ -2837,7 +2837,7 @@ void ETW::TypeSystemLog::PostRegistrationInit()
         // Determine if a COMPLUS env var is overriding the frequency for the sampled
         // object allocated events
 
-        // Config value intentionally typed as string, b/c DWORD intepretation is hard-coded
+        // Config value intentionally typed as string, b/c DWORD interpretation is hard-coded
         // to hex, which is not what the user would expect.  This way I can force the
         // conversion to use decimal.
         NewArrayHolder<WCHAR> wszCustomObjectAllocationEventsPerTypePerSec(NULL);
@@ -2877,7 +2877,7 @@ void ETW::TypeSystemLog::OnKeywordsChanged()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // If the desired frequencey for the GCSampledObjectAllocation events has changed,
+    // If the desired frequency for the GCSampledObjectAllocation events has changed,
     // update our state.
     s_fHeapAllocLowEventEnabledNow = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_GCHEAPALLOCLOW_KEYWORD);
     s_fHeapAllocHighEventEnabledNow = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_GCHEAPALLOCHIGH_KEYWORD);
@@ -6236,7 +6236,7 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
         if (cbDebugData < (offsetof(CV_INFO_PDB70, magic) + sizeof(((CV_INFO_PDB70*)0)->magic)))
         {
             // raw data too small to contain magic number at expected spot, so its format
-            // is not recognizeable. Skip
+            // is not recognizable. Skip
             continue;
         }
 
@@ -6677,7 +6677,7 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     ulColdMethodFlags = ulMethodFlags | ETW::MethodLog::MethodStructs::ColdSection; // Method Extent (bits 28, 29, 30, 31)
     ulMethodFlags = ulMethodFlags | ETW::MethodLog::MethodStructs::HotSection;         // Method Extent (bits 28, 29, 30, 31)
 
-    // MethodDesc ==> Code Address ==>JitMananger
+    // MethodDesc ==> Code Address ==>JitManager
     TADDR start = PCODEToPINSTR(pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode());
     if(start == 0) {
         // this method hasn't been jitted
@@ -7340,7 +7340,7 @@ VOID ETW::EnumerationLog::IterateDomain(BaseDomain *pDomain, DWORD enumerationOp
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
     // Do not call IterateDomain() directly with an AppDomain.  Use
-    // IterateAppDomain(), whch wraps this function with a hold on the
+    // IterateAppDomain(), which wraps this function with a hold on the
     // SystemDomain lock, which ensures pDomain's type data doesn't disappear
     // on us.
     if (pDomain->IsAppDomain())
