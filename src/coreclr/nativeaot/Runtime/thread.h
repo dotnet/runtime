@@ -66,6 +66,15 @@ struct ExInfo
     volatile void*          m_notifyDebuggerSP;
 };
 
+struct GCFrameRegistration
+{
+    Thread* m_pThread;
+    GCFrameRegistration* m_pNext;
+    void** m_pObjRefs;
+    uint32_t m_numObjRefs;
+    int m_MaybeInterior;
+};
+
 struct ThreadBuffer
 {
     uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
@@ -82,6 +91,7 @@ struct ThreadBuffer
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
     PTR_PTR_VOID            m_pThreadLocalModuleStatics;
     uint32_t                m_numThreadLocalModuleStatics;
+    GCFrameRegistration*    m_pGCFrameRegistrations;
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
     PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
@@ -273,6 +283,9 @@ public:
     bool SetThreadStaticStorageForModule(Object* pStorage, uint32_t moduleIndex);
 
     NATIVE_CONTEXT* GetInterruptedContext();
+
+    void PushGCFrameRegistration(GCFrameRegistration* pRegistration);
+    void PopGCFrameRegistration(GCFrameRegistration* pRegistration);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
     NATIVE_CONTEXT* EnsureRedirectionContext();

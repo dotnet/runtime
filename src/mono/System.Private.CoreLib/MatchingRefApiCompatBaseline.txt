@@ -1,0 +1,29 @@
+Compat issues with assembly System.Private.CoreLib:
+TypesMustExist : Type 'Internal.Console' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.InteropServices.ComponentActivator' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.AppContext.add_FirstChanceException(System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs>)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.AppContext.add_ProcessExit(System.EventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.AppContext.add_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.AppContext.remove_FirstChanceException(System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs>)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.AppContext.remove_ProcessExit(System.EventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.AppContext.remove_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.Environment.FailFast(System.String, System.Exception, System.String)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'protected void System.Diagnostics.Tracing.EventCounter.Flush()' does not exist in the reference but it does exist in the implementation.
+CannotMakeTypeAbstract : Type 'System.Diagnostics.Tracing.EventListener' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener..ctor()' is 'protected' in the reference but 'public' in the implementation.
+CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener.EventSourceIndex(System.Diagnostics.Tracing.EventSource)' is 'protected' in the reference but 'public' in the implementation.
+TypesMustExist : Type 'System.Diagnostics.Tracing.TraceLoggingEventTypes' does not exist in the reference but it does exist in the implementation.
+CannotMakeMemberAbstract : Member 'public System.Boolean System.IO.FileSystemInfo.Exists' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMemberAbstract : Member 'public System.String System.IO.FileSystemInfo.Name' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMemberAbstract : Member 'public System.Boolean System.IO.FileSystemInfo.Exists.get()' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMemberAbstract : Member 'public System.String System.IO.FileSystemInfo.Name.get()' is abstract in the reference but is not abstract in the implementation.
+MembersMustExist : Member 'protected System.ModuleHandle System.Reflection.Module.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'protected System.ModuleHandle System.Reflection.Emit.ModuleBuilder.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'protected System.String System.String System.Resources.ResourceManager.BaseNameField' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'protected System.Resources.IResourceReader System.Resources.IResourceReader System.Resources.ResourceSet.Reader' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.CompilerServices.ICastable' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute..ctor()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Boolean System.Runtime.Serialization.SerializationInfo.DeserializationInProgress.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.Runtime.Serialization.SerializationInfo.ThrowIfDeserializationInProgress()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.Runtime.Serialization.SerializationInfo.ThrowIfDeserializationInProgress(System.String, System.Int32)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.Runtime.Serialization.SerializationInfo.UpdateValue(System.String, System.Object, System.Type)' does not exist in the reference but it does exist in the implementation.

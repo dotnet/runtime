@@ -81,6 +81,7 @@ export type MonoConfig = {
     globalization_mode?: GlobalizationMode, // configures the runtime's globalization mode
     diagnostic_tracing?: boolean // enables diagnostic log messages during startup
     remote_sources?: string[], // additional search locations for assets. Sources will be checked in sequential order until the asset is found. The string "./" indicates to load from the application directory (as with the files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates that asset loads can be attempted from a remote server. Sources must end with a "/".
+    max_parallel_downloads?: number, // we are throttling parallel downloads in order to avoid net::ERR_INSUFFICIENT_RESOURCES on chrome
     environment_variables?: {
         [i: string]: string;
     }, // dictionary-style Object containing environment variables
@@ -154,6 +155,7 @@ export type RuntimeHelpers = {
     mono_wasm_bindings_is_ready: boolean;
 
     loaded_files: string[];
+    max_parallel_downloads: number;
     config: MonoConfig;
     diagnostic_tracing: boolean;
     enable_debugging: number;
