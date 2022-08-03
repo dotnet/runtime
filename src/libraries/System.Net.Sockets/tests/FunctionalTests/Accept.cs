@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -390,6 +391,52 @@ namespace System.Net.Sockets.Tests
     public sealed class AcceptApm : Accept<SocketHelperApm>
     {
         public AcceptApm(ITestOutputHelper output) : base(output) {}
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void AbortedByDispose_LeaksNoUnobservedExceptions()
+        {
+            RemoteExecutor.Invoke(static async () =>
+            {
+                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.BindToAnonymousPort(IPAddress.Loopback);
+                socket.Listen(10);
+
+                bool unobservedThrown = false;
+                TaskScheduler.UnobservedTaskException += OnUnobservedException;
+
+                await Task.Run(() =>
+                {
+                    socket.BeginAccept(asyncResult =>
+                    {
+                        try
+                        {
+                            var accepted = socket.EndAccept(asyncResult);
+                        }
+                        catch
+                        {
+                        }
+                    }, socket);
+                });
+
+                // Give some time for the Accept operation to start
+                await Task.Delay(30);
+
+                // Close the socket aborting Accept
+                socket.Dispose();
+
+                // Give chance for the unobserved exception to propagate. For some reason both waiting and enforcing Finalization is needed for this.
+                await Task.Delay(30);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                Assert.False(unobservedThrown);
+
+                void OnUnobservedException(object sender, UnobservedTaskExceptionEventArgs? args)
+                {
+                    unobservedThrown = true;
+                }
+            }).Dispose();   
+        }
     }
 
     public sealed class AcceptTask : Accept<SocketHelperTask>
