@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Reflection.Metadata;
 using System.Text;
 
 using Internal.TypeSystem;
