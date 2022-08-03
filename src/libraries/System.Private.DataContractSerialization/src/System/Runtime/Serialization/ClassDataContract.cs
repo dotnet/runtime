@@ -41,12 +41,14 @@ namespace System.Runtime.Serialization
             DynamicallyAccessedMemberTypes.PublicProperties;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal ClassDataContract(Type type) : base(new ClassDataContractCriticalHelper(type))
         {
             InitClassDataContract();
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private ClassDataContract(Type type, XmlDictionaryString ns, string[] memberNames) : base(new ClassDataContractCriticalHelper(type, ns, memberNames))
         {
             InitClassDataContract();
@@ -75,6 +77,7 @@ namespace System.Runtime.Serialization
         public XmlDictionaryString?[]? ChildElementNamespaces
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get
             {
                 if (_childElementNamespaces == null)
@@ -133,6 +136,7 @@ namespace System.Runtime.Serialization
         public override DataContractDictionary? KnownDataContracts
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get
             { return _helper.KnownDataContracts; }
         }
@@ -204,6 +208,8 @@ namespace System.Runtime.Serialization
         }
 
         private Func<object>? _makeNewInstance;
+        [UnconditionalSuppressMessage("AOT Analysis", "IL3050:RequiresDynamicCode",
+            Justification = "Cannot annotate a field, annotating the usage instead")]
         private Func<object> MakeNewInstance => _makeNewInstance ??= FastInvokerBuilder.GetMakeNewInstanceFunc(UnderlyingType);
 
         internal bool CreateNewInstanceViaDefaultConstructor([NotNullWhen(true)] out object? obj)
@@ -229,6 +235,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private XmlFormatClassWriterDelegate CreateXmlFormatWriterDelegate()
         {
             return new XmlFormatWriterGenerator().GenerateClassWriter(this);
@@ -237,6 +244,7 @@ namespace System.Runtime.Serialization
         internal XmlFormatClassWriterDelegate XmlFormatWriterDelegate
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get
             {
                 if (_helper.XmlFormatWriterDelegate == null)
@@ -259,6 +267,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private XmlFormatClassReaderDelegate CreateXmlFormatReaderDelegate()
         {
             return new XmlFormatReaderGenerator().GenerateClassReader(this);
@@ -267,6 +276,7 @@ namespace System.Runtime.Serialization
         internal XmlFormatClassReaderDelegate XmlFormatReaderDelegate
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get
             {
                 if (_helper.XmlFormatReaderDelegate == null)
@@ -289,6 +299,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal static ClassDataContract CreateClassDataContractForKeyValue(Type type, XmlDictionaryString ns, string[] memberNames)
         {
             ClassDataContract? cdc = (ClassDataContract?)DataContract.GetDataContractFromGeneratedAssembly(type);
@@ -323,6 +334,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal static XmlDictionaryString? GetChildNamespaceToDeclare(DataContract dataContract, Type childType, XmlDictionary dictionary)
         {
             childType = DataContract.UnwrapNullableType(childType);
@@ -446,6 +458,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private XmlDictionaryString?[]? CreateChildElementNamespaces()
         {
             if (Members == null)
@@ -474,6 +487,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             Debug.Assert(context != null);
@@ -486,6 +500,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             if (_isScriptObject)
@@ -693,6 +708,8 @@ namespace System.Runtime.Serialization
         {
             private static Type[]? s_serInfoCtorArgs;
             private static readonly MethodInfo s_getKeyValuePairMethod = typeof(KeyValuePairAdapter<,>).GetMethod("GetKeyValuePair", Globals.ScanAllMembers)!;
+            [UnconditionalSuppressMessage("AOT Analysis", "IL3050:RequiresDynamicCode",
+                Justification = "Cannot annotate a field, annotating the method that uses the field instead")]
             private static readonly ConstructorInfo s_ctorGenericMethod = typeof(KeyValuePairAdapter<,>).GetConstructor(Globals.ScanAllMembers, new Type[] { typeof(KeyValuePair<,>).MakeGenericType(typeof(KeyValuePairAdapter<,>).GetGenericArguments()) })!;
 
             private ClassDataContract? _baseContract;
@@ -725,6 +742,7 @@ namespace System.Runtime.Serialization
             public XmlDictionaryString[]? MemberNamespaces;
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             internal ClassDataContractCriticalHelper([DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
                 Type type) : base(type)
             {
@@ -839,6 +857,7 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             internal ClassDataContractCriticalHelper(
                 [DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
                 Type type, XmlDictionaryString ns, string[] memberNames) : base(type)
@@ -915,6 +934,7 @@ namespace System.Runtime.Serialization
             [MemberNotNull(nameof(_members))]
             [MemberNotNull(nameof(Members))]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             private void ImportDataMembers()
             {
                 Type type = this.UnderlyingType;
@@ -1093,6 +1113,7 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             private static bool SetIfGetOnlyCollection(DataMember memberContract)
             {
                 //OK to call IsCollection here since the use of surrogated collection types is not supported in get-only scenarios
@@ -1167,6 +1188,7 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             private XmlQualifiedName GetStableNameAndSetHasDataContract(Type type)
             {
                 return DataContract.GetStableName(type, out _hasDataContract);
@@ -1337,6 +1359,7 @@ namespace System.Runtime.Serialization
             {
 
                 [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+                [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
                 get
                 {
                     if (_knownDataContracts != null)
@@ -1386,6 +1409,7 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             private void SetKeyValuePairAdapterFlags(
                 [DynamicallyAccessedMembers(DataContractPreserveMemberTypes)]
                 Type type)
@@ -1510,6 +1534,7 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             internal ClassDataContractCriticalHelper Clone()
             {
                 ClassDataContractCriticalHelper clonedHelper = new ClassDataContractCriticalHelper(this.UnderlyingType);
@@ -1572,6 +1597,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal ClassDataContract Clone()
         {
             ClassDataContract clonedDc = new ClassDataContract(this.UnderlyingType);
@@ -1586,6 +1612,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal void UpdateNamespaceAndMembers(Type type, XmlDictionaryString ns, string[] memberNames)
         {
             this.StableName = new XmlQualifiedName(GetStableName(type).Name, ns.Value);

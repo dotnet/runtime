@@ -299,6 +299,7 @@ namespace System.Runtime.Serialization
         internal static Type TypeOfHashtable
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get => s_typeOfHashtable ??= TypeOfDictionaryGeneric.MakeGenericType(TypeOfObject, TypeOfObject);
         }
 
@@ -321,6 +322,7 @@ namespace System.Runtime.Serialization
         private static readonly Type? s_typeOfScriptObject;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal static ClassDataContract CreateScriptObjectClassDataContract()
         {
             Debug.Assert(s_typeOfScriptObject != null);

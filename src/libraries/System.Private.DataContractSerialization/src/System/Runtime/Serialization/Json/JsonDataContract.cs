@@ -16,6 +16,7 @@ namespace System.Runtime.Serialization.Json
         private readonly JsonDataContractCriticalHelper _helper;
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         protected JsonDataContract(DataContract traditionalDataContract)
         {
             _helper = new JsonDataContractCriticalHelper(traditionalDataContract);
@@ -63,12 +64,14 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public static JsonDataContract GetJsonDataContract(DataContract traditionalDataContract)
         {
             return JsonDataContractCriticalHelper.GetJsonDataContract(traditionalDataContract);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public object? ReadJsonValue(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             PushKnownDataContracts(context);
@@ -78,12 +81,14 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public virtual object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             return TraditionalDataContract.ReadXmlValue(jsonReader, context);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public void WriteJsonValue(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             PushKnownDataContracts(context);
@@ -92,6 +97,7 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         public virtual void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             TraditionalDataContract.WriteXmlValue(jsonWriter, obj, context);
@@ -149,6 +155,7 @@ namespace System.Runtime.Serialization.Json
             private readonly string _typeName;
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             internal JsonDataContractCriticalHelper(DataContract traditionalDataContract)
             {
                 _traditionalDataContract = traditionalDataContract;
@@ -163,6 +170,7 @@ namespace System.Runtime.Serialization.Json
             internal virtual string TypeName => _typeName;
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             public static JsonDataContract GetJsonDataContract(DataContract traditionalDataContract)
             {
                 int id = JsonDataContractCriticalHelper.GetId(traditionalDataContract.UnderlyingType.TypeHandle);
@@ -209,6 +217,7 @@ namespace System.Runtime.Serialization.Json
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             private static JsonDataContract CreateJsonDataContract(int id, DataContract traditionalDataContract)
             {
                 lock (s_createDataContractLock)
@@ -273,6 +282,7 @@ namespace System.Runtime.Serialization.Json
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             private void AddCollectionItemContractsToKnownDataContracts()
             {
                 if (_traditionalDataContract.KnownDataContracts != null)

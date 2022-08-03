@@ -99,12 +99,14 @@ namespace System.Runtime.Serialization
             _knownTypeResolver ??= new KnownTypeDataContractResolver(this);
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal DataContract GetDataContract(Type type)
         {
             return GetDataContract(type.TypeHandle, type);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal virtual DataContract GetDataContract(RuntimeTypeHandle typeHandle, Type? type)
         {
             if (IsGetOnlyCollection)
@@ -118,6 +120,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal virtual DataContract GetDataContractSkipValidation(int typeId, RuntimeTypeHandle typeHandle, Type? type)
         {
             if (IsGetOnlyCollection)
@@ -131,6 +134,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal virtual DataContract GetDataContract(int id, RuntimeTypeHandle typeHandle)
         {
             if (IsGetOnlyCollection)
@@ -144,6 +148,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal virtual void CheckIfTypeSerializable(Type memberType, bool isMemberTypeSerializable)
         {
             if (!isMemberTypeSerializable)
@@ -151,6 +156,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal virtual Type GetSurrogatedType(Type type)
         {
             return type;
@@ -158,6 +164,7 @@ namespace System.Runtime.Serialization
         internal virtual DataContractDictionary? SerializerKnownDataContracts
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             get
             {
                 // This field must be initialized during construction by serializers using data contracts.
@@ -171,6 +178,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private DataContract? GetDataContractFromSerializerKnownTypes(XmlQualifiedName qname)
         {
             DataContractDictionary? serializerKnownDataContracts = this.SerializerKnownDataContracts;
@@ -181,6 +189,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal static DataContractDictionary? GetDataContractsForKnownTypes(IList<Type> knownTypeList)
         {
             if (knownTypeList == null) return null;
@@ -198,6 +207,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal bool IsKnownType(DataContract dataContract, DataContractDictionary? knownDataContracts, Type? declaredType)
         {
             bool knownTypesAddedInCurrentScope = false;
@@ -217,6 +227,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal bool IsKnownType(DataContract dataContract, Type? declaredType)
         {
             DataContract? knownContract = ResolveDataContractFromKnownTypes(dataContract.StableName.Name, dataContract.StableName.Namespace, null /*memberTypeContract*/, declaredType);
@@ -224,6 +235,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal Type? ResolveNameFromKnownTypes(XmlQualifiedName typeName)
         {
             DataContract? dataContract = ResolveDataContractFromKnownTypes(typeName);
@@ -231,12 +243,14 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         private DataContract? ResolveDataContractFromKnownTypes(XmlQualifiedName typeName) =>
             PrimitiveDataContract.GetPrimitiveDataContract(typeName.Name, typeName.Namespace) ??
             scopedKnownTypes.GetDataContract(typeName) ??
             GetDataContractFromSerializerKnownTypes(typeName);
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         protected DataContract? ResolveDataContractFromKnownTypes(string typeName, string? typeNs, DataContract? memberTypeContract, Type? declaredType)
         {
             XmlQualifiedName qname = new XmlQualifiedName(typeName, typeNs);
@@ -270,6 +284,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         protected virtual DataContract? ResolveDataContractFromRootDataContract(XmlQualifiedName typeQName)
         {
             CollectionDataContract? collectionContract = rootTypeDataContract as CollectionDataContract;
@@ -286,6 +301,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal void PushKnownTypes(DataContract dc)
         {
             if (dc != null && dc.KnownDataContracts != null)
@@ -295,6 +311,7 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         internal void PopKnownTypes(DataContract dc)
         {
             if (dc != null && dc.KnownDataContracts != null)
