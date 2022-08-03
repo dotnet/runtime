@@ -8904,7 +8904,7 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
 
     gc.oPreAllocThrowable = oPreAllocThrowable;
 
-    // Start walking the list to find the tracker correponding
+    // Start walking the list to find the tracker corresponding
     // to the preallocated exception object.
     while (pEHTracker != NULL)
     {
@@ -10561,7 +10561,7 @@ PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEH
 
     BOOL fFoundTracker = FALSE;
 
-    // Start walking the list to find the tracker correponding
+    // Start walking the list to find the tracker corresponding
     // to the exception object.
     while (pEHTracker != NULL)
     {

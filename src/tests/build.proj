@@ -16,7 +16,6 @@
     <DisabledTestDir Include="Common" />
     <DisabledTestDir Include="Tests" />
     <DisabledTestDir Include="TestWrappers" />
-    <_SkipTestDir Include="@(DisabledTestDir)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,23 +48,11 @@
     <Error Condition="!Exists('$(XunitTestBinBase)')"
            Text="$(XunitTestBinBase) does not exist. Please run src\tests\build / src/tests/build.sh from the repo root at least once to get the tests built." />
 
-    <ItemGroup>
-      <AllTestDirsNonCanonicalPaths Include="$([System.IO.Directory]::GetDirectories(`$(XunitTestBinBase)`))" />
-      <AllTestDirsPaths Include="@(AllTestDirsNonCanonicalPaths)" />
-      <AllTestDirsPaths Include="@(AllTestDirsNonCanonicalPaths)" >
-        <Path>$([System.IO.Path]::GetFullPath(%(Identity)))</Path>
-      </AllTestDirsPaths>
-      <SkipTestDirsPaths Include="$([System.IO.Path]::GetFullPath('$(XunitTestBinBase)%(_SkipTestDir.Identity)'))" />
-      <NonExcludedTestDirectories Include="@(AllTestDirsPaths -> '%(Path)')" Exclude="@(SkipTestDirsPaths)" />
-    </ItemGroup>
-
     <ItemGroup Condition="'@(LegacyRunnableTestPaths)' != ''">
-      <TopLevelDirectories Include="@(NonExcludedTestDirectories)" />
-      <SecondLevel Include="$([System.IO.Directory]::GetDirectories(%(TopLevelDirectories.Identity)))" />
-      <SecondLevelDirectories Include="@(SecondLevel)">
-        <Path>$([System.IO.Path]::GetFullPath(%(LegacyRunnableTestPaths.Identity)))</Path>
-      </SecondLevelDirectories>
-      <TestDirectoriesWithDup Include="@(SecondLevelDirectories -> '%(Identity)')" Condition="$([System.String]::new('%(Path)').StartsWith('%(Identity)'))" />
+      <LegacyRunnableTestPaths Separator="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').IndexOfAny('\\/', $(XunitTestBinBase.Length)))" />
+      <LegacyRunnableTestPaths SecondSeparator="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').IndexOfAny('\\/', $([MSBuild]::Add(%(LegacyRunnableTestPaths.Separator), 1))))" />
+      <LegacyRunnableTestPaths Separator="%(LegacyRunnableTestPaths.SecondSeparator)" Condition="'%(LegacyRunnableTestPaths.SecondSeparator)' != '-1'" />
+      <TestDirectoriesWithDup Include="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').Substring(0, %(LegacyRunnableTestPaths.Separator)))" />
     </ItemGroup>
 
     <RemoveDuplicates Inputs="@(TestDirectoriesWithDup)">
@@ -390,8 +377,10 @@
 
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
+      <SkipTestDirsPaths Include="$([System.IO.Path]::GetFullPath('$(XunitTestBinBase)%(DisabledTestDir.Identity)'))" />
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.$(TestScriptExtension)"/>
       <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
+      <AllRunnableTestPaths Remove="%(SkipTestDirsPaths.Identity)\**\*.$(TestScriptExtension)" />
       <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssembly"/>
       <MergedAssemblyFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyMarkerPaths.Identity)'))" />
       <MergedAssemblyParentFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyFolders.Identity)'))" />
@@ -487,6 +476,7 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeFlavor=$(RuntimeFlavor)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeVariant=$(RuntimeVariant)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:CLRTestBuildAllTargets=$(CLRTestBuildAllTargets)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:UseCodeFlowEnforcement=$(UseCodeFlowEnforcement)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__TestGroupToBuild=$(__TestGroupToBuild)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__SkipRestorePackages=1"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /nodeReuse:false</GroupBuildCmd>

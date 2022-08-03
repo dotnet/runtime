@@ -458,6 +458,24 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void GetEnumValuesAsUnderlyingType_Int()
+        {
+            GetEnumValuesAsUnderlyingType(typeof(IntEnum), new int[] { 1, 2, 10, 18, 45 });
+        }
+
+        [Fact]
+        public static void GetEnumValuesAsUnderlyingType_UInt()
+        {
+            GetEnumValuesAsUnderlyingType(typeof(UIntEnum), new uint[] { 1, 10 });
+        }
+
+        private static void GetEnumValuesAsUnderlyingType(Type enumType, Array expected)
+        {
+            Assert.Equal(expected, enumType.GetTypeInfo().GetEnumValuesAsUnderlyingType());
+        }
+
+
+        [Fact]
         public void GetEnumValues_TypeNotEnum_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumUnderlyingType());

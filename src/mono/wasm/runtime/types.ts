@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import "node/buffer"; // we use the Buffer type to type some of Emscripten's APIs
-import { bind_runtime_method } from "./method-binding";
+import { JavaScriptExports } from "./managed-exports";
+import { BINDINGType, MONOType } from "./net6-legacy/exports-legacy";
 import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./types/emscripten";
 
 export type GCHandle = {
@@ -80,6 +81,7 @@ export type MonoConfig = {
     globalization_mode?: GlobalizationMode, // configures the runtime's globalization mode
     diagnostic_tracing?: boolean // enables diagnostic log messages during startup
     remote_sources?: string[], // additional search locations for assets. Sources will be checked in sequential order until the asset is found. The string "./" indicates to load from the application directory (as with the files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates that asset loads can be attempted from a remote server. Sources must end with a "/".
+    max_parallel_downloads?: number, // we are throttling parallel downloads in order to avoid net::ERR_INSUFFICIENT_RESOURCES on chrome
     environment_variables?: {
         [i: string]: string;
     }, // dictionary-style Object containing environment variables
@@ -128,10 +130,12 @@ export type RuntimeHelpers = {
     complete_task_method: MonoMethod;
     create_task_method: MonoMethod;
     call_delegate: MonoMethod;
+    runtime_interop_module: MonoAssembly;
     runtime_interop_namespace: string;
     runtime_interop_exports_classname: string;
     runtime_interop_exports_class: MonoClass;
-    bind_runtime_method: typeof bind_runtime_method;
+    runtime_legacy_exports_classname: string;
+    runtime_legacy_exports_class: MonoClass;
 
     _box_buffer_size: number;
     _unbox_buffer_size: number;
@@ -151,6 +155,7 @@ export type RuntimeHelpers = {
     mono_wasm_bindings_is_ready: boolean;
 
     loaded_files: string[];
+    max_parallel_downloads: number;
     config: MonoConfig;
     diagnostic_tracing: boolean;
     enable_debugging: number;
@@ -161,6 +166,7 @@ export type RuntimeHelpers = {
     ExitStatus: ExitStatusError;
     quit: Function,
     locateFile: (path: string, prefix?: string) => string,
+    javaScriptExports: JavaScriptExports,
 }
 
 export const wasm_type_symbol = Symbol.for("wasm type");
@@ -362,3 +368,19 @@ export function notThenable<T>(x: T | PromiseLike<T>): x is T {
 /// An identifier for an EventPipe session. The id is unique during the lifetime of the runtime.
 /// Primarily intended for debugging purposes.
 export type EventPipeSessionID = bigint;
+
+// this represents visibility in the javascript
+// like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts
+export interface DotnetPublicAPI {
+    MONO: MONOType,
+    BINDING: BINDINGType,
+    INTERNAL: any,
+    EXPORTS: any,
+    IMPORTS: any,
+    Module: EmscriptenModule,
+    RuntimeId: number,
+    RuntimeBuildInfo: {
+        ProductVersion: string,
+        Configuration: string,
+    }
+}
