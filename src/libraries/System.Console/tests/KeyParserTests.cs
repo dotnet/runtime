@@ -403,11 +403,13 @@ public class KeyParserTests
     }
 
     [Theory]
-    [InlineData("test123", "test123")] // no bracketed paste
-    [InlineData("\u001B[200~test123\u001B[201~", "test123")] // simple bracketed paste with both start and end tag
-    [InlineData("\u001B[200~test123", "test123")] // no end tag
-    [InlineData("test123\u001B[201~", "test123")] // no start tag
+    [InlineData(" test123 ", " test123 ")] // no bracketed paste
+    [InlineData("\u001B[200~ test123\u001B[201~", " test123")] // simple bracketed paste with both start and end tag
+    [InlineData("\u001B[200~test123 ", "test123 ")] // no end tag
+    [InlineData(" test123\u001B[201~", " test123")] // no start tag
     [InlineData("\u001B[200~", "")] // just start tag
+    // "nested" pasted to the Terminal, raw input copied and pasted again (yes, the escape characters got eaten by the xterm)
+    [InlineData("\u001B[200~[200~nested[201~\u001B[201~", "[200~nested[201~")]
     // the test case above are based on manual testing and observations
     // the test cases below were not reproduced during manual testing, but hypothetically are possible
     [InlineData("\u001B[201~", "")] // just end tag
@@ -418,7 +420,7 @@ public class KeyParserTests
     [InlineData("\u001B[200~\u001B[201~", "")]
     public void BracketedPasteIsSupported(string input, string expectedOutput)
     {
-        Assert.Equal(Encoding.UTF8.GetBytes(expectedOutput), KeyParser.RemoveBracketedPasteTags(Encoding.UTF8.GetBytes(input)).ToArray());
+        Assert.Equal(expectedOutput, Encoding.UTF8.GetString(KeyParser.RemoveBracketedPasteTags(Encoding.UTF8.GetBytes(input))));
     }
 
     private static ConsoleKeyInfo Parse(char[] chars, TerminalFormatStrings terminalFormatStrings, byte verase, int expectedStartIndex)
