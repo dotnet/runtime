@@ -624,7 +624,7 @@ namespace System.Tests
 
             var serializedTestModel = JsonSerializer.Serialize(testModel);
 
-            Assert.True(string.Equals(jsonTestModel, serializedTestModel, StringComparison.Ordinal));           
+            Assert.Equal(jsonTestModel, serializedTestModel);           
         }
 
         [Fact]
@@ -636,7 +636,7 @@ namespace System.Tests
 
             TestModelWithBinaryDataProperty deserializedModel = JsonSerializer.Deserialize<TestModelWithBinaryDataProperty>(jsonTestModel);
 
-            Assert.True(string.Equals(data.ToString(), deserializedModel.A.ToString(), StringComparison.Ordinal));
+            Assert.Equal(data.ToString(), deserializedModel.A.ToString());
         }
 
         internal class TestModel
