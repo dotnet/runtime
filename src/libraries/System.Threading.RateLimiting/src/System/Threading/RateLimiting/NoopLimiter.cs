@@ -18,9 +18,9 @@ namespace System.Threading.RateLimiting
 
         public override int GetAvailablePermits() => int.MaxValue;
 
-        protected override RateLimitLease AcquireCore(int permitCount) => _lease;
+        protected override RateLimitLease AttemptAcquireCore(int permitCount) => _lease;
 
-        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int permitCount, CancellationToken cancellationToken)
+        protected override ValueTask<RateLimitLease> AcquireAsyncCore(int permitCount, CancellationToken cancellationToken)
             => new ValueTask<RateLimitLease>(_lease);
 
         private sealed class NoopLease : RateLimitLease

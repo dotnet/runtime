@@ -36,6 +36,8 @@ namespace System.IO.Hashing.Tests
         private const string DotNetNCHashing3 = DotNetNCHashing + DotNetNCHashing + DotNetNCHashing;
         private const string SixteenBytes = ".NET Hashes This";
         private const string SixteenBytes3 = SixteenBytes + SixteenBytes + SixteenBytes;
+        private const string EightBytes = "Hashing!";
+        private const string EightBytes3 = EightBytes + EightBytes + EightBytes;
 
         protected static IEnumerable<TestCase> TestCaseDefinitions { get; } =
             new[]
@@ -96,7 +98,37 @@ namespace System.IO.Hashing.Tests
                 new TestCase(
                     $"{SixteenBytes} (x3)",
                     Encoding.ASCII.GetBytes(SixteenBytes3),
-                    "29DA7472")
+                    "29DA7472"),
+                // 8 * 3 bytes, filling the holdback buffer exactly on the second Append call.
+                new TestCase(
+                    $"{EightBytes} (x3)",
+                    Encoding.ASCII.GetBytes(EightBytes3),
+                    "5DF7D6C0"),
+            };
+
+        public static IEnumerable<object[]> LargeTestCases
+        {
+            get
+            {
+                object[] arr = new object[1];
+
+                foreach (LargeTestCase testCase in LargeTestCaseDefinitions)
+                {
+                    arr[0] = testCase;
+                    yield return arr;
+                }
+            }
+        }
+
+        protected static IEnumerable<LargeTestCase> LargeTestCaseDefinitions { get; } =
+            new[]
+            {
+                // Manually run against the xxHash32 reference implementation.
+                new LargeTestCase(
+                    "EEEEE... (10GB)",
+                    (byte)'E',
+                    10L * 1024 * 1024 * 1024, // 10 GB
+                    "22CBC3AA"),
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new XxHash32();
@@ -130,6 +162,14 @@ namespace System.IO.Hashing.Tests
         public void InstanceMultiAppendGetCurrentHash(TestCase testCase)
         {
             InstanceMultiAppendGetCurrentHashDriver(testCase);
+        }
+
+        [Theory]
+        [MemberData(nameof(LargeTestCases))]
+        [OuterLoop]
+        public void InstanceMultiAppendLargeInput(LargeTestCase testCase)
+        {
+            InstanceMultiAppendLargeInputDriver(testCase);
         }
 
         [Theory]

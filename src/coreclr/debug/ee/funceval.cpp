@@ -3158,7 +3158,7 @@ static void RecordFuncEvalException(DebuggerEval *pDE,
  * domain (steps 1a & 1b).  This has to be a separate function from GCProtectArgsAndDoNormalFuncEval
  * because otherwise we can't reliably find the right GCFrames to pop when unwinding the stack due to
  * an exception on 64-bit platforms (we have some GCFrames outside of the TRY, and some inside,
- * and they won't necesarily be laid out sequentially on the stack if they are all in the same function).
+ * and they won't necessarily be laid out sequentially on the stack if they are all in the same function).
  *
  * Parameters:
  *    pDE - pointer to the DebuggerEval object being processed.

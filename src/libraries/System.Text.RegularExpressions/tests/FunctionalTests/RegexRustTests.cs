@@ -61,11 +61,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"(?m)$[a-z]", "abc\ndef\nxyz", new ValueTuple<int, int>[] { } };
                 yield return new object[] { engine, @"(?m)^$", "", new[] { (0, 0) } };
                 yield return new object[] { engine, @"(?m)(?:^$)*", "a\nb\nc", new[] { (0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5) } };
-                if (!RegexHelpers.IsNonBacktracking(engine)) // https://github.com/dotnet/runtime/issues/72470
-                {
-                    yield return new object[] { engine, @"(?m)(?:^|a)+", "a\naaa\n", new[] { (0, 0), (2, 2), (3, 5), (6, 6) } };
-                    yield return new object[] { engine, @"(?m)(?:^|a)*", "a\naaa\n", new[] { (0, 0), (1, 1), (2, 2), (3, 5), (5, 5), (6, 6) } };
-                }
+                yield return new object[] { engine, @"(?m)(?:^|a)+", "a\naaa\n", new[] { (0, 0), (2, 2), (3, 5), (6, 6) } };
+                yield return new object[] { engine, @"(?m)(?:^|a)*", "a\naaa\n", new[] { (0, 0), (1, 1), (2, 2), (3, 5), (5, 5), (6, 6) } };
                 yield return new object[] { engine, @"(?m)(?:^[a-z])+", "abc\ndef\nxyz", new[] { (0, 1), (4, 5), (8, 9) } };
                 yield return new object[] { engine, @"(?m)(?:^[a-z]{3}\n?)+", "abc\ndef\nxyz", new[] { (0, 11) } };
                 yield return new object[] { engine, @"(?m)(?:^[a-z]{3}\n?)*", "abc\ndef\nxyz", new[] { (0, 11), (11, 11) } };

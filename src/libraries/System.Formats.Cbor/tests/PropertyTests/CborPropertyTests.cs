@@ -178,6 +178,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Property(Replay = ReplaySeed, MaxTest = MaxTests, Arbitrary = new[] { typeof(CborRandomGenerators) })]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73150", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CborDocument_Roundtrip(CborPropertyTestContext input)
         {
             byte[] encoding = CborDocumentSerializer.encode(input);

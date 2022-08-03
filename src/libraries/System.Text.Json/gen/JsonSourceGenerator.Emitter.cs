@@ -29,6 +29,7 @@ namespace System.Text.Json.SourceGeneration
             private const string DefaultContextBackingStaticVarName = "s_defaultContext";
             internal const string GetConverterFromFactoryMethodName = "GetConverterFromFactory";
             private const string InfoVarName = "info";
+            private const string PropertyInfoVarName = "propertyInfo";
             internal const string JsonContextVarName = "jsonContext";
             private const string NumberHandlingPropName = "NumberHandling";
             private const string ObjectCreatorPropName = "ObjectCreator";
@@ -57,6 +58,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonNamingPolicyTypeRef = "global::System.Text.Json.JsonNamingPolicy";
             private const string JsonSerializerTypeRef = "global::System.Text.Json.JsonSerializer";
             private const string JsonSerializerOptionsTypeRef = "global::System.Text.Json.JsonSerializerOptions";
+            private const string JsonSerializerContextTypeRef = "global::System.Text.Json.Serialization.JsonSerializerContext";
             private const string Utf8JsonWriterTypeRef = "global::System.Text.Json.Utf8JsonWriter";
             private const string JsonConverterTypeRef = "global::System.Text.Json.Serialization.JsonConverter";
             private const string JsonConverterFactoryTypeRef = "global::System.Text.Json.Serialization.JsonConverterFactory";
@@ -708,6 +710,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerO
                     string memberTypeCompilableName = memberTypeMetadata.TypeRef;
 
                     string infoVarName = $"{InfoVarName}{i}";
+                    string propertyInfoVarName = $"{PropertyInfoVarName}{i}";
 
                     sb.Append($@"
     {JsonPropertyInfoValuesTypeRef}<{memberTypeCompilableName}> {infoVarName} = new {JsonPropertyInfoValuesTypeRef}<{memberTypeCompilableName}>()
@@ -727,7 +730,16 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerO
         JsonPropertyName = {jsonPropertyNameValue}
     }};
 
-    {PropVarName}[{i}] = {JsonMetadataServicesTypeRef}.CreatePropertyInfo<{memberTypeCompilableName}>({OptionsLocalVariableName}, {infoVarName});
+    {JsonPropertyInfoTypeRef} {propertyInfoVarName} = {JsonMetadataServicesTypeRef}.CreatePropertyInfo<{memberTypeCompilableName}>({OptionsLocalVariableName}, {infoVarName});");
+
+                    if (memberMetadata.IsRequired)
+                    {
+                        sb.Append($@"
+    {propertyInfoVarName}.IsRequired = true;");
+                    }
+
+                    sb.Append($@"
+    {PropVarName}[{i}] = {propertyInfoVarName};
 ");
                 }
 
@@ -1071,6 +1083,9 @@ private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {val
                 string typeInfoPropertyTypeRef = $"{JsonTypeInfoTypeRef}<{typeCompilableName}>";
 
                 return @$"private {typeInfoPropertyTypeRef}? _{typeFriendlyName};
+/// <summary>
+/// Defines the source generated JSON serialization contract metadata for a given type.
+/// </summary>
 public {typeInfoPropertyTypeRef} {typeFriendlyName}
 {{
     get => _{typeFriendlyName} ??= {typeMetadata.CreateTypeInfoMethodName}({OptionsInstanceVariableName});
@@ -1103,6 +1118,7 @@ private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonS
             {
                 string contextTypeRef = _currentContext.ContextTypeRef;
                 string contextTypeName = _currentContext.ContextType.Name;
+
                 int backTickIndex = contextTypeName.IndexOf('`');
                 if (backTickIndex != -1)
                 {
@@ -1114,14 +1130,23 @@ private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonS
                 sb.Append(@$"{GetLogicForDefaultSerializerOptionsInit()}
 
 private static {contextTypeRef}? {DefaultContextBackingStaticVarName};
+
+/// <summary>
+/// The default <see cref=""{JsonSerializerContextTypeRef}""/> associated with a default <see cref=""{JsonSerializerOptionsTypeRef}""/> instance.
+/// </summary>
 public static {contextTypeRef} Default => {DefaultContextBackingStaticVarName} ??= new {contextTypeRef}(new {JsonSerializerOptionsTypeRef}({DefaultOptionsStaticVarName}));
 
+/// <summary>
+/// The source-generated options associated with this context.
+/// </summary>
 protected override {JsonSerializerOptionsTypeRef}? GeneratedSerializerOptions {{ get; }} = {DefaultOptionsStaticVarName};
 
+/// <inheritdoc/>
 public {contextTypeName}() : base(null)
 {{
 }}
 
+/// <inheritdoc/>
 public {contextTypeName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName}) : base({OptionsLocalVariableName})
 {{
 }}
@@ -1221,7 +1246,9 @@ private static {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({JsonS
             {
                 StringBuilder sb = new();
 
-                sb.Append(@$"public override {JsonTypeInfoTypeRef} GetTypeInfo({TypeTypeRef} type)
+                sb.Append(
+@$"/// <inheritdoc/>
+public override {JsonTypeInfoTypeRef} GetTypeInfo({TypeTypeRef} type)
 {{");
 
                 HashSet<TypeGenerationSpec> types = new(_currentContext.TypesWithMetadataGenerated);

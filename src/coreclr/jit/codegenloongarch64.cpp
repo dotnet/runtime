@@ -839,7 +839,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *     sd ra, pad+8(sp)
  *     sd s0,#xxx(sp)                         ; save callee-saved registers, as necessary,
  *     sd s1,#xxx+8(sp)
- *     daddiu sp,sp,-#outsz                     ; create space for outgoing argument space, mabye 16byte-alignment.
+ *     daddiu sp,sp,-#outsz                     ; create space for outgoing argument space, maybe 16byte-alignment.
  *
  *  The funclet frame is thus:
  *
@@ -2654,7 +2654,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                         checkDividend = false; // We statically know that the dividend is not -1
                     }
                 }
-                else // insert check for divison by zero
+                else // insert check for division by zero
                 {
                     // Check if the divisor is zero throw a DivideByZeroException
                     genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
@@ -2671,7 +2671,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
                     // At this point the divisor is known to be -1
                     //
-                    // Wether dividendReg is MinInt or not
+                    // Whether dividendReg is MinInt or not
                     //
 
                     emit->emitIns_J_cond_la(INS_beq, sdivLabel, dividendReg, REG_R0);
@@ -2876,7 +2876,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
 }
 
-// Generate code for CpObj nodes wich copy structs that have interleaved
+// Generate code for CpObj nodes which copy structs that have interleaved
 // GC pointers.
 // For this case we'll generate a sequence of loads/stores in the case of struct
 // slots that don't contain GC pointers.  The generated code will look like:
@@ -4635,7 +4635,7 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
 // integer/unsigned comparison against the value of Rt register which is used by
 // a GT_JTRUE condition jump node.
 //
-// This node is repsonsible for consuming the register, and emitting the
+// This node is responsible for consuming the register, and emitting the
 // appropriate fused compare/test and branch instruction
 //
 // Two flags guide code generation
@@ -4781,7 +4781,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     if (addr == nullptr)
     {
         // This is call to a runtime helper.
-        // li reg, pAddr     #NOTE: this maybe muti-instructions.
+        // li reg, pAddr     #NOTE: this maybe multi-instructions.
         // ld_d reg, reg
         // jirl reg
 
@@ -4963,7 +4963,7 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 }
 
 //--------------------------------------------------------------------------------
-// genSIMDIntrinsicRelOp: Generate code for a SIMD Intrinsic relational operater
+// genSIMDIntrinsicRelOp: Generate code for a SIMD Intrinsic relational operator
 // == and !=
 //
 // Arguments:
@@ -5880,7 +5880,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             emit->emitIns_S_R(storeIns, storeAttr, source->GetRegNum(), varNumOut, argOffsetOut);
         }
         argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
-        assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
+        assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing area
     }
     else // We have some kind of a struct argument
     {

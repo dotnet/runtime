@@ -74,13 +74,6 @@ const iffeConfig = {
     input: "exports.ts",
     output: [
         {
-            file: nativeBinDir + "/src/cjs/runtime.cjs.iffe.js",
-            name,
-            banner,
-            format,
-            plugins,
-        },
-        {
             file: nativeBinDir + "/src/es6/runtime.es6.iffe.js",
             name,
             banner,

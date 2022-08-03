@@ -3036,7 +3036,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     // First we morph the argument subtrees ('this' pointer, arguments, etc.).
     // During the first call to fgMorphArgs we also record the
     // information about late arguments in CallArgs.
-    // This information is used later to contruct the late args
+    // This information is used later to construct the late args
 
     // Note that this name is a bit of a misnomer - it indicates that there are struct args
     // that occupy more than a single slot that are passed by value (not necessarily in regs).
@@ -6496,15 +6496,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     if (call->IsExpandedEarly() && call->IsVirtualVtable() && (call->gtControlExpr == nullptr))
     {
         assert(call->gtArgs.HasThisPointer());
-        // It isn't alway profitable to expand a virtual call early
+        // It isn't always profitable to expand a virtual call early
         //
-        // We alway expand the TAILCALL_HELPER type late.
+        // We always expand the TAILCALL_HELPER type late.
         // And we exapnd late when we have an optimized tail call
         // and the this pointer needs to be evaluated into a temp.
         //
         if (tailCallResult == TAILCALL_HELPER)
         {
-            // We will alway expand this late in lower instead.
+            // We will always expand this late in lower instead.
             // (see LowerTailCallViaJitHelper as it needs some work
             // for us to be able to expand this earlier in morph)
             //
@@ -6757,7 +6757,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // if we're not going to return and the helper doesn't have enough info
         // to safely poll, so we poll before the tail call, if the block isn't
         // already safe. Since tail call via helper is a slow mechanism it
-        // doen't matter whether we emit GC poll. his is done to be in parity
+        // doesn't matter whether we emit GC poll. his is done to be in parity
         // with Jit64. Also this avoids GC info size increase if all most all
         // methods are expected to be tail calls (e.g. F#).
         //
@@ -8555,7 +8555,7 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
 //
 // Notes:
 //    TODO-CQ: currently this transformation is done only under copy block,
-//    but it is benefitial to do for each OBJ node. However, `PUT_ARG_STACK`
+//    but it is beneficial to do for each OBJ node. However, `PUT_ARG_STACK`
 //    for some platforms does not expect struct `LCL_VAR` as a source, so
 //    it needs more work.
 //
@@ -9716,7 +9716,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             if (IsBaselineSimdIsaSupported())
             {
                 // We should check whether op2 should be assigned to a SIMD field or not.
-                // If it is, we should tranlate the tree to simd intrinsic.
+                // If it is, we should translate the tree to simd intrinsic.
                 assert(!fgGlobalMorph || ((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0));
                 GenTree* newTree = fgMorphFieldAssignToSimdSetElement(tree);
                 typ              = tree->TypeGet();
@@ -9886,7 +9886,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 }
             }
 
-            // Convert DIV to UDIV if boths op1 and op2 are known to be never negative
+            // Convert DIV to UDIV if both op1 and op2 are known to be never negative
             if (!gtIsActiveCSE_Candidate(tree) && varTypeIsIntegral(tree) && op1->IsNeverNegative(this) &&
                 op2->IsNeverNegative(this))
             {
@@ -9954,7 +9954,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 goto USE_HELPER_FOR_ARITH;
             }
 
-            // Convert MOD to UMOD if boths op1 and op2 are known to be never negative
+            // Convert MOD to UMOD if both op1 and op2 are known to be never negative
             if (!gtIsActiveCSE_Candidate(tree) && varTypeIsIntegral(tree) && op1->IsNeverNegative(this) &&
                 op2->IsNeverNegative(this))
             {
@@ -10126,7 +10126,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 if (op1->OperIs(GT_LCL_VAR))
                 {
                     // With a `genReturnBB` this `RETURN(src)` tree will be replaced by a `ASG(genReturnLocal, src)`
-                    // and `ASG` will be tranformed into field by field copy without parent local referencing if
+                    // and `ASG` will be transformed into field by field copy without parent local referencing if
                     // possible.
                     GenTreeLclVar* lclVar = op1->AsLclVar();
                     unsigned       lclNum = lclVar->GetLclNum();
@@ -11006,7 +11006,7 @@ DONE_MORPHING_CHILDREN:
         case GT_NOT:
         case GT_NEG:
             // Remove double negation/not.
-            // Note: this is not a safe tranformation if "tree" is a CSE candidate.
+            // Note: this is not a safe transformation if "tree" is a CSE candidate.
             // Consider for example the following expression: NEG(NEG(OP)), where any
             // NEG is a CSE candidate. Were we to morph this to just OP, CSE would fail to find
             // the original NEG in the statement.
@@ -13844,7 +13844,7 @@ GenTreeOp* Compiler::fgRecognizeAndMorphLongMul(GenTreeOp* mul)
 // fgMorphLongMul : Morphs GT_MUL nodes marked with GTF_MUL_64RSLT.
 //
 // Morphs *only* the operands of casts that compose the long mul to
-// avoid them being folded aways.
+// avoid them being folded always.
 //
 // Arguments:
 //    mul  -  GT_MUL tree to morph operands of
@@ -14293,7 +14293,7 @@ DONE:;
 // fgFoldConditional: try and fold conditionals and optimize BBJ_COND or
 //   BBJ_SWITCH blocks.
 //
-// Argumetns:
+// Arguments:
 //   block - block to examine
 //
 // Returns:
@@ -16717,7 +16717,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     if (remainingAssignments > 0)
     {
         // if the left assignments number is bigger than zero, then this means
-        // that the assignments are not assgining to the contiguously memory
+        // that the assignments are not assigning to the contiguously memory
         // locations from same vector.
         return false;
     }
@@ -17156,7 +17156,7 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
                 assert(arrElem->gtArrInds[i] != nullptr);
 
                 // We cast the index operands to TYP_INT in the importer.
-                // Note that the offset calculcation needs to be TYP_I_IMPL, as multiplying the linearized index
+                // Note that the offset calculation needs to be TYP_I_IMPL, as multiplying the linearized index
                 // by the array element scale might overflow (although does .NET support array objects larger than
                 // 2GB in size?).
                 assert(genActualType(arrElem->gtArrInds[i]->TypeGet()) == TYP_INT);
@@ -17164,7 +17164,7 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
 
             // The order of evaluation of a[i,j,k] is: a, i, j, k. That is, if any of the i, j, k throw an
             // exception, it needs to happen before accessing `a`. For example, `a` could be null, but `i`
-            // could be an expresssion throwing an exception, and that exception needs to be thrown before
+            // could be an expression throwing an exception, and that exception needs to be thrown before
             // indirecting using `a` (such as reading a dimension length or lower bound).
             //
             // First, we need to make temp copies of the index expressions that have side-effects. We

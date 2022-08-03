@@ -25,6 +25,7 @@ namespace System.Text.Json.Serialization.Converters
             IsInternalConverterForNumberType = sourceConverter.IsInternalConverterForNumberType;
             RequiresReadAhead = sourceConverter.RequiresReadAhead;
             CanUseDirectReadOrWrite = sourceConverter.CanUseDirectReadOrWrite;
+            CanBePolymorphic = sourceConverter.CanBePolymorphic;
         }
 
         public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -91,6 +92,11 @@ namespace System.Text.Json.Serialization.Converters
 
         private static TSource CastOnWrite(T source)
         {
+            if (default(TSource) is not null && default(T) is null && source is null)
+            {
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(typeof(TSource));
+            }
+
             return (TSource)(object?)source!;
         }
     }
