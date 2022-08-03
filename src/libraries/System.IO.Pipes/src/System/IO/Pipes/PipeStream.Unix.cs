@@ -30,7 +30,7 @@ namespace System.IO.Pipes
         private static readonly char[] s_invalidPathNameChars = Path.GetInvalidPathChars();
 
         /// <summary>Prefix to prepend to all pipe names.</summary>
-        private static readonly string s_pipePrefix = Path.Combine(Path.GetTempPath(), (RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"))) ? "" : "CoreFxPipe_");
+        private static readonly string s_pipePrefix = Path.Combine(Path.GetTempPath(), (RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"))) ? "x" : "CoreFxPipe_");
 
         public override int Read(byte[] buffer, int offset, int count)
         {
