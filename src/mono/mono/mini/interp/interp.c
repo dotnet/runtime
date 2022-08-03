@@ -479,7 +479,7 @@ mono_interp_get_imethod (MonoMethod *method)
 	imethod->code_type = IMETHOD_CODE_UNKNOWN;
 	// always optimize code if tiering is disabled
 	// always optimize wrappers
-	if (!(mono_interp_opt & INTERP_OPT_TIERING) || method->wrapper_type != MONO_WRAPPER_NONE)
+	if (!mono_interp_tiering_enabled () || method->wrapper_type != MONO_WRAPPER_NONE)
 		imethod->optimized = TRUE;
 	if (imethod->method->string_ctor)
 		imethod->rtype = m_class_get_byval_arg (mono_defaults.string_class);
