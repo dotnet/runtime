@@ -2569,7 +2569,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         else
         {
             // Op1 is not contained, move it from a register into flags.
-            emit->emitIns_R_I(INS_cmp, EA_ATTR(genTypeSize(op1)), op1->GetRegNum(), 0);
+            emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op1->GetRegNum(), 0);
             cond  = INS_COND_NE;
             chain = true;
         }
@@ -2578,8 +2578,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         assert(chain);
 
         // Move the result from flags into a register.
-        genTreeOps opCond = GT_EQ;
-        bool isUnsigned = false;
+        genTreeOps opCond     = GT_EQ;
+        bool       isUnsigned = false;
         switch (cond)
         {
             case INS_COND_EQ:
@@ -2602,19 +2602,19 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
                 break;
             case INS_COND_HS:
                 isUnsigned = true;
-                opCond = GT_GE;
+                opCond     = GT_GE;
                 break;
             case INS_COND_HI:
                 isUnsigned = true;
-                opCond = GT_GT;
+                opCond     = GT_GT;
                 break;
             case INS_COND_LO:
                 isUnsigned = true;
-                opCond = GT_LT;
+                opCond     = GT_LT;
                 break;
             case INS_COND_LS:
                 isUnsigned = true;
-                opCond = GT_LE;
+                opCond     = GT_LE;
                 break;
             default:
                 assert(!"Unexpected cond");
@@ -4556,7 +4556,7 @@ void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, insC
         else
         {
             emitter* emit = GetEmitter();
-            emit->emitIns_R_I(INS_cmp, EA_ATTR(genTypeSize(op1)), op1->GetRegNum(), 0);
+            emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op1->GetRegNum(), 0);
             *prevcond = INS_COND_NE;
             *inChain  = true;
         }
@@ -4619,7 +4619,7 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
     {
         // Condition has been generated into a register - move it into flags.
         genConsumeReg(opcond);
-        emit->emitIns_R_I(INS_cmp, EA_ATTR(genTypeSize(opcond)), opcond->GetRegNum(), 0);
+        emit->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
         cond = INS_COND_NE;
     }
 
