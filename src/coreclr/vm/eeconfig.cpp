@@ -484,7 +484,7 @@ HRESULT EEConfig::sync()
 #if defined(FEATURE_READYTORUN)
     fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
 
-    if (g_pConfig->ReadyToRun())
+    if (fReadyToRun)
     {
         NewArrayHolder<WCHAR> wszReadyToRunExcludeList;
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunExcludeList, &wszReadyToRunExcludeList));
