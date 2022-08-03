@@ -230,12 +230,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal override JsonParameterInfoValues[] GetParameterInfoValues()
         {
-            ParameterInfo[] parameters = Converter.ConstructorInfo!.GetParameters();
-            return GetParameterInfoArray(parameters);
-        }
-
-        private static JsonParameterInfoValues[] GetParameterInfoArray(ParameterInfo[] parameters)
-        {
+            Debug.Assert(Converter.ConstructorInfo != null);
+            ParameterInfo[] parameters = Converter.ConstructorInfo.GetParameters();
             int parameterCount = parameters.Length;
             JsonParameterInfoValues[] jsonParameters = new JsonParameterInfoValues[parameterCount];
 
@@ -243,9 +239,16 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 ParameterInfo reflectionInfo = parameters[i];
 
+                // Trimmed parameter names are reported as null in CoreCLR or "" in Mono.
+                if (string.IsNullOrEmpty(reflectionInfo.Name))
+                {
+                    Debug.Assert(Converter.ConstructorInfo.DeclaringType != null);
+                    ThrowHelper.ThrowNotSupportedException_BaseConverterDoesNotSupportMetadata(Converter.ConstructorInfo.DeclaringType);
+                }
+
                 JsonParameterInfoValues jsonInfo = new()
                 {
-                    Name = reflectionInfo.Name!,
+                    Name = reflectionInfo.Name,
                     ParameterType = reflectionInfo.ParameterType,
                     Position = reflectionInfo.Position,
                     HasDefaultValue = reflectionInfo.HasDefaultValue,
