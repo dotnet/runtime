@@ -205,14 +205,16 @@ namespace System.Runtime.Serialization.Xml.Tests
         [Fact]
         public static void BinaryXml_Arrays()
         {
-            // Write more than 512 bytes in a single call to trigger different writing logic in XmlStreamNodeWriter.WriteBytes
             int[] ints = new int[] { -1, 0x01020304, 0x11223344, -1 };
-            long[] longs = Enumerable.Range(0x01020304, 127).Select(i => (long)i | (long)(~i << 32)).ToArray();
+            TimeSpan[] timespans = new[] { TimeSpan.FromTicks(0x0102030405060708), TimeSpan.FromTicks(0x1011121314151617) };
+            // Write more than 4 kb in a single call to ensure we hit path for reading (and writing happens on 512b) large arrays
+            long[] longs = Enumerable.Range(0x01020304, 513).Select(i => (long)i | (long)(~i << 32)).ToArray();
 
             using var ms = new MemoryStream();
             using var writer = XmlDictionaryWriter.CreateBinaryWriter(ms);
             writer.WriteStartElement("root");
             writer.WriteArray(null, "ints", null, ints, 1, 2);
+            writer.WriteArray(null, "timespans", null, timespans, 0, timespans.Length);
             writer.WriteArray(null, "longs", null, longs, 0, longs.Length);
             writer.WriteEndElement();
             writer.WriteEndDocument();
@@ -224,6 +226,7 @@ namespace System.Runtime.Serialization.Xml.Tests
             using var reader = XmlDictionaryReader.CreateBinaryReader(ms, XmlDictionaryReaderQuotas.Max);
             reader.ReadStartElement("root");
             int intsRead = reader.ReadArray("ints", string.Empty, actualInts, 1, 3);
+            TimeSpan[] actualTimeSpans = reader.ReadTimeSpanArray("timespans", string.Empty);
             long[] actualLongs = reader.ReadInt64Array("longs", string.Empty);
             reader.ReadEndElement();
 
@@ -232,6 +235,7 @@ namespace System.Runtime.Serialization.Xml.Tests
             Assert.Equal(2, intsRead);
             AssertExtensions.SequenceEqual(ints, actualInts);
             AssertExtensions.SequenceEqual(actualLongs, longs);
+            AssertExtensions.SequenceEqual(actualTimeSpans, timespans);
         }
 
         private static void AssertReadContentFromBinary<T>(T expected, XmlBinaryNodeType nodeType, ReadOnlySpan<byte> bytes)
