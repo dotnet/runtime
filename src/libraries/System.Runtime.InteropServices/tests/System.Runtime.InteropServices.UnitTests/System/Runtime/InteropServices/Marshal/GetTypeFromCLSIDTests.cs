@@ -8,10 +8,9 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class GetTypeFromCLSIDTests
     {
+        private static readonly Guid TestCLSID = new Guid("927971f5-0939-11d1-8be1-00c04fd8d503");
 
-        private static readonly Guid TestCLSID = new Guid(Common.ComServers.IDispatchSupportedComServer);
-
-        private const string TestProgID = Common.ComServers.IDispatchSupportedComServerProgId;
+        private const string TestProgID = "LargeInteger";
         private const string TestServerName = "____NonExistingServer____";
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
@@ -27,7 +26,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<COMException>(() => Activator.CreateInstance(type));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetTypeFromCLSID_CLSIDExists_ReturnsExpected()
         {
             Type type = Marshal.GetTypeFromCLSID(TestCLSID);
@@ -45,7 +44,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.NotNull(Activator.CreateInstance(type));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabledWithOSAutomationSupport))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetTypeFromCLSID_CLSIDExists_Server_ReturnsExpected()
         {
             Type type = Type.GetTypeFromCLSID(TestCLSID, server: TestServerName, throwOnError: true);
@@ -72,7 +71,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Type.GetTypeFromProgID(TestProgID, throwOnError: true));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
+        [Fact]
         public void GetTypeFromProgID_ReturnsExpected()
         {
             AssertExtensions.Throws<ArgumentNullException>("progID", () => Type.GetTypeFromProgID(null));
