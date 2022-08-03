@@ -15,7 +15,7 @@ namespace System.Threading.RateLimiting.Tests
         // Creates a DefaultPartitionedRateLimiter with the timer effectively disabled
         internal static PartitionedRateLimiter<TResource> CreatePartitionedLimiterWithoutTimer<TResource, TKey>(Func<TResource, RateLimitPartition<TKey>> partitioner)
         {
-            var limiterType = Assembly.GetAssembly(typeof(PartitionedRateLimiter<>)).GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2");
+            var limiterType = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2, System.Threading.RateLimiting");
             Assert.NotNull(limiterType);
 
             var genericLimiterType = limiterType.MakeGenericType(typeof(TResource), typeof(TKey));
@@ -30,10 +30,16 @@ namespace System.Threading.RateLimiting.Tests
         // Gets and runs the Heartbeat function on the DefaultPartitionedRateLimiter
         internal static Task RunTimerFunc<T>(PartitionedRateLimiter<T> limiter)
         {
-            var innerTimer = limiter.GetType().GetField("_timer", BindingFlags.NonPublic | BindingFlags.Instance);
+            var limiterType = limiter.GetType();
+
+            // Trick trimming into seeing what type we're operating on
+            if (string.Empty.Length > 0)
+                limiterType = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2, System.Threading.RateLimiting");
+
+            var innerTimer = limiterType.GetField("_timer", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(innerTimer);
 
-            var timerLoopMethod = limiter.GetType().GetMethod("Heartbeat", BindingFlags.NonPublic | BindingFlags.Instance);
+            var timerLoopMethod = limiterType.GetMethod("Heartbeat", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(timerLoopMethod);
 
             return (Task)timerLoopMethod.Invoke(limiter, Array.Empty<object>());
