@@ -4703,6 +4703,10 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
     {
         whyNot = "OSR can't handle reverse pinvoke";
     }
+    else if (!info.compIsStatic && !lvaIsOriginalThisReadOnly())
+    {
+        whyNot = "OSR can't handle modifiable this";
+    }
 #else
     whyNot = "OSR feature not defined in build";
 #endif

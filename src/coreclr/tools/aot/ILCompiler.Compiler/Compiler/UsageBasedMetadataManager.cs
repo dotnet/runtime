@@ -702,12 +702,12 @@ namespace ILCompiler
             }
         }
 
-        public override DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue)
+        public override DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue, TypeSystemEntity parent)
         {
             bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
             if (scanReflection)
             {
-                return (new AttributeDataFlow(Logger, factory, FlowAnnotations, new Logging.MessageOrigin(attributeCtor))).ProcessAttributeDataflow(attributeCtor, decodedValue);
+                return (new AttributeDataFlow(Logger, factory, FlowAnnotations, new Logging.MessageOrigin(parent))).ProcessAttributeDataflow(attributeCtor, decodedValue);
             }
 
             return null;
@@ -926,6 +926,11 @@ namespace ILCompiler
                 // but that's OK since the node factory will only add actually one node.
                 methodILDefinition = FlowAnnotations.ILProvider.GetMethodIL(userMethod);
             }
+
+            // Data-flow (reflection scanning) for compiler-generated methods will happen as part of the
+            // data-flow scan of the user-defined method which uses this compiler-generated method.
+            if (CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodILDefinition.OwningMethod))
+                return;
 
             dependencies = dependencies ?? new DependencyList();
             dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), reason);

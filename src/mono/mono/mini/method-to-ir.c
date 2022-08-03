@@ -9568,6 +9568,7 @@ calli_end:
 			//   call SomeStruct::Method()
 			guchar* callvirt_ip;
 			guint32 i32166_token;
+
 			if((callvirt_ip = il_read_callvirt(next_ip, end, &i32166_token)) && ip_in_bb(cfg, cfg->cbb, callvirt_ip)) 
 			{
 				MonoMethod* iface_method = mini_get_method(cfg, method, i32166_token, NULL, generic_context);
@@ -9585,10 +9586,6 @@ calli_end:
 						if (!mono_class_init_internal (iface_method->klass))
 							TYPE_LOAD_ERROR (iface_method->klass);
 
-					printf("\n*** %s (val t:%i f:%i)", 
-						mono_method_get_full_name(method),
-						val->type, val->flags);
-
 					MonoMethod* struct_method = mono_class_get_virtual_method(klass, iface_method, error);
 					
 					if(is_ok(error)) {
@@ -9604,16 +9601,11 @@ calli_end:
 						}
 						
 						cmethod_override = struct_method;
-
-						printf ("\n... box+callvirt optimization (%s) ===> (%s)", 
-							mono_method_get_full_name(iface_method),
-							mono_method_get_full_name(struct_method));
-
 						break;
 					} else {
 						mono_error_cleanup(error);
 					}
-				}
+				} 
 			}			
 
 			gboolean is_true;

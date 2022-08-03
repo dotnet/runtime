@@ -1677,16 +1677,23 @@ namespace System.Reflection.Emit
         #region Create Type
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public TypeInfo? CreateTypeInfo()
+        public TypeInfo CreateTypeInfo()
         {
-            lock (SyncRoot)
-            {
-                return CreateTypeNoLock();
-            }
+            TypeInfo? typeInfo = CreateTypeInfoImpl();
+            Debug.Assert(typeInfo != null);
+            return typeInfo;
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public Type? CreateType()
+        public Type CreateType()
+        {
+            Type? type = CreateTypeInfoImpl();
+            Debug.Assert(type != null);
+            return type;
+        }
+
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        internal TypeInfo? CreateTypeInfoImpl()
         {
             lock (SyncRoot)
             {

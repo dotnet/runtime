@@ -854,7 +854,7 @@ namespace ILCompiler
         {
         }
 
-        public virtual DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue)
+        public virtual DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue, TypeSystemEntity parent)
         {
             return null;
         }

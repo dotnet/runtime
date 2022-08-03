@@ -918,12 +918,6 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
     return *ppContext;
 }
 
-void RedirectForThreadAbort()
-{
-    // ThreadAbort is not supported in .net core
-    throw "NYI";
-}
-
 #if !defined(DACCESS_COMPILE)
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {

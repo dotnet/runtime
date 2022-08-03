@@ -847,7 +847,7 @@ namespace System.Runtime
             AssertNotRuntimeObject(pClauseType);
 #endif
 
-            return TypeCast.IsInstanceOfClass(pClauseType, exception) != null;
+            return TypeCast.IsInstanceOfException(pClauseType, exception);
         }
 
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart)
