@@ -210,14 +210,6 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>214ca6db481923aa49bac2d2b75b9aca4041b304</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="7.0.0-rc.1.22374.4">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>214ca6db481923aa49bac2d2b75b9aca4041b304</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="7.0.0-rc.1.22374.4">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>214ca6db481923aa49bac2d2b75b9aca4041b304</Sha>
-    </Dependency>
     <Dependency Name="runtime.native.System.IO.Ports" Version="7.0.0-rc.1.22374.4">
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>214ca6db481923aa49bac2d2b75b9aca4041b304</Sha>
