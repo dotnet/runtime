@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         /// <summary>
         /// A Converter whose declared type always matches that of the current JsonTypeInfo.
-        /// It might the same instance as JsonTypeInfo.Converter or the same value wrapped
+        /// It might be the same instance as JsonTypeInfo.Converter or it could be wrapped
         /// in a CastingConverter in cases where a polymorphic converter is being used.
         /// </summary>
         internal JsonConverter<T> EffectiveConverter { get; }
