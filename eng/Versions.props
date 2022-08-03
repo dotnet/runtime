@@ -154,43 +154,6 @@
     <MicrosoftDotNetXHarnessTestRunnersCommonVersion>1.0.0-prerelease.22375.5</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.22375.5</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.22375.5</MicrosoftDotNetXHarnessCLIVersion>
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>1.1.0-alpha.0.22401.2</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>>
-    <XUnitVersion>2.4.2-pre.22</XUnitVersion>
-    <XUnitAnalyzersVersion>0.12.0-pre.20</XUnitAnalyzersVersion>
-    <XUnitRunnerVisualStudioVersion>2.4.5</XUnitRunnerVisualStudioVersion>
-    <CoverletCollectorVersion>3.1.2</CoverletCollectorVersion>
-    <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
-    <NewtonsoftJsonBsonVersion>1.0.2</NewtonsoftJsonBsonVersion>
-    <SQLitePCLRawbundle_greenVersion>2.0.4</SQLitePCLRawbundle_greenVersion>
-    <MoqVersion>4.12.0</MoqVersion>
-    <FsCheckVersion>2.14.3</FsCheckVersion>
-    <!-- Uncomment to set a fixed version, else the latest is used -->
-    <!--<SdkVersionForWorkloadTesting>7.0.100-preview.3.22151.18</SdkVersionForWorkloadTesting>-->
-    <CompilerPlatformTestingVersion>1.1.2-beta1.22205.2</CompilerPlatformTestingVersion>
-    <!-- Docs -->
-    <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20220721.1</MicrosoftPrivateIntellisenseVersion>
-    <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>7.0.100-1.22371.3</MicrosoftNETILLinkTasksVersion>
-    <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
-    <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>7.0.0-rc.1.22375.1</MicrosoftNETCoreRuntimeICUTransportVersion>
-    <!-- MsQuic -->
-    <SystemNetMsQuicTransportVersion>7.0.0-alpha.1.22371.1</SystemNetMsQuicTransportVersion>
-    <!-- Mono LLVM -->
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22376.4</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22376.4</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22376.4</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22376.4</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22376.4</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22376.4</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22376.4</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22376.4</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <!-- emscripten / Node -->
-    <MicrosoftNETWorkloadEmscriptenManifest70100Version>7.0.0-rc.1.22368.1</MicrosoftNETWorkloadEmscriptenManifest70100Version>
-    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenManifest70100Version)</MicrosoftNETRuntimeEmscriptenVersion>
-    <!-- workloads -->
-    <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
-    <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
-    <MonoWorkloadManifestVersion>6.0.0-preview.5.21275.7</MonoWorkloadManifestVersion>
-  </PropertyGroup>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>1.1.0-alpha.0.22401.2</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>&gt;
+    <XUnitVersion>2.4.2-pre.22</XUnitVersion><XUnitAnalyzersVersion>0.12.0-pre.20</XUnitAnalyzersVersion><XUnitRunnerVisualStudioVersion>2.4.5</XUnitRunnerVisualStudioVersion><CoverletCollectorVersion>3.1.2</CoverletCollectorVersion><NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion><NewtonsoftJsonBsonVersion>1.0.2</NewtonsoftJsonBsonVersion><SQLitePCLRawbundle_greenVersion>2.0.4</SQLitePCLRawbundle_greenVersion><MoqVersion>4.12.0</MoqVersion><FsCheckVersion>2.14.3</FsCheckVersion><!-- Uncomment to set a fixed version, else the latest is used --><!--<SdkVersionForWorkloadTesting>7.0.100-preview.3.22151.18</SdkVersionForWorkloadTesting>--><CompilerPlatformTestingVersion>1.1.2-beta1.22205.2</CompilerPlatformTestingVersion><!-- Docs --><MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20220721.1</MicrosoftPrivateIntellisenseVersion><!-- ILLink --><MicrosoftNETILLinkTasksVersion>7.0.100-1.22371.3</MicrosoftNETILLinkTasksVersion><MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion><!-- ICU --><MicrosoftNETCoreRuntimeICUTransportVersion>7.0.0-rc.1.22375.1</MicrosoftNETCoreRuntimeICUTransportVersion><!-- MsQuic --><SystemNetMsQuicTransportVersion>7.0.0-alpha.1.22371.1</SystemNetMsQuicTransportVersion><!-- Mono LLVM --><runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22376.4</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion><runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22376.4</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion><runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22376.4</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion><runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22376.4</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion><runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22376.4</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion><runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22376.4</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion><runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22376.4</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion><runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22376.4</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion><!-- emscripten / Node --><MicrosoftNETWorkloadEmscriptenManifest70100Version>7.0.0-rc.1.22368.1</MicrosoftNETWorkloadEmscriptenManifest70100Version><MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenManifest70100Version)</MicrosoftNETRuntimeEmscriptenVersion><!-- workloads --><SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion><WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion><MonoWorkloadManifestVersion>6.0.0-preview.5.21275.7</MonoWorkloadManifestVersion></PropertyGroup>
 </Project>
