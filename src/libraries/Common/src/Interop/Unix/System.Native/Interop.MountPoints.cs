@@ -16,15 +16,14 @@ internal static partial class Interop
 
         private struct AllMountPointsContext
         {
-            public List<string> _results;
-            public ExceptionDispatchInfo? _exception;
+            internal List<string> _results;
+            internal ExceptionDispatchInfo? _exception;
         }
 
         [UnmanagedCallersOnly]
         private static unsafe void AddMountPoint(void* context, byte* name)
         {
             ref AllMountPointsContext callbackContext = ref Unsafe.As<byte, AllMountPointsContext>(ref *(byte*)context);
-            callbackContext._results = new List<string>();
 
             try
             {
@@ -46,8 +45,7 @@ internal static partial class Interop
                 GetAllMountPoints(&AddMountPoint, Unsafe.AsPointer(ref context));
             }
 
-            if (context._exception != null)
-                context._exception.Throw();
+            context._exception?.Throw();
 
             return context._results.ToArray();
         }
