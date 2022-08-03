@@ -1440,7 +1440,7 @@ namespace System
         // is an integer between 1 and 366.
         //
         public int DayOfYear =>
-            1 + ((((int)(UTicks / TicksPer6Hours) | 3) % DaysPer400Years) | 3) % DaysPer4Years / 4;
+            1 + (((((int)(UTicks / TicksPer6Hours) | 3) % DaysPer400Years) | 3) % DaysPer4Years >> 2);
 
         // Returns the hash code for this DateTime.
         //
