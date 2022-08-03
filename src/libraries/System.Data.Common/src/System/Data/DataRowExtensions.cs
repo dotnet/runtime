@@ -174,7 +174,7 @@ namespace System.Data
 
             private static T? NullableFieldUsingReflection(object value)
             {
-                if (value == null || value == DBNull.Value)
+                if (value == DBNull.Value)
                     return default;
 
                 // Try regular cast first
