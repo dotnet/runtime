@@ -3368,6 +3368,9 @@
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/CdeclMemberFunction/CdeclMemberFunctionTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/aliasing_retbuf/aliasing_retbuf/*">
+            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CircularCctors/CircularCctorFourThreadsBFI/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>

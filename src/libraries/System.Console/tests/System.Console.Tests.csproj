@@ -22,7 +22,6 @@
     <Compile Include="Timeout.cs" />
     <Compile Include="ThreadSafety.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-    <Compile Include="TermInfo.cs" />
     <Compile Include="RedirectedStream.cs" />
     <Compile Include="ReadKey.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
@@ -54,9 +53,32 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="CancelKeyPress.Unix.cs" />
     <Compile Include="NonStandardConfiguration.Unix.cs" />
+    <Compile Include="TermInfo.Unix.cs" />
+    <Compile Include="..\src\System\TermInfo.cs" Link="src\System\TermInfo.cs" />
+    <Compile Include="..\src\System\TermInfo.DatabaseFactory.cs" Link="src\System\TermInfo.DatabaseFactory.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs"
+             Link="Common\System\IO\PersistedFiles.Unix.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"
+             Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs"
+             Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs"
+             Link="Common\Interop\Unix\Interop.Open.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs"
+             Link="Common\Interop\Unix\Interop.OpenFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Fcntl.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SNPrintF.cs"
+             Link="Common\Interop\Unix\Interop.SNPrintF.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
+             Link="Common\Interop\Unix\Interop.GetEUid.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
+             Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
   </ItemGroup>
 </Project>

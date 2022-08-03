@@ -163,11 +163,10 @@ namespace Internal.Reflection.Execution
             return null;
         }
 
-        public override IntPtr GetDynamicInvokeThunk(MethodInvoker invoker, out IntPtr genericDictionary)
+        public override IntPtr GetDynamicInvokeThunk(MethodInvoker invoker)
         {
-            MethodInvokeInfo invokeInfo = ((MethodInvokerWithMethodInvokeInfo)invoker).MethodInvokeInfo;
-            genericDictionary = invokeInfo.DynamicInvokeGenericDictionary;
-            return invokeInfo.DynamicInvokeMethod;
+            return ((MethodInvokerWithMethodInvokeInfo)invoker).MethodInvokeInfo.InvokeThunk
+                ;
         }
     }
 }

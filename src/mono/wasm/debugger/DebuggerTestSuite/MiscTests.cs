@@ -1022,5 +1022,22 @@ namespace DebuggerTests
                 method_name_call_stack
             );
         }
+
+        [Fact]
+        public async Task InspectLocalRecursiveFieldValue()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test] InspectIntPtr:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1256, 8,
+                $"InspectIntPtr.Run",
+                locals_fn: async (locals) =>
+                {
+                    await CheckValueType(locals, "myInt", "System.IntPtr");
+                    await CheckValueType(locals, "myInt2", "System.IntPtr");
+                }
+            );
+        }
     }
 }

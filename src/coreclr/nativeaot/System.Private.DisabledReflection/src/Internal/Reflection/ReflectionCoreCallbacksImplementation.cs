@@ -21,7 +21,7 @@ namespace Internal.Reflection
                 isFlags: false);
         }
 
-        public override DelegateDynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
+        public override DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
             => throw new NotSupportedException(SR.Reflection_Disabled);
         public override object ActivatorCreateInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]

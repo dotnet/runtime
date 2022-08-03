@@ -2324,7 +2324,7 @@ namespace System.Net.Http
 
                 if (!connection.CheckUsabilityOnScavenge())
                 {
-                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"Scavenging connection. Unexpected data or EOF received.");
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"Scavenging connection. Keep-Alive timeout exceeded, unexpected data or EOF received.");
                     return false;
                 }
 
