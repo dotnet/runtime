@@ -35,14 +35,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 var parameterInfos = method.GetParameters();
                 if (parameterInfos.Length > 0 && parameterInfos[0].ParameterType == typeof(string[]))
                 {
-                    if(args != null)
-                    {
-                        argsToPass = new object[] { args };
-                    }
-                    else
-                    {
-                        argsToPass = new object[] { System.Array.Empty<string>() };
-                    }
+                    argsToPass = new object[] { args ?? System.Array.Empty<string>() };
                 }
                 if (method.ReturnType == typeof(void))
                 {
