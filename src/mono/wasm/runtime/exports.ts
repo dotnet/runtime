@@ -43,7 +43,7 @@ function initializeImportsAndExports(
     Object.assign(exports.mono, export_mono_api());
     Object.assign(exports.binding, export_binding_api());
     Object.assign(exports.internal, export_internal());
-    Object.assign(exports.api, export_api());
+    const API = export_api();
     __linker_exports = export_linker();
 
     exportedAPI = <any>{
@@ -56,7 +56,7 @@ function initializeImportsAndExports(
             productVersion: ProductVersion,
             buildConfiguration: BuildConfiguration
         },
-        ...exports.api,
+        ...API,
     };
     if (exports.module.__undefinedConfig) {
         module.disableDotnet6Compatibility = true;

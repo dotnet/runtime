@@ -320,7 +320,6 @@ export type EarlyImports = {
     requirePromise: Promise<Function>
 };
 export type EarlyExports = {
-    api: any,
     mono: any,
     binding: any,
     internal: any,
