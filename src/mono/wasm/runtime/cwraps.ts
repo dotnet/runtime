@@ -6,7 +6,7 @@ import {
     MonoMethod, MonoObject, MonoString,
     MonoType, MonoObjectRef, MonoStringRef
 } from "./types";
-import { Module } from "./imports";
+import { ENVIRONMENT_IS_PTHREAD, Module } from "./imports";
 import { JSMarshalerArguments } from "./marshal";
 import { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 
@@ -72,6 +72,10 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "string", "bool", "number"]],
     [true, "mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
     [true, "mono_wasm_event_pipe_session_disable", "bool", ["number"]],
+    [true, "mono_wasm_diagnostic_server_create_thread", "bool", ["string", "number"]],
+    [true, "mono_wasm_diagnostic_server_thread_attach_to_runtime", "void", []],
+    [true, "mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
+    [true, "mono_wasm_diagnostic_server_create_stream", "number", []],
 
     //DOTNET
     [true, "mono_wasm_string_from_js", "number", ["string"]],
@@ -212,10 +216,12 @@ export const enum I52Error {
 }
 
 export function init_c_exports(): void {
+    // init_c_exports is called very early in a pthread before Module.cwrap is available
+    const alwaysLazy = !!ENVIRONMENT_IS_PTHREAD;
     for (const sig of fn_signatures) {
         const wf: any = wrapped_c_functions;
         const [lazy, name, returnType, argTypes, opts] = sig;
-        if (lazy) {
+        if (lazy || alwaysLazy) {
             // lazy init on first run
             wf[name] = function (...args: any[]) {
                 const fce = Module.cwrap(name, returnType, argTypes, opts);

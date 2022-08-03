@@ -1434,6 +1434,12 @@ internal static class ReflectionTest
                     throw new Exception("GetValues");
             }
 
+            Console.WriteLine("Enum.GetValuesAsUnderlyingType");
+            {
+                if (Enum.GetValuesAsUnderlyingType(typeof(Mine)).GetType() != typeof(int[]))
+                    throw new Exception("Enum.GetValuesAsUnderlyingType");
+            }
+
             Console.WriteLine("Pattern in LINQ expressions");
             {
                 Type objType = typeof(object);

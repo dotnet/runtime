@@ -16,7 +16,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
         public UnsupportedProtocolException(string msg) : base(msg) {}
     }
 
-    // When the runtime is no longer availble for attaching.
+    // When the runtime is no longer available for attaching.
     public class ServerNotAvailableException : DiagnosticsClientException
     {
         public ServerNotAvailableException(string msg) : base(msg) {}

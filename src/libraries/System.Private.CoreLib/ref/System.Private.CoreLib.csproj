@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- It is a core assembly because it defines System.Object so we need to pass RuntimeMetadataVersion to the compiler -->
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <!-- disable warnings about obsolete APIs,
+        Remove warning disable when nullable attributes are respected,
+        Type has no accessible constructors which use only CLS-compliant types -->
+    <NoWarn>$(NoWarn);0809;0618;CS8614;CS3015</NoWarn>
+    <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <FeatureWasmPerfTracing Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</FeatureWasmPerfTracing>
+    <FeatureWasmThreads Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
+    <DefineConstants Condition="'$(FeatureWasmPerfTracing)' == 'true'">$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants>$(DefineConstants);BUILDING_CORELIB_REFERENCE</DefineConstants>
+    <!-- Disable binplacing since the System.Private.CoreLib reference assembly is internal to our build and shouldn't be exposed anywhere -->
+    <EnableBinPlacing>false</EnableBinPlacing>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- contracts where all types were moved to CoreLib, these are used both here and in the contract assemblies and are generated -->
+    <Compile Include="..\..\Microsoft.Win32.Primitives\ref\Microsoft.Win32.Primitives.cs" />
+    <Compile Include="..\..\System.Diagnostics.Contracts\ref\System.Diagnostics.Contracts.cs" />
+    <Compile Include="..\..\System.Diagnostics.Tracing\ref\System.Diagnostics.Tracing.cs" />
+    <Compile Include="..\..\System.Diagnostics.Tracing\ref\System.Diagnostics.Tracing.Counters.cs" />
+    <Compile Include="..\..\System.Numerics.Vectors\ref\System.Numerics.Vectors.cs" />
+    <Compile Include="..\..\System.Reflection.Emit.ILGeneration\ref\System.Reflection.Emit.ILGeneration.cs" />
+    <Compile Include="..\..\System.Reflection.Emit.Lightweight\ref\System.Reflection.Emit.Lightweight.cs" />
+    <Compile Include="..\..\System.Reflection.Emit\ref\System.Reflection.Emit.cs" />
+    <Compile Include="..\..\System.Reflection.Primitives\ref\System.Reflection.Primitives.cs" />
+    <Compile Include="..\..\System.Runtime.Intrinsics\ref\System.Runtime.Intrinsics.cs" />
+    <Compile Include="..\..\System.Runtime.Loader\ref\System.Runtime.Loader.cs" />
+    <Compile Include="..\..\System.Runtime\ref\System.Runtime.cs" />
+    <Compile Include="..\..\System.Text.Encoding.Extensions\ref\System.Text.Encoding.Extensions.cs" />
+    <Compile Include="..\..\System.Threading.Overlapped\ref\System.Threading.Overlapped.cs" />
+    <Compile Include="..\..\System.Threading.ThreadPool\ref\System.Threading.ThreadPool.cs" />
+    <Compile Include="..\..\System.Threading.Thread\ref\System.Threading.Thread.cs" />
+  
+    <!-- contracts where types were partially moved to CoreLib, these are used both here and in the contract assemblies and are generated -->
+    <Compile Include="..\..\System.Collections.Concurrent\ref\System.Collections.Concurrent.cs" />
+    <Compile Include="..\..\System.Collections\ref\System.Collections.cs" />
+    <Compile Include="..\..\System.Diagnostics.StackTrace\ref\System.Diagnostics.StackTrace.cs" />
+    <Compile Include="..\..\System.Memory\ref\System.Memory.cs" />
+    <Compile Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.cs" />
+    <Compile Include="..\..\System.Threading\ref\System.Threading.cs" />
+
+    <!-- types only exposed through CoreLib, this is manually maintained -->
+    <Compile Include="System.Private.CoreLib.ExtraApis.cs" />
+
+    <!-- types not exposed in contracts but forwarded from the mscorlib shim, this is manually maintained -->
+    <Compile Include="System.Private.CoreLib.ManualShimTypeForwards.cs" />
+  </ItemGroup>
+</Project>

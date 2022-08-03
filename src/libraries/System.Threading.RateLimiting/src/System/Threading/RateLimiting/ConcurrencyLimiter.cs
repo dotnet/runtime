@@ -65,7 +65,7 @@ namespace System.Threading.RateLimiting
         public override int GetAvailablePermits() => _permitCount;
 
         /// <inheritdoc/>
-        protected override RateLimitLease AcquireCore(int permitCount)
+        protected override RateLimitLease AttemptAcquireCore(int permitCount)
         {
             // These amounts of resources can never be acquired
             if (permitCount > _options.PermitLimit)
@@ -97,7 +97,7 @@ namespace System.Threading.RateLimiting
         }
 
         /// <inheritdoc/>
-        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int permitCount, CancellationToken cancellationToken = default)
+        protected override ValueTask<RateLimitLease> AcquireAsyncCore(int permitCount, CancellationToken cancellationToken = default)
         {
             // These amounts of resources can never be acquired
             if (permitCount > _options.PermitLimit)

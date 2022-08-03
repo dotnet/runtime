@@ -285,7 +285,7 @@ OBJECTREF COMToCLRGetObjectAndTarget_Virtual(ComCallWrapper * pWrap, MethodDesc 
     {
         // we know the slot number for this method desc, grab the actual
         // address from the vtable for this slot. The slot number should
-        // remain the same through out the heirarchy.
+        // remain the same through out the hierarchy.
         *ppManagedTargetOut = pMT->GetSlotForVirtual(pCMD->GetSlot());
     }
     return pObject;

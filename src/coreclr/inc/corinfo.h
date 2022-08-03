@@ -48,7 +48,7 @@ token validation.
 -------------------------------------------------------------------------------
 #ClassConstruction
 
-First of all class contruction comes in two flavors precise and 'beforeFieldInit'. In C# you get the former
+First of all class construction comes in two flavors precise and 'beforeFieldInit'. In C# you get the former
 if you declare an explicit class constructor method and the later if you declaratively initialize static
 fields. Precise class construction guarantees that the .cctor is run precisely before the first access to any
 method or field of the class. 'beforeFieldInit' semantics guarantees only that the .cctor will be run some
@@ -2708,7 +2708,7 @@ public:
                                                         //      jit allocated with allocateArray, EE frees
                 ) = 0;
 
-    // Query the EE to find out the scope of local varables.
+    // Query the EE to find out the scope of local variables.
     // normally the JIT would trash variables after last use, but
     // under debugging, the JIT needs to keep them live over their
     // entire scope so that they can be inspected.

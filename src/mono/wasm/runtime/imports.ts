@@ -53,6 +53,7 @@ export const runtimeHelpers: RuntimeHelpers = <any>{
     javaScriptExports: {},
     mono_wasm_load_runtime_done: false,
     mono_wasm_bindings_is_ready: false,
+    max_parallel_downloads: 16,
     get mono_wasm_runtime_is_ready() {
         return runtime_is_ready;
     },

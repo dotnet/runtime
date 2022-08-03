@@ -543,7 +543,7 @@ namespace System.Text.Json.Reflection
 
         protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
         {
-            // TODO: peformance; caching; honor bindingAttr
+            // TODO: performance; caching; honor bindingAttr
             foreach (PropertyInfo propertyInfo in GetProperties(bindingAttr))
             {
                 if (propertyInfo.Name == name)
@@ -595,17 +595,11 @@ namespace System.Text.Json.Reflection
 
         public override bool IsAssignableFrom(Type c)
         {
-            if (c is TypeWrapper tr)
-            {
-                return tr._typeSymbol.AllInterfaces.Contains(_typeSymbol, SymbolEqualityComparer.Default) ||
-                    (tr._namedTypeSymbol != null && tr._namedTypeSymbol.BaseTypes().Contains(_typeSymbol, SymbolEqualityComparer.Default));
-            }
-            else if (_metadataLoadContext.Resolve(c) is TypeWrapper trr)
-            {
-                return trr._typeSymbol.AllInterfaces.Contains(_typeSymbol, SymbolEqualityComparer.Default) ||
-                    (trr._namedTypeSymbol != null && trr._namedTypeSymbol.BaseTypes().Contains(_typeSymbol, SymbolEqualityComparer.Default));
-            }
-            return false;
+            TypeWrapper? tr = c as TypeWrapper ?? _metadataLoadContext.Resolve(c) as TypeWrapper;
+
+            return tr is not null &&
+                (tr._typeSymbol.AllInterfaces.Contains(_typeSymbol, SymbolEqualityComparer.Default) ||
+                (tr._namedTypeSymbol != null && tr._namedTypeSymbol.BaseTypes().Contains(_typeSymbol, SymbolEqualityComparer.Default)));
         }
 
 #pragma warning disable RS1024 // Compare symbols correctly
