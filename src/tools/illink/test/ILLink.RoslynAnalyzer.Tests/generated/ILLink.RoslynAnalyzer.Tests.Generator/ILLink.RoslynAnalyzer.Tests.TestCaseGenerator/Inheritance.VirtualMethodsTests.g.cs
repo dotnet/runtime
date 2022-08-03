@@ -10,6 +10,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance
 		protected override string TestSuiteName => "Inheritance.VirtualMethods";
 
 		[Fact]
+		public Task BaseIsInSkipAssembly ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task HarderToDetectUnusedVirtualMethodGetsRemoved ()
 		{
 			return RunTest (allowMissingWarnings: true);

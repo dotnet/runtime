@@ -10,18 +10,42 @@ namespace Mono.Linker
 	public class OverrideInformation
 	{
 		readonly ITryResolveMetadata resolver;
+		readonly OverridePair _pair;
+		private InterfaceImplementation? _matchingInterfaceImplementation;
 
 		public OverrideInformation (MethodDefinition @base, MethodDefinition @override, ITryResolveMetadata resolver, InterfaceImplementation? matchingInterfaceImplementation = null)
 		{
-			Base = @base;
-			Override = @override;
-			MatchingInterfaceImplementation = matchingInterfaceImplementation;
+			_pair = new OverridePair (@base, @override);
+			_matchingInterfaceImplementation = matchingInterfaceImplementation;
 			this.resolver = resolver;
 		}
+		public readonly record struct OverridePair (MethodDefinition Base, MethodDefinition Override)
+		{
+			public bool IsStaticInterfaceMethodPair () => Base.DeclaringType.IsInterface && Base.IsStatic && Override.IsStatic;
+			public InterfaceImplementation? GetMatchingInterfaceImplementation (ITryResolveMetadata resolver)
+			{
+				if (!Base.DeclaringType.IsInterface)
+					return null;
+				var interfaceType = Base.DeclaringType;
+				foreach (var @interface in Override.DeclaringType.Interfaces) {
+					if (resolver.TryResolve (@interface.InterfaceType)?.Equals (interfaceType) == true) {
+						return @interface;
+					}
+				}
+				return null;
+			}
+		}
 
-		public MethodDefinition Base { get; }
-		public MethodDefinition Override { get; }
-		public InterfaceImplementation? MatchingInterfaceImplementation { get; }
+		public MethodDefinition Base { get => _pair.Base; }
+		public MethodDefinition Override { get => _pair.Override; }
+		public InterfaceImplementation? MatchingInterfaceImplementation {
+			get {
+				if (_matchingInterfaceImplementation is not null)
+					return _matchingInterfaceImplementation;
+				_matchingInterfaceImplementation = _pair.GetMatchingInterfaceImplementation (resolver);
+				return _matchingInterfaceImplementation;
+			}
+		}
 
 		public bool IsOverrideOfInterfaceMember {
 			get {
@@ -43,5 +67,7 @@ namespace Mono.Linker
 				return Base.DeclaringType;
 			}
 		}
+
+		public bool IsStaticInterfaceMethodPair => _pair.IsStaticInterfaceMethodPair ();
 	}
 }
