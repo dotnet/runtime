@@ -1552,7 +1552,10 @@ namespace System.Text.RegularExpressions.Tests
             yield return ("^\\p{Lo}", RegexOptions.None, "\u4D00", true);
             yield return ("^\\p{Lo}", RegexOptions.None, "\u4DB4", true);
             yield return ("^\\p{Lo}", RegexOptions.None, "\u4DB5", true);
-            yield return ("^\\p{Lo}", RegexOptions.None, "\u4DB6", true);
+            if (PlatformDetection.IsNotNetFramework)
+            {
+                yield return ("^\\p{Lo}", RegexOptions.None, "\u4DB6", true); // this was broken prior .NET 7
+            }
             yield return ("^\\p{Lo}", RegexOptions.None, "a", false);
             yield return ("^\\p{Lo}", RegexOptions.None, "\u02B0", false);
             yield return ("^\\p{Lt}", RegexOptions.None, "\u01C5", true);
@@ -2744,7 +2747,10 @@ namespace System.Text.RegularExpressions.Tests
                 yield return ("^(?>.*?([A-Z])(?!.*\\1)){26}", RegexOptions.IgnoreCase, "Pack my fox with five dozen liquor jugs.", false);
                 yield return ("(?<=X(?(DEFINE)(A))).", RegexOptions.None, "AXYZ", true);
                 yield return ("(?<=X(?(DEFINE)(.*))Y).", RegexOptions.None, "AXYZ", true);
-                yield return ("(?(DEFINE)(?<foo>bar))(?<![-a-z0-9])word", RegexOptions.None, "word", true);
+                if (PlatformDetection.IsNotNetFramework)
+                {
+                    yield return ("(?(DEFINE)(?<foo>bar))(?<![-a-z0-9])word", RegexOptions.None, "word", true); // this was broken prior .NET 7
+                }
                 yield return ("^(xa|=?\\1a){2}$", RegexOptions.None, "xa=xaa", true);
                 yield return ("^(xa|=?\\1a){2}$", RegexOptions.None, "xa=xaaa", false);
                 yield return ("^(xa|=?\\1a)+$", RegexOptions.None, "xa=xaa", true);
@@ -2820,7 +2826,10 @@ namespace System.Text.RegularExpressions.Tests
                 yield return ("^(?(?=abc)\\w{3}:|\\d\\d)$", RegexOptions.None, "xyz", false);
                 yield return ("(?(?=ab)ab)", RegexOptions.None, "abxxx", true);
                 yield return ("(?(?=ab)ab)", RegexOptions.None, "ca", true);
-                yield return ("(?(?=ab)ab)", RegexOptions.None, "cd", true);
+                if (PlatformDetection.IsNotNetFramework)
+                {
+                    yield return ("(?(?=ab)ab)", RegexOptions.None, "cd", true); // This was broken prior .NET 7
+                }
                 yield return ("(?(VERSION>=10.04)yes|no)", RegexOptions.None, "yesno", true);
                 yield return ("\\k<A>*(?<A>aa)(?<A>bb)", RegexOptions.None, "aabb", true);
                 yield return ("((?=(?(?=(?(?=(?(?=()))))))))", RegexOptions.None, "a", true);
