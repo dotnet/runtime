@@ -513,7 +513,6 @@ namespace Microsoft.Interop.Analyzers
                         },
                         returnType: gen.TypeExpression(spanOfT.Construct(managedElementTypeSymbol.Value)),
                         accessibility: Accessibility.Public,
-                        modifiers: DeclarationModifiers.Static,
                         statements: new[] { DefaultMethodStatement(gen, editor.SemanticModel.Compilation) }));
             }
 

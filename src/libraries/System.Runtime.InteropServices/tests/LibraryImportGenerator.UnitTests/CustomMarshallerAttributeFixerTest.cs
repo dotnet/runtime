@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using LibraryImportGenerator.UnitTests.Verifiers;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop.Analyzers;
 using static Microsoft.Interop.Analyzers.CustomMarshallerAttributeAnalyzer;
 
@@ -17,6 +18,10 @@ namespace LibraryImportGenerator.UnitTests
 {
     internal class CustomMarshallerAttributeFixerTest : CSharpCodeFixVerifier<CustomMarshallerAttributeAnalyzer, CustomMarshallerAttributeFixer>.Test
     {
+        // Sort the diagnostics in a deterministic order even when they only differ by diagnostic message.
+        // In particular, sort the equivalent subgroups by their diagnostic descriptor in the order that the fixer's fix-all provider
+        // will add the methods.
+        // This ensures that the iterative code-fix test will produce the same (deterministic) output as the fix-all tests.
         protected override ImmutableArray<(Project project, Diagnostic diagnostic)> SortDistinctDiagnostics(IEnumerable<(Project project, Diagnostic diagnostic)> diagnostics)
             => diagnostics.OrderBy(d => d.diagnostic.Location.GetLineSpan().Path, StringComparer.Ordinal)
                 .ThenBy(d => d.diagnostic.Location.SourceSpan.Start)
@@ -43,58 +48,67 @@ namespace LibraryImportGenerator.UnitTests
             private static int GetOrderIndexFromDescriptor(DiagnosticDescriptor descriptor)
             {
                 // We'll order the descriptors in the following order for testing:
-                // - BufferSize
-                // - FromManaged/ConvertToUnmanaged/AllocateContainerForUnmanagedElements
-                // - GetManagedValuesSource/GetUnmanagedValuesDestination
+                // - FromManaged/ConvertToUnmanaged
                 // - ToUnmanaged
-                // - FromUnmanaged/ConvertToManaged/AllocateContainerForManagedElements
-                // - GetUnmanagedValuesSource/GetManagedValuesDestination
+                // - FromUnmanaged/ConvertToManaged
                 // - ToManaged
+                // - BufferSize
+                // - AllocateContainerForUnmanagedElements
+                // - AllocateContainerForManagedElements
+                // - GetManagedValuesSource/GetUnmanagedValuesDestination
+                // - GetUnmanagedValuesSource/GetManagedValuesDestination
                 // - Free
                 // This order corresponds to the order that the fix-all provider will add the methods.
-
-                if (IsEquivalentDescriptor(descriptor, CallerAllocFromManagedMustHaveBufferSizeRule)
-                    || IsEquivalentDescriptor(descriptor, StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeRule))
-                {
-                    return 0;
-                }
 
                 if (IsEquivalentDescriptor(descriptor, StatefulMarshallerRequiresFromManagedRule)
                     || IsEquivalentDescriptor(descriptor, StatelessValueInRequiresConvertToUnmanagedRule)
                     || IsEquivalentDescriptor(descriptor, StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule))
                 {
-                    return 1;
-                }
-                if (IsEquivalentDescriptor(descriptor, LinearCollectionInRequiresCollectionMethodsRule)
-                    || IsEquivalentDescriptor(descriptor, StatelessLinearCollectionInRequiresCollectionMethodsRule))
-                {
-                    return 2;
+                    return 0;
                 }
                 if (IsEquivalentDescriptor(descriptor, StatefulMarshallerRequiresToUnmanagedRule))
                 {
-                    return 3;
+                    return 1;
                 }
                 if (IsEquivalentDescriptor(descriptor, StatefulMarshallerRequiresFromUnmanagedRule)
                     || IsEquivalentDescriptor(descriptor, StatelessRequiresConvertToManagedRule)
                     || IsEquivalentDescriptor(descriptor, StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule))
                 {
+                    return 2;
+                }
+                if (IsEquivalentDescriptor(descriptor, StatefulMarshallerRequiresToManagedRule))
+                {
+                    return 3;
+                }
+                if (IsEquivalentDescriptor(descriptor, CallerAllocFromManagedMustHaveBufferSizeRule)
+                    || IsEquivalentDescriptor(descriptor, StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeRule))
+                {
                     return 4;
+                }
+                if (IsEquivalentDescriptor(descriptor, StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsRule))
+                {
+                    return 5;
+                }
+                if (IsEquivalentDescriptor(descriptor, StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsRule))
+                {
+                    return 6;
+                }
+                if (IsEquivalentDescriptor(descriptor, LinearCollectionInRequiresCollectionMethodsRule)
+                    || IsEquivalentDescriptor(descriptor, StatelessLinearCollectionInRequiresCollectionMethodsRule))
+                {
+                    return 7;
                 }
                 if (IsEquivalentDescriptor(descriptor, LinearCollectionOutRequiresCollectionMethodsRule)
                     || IsEquivalentDescriptor(descriptor, StatelessLinearCollectionOutRequiresCollectionMethodsRule))
                 {
-                    return 5;
-                }
-                if (IsEquivalentDescriptor(descriptor, StatefulMarshallerRequiresToManagedRule))
-                {
-                    return 6;
+                    return 8;
                 }
                 if (IsEquivalentDescriptor(descriptor, StatefulMarshallerRequiresFreeRule))
                 {
-                    return 7;
+                    return 9;
                 }
                 // Sort all unknown diagnostic descriptors later.
-                return 8;
+                return 10;
             }
 
             public int Compare(DiagnosticDescriptor? x, DiagnosticDescriptor? y)
@@ -111,6 +125,19 @@ namespace LibraryImportGenerator.UnitTests
 
                 return GetOrderIndexFromDescriptor(x) - GetOrderIndexFromDescriptor(y);
             }
+        }
+
+        public static async Task VerifyCodeFixAsync(string source, string fixedSource, params DiagnosticResult[] diagnostics)
+        {
+            CustomMarshallerAttributeFixerTest test = new()
+            {
+                TestCode = source,
+                FixedCode = fixedSource,
+            };
+
+            test.ExpectedDiagnostics.AddRange(diagnostics);
+
+            await test.RunAsync();
         }
     }
 }

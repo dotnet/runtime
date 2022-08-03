@@ -60,7 +60,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCodeFixAsync(
+            await CustomMarshallerAttributeFixerTest.VerifyCodeFixAsync(
                 source,
                 fixedSource,
                 VerifyCS.DiagnosticWithArguments(StatefulMarshallerRequiresFromManagedRule, "MarshallerType", MarshalMode.ManagedToUnmanagedIn, "ManagedType").WithLocation(0),
@@ -112,7 +112,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCodeFixAsync(
+            await CustomMarshallerAttributeFixerTest.VerifyCodeFixAsync(
                 source,
                 fixedSource,
                 VerifyCS.DiagnosticWithArguments(StatefulMarshallerRequiresFromUnmanagedRule, "MarshallerType", MarshalMode.ManagedToUnmanagedOut, "ManagedType").WithLocation(0),
@@ -197,7 +197,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCodeFixAsync(
+            await CustomMarshallerAttributeFixerTest.VerifyCodeFixAsync(
                 source,
                 fixedSource,
                 VerifyCS.DiagnosticWithArguments(StatefulMarshallerRequiresFreeRule, "MarshallerType").WithLocation(0),
@@ -339,7 +339,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCodeFixAsync(
+            await CustomMarshallerAttributeFixerTest.VerifyCodeFixAsync(
                 source,
                 fixedSource,
                 VerifyCS.Diagnostic(StatefulMarshallerRequiresFreeRule).WithLocation(0).WithArguments("MarshallerType"),
@@ -394,21 +394,10 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
 
-            await VerifyCodeFixAsync(
+            await CustomMarshallerAttributeFixerTest.VerifyCodeFixAsync(
                 source,
                 fixedSource,
                 VerifyCS.Diagnostic(CallerAllocFromManagedMustHaveBufferSizeRule).WithLocation(0).WithArguments("MarshallerType", "byte"));
-        }
-        private static async Task VerifyCodeFixAsync(string source, string fixedSource, params DiagnosticResult[] expected)
-        {
-            var test = new CustomMarshallerAttributeFixerTest
-            {
-                TestCode = source,
-                FixedCode = fixedSource,
-            };
-
-            test.ExpectedDiagnostics.AddRange(expected);
-            await test.RunAsync(CancellationToken.None);
         }
     }
 }
