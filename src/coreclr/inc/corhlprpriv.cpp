@@ -109,6 +109,23 @@ HRESULT _CountBytesOfOneArg(
     }
     switch (ulElementType)
     {
+        case ELEMENT_TYPE_GENERICINST:
+            CHECK_REMAINDER;
+            // skip over generic type
+            IfFailGo( _CountBytesOfOneArg(&pbSig[cbTotal], &cb) );
+            cbTotal += cb;
+
+            // skip over number of parameters
+            cbTotal += CorSigUncompressData(&pbSig[cbTotal], &cArg);
+
+            // loop through type parameters
+            for (cArgsIndex = 0; cArgsIndex < cArg; cArgsIndex++)
+            {
+                IfFailGo( _CountBytesOfOneArg(&pbSig[cbTotal], &cb) );
+                cbTotal += cb;
+            }
+            break;
+
         case ELEMENT_TYPE_SZARRAY:
         case 0x1e /* obsolete */:
             // skip over base type
