@@ -61,8 +61,10 @@ namespace System.Runtime.InteropServices.Tests.Common
             var clsid = new Guid(ComObjectFactory.CLSID);
             const int CLSCTX_INPROC_SERVER = 1;
             const int REGCLS_MULTIPLEUSE = 1;
-            int res = CoRegisterClassObject(in clsid, ComObjectFactory.Create(), CLSCTX_INPROC_SERVER, REGCLS_MULTIPLEUSE, out int cookie);
+            void* classFactory = ComObjectFactory.Create();
+            int res = CoRegisterClassObject(in clsid, classFactory, CLSCTX_INPROC_SERVER, REGCLS_MULTIPLEUSE, out int cookie);
             Xunit.Assert.Equal(ComConstants.S_OK, res);
+            Marshal.Release((IntPtr)classFactory);
 
             [DllImport("Ole32")]
             static extern int CoRegisterClassObject(in Guid clsid, void* factory, int clsContext, int flags, out int registerCookie);
