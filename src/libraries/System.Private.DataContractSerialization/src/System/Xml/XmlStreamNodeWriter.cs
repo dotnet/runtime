@@ -392,7 +392,6 @@ namespace System.Xml
                 fixed (byte* _bytes = &buffer[offset])
                 {
                     byte* bytes = _bytes;
-                    byte* bytesMax = &bytes[buffer.Length - offset];
                     char* charsMax = &chars[charCount];
 
                     if (Sse41.IsSupported && charCount >= Vector128<short>.Count)
@@ -415,10 +414,10 @@ namespace System.Xml
                         if (!Sse41.TestZ(v2, mask))
                             goto NonAscii;
 
-                        Sse2.StoreScalar((long*)(bytesMax - sizeof(long)), Sse2.PackUnsignedSaturate(v2, v2).AsInt64());
+                        Sse2.StoreScalar((long*)(_bytes + charCount - sizeof(long)), Sse2.PackUnsignedSaturate(v2, v2).AsInt64());
                         return charCount;
                     }
-                    // Fast path for small strings, skip and use Encoding.GetBytes for larger strings since it is faster even for the all Ascii case
+                    // Fast path for small strings, skip and use Encoding.GetBytes for larger strings since it is faster even for the all-Ascii case
                     else if (charCount < 16)
                     {
                         while (chars < charsMax)
@@ -436,6 +435,7 @@ namespace System.Xml
                     }
 
                 NonAscii:
+                    byte* bytesMax = &bytes[buffer.Length - offset];
                     return (int)(bytes - _bytes) + (_encoding ?? s_UTF8Encoding).GetBytes(chars, (int)(charsMax - chars), bytes, (int)(bytesMax - bytes));
                 }
             }
