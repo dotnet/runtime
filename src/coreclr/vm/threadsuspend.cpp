@@ -2880,7 +2880,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     // This should not normally fail.
     // The system silently ignores any feature specified in the FeatureMask
     // which is not enabled on the processor.
-    bRes &= SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX);
+    SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX);
 #endif //defined(TARGET_X86) || defined(TARGET_AMD64)
 
     // Make sure we specify CONTEXT_EXCEPTION_REQUEST to detect "trap frame reporting".
@@ -2981,7 +2981,7 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     _ASSERTE(PreemptiveGCDisabledOther());
     _ASSERTE(IsAddrOfRedirectFunc(pTgt));
     _ASSERTE(pCurrentThreadCtx);
-    _ASSERTE((pCurrentThreadCtx->ContextFlags & CONTEXT_COMPLETE) == CONTEXT_COMPLETE);
+    _ASSERTE((pCurrentThreadCtx->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
     _ASSERTE(ExecutionManager::IsManagedCode(GetIP(pCurrentThreadCtx)));
 
     ////////////////////////////////////////////////////////////////
