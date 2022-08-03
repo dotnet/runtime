@@ -848,7 +848,7 @@ namespace System.Xml
             WriteArrayInfo(XmlBinaryNodeType.GuidTextWithEndElement, items.Length);
             foreach (ref readonly Guid guid in items)
             {
-                Span<byte> bytes = GetBuffer(16, out int bufferOffset).AsSpan(bufferOffset);
+                Span<byte> bytes = GetBuffer(16, out int bufferOffset).AsSpan(bufferOffset, 16);
                 guid.TryWriteBytes(bytes);
                 Advance(16);
             }
@@ -1311,8 +1311,15 @@ namespace System.Xml
             if (count > 0)
             {
                 WriteStartArray(prefix, localName, namespaceUri, count);
-                _writer.WriteGuidArray(array.AsSpan(offset, count));
-                // WriteEndArray();
+                if (BitConverter.IsLittleEndian)
+                {
+                    ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(array.AsSpan(offset, count));
+                    _writer.WriteArray(XmlBinaryNodeType.GuidTextWithEndElement, count, bytes);
+                }
+                else
+                {
+                    _writer.WriteGuidArray(array.AsSpan(offset, count));
+                }
             }
         }
 

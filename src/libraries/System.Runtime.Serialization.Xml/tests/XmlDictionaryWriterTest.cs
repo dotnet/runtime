@@ -390,9 +390,16 @@ public static class XmlDictionaryWriterTest
         int offset = 1;
         int count = 2;
 
-        int[] ints = new int[] {-1, 0x01020304, 0x11223344, -1 };
-
+        int[] ints = new int[] { -1, 0x01020304, 0x11223344, -1 };
         AssertBytesWritten(x => x.WriteArray(null, "a", null, ints, offset, count), XmlBinaryNodeType.Int32TextWithEndElement, count, new byte[] { 4, 3, 2, 1, 0x44, 0x33, 0x22, 0x11 });
+
+        Guid[] guids = new Guid[]
+        {
+            new Guid(new ReadOnlySpan<byte>(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 })),
+            new Guid(new ReadOnlySpan<byte>(new byte[] { 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160 }))
+        };
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, guids, 0, guids.Length), XmlBinaryNodeType.GuidTextWithEndElement, guids.Length
+            , new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160 });
 
         // Write more than 512 bytes in a single call to trigger different writing logic in XmlStreamNodeWriter.WriteBytes
         long[] longs = Enumerable.Range(0x01020304, 127).Select(i => (long)i | (long)(~i << 32)).ToArray();
@@ -410,7 +417,7 @@ public static class XmlDictionaryWriterTest
             writer.Flush();
             ms.TryGetBuffer(out ArraySegment<byte> segement);
 
-            var actual = segement.AsSpan(); 
+            var actual = segement.AsSpan();
             Assert.Equal(XmlBinaryNodeType.Array, (XmlBinaryNodeType)actual[0]);
             Assert.Equal(XmlBinaryNodeType.ShortElement, (XmlBinaryNodeType)actual[1]);
             int elementLenght = actual[2];
