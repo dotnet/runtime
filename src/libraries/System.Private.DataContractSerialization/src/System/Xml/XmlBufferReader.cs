@@ -461,20 +461,6 @@ namespace System.Xml
 
         public void ReadRawArrayBytes(Span<byte> dst)
         {
-            if (_stream != null)
-            {
-                const int chunk = 256;
-                while (dst.Length >= chunk)
-                {
-                    GetBuffer(chunk, out _offset)
-                        .AsSpan(_offset, chunk)
-                        .CopyTo(dst);
-
-                    Advance(chunk);
-                    dst = dst.Slice(chunk);
-                }
-            }
-
             if (dst.Length > 0)
             {
                 GetBuffer(dst.Length, out _offset)

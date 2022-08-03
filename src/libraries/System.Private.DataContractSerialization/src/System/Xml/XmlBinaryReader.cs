@@ -1394,6 +1394,8 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
+            // Try to read in whole array, but don't fail if not possible
+            BufferReader.GetBuffer(actual * ValueHandleLength.DateTime, out _, out _);
             foreach (ref DateTime item in array.AsSpan(offset, actual))
             {
                 item = BufferReader.ReadDateTime();
@@ -1421,6 +1423,8 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
+            // Try to read in whole array, but don't fail if not possible
+            BufferReader.GetBuffer(actual * ValueHandleLength.Guid, out _, out _);
             foreach (ref Guid item in array.AsSpan(offset, actual))
             {
                 item = BufferReader.ReadGuid();
@@ -1448,6 +1452,8 @@ namespace System.Xml
         {
             CheckArray(array, offset, count);
             int actual = Math.Min(count, _arrayCount);
+            // Try to read in whole array, but don't fail if not possible
+            BufferReader.GetBuffer(actual * ValueHandleLength.TimeSpan, out _, out _);
             foreach (ref TimeSpan item in array.AsSpan(offset, actual))
             {
                 item = BufferReader.ReadTimeSpan();
