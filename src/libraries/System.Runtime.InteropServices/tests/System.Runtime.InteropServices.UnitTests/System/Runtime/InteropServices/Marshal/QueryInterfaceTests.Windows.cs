@@ -37,9 +37,6 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new AutoDispatchComObjectEmpty(), IID_IDISPATCH };
             yield return new object[] { new AutoDualComObjectEmpty(), IID_IUNKNOWN };
             yield return new object[] { new AutoDualComObjectEmpty(), IID_IDISPATCH };
-
-            yield return new object[] { new IUnknownComObject(), IID_IUNKNOWN };
-            yield return new object[] { new IUnknownComObject(), IID_IDISPATCH };
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
@@ -69,7 +66,7 @@ namespace System.Runtime.InteropServices.Tests
 
         public static IEnumerable<object[]> QueryInterface_NoSuchComObjectInterface_TestData()
         {
-            const string IID_CUSTOMINTERFACE = "927971f5-0939-11d1-8be1-00c04fd8d503";
+            const string IID_CUSTOMINTERFACE = "ED53244F-0514-49D1-9A85-E14B33E71CDF";
 
             yield return new object[] { new ComImportObject(), IID_IINSPECTABLE };
             yield return new object[] { new ComImportObject(), IID_CUSTOMINTERFACE };

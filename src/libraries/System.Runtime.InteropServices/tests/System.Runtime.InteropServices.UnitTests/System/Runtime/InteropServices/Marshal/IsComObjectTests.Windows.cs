@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new ComImportObject[0], false };
             yield return new object[] { new SubComImportObject(), true };
             yield return new object[] { new GenericSubComImportObject<string>(), true };
-            yield return new object[] { new InterfaceAndComImportObject(), true };
+            yield return new object[] { new InterfaceOnComImportObject(), true };
             yield return new object[] { new InterfaceComImportObject(), false };
         }
 

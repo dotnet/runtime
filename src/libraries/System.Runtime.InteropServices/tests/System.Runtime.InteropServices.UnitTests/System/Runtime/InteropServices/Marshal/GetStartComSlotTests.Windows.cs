@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(ComImportObject), -1 };
             yield return new object[] { typeof(SubComImportObject), -1 };
             yield return new object[] { typeof(InterfaceComImportObject), -1 };
-            yield return new object[] { typeof(InterfaceAndComImportObject), 7 };
+            yield return new object[] { typeof(InterfaceOnComImportObject), 7 };
             yield return new object[] { typeof(IComImportObject), 7 };
 
             yield return new object[] { typeof(DualInterface), 7};

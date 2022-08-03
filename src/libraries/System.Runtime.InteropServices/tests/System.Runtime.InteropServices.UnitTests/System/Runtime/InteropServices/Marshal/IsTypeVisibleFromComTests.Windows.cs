@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.Tests
         public static IEnumerable<object[]> IsTypeVisibleFromCom_Windows_TestData()
         {
             yield return new object[] { typeof(ComImportObject), true };
-            yield return new object[] { typeof(InterfaceAndComImportObject), true };
+            yield return new object[] { typeof(InterfaceOnComImportObject), true };
             yield return new object[] { typeof(InterfaceComImportObject), true };
 
             yield return new object[] { typeof(IsTypeVisibleFromComTests), true };
