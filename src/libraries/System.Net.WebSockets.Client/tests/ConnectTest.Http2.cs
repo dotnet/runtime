@@ -76,7 +76,7 @@ namespace System.Net.WebSockets.Client.Tests
             async server =>
             {
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 0 });
-            }, new Http2Options() { WebSocketEndpoint = true, UseSsl = true }
+            }, new Http2Options() { WebSocketEndpoint = true }
             );
         }
 
@@ -134,7 +134,7 @@ namespace System.Net.WebSockets.Client.Tests
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
                 (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
                 await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.OK);
-            }, new Http2Options() { WebSocketEndpoint = true, UseSsl = true }
+            }, new Http2Options() { WebSocketEndpoint = true }
             );
         }
     }

@@ -102,7 +102,7 @@ namespace System.Net.WebSockets.Client.Tests
                 byte[] constructMessage = prefix.Concat(serverMessage).ToArray();
                 await connection.SendResponseDataAsync(streamId, constructMessage, endStream: false);
 
-            }, new Http2Options() { WebSocketEndpoint = true, UseSsl = true }
+            }, new Http2Options() { WebSocketEndpoint = true }
             );
         }
     }
