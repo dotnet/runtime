@@ -11459,8 +11459,8 @@ void gc_heap::set_region_gen_num (heap_segment* region, int gen_num)
 
             if ((region_start < ephemeral_low) || (ephemeral_high < region_end))
             {
-                uint8_t* new_ephemeral_low = min (region_start, ephemeral_low);
-                uint8_t* new_ephemeral_high = max (region_end, ephemeral_high);
+                uint8_t* new_ephemeral_low = min (region_start, ephemeral_low.Load());
+                uint8_t* new_ephemeral_high = max (region_end, ephemeral_high.Load());
 
                 dprintf (REGIONS_LOG, ("about to set ephemeral_low = %Ix ephemeral_high = %Ix", new_ephemeral_low, new_ephemeral_high));
 
@@ -25929,8 +25929,8 @@ void gc_heap::compute_gc_and_ephemeral_range (int condemned_gen_number, bool end
                 generation *gen = hp->generation_of (gen_number);
                 for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
                 {
-                    ephemeral_low = min (ephemeral_low, get_region_start (region));
-                    ephemeral_high = max (ephemeral_high, heap_segment_reserved (region));
+                    ephemeral_low = min (ephemeral_low.Load(), get_region_start (region));
+                    ephemeral_high = max (ephemeral_high.Load(), heap_segment_reserved (region));
                     if (gen_number <= condemned_gen_number)
                     {
                         gc_low = min (gc_low, get_region_start (region));
