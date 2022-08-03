@@ -14360,8 +14360,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 	if (acfg->aot_opts.llvm_only) {
 		if (!mono_aot_mode_is_interp (&acfg->aot_opts))
 			acfg->jit_opts |= MONO_OPT_GSHAREDVT;
-	} else if (mono_aot_mode_is_full (&acfg->aot_opts) || mono_aot_mode_is_hybrid (&acfg->aot_opts)) {
-		// acfg->jit_opts |= MONO_OPT_GSHAREDVT;
+	} else if ((mono_aot_mode_is_full (&acfg->aot_opts) && !acfg->aot_opts.interp) || mono_aot_mode_is_hybrid (&acfg->aot_opts)) {
+		acfg->jit_opts |= MONO_OPT_GSHAREDVT;
 	}
 #endif
 
