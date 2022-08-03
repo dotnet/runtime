@@ -272,7 +272,7 @@ globalThis.rebound = {
 }
 
 export async function setup() {
-    dllExports = await App.API.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests.dll");
+    dllExports = await App.runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests.dll");
 }
 
 // console.log('JavaScriptTestHelper:' Object.keys(globalThis.JavaScriptTestHelper));

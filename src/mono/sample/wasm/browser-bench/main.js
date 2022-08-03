@@ -10,8 +10,8 @@ let setTasks;
 let getFullJsonResults;
 
 class MainApp {
-    async init({ API }) {
-        const exports = await API.getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
+    async init({ getAssemblyExports }) {
+        const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
         runBenchmark = exports.Sample.Test.RunBenchmark;
         setTasks = exports.Sample.Test.SetTasks;
         getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
@@ -94,14 +94,14 @@ try {
     globalThis.mainApp.FrameReachedManaged = globalThis.mainApp.frameReachedManaged.bind(globalThis.mainApp);
     globalThis.mainApp.PageShow = globalThis.mainApp.pageShow.bind(globalThis.mainApp);
 
-    const { API } = await createDotnetRuntime(() => ({
+    const runtime = await createDotnetRuntime(() => ({
         disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
         onAbort: (error) => {
             wasm_exit(1, error);
         }
     }));
-    await mainApp.init({ API });
+    await mainApp.init(runtime);
 }
 catch (err) {
     wasm_exit(1, err);

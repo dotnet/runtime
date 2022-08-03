@@ -18,7 +18,7 @@ import { BINDINGType, MONOType } from "./export-types";
 
 export function export_mono_api(): MONOType {
     return {
-        // current "public" MONO API
+        // legacy MONO API
         mono_wasm_setenv,
         mono_wasm_load_bytes_into_heap,
         mono_wasm_load_icu_data,
@@ -80,7 +80,7 @@ export function cwraps_mono_api(mono: MONOType): void {
 
 export function export_binding_api(): BINDINGType {
     return {
-        //current "public" BINDING API
+        // legacy BINDING API
         bind_static_method: mono_bind_static_method,
         call_assembly_entry_point: mono_call_assembly_entry_point,
         mono_obj_array_new: <any>null,

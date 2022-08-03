@@ -1,7 +1,7 @@
 import { App } from './app-support.mjs'
 
 App.main = async function (applicationArguments) {
-    App.API.setModuleImports("main.mjs", {
+    App.runtime.setModuleImports("main.mjs", {
         node: {
             process: {
                 version: () => globalThis.process.version
@@ -9,9 +9,9 @@ App.main = async function (applicationArguments) {
         }
     });
 
-    const exports = await App.API.getAssemblyExports("console.0.dll");
+    const exports = await App.runtime.getAssemblyExports("console.0.dll");
     const text = exports.MyClass.Greeting();
     console.log(text);
 
-    return await App.API.runMain("console.0.dll", applicationArguments);
+    return await App.runtime.runMain("console.0.dll", applicationArguments);
 }

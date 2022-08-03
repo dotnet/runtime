@@ -25,7 +25,7 @@ function sub(a, b) {
     return a - b;
 }
 try {
-    const { API, RuntimeBuildInfo } = await createDotnetRuntimeTyped(({ API, Module }) => {
+    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain } = await createDotnetRuntimeTyped(() => {
         // this callback usually needs no statements, the API objects are only empty shells here and are populated later
         return {
             configSrc: "./mono-config.json",
@@ -51,9 +51,9 @@ try {
     });
     // at this point both emscripten and monoVM are fully initialized.
     // we could use the APIs returned and resolved from createDotnetRuntime promise
-    // both exports are receiving the same object instances, i.e. same `API` instance.    
+    // both exports are receiving the same object instances
     console.log('user code after createDotnetRuntime()');
-    API.setModuleImports("main.js", {
+    setModuleImports("main.js", {
         Sample: {
             Test: {
                 add,
@@ -62,15 +62,15 @@ try {
         }
     });
 
-    const exports = await API.getAssemblyExports("Wasm.Browser.Sample.dll");
+    const exports = await getAssemblyExports("Wasm.Browser.Sample.dll");
     const meaning = exports.Sample.Test.TestMeaning();
     console.debug(`meaning: ${meaning}`);
     if (!exports.Sample.Test.IsPrime(meaning)) {
-        document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
+        document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${runtimeBuildInfo.productVersion}`;
         console.debug(`ret: ${meaning}`);
     }
 
-    let exit_code = await API.runMain("Wasm.Browser.Sample.dll", []);
+    let exit_code = await runMain("Wasm.Browser.Sample.dll", []);
     wasm_exit(exit_code);
 }
 catch (err) {

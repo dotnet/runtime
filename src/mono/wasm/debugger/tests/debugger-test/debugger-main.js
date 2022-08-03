@@ -6,7 +6,7 @@
 import createDotnetRuntime from './dotnet.js'
 
 try {
-    const { BINDING } = await createDotnetRuntime(({ INTERNAL }) => ({
+    const runtime = await createDotnetRuntime(({ INTERNAL }) => ({
         configSrc: "./mono-config.json",
         onConfigLoaded: (config) => {
             config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
@@ -21,7 +21,7 @@ try {
             */
         },
     }));
-    App.BINDING = BINDING;
+    App.runtime = runtime;
     App.init()
 } catch (err) {
     console.log(`WASM ERROR ${err}`);

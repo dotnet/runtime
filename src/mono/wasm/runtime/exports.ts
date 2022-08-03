@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
-import Configuration from "consts:configuration";
+import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { ENVIRONMENT_IS_PTHREAD, set_imports_exports } from "./imports";
@@ -47,16 +47,16 @@ function initializeImportsAndExports(
     __linker_exports = export_linker();
 
     exportedAPI = <any>{
-        API: exports.api,
         MONO: exports.mono,
         BINDING: exports.binding,
         INTERNAL: exports.internal,
         IMPORTS: exports.marshaled_imports,
         Module: module,
-        RuntimeBuildInfo: {
-            ProductVersion,
-            Configuration
-        }
+        runtimeBuildInfo: {
+            productVersion: ProductVersion,
+            buildConfiguration: BuildConfiguration
+        },
+        ...exports.api,
     };
     if (exports.module.__undefinedConfig) {
         module.disableDotnet6Compatibility = true;
@@ -153,9 +153,9 @@ class RuntimeList {
     private list: { [runtimeId: number]: WeakRef<DotnetPublicAPI> } = {};
 
     public registerRuntime(api: DotnetPublicAPI): number {
-        api.RuntimeId = Object.keys(this.list).length;
-        this.list[api.RuntimeId] = create_weak_ref(api);
-        return api.RuntimeId;
+        api.runtimeId = Object.keys(this.list).length;
+        this.list[api.runtimeId] = create_weak_ref(api);
+        return api.runtimeId;
     }
 
     public getRuntime(runtimeId: number): DotnetPublicAPI | undefined {
@@ -175,38 +175,35 @@ export interface APIType {
     getAssemblyExports(assemblyName: string): Promise<any>,
     setModuleImports(moduleName: string, moduleImports: any): void,
     getConfig: () => MonoConfig,
-    memory: {
-        setB32: (offset: NativePointer, value: number | boolean) => void,
-        setU8: (offset: NativePointer, value: number) => void,
-        setU16: (offset: NativePointer, value: number) => void,
-        setU32: (offset: NativePointer, value: NativePointer | number) => void,
-        setI8: (offset: NativePointer, value: number) => void,
-        setI16: (offset: NativePointer, value: number) => void,
-        setI32: (offset: NativePointer, value: number) => void,
-        setI52: (offset: NativePointer, value: number) => void,
-        setU52: (offset: NativePointer, value: number) => void,
-        setI64Big: (offset: NativePointer, value: bigint) => void,
-        setF32: (offset: NativePointer, value: number) => void,
-        setF64: (offset: NativePointer, value: number) => void,
-        getB32: (offset: NativePointer) => boolean,
-        getU8: (offset: NativePointer) => number,
-        getU16: (offset: NativePointer) => number,
-        getU32: (offset: NativePointer) => number,
-        getI8: (offset: NativePointer) => number,
-        getI16: (offset: NativePointer) => number,
-        getI32: (offset: NativePointer) => number,
-        getI52: (offset: NativePointer) => number,
-        getU52: (offset: NativePointer) => number,
-        getI64Big: (offset: NativePointer) => bigint,
-        getF32: (offset: NativePointer) => number,
-        getF64: (offset: NativePointer) => number,
-    },
+    setHeapB32: (offset: NativePointer, value: number | boolean) => void,
+    setHeapU8: (offset: NativePointer, value: number) => void,
+    setHeapU16: (offset: NativePointer, value: number) => void,
+    setHeapU32: (offset: NativePointer, value: NativePointer | number) => void,
+    setHeapI8: (offset: NativePointer, value: number) => void,
+    setHeapI16: (offset: NativePointer, value: number) => void,
+    setHeapI32: (offset: NativePointer, value: number) => void,
+    setHeapI52: (offset: NativePointer, value: number) => void,
+    setHeapU52: (offset: NativePointer, value: number) => void,
+    setHeapI64Big: (offset: NativePointer, value: bigint) => void,
+    setHeapF32: (offset: NativePointer, value: number) => void,
+    setHeapF64: (offset: NativePointer, value: number) => void,
+    getHeapB32: (offset: NativePointer) => boolean,
+    getHeapU8: (offset: NativePointer) => number,
+    getHeapU16: (offset: NativePointer) => number,
+    getHeapU32: (offset: NativePointer) => number,
+    getHeapI8: (offset: NativePointer) => number,
+    getHeapI16: (offset: NativePointer) => number,
+    getHeapI32: (offset: NativePointer) => number,
+    getHeapI52: (offset: NativePointer) => number,
+    getHeapU52: (offset: NativePointer) => number,
+    getHeapI64Big: (offset: NativePointer) => bigint,
+    getHeapF32: (offset: NativePointer) => number,
+    getHeapF64: (offset: NativePointer) => number,
 }
 
 // this represents visibility in the javascript
 // like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts
-export interface DotnetPublicAPI {
-    API: APIType,
+export type DotnetPublicAPI = {
     /**
      * @deprecated Please use API object instead. See also MONOType in dotnet-legacy.d.ts
      */
@@ -217,9 +214,9 @@ export interface DotnetPublicAPI {
     BINDING: any,
     INTERNAL: any,
     Module: EmscriptenModule,
-    RuntimeId: number,
-    RuntimeBuildInfo: {
-        ProductVersion: string,
-        Configuration: string,
-    }
+    runtimeId: number,
+    runtimeBuildInfo: {
+        productVersion: string,
+        buildConfiguration: string,
+    } & APIType
 }

@@ -142,35 +142,32 @@ interface APIType {
     getAssemblyExports(assemblyName: string): Promise<any>;
     setModuleImports(moduleName: string, moduleImports: any): void;
     getConfig: () => MonoConfig;
-    memory: {
-        setB32: (offset: NativePointer, value: number | boolean) => void;
-        setU8: (offset: NativePointer, value: number) => void;
-        setU16: (offset: NativePointer, value: number) => void;
-        setU32: (offset: NativePointer, value: NativePointer | number) => void;
-        setI8: (offset: NativePointer, value: number) => void;
-        setI16: (offset: NativePointer, value: number) => void;
-        setI32: (offset: NativePointer, value: number) => void;
-        setI52: (offset: NativePointer, value: number) => void;
-        setU52: (offset: NativePointer, value: number) => void;
-        setI64Big: (offset: NativePointer, value: bigint) => void;
-        setF32: (offset: NativePointer, value: number) => void;
-        setF64: (offset: NativePointer, value: number) => void;
-        getB32: (offset: NativePointer) => boolean;
-        getU8: (offset: NativePointer) => number;
-        getU16: (offset: NativePointer) => number;
-        getU32: (offset: NativePointer) => number;
-        getI8: (offset: NativePointer) => number;
-        getI16: (offset: NativePointer) => number;
-        getI32: (offset: NativePointer) => number;
-        getI52: (offset: NativePointer) => number;
-        getU52: (offset: NativePointer) => number;
-        getI64Big: (offset: NativePointer) => bigint;
-        getF32: (offset: NativePointer) => number;
-        getF64: (offset: NativePointer) => number;
-    };
+    setHeapB32: (offset: NativePointer, value: number | boolean) => void;
+    setHeapU8: (offset: NativePointer, value: number) => void;
+    setHeapU16: (offset: NativePointer, value: number) => void;
+    setHeapU32: (offset: NativePointer, value: NativePointer | number) => void;
+    setHeapI8: (offset: NativePointer, value: number) => void;
+    setHeapI16: (offset: NativePointer, value: number) => void;
+    setHeapI32: (offset: NativePointer, value: number) => void;
+    setHeapI52: (offset: NativePointer, value: number) => void;
+    setHeapU52: (offset: NativePointer, value: number) => void;
+    setHeapI64Big: (offset: NativePointer, value: bigint) => void;
+    setHeapF32: (offset: NativePointer, value: number) => void;
+    setHeapF64: (offset: NativePointer, value: number) => void;
+    getHeapB32: (offset: NativePointer) => boolean;
+    getHeapU8: (offset: NativePointer) => number;
+    getHeapU16: (offset: NativePointer) => number;
+    getHeapU32: (offset: NativePointer) => number;
+    getHeapI8: (offset: NativePointer) => number;
+    getHeapI16: (offset: NativePointer) => number;
+    getHeapI32: (offset: NativePointer) => number;
+    getHeapI52: (offset: NativePointer) => number;
+    getHeapU52: (offset: NativePointer) => number;
+    getHeapI64Big: (offset: NativePointer) => bigint;
+    getHeapF32: (offset: NativePointer) => number;
+    getHeapF64: (offset: NativePointer) => number;
 }
-interface DotnetPublicAPI {
-    API: APIType;
+declare type DotnetPublicAPI = {
     /**
      * @deprecated Please use API object instead. See also MONOType in dotnet-legacy.d.ts
      */
@@ -181,12 +178,12 @@ interface DotnetPublicAPI {
     BINDING: any;
     INTERNAL: any;
     Module: EmscriptenModule;
-    RuntimeId: number;
-    RuntimeBuildInfo: {
-        ProductVersion: string;
-        Configuration: string;
-    };
-}
+    runtimeId: number;
+    runtimeBuildInfo: {
+        productVersion: string;
+        buildConfiguration: string;
+    } & APIType;
+};
 
 interface IDisposable {
     dispose(): void;

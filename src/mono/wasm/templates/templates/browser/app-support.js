@@ -79,8 +79,8 @@ function stringify_as_error_with_stack(err) {
         return "";
 
     // FIXME:
-    if (App && App.INTERNAL)
-        return App.INTERNAL.mono_wasm_stringify_as_error_with_stack(err);
+    if (App && App.runtime && App.runtime.INTERNAL)
+        return App.runtime.INTERNAL.mono_wasm_stringify_as_error_with_stack(err);
 
     if (err.stack)
         return err.stack;
@@ -153,12 +153,12 @@ try {
     initRunArgs();
     applyArguments();
 
-    createDotnetRuntime(({ API, INTERNAL, Module }) => ({
+    const runtime = await createDotnetRuntime(({ Module, INTERNAL }) => ({
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
         onConfigLoaded: (config) => {
-            if (!Module.config) {
+            if (!config) {
                 const err = new Error("Could not find ./mono-config.json. Cancelling run");
                 set_exit_code(1);
                 throw err;
@@ -186,29 +186,25 @@ try {
 
             if (runArgs.runtimeArgs.length > 0)
                 INTERNAL.mono_wasm_set_runtime_options(runArgs.runtimeArgs);
-
-            Object.assign(App, { API, Module, runArgs });
-
-            try {
-                if (App.main) {
-                    let exit_code = await App.main(runArgs.applicationArguments);
-                    set_exit_code(exit_code ?? 0);
-                }
-                else {
-                    set_exit_code(1, "WASM ERROR: no App.main defined");
-                }
-            } catch (err) {
-                if (is_browser && document.getElementById("out"))
-                    document.getElementById("out").innerHTML = `error: ${err}`;
-                set_exit_code(1, err);
-            }
         },
         onAbort: (error) => {
             set_exit_code(1, error);
         },
     }));
+    App.runtime = runtime;
+    App.runArgs = runArgs;
+
+    if (App.main) {
+        let exit_code = await App.main(runArgs.applicationArguments);
+        set_exit_code(exit_code ?? 0);
+    }
+    else {
+        set_exit_code(1, "WASM ERROR: no App.main defined");
+    }
 }
 catch (err) {
+    if (is_browser && document.getElementById("out"))
+        document.getElementById("out").innerHTML = `error: ${err}`;
     set_exit_code(2, err);
 }
 

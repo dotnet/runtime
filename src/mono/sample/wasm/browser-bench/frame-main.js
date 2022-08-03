@@ -6,8 +6,8 @@
 import createDotnetRuntime from './dotnet.js'
 
 class FrameApp {
-    async init({ API }) {
-        const exports = await API.getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
+    async init({ getAssemblyExports }) {
+        const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
         exports.Sample.AppStartTask.FrameApp.ReachedManaged();
     }
 
@@ -30,7 +30,7 @@ try {
         mute = true;
     }
 
-    const { API } = await createDotnetRuntime(() => ({
+    const runtime = await createDotnetRuntime(() => ({
         disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
         printErr: function () {
@@ -52,7 +52,7 @@ try {
     if (window.parent != window) {
         window.parent.resolveAppStartEvent("onDotnetReady");
     }
-    await frameApp.init({ API });
+    await frameApp.init(runtime);
 }
 catch (err) {
     if (!mute) {
