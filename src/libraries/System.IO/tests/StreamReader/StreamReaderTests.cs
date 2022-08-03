@@ -556,7 +556,6 @@ namespace System.IO.Tests
         [InlineData(1, true)]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51390", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ReadAsync_Canceled_ThrowsException(int method, bool precanceled)
         {
             Func<StreamReader, CancellationToken, Task<int>> func = method switch
@@ -566,7 +565,7 @@ namespace System.IO.Tests
                 _ => throw new Exception("unknown mode")
             };
 
-            string pipeName = Guid.NewGuid().ToString("N");
+            string pipeName = "x";
             using (var serverStream = new NamedPipeServerStream(pipeName, PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             using (var clientStream = new NamedPipeClientStream(".", pipeName, PipeDirection.In, PipeOptions.Asynchronous))
             {
