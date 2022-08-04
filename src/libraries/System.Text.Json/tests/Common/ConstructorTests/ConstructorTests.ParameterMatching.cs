@@ -500,6 +500,9 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,,,,,,>))]
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73347", typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+#endif
         public async Task TupleDeserialization_MoreThanSevenItems()
         {
             var dont_trim_ctor = typeof(Tuple<,,,,,,>).GetConstructors();
