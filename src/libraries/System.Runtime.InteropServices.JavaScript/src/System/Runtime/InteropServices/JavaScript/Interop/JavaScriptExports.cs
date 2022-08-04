@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
 
                 arg_2.ToManaged(out string?[]? args);
-                object[] argsToPass= System.Array.Empty<object>();
+                object[] argsToPass = System.Array.Empty<object>();
                 Task<int>? result = null;
                 var parameterInfos = method.GetParameters();
                 if (parameterInfos.Length > 0 && parameterInfos[0].ParameterType == typeof(string[]))
