@@ -27,14 +27,16 @@ wasi_transport_recv (void *buf, int len)
 	int res;
 	int total = 0;
 	int fd = conn_fd;
-	int again = 0;
+	int num_recv_calls  = 0;
 
 	do {
 		res = read (fd, (char *) buf + total, len - total);
 		if (res > 0)
 			total += res;
-		again++;
-		if ((res > 0 && total < len) || (res == -1 && again < retry_receive_message)) {
+		num_recv_calls++;
+		if (errno != 0)
+			return -1;
+		if ((res > 0 && total < len) || (res == -1 && num_recv_calls  < retry_receive_message)) {
 			// Wasmtime on Windows doesn't seem to be able to sleep for short periods like 1ms so we'll have to spinlock
 			long long start = timeInMilliseconds ();
 			while (timeInMilliseconds () < start + connection_wait_ms);
@@ -67,12 +69,18 @@ wasi_transport_connect (const char *socket_fd)
 	PRINT_DEBUG_MSG (1, "wasi_transport_connect.\n");
 	bool handshake_ok = FALSE;
 	conn_fd = -1;
+	char *ptr;
 	while (!handshake_ok) {
 		PRINT_DEBUG_MSG (1, "Waiting for connection from client, socket fd=%s.\n", socket_fd);
-		sock_accept (atoi(socket_fd), 4, &conn_fd);
+		long socket_fd_long = strtol(socket_fd, &ptr, 10);
+		if (socket_fd_long == 0)
+			return;
+		sock_accept (socket_fd_long, __WASI_FDFLAGS_NONBLOCK, &conn_fd);
 		int res = -1;
 		if (conn_fd != -1) {
 			res = write (conn_fd, (const char*)"", 0);
+			if (errno != 0)
+				return;
 			if (res != -1) {
 				handshake_ok = mono_component_debugger ()->transport_handshake ();
 			}
