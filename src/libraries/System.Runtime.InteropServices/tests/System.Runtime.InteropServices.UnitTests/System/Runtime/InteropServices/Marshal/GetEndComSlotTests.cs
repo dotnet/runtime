@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentNullException>(null, () => Marshal.GetEndComSlot(null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GetEndComSlot_NotRuntimeType_ThrowsArgumentException()
         {
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.Run);
@@ -60,11 +60,14 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(int[][]) };
             yield return new object[] { typeof(int[,]) };
 
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type collectibleType = typeBuilder.CreateType();
-            yield return new object[] { collectibleType };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
+                ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
+                TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
+                Type collectibleType = typeBuilder.CreateType();
+                yield return new object[] { collectibleType };
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]

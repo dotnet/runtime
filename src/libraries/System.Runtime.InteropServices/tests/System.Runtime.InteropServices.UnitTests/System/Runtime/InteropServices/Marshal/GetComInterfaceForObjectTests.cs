@@ -154,20 +154,23 @@ namespace System.Runtime.InteropServices.Tests
 
             yield return new object[] { typeof(GenericClass<>).GetTypeInfo().GenericTypeParameters[0] };
 
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.Run);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            yield return new object[] { typeBuilder };
-
             yield return new object[] { typeof(NonComVisibleClass) };
             yield return new object[] { typeof(NonComVisibleStruct) };
             yield return new object[] { typeof(INonComVisibleInterface) };
 
-            AssemblyBuilder collectibleAssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder collectibleModuleBuilder = collectibleAssemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder collectibleTypeBuilder = collectibleModuleBuilder.DefineType("Type", TypeAttributes.Interface | TypeAttributes.Abstract);
-            Type collectibleType = collectibleTypeBuilder.CreateType();
-            yield return new object[] { collectibleType };
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.Run);
+                ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
+                TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
+                yield return new object[] { typeBuilder };
+
+                AssemblyBuilder collectibleAssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
+                ModuleBuilder collectibleModuleBuilder = collectibleAssemblyBuilder.DefineDynamicModule("Module");
+                TypeBuilder collectibleTypeBuilder = collectibleModuleBuilder.DefineType("Type", TypeAttributes.Interface | TypeAttributes.Abstract);
+                Type collectibleType = collectibleTypeBuilder.CreateType();
+                yield return new object[] { collectibleType };
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
