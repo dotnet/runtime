@@ -32,7 +32,7 @@ namespace System.Threading.RateLimiting.Tests
         {
             // Use Type.GetType so that trimming can see what type we're reflecting on, but assert it's the one we got
             var limiterType = Type.GetType("System.Threading.RateLimiting.DefaultPartitionedRateLimiter`2, System.Threading.RateLimiting");
-            Assert.Equal(limiterType, type.GetType());
+            Assert.Equal(limiterType, limiter.GetType());
 
             var innerTimer = limiterType.GetField("_timer", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(innerTimer);
