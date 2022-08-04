@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Net.Test.Common;
 using System.Reflection;
 using System.Text;
@@ -13,12 +14,37 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
+    public sealed class InternalHandlerDeflateTests : DeflateTests
+    {
+        public InternalHandlerDeflateTests(ITestOutputHelper output) : base(output) { }
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, cancellationToken);
+    }
+
+    public sealed class InvokerDeflateTests : DeflateTests
+    {
+        public InvokerDeflateTests(ITestOutputHelper output) : base(output) { }
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, new HttpMessageInvoker(new SocketsHttpHandler()), cancellationToken);
+    }
+
+    public sealed class HttpClientDeflateTests : DeflateTests
+    {
+        public HttpClientDeflateTests(ITestOutputHelper output) : base(output) { }
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, new HttpClient(new HttpClientHandler()), cancellationToken);
+    }
+
     [PlatformSpecific(~TestPlatforms.Browser)]
-    public class DeflateTests : ClientWebSocketTestBase
+    public abstract class DeflateTests : ClientWebSocketTestBase
     {
         public DeflateTests(ITestOutputHelper output) : base(output)
         {
         }
+        protected abstract Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken);
 
         [ConditionalTheory(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
@@ -45,7 +71,7 @@ namespace System.Net.WebSockets.Client.Tests
                     ServerContextTakeover = serverContextTakover
                 };
 
-                await client.ConnectAsync(uri, cancellation.Token);
+                await ConnectAsync(client, uri, cancellation.Token);
 
                 object webSocketHandle = client.GetType().GetField("_innerWebSocket", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(client);
                 WebSocketDeflateOptions negotiatedDeflateOptions = (WebSocketDeflateOptions)webSocketHandle.GetType()

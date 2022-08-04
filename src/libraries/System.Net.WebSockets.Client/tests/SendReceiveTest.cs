@@ -18,6 +18,8 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output);
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, cancellationToken);
     }
 
     public sealed class InvokerMemorySendReceiveTest : MemorySendReceiveTest
@@ -26,6 +28,9 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpMessageInvoker(new SocketsHttpHandler()));
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, new HttpMessageInvoker(new SocketsHttpHandler()), cancellationToken);
     }
 
     public sealed class HttpClientMemorySendReceiveTest : MemorySendReceiveTest
@@ -34,6 +39,9 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpClient(new HttpClientHandler()));
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, new HttpClient(new HttpClientHandler()), cancellationToken);
     }
 
     public sealed class InternalHandlerArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
@@ -42,6 +50,9 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output);
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, cancellationToken);
     }
 
     public sealed class InvokerArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
@@ -50,6 +61,8 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpMessageInvoker(new SocketsHttpHandler()));
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, new HttpMessageInvoker(new SocketsHttpHandler()), cancellationToken);
     }
 
     public sealed class HttpClientArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
@@ -58,6 +71,8 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpClient(new HttpClientHandler()));
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, new HttpClient(new HttpClientHandler()), cancellationToken);
     }
 
     public abstract class MemorySendReceiveTest : SendReceiveTest
@@ -99,6 +114,7 @@ namespace System.Net.WebSockets.Client.Tests
         public SendReceiveTest(ITestOutputHelper output) : base(output) { }
 
         protected abstract Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output);
+        protected abstract Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken);
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
@@ -467,7 +483,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 // Initiate a connection attempt.
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
-                await clientSocket.ConnectAsync(url, cts.Token);
+                await ConnectAsync(clientSocket, url, cts.Token);
 
                 // Post a pending ReceiveAsync before the TCP connection is torn down.
                 var recvBuffer = new byte[100];

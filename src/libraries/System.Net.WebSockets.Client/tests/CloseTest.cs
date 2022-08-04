@@ -20,6 +20,9 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output);
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, cancellationToken);
     }
 
     public sealed class InvokerCloseTest : CloseTest
@@ -28,6 +31,9 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpMessageInvoker(new SocketsHttpHandler()));
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, new HttpMessageInvoker(new SocketsHttpHandler()), cancellationToken);
     }
 
     public sealed class HttpClientCloseTest : CloseTest
@@ -36,6 +42,9 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpClient(new HttpClientHandler()));
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, new HttpClient(new HttpClientHandler()), cancellationToken);
     }
 
     public abstract class CloseTest : ClientWebSocketTestBase
@@ -43,6 +52,7 @@ namespace System.Net.WebSockets.Client.Tests
         public CloseTest(ITestOutputHelper output) : base(output) { }
 
         protected abstract Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output);
+        protected abstract Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken);
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/28957")]
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
@@ -414,7 +424,7 @@ namespace System.Net.WebSockets.Client.Tests
                     using (var cws = new ClientWebSocket())
                     using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                     {
-                        await cws.ConnectAsync(uri, cts.Token);
+                        await ConnectAsync(cws, uri, cts.Token);
 
                         Task receiveTask = cws.ReceiveAsync(new byte[1], CancellationToken.None);
 

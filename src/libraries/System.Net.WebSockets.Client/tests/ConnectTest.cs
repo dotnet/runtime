@@ -171,7 +171,6 @@ namespace System.Net.WebSockets.Client.Tests
                 Cookie secureCookie = new Cookie("Occasionally", "Raisin");
                 secureCookie.Secure = true;
 
-                // TODO: check options for handler
                 cws.Options.Cookies.Add(server, cookie1);
                 cws.Options.Cookies.Add(server, cookie2);
                 cws.Options.Cookies.Add(server, secureCookie);
