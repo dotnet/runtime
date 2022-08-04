@@ -57,14 +57,10 @@ namespace System.Linq
             // Before allocating anything, make sure there's at least one element.
             if (e.MoveNext())
             {
-                if (!source.TryGetNonEnumeratedCount(out int count))
-                {
-                    // Now that we know we have at least one item, allocate an initial storage array. This is not
-                    // the array we'll yield.  It starts out small in order to avoid significantly overallocating
-                    // when the source has many fewer elements than the chunk size.
-                    count = 4;
-                }
-                int arraySize = Math.Min(size, count);
+                // Now that we know we have at least one item, allocate an initial storage array. This is not
+                // the array we'll yield.  It starts out small in order to avoid significantly overallocating
+                // when the source has many fewer elements than the chunk size.
+                int arraySize = Math.Min(size, 4);
                 int i;
                 do
                 {
