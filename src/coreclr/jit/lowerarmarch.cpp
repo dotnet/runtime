@@ -2165,8 +2165,7 @@ void Lowering::ContainCheckAndChain(GenTree* tree)
     }
 
     // First check there is a valid chain.
-    if (IsValidCompareChain(tree->AsOp()->gtGetOp2(), tree) &&
-        IsValidCompareChain(tree->AsOp()->gtGetOp1(), tree))
+    if (IsValidCompareChain(tree->AsOp()->gtGetOp2(), tree) && IsValidCompareChain(tree->AsOp()->gtGetOp1(), tree))
     {
         GenTree* startOfChain = nullptr;
 
@@ -2242,7 +2241,7 @@ void Lowering::ContainCheckSelect(GenTreeConditional* node)
     }
 }
 
-#endif //TARGET_ARM64
+#endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
 // ContainCheckBoundsChk: determine whether any source of a bounds check node should be contained.

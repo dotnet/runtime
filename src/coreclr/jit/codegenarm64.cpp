@@ -4467,8 +4467,8 @@ void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCon
     insCflags cflags = InsCflagsForCcmp(GenCondition::FromRelop(tree));
 
     // For the condition, use the previous compare.
-    const GenConditionDesc& prevDesc = GenConditionDesc::Get(prevCond);
-    insCond prevInsCond = JumpKindToInsCond(prevDesc.jumpKind1);
+    const GenConditionDesc& prevDesc    = GenConditionDesc::Get(prevCond);
+    insCond                 prevInsCond = JumpKindToInsCond(prevDesc.jumpKind1);
 
     if (op2->isContainedIntOrIImmed())
     {
@@ -4520,7 +4520,7 @@ void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, GenC
         {
             emitter* emit = GetEmitter();
             emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op1->GetRegNum(), 0);
-            *prevCond  = GenCondition::NE;
+            *prevCond = GenCondition::NE;
             *inChain  = true;
         }
 
