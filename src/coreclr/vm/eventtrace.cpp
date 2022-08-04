@@ -4184,7 +4184,6 @@ VOID ETW::EnumerationLog::EndRundown()
                                                                             TRACE_LEVEL_INFORMATION,
                                                                             CLR_RUNDOWNJITTEDMETHODILTONATIVEMAP_KEYWORD);
         BOOL bIsRichDebugInfoEnabled =
-            bIsIlToNativeMapsRundownEnabled &&
             ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, JittedMethodRichDebugInfo);
 
         if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
@@ -5554,7 +5553,7 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
             _ASSERTE(g_pDebugInterface != NULL);
             g_pDebugInterface->InitializeLazyDataIfNecessary();
 
-            ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), pConfig->GetCodeVersion().GetILCodeVersionId());
+            ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), pConfig->GetCodeVersion().GetILCodeVersionId(), NULL);
         }
 
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
@@ -6517,6 +6516,17 @@ done:;
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
 
+VOID ETW::MethodLog::SendNonDuplicateMethodDetailsEvent(MethodDesc* pMethodDesc, MethodDescSet* set)
+{
+    if (set == NULL || !set->Contains(pMethodDesc))
+    {
+        SendMethodDetailsEvent(pMethodDesc);
+
+        if (set != NULL)
+            set->Add(pMethodDesc);
+    }
+}
+
 /*****************************************************************/
 /* This routine is used to send an ETW event just before a method starts jitting*/
 /*****************************************************************/
@@ -6596,7 +6606,7 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
 /****************************************************************************/
 /* This routine is used to send a method load/unload or rundown event                              */
 /****************************************************************************/
-VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig)
+VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig, MethodDescSet* sentMethodDetailsSet)
 {
     CONTRACTL {
         THROWS;
@@ -6733,7 +6743,7 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     szDtraceOutput2 = (PCWSTR)pMethodName;
     szDtraceOutput3 = (PCWSTR)pMethodSignature;
 
-    SendMethodDetailsEvent(pMethodDesc);
+    SendNonDuplicateMethodDetailsEvent(pMethodDesc, sentMethodDetailsSet);
 
     if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodLoad) ||
         (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad))
@@ -6947,7 +6957,7 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
         FireEtwMethodDCEndILToNativeMap_V1(ullMethodIdentifier, nativeCodeId, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId(), ilCodeId);
 }
 
-VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId)
+VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId, MethodDescSet* sentMethodDetailsSet)
 {
     CONTRACTL
     {
@@ -7019,7 +7029,7 @@ VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNat
         {
             MethodDesc* pInlineeMethodDesc = reinterpret_cast<MethodDesc*>(inlineTree[i].Method);
             if (pInlineeMethodDesc != pMethodDesc)
-                SendMethodDetailsEvent(pInlineeMethodDesc);
+                SendNonDuplicateMethodDetailsEvent(pInlineeMethodDesc, sentMethodDetailsSet);
         }
     }
 
@@ -7100,6 +7110,12 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
     _ASSERTE(pLoaderAllocatorFilter == nullptr || pLoaderAllocatorFilter->IsCollectible());
     _ASSERTE(pLoaderAllocatorFilter == nullptr || !fGetCodeIds);
 
+    // Set of methods for which we already have sent a MethodDetails event.
+    // Only used when sending rich debug info that would other send a lot of
+    // duplicate events.
+    MethodDescSet sentMethodDetailsSet;
+    MethodDescSet* pSentMethodDetailsSet = fSendRichDebugInfoEvent ? &sentMethodDetailsSet : NULL;
+
     EEJitManager::CodeHeapIterator heapIterator(pLoaderAllocatorFilter);
     while (heapIterator.Next())
     {
@@ -7160,7 +7176,9 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
                     NULL,           // methodName
                     NULL,           // methodSignature
                     codeStart,
-                    &config);
+                    &config,
+                    pSentMethodDetailsSet
+                    );
             }
         }
 
@@ -7169,7 +7187,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
             ETW::MethodLog::SendMethodILToNativeMapEvent(pMD, dwEventOptions, codeStart, nativeCodeVersionId, ilCodeId);
 
         if (fSendRichDebugInfoEvent)
-            ETW::MethodLog::SendMethodRichDebugInfo(pMD, codeStart, nativeCodeVersion.GetVersionId(), ilCodeId);
+            ETW::MethodLog::SendMethodRichDebugInfo(pMD, codeStart, nativeCodeVersion.GetVersionId(), ilCodeId, pSentMethodDetailsSet);
 
         // When we're called to announce unloads, then the methodunload event itself must
         // come after any supplemental events, so that the method unload event is the
