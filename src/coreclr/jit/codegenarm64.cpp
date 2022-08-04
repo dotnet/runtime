@@ -2557,8 +2557,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
 
     if (tree->OperIs(GT_AND) && op2->isContainedAndNotIntOrIImmed())
     {
-        insCond cond  = INS_COND_EQ; // Dummy value.
-        bool    chain = false;
+        GenCondition cond;
+        bool         chain = false;
 
         if (op1->isContained())
         {
@@ -2570,7 +2570,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         {
             // Op1 is not contained, move it from a register into flags.
             emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op1->GetRegNum(), 0);
-            cond  = INS_COND_NE;
+            cond  = GenCondition::NE;
             chain = true;
         }
         // Gen Op2 into flags.
@@ -2578,48 +2578,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         assert(chain);
 
         // Move the result from flags into a register.
-        genTreeOps opCond     = GT_EQ;
-        bool       isUnsigned = false;
-        switch (cond)
-        {
-            case INS_COND_EQ:
-                opCond = GT_EQ;
-                break;
-            case INS_COND_NE:
-                opCond = GT_NE;
-                break;
-            case INS_COND_GE:
-                opCond = GT_GE;
-                break;
-            case INS_COND_LT:
-                opCond = GT_LT;
-                break;
-            case INS_COND_GT:
-                opCond = GT_GT;
-                break;
-            case INS_COND_LE:
-                opCond = GT_LE;
-                break;
-            case INS_COND_HS:
-                isUnsigned = true;
-                opCond     = GT_GE;
-                break;
-            case INS_COND_HI:
-                isUnsigned = true;
-                opCond     = GT_GT;
-                break;
-            case INS_COND_LO:
-                isUnsigned = true;
-                opCond     = GT_LT;
-                break;
-            case INS_COND_LS:
-                isUnsigned = true;
-                opCond     = GT_LE;
-                break;
-            default:
-                assert(!"Unexpected cond");
-        }
-        inst_SETCC(GenCondition::FromIntegralRelop(opCond, isUnsigned), tree->TypeGet(), targetReg);
+        inst_SETCC(cond, tree->TypeGet(), targetReg);
         genProduceReg(tree);
         return;
     }
@@ -4485,7 +4444,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 //    tree - a compare node (GT_EQ etc)
 //    cond - the condition of the previous generated compare.
 //
-void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, insCond cond)
+void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCond)
 {
     emitter* emit = GetEmitter();
 
@@ -4505,17 +4464,21 @@ void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, insCond cond)
     assert(targetReg == REG_NA);
 
     // For the ccmp flags, invert the condition of the compare.
-    insCflags cflags = InsCflagsForCcmp(InsCondForCompareOp(tree));
+    insCflags cflags = InsCflagsForCcmp(GenCondition::FromRelop(tree));
+
+    // For the condition, use the previous compare.
+    const GenConditionDesc& prevDesc = GenConditionDesc::Get(prevCond);
+    insCond prevInsCond = JumpKindToInsCond(prevDesc.jumpKind1);
 
     if (op2->isContainedIntOrIImmed())
     {
         GenTreeIntConCommon* intConst = op2->AsIntConCommon();
-        emit->emitIns_R_I_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, (int)intConst->IconValue(), cflags, cond);
+        emit->emitIns_R_I_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, (int)intConst->IconValue(), cflags, prevInsCond);
     }
     else
     {
         regNumber srcReg2 = op2->GetRegNum();
-        emit->emitIns_R_R_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, srcReg2, cflags, cond);
+        emit->emitIns_R_R_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, srcReg2, cflags, prevInsCond);
     }
 }
 
@@ -4528,11 +4491,11 @@ void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, insCond cond)
 // Arguments:
 //    tree - the node. Either a compare or a tree of compares connected by ANDs.
 //    inChain - whether a contained chain is in progress.
-//    prev - If a chain is in progress, the condition of the previous compare.
+//    prevCond - If a chain is in progress, the condition of the previous compare.
 // Return:
 //    The last compare node generated.
 //
-void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, insCond* prevcond)
+void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, GenCondition* prevCond)
 {
     assert(tree->isContained());
     if (!*inChain)
@@ -4550,19 +4513,19 @@ void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, insC
         // If Op1 is contained, generate into flags. Otherwise, move the result into flags.
         if (op1->isContained())
         {
-            genCodeForContainedCompareChain(op1, inChain, prevcond);
+            genCodeForContainedCompareChain(op1, inChain, prevCond);
             assert(*inChain);
         }
         else
         {
             emitter* emit = GetEmitter();
             emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op1->GetRegNum(), 0);
-            *prevcond = INS_COND_NE;
+            *prevCond  = GenCondition::NE;
             *inChain  = true;
         }
 
         // Generate Op2 based on Op1.
-        genCodeForContainedCompareChain(op2, inChain, prevcond);
+        genCodeForContainedCompareChain(op2, inChain, prevCond);
         assert(*inChain);
     }
     else
@@ -4579,11 +4542,11 @@ void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, insC
         {
             // Within the chain. Use a conditional compare (which is
             // dependent on the previous emitted compare).
-            genCodeForConditionalCompare(tree->AsOp(), *prevcond);
+            genCodeForConditionalCompare(tree->AsOp(), *prevCond);
         }
 
         *inChain  = true;
-        *prevcond = InsCondForCompareOp(tree);
+        *prevCond = GenCondition::FromRelop(tree);
     }
 }
 
@@ -4607,12 +4570,12 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
     assert(!op1->isUsedFromMemory());
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
-    insCond cond = INS_COND_EQ; // Dummy value.
+    GenCondition prevCond;
     if (opcond->isContained())
     {
         // Generate the contained condition.
         bool chain = false;
-        genCodeForContainedCompareChain(opcond, &chain, &cond);
+        genCodeForContainedCompareChain(opcond, &chain, &prevCond);
         assert(chain);
     }
     else
@@ -4620,14 +4583,15 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
         // Condition has been generated into a register - move it into flags.
         genConsumeReg(opcond);
         emit->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
-        cond = INS_COND_NE;
+        prevCond = GenCondition::NE;
     }
 
-    regNumber targetReg = tree->GetRegNum();
-    regNumber srcReg1   = genConsumeReg(op1);
-    regNumber srcReg2   = genConsumeReg(op2);
+    regNumber               targetReg = tree->GetRegNum();
+    regNumber               srcReg1   = genConsumeReg(op1);
+    regNumber               srcReg2   = genConsumeReg(op2);
+    const GenConditionDesc& prevDesc  = GenConditionDesc::Get(prevCond);
 
-    emit->emitIns_R_R_R_COND(INS_csel, cmpSize, targetReg, srcReg1, srcReg2, cond);
+    emit->emitIns_R_R_R_COND(INS_csel, cmpSize, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
     regSet.verifyRegUsed(targetReg);
 }
 
@@ -10602,74 +10566,6 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
-// InsCondForCompareOp: Map the condition in a Compare/Conditional op to a insCond.
-//
-// Arguments:
-//    tree - the node
-//
-insCond CodeGen::InsCondForCompareOp(GenTree* tree)
-{
-    assert(tree->OperIsCompare());
-
-    switch (tree->AsOp()->OperGet())
-    {
-        case GT_EQ:
-        case GT_TEST_EQ:
-            return INS_COND_EQ;
-        case GT_NE:
-        case GT_TEST_NE:
-            return INS_COND_NE;
-        case GT_GE:
-            return tree->IsUnsigned() ? INS_COND_HS : INS_COND_GE;
-        case GT_GT:
-            return tree->IsUnsigned() ? INS_COND_HI : INS_COND_GT;
-        case GT_LT:
-            return tree->IsUnsigned() ? INS_COND_LO : INS_COND_LT;
-        case GT_LE:
-            return tree->IsUnsigned() ? INS_COND_LS : INS_COND_LE;
-        default:
-            assert(false && "Invalid condition");
-            return INS_COND_EQ;
-    }
-}
-
-//------------------------------------------------------------------------
-// InvertInsCond: Invert an insCond
-//
-// Arguments:
-//    cond - the insCond.
-//
-insCond CodeGen::InvertInsCond(insCond cond)
-{
-    switch (cond)
-    {
-        case INS_COND_EQ:
-            return INS_COND_NE;
-        case INS_COND_NE:
-            return INS_COND_EQ;
-        case INS_COND_GE:
-            return INS_COND_LT;
-        case INS_COND_GT:
-            return INS_COND_LE;
-        case INS_COND_LT:
-            return INS_COND_GE;
-        case INS_COND_LE:
-            return INS_COND_GT;
-        case INS_COND_HS:
-            return INS_COND_LO;
-        case INS_COND_HI:
-            return INS_COND_LS;
-        case INS_COND_LO:
-            return INS_COND_HS;
-        case INS_COND_LS:
-            return INS_COND_HI;
-        default:
-            assert(false && "Invalid condition");
-            return INS_COND_EQ;
-    }
-}
-
-//------------------------------------------------------------------------
 // InsCflagsForCcmp: Get the Cflags for a required for a CCMP instruction.
 //
 // Consider:
@@ -10680,35 +10576,81 @@ insCond CodeGen::InvertInsCond(insCond cond)
 // Given COND, this function returns A.
 //
 // Arguments:
-//    cond - the insCond.
+//    cond - the GenCondition.
 //
-insCflags CodeGen::InsCflagsForCcmp(insCond cond)
+insCflags CodeGen::InsCflagsForCcmp(GenCondition cond)
 {
-    switch (InvertInsCond(cond))
+    GenCondition inverted = GenCondition::Reverse(cond);
+    switch (inverted.GetCode())
     {
-        case INS_COND_EQ:
+        case GenCondition::EQ:
             return INS_FLAGS_Z;
-        case INS_COND_NE:
+        case GenCondition::NE:
             return INS_FLAGS_NONE;
-        case INS_COND_GE:
+        case GenCondition::SGE:
             return INS_FLAGS_Z;
-        case INS_COND_GT:
+        case GenCondition::SGT:
             return INS_FLAGS_NONE;
-        case INS_COND_LT:
+        case GenCondition::SLT:
             return INS_FLAGS_NC;
-        case INS_COND_LE:
+        case GenCondition::SLE:
             return INS_FLAGS_NZC;
-        case INS_COND_HS:
+        case GenCondition::UGE:
             return INS_FLAGS_C;
-        case INS_COND_HI:
+        case GenCondition::UGT:
             return INS_FLAGS_C;
-        case INS_COND_LO:
+        case GenCondition::ULT:
             return INS_FLAGS_NONE;
-        case INS_COND_LS:
+        case GenCondition::ULE:
             return INS_FLAGS_Z;
         default:
-            assert(false && "Invalid condition");
+            NO_WAY("unexpected condition type");
             return INS_FLAGS_NONE;
+    }
+}
+
+//------------------------------------------------------------------------
+// JumpKindToInsCond: Convert a Jump Kind to a condition.
+//
+// Arguments:
+//    condition - the emitJumpKind.
+//
+insCond CodeGen::JumpKindToInsCond(emitJumpKind condition)
+{
+    /* Convert the condition to an insCond value */
+    switch (condition)
+    {
+        case EJ_eq:
+            return INS_COND_EQ;
+        case EJ_ne:
+            return INS_COND_NE;
+        case EJ_hs:
+            return INS_COND_HS;
+        case EJ_lo:
+            return INS_COND_LO;
+        case EJ_mi:
+            return INS_COND_MI;
+        case EJ_pl:
+            return INS_COND_PL;
+        case EJ_vs:
+            return INS_COND_VS;
+        case EJ_vc:
+            return INS_COND_VC;
+        case EJ_hi:
+            return INS_COND_HI;
+        case EJ_ls:
+            return INS_COND_LS;
+        case EJ_ge:
+            return INS_COND_GE;
+        case EJ_lt:
+            return INS_COND_LT;
+        case EJ_gt:
+            return INS_COND_GT;
+        case EJ_le:
+            return INS_COND_LE;
+        default:
+            NO_WAY("unexpected condition type");
+            return INS_COND_EQ;
     }
 }
 
