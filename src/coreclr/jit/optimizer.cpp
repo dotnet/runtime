@@ -5018,13 +5018,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     assert(foundCondTree);
 
-    // Flag the block that received the copy as potentially having an array/vtable
-    // reference, nullcheck, object allocation if the block copied from did;
-    // this is a conservative guess.
-    if (auto copyFlags = bTest->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_NULLCHECK | BBF_HAS_NEWOBJ))
-    {
-        bNewCond->bbFlags |= copyFlags;
-    }
+    // Flag the block that received the copy as potentially having various constructs.
+    bNewCond->bbFlags |= bTest->bbFlags & BBF_COPY_PROPAGATE;
 
     bNewCond->bbJumpDest = bTest->bbNext;
     bNewCond->inheritWeight(block);
@@ -6341,7 +6336,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     compCurBB = preHead;
     hoist     = fgMorphTree(hoist);
 
-    preHead->bbFlags |= (exprBb->bbFlags & (BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_NULLCHECK));
+    preHead->bbFlags |= exprBb->bbFlags & BBF_COPY_PROPAGATE;
 
     Statement* hoistStmt = gtNewStmt(hoist);
 
