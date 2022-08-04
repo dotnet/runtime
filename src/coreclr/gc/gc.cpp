@@ -23550,7 +23550,7 @@ inline void Prefetch(void* addr)
 #define _MM_HINT_T0 1
 #endif
     _mm_prefetch((const char*)addr, _MM_HINT_T0);
-#elif TARGET_ARM64
+#elif defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
     __prefetch((const char*)addr);
 #else
     UNREFERENCED_PARAMETER(addr);
