@@ -372,24 +372,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private void EmitFunctionPointerTypeSignature(FunctionPointerType type, SignatureContext context)
         {
-            CorCallingConvention callingConvention = (type.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) switch
-            {
-                MethodSignatureFlags.None => CorCallingConvention.IMAGE_CEE_CS_CALLCONV_DEFAULT,
-                MethodSignatureFlags.UnmanagedCallingConventionCdecl => CorCallingConvention.IMAGE_CEE_CS_CALLCONV_C,
-                MethodSignatureFlags.UnmanagedCallingConventionStdCall => CorCallingConvention.IMAGE_CEE_CS_CALLCONV_STDCALL,
-                MethodSignatureFlags.UnmanagedCallingConventionThisCall => CorCallingConvention.IMAGE_CEE_CS_CALLCONV_THISCALL,
-                MethodSignatureFlags.CallingConventionVarargs => CorCallingConvention.IMAGE_CEE_CS_CALLCONV_VARARG,
-                MethodSignatureFlags.UnmanagedCallingConvention => CorCallingConvention.IMAGE_CEE_CS_CALLCONV_UNMANAGED,
-                _ => throw new NotSupportedException()
-            };
-
-            if ((type.Signature.Flags & MethodSignatureFlags.Static) == 0)
-            {
-                callingConvention |= CorCallingConvention.IMAGE_CEE_CS_CALLCONV_HASTHIS | CorCallingConvention.IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS;
-            }
+            SignatureCallingConvention callingConvention = (SignatureCallingConvention)(type.Signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
+            SignatureAttributes callingConventionAttributes = ((type.Signature.Flags & MethodSignatureFlags.Static) != 0 ? SignatureAttributes.None : SignatureAttributes.Instance);
 
             EmitElementType(CorElementType.ELEMENT_TYPE_FNPTR);
-            EmitUInt((byte)callingConvention);
+            EmitUInt((uint)((byte)callingConvention | (byte)callingConventionAttributes));
             EmitUInt((uint)type.Signature.Length);
 
             EmitTypeSignature(type.Signature.ReturnType, context);

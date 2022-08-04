@@ -95,36 +95,4 @@ namespace Internal.CorConstants
         mdtName = 0x71000000,
         mdtBaseType = 0x72000000,
     }
-
-    [Flags]
-    public enum CorUnmanagedCallingConvention
-    {
-        IMAGE_CEE_UNMANAGED_CALLCONV_C = 0x1,
-        IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL = 0x2,
-        IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL = 0x3,
-        IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL = 0x4,
-    }
-
-    [Flags]
-    public enum CorCallingConvention
-    {
-        IMAGE_CEE_CS_CALLCONV_DEFAULT = 0x0,
-        IMAGE_CEE_CS_CALLCONV_C = (int)CorUnmanagedCallingConvention.IMAGE_CEE_UNMANAGED_CALLCONV_C,
-        IMAGE_CEE_CS_CALLCONV_STDCALL = (int)CorUnmanagedCallingConvention.IMAGE_CEE_UNMANAGED_CALLCONV_STDCALL,
-        IMAGE_CEE_CS_CALLCONV_THISCALL = (int)CorUnmanagedCallingConvention.IMAGE_CEE_UNMANAGED_CALLCONV_THISCALL,
-        IMAGE_CEE_CS_CALLCONV_FASTCALL = (int)CorUnmanagedCallingConvention.IMAGE_CEE_UNMANAGED_CALLCONV_FASTCALL,
-        IMAGE_CEE_CS_CALLCONV_VARARG = 0x5,
-        IMAGE_CEE_CS_CALLCONV_FIELD = 0x6,
-        IMAGE_CEE_CS_CALLCONV_LOCAL_SIG = 0x7,
-        IMAGE_CEE_CS_CALLCONV_PROPERTY = 0x8,
-        IMAGE_CEE_CS_CALLCONV_UNMANAGED = 0x9,  // Unmanaged calling convention encoded as modopts
-        IMAGE_CEE_CS_CALLCONV_GENERICINST = 0xa,  // generic method instantiation
-        IMAGE_CEE_CS_CALLCONV_NATIVEVARARG = 0xb,  // used ONLY for 64bit vararg PInvoke calls
-        IMAGE_CEE_CS_CALLCONV_MAX = 0xc,  // first invalid calling convention
-
-        IMAGE_CEE_CS_CALLCONV_MASK = 0x0f,  // Calling convention is bottom 4 bits
-        IMAGE_CEE_CS_CALLCONV_HASTHIS = 0x20,  // Top bit indicates a 'this' parameter
-        IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS = 0x40,  // This parameter is explicitly in the signature
-        IMAGE_CEE_CS_CALLCONV_GENERIC = 0x10,  // Generic method sig with explicit number of type arguments (precedes ordinary parameter count)
-    }
 }
