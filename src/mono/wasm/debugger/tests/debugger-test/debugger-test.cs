@@ -100,7 +100,7 @@ public partial class Math
         return i - 2;
     }
 
-    public class NestedInMath
+    public partial class NestedInMath
     {
         public int InnerMethod(int i)
         {
