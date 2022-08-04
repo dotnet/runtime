@@ -15,3 +15,8 @@ When a pull request is open against this fork, we should determine if the change
 Assuming the branch with changes to upstream is named `great-new-feature` then a new branch of upstream [`main`](https://github.com/dotnet/runtime/tree/main) named `upstream-great-new-feature` should be created. Each commit from `great-new-feature` should be cherry-picked `upstream-great-new-feature`, and then a pull request should be opened from `upstream-great-new-feature` to [`main`](https://github.com/dotnet/runtime/tree/main) in the upstream repository.
 
 It is acceptable to _merge_ changes to this fork from `great-new-feature` before `upstream-great-new-feature` is merged, but we should at least _open_ an upstream pull request first.
+
+
+## Running yamato test scripts for local development purpose
+
+In unity/tests-scripts, there are four scripts (linux x64, osx x64, windows x64, windows x86) to run the [`yamato checks`](https://github.com/Unity-Technologies/runtime/tree/unity-main/.yamato) locally. Those scripts combine the build and test processes for each platform. 
