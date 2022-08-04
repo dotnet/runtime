@@ -10,7 +10,12 @@ namespace InteropLib
 {
     namespace ABI
     {
+#ifdef HOST_64BIT
+        const size_t DispatchAlignmentThisPtr = 64; // Should be a power of 2.
+#else
         const size_t DispatchAlignmentThisPtr = 16; // Should be a power of 2.
+#endif
+
         const intptr_t DispatchThisPtrMask = ~(DispatchAlignmentThisPtr - 1);
 
         // Managed object wrapper layout.

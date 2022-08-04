@@ -381,7 +381,7 @@ HRESULT ManagedObjectWrapper::Create(
     _ASSERTE((flags & CreateComInterfaceFlagsEx::InternalMask) == CreateComInterfaceFlagsEx::None);
 
     // Maximum number of runtime supplied vtables.
-    ABI::ComInterfaceEntry runtimeDefinedLocal[4];
+    ABI::ComInterfaceEntry runtimeDefinedLocal[2];
     int32_t runtimeDefinedCount = 0;
 
     // Check if the caller will provide the IUnknown table.
@@ -400,7 +400,7 @@ HRESULT ManagedObjectWrapper::Create(
         curr.Vtable = &ManagedObjectWrapper_IReferenceTrackerTargetImpl;
     }
 
-    _ASSERTE(runtimeDefinedCount <= (int) ARRAY_SIZE(runtimeDefinedLocal));
+    _ASSERTE(runtimeDefinedCount <= static_cast<int32_t>(ARRAY_SIZE(runtimeDefinedLocal)));
 
     // Compute size for ManagedObjectWrapper instance.
     const size_t totalRuntimeDefinedSize = runtimeDefinedCount * sizeof(ABI::ComInterfaceEntry);
