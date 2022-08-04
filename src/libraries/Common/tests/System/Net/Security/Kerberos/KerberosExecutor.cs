@@ -5,12 +5,10 @@ using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Kerberos.NET.Configuration;
 using Kerberos.NET.Crypto;
-using Kerberos.NET.Entities;
 using Kerberos.NET.Server;
 using Kerberos.NET.Logging;
 using Xunit.Abstractions;
@@ -28,7 +26,8 @@ public class KerberosExecutor : IDisposable
     private string? _keytabPath;
     private readonly List<FakeKerberosPrincipal> _servicePrincipals;
 
-    public static bool IsSupported { get; } = OperatingSystem.IsLinux() || OperatingSystem.IsMacOS();
+    public static bool IsSupported { get; } =
+        RemoteExecutor.IsSupported && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS());
 
     public const string DefaultAdminPassword = "PLACEHOLDERadmin.";
 
@@ -47,7 +46,6 @@ public class KerberosExecutor : IDisposable
         _principalService = new FakePrincipalService(realm);
 
         byte[] krbtgtPassword = new byte[16];
-        //RandomNumberGenerator.Fill(krbtgtPassword);
 
         var krbtgt = new FakeKerberosPrincipal(PrincipalType.Service, "krbtgt", realm, krbtgtPassword);
         _principalService.Add("krbtgt", krbtgt);
