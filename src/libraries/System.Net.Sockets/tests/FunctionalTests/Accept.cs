@@ -415,8 +415,10 @@ namespace System.Net.Sockets.Tests
                 // Close the socket aborting Accept
                 socket.Dispose();
 
-                // Give chance for the unobserved exception to propagate. For some reason both waiting and enforcing Finalization is needed for this.
+                // Wait for the internal AcceptAsync Task to complete with the exception.
                 await Task.Delay(30);
+
+                // Ensure that the internal TaskExceptionHolder is finalized and the exception published to UnobservedTaskException.
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
 
