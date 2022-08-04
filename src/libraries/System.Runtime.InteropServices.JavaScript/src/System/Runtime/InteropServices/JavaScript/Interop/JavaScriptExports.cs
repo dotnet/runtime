@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new InvalidProgramException(method.ReturnType.FullName);
+                    throw new InvalidProgramException($"Return type '{method.ReturnType.FullName}' from main method in not supported");
                 }
                 arg_result.ToJS(result, (ref JSMarshalerArgument arg, int value) =>
                 {
