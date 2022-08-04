@@ -557,7 +557,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void HonorNamingPolicyOnDeserialization()
+        public static void Honor_EnumNamingPolicy_On_Deserialization()
         {
             JsonSerializerOptions options = new()
             {
@@ -574,28 +574,44 @@ namespace System.Text.Json.Serialization.Tests
             bindingFlags = JsonSerializer.Deserialize<BindingFlags>(@"""NonPublic, Public""", options);
             Assert.Equal(BindingFlags.NonPublic | BindingFlags.Public, bindingFlags);
 
-            // Flags not supported with naming policy.
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BindingFlags>(@"""non_public, public""", options));
-
-            // Naming policy honored for values within the 64-count cache limit.
-            EnumWithMoreThan64Values customEnum = JsonSerializer.Deserialize<EnumWithMoreThan64Values>(@"""a_a_a""", options);
-            Assert.Equal(EnumWithMoreThan64Values.AAA, customEnum);
-
-            // Naming policy not honored for values outside the 64-count cache limit.
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EnumWithMoreThan64Values>(@"""x_x_x""", options));
+            // Flags supported with naming policy.
+            bindingFlags = JsonSerializer.Deserialize<BindingFlags>(@"""static, public""", options);
+            Assert.Equal(BindingFlags.Static | BindingFlags.Public, bindingFlags);
 
             // Null not supported.
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EnumWithMoreThan64Values>("null", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BindingFlags>("null", options));
 
             // Null supported for nullable enum.
-            Assert.Null(JsonSerializer.Deserialize<EnumWithMoreThan64Values?>("null", options));
+            Assert.Null(JsonSerializer.Deserialize<BindingFlags?>("null", options));
         }
 
-        public enum EnumWithMoreThan64Values
+        [Fact]
+        public static void EnumDictionaryKeyDeserialization()
         {
-            A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X,
-            AA, BB, CC, DD, EE, FF, GG, HH, II, JJ, KK, LL, MM, NN, OO, PP, QQ, RR, SS, TT, UU, VV, WW, XX,
-            AAA, BBB, CCC, DDD, EEE, FFF, GGG, HHH, III, JJJ, KKK, LLL, MMM, NNN, OOO, PPP, QQQ, RRR, SSS, TTT, UUU, VVV, WWW, XXX
+            JsonNamingPolicy snakeCasePolicy = new SimpleSnakeCasePolicy();
+            JsonSerializerOptions options = new()
+            {
+                Converters =
+                {
+                    new JsonStringEnumConverter(namingPolicy: snakeCasePolicy)
+                },
+                DictionaryKeyPolicy = snakeCasePolicy
+            };
+
+            // Baseline.
+            var dict = JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""NonPublic, Public"": 1}", options);
+            Assert.Equal(1, dict[BindingFlags.NonPublic | BindingFlags.Public]);
+
+            // DictionaryKeyPolicy not honored for dict key deserialization.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""NonPublic0, Public0"": 1}", options));
+
+            // EnumConverter naming policy not honored.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""non_public, static"": 0, ""NonPublic, Public"": 1}", options));
+        }
+
+        private class ZeroAppenderPolicy : JsonNamingPolicy
+        {
+            public override string ConvertName(string name) => name + "0";
         }
     }
 }
