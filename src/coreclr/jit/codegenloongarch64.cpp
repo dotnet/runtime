@@ -9190,7 +9190,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     storeType = varDsc->GetLayout()->GetGCPtrType(0);
                 }
             }
-            slotSize = (int)emitActualTypeSize(storeType);
+            slotSize = (int)EA_SIZE(emitActualTypeSize(storeType));
 
 #if FEATURE_MULTIREG_ARGS
             // Must be <= MAX_PASS_MULTIREG_BYTES or else it wouldn't be passed in registers
@@ -9238,7 +9238,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
             {
                 assert(tmp_reg == REG_NA);
 
-                tmp_reg    = REG_R21;
+                tmp_reg = REG_R21;
                 GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, baseOffset);
                 // The last parameter `int offs` of the `emitIns_S_R` is negtive,
                 // it means the offset imm had been stored within the `REG_R21`.
@@ -9287,16 +9287,17 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     {
                         if (tmp_reg == REG_NA)
                         {
-                            tmp_reg    = REG_R21;
                             GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, baseOffset);
                             // The last parameter `int offs` of the `emitIns_S_R` is negtive,
                             // it means the offset imm had been stored within the `REG_R21`.
-                            GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum, -8);
+                            GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum,
+                                                      -slotSize - 8);
                         }
                         else
                         {
-                            GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R21, TARGET_POINTER_SIZE);
-                            GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum, -8);
+                            GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R21, slotSize);
+                            GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, varNum,
+                                                      -slotSize - 8);
                         }
                     }
                     regArgMaskLive &= ~genRegMask(srcRegNum); // maybe do this later is better!
@@ -9321,7 +9322,6 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     {
                         if (tmp_reg == REG_NA)
                         {
-                            tmp_reg    = REG_R21;
                             GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, baseOffset);
                             // The last parameter `int offs` of the `emitIns_S_R` is negtive,
                             // it means the offset imm had been stored within the `REG_R21`.
@@ -9330,7 +9330,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         else
                         {
                             GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R21, TARGET_POINTER_SIZE);
-                            GetEmitter()->emitIns_S_R(INS_stx_d, size, REG_SCRATCH, varNum, -8);
+                            GetEmitter()->emitIns_S_R(INS_stx_d, size, REG_SCRATCH, varNum, -slotSize - 8);
                         }
                     }
                 }
