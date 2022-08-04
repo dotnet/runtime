@@ -342,7 +342,7 @@ namespace System
             {
                 if (!isUnsigned && sbyte.IsNegative((sbyte)source[0]))
                 {
-                    // When we are signed and the sign bit is set is set we are negative and therefore
+                    // When we are signed and the sign bit is set we are negative and therefore
                     // definitely out of range
 
                     value = result;
