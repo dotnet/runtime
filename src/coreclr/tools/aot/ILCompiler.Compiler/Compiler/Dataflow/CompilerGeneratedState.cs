@@ -427,12 +427,11 @@ namespace ILCompiler.Dataflow
                         // (such as AsyncTaskMethodBuilder::Start<TStateMachine>).
                         if (!handled && methodOperand is not null)
                         {
-                            // TODO!!!
-                            if (methodOperand != methodOperand.GetTypicalMethodDefinition()) // If method is instantiated generic (not definition)
+                            if (methodOperand != methodOperand.GetTypicalMethodDefinition())
                             {
                                 foreach (var tr in methodOperand.Instantiation)
                                 {
-                                    if (tr is MetadataType && tr != tr.GetTypeDefinition() // If type is instantiated generic
+                                    if (tr is MetadataType && tr != tr.GetTypeDefinition()
                                         && compilerGeneratedType == tr.GetTypeDefinition())
                                     {
                                         return tr as MetadataType;

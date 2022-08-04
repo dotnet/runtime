@@ -10,6 +10,8 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+#pragma warning disable CS4014 // async call is not awaited
+
 	[ExpectedNoWarnings]
 	[SkipKeptItemsValidation]
 	public class CompilerGeneratedTypes
