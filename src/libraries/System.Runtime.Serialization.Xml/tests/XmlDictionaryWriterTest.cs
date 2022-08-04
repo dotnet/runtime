@@ -331,7 +331,7 @@ public static class XmlDictionaryWriterTest
         writer.WriteStartElement("root");
 
         int[] lengths = new[] { 7, 8, 9, 15, 16, 17, 31, 32, 36, 258 };
-        byte[] buffer = new byte[lengths.Max() * 1];
+        byte[] buffer = new byte[lengths.Max() + 1];
 
         foreach (var length in lengths)
         {
