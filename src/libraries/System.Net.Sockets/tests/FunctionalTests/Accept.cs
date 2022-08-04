@@ -393,7 +393,7 @@ namespace System.Net.Sockets.Tests
                 socket.Listen(10);
 
                 bool unobservedThrown = false;
-                TaskScheduler.UnobservedTaskException += OnUnobservedException;
+                TaskScheduler.UnobservedTaskException += (_, __) => unobservedThrown = true;
 
                 await Task.Run(() =>
                 {
@@ -401,7 +401,7 @@ namespace System.Net.Sockets.Tests
                     {
                         try
                         {
-                            var accepted = socket.EndAccept(asyncResult);
+                            socket.EndAccept(asyncResult);
                         }
                         catch
                         {
@@ -423,11 +423,6 @@ namespace System.Net.Sockets.Tests
                 GC.WaitForPendingFinalizers();
 
                 Assert.False(unobservedThrown);
-
-                void OnUnobservedException(object sender, UnobservedTaskExceptionEventArgs? args)
-                {
-                    unobservedThrown = true;
-                }
             }).Dispose();   
         }
     }
