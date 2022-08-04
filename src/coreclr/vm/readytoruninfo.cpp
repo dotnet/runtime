@@ -751,6 +751,50 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                                                         ofRead,
                                                         IID_IMDInternalImport,
                                                         (void **) &pNativeMDImport));
+
+            HENUMInternal assemblyEnum;
+            HRESULT hr = pNativeMDImport->EnumAllInit(mdtAssemblyRef, &assemblyEnum);
+            mdAssemblyRef assemblyRef;
+            int32_t manifestAssemblyCount = 0;
+            GUID emptyGuid  = {0};
+
+            AssemblyBinder* binder = pModule != NULL ? pModule->GetPEAssembly()->GetAssemblyBinder() : pNativeImage->GetAssemblyBinder();
+            auto pComponentAssemblyMvids = FindSection(ReadyToRunSectionType::ManifestAssemblyMvids);
+            if (pComponentAssemblyMvids != NULL)
+            {
+                const GUID *componentMvids = (const GUID *)m_pComposite->GetLayout()->GetDirectoryData(pComponentAssemblyMvids);
+                // Take load lock so that DeclareDependencyOnMvid can be called
+
+                BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
+
+                while (pNativeMDImport->EnumNext(&assemblyEnum, &assemblyRef))
+                {
+                    const GUID *componentMvid = &componentMvids[manifestAssemblyCount];
+
+                    if (IsEqualGUID(*componentMvid, emptyGuid))
+                    {
+                        // Empty guid does not need further handling.
+                        continue;
+                    }
+
+                    if ((manifestAssemblyCount == 0) && pNativeImage == NULL)
+                    {
+                        // This is the definition module, and doesn't need to express a dependency.
+#ifdef _DEBUG
+                        LPCSTR assemblyName;
+                        IfFailThrow(pNativeMDImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL));
+                        _ASSERTE(strcmp(assemblyName, pModule->GetSimpleName()) == 0);
+#endif // _DEBUG
+                        continue;
+                    }
+
+                    LPCSTR assemblyName;
+                    IfFailThrow(pNativeMDImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL));
+
+                    binder->DeclareDependencyOnMvid(assemblyName, *componentMvid, pNativeImage != NULL ? pNativeImage->GetFileName() : pModule->GetSimpleName());
+                    manifestAssemblyCount++;
+                }
+            }
         }
         else
         {

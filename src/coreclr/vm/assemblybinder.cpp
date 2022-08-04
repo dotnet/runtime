@@ -38,27 +38,125 @@ NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 na
     bool isNewNativeImage;
     NativeImage* nativeImage = NativeImage::Open(componentModule, nativeImageName, binder, moduleLoaderAllocator, &isNewNativeImage);
 
-    if (isNewNativeImage && nativeImage != nullptr)
-    {
-        m_nativeImages.Append(nativeImage);
+    return nativeImage;
+}
 
-        for (COUNT_T assemblyIndex = 0; assemblyIndex < m_loadedAssemblies.GetCount(); assemblyIndex++)
+#ifdef FEATURE_READYTORUN
+void AssemblyBinder::DeclareDependencyOnMvid(LPCUTF8 simpleName, GUID mvid, LPCUTF8 requestingAssemblyName)
+{
+    // If the table is empty, then we didn't fill it with all the loaded assemblies as they were loaded. Record this detail, and fix after adding the dependency
+    bool addAllLoadedModules = false;
+    if (m_assemblySimpleNameMvidCheckHash.GetCount() == 0)
+    {
+        addAllLoadedModules = true;
+    }
+
+    SimpleNameToExpectedMVIDAndRequiringAssembly* foundElem = (SimpleNameToExpectedMVIDAndRequiringAssembly*)m_assemblySimpleNameMvidCheckHash.LookupPtr(simpleName);
+    if (foundElem == NULL)
+    {
+        SimpleNameToExpectedMVIDAndRequiringAssembly newElem(simpleName, mvid, requestingAssemblyName);
+        m_assemblySimpleNameMvidCheckHash.Add(newElem);
+    }
+    else
+    {
+        // Elem already exists. Determine if the existing elem is another one with the same mvid, in which case just record that a dependency is in play.
+        // If the existing elem has a different mvid, fail.
+        if (IsEqualGUID(mvid, foundElem->Mvid))
         {
-            nativeImage->CheckAssemblyMvid(m_loadedAssemblies[assemblyIndex]);
+            // Mvid matches exactly.
+            if (foundElem->RequiredAssemblySimpleName == NULL)
+                foundElem->RequiredAssemblySimpleName = requestingAssemblyName;
+        }
+        else
+        {
+            static const size_t MVID_TEXT_LENGTH = 39;
+            WCHAR assemblyMvidText[MVID_TEXT_LENGTH];
+            StringFromGUID2(foundElem->Mvid, assemblyMvidText, MVID_TEXT_LENGTH);
+
+            WCHAR componentMvidText[MVID_TEXT_LENGTH];
+            StringFromGUID2(mvid, componentMvidText, MVID_TEXT_LENGTH);
+
+            SString message;
+            message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)"),
+                SString(SString::Utf8, simpleName).GetUnicode(),
+                assemblyMvidText,
+                SString(SString::Utf8, requestingAssemblyName).GetUnicode(),
+                componentMvidText);
+
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
         }
     }
 
-    return nativeImage;
+    if (addAllLoadedModules)
+    {
+        for (COUNT_T assemblyIndex = 0; assemblyIndex < m_loadedAssemblies.GetCount(); assemblyIndex++)
+        {
+           DeclareLoadedAssembly(m_loadedAssemblies[assemblyIndex]);
+        }
+    }
 }
+
+void AssemblyBinder::DeclareLoadedAssembly(Assembly* loadedAssembly)
+{
+    // If table is empty, then no mvid dependencies have been declared, so we don't need to record this information
+    if (m_assemblySimpleNameMvidCheckHash.GetCount() == 0)
+        return;
+
+    GUID mvid;
+    loadedAssembly->GetMDImport()->GetScopeProps(NULL, &mvid);
+
+    LPCUTF8 simpleName = loadedAssembly->GetSimpleName();
+
+    SimpleNameToExpectedMVIDAndRequiringAssembly* foundElem = (SimpleNameToExpectedMVIDAndRequiringAssembly*)m_assemblySimpleNameMvidCheckHash.LookupPtr(simpleName);
+    if (foundElem == NULL)
+    {
+        SimpleNameToExpectedMVIDAndRequiringAssembly newElem(simpleName, mvid, NULL);
+        m_assemblySimpleNameMvidCheckHash.Add(newElem);
+    }
+    else
+    {
+        // Elem already exists. Determine if the existing elem is another one with the same mvid, in which case do nothing. Everything is fine here.
+        // If the existing elem has a different mvid, but isn't a dependency on exact mvid elem, then set the mvid to all 0.
+        // If the existing elem has a different mvid, and is a dependency on exact mvid elem, then we've hit a fatal error.
+        if (IsEqualGUID(mvid, foundElem->Mvid))
+        {
+            // Mvid matches exactly.
+        }
+        else if (foundElem->RequiredAssemblySimpleName == NULL)
+        {
+            // Another loaded assembly, set the stored Mvid to all zeroes to indicate that it isn't a unique mvid
+            memset(&foundElem->Mvid, 0, sizeof(GUID));
+        }
+        else
+        {
+            static const size_t MVID_TEXT_LENGTH = 39;
+            WCHAR assemblyMvidText[MVID_TEXT_LENGTH];
+            StringFromGUID2(mvid, assemblyMvidText, MVID_TEXT_LENGTH);
+
+            WCHAR componentMvidText[MVID_TEXT_LENGTH];
+            StringFromGUID2(foundElem->Mvid, componentMvidText, MVID_TEXT_LENGTH);
+
+            SString message;
+            message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)"),
+                SString(SString::Utf8, simpleName).GetUnicode(),
+                assemblyMvidText,
+                SString(SString::Utf8, foundElem->RequiredAssemblySimpleName).GetUnicode(),
+                componentMvidText);
+
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
+        }
+    }
+}
+#endif // FEATURE_READYTORUN
 
 void AssemblyBinder::AddLoadedAssembly(Assembly* loadedAssembly)
 {
     BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
     m_loadedAssemblies.Append(loadedAssembly);
-    for (COUNT_T nativeImageIndex = 0; nativeImageIndex < m_nativeImages.GetCount(); nativeImageIndex++)
-    {
-        m_nativeImages[nativeImageIndex]->CheckAssemblyMvid(loadedAssembly);
-    }
+
+#ifdef FEATURE_READYTORUN
+    DeclareLoadedAssembly(loadedAssembly);
+#endif // FEATURE_READYTORUN
 }
 
 void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* out */ SString& alcName)
