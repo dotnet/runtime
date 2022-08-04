@@ -9170,9 +9170,9 @@ public:
         bool optRepeat; // Repeat optimizer phases k times
 #endif
 
-        bool disAsm;          // Display native code as it is generated
-        bool dspDiffable;     // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
-        bool disDiffable;     // Makes the Disassembly code 'diff-able'
+        bool disAsm;      // Display native code as it is generated
+        bool dspDiffable; // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
+        bool disDiffable; // Makes the Disassembly code 'diff-able'
 #ifdef DEBUG
         bool compProcedureSplittingEH; // Separate cold code from hot code for functions with EH
         bool dspCode;                  // Display native code generated
@@ -9189,9 +9189,9 @@ public:
         bool disAsm2;                  // Display native code after it is generated using external disassembler
         bool dspOrder;                 // Display names of each of the methods that we ngen/jit
         bool dspUnwind;                // Display the unwind info output
-        bool compLongAddress; // Force using large pseudo instructions for long address
-                              // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
-        bool dspGCtbls;       // Display the GC tables
+        bool compLongAddress;          // Force using large pseudo instructions for long address
+                                       // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
+        bool dspGCtbls;                // Display the GC tables
 #endif
 
         bool compExpandCallsEarly; // True if we should expand virtual call targets early for this method
@@ -9808,7 +9808,7 @@ public:
     unsigned compStatementID;
     unsigned compBasicBlockID;
 #endif
-    LONG     compMethodID;
+    LONG compMethodID;
 
     BasicBlock* compCurBB;   // the current basic block in process
     Statement*  compCurStmt; // the current statement in process

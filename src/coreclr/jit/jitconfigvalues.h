@@ -270,13 +270,10 @@ CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile")) // Ngen Xml/Dot flowgraph dum
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
                                                                            // intrinsic classes
 
-#else // defined(DEBUG)
+#else  // defined(DEBUG)
 
-// JitDisasm works in Release too
+// JitDisasm is supported in Release too
 CONFIG_METHODSET(JitDisasm, W("JitDisasm"))
-CONFIG_INTEGER(DiffableDasm, W("JitDiffableDasm"), 0)
-CONFIG_METHODSET(NgenDisasm, W("NgenDisasm")) // Same as JitDisasm, but for R2R/ILC
-
 #endif // !defined(DEBUG)
 
 CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug info and report it back to the EE

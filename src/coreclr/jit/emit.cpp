@@ -1519,7 +1519,6 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     id->idDebugOnlyInfo(info);
 
-
     /* Store the size and handle the two special values
        that indicate GCref and ByRef */
 
@@ -4126,7 +4125,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
             printf("%s \"%S\"", commentPrefix, buf);
         }
 #else
-        str = "string handle";
+        str                   = "string handle";
 #endif
     }
     else if (flag == GTF_ICON_CLASS_HDL)
@@ -6663,7 +6662,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 printf("\n");
             }
         }
-#else // DEBUG
+#else  // DEBUG
         if (emitComp->opts.disAsm)
         {
             printf("\n%s:", emitLabelString(ig));
@@ -6914,7 +6913,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                    ig->igPerfScore);
         }
         *instrCount += ig->igInsCnt;
-#else // DEBUG
+#else  // DEBUG
         if (emitComp->opts.disAsm)
         {
             // Separate IGs with a blank line
@@ -7941,7 +7940,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                 {
                     case TYP_FLOAT:
                         assert(data->dsSize >= 4);
-                        printf("\tdd\t%08llXh\t", (UINT64)*reinterpret_cast<uint32_t*>(&data->dsCont[i]));
+                        printf("\tdd\t%08llXh\t", (UINT64) * reinterpret_cast<uint32_t*>(&data->dsCont[i]));
                         printf("\t; %9.6g", *reinterpret_cast<float*>(&data->dsCont[i]));
                         i += 4;
                         break;

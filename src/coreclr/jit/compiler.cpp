@@ -2818,9 +2818,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
 
-    opts.disAsm          = false;
-    opts.disDiffable     = false;
-    opts.dspDiffable     = false;
+    opts.disAsm      = false;
+    opts.disDiffable = false;
+    opts.dspDiffable = false;
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -3069,7 +3069,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
         s_pJitFunctionFileInitialized = true;
     }
-#else // DEBUG
+#else  // DEBUG
     if (!JitConfig.JitDisasm().isEmpty())
     {
         const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);

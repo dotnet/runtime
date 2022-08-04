@@ -4367,7 +4367,7 @@ void emitter::emitIns_IJ(emitAttr attr, regNumber reg, unsigned base)
     id->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
     id->idAddr()->iiaAddrMode.amIndxReg = reg;
     id->idAddr()->iiaAddrMode.amScale   = emitter::OPSZP;
-    id->idDebugOnlyInfo()->idMemCookie = base;
+    id->idDebugOnlyInfo()->idMemCookie  = base;
 
     id->idCodeSize(sz);
 
@@ -7989,7 +7989,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idCallSig = sigInfo;
-#endif // DEBUG    
+#endif
     id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
 
 #ifdef LATE_DISASM
@@ -8751,7 +8751,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
 
     printf("]");
 
-    // pretty print string if it looks like one
+// pretty print string if it looks like one
 #ifdef DEBUG
     if ((id->idGCref() == GCT_GCREF) && (id->idIns() == INS_mov) && (id->idAddr()->iiaAddrMode.amBaseReg == REG_NA))
     {
@@ -14767,7 +14767,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }
 #else
-    if (emitComp->opts.disAsm&& !emitJmpInstHasNoCode(id))
+    if (emitComp->opts.disAsm && !emitJmpInstHasNoCode(id))
     {
         emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }

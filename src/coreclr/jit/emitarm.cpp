@@ -4836,8 +4836,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                    VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
         }
     }
-    id->idDebugOnlyInfo()->idCallSig   = sigInfo;
-#endif // DEBUG
+    id->idDebugOnlyInfo()->idCallSig = sigInfo;
+#endif
     id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
 
 #ifdef LATE_DISASM
