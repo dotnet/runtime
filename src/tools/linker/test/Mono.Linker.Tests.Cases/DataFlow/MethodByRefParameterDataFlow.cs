@@ -190,6 +190,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
+		#region InheritsFromType
 		class InheritsFromType : Type
 		{
 			public void MethodWithRefAndImplicitThis ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] ref Type type1,
@@ -368,5 +369,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				throw new NotImplementedException ();
 			}
 		}
+		#endregion
 	}
 }
