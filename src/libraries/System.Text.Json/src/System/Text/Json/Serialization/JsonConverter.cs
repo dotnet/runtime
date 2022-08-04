@@ -125,19 +125,6 @@ namespace System.Text.Json.Serialization
         // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized { get; }
 
-        /// <summary>
-        ///  For reflection-based metadata generation, indicates whether the
-        ///  converter avails of default constructors when deserializing types.
-        /// </summary>
-        internal bool UsesDefaultConstructor =>
-            ConverterStrategy switch
-            {
-                ConverterStrategy.Object => !ConstructorIsParameterized && this is not ObjectConverter,
-                ConverterStrategy.Enumerable or
-                ConverterStrategy.Dictionary => true,
-                _ => false
-            };
-
         internal ConstructorInfo? ConstructorInfo { get; set; }
 
         /// <summary>
