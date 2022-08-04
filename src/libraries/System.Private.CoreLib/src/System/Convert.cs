@@ -105,7 +105,7 @@ namespace System
         internal const string Base64Table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
         private const int Base64LineBreakPosition = 76;
-        private const int Base64VectorizationLengthThreshold = 64;
+        private const int Base64VectorizationLengthThreshold = 16;
 
 #if DEBUG
         static Convert()
@@ -2465,6 +2465,7 @@ namespace System
             // and then widen the resulting bytes into chars.
             Debug.Assert(bytes.Length >= Base64VectorizationLengthThreshold);
             Debug.Assert(chars.Length >= charLengthRequired);
+            Debug.Assert(charLengthRequired % 4 == 0);
 
             // Base64-encode the bytes directly into the destination char buffer (reinterpreted as a byte buffer).
             OperationStatus status = Base64.EncodeToUtf8(bytes, MemoryMarshal.AsBytes(chars), out _, out int bytesWritten);
@@ -2473,8 +2474,8 @@ namespace System
             // Now widen the ASCII bytes in-place to chars (if the vectorized ASCIIUtility.WidenAsciiToUtf16 is ever updated
             // to support in-place updates, it should be used here instead). Since the base64 bytes are all valid ASCII, the byte
             // data is guaranteed to be 1/2 as long as the char data, and we can widen in-place.
-            ref char dest = ref MemoryMarshal.GetReference(chars);
-            ref byte src = ref Unsafe.As<char, byte>(ref dest);
+            ref ushort dest = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(chars));
+            ref byte src = ref Unsafe.As<ushort, byte>(ref dest);
             ref byte srcBeginning = ref src;
 
             // We process the bytes/chars from right to left to avoid overwriting the remaining unprocessed data.
@@ -2492,11 +2493,10 @@ namespace System
                     src = ref Unsafe.Subtract(ref src, 32);
                     dest = ref Unsafe.Subtract(ref dest, 32);
 
-                    Vector256<byte> utf8Vector = Vector256.LoadUnsafe(ref src);
-                    (Vector256<ushort> utf16Lower, Vector256<ushort> utf16Upper) = Vector256.Widen(utf8Vector);
+                    (Vector256<ushort> utf16Lower, Vector256<ushort> utf16Upper) = Vector256.Widen(Vector256.LoadUnsafe(ref src));
 
-                    utf16Lower.StoreUnsafe(ref Unsafe.As<char, ushort>(ref dest));
-                    utf16Upper.StoreUnsafe(ref Unsafe.As<char, ushort>(ref dest), 16);
+                    utf16Lower.StoreUnsafe(ref dest);
+                    utf16Upper.StoreUnsafe(ref dest, 16);
                 }
             }
 
@@ -2509,33 +2509,28 @@ namespace System
                     src = ref Unsafe.Subtract(ref src, 16);
                     dest = ref Unsafe.Subtract(ref dest, 16);
 
-                    Vector128<byte> utf8Vector = Vector128.LoadUnsafe(ref src);
-                    (Vector128<ushort> utf16Lower, Vector128<ushort> utf16Upper) = Vector128.Widen(utf8Vector);
+                    (Vector128<ushort> utf16Lower, Vector128<ushort> utf16Upper) = Vector128.Widen(Vector128.LoadUnsafe(ref src));
 
-                    utf16Lower.StoreUnsafe(ref Unsafe.As<char, ushort>(ref dest));
-                    utf16Upper.StoreUnsafe(ref Unsafe.As<char, ushort>(ref dest), 8);
+                    utf16Lower.StoreUnsafe(ref dest);
+                    utf16Upper.StoreUnsafe(ref dest, 8);
                 }
             }
 
             // Handle 4 bytes at a time.
-            ref byte srcBeginningPlusThree = ref Unsafe.Add(ref srcBeginning, 3);
-            while (Unsafe.IsAddressGreaterThan(ref src, ref srcBeginningPlusThree))
+            ref byte srcBeginningPlus3 = ref Unsafe.Add(ref srcBeginning, 3);
+            while (Unsafe.IsAddressGreaterThan(ref src, ref srcBeginningPlus3))
             {
                 dest = ref Unsafe.Subtract(ref dest, 4);
                 src = ref Unsafe.Subtract(ref src, 4);
-                ASCIIUtility.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref dest, Unsafe.ReadUnaligned<uint>(ref src));
+                ASCIIUtility.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref Unsafe.As<ushort, char>(ref dest), Unsafe.ReadUnaligned<uint>(ref src));
             }
 
-            // Handle 1 byte at a time.
-            while (Unsafe.IsAddressGreaterThan(ref src, ref srcBeginning))
-            {
-                dest = ref Unsafe.Subtract(ref dest, 1);
-                src = ref Unsafe.Subtract(ref src, 1);
-                dest = (char)src;
-            }
+            // The length produced by Base64 encoding is always a multiple of 4, so we don't need to handle
+            // 1 byte at a time as is common in other vectorized operations, as nothing will remain after
+            // the 4-byte loop.
 
-            Debug.Assert(Unsafe.AreSame(ref src, ref srcBeginning));
-            Debug.Assert(Unsafe.AreSame(ref src, ref Unsafe.As<char, byte>(ref dest)),
+            Debug.Assert(Unsafe.AreSame(ref srcBeginning, ref src));
+            Debug.Assert(Unsafe.AreSame(ref srcBeginning, ref Unsafe.As<ushort, byte>(ref dest)),
                 "The two references should have ended up exactly at the beginning");
         }
 
