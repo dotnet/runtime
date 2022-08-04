@@ -10,7 +10,6 @@ import { EmscriptenModule } from "./types/emscripten";
 // these are our public API (except internal)
 export let Module: EmscriptenModule & DotnetModule;
 export let INTERNAL: any;
-export let EXPORTS: any;
 export let IMPORTS: any;
 
 // these are imported and re-exported from emscripten internals
@@ -28,9 +27,6 @@ export function set_imports_exports(
     INTERNAL = exports.internal;
     Module = exports.module;
 
-    EXPORTS = exports.marshaled_exports; // [JSExport]
-    IMPORTS = exports.marshaled_imports; // [JSImport]
-
     ENVIRONMENT_IS_NODE = imports.isNode;
     ENVIRONMENT_IS_SHELL = imports.isShell;
     ENVIRONMENT_IS_WEB = imports.isWeb;
@@ -47,7 +43,6 @@ export const runtimeHelpers: RuntimeHelpers = <any>{
     mono_wasm_bindings_is_ready: false,
     max_parallel_downloads: 16,
     config: {},
-    diagnostic_tracing: false,
-    enable_debugging: false,
+    diagnosticTracing: false,
     fetch: null
 };

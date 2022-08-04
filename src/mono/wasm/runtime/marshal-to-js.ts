@@ -6,7 +6,7 @@ import cwraps from "./cwraps";
 import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy } from "./gc-handles";
 import { Module, runtimeHelpers } from "./imports";
 import {
-    ManagedObject, JSMarshalerArgument, ManagedError, JSMarshalerArguments, MarshalerToCs, MarshalerToJs, JSMarshalerType,
+    ManagedObject, ManagedError,
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
     get_arg_b8, get_arg_date, get_arg_length, set_js_handle, get_arg, set_arg_type,
     get_signature_arg2_type, get_signature_arg1_type, get_signature_type, cs_to_js_marshalers, js_to_cs_marshalers,
@@ -14,7 +14,7 @@ import {
     ArraySegment, Span, MemoryViewType, get_signature_arg3_type, MarshalerType, get_arg_i64_big, get_arg_intptr, get_arg_element_type
 } from "./marshal";
 import { conv_string_root } from "./strings";
-import { mono_assert, JSHandleNull, GCHandleNull } from "./types";
+import { mono_assert, JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs } from "./types";
 import { TypedArray } from "./types/emscripten";
 
 export function initialize_marshalers_to_js(): void {

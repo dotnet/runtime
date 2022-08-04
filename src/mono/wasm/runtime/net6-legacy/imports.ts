@@ -1,6 +1,6 @@
 import { EarlyExports, MonoClass } from "../types";
 import { VoidPtr } from "../types/emscripten";
-import { BINDINGType, MONOType } from "./exports-legacy";
+import { BINDINGType, MONOType } from "./export-types";
 
 export let MONO: MONOType;
 export let BINDING: BINDINGType;

@@ -12,12 +12,12 @@ function wasm_exit(exit_code, reason) {
     console.log(`WASM EXIT ${exit_code}`);
 }
 
-function saveProfile(aot_profile_data) {
-    if (!aot_profile_data) {
-        throw new Error("aot_profile_data not set")
+function saveProfile(aotProfileData) {
+    if (!aotProfileData) {
+        throw new Error("aotProfileData not set")
     }
     const a = document.createElement('a');
-    const blob = new Blob([aot_profile_data]);
+    const blob = new Blob([aotProfileData]);
     a.href = URL.createObjectURL(blob);
     a.download = "data.aotprofile";
     // Append anchor to body.
@@ -32,11 +32,11 @@ try {
     const { MONO, BINDING, INTERNAL } = await createDotnetRuntime(({ MONO }) => ({
         configSrc: "./mono-config.json",
         disableDotnet6Compatibility: true,
-        onConfigLoaded: () => {
-            if (MONO.config.enable_profiler) {
-                MONO.config.aot_profiler_options = {
-                    write_at: "Sample.Test::StopProfile",
-                    send_to: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
+        onConfigLoaded: (config) => {
+            if (config.enableProfiler) {
+                config.aotProfilerOptions = {
+                    writeAt: "Sample.Test::StopProfile",
+                    sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
                 }
             }
         },
@@ -49,9 +49,9 @@ try {
     document.getElementById("out").innerHTML = ret;
     console.debug(`ret: ${ret}`);
 
-    if (MONO.config.enable_profiler) {
+    if (MONO.config.enableProfiler) {
         stopProfile();
-        saveProfile(INTERNAL.aot_profile_data);
+        saveProfile(INTERNAL.aotProfileData);
     }
 
     let exit_code = ret == 42 ? 0 : 1;

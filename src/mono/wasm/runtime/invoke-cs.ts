@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { EXPORTS, Module, runtimeHelpers } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import { generate_arg_marshal_to_cs } from "./marshal-to-cs";
 import { marshal_exception_to_js, generate_arg_marshal_to_js } from "./marshal-to-js";
 import {
-    JSMarshalerArguments, JavaScriptMarshalerArgSize, JSFunctionSignature,
+    JavaScriptMarshalerArgSize,
     JSMarshalerTypeSize, JSMarshalerSignatureHeaderSize,
     get_arg, get_sig,
     get_signature_argument_count, is_args_exception, bound_cs_function_symbol, get_signature_version, MarshalerType, alloc_stack_frame,
 } from "./marshal";
 import { mono_wasm_new_external_root } from "./roots";
 import { conv_string, conv_string_root } from "./strings";
-import { mono_assert, MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod } from "./types";
+import { mono_assert, MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature } from "./types";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
@@ -31,7 +31,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         const js_fqn = conv_string_root(fqn_root)!;
         mono_assert(js_fqn, "fully_qualified_name must be string");
 
-        if (runtimeHelpers.diagnostic_tracing) {
+        if (runtimeHelpers.diagnosticTracing) {
             console.debug(`MONO_WASM: Binding [JSExport] ${js_fqn}`);
         }
 
@@ -119,30 +119,9 @@ export function invoke_method_and_handle_exception(method: MonoMethod, args: JSM
 }
 
 export const exportsByAssembly: Map<string, any> = new Map();
-
 function _walk_exports_to_set_function(assembly: string, namespace: string, classname: string, methodname: string, signature_hash: number, fn: Function): void {
-    let scope: any = EXPORTS;
     const parts = `${namespace}.${classname}`.replace(/\//g, ".").split(".");
-
-    for (let i = 0; i < parts.length; i++) {
-        const part = parts[i];
-        if (part != "") {
-            let newscope = scope[part];
-            if (typeof newscope === "undefined") {
-                newscope = {};
-                scope[part] = newscope;
-            }
-            mono_assert(newscope, () => `${part} not found while looking up ${classname}`);
-            scope = newscope;
-        }
-    }
-
-    if (!scope[methodname]) {
-        scope[methodname] = fn;
-    }
-    scope[`${methodname}.${signature_hash}`] = fn;
-
-    // do it again for per assemly scope
+    let scope: any = undefined;
     let assemblyScope = exportsByAssembly.get(assembly);
     if (!assemblyScope) {
         assemblyScope = {};
