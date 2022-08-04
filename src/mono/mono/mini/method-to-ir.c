@@ -7472,6 +7472,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				cmethod_override = NULL;
 				virtual_ = FALSE;
 				il_op = MONO_CEE_CALL;
+				printf("\n*** applied box+callvirt optimization %s", mono_method_get_full_name(cmethod));
 			} else {
 				cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
 			}
@@ -9569,16 +9570,19 @@ calli_end:
 			guchar* callvirt_ip;
 			guint32 i32166_token;
 
-			if((callvirt_ip = il_read_callvirt(next_ip, end, &i32166_token)) && ip_in_bb(cfg, cfg->cbb, callvirt_ip)) 
+			if((callvirt_ip = il_read_callvirt(next_ip, end, &i32166_token)) && 
+				ip_in_bb(cfg, cfg->cbb, callvirt_ip) /*&&
+				mono_class_is_def(klass)*/) 
 			{
 				MonoMethod* iface_method = mini_get_method(cfg, method, i32166_token, NULL, generic_context);
 				MonoMethodSignature* iface_method_sig = mono_method_signature_internal(iface_method);
 
 				if(	val &&
-					(val->type == STACK_VTYPE || val->type == STACK_OBJ) && // we have the address on stack (not the value itself)
 					val->flags != MONO_INST_FAULT && // not null
 					iface_method_sig != NULL && // callee signture is healthy
 					iface_method_sig->hasthis && // the callee is a method of what's on stack
+					!iface_method_sig->has_type_parameters &&
+					iface_method_sig->generic_param_count == 0 &&
 					iface_method_sig->param_count == 0) // the callee has no args (other than this)
 				{
 					// is this needed?
@@ -9589,19 +9593,35 @@ calli_end:
 					MonoMethod* struct_method = mono_class_get_virtual_method(klass, iface_method, error);
 					
 					if(is_ok(error)) {
-						if(val->flags & MONO_INST_INDIRECT) {
+						printf ("\n... box+callvirt optimization (%s) ===> (%s)",
+							mono_method_get_full_name(iface_method),
+							mono_method_get_full_name(struct_method));
+
+						MonoClass* struct_obj = mono_method_get_class(struct_method);
+
+						if(!struct_method ||
+							!mono_method_can_access_method(method, struct_method) ||
+							mono_class_is_abstract(struct_obj)// ||
+							//struct_obj == mono_class_get_valuetype_class() ||
+							/*mono_class_is_ginst(struct_obj)*/) {
+							// if the resolved struct_method cannot be accessed, do not optimize, let callvirt deal with it
+						}
+						else if(val->flags & MONO_INST_INDIRECT) {
 							*sp++ = val;
-						} else {
+							cmethod_override = struct_method;
+						}
+						else {
 							MonoInst* srcvar = get_vreg_to_inst(cfg, val->dreg);
 							if (!srcvar)
 								srcvar = mono_compile_create_var_for_vreg (cfg, m_class_get_byval_arg (klass), OP_LOCAL, val->dreg);
 
 							EMIT_NEW_VARLOADA (cfg, ins, srcvar, m_class_get_byval_arg(klass));
 							*sp++= ins;
+							cmethod_override = struct_method;
+						break;
 						}
 						
-						cmethod_override = struct_method;
-						break;
+						
 					} else {
 						mono_error_cleanup(error);
 					}
