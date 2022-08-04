@@ -94,7 +94,11 @@ export const diagnostics: Diagnostics = getDiagnostics();
 let suspendOnStartup = false;
 let diagnosticsServerEnabled = false;
 
+let diagnosticsInitialized = false;
+
 export async function mono_wasm_init_diagnostics(opts: "env" | DiagnosticOptions): Promise<void> {
+    if (diagnosticsInitialized)
+        return;
     if (!monoWasmThreads) {
         console.warn("MONO_WASM: ignoring diagnostics options because this runtime does not support diagnostics", opts);
         return;
@@ -107,6 +111,7 @@ export async function mono_wasm_init_diagnostics(opts: "env" | DiagnosticOptions
         } else {
             options = opts;
         }
+        diagnosticsInitialized = true;
         if (!is_nullish(options?.server)) {
             if (options.server.connectUrl === undefined || typeof (options.server.connectUrl) !== "string") {
                 throw new Error("server.connectUrl must be a string");
