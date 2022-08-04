@@ -43,9 +43,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 				TestWithMultipleArgumentsWithRequirements ();
 
-				TestWithNewConstraint ();
-				TestWithStructConstraint ();
-				TestWithUnmanagedConstraint ();
+				NewConstraint.Test ();
+				StructConstraint.Test ();
+				UnmanagedConstraint.Test ();
 				TestWithNullable ();
 			}
 
@@ -182,31 +182,118 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			static void TestWithNewConstraint ()
+			class NewConstraint
 			{
-				typeof (GenericWithNewConstraint<>).MakeGenericType (typeof (TestType));
+				class GenericWithNewConstraint<T> where T : new()
+				{
+				}
+
+				class GenericWithNewConstraintAndAnnotations<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> where T : new()
+				{
+				}
+
+				static void SpecificType ()
+				{
+					typeof (GenericWithNewConstraint<>).MakeGenericType (typeof (TestType));
+				}
+
+				[ExpectedWarning ("IL2070")]
+				static void UnknownType (Type unknownType = null)
+				{
+					typeof (GenericWithNewConstraint<>).MakeGenericType (unknownType);
+				}
+
+				static void AnnotationMatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type withCtor = null)
+				{
+					typeof (GenericWithNewConstraint<>).MakeGenericType (withCtor);
+				}
+
+				[ExpectedWarning ("IL2070")]
+				static void AnnotationMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withPublicMethods = null)
+				{
+					typeof (GenericWithNewConstraint<>).MakeGenericType (withPublicMethods);
+				}
+
+				static void AnnotationAndConstraintMatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)] Type withMethodsAndCtors = null)
+				{
+					typeof (GenericWithNewConstraintAndAnnotations<>).MakeGenericType (withMethodsAndCtors);
+				}
+
+				[ExpectedWarning ("IL2070")]
+				static void AnnotationAndConstraintMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withMethods = null)
+				{
+					typeof (GenericWithNewConstraintAndAnnotations<>).MakeGenericType (withMethods);
+				}
+
+				public static void Test ()
+				{
+					SpecificType ();
+					UnknownType ();
+					AnnotationMatch ();
+					AnnotationMismatch ();
+					AnnotationAndConstraintMatch ();
+					AnnotationAndConstraintMismatch ();
+				}
 			}
 
-			class GenericWithNewConstraint<T> where T : new()
+			class StructConstraint
 			{
+				class GenericWithStructConstraint<T> where T : struct
+				{
+				}
+
+				static void SpecificType ()
+				{
+					typeof (GenericWithStructConstraint<>).MakeGenericType (typeof (TestType));
+				}
+
+				static void AnnotationMatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type withCtor = null)
+				{
+					typeof (GenericWithStructConstraint<>).MakeGenericType (withCtor);
+				}
+
+				[ExpectedWarning ("IL2070")]
+				static void AnnotationMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withPublicMethods = null)
+				{
+					typeof (GenericWithStructConstraint<>).MakeGenericType (withPublicMethods);
+				}
+
+				public static void Test ()
+				{
+					SpecificType ();
+					AnnotationMatch ();
+					AnnotationMismatch ();
+				}
 			}
 
-			static void TestWithStructConstraint ()
+			class UnmanagedConstraint
 			{
-				typeof (GenericWithStructConstraint<>).MakeGenericType (typeof (TestType));
-			}
+				class GenericWithUnmanagedConstraint<T> where T : unmanaged
+				{
+				}
 
-			class GenericWithStructConstraint<T> where T : struct
-			{
-			}
+				static void SpecificType ()
+				{
+					typeof (GenericWithUnmanagedConstraint<>).MakeGenericType (typeof (TestType));
+				}
 
-			static void TestWithUnmanagedConstraint ()
-			{
-				typeof (GenericWithUnmanagedConstraint<>).MakeGenericType (typeof (TestType));
-			}
+				static void AnnotationMatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type withCtor = null)
+				{
+					typeof (GenericWithUnmanagedConstraint<>).MakeGenericType (withCtor);
+				}
 
-			class GenericWithUnmanagedConstraint<T> where T : unmanaged
-			{
+				[ExpectedWarning ("IL2070")]
+				static void AnnotationMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withPublicMethods = null)
+				{
+					typeof (GenericWithUnmanagedConstraint<>).MakeGenericType (withPublicMethods);
+				}
+
+				public static void Test ()
+				{
+					SpecificType ();
+					AnnotationMatch ();
+					AnnotationMismatch ();
+				}
 			}
 
 			static void TestWithNullable ()
@@ -264,9 +351,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 				TestWithMultipleArgumentsWithRequirements ();
 
-				TestWithNewConstraint ();
-				TestWithStructConstraint ();
-				TestWithUnmanagedConstraint ();
+				NewConstraint.Test ();
+				StructConstraint.Test ();
+				UnmanagedConstraint.Test ();
 
 				TestGetMethodFromHandle ();
 				TestGetMethodFromHandleWithWarning ();
@@ -663,38 +750,135 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			static void TestWithNewConstraint ()
+			class NewConstraint
 			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithNewConstraint), BindingFlags.Static | BindingFlags.NonPublic)
-					.MakeGenericMethod (typeof (TestType));
+				static void GenericWithNewConstraint<T> () where T : new()
+				{
+					var t = new T ();
+				}
+
+				static void GenericWithNewConstraintAndAnnotations<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () where T : new()
+				{
+				}
+
+				static void SpecificType ()
+				{
+					typeof (NewConstraint).GetMethod (nameof (GenericWithNewConstraint), BindingFlags.Static | BindingFlags.NonPublic)
+						.MakeGenericMethod (typeof (TestType));
+				}
+
+				[ExpectedWarning ("IL2070")]
+				static void UnknownType (Type unknownType = null)
+				{
+					typeof (NewConstraint).GetMethod (nameof (GenericWithNewConstraint), BindingFlags.Static | BindingFlags.NonPublic)
+						.MakeGenericMethod (unknownType);
+				}
+
+				static void AnnotationMatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type withCtor = null)
+				{
+					typeof (NewConstraint).GetMethod (nameof (GenericWithNewConstraint), BindingFlags.Static | BindingFlags.NonPublic)
+						.MakeGenericMethod (withCtor);
+				}
+
+				[ExpectedWarning ("IL2070")]
+				static void AnnotationMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withPublicMethods = null)
+				{
+					typeof (NewConstraint).GetMethod (nameof (GenericWithNewConstraint), BindingFlags.Static | BindingFlags.NonPublic)
+						.MakeGenericMethod (withPublicMethods);
+				}
+
+				static void AnnotationAndConstraintMatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)] Type withMethodsAndCtors = null)
+				{
+					typeof (NewConstraint).GetMethod (nameof (GenericWithNewConstraintAndAnnotations), BindingFlags.Static | BindingFlags.NonPublic)
+						.MakeGenericMethod (withMethodsAndCtors);
+				}
+
+				[ExpectedWarning ("IL2070")]
+				static void AnnotationAndConstraintMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withMethods = null)
+				{
+					typeof (NewConstraint).GetMethod (nameof (GenericWithNewConstraintAndAnnotations), BindingFlags.Static | BindingFlags.NonPublic)
+						.MakeGenericMethod (withMethods);
+				}
+
+				public static void Test ()
+				{
+					SpecificType ();
+					UnknownType ();
+					AnnotationMatch ();
+					AnnotationMismatch ();
+					AnnotationAndConstraintMatch ();
+					AnnotationAndConstraintMismatch ();
+				}
 			}
 
-			static void GenericWithNewConstraint<T> () where T : new()
+			class StructConstraint
 			{
-				var t = new T ();
+				static void GenericWithStructConstraint<T> () where T : struct
+				{
+					var t = new T ();
+				}
+
+				static void SpecificType ()
+				{
+					typeof (StructConstraint).GetMethod (nameof (GenericWithStructConstraint), BindingFlags.Static | BindingFlags.NonPublic)
+						.MakeGenericMethod (typeof (TestType));
+				}
+
+				static void AnnotationMatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type withCtor = null)
+				{
+					typeof (StructConstraint).GetMethod (nameof (GenericWithStructConstraint), BindingFlags.Static | BindingFlags.NonPublic)
+						.MakeGenericMethod (withCtor);
+				}
+
+				[ExpectedWarning ("IL2070")]
+				static void AnnotationMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withPublicMethods = null)
+				{
+					typeof (StructConstraint).GetMethod (nameof (GenericWithStructConstraint), BindingFlags.Static | BindingFlags.NonPublic)
+						.MakeGenericMethod (withPublicMethods);
+				}
+
+				public static void Test ()
+				{
+					SpecificType ();
+					AnnotationMatch ();
+					AnnotationMismatch ();
+				}
 			}
 
-			static void TestWithStructConstraint ()
+			class UnmanagedConstraint
 			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithStructConstraint), BindingFlags.Static | BindingFlags.NonPublic)
-					.MakeGenericMethod (typeof (TestType));
+				static void GenericWithUnmanagedConstraint<T> () where T : unmanaged
+				{
+					var t = new T ();
+				}
+
+				static void SpecificType ()
+				{
+					typeof (UnmanagedConstraint).GetMethod (nameof (GenericWithUnmanagedConstraint), BindingFlags.Static | BindingFlags.NonPublic)
+						.MakeGenericMethod (typeof (TestType));
+				}
+
+				static void AnnotationMatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type withCtor = null)
+				{
+					typeof (UnmanagedConstraint).GetMethod (nameof (GenericWithUnmanagedConstraint), BindingFlags.Static | BindingFlags.NonPublic)
+						.MakeGenericMethod (withCtor);
+				}
+
+				[ExpectedWarning ("IL2070")]
+				static void AnnotationMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type withPublicMethods = null)
+				{
+					typeof (UnmanagedConstraint).GetMethod (nameof (GenericWithUnmanagedConstraint), BindingFlags.Static | BindingFlags.NonPublic)
+						.MakeGenericMethod (withPublicMethods);
+				}
+
+				public static void Test ()
+				{
+					SpecificType ();
+					AnnotationMatch ();
+					AnnotationMismatch ();
+				}
 			}
 
-			static void GenericWithStructConstraint<T> () where T : struct
-			{
-				var t = new T ();
-			}
-
-			static void TestWithUnmanagedConstraint ()
-			{
-				typeof (MakeGenericMethod).GetMethod (nameof (GenericWithUnmanagedConstraint), BindingFlags.Static | BindingFlags.NonPublic)
-					.MakeGenericMethod (typeof (TestType));
-			}
-
-			static void GenericWithUnmanagedConstraint<T> () where T : unmanaged
-			{
-				var t = new T ();
-			}
 
 			static void TestGetMethodFromHandle (Type unknownType = null)
 			{
