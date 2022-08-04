@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { mono_assert, CharPtrNull, DotnetModule, MonoConfig, MonoConfigError, LoadingResource, AssetEntry, ResourceRequest, DiagnosticOptions } from "./types";
+import { mono_assert, CharPtrNull, DotnetModule, MonoConfig, MonoConfigError, LoadingResource, AssetEntry, ResourceRequest } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";

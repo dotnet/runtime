@@ -1,7 +1,7 @@
 import monoWasmThreads from "consts:monoWasmThreads";
 import { Module, runtimeHelpers } from "./imports";
 import { mono_assert, MemOffset, NumberOrPointer } from "./types";
-import { VoidPtr, CharPtr, NativePointer, ManagedPointer } from "./types/emscripten";
+import { VoidPtr, CharPtr } from "./types/emscripten";
 import * as cuint64 from "./cuint64";
 import cwraps, { I52Error } from "./cwraps";
 
