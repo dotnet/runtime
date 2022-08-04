@@ -3309,7 +3309,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine("// If the iteration successfully matched zero-length input, record that an empty iteration was seen.");
                         using (EmitBlock(writer, $"if (pos == {startingPos})"))
                         {
-                            writer.WriteLine($"{sawEmpty} = 1 /* true */;");
+                            writer.WriteLine($"{sawEmpty} = 1; // true");
                         }
                         writer.WriteLine();
                     }
@@ -3355,9 +3355,16 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             // The child has backtracking constructs.  If we have no successful iterations previously processed, just bail.
                             // If we do have successful iterations previously processed, however, we need to backtrack back into the last one.
-                            writer.WriteLine($"// If the lazy loop has matched any iterations, backtrack into the last one.");
                             using (EmitBlock(writer, $"if ({iterationCount} > 0)"))
                             {
+                                writer.WriteLine($"// The lazy loop matched at least one iteration; backtrack into the last one.");
+                                if (iterationMayBeEmpty)
+                                {
+                                    // If we saw empty, it must have been in the most recent iteration, as we wouldn't have
+                                    // allowed additional iterations after one that was empty.  Thus, we reset it back to
+                                    // false prior to backtracking / undoing that iteration.
+                                    writer.WriteLine($"{sawEmpty} = 0; // false");
+                                }
                                 Goto(doneLabel);
                             }
                             writer.WriteLine();
@@ -3417,6 +3424,7 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         FinishEmitBlock clause;
 
+                        writer.WriteLine();
                         if (maxIterations == int.MaxValue)
                         {
                             // If the last iteration matched empty, backtrack.
@@ -3440,6 +3448,13 @@ namespace System.Text.RegularExpressions.Generator
 
                         using (clause)
                         {
+                            if (iterationMayBeEmpty)
+                            {
+                                // If we saw empty, it must have been in the most recent iteration, as we wouldn't have
+                                // allowed additional iterations after one that was empty.  Thus, we reset it back to
+                                // false prior to backtracking / undoing that iteration.
+                                writer.WriteLine($"{sawEmpty} = 0; // false");
+                            }
                             Goto(doneLabel);
                         }
                     }

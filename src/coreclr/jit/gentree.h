@@ -4311,7 +4311,7 @@ struct CallArgABIInformation
         , IsBackFilled(false)
         , IsStruct(false)
         , PassedByRef(false)
-#ifdef FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT
         , m_isSplit(false)
 #endif
 #ifdef FEATURE_HFA_FIELDS_PRESENT
@@ -4366,7 +4366,7 @@ public:
     bool PassedByRef : 1;
 
 private:
-#ifdef FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT
     // True when this argument is split between the registers and OutArg area
     bool m_isSplit : 1;
 #endif

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { BINDINGType, MONOType } from "./net6-legacy/exports-legacy";
-import { IDisposable, IMemoryView, ManagedError, ManagedObject, MemoryViewType } from "./marshal";
-import { AssetBehaviours, AssetEntry, DotnetModuleConfig, DotnetPublicAPI, LoadingResource, MonoArray, MonoConfig, MonoObject, MonoString, ResourceRequest } from "./types";
-import { EmscriptenModule, TypedArray, VoidPtr } from "./types/emscripten";
+import { APIType, DotnetPublicAPI } from "./exports";
+import { IDisposable, IMemoryView, MemoryViewType } from "./marshal";
+import { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadingResource, MonoConfig, ResourceRequest } from "./types";
+import { EmscriptenModule, NativePointer, TypedArray } from "./types/emscripten";
 
 // -----------------------------------------------------------
 // this files has all public exports from the dotnet.js module
@@ -51,11 +51,28 @@ declare class ArraySegment implements IMemoryView, IDisposable {
     get byteLength(): number;
 }
 
+/**
+ * Represents proxy to the System.Exception
+ */
+declare class ManagedError extends Error implements IDisposable {
+    get stack(): string | undefined;
+    dispose(): void;
+    get isDisposed(): boolean;
+    toString(): string;
+}
+
+/**
+ * Represents proxy to the System.Object
+ */
+declare class ManagedObject implements IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+    toString(): string;
+}
+
 export {
-    VoidPtr,
-    MonoObject, MonoString, MonoArray,
-    BINDINGType, MONOType, EmscriptenModule,
-    DotnetPublicAPI, DotnetModuleConfig, CreateDotnetRuntimeType, MonoConfig,
+    EmscriptenModule, NativePointer,
+    DotnetPublicAPI, APIType, DotnetModuleConfig, CreateDotnetRuntimeType, MonoConfig,
     AssetEntry, ResourceRequest, LoadingResource, AssetBehaviours,
     IMemoryView, MemoryViewType, ManagedObject, ManagedError, Span, ArraySegment
 };
