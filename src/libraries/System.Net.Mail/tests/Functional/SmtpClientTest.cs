@@ -458,6 +458,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72818", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         public async Task SendMailAsync_CanBeCanceled_CancellationToken()
         {
             using var server = new LoopbackSmtpServer();

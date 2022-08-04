@@ -117,7 +117,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
         }
 
-        // Called by the AOT profiler to save profile data into INTERNAL.aot_profile_data
+        // Called by the AOT profiler to save profile data into INTERNAL.aotProfileData
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static unsafe void DumpAotProfileData(ref byte buf, int len, string extraArg)
         {
@@ -133,7 +133,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (module == null)
                     throw new InvalidOperationException();
 
-                module.SetProperty("aot_profile_data", span.ToArray());
+                module.SetProperty("aotProfileData", span.ToArray());
             }
         }
     }

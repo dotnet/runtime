@@ -64,5 +64,19 @@ namespace Internal.Cryptography
             bytesWritten = 0;
             return false;
         }
+
+        internal static int HashOidToByteLength(string hashOid)
+        {
+            // This file is compiled in netstandard2.0, can't use the HashSizeInBytes consts.
+            return hashOid switch
+            {
+                Oids.Sha256 => 256 >> 3,
+                Oids.Sha384 => 384 >> 3,
+                Oids.Sha512 => 512 >> 3,
+                Oids.Sha1 => 160 >> 3,
+                Oids.Md5 => 128 >> 3,
+                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashOid)),
+            };
+        }
     }
 }

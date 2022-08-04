@@ -15,7 +15,7 @@ namespace System.Net.Sockets.Tests
         // is responsible for doing so prior to making relevant native calls; this tests entry points.
         // RemoteExecutor is used so that the individual method is used as early in the process as possible.
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void OSSupportsIPv4()
         {
             bool parentSupported = Socket.OSSupportsIPv4;
@@ -25,7 +25,7 @@ namespace System.Net.Sockets.Tests
             }, parentSupported.ToString()).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void OSSupportsIPv6()
         {
             bool parentSupported = Socket.OSSupportsIPv6;
@@ -35,7 +35,7 @@ namespace System.Net.Sockets.Tests
             }, parentSupported.ToString()).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void OSSupportsUnixDomainSockets()
         {
             bool parentSupported = Socket.OSSupportsUnixDomainSockets;
@@ -46,7 +46,7 @@ namespace System.Net.Sockets.Tests
         }
 
 #pragma warning disable CS0618 // SupportsIPv4 and SupportsIPv6 are obsolete
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void SupportsIPv4()
         {
             bool parentSupported = Socket.SupportsIPv4;
@@ -56,7 +56,7 @@ namespace System.Net.Sockets.Tests
             }, parentSupported.ToString()).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void SupportsIPv6()
         {
             bool parentSupported = Socket.SupportsIPv6;
@@ -67,7 +67,7 @@ namespace System.Net.Sockets.Tests
         }
 #pragma warning restore CS0618
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void Ctor_SocketType_ProtocolType()
         {
             RemoteExecutor.Invoke(() =>
@@ -76,7 +76,7 @@ namespace System.Net.Sockets.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void Ctor_AddressFamily_SocketType_ProtocolType()
         {
             RemoteExecutor.Invoke(() =>
@@ -85,7 +85,7 @@ namespace System.Net.Sockets.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void Ctor_SafeHandle() => RemoteExecutor.Invoke(() =>
         {
             using var pipe = new AnonymousPipeServerStream();

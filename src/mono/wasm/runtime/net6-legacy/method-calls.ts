@@ -75,7 +75,7 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: str
         throw new Error("Could not find assembly: " + assembly);
 
     let auto_set_breakpoint = 0;
-    if (runtimeHelpers.wait_for_debugger == 1)
+    if (runtimeHelpers.waitForDebugger == 1)
         auto_set_breakpoint = 1;
 
     const method = cwraps.mono_wasm_assembly_get_entry_point(asm, auto_set_breakpoint);

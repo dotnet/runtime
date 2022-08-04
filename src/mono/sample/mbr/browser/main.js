@@ -3,8 +3,8 @@ import createDotnetRuntime from './dotnet.js'
 try {
     const { BINDING } = await createDotnetRuntime(({ MONO }) => ({
         configSrc: "./mono-config.json",
-        onConfigLoaded: () => {
-            MONO.config.environment_variables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
+        onConfigLoaded: (config) => {
+            config.environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
         },
     }));
     const update = BINDING.bind_static_method("[WasmDelta] Sample.Test:Update");
