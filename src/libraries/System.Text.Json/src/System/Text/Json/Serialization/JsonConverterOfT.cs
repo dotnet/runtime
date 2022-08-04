@@ -216,6 +216,20 @@ namespace System.Text.Json.Serialization
             bool isContinuation = state.IsContinuation;
             bool success;
 
+            if (
+#if NETCOREAPP
+                !typeof(T).IsValueType &&
+#endif
+                CanBePolymorphic)
+            {
+                // Special case object converters since they don't
+                // require the expensive ReadStack.Push()/Pop() operations.
+                Debug.Assert(this is ObjectConverter);
+                success = OnTryRead(ref reader, typeToConvert, options, ref state, out value);
+                Debug.Assert(success);
+                return true;
+            }
+
 #if DEBUG
             // DEBUG: ensure push/pop operations preserve stack integrity
             JsonTypeInfo originalJsonTypeInfo = state.Current.JsonTypeInfo;
