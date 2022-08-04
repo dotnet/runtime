@@ -86,12 +86,12 @@ private:
     void ContainCheckRet(GenTreeUnOp* ret);
     void ContainCheckJTrue(GenTreeOp* node);
 #ifdef TARGET_ARM64
-    void ContainCheckConditionalCompare(GenTreeOp* cmp);
-#endif
     bool IsValidCompareChain(GenTree* child, GenTree* parent);
     bool ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** earliestValid);
     void ContainCheckAndChain(GenTree* tree);
+    void ContainCheckConditionalCompare(GenTreeOp* cmp);
     void ContainCheckSelect(GenTreeConditional* node);
+#endif
     void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
