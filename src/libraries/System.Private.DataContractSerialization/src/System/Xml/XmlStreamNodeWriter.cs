@@ -435,7 +435,7 @@ namespace System.Xml
                     }
 
                 NonAscii:
-                    byte* bytesMax = &bytes[buffer.Length - offset];
+                    byte* bytesMax = _bytes + buffer.Length - offset;
                     return (int)(bytes - _bytes) + (_encoding ?? s_UTF8Encoding).GetBytes(chars, (int)(charsMax - chars), bytes, (int)(bytesMax - bytes));
                 }
             }
