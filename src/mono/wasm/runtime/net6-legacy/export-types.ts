@@ -1,4 +1,4 @@
-import { MonoArray, MonoObject, MonoObjectRef, MonoString, WasmRoot, WasmRootBuffer, _MemOffset, _NumberOrPointer } from "../types";
+import { MonoArray, MonoObject, MonoObjectRef, MonoString, WasmRoot, WasmRootBuffer, MemOffset, NumberOrPointer } from "../types";
 import { VoidPtr } from "../types/emscripten";
 
 /**
@@ -154,97 +154,97 @@ export type MONOType = {
     /**
      * @deprecated Please use setHeapB32
      */
-    setB32: (offset: _MemOffset, value: number | boolean) => void;
+    setB32: (offset: MemOffset, value: number | boolean) => void;
     /**
      * @deprecated Please use setHeapI8
      */
-    setI8: (offset: _MemOffset, value: number) => void;
+    setI8: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapI16
      */
-    setI16: (offset: _MemOffset, value: number) => void;
+    setI16: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapI32
      */
-    setI32: (offset: _MemOffset, value: number) => void;
+    setI32: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapI52
      */
-    setI52: (offset: _MemOffset, value: number) => void;
+    setI52: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapU52
      */
-    setU52: (offset: _MemOffset, value: number) => void;
+    setU52: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapI64Big
      */
-    setI64Big: (offset: _MemOffset, value: bigint) => void;
+    setI64Big: (offset: MemOffset, value: bigint) => void;
     /**
      * @deprecated Please use setHeapU8
      */
-    setU8: (offset: _MemOffset, value: number) => void;
+    setU8: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapU16
      */
-    setU16: (offset: _MemOffset, value: number) => void;
+    setU16: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapU32
      */
-    setU32: (offset: _MemOffset, value: _NumberOrPointer) => void;
+    setU32: (offset: MemOffset, value: NumberOrPointer) => void;
     /**
      * @deprecated Please use setHeapF32
      */
-    setF32: (offset: _MemOffset, value: number) => void;
+    setF32: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapF64
      */
-    setF64: (offset: _MemOffset, value: number) => void;
+    setF64: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use getHeapB32
      */
-    getB32: (offset: _MemOffset) => boolean;
+    getB32: (offset: MemOffset) => boolean;
     /**
      * @deprecated Please use getHeapI8
      */
-    getI8: (offset: _MemOffset) => number;
+    getI8: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapI16
      */
-    getI16: (offset: _MemOffset) => number;
+    getI16: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapI32
      */
-    getI32: (offset: _MemOffset) => number;
+    getI32: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapI52
      */
-    getI52: (offset: _MemOffset) => number;
+    getI52: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapU52
      */
-    getU52: (offset: _MemOffset) => number;
+    getU52: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapI64Big
      */
-    getI64Big: (offset: _MemOffset) => bigint;
+    getI64Big: (offset: MemOffset) => bigint;
     /**
      * @deprecated Please use getHeapU8
      */
-    getU8: (offset: _MemOffset) => number;
+    getU8: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapU16
      */
-    getU16: (offset: _MemOffset) => number;
+    getU16: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapU32
      */
-    getU32: (offset: _MemOffset) => number;
+    getU32: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapF32
      */
-    getF32: (offset: _MemOffset) => number;
+    getF32: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapF64
      */
-    getF64: (offset: _MemOffset) => number;
+    getF64: (offset: MemOffset) => number;
 };
