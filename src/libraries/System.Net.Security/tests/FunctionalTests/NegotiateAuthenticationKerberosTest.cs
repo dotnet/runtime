@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Net.Security.Kerberos;
 using Xunit;
 using Xunit.Abstractions;
+using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Net.Security.Tests
 {
@@ -18,7 +19,7 @@ namespace System.Net.Security.Tests
             _testOutputHelper = testOutputHelper;
         }
     
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task Loopback_Success()
         {
             using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
@@ -61,7 +62,7 @@ namespace System.Net.Security.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async void Invalid_Token()
         {
             using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
