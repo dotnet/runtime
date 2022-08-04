@@ -70,6 +70,8 @@ namespace System.Runtime.InteropServices
             => Architecture.LoongArch64;
 #elif TARGET_POWERPC64
             => Architecture.Ppc64le;
+#elif TARGET_RISCV64
+            => (Architecture)9; // TODO-RISCV64: go though API review for RiscV64
 #else
 #error Unknown Architecture
 #endif

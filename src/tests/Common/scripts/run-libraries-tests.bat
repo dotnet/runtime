@@ -3,7 +3,7 @@ setlocal ENABLEDELAYEDEXPANSION
 goto start
 
 :usage
-echo Usage: run-corefx-tests.bat ^<runtime path^> ^<tests dir^> ^<test exclusion file^>
+echo Usage: run-libraries-tests.bat ^<runtime path^> ^<tests dir^> ^<test exclusion file^>
 echo.
 echo Runs the corefx tests on a Windows ARM/ARM64 device, by searching for all relevant corefx
 echo RunTests.cmd files in the ^<tests dir^> tree, and running each one in turn. This
