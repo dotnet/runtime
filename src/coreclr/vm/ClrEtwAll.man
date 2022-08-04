@@ -211,6 +211,7 @@
                           value="8" eventGUID="{561410f5-a138-4ab3-945e-516483cddfbc}"
                           message="$(string.RuntimePublisher.ContentionTaskMessage)">
                         <opcodes>
+                            <opcode name="AwareLockCreated" message="$(string.RuntimePublisher.AwareLockCreatedOpcodeMessage)" symbol="CLR_AWARELOCK_CREATED_OPCODE" value="10"> </opcode>
                         </opcodes>
                     </task>
 
@@ -3109,6 +3110,18 @@
                         </Settings>
                       </UserData>
                     </template>
+
+                    <template tid="AwareLockCreated">
+                        <data name="AwareLockID" inType="win:Pointer" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <UserData>
+                            <AwareLockCreated xmlns="myNs">
+                                <AwareLockID> %1 </AwareLockID>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                            </AwareLockCreated>
+                        </UserData>
+                    </template>
+
                 </templates>
 
                 <events>
@@ -3671,6 +3684,12 @@
                            keywords ="ContentionKeyword"  opcode="win:Stop"
                            task="Contention"
                            symbol="ContentionStop_V1" message="$(string.RuntimePublisher.ContentionStop_V1EventMessage)"/>
+
+                    <event value="414" version="0" level="win:Informational"  template="AwareLockCreated"
+                           keywords ="ContentionKeyword"  opcode="AwareLockCreated"
+                           task="Contention"
+                           symbol="AwareLockCreated" message="$(string.RuntimePublisher.AwareLockEventMessage)"/>
+
 
                     <!-- CLR Stack events -->
                     <event value="82" version="0" level="win:LogAlways"  template="ClrStackWalk"
@@ -8455,6 +8474,7 @@
                 <string id="RuntimePublisher.ContentionStart_V2EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2;%LockObjectID=%3;%LockOwnerThreadID=%4"/>
                 <string id="RuntimePublisher.ContentionStopEventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2"/>
                 <string id="RuntimePublisher.ContentionStop_V1EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2;DurationNs=%3"/>
+                <string id="RuntimePublisher.AwareLockEventMessage" value="AwareLockID=%1;%nClrInstanceID=%2"/>
                 <string id="RuntimePublisher.DCStartCompleteEventMessage" value="NONE" />
                 <string id="RuntimePublisher.DCEndCompleteEventMessage" value="NONE" />
                 <string id="RuntimePublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
@@ -9231,6 +9251,8 @@
                 <string id="RundownPublisher.ModuleRangeDCEndOpcodeMessage" value="ModuleRangeDCEnd" />
                 <string id="RundownPublisher.TieredCompilationSettingsDCStartOpcodeMessage" value="SettingsDCStart" />
                 <string id="RundownPublisher.ExecutionCheckpointDCEndOpcodeMessage" value="ExecutionCheckpointDCEnd" />
+
+                <string id="RundownPublisher.AwareLockCreatedOpcodeMessage" value="AwareLockCreated" />
 
                 <string id="PrivatePublisher.FailFastOpcodeMessage" value="FailFast" />
 

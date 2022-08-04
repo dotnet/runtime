@@ -466,6 +466,11 @@ private:
           m_waiterStarvationStartTimeMs(0)
     {
         LIMITED_METHOD_CONTRACT;
+        
+        if (IsContentionKeywordEnabled())
+        {
+            FireEtwAwareLockCreated(this, GetClrInstanceId());
+        }
     }
 
     ~AwareLock()
@@ -601,6 +606,9 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_HoldingThread;
     }
+
+    BOOLEAN IsContentionKeywordEnabled() const;
+
 };
 
 #ifdef FEATURE_COMINTEROP

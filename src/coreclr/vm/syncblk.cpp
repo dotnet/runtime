@@ -2546,15 +2546,15 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 
     OBJECTREF obj = GetOwningObject();
 
-    BOOLEAN IsContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
+    BOOLEAN isContentionKeywordEnabled = IsContentionKeywordEnabled();
     LARGE_INTEGER startTicks = { {0} };
 
-    if (IsContentionKeywordEnabled)
+    if (isContentionKeywordEnabled)
     {
         QueryPerformanceCounter(&startTicks);
 
         // Fire a contention start event for a managed contention
-        FireEtwContentionStart_V2(ETW::ContentionLog::ContentionStructs::ManagedContention, GetClrInstanceId(), OBJECTREFToObject(obj), m_HoldingThread);
+        FireEtwContentionStart_V2(ETW::ContentionLog::ContentionStructs::ManagedContention, GetClrInstanceId(), OBJECTREFToObject(obj), this);
     }
 
     // We cannot allow the AwareLock to be cleaned up underneath us by the GC.
@@ -2684,7 +2684,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     GCPROTECT_END();
     DecrementTransientPrecious();
 
-    if (IsContentionKeywordEnabled)
+    if (isContentionKeywordEnabled)
     {
         LARGE_INTEGER endTicks;
         QueryPerformanceCounter(&endTicks);
@@ -2765,6 +2765,10 @@ BOOL AwareLock::OwnedByCurrentThread()
     return (GetThread() == m_HoldingThread);
 }
 
+BOOLEAN AwareLock::IsContentionKeywordEnabled() const
+{
+    return ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
+}
 
 // ***************************************************************************
 //
