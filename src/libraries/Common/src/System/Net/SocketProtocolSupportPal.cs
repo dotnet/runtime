@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 
 namespace System.Net
 {
@@ -12,7 +13,8 @@ namespace System.Net
 
         public static bool OSSupportsIPv6 { get; } = IsSupported(AddressFamily.InterNetworkV6) && !IsIPv6Disabled();
         public static bool OSSupportsIPv4 { get; } = IsSupported(AddressFamily.InterNetwork);
-        public static bool OSSupportsUnixDomainSockets { get; } = IsSupported(AddressFamily.Unix);
+        // iOS/tvOS ostensibly has AF_UNIX, but throws EPERM on iOS/tvOS 10.0+ on bind
+        public static bool OSSupportsUnixDomainSockets { get; } = IsSupported(AddressFamily.Unix) && !RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS")) && !RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
 
         private static bool IsIPv6Disabled()
         {
