@@ -7,7 +7,7 @@
 static int conn_fd;
 static int log_level = 1;
 static int retry_receive_message = 100;
-static int connection_wait = 1000;
+static int connection_wait_ms = 1000;
 
 __attribute__((import_module("wasi_snapshot_preview1")))
 __attribute__((import_name("sock_accept")))
@@ -37,7 +37,7 @@ wasi_transport_recv (void *buf, int len)
 		if ((res > 0 && total < len) || (res == -1 && again < retry_receive_message)) {
 			// Wasmtime on Windows doesn't seem to be able to sleep for short periods like 1ms so we'll have to spinlock
 			long long start = timeInMilliseconds ();
-			while (timeInMilliseconds () < start + (connection_wait/1000));
+			while (timeInMilliseconds () < start + connection_wait_ms);
 		} else {
 			break;
 		}
@@ -64,9 +64,9 @@ wasi_transport_send (void *data, int len)
 static void
 wasi_transport_connect (const char *socket_fd)
 {
-	PRINT_DEBUG_MSG (1, "wasi_transport_connect.\n", conn_fd);
+	PRINT_DEBUG_MSG (1, "wasi_transport_connect.\n");
 	bool handshake_ok = FALSE;
-	
+	conn_fd = -1;
 	while (!handshake_ok) {
 		PRINT_DEBUG_MSG (1, "Waiting for connection from client, socket fd=%s.\n", socket_fd);
 		sock_accept (atoi(socket_fd), 4, &conn_fd);
@@ -103,7 +103,7 @@ static void
 mono_wasi_start_debugger_thread (MonoError *error)
 {
 	mono_debugger_agent_receive_and_process_command ();
-	connection_wait = 250;
+	connection_wait_ms = 250;
 }
 
 static void
