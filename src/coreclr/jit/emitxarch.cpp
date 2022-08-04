@@ -9125,11 +9125,11 @@ void emitter::emitDispIns(
                 }
                 else if ((val > 0) || (val < -0xFFFFFF))
                 {
-                    printf("0x%IX", (INT64)val);
+                    printf("0x%IX", (ssize_t)val);
                 }
                 else
                 { // (val < 0)
-                    printf("-0x%IX", (INT64)-val);
+                    printf("-0x%IX", (ssize_t)-val);
                 }
                 emitDispCommentForHandle(srcVal, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             }

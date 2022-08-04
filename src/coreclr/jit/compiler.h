@@ -9296,7 +9296,6 @@ public:
 
     static bool       s_pJitFunctionFileInitialized;
     static MethodSet* s_pJitMethodSet;
-#endif // DEBUG
 
 // silence warning of cast to greater size. It is easier to silence than construct code the compiler is happy with, and
 // it is safe in this case
@@ -9315,6 +9314,23 @@ public:
         return (o == ZERO) ? ZERO : (opts.dspDiffable ? T(0xD1FFAB1E) : o);
     }
 #pragma warning(pop)
+#else
+#pragma warning(push)
+#pragma warning(disable : 4312)
+    template <typename T>
+    T dspPtr(T p)
+    {
+        return p;
+    }
+
+    template <typename T>
+    T dspOffset(T o)
+    {
+        return o;
+    }
+#pragma warning(pop)
+#endif
+
 #ifdef DEBUG
 
     static int dspTreeID(GenTree* tree)
@@ -9787,12 +9803,12 @@ private:
 #endif
 
 public:
-    LONG     compMethodID;
 #ifdef DEBUG
     unsigned compGenTreeID;
     unsigned compStatementID;
     unsigned compBasicBlockID;
 #endif
+    LONG     compMethodID;
 
     BasicBlock* compCurBB;   // the current basic block in process
     Statement*  compCurStmt; // the current statement in process

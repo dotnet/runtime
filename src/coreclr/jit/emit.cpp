@@ -1506,8 +1506,6 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     emitInsCount++;
 
-    /* In debug mode we clear/set some additional fields */
-
     instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
 
     info->idNum         = emitInsCount;
@@ -2654,11 +2652,7 @@ const char* emitter::emitLabelString(insGroup* ig)
     static char     buf[4][TEMP_BUFFER_LEN];
     const char*     retbuf;
 
-#ifdef DEBUG
     sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "G_M%03u_IG%02u", emitComp->compMethodID, ig->igNum);
-#else
-    sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "IG_%02u", ig->igNum);
-#endif
     retbuf = buf[curBuf];
     curBuf = (curBuf + 1) % 4;
     return retbuf;
@@ -4060,7 +4054,6 @@ void emitter::emitRecomputeIGoffsets()
 //
 void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag)
 {
-#ifdef DEBUG
 #ifdef TARGET_XARCH
     const char* commentPrefix = "      ;";
 #else
@@ -4099,6 +4092,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     const char* str = nullptr;
     if (flag == GTF_ICON_STR_HDL)
     {
+#ifdef DEBUG
         const WCHAR* wstr = emitComp->eeGetCPString(handle);
         // NOTE: eGetCPString always returns nullptr on Linux/ARM
         if (wstr == nullptr)
@@ -4131,6 +4125,9 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
             }
             printf("%s \"%S\"", commentPrefix, buf);
         }
+#else
+        str = "string handle";
+#endif
     }
     else if (flag == GTF_ICON_CLASS_HDL)
     {
@@ -4169,7 +4166,6 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     {
         printf("%s %s", commentPrefix, str);
     }
-#endif // DEBUG
 }
 
 //****************************************************************************
@@ -6671,6 +6667,10 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         if (emitComp->opts.disAsm)
         {
             printf("\n%s:", emitLabelString(ig));
+            if (!emitComp->opts.disDiffable)
+            {
+                printf("                ;; offset=%04XH", emitCurCodeOffs(cp));
+            }
             printf("\n");
         }
 #endif // !DEBUG
@@ -6914,7 +6914,13 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                    ig->igPerfScore);
         }
         *instrCount += ig->igInsCnt;
-#endif // DEBUG
+#else // DEBUG
+        if (emitComp->opts.disAsm)
+        {
+            // Separate IGs with a blank line
+            printf(" ");
+        }
+#endif // !DEBUG
 
         emitCurIG = nullptr;
 

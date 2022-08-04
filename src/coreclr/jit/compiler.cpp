@@ -3070,36 +3070,15 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         s_pJitFunctionFileInitialized = true;
     }
 #else // DEBUG
-    if (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    if (!JitConfig.JitDisasm().isEmpty())
     {
-        if (!JitConfig.JitDisasm().isEmpty())
+        const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
+        const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
+        if (JitConfig.JitDisasm().contains(methodName, className, &info.compMethodInfo->args))
         {
-            const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
-            const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
-
-            if (JitConfig.JitDisasm().contains(methodName, className, &info.compMethodInfo->args))
-            {
-                opts.disAsm = true;
-            }
+            opts.disAsm = true;
         }
     }
-    else
-    {
-        if (!JitConfig.NgenDisasm().isEmpty())
-        {
-            const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
-            const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
-
-            if (JitConfig.NgenDisasm().contains(methodName, className, &info.compMethodInfo->args))
-            {
-                opts.disAsm = true;
-            }
-        }
-    }
-
-    bool diffable = JitConfig.DiffableDasm();
-    opts.disDiffable = diffable;
-    opts.dspDiffable = diffable;
 #endif // !DEBUG
 
 //-------------------------------------------------------------------------

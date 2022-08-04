@@ -10421,26 +10421,6 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
             vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, vnpBaseNorm.GetConservative())));
     }
 
-    VNFuncApp func;
-    if (vnStore->GetVNFunc(vnpBaseNorm.GetConservative(), &func) &&
-        (func.m_func == VNF_GetsharedGcthreadstaticBaseNoctor))
-    {
-        switch (func.m_func)
-        {
-            case VNF_GetgenericsGcthreadstaticBase:
-            case VNF_GetgenericsNongcthreadstaticBase:
-            case VNF_GetsharedGcthreadstaticBase:
-            case VNF_GetsharedNongcthreadstaticBase:
-            case VNF_GetsharedGcthreadstaticBaseNoctor:
-            case VNF_GetsharedNongcthreadstaticBaseNoctor:
-            case VNF_GetsharedGcthreadstaticBaseDynamicclass:
-            case VNF_GetsharedNongcthreadstaticBaseDynamicclass:
-                tree->gtVNPair.SetConservative(tree->gtVNPair.GetLiberal());
-                break;
-            default:
-                break;
-        }
-    }
     // Add the NullPtrExc to "tree"'s value numbers.
     tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excChkSet);
 }

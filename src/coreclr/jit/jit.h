@@ -798,7 +798,6 @@ inline bool IsUninitialized(T data)
 {
     return data == UninitializedWord<T>(JitTls::GetCompiler());
 }
-#else // !defined(DEBUG)
 
 #pragma warning(push)
 #pragma warning(disable : 4312)
@@ -819,6 +818,25 @@ T dspOffset(T o)
     return (o == ZERO) ? ZERO : (JitTls::GetCompiler()->opts.dspDiffable ? T(0xD1FFAB1E) : o);
 }
 #pragma warning(pop)
+
+#else // !defined(DEBUG)
+
+//****************************************************************************
+//
+//  Non-Debug template definitions for dspPtr, dspOffset
+//    - This is a nop in non-Debug builds
+//
+template <typename T>
+T dspPtr(T p)
+{
+    return p;
+}
+
+template <typename T>
+T dspOffset(T o)
+{
+    return o;
+}
 
 #endif // !defined(DEBUG)
 
