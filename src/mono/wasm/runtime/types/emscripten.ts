@@ -59,10 +59,10 @@ export declare interface EmscriptenModule {
 
     ready: Promise<unknown>;
     instantiateWasm?: (imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => any;
-    preInit?: (() => any)[];
-    preRun?: (() => any)[];
+    preInit?: (() => any)[] | (() => any);
+    preRun?: (() => any)[] | (() => any);
     onRuntimeInitialized?: () => any;
-    postRun?: (() => any)[];
+    postRun?: (() => any)[] | (() => any);
     onAbort?: { (error: any): void };
 }
 

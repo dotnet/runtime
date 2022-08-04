@@ -59,16 +59,17 @@ namespace System
         private const long TicksPerMicrosecond = 10;
         private const long TicksPerMillisecond = TicksPerMicrosecond * MicrosecondsPerMillisecond;
 
+        private const int HoursPerDay = 24;
         private const long TicksPerSecond = TicksPerMillisecond * 1000;
         private const long TicksPerMinute = TicksPerSecond * 60;
         private const long TicksPerHour = TicksPerMinute * 60;
-        private const long TicksPerDay = TicksPerHour * 24;
+        private const long TicksPerDay = TicksPerHour * HoursPerDay;
 
         // Number of milliseconds per time unit
         private const int MillisPerSecond = 1000;
         private const int MillisPerMinute = MillisPerSecond * 60;
         private const int MillisPerHour = MillisPerMinute * 60;
-        private const int MillisPerDay = MillisPerHour * 24;
+        private const int MillisPerDay = MillisPerHour * HoursPerDay;
 
         // Number of days in a non-leap year
         private const int DaysPerYear = 365;
@@ -90,8 +91,12 @@ namespace System
 
         internal const long MinTicks = 0;
         internal const long MaxTicks = DaysTo10000 * TicksPerDay - 1;
-        private const long MaxMillis = (long)DaysTo10000 * MillisPerDay;
-        private const long MaxMicroseconds = MaxMillis * MicrosecondsPerMillisecond;
+        private const long MaxMicroseconds = MaxTicks / TicksPerMicrosecond;
+        private const long MaxMillis = MaxTicks / TicksPerMillisecond;
+        private const long MaxSeconds = MaxTicks / TicksPerSecond;
+        private const long MaxMinutes = MaxTicks / TicksPerMinute;
+        private const long MaxHours = MaxTicks / TicksPerHour;
+        private const long MaxDays = (long)DaysTo10000 - 1;
 
         internal const long UnixEpochTicks = DaysTo1970 * TicksPerDay;
         private const long FileTimeOffset = DaysTo1601 * TicksPerDay;
@@ -178,6 +183,7 @@ namespace System
         private static void ThrowMillisecondOutOfRange() => throw new ArgumentOutOfRangeException("millisecond", SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1));
         private static void ThrowMicrosecondOutOfRange() => throw new ArgumentOutOfRangeException("microsecond", SR.Format(SR.ArgumentOutOfRange_Range, 0, MicrosecondsPerMillisecond - 1));
         private static void ThrowDateArithmetic(int param) => throw new ArgumentOutOfRangeException(param switch { 0 => "value", 1 => "t", _ => "months" }, SR.ArgumentOutOfRange_DateArithmetic);
+        private static void ThrowAddOutOfRange() => throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_AddValue);
 
         // Constructs a DateTime from a given year, month, and day. The
         // time-of-day of the resulting DateTime is always midnight.
@@ -835,49 +841,48 @@ namespace System
             return AddTicks(value._ticks);
         }
 
-        // Returns the DateTime resulting from adding a fractional number of
-        // time units to this DateTime.
-        private DateTime Add(double value, int scale)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private DateTime AddUnits(double value, long maxUnitCount, long ticksPerUnit)
         {
-            double millis_double = value * scale + (value >= 0 ? 0.5 : -0.5);
-            if (millis_double <= -MaxMillis || millis_double >= MaxMillis) ThrowOutOfRange();
-            return AddTicks((long)millis_double * TicksPerMillisecond);
+            if (Math.Abs(value) > maxUnitCount)
+            {
+                ThrowAddOutOfRange();
+            }
 
-            static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
+            double integralPart = Math.Truncate(value);
+            double fractionalPart = value - integralPart;
+            long ticks = (long)(integralPart) * ticksPerUnit;
+            ticks += (long)(fractionalPart * ticksPerUnit);
+
+            return AddTicks(ticks);
         }
 
-        // Returns the DateTime resulting from adding a fractional number of
-        // days to this DateTime. The result is computed by rounding the
-        // fractional number of days given by value to the nearest
-        // millisecond, and adding that interval to this DateTime. The
-        // value argument is permitted to be negative.
-        //
-        public DateTime AddDays(double value)
-        {
-            return Add(value, MillisPerDay);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of days to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional days. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of days represented by value.
+        /// </returns>
+        public DateTime AddDays(double value) => AddUnits(value, MaxDays, TicksPerDay);
 
-        // Returns the DateTime resulting from adding a fractional number of
-        // hours to this DateTime. The result is computed by rounding the
-        // fractional number of hours given by value to the nearest
-        // millisecond, and adding that interval to this DateTime. The
-        // value argument is permitted to be negative.
-        //
-        public DateTime AddHours(double value)
-        {
-            return Add(value, MillisPerHour);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of hours to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional hours. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of hours represented by value.
+        /// </returns>
+        public DateTime AddHours(double value) => AddUnits(value, MaxHours, TicksPerHour);
 
-        // Returns the DateTime resulting from the given number of
-        // milliseconds to this DateTime. The result is computed by rounding
-        // the number of milliseconds given by value to the nearest integer,
-        // and adding that interval to this DateTime. The value
-        // argument is permitted to be negative.
-        //
-        public DateTime AddMilliseconds(double value)
-        {
-            return Add(value, 1);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of milliseconds to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional milliseconds. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of milliseconds represented by value.
+        /// </returns>
+        public DateTime AddMilliseconds(double value) => AddUnits(value, MaxMillis, TicksPerMillisecond);
 
         /// <summary>
         /// Returns a new <see cref="DateTime"/> that adds the specified number of microseconds to the value of this instance.
@@ -903,28 +908,16 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// The resulting <see cref="DateTime"/> is less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>.
         /// </exception>
-        public DateTime AddMicroseconds(double value)
-        {
-            if (value < -MaxMicroseconds || value > MaxMicroseconds)
-            {
-                ThrowOutOfRange();
-            }
+        public DateTime AddMicroseconds(double value) => AddUnits(value, MaxMicroseconds, TicksPerMicrosecond);
 
-            return AddTicks((long)(value * TicksPerMicrosecond));
-
-            static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
-        }
-
-        // Returns the DateTime resulting from adding a fractional number of
-        // minutes to this DateTime. The result is computed by rounding the
-        // fractional number of minutes given by value to the nearest
-        // millisecond, and adding that interval to this DateTime. The
-        // value argument is permitted to be negative.
-        //
-        public DateTime AddMinutes(double value)
-        {
-            return Add(value, MillisPerMinute);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of minutes to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional minutes. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of minutes represented by value.
+        /// </returns>
+        public DateTime AddMinutes(double value) => AddUnits(value, MaxMinutes, TicksPerMinute);
 
         // Returns the DateTime resulting from adding the given number of
         // months to this DateTime. The result is computed by incrementing
@@ -961,16 +954,14 @@ namespace System
             return new DateTime(n * (ulong)TicksPerDay + UTicks % TicksPerDay | InternalKind);
         }
 
-        // Returns the DateTime resulting from adding a fractional number of
-        // seconds to this DateTime. The result is computed by rounding the
-        // fractional number of seconds given by value to the nearest
-        // millisecond, and adding that interval to this DateTime. The
-        // value argument is permitted to be negative.
-        //
-        public DateTime AddSeconds(double value)
-        {
-            return Add(value, MillisPerSecond);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of seconds to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional seconds. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of seconds represented by value.
+        /// </returns>
+        public DateTime AddSeconds(double value) => AddUnits(value, MaxSeconds, TicksPerSecond);
 
         // Returns the DateTime resulting from adding the given number of
         // 100-nanosecond ticks to this DateTime. The value argument
@@ -1161,7 +1152,7 @@ namespace System
 
             millis += DoubleDateOffset / TicksPerMillisecond;
 
-            if (millis < 0 || millis >= MaxMillis) throw new ArgumentException(SR.Arg_OleAutDateScale);
+            if (millis < 0 || millis > MaxMillis) throw new ArgumentException(SR.Arg_OleAutDateScale);
             return millis * TicksPerMillisecond;
         }
 

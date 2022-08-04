@@ -101,7 +101,7 @@ namespace System.Text.Json.SourceGeneration
 
             // Unsupported types
             private readonly Type _delegateType;
-            private readonly Type _typeType;
+            private readonly Type _memberInfoType;
             private readonly Type _serializationInfoType;
             private readonly Type _intPtrType;
             private readonly Type _uIntPtrType;
@@ -232,15 +232,15 @@ namespace System.Text.Json.SourceGeneration
                 _jsonObjectType = _metadataLoadContext.Resolve(JsonObjectFullName);
                 _jsonValueType = _metadataLoadContext.Resolve(JsonValueFullName);
                 _jsonDocumentType = _metadataLoadContext.Resolve(JsonDocumentFullName);
+                _dateOnlyType = _metadataLoadContext.Resolve(DateOnlyFullName);
+                _timeOnlyType = _metadataLoadContext.Resolve(TimeOnlyFullName);
 
                 // Unsupported types.
                 _delegateType = _metadataLoadContext.Resolve(SpecialType.System_Delegate);
-                _typeType = _metadataLoadContext.Resolve(typeof(Type));
+                _memberInfoType = _metadataLoadContext.Resolve(typeof(MemberInfo));
                 _serializationInfoType = _metadataLoadContext.Resolve(typeof(Runtime.Serialization.SerializationInfo));
                 _intPtrType = _metadataLoadContext.Resolve(typeof(IntPtr));
                 _uIntPtrType = _metadataLoadContext.Resolve(typeof(UIntPtr));
-                _dateOnlyType = _metadataLoadContext.Resolve(DateOnlyFullName);
-                _timeOnlyType = _metadataLoadContext.Resolve(TimeOnlyFullName);
 
                 _jsonConverterOfTType = _metadataLoadContext.Resolve(JsonConverterOfTFullName);
 
@@ -960,7 +960,10 @@ namespace System.Text.Json.SourceGeneration
                         }
                     }
                 }
-                else if (_knownUnsupportedTypes.Contains(type) || _delegateType.IsAssignableFrom(type))
+                else if (
+                    _knownUnsupportedTypes.Contains(type) ||
+                    _memberInfoType.IsAssignableFrom(type) ||
+                    _delegateType.IsAssignableFrom(type))
                 {
                     classType = ClassType.KnownUnsupportedType;
                 }
@@ -1590,7 +1593,6 @@ namespace System.Text.Json.SourceGeneration
                 AddTypeIfNotNull(_knownTypes, _jsonValueType);
                 AddTypeIfNotNull(_knownTypes, _jsonDocumentType);
 
-                _knownUnsupportedTypes.Add(_typeType);
                 _knownUnsupportedTypes.Add(_serializationInfoType);
                 _knownUnsupportedTypes.Add(_intPtrType);
                 _knownUnsupportedTypes.Add(_uIntPtrType);
