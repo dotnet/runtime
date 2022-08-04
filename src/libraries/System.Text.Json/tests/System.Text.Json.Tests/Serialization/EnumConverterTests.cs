@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -553,6 +554,48 @@ namespace System.Text.Json.Serialization.Tests
             E = 1 << 4,
             F = 1 << 5,
             G = 1 << 6,
+        }
+
+        [Fact]
+        public static void HonorNamingPolicyOnDeserialization()
+        {
+            JsonSerializerOptions options = new()
+            {
+                Converters =
+                {
+                    new JsonStringEnumConverter(namingPolicy: new SimpleSnakeCasePolicy() )
+                }
+            };
+
+            BindingFlags bindingFlags = JsonSerializer.Deserialize<BindingFlags>(@"""non_public""", options);
+            Assert.Equal(BindingFlags.NonPublic, bindingFlags);
+
+            // Flags supported without naming policy.
+            bindingFlags = JsonSerializer.Deserialize<BindingFlags>(@"""NonPublic, Public""", options);
+            Assert.Equal(BindingFlags.NonPublic | BindingFlags.Public, bindingFlags);
+
+            // Flags not supported with naming policy.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BindingFlags>(@"""non_public, public""", options));
+
+            // Naming policy honored for values within the 64-count cache limit.
+            EnumWithMoreThan64Values customEnum = JsonSerializer.Deserialize<EnumWithMoreThan64Values>(@"""a_a_a""", options);
+            Assert.Equal(EnumWithMoreThan64Values.AAA, customEnum);
+
+            // Naming policy not honored for values outside the 64-count cache limit.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EnumWithMoreThan64Values>(@"""x_x_x""", options));
+
+            // Null not supported.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EnumWithMoreThan64Values>("null", options));
+
+            // Null supported for nullable enum.
+            Assert.Null(JsonSerializer.Deserialize<EnumWithMoreThan64Values?>("null", options));
+        }
+
+        public enum EnumWithMoreThan64Values
+        {
+            A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X,
+            AA, BB, CC, DD, EE, FF, GG, HH, II, JJ, KK, LL, MM, NN, OO, PP, QQ, RR, SS, TT, UU, VV, WW, XX,
+            AAA, BBB, CCC, DDD, EEE, FFF, GGG, HHH, III, JJJ, KKK, LLL, MMM, NNN, OOO, PPP, QQQ, RRR, SSS, TTT, UUU, VVV, WWW, XXX
         }
     }
 }
