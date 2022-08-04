@@ -5,12 +5,10 @@ using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Kerberos.NET.Configuration;
 using Kerberos.NET.Crypto;
-using Kerberos.NET.Entities;
 using Kerberos.NET.Server;
 using Kerberos.NET.Logging;
 using Xunit.Abstractions;
@@ -26,9 +24,12 @@ public class KerberosExecutor : IDisposable
     private RemoteInvokeHandle? _invokeHandle;
     private string? _krb5Path;
     private string? _keytabPath;
+    private string? _tracePath;
     private readonly List<FakeKerberosPrincipal> _servicePrincipals;
+    private readonly ITestOutputHelper _testOutputHelper;
 
-    public static bool IsSupported { get; } = OperatingSystem.IsLinux() || OperatingSystem.IsMacOS();
+    public static bool IsSupported { get; } =
+        RemoteExecutor.IsSupported && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS());
 
     public const string DefaultAdminPassword = "PLACEHOLDERadmin.";
 
@@ -47,7 +48,6 @@ public class KerberosExecutor : IDisposable
         _principalService = new FakePrincipalService(realm);
 
         byte[] krbtgtPassword = new byte[16];
-        //RandomNumberGenerator.Fill(krbtgtPassword);
 
         var krbtgt = new FakeKerberosPrincipal(PrincipalType.Service, "krbtgt", realm, krbtgtPassword);
         _principalService.Add("krbtgt", krbtgt);
@@ -65,14 +65,34 @@ public class KerberosExecutor : IDisposable
         _kdcListener = new FakeKdcServer(_options);
         _realm = realm;
         _servicePrincipals = new List<FakeKerberosPrincipal>();
+        _testOutputHelper = testOutputHelper;
     }
 
     public void Dispose()
     {
-        _invokeHandle?.Dispose();
-        _kdcListener.Stop();
-        File.Delete(_krb5Path);
-        File.Delete(_keytabPath);
+        try
+        {
+            _invokeHandle?.Dispose();
+        }
+        catch (Exception)
+        {
+            try
+            {
+                _testOutputHelper.WriteLine("GSSAPI trace:");
+                _testOutputHelper.WriteLine(File.ReadAllText(_tracePath));
+            }
+            catch (IOException)
+            {
+            }
+            throw;
+        }
+        finally
+        {
+            _kdcListener.Stop();
+            File.Delete(_tracePath);
+            File.Delete(_krb5Path);
+            File.Delete(_keytabPath);
+        }
     }
 
     public void AddService(string name, string password = DefaultAdminPassword)
@@ -136,8 +156,11 @@ public class KerberosExecutor : IDisposable
             writer.Flush();
         }
 
+        _tracePath = Path.GetTempFileName();
+
         // Set environment variables for GSSAPI
         Environment.SetEnvironmentVariable("KRB5_CONFIG", _krb5Path);
         Environment.SetEnvironmentVariable("KRB5_KTNAME", _keytabPath);
+        Environment.SetEnvironmentVariable("KRB5_TRACE", _tracePath);
     }
 }
