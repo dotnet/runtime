@@ -222,7 +222,8 @@ namespace System.Net.Http
                 BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, windowUpdateAmount);
                 _outgoingBuffer.Commit(4);
 
-                _receivedSettingsAck = false;
+                // Processing the incoming frames before sending the client preface and SETTINGS is necessary when using a NamedPipe as a transport.
+                // If the preface and SETTINGS coming from the server are not read first the below WriteAsync and the ProcessIncomingFramesAsync fall into a deadlock.
                 _ = ProcessIncomingFramesAsync();
                 await _stream.WriteAsync(_outgoingBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
                 _rttEstimator.OnInitialSettingsSent();
