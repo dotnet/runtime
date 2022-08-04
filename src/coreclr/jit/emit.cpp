@@ -104,8 +104,6 @@ void emitLocation::Print(LONG compMethodID) const
  *  Return the name of an instruction format.
  */
 
-#if defined(DEBUG) || EMITTER_STATS
-
 const char* emitter::emitIfName(unsigned f)
 {
     static const char* const ifNames[] = {
@@ -123,8 +121,6 @@ const char* emitter::emitIfName(unsigned f)
     sprintf_s(errBuff, sizeof(errBuff), "??%u??", f);
     return errBuff;
 }
-
-#endif
 
 /*****************************************************************************/
 
@@ -1363,14 +1359,14 @@ void emitter::appendToCurIG(instrDesc* id)
  *  Display (optionally) an instruction offset.
  */
 
-#ifdef DEBUG
-
 void emitter::emitDispInsAddr(BYTE* code)
 {
+#ifdef DEBUG
     if (emitComp->opts.disAddr)
     {
         printf(FMT_ADDR, DBG_ADDR(code));
     }
+#endif
 }
 
 void emitter::emitDispInsOffs(unsigned offs, bool doffs)
@@ -1384,8 +1380,6 @@ void emitter::emitDispInsOffs(unsigned offs, bool doffs)
         printf("      ");
     }
 }
-
-#endif // DEBUG
 
 #ifdef JIT32_GCENCODER
 
@@ -1512,7 +1506,6 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     emitInsCount++;
 
-#if defined(DEBUG)
     /* In debug mode we clear/set some additional fields */
 
     instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
@@ -1528,7 +1521,6 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     id->idDebugOnlyInfo(info);
 
-#endif // defined(DEBUG)
 
     /* Store the size and handle the two special values
        that indicate GCref and ByRef */
@@ -2644,11 +2636,7 @@ void* emitter::emitAddInlineLabel()
 //
 void emitter::emitPrintLabel(insGroup* ig)
 {
-#ifdef DEBUG
     printf("G_M%03u_IG%02u", emitComp->compMethodID, ig->igNum);
-#else
-    printf("IG_%02u", ig->igNum);
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -7704,13 +7692,13 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         printf("\nEmitting data sections: %u total bytes\n", sec->dsdOffs);
     }
 
+    unsigned secNum = 0;
+#endif
+
     if (emitComp->opts.disAsm)
     {
         emitDispDataSec(sec, dst);
     }
-
-    unsigned secNum = 0;
-#endif
 
     assert(dst);
     assert(sec->dsdOffs);
@@ -7820,8 +7808,6 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
     }
 }
 
-#ifdef DEBUG
-
 //------------------------------------------------------------------------
 // emitDispDataSec: Dump a data section to stdout.
 //
@@ -7842,10 +7828,12 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
 
     for (dataSection* data = section->dsdList; data != nullptr; data = data->dsNext)
     {
+#ifdef DEBUG
         if (emitComp->opts.disAddr)
         {
             printf("; @" FMT_ADDR "\n", DBG_ADDR(dst));
         }
+#endif
 
         const char* labelFormat = "%-7s";
         char        label[64];
@@ -7947,7 +7935,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                 {
                     case TYP_FLOAT:
                         assert(data->dsSize >= 4);
-                        printf("\tdd\t%08llXh\t", *reinterpret_cast<uint32_t*>(&data->dsCont[i]));
+                        printf("\tdd\t%08llXh\t", (UINT64)*reinterpret_cast<uint32_t*>(&data->dsCont[i]));
                         printf("\t; %9.6g", *reinterpret_cast<float*>(&data->dsCont[i]));
                         i += 4;
                         break;
@@ -8022,7 +8010,6 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
         }
     }
 }
-#endif
 
 /*****************************************************************************/
 /*****************************************************************************

@@ -1269,7 +1269,6 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
 }
 
 /*****************************************************************************/
-#ifdef DEBUG
 
 // clang-format off
 static const char * const  xRegNames[] =
@@ -1391,8 +1390,6 @@ const char* emitter::emitVectorRegName(regNumber reg)
 
     return vRegNames[index];
 }
-
-#endif // DEBUG
 
 /*****************************************************************************
  *
@@ -8703,10 +8700,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
                    VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
         }
     }
-
-    id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
-    id->idDebugOnlyInfo()->idCallSig   = sigInfo;
+    id->idDebugOnlyInfo()->idCallSig = sigInfo;
 #endif // DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
 
 #ifdef LATE_DISASM
     if (addr != nullptr)
@@ -11742,6 +11738,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         emitDispGCInfoDelta();
     }
+#else
+    size_t expected = emitSizeOfInsDsc(id);
+    assert(sz == expected);
+
+    if (emitComp->opts.disAsm)
+    {
+        emitDispIns(id, false, 0, true, emitCurCodeOffs(odst), *dp, (dst - *dp), ig);
+    }
 #endif
 
     /* All instructions are expected to generate code */
@@ -11755,8 +11759,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
 /*****************************************************************************/
 /*****************************************************************************/
-
-#ifdef DEBUG
 
 /*****************************************************************************
  *
@@ -11804,7 +11806,7 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
 
     if (!alwaysHex && (imm > -1000) && (imm < 1000))
     {
-        printf("%d", imm);
+        printf("%d", (int)imm);
     }
     else
     {
@@ -11820,7 +11822,7 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
         }
         else
         {
-            printf("0x%02x", imm);
+            printf("0x%02x", (unsigned)imm);
         }
     }
 
@@ -12018,7 +12020,7 @@ void emitter::emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t i
     assert(isVectorRegister(reg));
     printf(emitVectorRegName(reg));
     emitDispElemsize(elemsize);
-    printf("[%d]", index);
+    printf("[%d]", (int)index);
 
     if (addComma)
         printf(", ");
@@ -12482,6 +12484,7 @@ void emitter::emitDispIns(
 void emitter::emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
+#ifdef DEBUG
     if (EMITVERBOSE)
     {
         unsigned idNum =
@@ -12489,6 +12492,7 @@ void emitter::emitDispInsHelp(
 
         printf("IN%04x: ", idNum);
     }
+#endif
 
     if (pCode == NULL)
     {
@@ -12583,7 +12587,7 @@ void emitter::emitDispInsHelp(
                     UNATIVE_OFFSET srcOffs = ig->igOffs + emitFindOffset(ig, insNum + 1);
                     UNATIVE_OFFSET dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
                     ssize_t        relOffs = (ssize_t)(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(srcOffs));
-                    printf("pc%s%d (%d instructions)", (relOffs >= 0) ? "+" : "", relOffs, instrCount);
+                    printf("pc%s%d (%d instructions)", (relOffs >= 0) ? "+" : "", (int)relOffs, (int)instrCount);
                 }
             }
             else if (id->idIsBound())
@@ -12627,7 +12631,7 @@ void emitter::emitDispInsHelp(
                     UNATIVE_OFFSET srcOffs = ig->igOffs + emitFindOffset(ig, insNum + 1);
                     UNATIVE_OFFSET dstOffs = ig->igOffs + emitFindOffset(ig, insNum + 1 + instrCount);
                     ssize_t        relOffs = (ssize_t)(emitOffsetToPtr(dstOffs) - emitOffsetToPtr(srcOffs));
-                    printf("pc%s%d (%d instructions)", (relOffs >= 0) ? "+" : "", relOffs, instrCount);
+                    printf("pc%s%d (%d instructions)", (relOffs >= 0) ? "+" : "", (int)relOffs, (int)instrCount);
                 }
             }
             else if (id->idIsBound())
@@ -12694,6 +12698,7 @@ void emitter::emitDispInsHelp(
                     emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
                     size_t targetHandle = id->idDebugOnlyInfo()->idMemCookie;
 
+#ifdef DEBUG
                     if (targetHandle == THT_InitializeArrayIntrinsics)
                     {
                         targetName = "InitializeArrayIntrinsics";
@@ -12706,6 +12711,7 @@ void emitter::emitDispInsHelp(
                     {
                         targetName = "SetGlobalSecurityCookie";
                     }
+#endif
                 }
                 else if (id->idIsBound())
                 {
@@ -13486,7 +13492,7 @@ void emitter::emitDispInsHelp(
                 size = id->idOpSize();
                 emitDispVectorReg(id->idReg2(), (size == EA_8BYTE) ? INS_OPTS_8B : INS_OPTS_16B, true);
                 index = emitGetInsSC(id);
-                printf("%s.4b[%d]", emitVectorRegName(id->idReg3()), index);
+                printf("%s.4b[%d]", emitVectorRegName(id->idReg3()), (int)index);
             }
             else
             {
@@ -13682,6 +13688,7 @@ void emitter::emitDispInsHelp(
 
 void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 {
+#ifdef DEBUG
     printf("[");
 
     if (varx < 0)
@@ -13712,9 +13719,8 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
             printf("'");
         }
     }
+#endif
 }
-
-#endif // DEBUG
 
 // Generate code for a load or store operation with a potentially complex addressing mode
 // This method handles the case of a GT_IND with contained GT_LEA op1 of the x86 form [base + index*scale + offset]

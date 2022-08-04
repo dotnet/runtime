@@ -22,7 +22,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 
 /*****************************************************************************/
-#ifdef DEBUG
 
 //-----------------------------------------------------------------------------
 // genInsName: Returns the string representation of the given CPU instruction, as
@@ -147,15 +146,10 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     return insName;
 }
 
-/*****************************************************************************/
-#endif // DEBUG
-
 /*****************************************************************************
  *
  *  Return the size string (e.g. "word ptr") appropriate for the given size.
  */
-
-#ifdef DEBUG
 
 const char* CodeGen::genSizeStr(emitAttr attr)
 {
@@ -212,8 +206,6 @@ const char* CodeGen::genSizeStr(emitAttr attr)
         return "unknw ptr ";
     }
 }
-
-#endif
 
 /*****************************************************************************
  *

@@ -4367,10 +4367,7 @@ void emitter::emitIns_IJ(emitAttr attr, regNumber reg, unsigned base)
     id->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
     id->idAddr()->iiaAddrMode.amIndxReg = reg;
     id->idAddr()->iiaAddrMode.amScale   = emitter::OPSZP;
-
-#ifdef DEBUG
     id->idDebugOnlyInfo()->idMemCookie = base;
-#endif
 
     id->idCodeSize(sz);
 
@@ -7991,18 +7988,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
 
 #ifdef DEBUG
-    if (emitComp->verbose && 0)
-    {
-        if (id->idIsLargeCall())
-        {
-            printf("[%02u] Rec call GC vars = %s\n", id->idDebugOnlyInfo()->idNum,
-                   VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
-        }
-    }
-
+    id->idDebugOnlyInfo()->idCallSig = sigInfo;
+#endif // DEBUG    
     id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
-    id->idDebugOnlyInfo()->idCallSig   = sigInfo;
-#endif // DEBUG
 
 #ifdef LATE_DISASM
     if (addr != nullptr)
@@ -8173,8 +8161,6 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
     return sizeof(instrDesc);
 }
 
-/*****************************************************************************/
-#ifdef DEBUG
 /*****************************************************************************
  *
  *  Return a string that represents the given register.
@@ -8412,13 +8398,13 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
 
     if (fldHnd == FLD_GLOBAL_FS)
     {
-        printf("FS:[0x%04X]", offs);
+        printf("FS:[0x%04X]", (unsigned)offs);
         return;
     }
 
     if (fldHnd == FLD_GLOBAL_DS)
     {
-        printf("[0x%04X]", offs);
+        printf("[0x%04X]", (unsigned)offs);
         return;
     }
 
@@ -8449,7 +8435,7 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
     }
     else
     {
-        printf("classVar[%#x]", emitComp->dspPtr(fldHnd));
+        printf("classVar[%#p]", (void*)emitComp->dspPtr(fldHnd));
 
         if (offs)
         {
@@ -8459,6 +8445,7 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
 
     printf("]");
 
+#ifdef DEBUG
     if (emitComp->opts.varNames && offs < 0)
     {
         printf("'%s", emitComp->eeGetFieldName(fldHnd));
@@ -8468,6 +8455,7 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
         }
         printf("'");
     }
+#endif
 }
 
 /*****************************************************************************
@@ -8550,7 +8538,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
     }
 
     printf("]");
-
+#ifdef DEBUG
     if (varx >= 0 && emitComp->opts.varNames)
     {
         const char* varName = emitComp->compLocalVarName(varx, offs);
@@ -8571,6 +8559,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
             printf("'");
         }
     }
+#endif
 }
 
 /*****************************************************************************
@@ -8644,7 +8633,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             {
                 printf("reloc ");
             }
-            printf("J_M%03u_DS%02u", emitComp->compMethodID, id->idDebugOnlyInfo()->idMemCookie);
+            printf("J_M%03u_DS%02u", emitComp->compMethodID, (unsigned)id->idDebugOnlyInfo()->idMemCookie);
 
             disp -= id->idDebugOnlyInfo()->idMemCookie;
         }
@@ -8678,7 +8667,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
         }
         if (scale > 1)
         {
-            printf("%u*", scale);
+            printf("%u*", (unsigned)scale);
         }
         printf("%s", emitRegName(id->idAddr()->iiaAddrMode.amIndxReg));
         nsep = true;
@@ -8712,34 +8701,34 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             }
             if (frameRef)
             {
-                printf("%02XH", disp);
+                printf("%02XH", (unsigned)disp);
             }
             else if (disp < 1000)
             {
-                printf("%d", disp);
+                printf("%d", (unsigned)disp);
             }
             else if (disp <= 0xFFFF)
             {
-                printf("%04XH", disp);
+                printf("%04XH", (unsigned)disp);
             }
             else
             {
-                printf("%08XH", disp);
+                printf("%08XH", (unsigned)disp);
             }
         }
         else if (disp < 0)
         {
             if (frameRef)
             {
-                printf("-%02XH", -disp);
+                printf("-%02XH", (unsigned)-disp);
             }
             else if (disp > -1000)
             {
-                printf("-%d", -disp);
+                printf("-%d", (unsigned)-disp);
             }
             else if (disp >= -0xFFFF)
             {
-                printf("-%04XH", -disp);
+                printf("-%04XH", (unsigned)-disp);
             }
             else if (disp < -0xFFFFFF)
             {
@@ -8747,22 +8736,23 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
                 {
                     printf("+");
                 }
-                printf("%08XH", disp);
+                printf("%08XH", (unsigned)disp);
             }
             else
             {
-                printf("-%08XH", -disp);
+                printf("-%08XH", (unsigned)-disp);
             }
         }
         else if (!nsep)
         {
-            printf("%04XH", disp);
+            printf("%04XH", (unsigned)disp);
         }
     }
 
     printf("]");
 
     // pretty print string if it looks like one
+#ifdef DEBUG
     if ((id->idGCref() == GCT_GCREF) && (id->idIns() == INS_mov) && (id->idAddr()->iiaAddrMode.amBaseReg == REG_NA))
     {
         const WCHAR* str = emitComp->eeGetCPString(disp);
@@ -8771,6 +8761,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             printf("      '%S'", str);
         }
     }
+#endif
 
     if (jdsc && !noDetail)
     {
@@ -8868,7 +8859,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 
         if (sz < digits)
         {
-            printf("%.*s", 2 * (digits - sz), "                         ");
+            printf("%.*s", (int)(2 * (digits - sz)), "                         ");
         }
     }
 }
@@ -8897,11 +8888,13 @@ void emitter::emitDispIns(
 
     instruction ins = id->idIns();
 
+#ifdef DEBUG
     if (emitComp->verbose)
     {
         unsigned idNum = id->idDebugOnlyInfo()->idNum;
         printf("IN%04x: ", idNum);
     }
+#endif
 
 #define ID_INFO_DSP_RELOC ((bool)(id->idIsDspReloc()))
 
@@ -9128,15 +9121,15 @@ void emitter::emitDispIns(
                 }
                 if ((val > -1000) && (val < 1000))
                 {
-                    printf("%d", val);
+                    printf("%d", (int)val);
                 }
                 else if ((val > 0) || (val < -0xFFFFFF))
                 {
-                    printf("0x%IX", val);
+                    printf("0x%IX", (INT64)val);
                 }
                 else
                 { // (val < 0)
-                    printf("-0x%IX", -val);
+                    printf("-0x%IX", (INT64)-val);
                 }
                 emitDispCommentForHandle(srcVal, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             }
@@ -9371,8 +9364,10 @@ void emitter::emitDispIns(
                 emitCurStackLvl -= sizeof(int);
 #endif
 
+#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+#endif
 
 #if !FEATURE_FIXED_OUT_ARGS
             if (ins == INS_pop)
@@ -9388,8 +9383,10 @@ void emitter::emitDispIns(
 
             printf("%s", sstr);
 
+#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+#endif
 
             printf(", %s", emitRegName(id->idReg1(), attr));
             break;
@@ -9401,8 +9398,10 @@ void emitter::emitDispIns(
 
             printf("%s", sstr);
 
+#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+#endif
 
             emitGetInsCns(id, &cnsVal);
             val = cnsVal.cnsVal;
@@ -9435,8 +9434,10 @@ void emitter::emitDispIns(
 
             printf("%s", sstr);
 
+#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+#endif
 
             printf(", %s", emitRegName(id->idReg1(), attr));
 
@@ -9475,8 +9476,10 @@ void emitter::emitDispIns(
             }
 
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+#endif
 
             break;
 
@@ -9484,8 +9487,10 @@ void emitter::emitDispIns(
         case IF_RWR_SRD_CNS:
         {
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
+#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+#endif
             emitGetInsCns(id, &cnsVal);
 
             val = cnsVal.cnsVal;
@@ -9504,15 +9509,19 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_SRD:
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+#endif
             break;
 
         case IF_RWR_RRD_SRD_CNS:
         {
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+#endif
             emitGetInsCns(id, &cnsVal);
 
             val = cnsVal.cnsVal;
@@ -9533,8 +9542,10 @@ void emitter::emitDispIns(
         {
             printf("%s, ", emitRegName(id->idReg1(), attr));
             printf("%s, ", emitRegName(id->idReg2(), attr));
+#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+#endif
 
             emitGetInsCns(id, &cnsVal);
             val = (cnsVal.cnsVal >> 4) + XMMBASE;
@@ -10016,17 +10027,16 @@ void emitter::emitDispIns(
             break;
     }
 
+#ifdef DEBUG
     if (sz != 0 && sz != id->idCodeSize() && (!asmfm || emitComp->verbose))
     {
         // Code size in the instrDesc is different from the actual code size we've been given!
         printf(" (ECS:%d, ACS:%d)", id->idCodeSize(), sz);
     }
+#endif
 
     printf("\n");
 }
-
-/*****************************************************************************/
-#endif
 
 /*****************************************************************************
  *
@@ -14755,6 +14765,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     if ((emitComp->opts.disAsm || emitComp->verbose) && !emitJmpInstHasNoCode(id))
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+    }
+#else
+    if (emitComp->opts.disAsm&& !emitJmpInstHasNoCode(id))
+    {
+        emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }
 #endif
 

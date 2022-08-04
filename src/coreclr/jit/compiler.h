@@ -9298,7 +9298,6 @@ public:
     static MethodSet* s_pJitMethodSet;
 #endif // DEBUG
 
-#ifdef DEBUG
 // silence warning of cast to greater size. It is easier to silence than construct code the compiler is happy with, and
 // it is safe in this case
 #pragma warning(push)
@@ -9316,6 +9315,7 @@ public:
         return (o == ZERO) ? ZERO : (opts.dspDiffable ? T(0xD1FFAB1E) : o);
     }
 #pragma warning(pop)
+#ifdef DEBUG
 
     static int dspTreeID(GenTree* tree)
     {
@@ -9787,8 +9787,8 @@ private:
 #endif
 
 public:
-#ifdef DEBUG
     LONG     compMethodID;
+#ifdef DEBUG
     unsigned compGenTreeID;
     unsigned compStatementID;
     unsigned compBasicBlockID;
@@ -10000,12 +10000,12 @@ public:
 
     const char* compLocalVarName(unsigned varNum, unsigned offs);
     VarName compVarName(regNumber reg, bool isFloatReg = false);
-    const char* compRegVarName(regNumber reg, bool displayVar = false, bool isFloatReg = false);
-    const char* compRegNameForSize(regNumber reg, size_t size);
     const char* compFPregVarName(unsigned fpReg, bool displayVar = false);
     void compDspSrcLinesByNativeIP(UNATIVE_OFFSET curIP);
     void compDspSrcLinesByLineNum(unsigned line, bool seek = false);
 #endif // DEBUG
+    const char* compRegNameForSize(regNumber reg, size_t size);
+    const char* compRegVarName(regNumber reg, bool displayVar = false, bool isFloatReg = false);
 
     //-------------------------------------------------------------------------
 

@@ -2076,10 +2076,6 @@ unsigned char Compiler::compGetJitDefaultFill(Compiler* comp)
     return defaultFill;
 }
 
-#endif // DEBUG
-
-/*****************************************************************************/
-#ifdef DEBUG
 /*****************************************************************************/
 
 VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
@@ -2124,13 +2120,15 @@ VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
     return nullptr;
 }
 
+#endif // DEBUG
+
 const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloatReg)
 {
-
 #ifdef TARGET_ARM
     isFloatReg = genIsValidFloatReg(reg);
 #endif
 
+#ifdef DEBUG
     if (displayVar && (reg != REG_NA))
     {
         VarName varName = compVarName(reg, isFloatReg);
@@ -2148,6 +2146,7 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
             return nameVarReg[index];
         }
     }
+#endif
 
     /* no debug info required or no variable in that register
        -> return standard name */
@@ -2194,6 +2193,7 @@ const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
     return sizeNames[reg][size - 1];
 }
 
+#ifdef DEBUG
 const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 {
     unsigned     i;
@@ -2214,9 +2214,8 @@ const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 
     return nullptr;
 }
+#endif
 
-/*****************************************************************************/
-#endif // DEBUG
 /*****************************************************************************/
 
 void Compiler::compSetProcessor()
@@ -6763,6 +6762,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
 #endif
 
+    compMethodID = 0;
 #ifdef DEBUG
     /* Give the function a unique number */
 

@@ -554,8 +554,6 @@ protected:
 
 #endif // TARGET_XARCH
 
-#ifdef DEBUG // This information is used in DEBUG builds for additional diagnostics
-
     struct instrDesc;
 
     struct instrDescDebugInfo
@@ -569,8 +567,6 @@ protected:
         bool              idCatchRet;    // Instruction is for a catch 'return'
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
     };
-
-#endif // DEBUG
 
 #ifdef TARGET_ARM
     unsigned insEncodeSetFlags(insFlags sf);
@@ -810,8 +806,6 @@ protected:
         ////////////////////////////////////////////////////////////////////////
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef DEBUG
-
         instrDescDebugInfo* _idDebugOnlyInfo;
 
     public:
@@ -825,7 +819,6 @@ protected:
         }
 
     private:
-#endif // DEBUG
 
         CLANG_FORMAT_COMMENT_ANCHOR;
 
@@ -849,11 +842,7 @@ protected:
     emitter::emitAllocInstr() to clear them.
  */
 
-#if DEBUG
 #define SMALL_IDSC_DEBUG_EXTRA (sizeof(void*))
-#else
-#define SMALL_IDSC_DEBUG_EXTRA (0)
-#endif
 
 #define SMALL_IDSC_SIZE (8 + SMALL_IDSC_DEBUG_EXTRA)
 
@@ -1681,9 +1670,7 @@ protected:
     ssize_t emitGetInsCIdisp(instrDesc* id);
     unsigned emitGetInsCIargs(instrDesc* id);
 
-#ifdef DEBUG
     inline static emitAttr emitGetMemOpSize(instrDesc* id);
-#endif // DEBUG
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -1697,15 +1684,13 @@ protected:
 /*           A few routines used for debug display purposes             */
 /************************************************************************/
 
-#if defined(DEBUG) || EMITTER_STATS
-
     static const char* emitIfName(unsigned f);
 
-#endif // defined(DEBUG) || EMITTER_STATS
-
 #ifdef DEBUG
-
     unsigned emitVarRefOffs;
+#else // !DEBUG
+#define emitVarRefOffs 0
+#endif // !DEBUG
 
     const char* emitRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
     const char* emitFloatRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
@@ -1746,10 +1731,6 @@ protected:
                      BYTE*      pCode = nullptr,
                      size_t     sz    = 0,
                      insGroup*  ig    = nullptr);
-
-#else // !DEBUG
-#define emitVarRefOffs 0
-#endif // !DEBUG
 
     /************************************************************************/
     /*                      Method prolog and epilog                        */
@@ -2557,9 +2538,7 @@ public:
     dataSection* emitDataSecCur;
 
     void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
-#ifdef DEBUG
     void emitDispDataSec(dataSecDsc* section, BYTE* dst);
-#endif
 
     /************************************************************************/
     /*              Handles to the current class and method.                */
@@ -3107,7 +3086,6 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
     }
 }
 
-#ifdef DEBUG
 //-----------------------------------------------------------------------------
 // emitGetMemOpSize: Get the memory operand size of instrDesc.
 //
@@ -3275,7 +3253,6 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
         }
     }
 }
-#endif // DEBUG
 
 #endif // TARGET_XARCH
 

@@ -196,7 +196,6 @@ protected:
     void*     coldCodePtr;
     void*     consPtr;
 
-#ifdef DEBUG
     // Last instr we have displayed for dspInstrs
     unsigned genCurDispOffset;
 
@@ -204,7 +203,6 @@ protected:
     const char* genInsDisplayName(emitter::instrDesc* id);
 
     static const char* genSizeStr(emitAttr size);
-#endif // DEBUG
 
     void genInitialize();
 
