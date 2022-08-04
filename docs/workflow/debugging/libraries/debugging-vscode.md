@@ -27,6 +27,7 @@ See also [Android debugging](../mono/android-debugging.md) and [WebAssembly debu
 
 - Install the VS Code [Mono Debugger (`ms-vscode.mono-debug`)](https://marketplace.visualstudio.com/items?itemName=ms-vscode.mono-debug) extension
 - Create a `launch.json` file configuration with type `mono`
+
    ```json
    {
        "version": "0.2.0",
@@ -38,14 +39,16 @@ See also [Android debugging](../mono/android-debugging.md) and [WebAssembly debu
                "address": "localhost",
                "port": 1235
            }
-	    ]
+        ]
    }
-
    ```
+
 - start a test from the command line, setting the `MONO_ENV_OPTIONS` environment variable to configure the debugger:
-  ```
+
+  ```sh
   DOTNET_REMOTEEXECUTOR_SUPPORTED=0 MONO_ENV_OPTIONS="--debug --debugger-agent=transport=dt_socket,address=127.0.0.1:1235,server=y,suspend=y" ./dotnet.sh build /t:Test /p:RuntimeFlavor=Mono src/libraries/System.Buffers/tests
   ```
+
   Note that you also have to set `DOTNET_REMOTEEXECUTOR_SUPPORTED=0` otherwise multiple instances of the runtime will attempt to listen on the same port.
 - Set a breakpoint in a test in VS Code and start debugging in the "Attach to Mono" configuration.
 - Note that Mono does not stop on first chance exceptions and xunit catches all exceptions, so if a test is throwing, the debugger won't break on an uncaught exception.
