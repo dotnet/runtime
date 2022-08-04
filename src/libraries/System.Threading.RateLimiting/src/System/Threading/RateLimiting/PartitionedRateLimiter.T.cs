@@ -27,23 +27,23 @@ namespace System.Threading.RateLimiting
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <returns>A successful or failed lease.</returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public RateLimitLease Acquire(TResource resource, int permitCount = 1)
+        public RateLimitLease AttemptAcquire(TResource resource, int permitCount = 1)
         {
             if (permitCount < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(permitCount));
             }
 
-            return AcquireCore(resource, permitCount);
+            return AttemptAcquireCore(resource, permitCount);
         }
 
         /// <summary>
-        /// Method that <see cref="PartitionedRateLimiter{TResource}"/> implementations implement for <see cref="Acquire"/>.
+        /// Method that <see cref="PartitionedRateLimiter{TResource}"/> implementations implement for <see cref="AttemptAcquire"/>.
         /// </summary>
         /// <param name="resource">The resource to limit.</param>
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <returns></returns>
-        protected abstract RateLimitLease AcquireCore(TResource resource, int permitCount);
+        protected abstract RateLimitLease AttemptAcquireCore(TResource resource, int permitCount);
 
         /// <summary>
         /// Wait until the requested permits are available or permits can no longer be acquired.
@@ -56,7 +56,7 @@ namespace System.Threading.RateLimiting
         /// <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public ValueTask<RateLimitLease> WaitAndAcquireAsync(TResource resource, int permitCount = 1, CancellationToken cancellationToken = default)
+        public ValueTask<RateLimitLease> AcquireAsync(TResource resource, int permitCount = 1, CancellationToken cancellationToken = default)
         {
             if (permitCount < 0)
             {
@@ -68,17 +68,17 @@ namespace System.Threading.RateLimiting
                 return new ValueTask<RateLimitLease>(Task.FromCanceled<RateLimitLease>(cancellationToken));
             }
 
-            return WaitAndAcquireAsyncCore(resource, permitCount, cancellationToken);
+            return AcquireAsyncCore(resource, permitCount, cancellationToken);
         }
 
         /// <summary>
-        /// Method that <see cref="PartitionedRateLimiter{TResource}"/> implementations implement for <see cref="WaitAndAcquireAsync"/>.
+        /// Method that <see cref="PartitionedRateLimiter{TResource}"/> implementations implement for <see cref="AcquireAsync"/>.
         /// </summary>
         /// <param name="resource">The resource to limit.</param>
         /// <param name="permitCount">Number of permits to try and acquire.</param>
         /// <param name="cancellationToken">Optional token to allow canceling a queued request for permits.</param>
         /// <returns>A task that completes when the requested permits are acquired or when the requested permits are denied.</returns>
-        protected abstract ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken);
+        protected abstract ValueTask<RateLimitLease> AcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken);
 
         /// <summary>
         /// Dispose method for implementations to write.

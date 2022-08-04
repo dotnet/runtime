@@ -139,7 +139,8 @@ namespace System.Text.Json
                 }
 
                 extensionData = createObjectForExtensionDataProp();
-                jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, extensionData);
+                Debug.Assert(jsonPropertyInfo.Set != null);
+                jsonPropertyInfo.Set(obj, extensionData);
             }
 
             // We don't add the value to the dictionary here because we need to support the read-ahead functionality for Streams.

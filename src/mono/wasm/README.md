@@ -37,7 +37,7 @@ If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically duri
 
 **Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/wasm/emsdk` directory should be manually deleted and then a rebuild attempted.
 
-## Bulding on Windows
+## Building on Windows
 
 * To build everything
 

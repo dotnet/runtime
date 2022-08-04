@@ -208,7 +208,7 @@ enum EmitCallType
     // However, LOONGARCH has a much reduced instruction set, and so the LOONGARCH emitter only
     // supports a subset of the x86 variants.  By leaving them commented out, it becomes
     // a compile time error if code tries to use them (and hopefully see this comment
-    // and know why they are unavailible on LOONGARCH), while making it easier to stay
+    // and know why they are unavailable on LOONGARCH), while making it easier to stay
     // in-sync with x86 and possibly add them back in if needed.
 
     EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method

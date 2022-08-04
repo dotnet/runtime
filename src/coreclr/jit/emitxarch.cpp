@@ -4743,7 +4743,7 @@ bool emitter::IsRedundantMov(
 //    src  - The source register for the original mov
 //
 // Return Value:
-//    "true" if the optimization succeded, in which case the instruction can be
+//    "true" if the optimization succeeded, in which case the instruction can be
 //    counted as emitted, "false" otherwise.
 //
 bool emitter::EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src)
@@ -6802,7 +6802,7 @@ void emitter::emitIns_SIMD_R_R_R_I(
 
 //------------------------------------------------------------------------
 // emitIns_SIMD_R_R_S_I: emits the code for a SIMD instruction that takes a register operand, a variable index + offset,
-//                       an imediate operand, and that returns a value in register
+//                       an immediate operand, and that returns a value in register
 //
 // Arguments:
 //    ins       -- The instruction being emitted
@@ -10194,7 +10194,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     instrDescAlign* alignInstr = (instrDescAlign*)id;
 
 #ifdef DEBUG
-    // For cases where 'align' was placed behing a 'jmp' in an IG that does not
+    // For cases where 'align' was placed behind a 'jmp' in an IG that does not
     // immediately preced the loop IG, we do not know in advance the offset of
     // IG having loop. For such cases, skip the padding calculation validation.
     bool validatePadding = !alignInstr->isPlacedAfterJmp;

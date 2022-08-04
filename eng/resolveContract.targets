@@ -12,6 +12,7 @@
     <GenAPIHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GenAPIHeaderFile>
     <GenAPITargetPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</GenAPITargetPath>
     <GenAPILangVersion Condition="'$(LangVersion)' != ''">$(LangVersion)</GenAPILangVersion>
+    <ProjectForGenAPIDocIdGeneration Condition="'$(IsSourceProject)' == 'true' and '$(ProjectForGenAPIDocIdGeneration)' == ''">$(CoreLibProject)</ProjectForGenAPIDocIdGeneration>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
@@ -20,6 +21,10 @@
     <!-- Disable API compat if the project doesn't have reference assembly -->
     <RunApiCompat Condition="'$(HasMatchingContract)' != 'true'">false</RunApiCompat>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true' or '$(IsPartialFacadeAssembly)' == 'true'">
+    <PackageReference Include="Microsoft.DotNet.ApiCompat" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetApiCompatVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(HasMatchingContract)' == 'true' and '$(ContractProject)' != '' and '@(ResolvedMatchingContract)' == ''">
     <ProjectReference Include="$(ContractProject)" ReferenceOutputAssembly="false" OutputItemType="ResolvedMatchingContract" />
@@ -60,11 +65,40 @@
                                       ReferenceAssembly="" />
     </ItemGroup>
   </Target>
-  
+
+  <!-- Generate a .txt file with all public types of the project referenced by ProjectForGenAPIDocIdGeneration (e.g. System.Private.CoreLib or System.Private.Uri implementation assembly).
+       This file is then later on passed to GenAPI as the list of types which should be "split out" with the conditional compilation logic. -->
+  <Target Name="GenerateConditionalTypeLists"
+          Condition="'@(ProjectReference)' != '' and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(ProjectForGenAPIDocIdGeneration)')) and ('$(ContractTypesPartiallyMoved)' == 'true' or '$(ContractTypesPartiallyMoved)' == 'true')">
+    <PropertyGroup>
+      <!-- We either wrap all contract types in a #if condition (when SymbolForGenAPIConditionalTypeLists is empty),
+           or just the types mentioned in GenAPIConditionalTypeLists with the symbol specified in SymbolForGenAPIConditionalTypeLists -->
+      <GenAPIDefaultCondition Condition="'$(SymbolForGenAPIConditionalTypeLists)' == ''">!BUILDING_CORELIB_REFERENCE</GenAPIDefaultCondition>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_genAPILibPathForGenAPIDocIdGeneration Include="@(ReferencePath->'%(RootDir)%(Directory)'->Distinct())" />
+      <_genAPIResolvedProjectForGenAPIDocIdGeneration Include="@(_ResolvedProjectReferencePaths->WithMetadataValue('MSBuildSourceProjectFile','$(ProjectForGenAPIDocIdGeneration)'))" />
+
+      <GenAPIConditionalTypeLists Include="$(IntermediateOutputPath)GenAPIConditionalTypeList.txt">
+        <Symbol Condition="'$(SymbolForGenAPIConditionalTypeLists)' != ''">$(SymbolForGenAPIConditionalTypeLists)</Symbol>
+      </GenAPIConditionalTypeLists>
+    </ItemGroup>
+
+    <!-- Generate conditional compilation symbols to hide types implemented in contracts so we can include the .cs in the System.Private.CoreLib ref -->
+    <Microsoft.DotNet.GenAPI.GenAPITask
+        Assembly="@(_genAPIResolvedProjectForGenAPIDocIdGeneration)"
+        LibPath="@(_genAPILibPathForGenAPIDocIdGeneration)"
+        WriterType="DocIds"
+        DocIdKinds="Namespace, Type"
+        OutputPath="@(GenAPIConditionalTypeLists)" />
+  </Target>
+
   <Target Name="SetGenAPIProperties"
+          DependsOnTargets="GenerateConditionalTypeLists"
           BeforeTargets="GenerateReferenceAssemblySource">
     <PropertyGroup>
-      <GenAPIFollowTypeForwards Condition="'%(ProjectReference.Identity)' == '$(CoreLibProject)'">true</GenAPIFollowTypeForwards>
+      <GenAPIFollowTypeForwards Condition="'%(ProjectReference.Identity)' == '$(CoreLibProject)' or '%(ProjectReference.Identity)' == '$(UriProject)'">true</GenAPIFollowTypeForwards>
     </PropertyGroup>
   </Target>
 

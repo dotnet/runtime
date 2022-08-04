@@ -938,7 +938,7 @@ class StringObject : public Object
     static BOOL CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR * strA, _In_z_ INT8 * strB, int aLength, int bLength, int *result);
 
     /*=================RefInterpretGetStringValuesDangerousForGC======================
-    **N.B.: This perfoms no range checking and relies on the caller to have done this.
+    **N.B.: This performs no range checking and relies on the caller to have done this.
     **Args: (IN)ref -- the String to be interpretted.
     **      (OUT)chars -- a pointer to the characters in the buffer.
     **      (OUT)length -- a pointer to the length of the buffer.
