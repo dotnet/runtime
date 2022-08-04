@@ -7023,55 +7023,43 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
-// CompareChainSize : Determine the size of an uncontained chain.
+// IsValidCompareChain : Determine if the node contains a valid compare chain.
 //
 // Arguments:
 //    child - pointer to the node being checked.
 //    parent - parent node of the child.
-//    inChain - set to true if an exisiting contained chain is found.
 //
 // Return value:
-//    Number of uncontained nodes in the chain.
+//    True if a valid chain is found.
 //
-int Lowering::CompareChainSize(GenTree* child, GenTree* parent, bool* inChain)
+bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
 {
     assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
-    int count = 0;
 
     if (child->isContainedAndNotIntOrIImmed())
     {
         // Already have a chain.
-        *inChain = true;
+        assert(child->OperIs(GT_AND) || child->OperIsCompare());
+        return true;
     }
     else
     {
         if (child->OperIs(GT_AND))
         {
             // Count both sides.
-            int count2 = CompareChainSize(child->AsOp()->gtGetOp2(), child, inChain);
-            if (count2 > 0)
-            {
-                int count1 = CompareChainSize(child->AsOp()->gtGetOp1(), child, inChain);
-
-                if (count1 > 0)
-                {
-                    count = count1 + count2 + 1;
-                }
-            }
+            return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
+                   IsValidCompareChain(child->AsOp()->gtGetOp1(), child);
         }
 #ifdef TARGET_ARM64
         else if (child->OperIsCompare())
         {
             // Can the child compare be contained.
-            if (IsSafeToContainMem(parent, child))
-            {
-                count++;
-            }
+            return IsSafeToContainMem(parent, child);
         }
 #endif
     }
 
-    return count;
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -7153,21 +7141,9 @@ void Lowering::ContainCheckAndChain(GenTree* tree)
         return;
     }
 
-    // Determine whether a chain exists.
-    bool inChain    = false;
-    int  chainSize  = 0;
-    int  chainSize2 = CompareChainSize(tree->AsOp()->gtGetOp2(), tree, &inChain);
-    if (chainSize2 > 0 && !inChain)
-    {
-        int chainSize1 = CompareChainSize(tree->AsOp()->gtGetOp1(), tree, &inChain);
-        if (chainSize1 > 0 && !inChain)
-        {
-            chainSize = chainSize1 + chainSize2;
-        }
-    }
-
-    // Continue an exisiting chain, or start a new one if it's long enough to be worthwhile.
-    if (chainSize > 1 || inChain)
+    // First check there is a valid chain.
+    if (IsValidCompareChain(tree->AsOp()->gtGetOp2(), tree) &&
+        IsValidCompareChain(tree->AsOp()->gtGetOp1(), tree))
     {
         GenTree* startOfChain = nullptr;
 
@@ -7189,7 +7165,7 @@ void Lowering::ContainCheckAndChain(GenTree* tree)
             }
         }
 
-        JITDUMP("Lowered And chain: length=%d %s\n", chainSize, inChain ? "" : "(new chain)");
+        JITDUMP("Lowered And chain:\n");
         DISPTREE(tree);
     }
 }
