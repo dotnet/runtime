@@ -137,7 +137,7 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
     PUSH_PROBE_FRAME x2, x3, x12
 
     ldr         x0, [x2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
-    // bl          C_FUNC(RhpWaitForGC2)
+    bl          C_FUNC(RhpWaitForGC2)
 
     ldr         x2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
     tbnz        x2, #PTFF_THREAD_ABORT_BIT, ThrowThreadAbort
