@@ -115,9 +115,9 @@
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
 
-    <PropertyGroup Condition=" '$(RuntimeComponents)' == '' ">
-      <RuntimeComponents>marshal-ilgen</RuntimeComponents>
-    </PropertyGroup>
+    <ItemGroup>
+      <RuntimeComponents Include="marshal-ilgen" />
+    </ItemGroup>
 
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
