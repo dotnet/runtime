@@ -12,14 +12,6 @@ function wasm_exit(exit_code, reason) {
     console.log(`WASM EXIT ${exit_code}`);
 }
 
-function add(a, b) {
-    return a + b;
-}
-
-function sub(a, b) {
-    return a - b;
-}
-
 let progressElement = null;
 
 function updateProgress(status) {
@@ -69,30 +61,46 @@ function onInputValueChanged(exports, inputElement) {
 
 try {
     const inputElement = document.getElementById("inputN");
-    const { MONO, RuntimeBuildInfo, IMPORTS } = await createDotnetRuntime(() => {
+    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain } = await createDotnetRuntime(() => {
         console.log('user code in createDotnetRuntime callback');
         return {
             configSrc: "./mono-config.json",
+            onConfigLoaded: (config) => {
+                // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
+                console.log('user code Module.onConfigLoaded');
+                // config is loaded and could be tweaked before the rest of the runtime startup sequence
+                config.environmentVariables["MONO_LOG_LEVEL"] = "debug"
+            },
             preInit: () => { console.log('user code Module.preInit'); },
             preRun: () => { console.log('user code Module.preRun'); },
-            onRuntimeInitialized: () => { console.log('user code Module.onRuntimeInitialized'); },
+            onRuntimeInitialized: () => {
+                console.log('user code Module.onRuntimeInitialized');
+                // here we could use API passed into this callback
+                // Module.FS.chdir("/");
+            },
+            onDotnetReady: () => {
+                // This is called after all assets are loaded.
+                console.log('user code Module.onDotnetReady');
+            },
             postRun: () => { console.log('user code Module.postRun'); },
         }
     });
     console.log('user code after createDotnetRuntime()');
-    IMPORTS.Sample = {
-        Test: {
-            updateProgress
-        }
-    };
+    setModuleImports("main.js", {
+	Sample: {
+	    Test: {
+		updateProgress
+	    }
+	}
+    });
 
-    const exports = await MONO.mono_wasm_get_assembly_exports(assemblyName);
+    const exports = await getAssemblyExports(assemblyName);
 
     await doMathSlowly(exports);
     setEditable(inputElement, true);
     inputElement.addEventListener("change", onInputValueChanged(exports, inputElement));
 
-    let exit_code = await MONO.mono_run_main(assemblyName, []);
+    let exit_code = await runMain(assemblyName, []);
     wasm_exit(exit_code);
 } catch (err) {
     wasm_exit(2, err);

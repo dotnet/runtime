@@ -18,7 +18,7 @@ namespace Sample
             return 0;
         }
 
-        [JSImport("Sample.Test.updateProgress")]
+        [JSImport("Sample.Test.updateProgress", "main.js")]
         static partial void updateProgress(string status);
 
         internal static void UpdateProgress(string status) => updateProgress(status);
