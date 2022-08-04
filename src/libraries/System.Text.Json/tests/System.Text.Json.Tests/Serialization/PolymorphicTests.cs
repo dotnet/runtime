@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -60,34 +61,23 @@ namespace System.Text.Json.Serialization.Tests
         {
         }
 
-        [Fact]
-        public async Task PrimitivesAsRootObject()
+        [Theory]
+        [InlineData(1, "1")]
+        [InlineData("stringValue", @"""stringValue""")]
+        [InlineData(true, "true")]
+        [InlineData(null, "null")]
+        [InlineData(new int[] { 1, 2, 3}, "[1,2,3]")]
+        public async Task PrimitivesAsRootObject(object? value, string expectedJson)
         {
-            string json = await Serializer.SerializeWrapper<object>(1);
-            Assert.Equal("1", json);
-            json = await Serializer.SerializeWrapper(1, typeof(object));
-            Assert.Equal("1", json);
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal(expectedJson, json);
+            json = await Serializer.SerializeWrapper(value, typeof(object));
+            Assert.Equal(expectedJson, json);
 
-            json = await Serializer.SerializeWrapper<object>("foo");
-            Assert.Equal(@"""foo""", json);
-            json = await Serializer.SerializeWrapper("foo", typeof(object));
-            Assert.Equal(@"""foo""", json);
-
-            json = await Serializer.SerializeWrapper<object>(true);
-            Assert.Equal(@"true", json);
-            json = await Serializer.SerializeWrapper(true, typeof(object));
-            Assert.Equal(@"true", json);
-
-            json = await Serializer.SerializeWrapper<object>(null);
-            Assert.Equal(@"null", json);
-            json = await Serializer.SerializeWrapper((object)null, typeof(object));
-            Assert.Equal(@"null", json);
-
-            decimal pi = 3.1415926535897932384626433833m;
-            json = await Serializer.SerializeWrapper<object>(pi);
-            Assert.Equal(@"3.1415926535897932384626433833", json);
-            json = await Serializer.SerializeWrapper(pi, typeof(object));
-            Assert.Equal(@"3.1415926535897932384626433833", json);
+            var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
+            JsonTypeInfo<object> objectTypeInfo = (JsonTypeInfo<object>)options.GetTypeInfo(typeof(object));
+            json = await Serializer.SerializeWrapper(value, objectTypeInfo);
+            Assert.Equal(expectedJson, json);
         }
 
         [Fact]

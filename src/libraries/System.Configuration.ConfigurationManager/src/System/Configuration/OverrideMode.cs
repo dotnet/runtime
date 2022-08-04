@@ -8,7 +8,7 @@ namespace System.Configuration
     // can be defined in child web.config files
     public enum OverrideMode
     {
-        // Default ( aka Indiferent ) - When specified on a location tag means the location tag will not alter
+        // Default ( aka Indifferent ) - When specified on a location tag means the location tag will not alter
         // the locking mode ( locked or unlocked ). Rather, the locking mode should be picked
         // from the <location> tag with the closest parent path in the current file, or the parent file if no such location in the current one,
         // or the default for the specific section ( section.OverrideModeDefault )

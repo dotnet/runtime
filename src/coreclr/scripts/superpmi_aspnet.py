@@ -162,21 +162,26 @@ def build_and_run(coreclr_args):
 
         # todo: add grpc/signalr, perhaps
 
-        configname_scenario_list = [("platform", "plaintext"),
+        configname_scenario_list = [
+                                    ("platform", "plaintext"),
                                     ("json", "json"),
                                     ("plaintext", "mvc"),
                                     ("database", "fortunes_dapper"),
                                     ("database", "fortunes_ef_mvc_https"),
+                                    ("database", "updates"),
                                     ("proxy", "proxy-yarp"),
-                                    ("staticfiles", "static")]
+                                    ("staticfiles", "static"),
+                                    ("websocket", "websocket"),
+                                    ("orchard", "about-sqlite")
+                                    ]
 
         # configname_scenario_list = [("platform", "plaintext")]
 
         # note tricks to get one element tuples
 
-        runtime_options_list = [("Dummy=0",), ("TieredCompilation=0", ), ("TieredPGO=1", "TC_QuickJitForLoops=1"), ("TieredPGO=1", "TC_QuickJitForLoops=1", "ReadyToRun=0"),
-            ("TC_QuickJitForLoops=1", "ReadyToRun=0", "TC_OnStackReplacement=1", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=0"),
-            ("TieredPGO=1", "TC_QuickJitForLoops=1", "ReadyToRun=0", "TC_OnStackReplacement=1", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=100")]
+        runtime_options_list = [("Dummy=0",), ("TieredCompilation=0", ), ("TieredPGO=1",), ("TieredPGO=1", "ReadyToRun=0"),
+            ("ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10"),
+            ("TieredPGO=1", "ReadyToRun=0", "OSR_HitLimit=0", "TC_OnStackReplacement_InitialCounter=10")]
 
         # runtime_options_list = [("TieredCompilation=0", )]
 

@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 649 // 'blah' is never assgined to
+#pragma warning disable 649 // 'blah' is never assigned to
 #pragma warning disable 169 // 'blah' is never used
 #pragma warning disable 436 // conflicting type
 
@@ -591,7 +591,7 @@ class Program
                 Justification = "That's the point")]
             static void SanityTest()
             {
-                // Sanity check that instrinsic detection is necessary
+                // Sanity check that intrinsic detection is necessary
                 bool thrown = false;
                 try
                 {

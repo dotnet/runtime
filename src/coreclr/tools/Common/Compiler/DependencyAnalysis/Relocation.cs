@@ -300,7 +300,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             uint pcInstr = *pCode;
 
-            // first get the hight 20 bits,
+            // first get the high 20 bits,
             int imm = (int)(((pcInstr >> 5) & 0xFFFFF) << 12);
 
             // then get the low 12 bits,
@@ -329,14 +329,14 @@ namespace ILCompiler.DependencyAnalysis
             int imm = (int)imm32 + relOff;
             relOff = ((imm & 0x7ff) - relOff) & 0xfff;
 
-            // Assemble the pc-relative hight20bits of 'imm32' into the pcaddu12i instruction
+            // Assemble the pc-relative high 20 bits of 'imm32' into the pcaddu12i instruction
             pcInstr |= (uint)(((imm >> 12) & 0xFFFFF) << 5);
 
             *pCode = pcInstr;          // write the assembled instruction
 
             pcInstr = *(pCode + 1);
 
-            // Assemble the pc-relative low12bits of 'imm32' into the addid or ld instruction
+            // Assemble the pc-relative low 12 bits of 'imm32' into the addid or ld instruction
             pcInstr |= (uint)(relOff << 10);
 
             *(pCode + 1) = pcInstr;          // write the assembled instruction
@@ -373,14 +373,14 @@ namespace ILCompiler.DependencyAnalysis
             long imm = imm38 + relOff;
             relOff = (((imm & 0x1ffff) - relOff) >> 2) & 0xffff;
 
-            // Assemble the pc-relative hight20bits of 'imm38' into the pcaddu12i instruction
+            // Assemble the pc-relative high 20 bits of 'imm38' into the pcaddu12i instruction
             pcInstr |= (uint)(((imm >> 18) & 0xFFFFF) << 5);
 
             *pCode = pcInstr;          // write the assembled instruction
 
             pcInstr = *(pCode + 1);
 
-            // Assemble the pc-relative low18bits of 'imm38' into the addid or ld instruction
+            // Assemble the pc-relative low 18 bits of 'imm38' into the addid or ld instruction
             pcInstr |= (uint)(relOff << 10);
 
             *(pCode + 1) = pcInstr;          // write the assembled instruction

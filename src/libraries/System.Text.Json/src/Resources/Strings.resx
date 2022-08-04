@@ -518,6 +518,9 @@
   <data name="CannotPopulateCollection" xml:space="preserve">
     <value>The collection type '{0}' is abstract, an interface, or is read only, and could not be instantiated and populated.</value>
   </data>
+  <data name="ConstructorContainsNullParameterNames" xml:space="preserve">
+    <value>The deserialization constructor for type '{0}' contains parameters with null names. This might happen because the parameter names have been trimmed by the linker. Consider using the source generated serializer instead.</value>
+  </data>
   <data name="DefaultIgnoreConditionAlreadySpecified" xml:space="preserve">
     <value>'IgnoreNullValues' and 'DefaultIgnoreCondition' cannot both be set to non-default values.</value>
   </data>
@@ -658,5 +661,14 @@
   </data>
   <data name="JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo" xml:space="preserve">
     <value>Parameter already associated with a different JsonTypeInfo instance.</value>
+  </data>
+  <data name="JsonPropertyRequiredAndNotDeserializable" xml:space="preserve">
+    <value>JsonPropertyInfo '{0}' defined in type '{1}' is marked required but does not specify a setter.</value>
+  </data>
+  <data name="JsonPropertyRequiredAndExtensionData" xml:space="preserve">
+    <value>JsonPropertyInfo '{0}' defined in type '{1}' is marked both as required and as an extension data property. This combination is not supported.</value>
+  </data>
+  <data name="JsonRequiredPropertiesMissing" xml:space="preserve">
+    <value>JSON deserialization for type '{0}' was missing required properties, including the following: {1}</value>
   </data>
 </root>

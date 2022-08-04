@@ -203,6 +203,32 @@ namespace System.Text.Json.Serialization.Metadata
 
         private bool _isExtensionDataProperty;
 
+        /// <summary>
+        /// Specifies whether the current property is required for deserialization to be successful.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        /// </exception>
+        /// <remarks>
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// the value of this property will be mapped from <see cref="JsonRequiredAttribute"/> annotations.
+        ///
+        /// For contracts using <see cref="DefaultJsonTypeInfoResolver"/>, properties using the <see langword="required"/> keyword
+        /// will also map to this setting, unless deserialization uses a SetsRequiredMembersAttribute on a constructor that populates all required properties.
+        /// <see langword="required"/> keyword is currently not supported in <see cref="JsonSerializerContext"/> contracts.
+        /// </remarks>
+        public bool IsRequired
+        {
+            get => _isRequired;
+            set
+            {
+                VerifyMutable();
+                _isRequired = value;
+            }
+        }
+
+        private bool _isRequired;
+
         internal JsonPropertyInfo(Type declaringType, Type propertyType, JsonTypeInfo? declaringTypeInfo, JsonSerializerOptions options)
         {
             Debug.Assert(declaringTypeInfo is null || declaringTypeInfo.Type == declaringType);
@@ -279,6 +305,21 @@ namespace System.Text.Json.Serialization.Metadata
                 DetermineIgnoreCondition();
                 DetermineSerializationCapabilities();
             }
+
+            if (IsRequired)
+            {
+                if (!CanDeserialize)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndNotDeserializable(this);
+                }
+
+                if (IsExtensionData)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndExtensionData(this);
+                }
+
+                Debug.Assert(!IgnoreNullTokensOnRead);
+            }
         }
 
         private protected abstract void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo);
@@ -341,7 +382,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Debug.Assert(Options.DefaultIgnoreCondition == JsonIgnoreCondition.Never);
                 if (PropertyTypeCanBeNull)
                 {
-                    IgnoreNullTokensOnRead = !_isUserSpecifiedSetter;
+                    IgnoreNullTokensOnRead = !_isUserSpecifiedSetter && !IsRequired;
                     IgnoreDefaultValuesOnWrite = ShouldSerialize is null;
                 }
             }
@@ -477,6 +518,12 @@ namespace System.Text.Json.Serialization.Metadata
                 potentialNumberType == JsonTypeInfo.ObjectType;
         }
 
+        private void DetermineIsRequired(MemberInfo memberInfo, bool shouldCheckForRequiredKeyword)
+        {
+            IsRequired = memberInfo.GetCustomAttribute<JsonRequiredAttribute>(inherit: false) != null
+                || (shouldCheckForRequiredKeyword && memberInfo.HasRequiredMemberAttribute());
+        }
+
         internal abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
         internal abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
 
@@ -504,7 +551,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool HasGetter => _untypedGet is not null;
         internal bool HasSetter => _untypedSet is not null;
 
-        internal void InitializeUsingMemberReflection(MemberInfo memberInfo, JsonConverter? customConverter, JsonIgnoreCondition? ignoreCondition)
+        internal void InitializeUsingMemberReflection(MemberInfo memberInfo, JsonConverter? customConverter, JsonIgnoreCondition? ignoreCondition, bool shouldCheckForRequiredKeyword)
         {
             Debug.Assert(AttributeProvider == null);
 
@@ -531,6 +578,7 @@ namespace System.Text.Json.Serialization.Metadata
             CustomConverter = customConverter;
             DeterminePoliciesFromMember(memberInfo);
             DeterminePropertyNameFromMember(memberInfo);
+            DetermineIsRequired(memberInfo, shouldCheckForRequiredKeyword);
 
             if (ignoreCondition != JsonIgnoreCondition.Always)
             {
@@ -760,8 +808,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal abstract void SetExtensionDictionaryAsObject(object obj, object? extensionDict);
-
         internal bool IsIgnored => _ignoreCondition == JsonIgnoreCondition.Always;
 
         /// <summary>
@@ -822,6 +868,29 @@ namespace System.Text.Json.Serialization.Metadata
         /// Default value used for parameterized ctor invocation.
         /// </summary>
         internal abstract object? DefaultValue { get; }
+
+        /// <summary>
+        /// Required property index on the list of JsonTypeInfo properties.
+        /// It is used as a unique identifier for required properties.
+        /// It is set just before property is configured and does not change afterward.
+        /// It is not equivalent to index on the properties list
+        /// </summary>
+        internal int RequiredPropertyIndex
+        {
+            get
+            {
+                Debug.Assert(_isConfigured);
+                Debug.Assert(IsRequired);
+                return _index;
+            }
+            set
+            {
+                Debug.Assert(!_isConfigured);
+                _index = value;
+            }
+        }
+
+        private int _index;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"PropertyType = {PropertyType}, Name = {Name}, DeclaringType = {DeclaringType}";

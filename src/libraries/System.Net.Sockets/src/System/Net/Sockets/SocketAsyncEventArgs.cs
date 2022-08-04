@@ -29,7 +29,7 @@ namespace System.Net.Sockets
         // BytesTransferred property variables.
         private int _bytesTransferred;
 
-        // DisconnectReuseSocket propery variables.
+        // DisconnectReuseSocket property variables.
         private bool _disconnectReuseSocket;
 
         // LastOperation property variables.

@@ -122,7 +122,7 @@ namespace System.Xml.Xsl.Xslt
             }
             if (excludeAll)
             {
-                // #all should be on the top of the stack, becase all NSs on this element should be excluded as well
+                // #all should be on the top of the stack, because all NSs on this element should be excluded as well
                 AddExNamespace(null);
             }
             return hasNamespaces;

@@ -2451,10 +2451,12 @@ namespace System.Security.Cryptography.X509Certificates
         public CertificateRequest(System.Security.Cryptography.X509Certificates.X500DistinguishedName subjectName, System.Security.Cryptography.ECDsa key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
         public CertificateRequest(System.Security.Cryptography.X509Certificates.X500DistinguishedName subjectName, System.Security.Cryptography.RSA key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { }
         public CertificateRequest(System.Security.Cryptography.X509Certificates.X500DistinguishedName subjectName, System.Security.Cryptography.X509Certificates.PublicKey publicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
+        public CertificateRequest(System.Security.Cryptography.X509Certificates.X500DistinguishedName subjectName, System.Security.Cryptography.X509Certificates.PublicKey publicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding? rsaSignaturePadding = null) { }
         public CertificateRequest(string subjectName, System.Security.Cryptography.ECDsa key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
         public CertificateRequest(string subjectName, System.Security.Cryptography.RSA key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { }
         public System.Collections.ObjectModel.Collection<System.Security.Cryptography.X509Certificates.X509Extension> CertificateExtensions { get { throw null; } }
         public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get { throw null; } }
+        public System.Collections.ObjectModel.Collection<System.Security.Cryptography.AsnEncodedData> OtherRequestAttributes { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.PublicKey PublicKey { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X500DistinguishedName SubjectName { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509Certificate2 Create(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, System.DateTimeOffset notBefore, System.DateTimeOffset notAfter, byte[] serialNumber) { throw null; }
@@ -2464,6 +2466,35 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.X509Certificates.X509Certificate2 CreateSelfSigned(System.DateTimeOffset notBefore, System.DateTimeOffset notAfter) { throw null; }
         public byte[] CreateSigningRequest() { throw null; }
         public byte[] CreateSigningRequest(System.Security.Cryptography.X509Certificates.X509SignatureGenerator signatureGenerator) { throw null; }
+        public string CreateSigningRequestPem() { throw null; }
+        public string CreateSigningRequestPem(System.Security.Cryptography.X509Certificates.X509SignatureGenerator signatureGenerator) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRequest LoadSigningRequest(byte[] pkcs10, System.Security.Cryptography.HashAlgorithmName signerHashAlgorithm, System.Security.Cryptography.X509Certificates.CertificateRequestLoadOptions options = System.Security.Cryptography.X509Certificates.CertificateRequestLoadOptions.Default, System.Security.Cryptography.RSASignaturePadding? signerSignaturePadding = null) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRequest LoadSigningRequest(System.ReadOnlySpan<byte> pkcs10, System.Security.Cryptography.HashAlgorithmName signerHashAlgorithm, out int bytesConsumed, System.Security.Cryptography.X509Certificates.CertificateRequestLoadOptions options = System.Security.Cryptography.X509Certificates.CertificateRequestLoadOptions.Default, System.Security.Cryptography.RSASignaturePadding? signerSignaturePadding = null) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRequest LoadSigningRequestPem(System.ReadOnlySpan<char> pkcs10Pem, System.Security.Cryptography.HashAlgorithmName signerHashAlgorithm, System.Security.Cryptography.X509Certificates.CertificateRequestLoadOptions options = System.Security.Cryptography.X509Certificates.CertificateRequestLoadOptions.Default, System.Security.Cryptography.RSASignaturePadding? signerSignaturePadding = null) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRequest LoadSigningRequestPem(string pkcs10Pem, System.Security.Cryptography.HashAlgorithmName signerHashAlgorithm, System.Security.Cryptography.X509Certificates.CertificateRequestLoadOptions options = System.Security.Cryptography.X509Certificates.CertificateRequestLoadOptions.Default, System.Security.Cryptography.RSASignaturePadding? signerSignaturePadding = null) { throw null; }
+    }
+    [System.FlagsAttribute]
+    public enum CertificateRequestLoadOptions
+    {
+        Default = 0,
+        SkipSignatureValidation = 1,
+        UnsafeLoadCertificateExtensions = 2,
+    }
+    public sealed partial class CertificateRevocationListBuilder
+    {
+        public CertificateRevocationListBuilder() { }
+        public void AddEntry(byte[] serialNumber, System.DateTimeOffset? revocationTime = default(System.DateTimeOffset?), System.Security.Cryptography.X509Certificates.X509RevocationReason? reason = default(System.Security.Cryptography.X509Certificates.X509RevocationReason?)) { }
+        public void AddEntry(System.ReadOnlySpan<byte> serialNumber, System.DateTimeOffset? revocationTime = default(System.DateTimeOffset?), System.Security.Cryptography.X509Certificates.X509RevocationReason? reason = default(System.Security.Cryptography.X509Certificates.X509RevocationReason?)) { }
+        public void AddEntry(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.DateTimeOffset? revocationTime = default(System.DateTimeOffset?), System.Security.Cryptography.X509Certificates.X509RevocationReason? reason = default(System.Security.Cryptography.X509Certificates.X509RevocationReason?)) { }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension authorityKeyIdentifier, System.DateTimeOffset? thisUpdate = default(System.DateTimeOffset?)) { throw null; }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding? rsaSignaturePadding = null, System.DateTimeOffset? thisUpdate = default(System.DateTimeOffset?)) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Extension BuildCrlDistributionPointExtension(System.Collections.Generic.IEnumerable<string> uris, bool critical = false) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder Load(byte[] currentCrl, out System.Numerics.BigInteger currentCrlNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder Load(System.ReadOnlySpan<byte> currentCrl, out System.Numerics.BigInteger currentCrlNumber, out int bytesConsumed) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder LoadPem(System.ReadOnlySpan<char> currentCrl, out System.Numerics.BigInteger currentCrlNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder LoadPem(string currentCrl, out System.Numerics.BigInteger currentCrlNumber) { throw null; }
+        public bool RemoveEntry(byte[] serialNumber) { throw null; }
+        public bool RemoveEntry(System.ReadOnlySpan<byte> serialNumber) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
@@ -2605,6 +2636,25 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Collections.Generic.IEnumerable<string> EnumerateUris(System.Security.Cryptography.Oid accessMethodOid) { throw null; }
         public System.Collections.Generic.IEnumerable<string> EnumerateUris(string accessMethodOid) { throw null; }
     }
+    public sealed partial class X509AuthorityKeyIdentifierExtension : System.Security.Cryptography.X509Certificates.X509Extension
+    {
+        public X509AuthorityKeyIdentifierExtension() { }
+        public X509AuthorityKeyIdentifierExtension(byte[] rawData, bool critical = false) { }
+        public X509AuthorityKeyIdentifierExtension(System.ReadOnlySpan<byte> rawData, bool critical = false) { }
+        public System.ReadOnlyMemory<byte>? KeyIdentifier { get { throw null; } }
+        public System.Security.Cryptography.X509Certificates.X500DistinguishedName? NamedIssuer { get { throw null; } }
+        public System.ReadOnlyMemory<byte>? RawIssuer { get { throw null; } }
+        public System.ReadOnlyMemory<byte>? SerialNumber { get { throw null; } }
+        public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension Create(byte[] keyIdentifier, System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, byte[] serialNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension Create(System.ReadOnlySpan<byte> keyIdentifier, System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.ReadOnlySpan<byte> serialNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, bool includeKeyIdentifier, bool includeIssuerAndSerial) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromIssuerNameAndSerialNumber(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, byte[] serialNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromIssuerNameAndSerialNumber(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.ReadOnlySpan<byte> serialNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromSubjectKeyIdentifier(byte[] subjectKeyIdentifier) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromSubjectKeyIdentifier(System.ReadOnlySpan<byte> subjectKeyIdentifier) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension CreateFromSubjectKeyIdentifier(System.Security.Cryptography.X509Certificates.X509SubjectKeyIdentifierExtension subjectKeyIdentifier) { throw null; }
+    }
     public sealed partial class X509BasicConstraintsExtension : System.Security.Cryptography.X509Certificates.X509Extension
     {
         public X509BasicConstraintsExtension() { }
@@ -2614,6 +2664,8 @@ namespace System.Security.Cryptography.X509Certificates
         public bool HasPathLengthConstraint { get { throw null; } }
         public int PathLengthConstraint { get { throw null; } }
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+        public static System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension CreateForCertificateAuthority(int? pathLengthConstraint = default(int?)) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension CreateForEndEntity(bool critical = false) { throw null; }
     }
     public partial class X509Certificate : System.IDisposable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
@@ -2651,6 +2703,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public System.IntPtr Handle { get { throw null; } }
         public string Issuer { get { throw null; } }
+        public System.ReadOnlyMemory<byte> SerialNumberBytes { get { throw null; } }
         public string Subject { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Security.Cryptography.X509Certificates.X509Certificate CreateFromCertFile(string filename) { throw null; }
@@ -3125,6 +3178,20 @@ namespace System.Security.Cryptography.X509Certificates
         Online = 1,
         Offline = 2,
     }
+    public enum X509RevocationReason
+    {
+        Unspecified = 0,
+        KeyCompromise = 1,
+        CACompromise = 2,
+        AffiliationChanged = 3,
+        Superseded = 4,
+        CessationOfOperation = 5,
+        CertificateHold = 6,
+        RemoveFromCrl = 8,
+        PrivilegeWithdrawn = 9,
+        AACompromise = 10,
+        WeakAlgorithmOrKey = 11,
+    }
     public abstract partial class X509SignatureGenerator
     {
         protected X509SignatureGenerator() { }
@@ -3178,6 +3245,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509SubjectKeyIdentifierExtension(System.Security.Cryptography.X509Certificates.PublicKey key, System.Security.Cryptography.X509Certificates.X509SubjectKeyIdentifierHashAlgorithm algorithm, bool critical) { }
         public X509SubjectKeyIdentifierExtension(string subjectKeyIdentifier, bool critical) { }
         public string? SubjectKeyIdentifier { get { throw null; } }
+        public System.ReadOnlyMemory<byte> SubjectKeyIdentifierBytes { get { throw null; } }
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
     }
     public enum X509SubjectKeyIdentifierHashAlgorithm

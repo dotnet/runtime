@@ -1090,7 +1090,7 @@ namespace System.Transactions
         private static readonly AsyncLocal<ContextKey?> s_currentTransaction = new AsyncLocal<ContextKey?>();
 
         // ConditionalWeakTable is used to automatically remove the entries that are no longer referenced. This will help prevent leaks in async nested TransactionScope
-        // usage and when child nested scopes are not syncronized properly.
+        // usage and when child nested scopes are not synchronized properly.
         private static readonly ConditionalWeakTable<ContextKey, ContextData> s_contextDataTable = new ConditionalWeakTable<ContextKey, ContextData>();
 
         //

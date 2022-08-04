@@ -2111,7 +2111,7 @@ void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 // NOTE:
 //  For loongarch64, emitIns_J is just only jump, not include the condition branch!
 //  The condition branch is the emitIns_J_cond_la().
-//  If using "BasicBlock* dst" lable as target, the INS_OPTS_J is a short jump while long jump will be replace by
+//  If using "BasicBlock* dst" label as target, the INS_OPTS_J is a short jump while long jump will be replace by
 //  INS_OPTS_JIRL.
 //
 //  The arg "instrCount" is two regs's encoding when ins is beq/bne/blt/bltu/bge/bgeu/beqz/bnez.

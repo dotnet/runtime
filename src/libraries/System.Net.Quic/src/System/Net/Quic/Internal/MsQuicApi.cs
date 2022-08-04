@@ -51,67 +51,95 @@ internal sealed unsafe class MsQuicApi
 
     internal static bool IsQuicSupported { get; }
 
+    internal static bool UsesSChannelBackend { get; }
+
     internal static bool Tls13ServerMayBeDisabled { get; }
     internal static bool Tls13ClientMayBeDisabled { get; }
 
     static MsQuicApi()
     {
-        if (OperatingSystem.IsWindows())
+        IntPtr msQuicHandle;
+        if (!NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle) &&
+            !NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
         {
-            if (!IsWindowsVersionSupported())
-            {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
-                }
+            return;
+        }
 
+        try
+        {
+            if (!NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
+            {
                 return;
             }
 
-            Tls13ServerMayBeDisabled = IsTls13Disabled(true);
-            Tls13ClientMayBeDisabled = IsTls13Disabled(false);
-        }
+            QUIC_API_TABLE* apiTable = null;
+            delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int> msQuicOpenVersion = (delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int>)msQuicOpenVersionAddress;
+            if (StatusFailed(msQuicOpenVersion((uint)MsQuicVersion.Major, &apiTable)))
+            {
+                return;
+            }
 
-        IntPtr msQuicHandle;
-        if (NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle) ||
-            NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
-        {
             try
             {
-                if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
+                int arraySize = 4;
+                uint* libVersion = stackalloc uint[arraySize];
+                uint size = (uint)arraySize * sizeof(uint);
+                if (StatusFailed(apiTable->GetParam(null, QUIC_PARAM_GLOBAL_LIBRARY_VERSION, &size, libVersion)))
                 {
-                    QUIC_API_TABLE* apiTable;
-                    delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int> msQuicOpenVersion = (delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int>)msQuicOpenVersionAddress;
-                    if (StatusSucceeded(msQuicOpenVersion((uint)MsQuicVersion.Major, &apiTable)))
-                    {
-                        int arraySize = 4;
-                        uint* libVersion = stackalloc uint[arraySize];
-                        uint size = (uint)arraySize * sizeof(uint);
-                        if (StatusSucceeded(apiTable->GetParam(null, QUIC_PARAM_GLOBAL_LIBRARY_VERSION, &size, libVersion)))
-                        {
-                            var version = new Version((int)libVersion[0], (int)libVersion[1], (int)libVersion[2], (int)libVersion[3]);
-                            if (version >= MsQuicVersion)
-                            {
-                                Api = new MsQuicApi(apiTable);
-                                IsQuicSupported = true;
-                            }
-                            else
-                            {
-                                if (NetEventSource.Log.IsEnabled())
-                                {
-                                    NetEventSource.Info(null, $"Incompatible MsQuic library version '{version}', expecting '{MsQuicVersion}'");
-                                }
-                            }
-                        }
-                    }
+                    return;
                 }
+
+                var version = new Version((int)libVersion[0], (int)libVersion[1], (int)libVersion[2], (int)libVersion[3]);
+                if (version < MsQuicVersion)
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(null, $"Incompatible MsQuic library version '{version}', expecting '{MsQuicVersion}'");
+                    }
+                    return;
+                }
+
+                // Assume SChannel is being used on windows and query for the actual provider from the library
+                QUIC_TLS_PROVIDER provider = OperatingSystem.IsWindows() ? QUIC_TLS_PROVIDER.SCHANNEL : QUIC_TLS_PROVIDER.OPENSSL;
+                size = sizeof(QUIC_TLS_PROVIDER);
+                apiTable->GetParam(null, QUIC_PARAM_GLOBAL_TLS_PROVIDER, &size, &provider);
+                UsesSChannelBackend = provider == QUIC_TLS_PROVIDER.SCHANNEL;
+
+                if (UsesSChannelBackend)
+                {
+                    // Implies windows platform, check TLS1.3 availability
+                    if (!IsWindowsVersionSupported())
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
+                        }
+
+                        return;
+                    }
+
+                    Tls13ServerMayBeDisabled = IsTls13Disabled(isServer: true);
+                    Tls13ClientMayBeDisabled = IsTls13Disabled(isServer: false);
+                }
+
+                Api = new MsQuicApi(apiTable);
+                IsQuicSupported = true;
             }
             finally
             {
-                if (!IsQuicSupported)
+                if (!IsQuicSupported && NativeLibrary.TryGetExport(msQuicHandle, "MsQuicClose", out IntPtr msQuicClose))
                 {
-                    NativeLibrary.Free(msQuicHandle);
+                    // Gracefully close the API table
+                    ((delegate* unmanaged[Cdecl]<QUIC_API_TABLE*, void>)msQuicClose)(apiTable);
                 }
+            }
+
+        }
+        finally
+        {
+            if (!IsQuicSupported)
+            {
+                NativeLibrary.Free(msQuicHandle);
             }
         }
     }

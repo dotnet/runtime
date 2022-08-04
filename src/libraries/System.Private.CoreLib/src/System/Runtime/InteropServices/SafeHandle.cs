@@ -248,7 +248,7 @@ namespace System.Runtime.InteropServices
 
                 // Attempt the update to the new state, fail and retry if the initial
                 // state has been modified in the meantime. Decrement the ref count by
-                // substracting StateBits.RefCountOne from the state then OR in the bits for
+                // subtracting StateBits.RefCountOne from the state then OR in the bits for
                 // Dispose (if that's the reason for the Release) and closed (if the
                 // initial ref count was 1).
                 newState = oldState - StateBits.RefCountOne;

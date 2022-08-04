@@ -133,14 +133,15 @@ namespace System.IO.Pipes.Tests
                 Task<int> clientTask = readable.ReadAsync(received1, 0, received1.Length);
                 using (NamedPipeServerStream server = new NamedPipeServerStream(PipeDirection.Out, false, true, serverBase.SafePipeHandle))
                 {
-                    if (OperatingSystem.IsWindows())
-                    {
-                        Assert.Equal(1, ((NamedPipeClientStream)readable).NumberOfServerInstances);
-                    }
                     server.Write(msg1, 0, msg1.Length);
                     int receivedLength = await clientTask;
                     Assert.Equal(msg1.Length, receivedLength);
                     Assert.Equal(msg1, received1);
+
+                    if (OperatingSystem.IsWindows())
+                    {
+                        Assert.Equal(1, ((NamedPipeClientStream)readable).NumberOfServerInstances);
+                    }
                 }
             }
             else
@@ -708,6 +709,13 @@ namespace System.IO.Pipes.Tests
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task TwoServerInstances_OnceDisposed_Throws()
         {
+            if ((Options & PipeOptions.Asynchronous) == 0)
+            {
+                // Dispose'ing of pipes with active operations in flight isn't a supported use case.
+                // It works with overlapped I/O but may not when we simulate the asynchrony.
+                return;
+            }
+
             string pipeName = GetUniquePipeName();
             NamedPipeServerStream server1 = CreateServerStream(pipeName, 2);
             using NamedPipeServerStream server2 = CreateServerStream(pipeName, 2);
@@ -804,14 +812,10 @@ namespace System.IO.Pipes.Tests
         protected override PipeOptions Options => PipeOptions.Asynchronous;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/72526")]
     public sealed class NamedPipeTest_ServerInOut_ClientInOut_Synchronous : NamedPipeTest_ServerInOut_ClientInOut
     {
         protected override PipeOptions Options => PipeOptions.None;
-
-        // TODO https://github.com/dotnet/runtime/issues/72526:
-        // The ConcurrentBidirectionalReadsWrites_Success test hangs on Windows with PipeOptions.None and InOut named pipes.
-        // Disabling for now.
-        protected override bool SupportsConcurrentBidirectionalUse => !OperatingSystem.IsWindows();
     }
 
     public sealed class NamedPipeTest_ServerInOut_ClientInOut_Asynchronous : NamedPipeTest_ServerInOut_ClientInOut
