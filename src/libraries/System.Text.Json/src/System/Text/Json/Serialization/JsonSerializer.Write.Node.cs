@@ -113,14 +113,38 @@ namespace System.Text.Json
 
         private static JsonNode? WriteNode<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            JsonDocument jsonDocument = WriteDocument(value, jsonTypeInfo);
-            return JsonNode.FromJsonElement(jsonDocument.RootElement);
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(jsonTypeInfo.Options, out PooledByteBufferWriter output);
+
+            try
+            {
+                WriteCore(writer, value, jsonTypeInfo);
+                return JsonNode.Parse(output.WrittenMemory.Span, options.GetNodeOptions(), options.GetDocumentOptions());
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
         }
 
         private static JsonNode? WriteNodeAsObject(object? value, JsonTypeInfo jsonTypeInfo)
         {
-            JsonDocument jsonDocument = WriteDocumentAsObject(value, jsonTypeInfo);
-            return JsonNode.FromJsonElement(jsonDocument.RootElement);
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(jsonTypeInfo.Options, out PooledByteBufferWriter output);
+
+            try
+            {
+                WriteCoreAsObject(writer, value, jsonTypeInfo);
+                return JsonNode.Parse(output.WrittenMemory.Span, options.GetNodeOptions(), options.GetDocumentOptions());
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
         }
     }
 }

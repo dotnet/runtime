@@ -111,9 +111,39 @@ namespace System.Text.Json
         }
 
         private static JsonElement WriteElement<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
-            => WriteDocument(value, jsonTypeInfo).RootElement;
+        {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(jsonTypeInfo.Options, out PooledByteBufferWriter output);
+
+            try
+            {
+                WriteCore(writer, value, jsonTypeInfo);
+                return JsonElement.ParseValue(output.WrittenMemory.Span, options.GetDocumentOptions());
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
+        }
 
         private static JsonElement WriteElementAsObject(object? value, JsonTypeInfo jsonTypeInfo)
-            => WriteDocumentAsObject(value, jsonTypeInfo).RootElement;
+        {
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+            Debug.Assert(options != null);
+
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(jsonTypeInfo.Options, out PooledByteBufferWriter output);
+
+            try
+            {
+                WriteCoreAsObject(writer, value, jsonTypeInfo);
+                return JsonElement.ParseValue(output.WrittenMemory.Span, options.GetDocumentOptions());
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
+        }
     }
 }

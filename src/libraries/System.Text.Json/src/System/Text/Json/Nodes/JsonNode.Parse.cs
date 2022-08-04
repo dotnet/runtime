@@ -126,12 +126,5 @@ namespace System.Text.Json.Nodes
             JsonElement element = JsonElement.ParseValue(utf8Json, documentOptions);
             return JsonNodeConverter.Create(element, nodeOptions);
         }
-
-        internal static JsonNode? FromJsonElement(
-            JsonElement jsonElement,
-            JsonNodeOptions? nodeOptions = null)
-        {
-            return JsonNodeConverter.Create(jsonElement, nodeOptions);
-        }
     }
 }
