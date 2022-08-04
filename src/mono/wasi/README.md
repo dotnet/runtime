@@ -24,7 +24,6 @@ Currently this can only be built in Linux or WSL (tested on Windows 11). Simply 
 
 The resulting libraries are placed in `(repo_root)/artifacts/bin/mono/Wasi.Release`.
 
-
 ## How to build and run the sample
 
 ### 1. Obtain a WASI runtime

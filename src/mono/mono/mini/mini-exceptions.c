@@ -1346,11 +1346,11 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoJitTlsD
 	unwinder_init (&unwinder);
 
 #ifdef HOST_WASI
-	gboolean ignoreEndOfStack = true;
+	gboolean ignore_end_of_stack = true;
 #else
-	gboolean ignoreEndOfStack = false;
+	gboolean ignore_end_of_stack = false;
 #endif
-	while (ignoreEndOfStack || MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
+	while (ignore_end_of_stack || MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
 		frame.lmf = lmf;
 		res = unwinder_unwind_frame (&unwinder, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, get_reg_locations ? new_reg_locations : NULL, &frame);
 		if (!res)

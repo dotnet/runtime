@@ -99,7 +99,6 @@ wasi_transport_close2 (void)
 //	shutdown (conn_fd, SHUT_RDWR);
 }
 
-
 static void 
 mono_wasi_start_debugger_thread (MonoError *error)
 {
@@ -110,7 +109,6 @@ mono_wasi_start_debugger_thread (MonoError *error)
 static void
 mono_wasi_suspend_vm (void)
 {
-
 }
 
 static void
