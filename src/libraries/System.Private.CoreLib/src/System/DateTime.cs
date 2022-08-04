@@ -104,9 +104,16 @@ namespace System
         // All OA dates must be less than (not <=) OADateMaxAsDouble
         private const double OADateMaxAsDouble = 2958466.0;
 
-        // Euclidean Affine Functions Algorithm constants
+        // Euclidean Affine Functions Algorithm (EAF) constants
+
+        // Constants used for fast calculation of following subexpressions
+        //      x / DaysPer4Years
+        //      x % DaysPer4Years / 4
+        private const uint EafMultiplier = (uint)(((1UL << 32) + DaysPer4Years - 1) / DaysPer4Years);   // 2,939,745
+        private const uint EafDivider = EafMultiplier * 4;                                              // 11,758,980
+
         private const ulong TicksPer6Hours = TicksPerHour * 6;
-        private const int March1BasedDayOfNewYear = 306;       // Days between March 1 and January 1
+        private const int March1BasedDayOfNewYear = 306;              // Days between March 1 and January 1
 
         private static readonly uint[] s_daysToMonth365 = {
             0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
@@ -1359,8 +1366,8 @@ namespace System
             // y100 = number of whole 100-year periods since 3/1/0000
             // r1 = (day number within 100-year period) * 4
             (uint y100, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
-            ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
-            ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
+            ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+            ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
             int n3 = 2141 * daySinceMarch1 + 197913;
             year = (int)(100 * y100 + (uint)(u2 >> 32));
             // compute month and day
@@ -1421,8 +1428,8 @@ namespace System
             {
                 // r1 = (day number within 100-year period) * 4
                 uint r1 = (((uint)(UTicks / TicksPer6Hours) | 3U) + 1224) % DaysPer400Years;
-                ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
-                ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
+                ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+                ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
                 int n3 = 2141 * daySinceMarch1 + 197913;
                 // Return 1-based day-of-month
                 return (ushort)n3 / 2141 + 1;
@@ -1440,7 +1447,7 @@ namespace System
         // is an integer between 1 and 366.
         //
         public int DayOfYear =>
-            1 + (((((int)(UTicks / TicksPer6Hours) | 3) % DaysPer400Years) | 3) % DaysPer4Years >> 2);
+            1 + (int)(((((uint)(UTicks / TicksPer6Hours) | 3U) % (uint)DaysPer400Years) | 3U) * EafMultiplier / EafDivider);
 
         // Returns the hash code for this DateTime.
         //
@@ -1498,8 +1505,8 @@ namespace System
             {
                 // r1 = (day number within 100-year period) * 4
                 uint r1 = (((uint)(UTicks / TicksPer6Hours) | 3U) + 1224) % DaysPer400Years;
-                ulong u2 = (ulong)Math.BigMul(2939745, (int)r1 | 3);
-                ushort daySinceMarch1 = (ushort)((uint)u2 / 11758980);
+                ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+                ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
                 int n3 = 2141 * daySinceMarch1 + 197913;
                 return (ushort)(n3 >> 16) - (daySinceMarch1 >= March1BasedDayOfNewYear ? 12 : 0);
             }
