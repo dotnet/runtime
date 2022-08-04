@@ -25,6 +25,8 @@ namespace System.Text.Json.Serialization
 
         internal abstract ConverterStrategy ConverterStrategy { get; }
 
+        internal virtual bool SupportsCreateObjectDelegate => false;
+
         /// <summary>
         /// Can direct Read or Write methods be called (for performance).
         /// </summary>
