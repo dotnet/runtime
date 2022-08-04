@@ -1,19 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_assert, CharPtrNull, DotnetModule, MonoConfig, wasm_type_symbol, MonoObject, MonoConfigError, LoadingResource, AssetEntry, ResourceRequest } from "./types";
-import { BINDING, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
+import { mono_assert, CharPtrNull, DotnetModule, MonoConfig, MonoConfigError, LoadingResource, AssetEntry, ResourceRequest } from "./types";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
-import { find_corlib_class } from "./class-loader";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import { mono_on_abort, set_exit_code } from "./run";
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
-import { mono_wasm_new_root } from "./roots";
 import { init_crypto } from "./crypto-worker";
 import { init_polyfills_async } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
@@ -25,7 +23,8 @@ import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { cwraps_internal } from "./exports-internal";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
-import { DotnetPublicAPI } from "./exports";
+import { DotnetPublicAPI } from "./export-types";
+import { BINDING, MONO } from "./net6-legacy/imports";
 
 let all_assets_loaded_in_memory: Promise<void> | null = null;
 const loaded_files: { url: string, file: string }[] = [];
@@ -573,32 +572,12 @@ export function bindings_init(): void {
     }
     runtimeHelpers.mono_wasm_bindings_is_ready = true;
     try {
-
-        // please keep System.Runtime.InteropServices.JavaScript.JSHostImplementation.MappedType in sync
-        (<any>Object.prototype)[wasm_type_symbol] = 0;
-        (<any>Array.prototype)[wasm_type_symbol] = 1;
-        (<any>ArrayBuffer.prototype)[wasm_type_symbol] = 2;
-        (<any>DataView.prototype)[wasm_type_symbol] = 3;
-        (<any>Function.prototype)[wasm_type_symbol] = 4;
-        (<any>Uint8Array.prototype)[wasm_type_symbol] = 11;
-
-        runtimeHelpers._box_buffer_size = 65536;
-        runtimeHelpers._unbox_buffer_size = 65536;
-        runtimeHelpers._box_buffer = Module._malloc(runtimeHelpers._box_buffer_size);
-        runtimeHelpers._unbox_buffer = Module._malloc(runtimeHelpers._unbox_buffer_size);
-        runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);
-        runtimeHelpers._class_int32 = find_corlib_class("System", "Int32");
-        runtimeHelpers._class_uint32 = find_corlib_class("System", "UInt32");
-        runtimeHelpers._class_double = find_corlib_class("System", "Double");
-        runtimeHelpers._class_boolean = find_corlib_class("System", "Boolean");
-
         init_managed_exports();
         init_legacy_exports();
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();
+        runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);
 
-        runtimeHelpers._box_root = mono_wasm_new_root<MonoObject>();
-        runtimeHelpers._null_root = mono_wasm_new_root<MonoObject>();
     } catch (err) {
         _print_error("MONO_WASM: Error in bindings_init", err);
         throw err;

@@ -119,30 +119,12 @@ export type AssetBehaviours =
     | "dotnetwasm"; // the binary of the dotnet runtime
 
 export type RuntimeHelpers = {
-    get_call_sig_ref: MonoMethod;
-    complete_task_method: MonoMethod;
-    create_task_method: MonoMethod;
-    call_delegate: MonoMethod;
     runtime_interop_module: MonoAssembly;
     runtime_interop_namespace: string;
     runtime_interop_exports_classname: string;
     runtime_interop_exports_class: MonoClass;
-    runtime_legacy_exports_classname: string;
-    runtime_legacy_exports_class: MonoClass;
 
-    _box_buffer_size: number;
-    _unbox_buffer_size: number;
-
-    _box_buffer: VoidPtr;
-    _unbox_buffer: VoidPtr;
     _i52_error_scratch_buffer: Int32Ptr;
-    _box_root: any;
-    // A WasmRoot that is guaranteed to contain 0
-    _null_root: any;
-    _class_int32: MonoClass;
-    _class_uint32: MonoClass;
-    _class_double: MonoClass;
-    _class_boolean: MonoClass;
     mono_wasm_load_runtime_done: boolean;
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
@@ -160,8 +142,6 @@ export type RuntimeHelpers = {
     locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
 }
-
-export const wasm_type_symbol = Symbol.for("wasm type");
 
 export type GlobalizationMode =
     "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
@@ -364,14 +344,20 @@ export type EventPipeSessionID = bigint;
 // see src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.cs
 export interface JavaScriptExports {
     // the marshaled signature is: void ReleaseJSOwnedObjectByGCHandle(GCHandle gcHandle)
-    _release_js_owned_object_by_gc_handle(gc_handle: GCHandle): void;
+    release_js_owned_object_by_gc_handle(gc_handle: GCHandle): void;
+
     // the marshaled signature is: GCHandle CreateTaskCallback()
-    _create_task_callback(): GCHandle;
+    create_task_callback(): GCHandle;
+
     // the marshaled signature is: void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
-    _complete_task(holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs): void;
+    complete_task(holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs): void;
+
     // the marshaled signature is: TRes? CallDelegate<T1,T2,T3TRes>(GCHandle callback, T1? arg1, T2? arg2, T3? arg3)
-    _call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any,
+    call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any,
         res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs): any;
+
+    // the marshaled signature is: Task<int>? CallEntrypoint(MonoMethod* entrypointPtr, string[] args)
+    call_entry_point(entry_point: MonoMethod, args?: string[]): Promise<number>;
 }
 
 export type MarshalerToJs = (arg: JSMarshalerArgument, sig?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs) => any;
@@ -393,3 +379,34 @@ export interface JSMarshalerArgument extends NativePointer {
     __brand: "JSMarshalerArgument"
 }
 
+export type MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
+export type NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
+
+export interface WasmRoot<T extends MonoObject> {
+    get_address(): MonoObjectRef;
+    get_address_32(): number;
+    get address(): MonoObjectRef;
+    get(): T;
+    set(value: T): T;
+    get value(): T;
+    set value(value: T);
+    copy_from_address(source: MonoObjectRef): void;
+    copy_to_address(destination: MonoObjectRef): void;
+    copy_from(source: WasmRoot<T>): void;
+    copy_to(destination: WasmRoot<T>): void;
+    valueOf(): T;
+    clear(): void;
+    release(): void;
+    toString(): string;
+}
+
+export interface WasmRootBuffer {
+    get_address(index: number): MonoObjectRef
+    get_address_32(index: number): number
+    get(index: number): ManagedPointer
+    set(index: number, value: ManagedPointer): ManagedPointer
+    copy_value_from_address(index: number, sourceAddress: MonoObjectRef): void
+    clear(): void;
+    release(): void;
+    toString(): string;
+}
