@@ -99,10 +99,7 @@ $(_XunitEpilog)
     <!-- NOTE! semicolons must be escaped with %3B boooo -->
 
     <PropertyGroup>
-      <_CMDDIR_Parent>$([System.IO.Path]::GetDirectoryName($(_CMDDIR)))</_CMDDIR_Parent>
-      <_CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($(_CMDDIR_Parent)))</_CMDDIR_Grandparent>
-      <CategoryWithSlash Condition="'$(RunningOnUnix)' != 'true'" >$([System.String]::Copy('$(_CMDDIR)').Replace("$(_CMDDIR_Grandparent)\",""))</CategoryWithSlash>
-      <CategoryWithSlash Condition="'$(RunningOnUnix)' == 'true'" >$([System.String]::Copy('$(_CMDDIR)').Replace("$(_CMDDIR_Grandparent)/",""))</CategoryWithSlash>
+      <CategoryWithSlash>$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '$(_CMDDIR)'))</CategoryWithSlash>
       <Category Condition="'$(RunningOnUnix)' != 'true'" >$([System.String]::Copy('$(CategoryWithSlash)').Replace('\','.'))</Category>
       <Category Condition="'$(RunningOnUnix)' == 'true'" >$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','.'))</Category>
       <XunitWrapper>$(Category).XUnitWrapper</XunitWrapper>

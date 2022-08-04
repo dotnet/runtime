@@ -599,7 +599,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     exception = ExceptionHelper.CreateSyncAllException(temp, true);
                     if (exception == null)
                     {
-                        // this is the special case that we ingore the failure when SyncAllOptions.CheckServerAlivenessOnly is specified
+                        // this is the special case that we ignore the failure when SyncAllOptions.CheckServerAlivenessOnly is specified
                         return true;
                     }
                 }

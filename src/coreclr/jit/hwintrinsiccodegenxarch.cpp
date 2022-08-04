@@ -1425,7 +1425,6 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
             }
             else
             {
-                assert(op1->TypeGet() == op2->TypeGet());
                 assert((targetType == TYP_INT) || (targetType == TYP_LONG));
                 genHWIntrinsic_R_RM(node, INS_crc32, emitTypeSize(targetType), targetReg, op2);
             }

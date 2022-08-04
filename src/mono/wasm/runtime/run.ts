@@ -9,7 +9,7 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args: s
         set_exit_code(result);
     } catch (error) {
         if (error instanceof runtimeHelpers.ExitStatus) {
-            return;
+            return;// FIXME: should this be re-throw ?
         }
         set_exit_code(1, error);
     }
@@ -17,7 +17,7 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args: s
 
 export async function mono_run_main(main_assembly_name: string, args: string[]): Promise<number> {
     mono_wasm_set_main_args(main_assembly_name, args);
-    if (runtimeHelpers.wait_for_debugger == -1) {
+    if (runtimeHelpers.waitForDebugger == -1) {
         console.log("MONO_WASM: waiting for debugger...");
         return await mono_wasm_wait_for_debugger().then(() => mono_call_assembly_entry_point(main_assembly_name, [args], "m"));
     }

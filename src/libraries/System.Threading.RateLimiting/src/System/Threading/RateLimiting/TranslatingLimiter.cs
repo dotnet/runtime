@@ -29,18 +29,18 @@ namespace System.Threading.RateLimiting
             return _innerRateLimiter.GetAvailablePermits(key);
         }
 
-        protected override RateLimitLease AcquireCore(TResource resource, int permitCount)
+        protected override RateLimitLease AttemptAcquireCore(TResource resource, int permitCount)
         {
             ThrowIfDispose();
             TInner key = _keyAdapter(resource);
-            return _innerRateLimiter.Acquire(key, permitCount);
+            return _innerRateLimiter.AttemptAcquire(key, permitCount);
         }
 
-        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken)
+        protected override ValueTask<RateLimitLease> AcquireAsyncCore(TResource resource, int permitCount, CancellationToken cancellationToken)
         {
             ThrowIfDispose();
             TInner key = _keyAdapter(resource);
-            return _innerRateLimiter.WaitAndAcquireAsync(key, permitCount, cancellationToken);
+            return _innerRateLimiter.AcquireAsync(key, permitCount, cancellationToken);
         }
 
         protected override void Dispose(bool disposing)

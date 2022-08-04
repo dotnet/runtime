@@ -212,7 +212,7 @@ enum DbgTransportFaultSide
     FS_Right    = 0x20000000,
 };
 
-// Network operations which are candiates for fault injection.
+// Network operations which are candidates for fault injection.
 enum DbgTransportFaultOp
 {
     FO_Connect  = 0x01000000,

@@ -1200,6 +1200,7 @@ extern "C" uint64_t PalGetCurrentThreadIdForLogging()
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
 
+#if !__has_builtin(__cpuid)
 REDHAWK_PALEXPORT void __cpuid(int cpuInfo[4], int function_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
@@ -1210,7 +1211,9 @@ REDHAWK_PALEXPORT void __cpuid(int cpuInfo[4], int function_id)
         : "0"(function_id)
         );
 }
+#endif
 
+#if !__has_builtin(__cpuidex)
 REDHAWK_PALEXPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
@@ -1221,6 +1224,7 @@ REDHAWK_PALEXPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunctio
         : "0"(function_id), "2"(subFunction_id)
         );
 }
+#endif
 
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
 {

@@ -19,7 +19,7 @@ import {
 import { EventPipeSession, makeEventPipeSession } from "./browser/file-session";
 
 export interface Diagnostics {
-    EventLevel: EventLevel;
+    eventLevel: EventLevel;
     SessionOptionsBuilder: typeof SessionOptionsBuilder;
 
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
@@ -62,7 +62,7 @@ function getDiagnostics(): Diagnostics {
             /// Warning: 3,
             /// Informational: 4,
             /// Verbose: 5,
-            EventLevel: eventLevel,
+            eventLevel: eventLevel,
             /// A builder for creating an EventPipeSessionOptions instance.
             SessionOptionsBuilder: SessionOptionsBuilder,
             /// Creates a new EventPipe session that will collect trace events from the runtime and managed libraries.
@@ -100,10 +100,10 @@ export async function mono_wasm_init_diagnostics(options: DiagnosticOptions): Pr
         return;
     } else {
         if (!is_nullish(options.server)) {
-            if (options.server.connect_url === undefined || typeof (options.server.connect_url) !== "string") {
-                throw new Error("server.connect_url must be a string");
+            if (options.server.connectUrl === undefined || typeof (options.server.connectUrl) !== "string") {
+                throw new Error("server.connectUrl must be a string");
             }
-            const url = options.server.connect_url;
+            const url = options.server.connectUrl;
             const suspend = boolsyOption(options.server.suspend);
             const controller = await startDiagnosticServer(url);
             if (controller) {

@@ -393,7 +393,6 @@ namespace System.Net.Quic.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(false, false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64944", TestPlatforms.Windows)]
         public async Task ConnectWithClientCertificate(bool sendCertificate, bool useClientSelectionCallback)
         {
             if (PlatformDetection.IsWindows10Version20348OrLower)

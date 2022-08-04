@@ -515,7 +515,7 @@ namespace System
             return fields[0].FieldType;
         }
 
-        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use Enum.GetValues<TEnum> instead.")]
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetEnumValues<TEnum> overload or the GetEnumValuesAsUnderlyingType method instead.")]
         public virtual Array GetEnumValues()
         {
             if (!IsEnum)
@@ -525,6 +525,19 @@ namespace System
             // a non-runtime type. If there is strong need we can consider returning an object or int64 array.
             throw NotImplemented.ByDesign;
         }
+
+        /// <summary>
+        /// Retrieves an array of the values of the underlying type constants in a specified enumeration type.
+        /// </summary>
+        /// <remarks>
+        /// This method can be used to get enumeration values when creating an array of the enumeration type is challenging.
+        /// For example, <see cref="T:System.Reflection.MetadataLoadContext" /> or on a platform where runtime codegen is not available.
+        /// </remarks>
+        /// <returns>An array that contains the values of the underlying type constants in enumType.</returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the type is not an enumeration type.
+        /// </exception>
+        public virtual Array GetEnumValuesAsUnderlyingType() => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public virtual Type MakeArrayType() => throw new NotSupportedException();

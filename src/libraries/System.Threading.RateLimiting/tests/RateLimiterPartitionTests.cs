@@ -54,14 +54,14 @@ namespace System.Threading.RateLimiting.Tests
 
             // How do we test an internal implementation of a limiter that doesn't limit? Just try some stuff that normal limiters would probably block on and see if it works.
             var available = limiter.GetAvailablePermits();
-            var lease = limiter.Acquire(int.MaxValue);
+            var lease = limiter.AttemptAcquire(int.MaxValue);
             Assert.True(lease.IsAcquired);
             Assert.Equal(available, limiter.GetAvailablePermits());
 
-            lease = limiter.Acquire(int.MaxValue);
+            lease = limiter.AttemptAcquire(int.MaxValue);
             Assert.True(lease.IsAcquired);
 
-            var wait = limiter.WaitAndAcquireAsync(int.MaxValue);
+            var wait = limiter.AcquireAsync(int.MaxValue);
             Assert.True(wait.IsCompletedSuccessfully);
             lease = await wait;
             Assert.True(lease.IsAcquired);

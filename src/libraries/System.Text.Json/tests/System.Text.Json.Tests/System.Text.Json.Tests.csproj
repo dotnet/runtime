@@ -155,6 +155,7 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ReadAhead.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ValueTypedMember.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.cs" />
+    <Compile Include="Serialization\MetadataTests\DefaultJsonPropertyInfo.cs" />
     <Compile Include="Serialization\RequiredKeywordTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
     <Compile Include="Serialization\DomTests.cs" />

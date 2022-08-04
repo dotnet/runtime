@@ -63,14 +63,14 @@ namespace DelegateTest
                     TestLibrary.TestFramework.LogError("001", "remove failure  " );
                     retVal = false;
                 }
-                
+
             }
             catch (Exception e)
             {
                 TestLibrary.TestFramework.LogError("002", "Unexpected exception: " + e);
                 retVal = false;
             }
-            
+
             return retVal;
         }
         // Returns true if the expected result is right
@@ -110,7 +110,7 @@ namespace DelegateTest
                 TestLibrary.TestFramework.LogError("005", "Unexpected exception: " + e);
                 retVal = false;
             }
-            
+
             return retVal;
         }
         // Returns true if the expected result is right
@@ -136,7 +136,7 @@ namespace DelegateTest
 		Delegate[] afterList = delctor.starkWork.GetInvocationList();
 		if (beforeList.Length != afterList.Length)
                  {
-                    TestLibrary.TestFramework.LogError("006", 
+                    TestLibrary.TestFramework.LogError("006",
 		String.Format("Remove changed invocation list length from {0} to {1}", beforeList.Length,
 		afterList.Length));
                     retVal = false;
@@ -156,7 +156,7 @@ namespace DelegateTest
                 TestLibrary.TestFramework.LogError("008", "Unexpected exception: " + e);
                 retVal = false;
             }
-            
+
             return retVal;
         }
 
@@ -246,7 +246,7 @@ namespace DelegateTest
             return retVal;
         }
     }
-    //create testclass for provding test method and test target.
+    //create testclass for providing test method and test target.
     class TestClass
     {
         public bool StartWork_Bool()

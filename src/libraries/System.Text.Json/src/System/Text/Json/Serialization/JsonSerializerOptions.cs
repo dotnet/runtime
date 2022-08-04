@@ -630,7 +630,11 @@ namespace System.Text.Json
             DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance();
             _typeInfoResolver ??= defaultResolver;
             IsImmutable = true;
+            _isInitializedForReflectionSerializer = true;
         }
+
+        internal bool IsInitializedForReflectionSerializer => _isInitializedForReflectionSerializer;
+        private volatile bool _isInitializedForReflectionSerializer;
 
         internal void InitializeForMetadataGeneration()
         {

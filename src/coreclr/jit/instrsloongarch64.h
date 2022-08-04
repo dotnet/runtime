@@ -63,17 +63,17 @@ INST(bl,            "bl",             0,    0x54000000)
 //  mov     rd,rj
 //  In fact, mov is an alias instruction, "ori rd,rj,0"
 INST(mov,           "mov",            0,    0x03800000)
-                    //dneg is a alias instruction.
-                    //sub_d rd, zero, rk
+                    // dneg is an alias instruction.
+                    // sub_d rd, zero, rk
 INST(dneg,          "dneg",           0,    0x00118000)
-                    //neg is a alias instruction.
-                    //sub_w rd, zero, rk
+                    // neg is an alias instruction.
+                    // sub_w rd, zero, rk
 INST(neg,           "neg",            0,    0x00110000)
-                    //not is a alias instruction.
-                    //nor rd, rj, zero
+                    // not is an alias instruction.
+                    // nor rd, rj, zero
 INST(not,           "not",            0,    0x00140000)
 
-//   enum:id        name             FP   LD/ST   Formate   ENCODE
+//   enum:id        name             FP   LD/ST   Format   ENCODE
 ////R_R_R.
 INST(add_w,         "add.w",          0,    0x00100000)
 INST(add_d,         "add.d",          0,    0x00108000)

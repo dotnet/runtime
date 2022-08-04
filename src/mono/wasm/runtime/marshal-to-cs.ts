@@ -6,16 +6,16 @@ import cwraps from "./cwraps";
 import { assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
 import { Module, runtimeHelpers } from "./imports";
 import {
-    JSMarshalerArgument, ManagedError,
+    ManagedError,
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_b8, set_arg_date,
     set_arg_length, get_arg, get_signature_type, get_signature_arg1_type, get_signature_arg2_type, cs_to_js_marshalers, js_to_cs_marshalers,
-    MarshalerToCs, MarshalerToJs, get_signature_res_type, JSMarshalerArguments, bound_js_function_symbol, set_arg_u16, JSMarshalerType, array_element_size,
+    get_signature_res_type, bound_js_function_symbol, set_arg_u16, array_element_size,
     get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, MarshalerType, set_arg_i64_big, set_arg_intptr, IDisposable,
     set_arg_element_type, ManagedObject
 } from "./marshal";
 import { _zero_region } from "./memory";
 import { js_string_to_mono_string_root } from "./strings";
-import { mono_assert, GCHandle, GCHandleNull } from "./types";
+import { mono_assert, GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs } from "./types";
 import { TypedArray } from "./types/emscripten";
 
 export function initialize_marshalers_to_cs(): void {

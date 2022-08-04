@@ -82,3 +82,4 @@ jobs:
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: release
+      useCodeFlowEnforcement: true

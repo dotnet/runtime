@@ -85,8 +85,8 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
 {
     if (((opcode >> 24) & 0xFC) == 0x50) // Decode B
     {
-        offset = (opcode >> 10) & 0xFFFF; // Get the low-16bits offset field.
-        offset |= (opcode & 0x3FF) << 16; // Get the hight-10bits offset field.
+        offset = (opcode >> 10) & 0xFFFF; // Get the low 16 bits offset field.
+        offset |= (opcode & 0x3FF) << 16; // Get the high 10 bits offset field.
 
         // Check whether sign extension
         if ((opcode & 0x200) != 0)
@@ -105,8 +105,8 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
     }
     else if (((opcode >> 24) & 0xFC) == 0x54) // Decode BL
     {
-        offset = (opcode >> 10) & 0xFFFF; // Get the low-16bits offset field.
-        offset |= (opcode & 0x3FF) << 16; // Get the hight-10bits offset field.
+        offset = (opcode >> 10) & 0xFFFF; // Get the low 16 bits offset field.
+        offset |= (opcode & 0x3FF) << 16; // Get the high 10 bits offset field.
 
         // Check whether sign extension
         if ((opcode & 0x200) != 0)
