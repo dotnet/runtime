@@ -244,6 +244,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, "Program", "TopLevelStatements")]
         public void TopLevelStatements()
         {
             var assembly = Assembly.Load("TopLevelStatements");
@@ -254,6 +255,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, "Program", "TopLevelStatementsTestsTimeout")]
         public void TopLevelStatementsTestsTimeout()
         {
             var assembly = Assembly.Load("TopLevelStatementsTestsTimeout");
@@ -264,6 +266,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, "Program", "ApplicationNameSetFromArgument")]
         public void ApplicationNameSetFromArgument()
         {
             Assembly assembly = Assembly.Load("ApplicationNameSetFromArgument");

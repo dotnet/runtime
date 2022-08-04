@@ -41,7 +41,7 @@ public partial class ThreadPoolBoundHandleTests
         using (PreAllocatedOverlapped.UnsafeCreate((_, __, ___) => { }, new object(), new byte[0])) { }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPinnedGCHandleBlittabilityEnforced))]
     [ActiveIssue("https://github.com/mono/mono/issues/15313", TestRuntimes.Mono)]
     public unsafe void PreAllocatedOverlapped_NonBlittableTypeAsPinData_Throws()
     {
@@ -73,7 +73,7 @@ public partial class ThreadPoolBoundHandleTests
         using (PreAllocatedOverlapped.UnsafeCreate((_, __, ___) => { }, new object(), array)) { }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPinnedGCHandleBlittabilityEnforced))]
     [ActiveIssue("https://github.com/mono/mono/issues/15313", TestRuntimes.Mono)]
     public unsafe void PreAllocatedOverlapped_ObjectArrayWithNonBlittableTypeAsPinData_Throws()
     {

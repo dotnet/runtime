@@ -78,7 +78,7 @@ public partial class ThreadPoolBoundHandleTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPinnedGCHandleBlittabilityEnforced))]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_NonBlittableTypeAsPinData_Throws()
     {
@@ -127,7 +127,7 @@ public partial class ThreadPoolBoundHandleTests
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPinnedGCHandleBlittabilityEnforced))]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_ObjectArrayWithNonBlittableTypeAsPinData_Throws()
     {

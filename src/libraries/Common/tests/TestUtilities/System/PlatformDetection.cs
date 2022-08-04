@@ -127,6 +127,8 @@ namespace System
 
         public static bool IsLineNumbersSupported => !IsNativeAot;
 
+        public static bool IsPinnedGCHandleBlittabilityEnforced => !IsNativeAot;
+
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
         public static bool SupportsSsl3 => GetSsl3Support();
