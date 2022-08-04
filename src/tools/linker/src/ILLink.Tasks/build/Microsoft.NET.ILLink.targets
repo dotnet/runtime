@@ -59,38 +59,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Suppress warnings produced by the linker or by the ILLink Roslyn analyzer. -->
   <PropertyGroup Condition="'$(SuppressTrimAnalysisWarnings)' == 'true'">
-    <!-- RequiresUnreferenceCodeAttribute method called -->
-    <NoWarn>$(NoWarn);IL2026;IL2116</NoWarn>
-    <!-- Invalid use of DynamicallyAccessedMembersAttribute -->
-    <NoWarn>$(NoWarn);IL2041;IL2042;IL2043;IL2056</NoWarn>
-    <!-- Reference to removed attribute type -->
-    <NoWarn>$(NoWarn);IL2045</NoWarn>
-    <!-- RequiresUnreferencedCodeAttribute mismatch on virtual override -->
-    <NoWarn>$(NoWarn);IL2046</NoWarn>
-    <!-- COM marshalling warning -->
-    <NoWarn>$(NoWarn);IL2050</NoWarn>
-    <!-- Reflection intrinsics with unknown arguments -->
-    <NoWarn>$(NoWarn);IL2032;IL2055;IL2057;IL2058;IL2059;IL2060;IL2061;IL2096</NoWarn>
-    <!-- Unknown values passed to locations with DynamicallyAccessedMemberTypes -->
-    <NoWarn>$(NoWarn);IL2062;IL2063;IL2064;IL2065;IL2066</NoWarn>
-    <!-- Unsatisfied DynamicallyAccessedMembers requirements -->
-    <NoWarn>$(NoWarn);IL2067;IL2068;IL2069;IL2070;IL2071;IL2072;IL2073;IL2074;IL2075;IL2076;IL2077;IL2078;IL2079;IL2080;IL2081;IL2082;IL2083;IL2084;IL2085;IL2086;IL2087;IL2088;IL2089;IL2090;IL2091</NoWarn>
-    <!-- DynamicallyAccessedMembersAttribute mismatch on virtual override -->
-    <NoWarn>$(NoWarn);IL2092;IL2093;IL2094;IL2095</NoWarn>
-    <!-- DynamicallyAccessedMembersAttribute used on unsupported member -->
-    <NoWarn>$(NoWarn);IL2097;IL2098;IL2099;IL2106</NoWarn>
-    <!-- Unknown value passed to Expression.Property -->
-    <NoWarn>$(NoWarn);IL2103</NoWarn>
-    <!-- Multiple methods associated with state machine type or user method -->
-    <NoWarn>$(NoWarn);IL2107;IL2117</NoWarn>
-    <!-- Unannotated type derived from base type with RequiresUnreferencedCode -->
-    <NoWarn>$(NoWarn);IL2109</NoWarn>
-    <!-- Reflection access to members with DynamicallyAccessedMembers requirements -->
-    <NoWarn>$(NoWarn);IL2110;IL2111;IL2114;IL2115</NoWarn>
-    <!-- Reflection access to members with RequiresUnreferencedCode -->
-    <NoWarn>$(NoWarn);IL2112;IL2113</NoWarn>
-    <!-- Reflection access to compiler-generated code -->
-    <NoWarn>$(NoWarn);IL2118;IL2119;IL2120</NoWarn>
+    <ILLinkWarningLevel Condition="'$(ILLinkWarningLevel)' == ''">0</ILLinkWarningLevel>
+    <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == ''">false</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <!-- Disable Redundant Warning Suppressions by default-->
@@ -251,17 +221,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <ILLinkTreatWarningsAsErrors Condition=" '$(ILLinkTreatWarningsAsErrors)' == '' ">$(TreatWarningsAsErrors)</ILLinkTreatWarningsAsErrors>
       <_ExtraTrimmerArgs>--skip-unresolved true $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
       <TrimmerSingleWarn Condition=" '$(TrimmerSingleWarn)' == '' ">true</TrimmerSingleWarn>
-    </PropertyGroup>
-
-    <!-- Suppressions to work around issues in previous versions of the framework. See https://github.com/dotnet/runtime/issues/40336 -->
-    <PropertyGroup Condition="'$(SuppressTrimAnalysisWarnings)' == 'true' And $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0'))">
-      <!-- Framework embedded XML descriptors reference windows-only members. -->
-      <NoWarn Condition=" !$(RuntimeIdentifier.StartsWith('win')) ">$(NoWarn);IL2008</NoWarn> <!-- Unresolved type referenced in XML. -->
-      <NoWarn Condition=" !$(RuntimeIdentifier.StartsWith('win')) ">$(NoWarn);IL2009</NoWarn> <!-- Unresolved member on type referenced in XML. -->
-      <!-- Framework has DynamicDependencyAttributes that reference windows-only members. -->
-      <NoWarn Condition=" !$(RuntimeIdentifier.StartsWith('win')) ">$(NoWarn);IL2037</NoWarn> <!-- Unresolved member for DynamicDependencyAttribute -->
-      <!-- Framework embedded XML descriptors reference 32-bit-only members. -->
-      <NoWarn Condition=" '$(PlatformTarget)' != 'x64' AND '$(PlatformTarget)' != 'arm64'">$(NoWarn);IL2009;IL2012</NoWarn> <!-- Unresolved field referenced in XML -->
     </PropertyGroup>
 
     <!-- Enable serialization discovery for compat in < 7.0 -->
