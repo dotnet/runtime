@@ -373,7 +373,7 @@ namespace System
 
                 if (source.Length > sizeof(sbyte))
                 {
-                    if (source[..^sizeof(sbyte)].IndexOfAnyExcept((byte)sign) != -1)
+                    if (source[..^sizeof(sbyte)].IndexOfAnyExcept((byte)sign) >= 0)
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -426,7 +426,7 @@ namespace System
 
                 if (source.Length > sizeof(sbyte))
                 {
-                    if (source[sizeof(sbyte)..].IndexOfAnyExcept((byte)sign) != -1)
+                    if (source[sizeof(sbyte)..].IndexOfAnyExcept((byte)sign) >= 0)
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range

@@ -349,7 +349,7 @@ namespace System
                     return false;
                 }
 
-                if ((source.Length > sizeof(byte)) && (source[..^sizeof(byte)].IndexOfAnyExcept((byte)0x00) != -1))
+                if ((source.Length > sizeof(byte)) && (source[..^sizeof(byte)].IndexOfAnyExcept((byte)0x00) >= 0))
                 {
                     // When we have any non-zero leading data, we are a large positive and therefore
                     // definitely out of range
@@ -382,7 +382,7 @@ namespace System
                     return false;
                 }
 
-                if ((source.Length > sizeof(byte)) && (source[sizeof(byte)..].IndexOfAnyExcept((byte)0x00) != -1))
+                if ((source.Length > sizeof(byte)) && (source[sizeof(byte)..].IndexOfAnyExcept((byte)0x00) >= 0))
                 {
                     // When we have any non-zero leading data, we are a large positive and therefore
                     // definitely out of range
