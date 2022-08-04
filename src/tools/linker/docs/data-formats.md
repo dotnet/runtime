@@ -100,6 +100,21 @@ The `required` attribute specifies that if the type is not marked, during the ma
 </linker>
 ```
 
+### Preserve more than one type within an assembly
+
+```xml
+<linker>
+  <assembly fullname="Assembly">
+    
+    <!-- Preserves all types who's fully qualified type name matches the regular expression -->
+    <type fullname="Assembly.Namespace*" />
+    
+    <!-- Preserve all types within the specified namespace -->
+    <namespace fullname="Assembly.Namespace" /> 
+  </assembly>
+</linker>
+```
+
 ### Preserve only selected fields on a type
 
 ```xml

@@ -31,11 +31,38 @@ namespace Mono.Linker.Tests.Cases.LinkXml.PreserveNamespace
 	[KeptMember (".ctor()")]
 	class Type1
 	{
+		[Kept]
+		public int UnusedField;
 	}
 
 	[Kept]
 	[KeptMember (".ctor()")]
 	class Type2
 	{
+		[Kept]
+		public void Method ()
+		{
+		}
+	}
+}
+
+namespace Mono.Linker.Tests.Cases.LinkXml.PreserveNamespace.SubNamespace
+{
+	[Kept]
+	[KeptMember (".ctor()")]
+	class Type1
+	{
+		[Kept]
+		public int UnusedField;
+	}
+
+	[Kept]
+	[KeptMember (".ctor()")]
+	class Type2
+	{
+		[Kept]
+		public void Method ()
+		{
+		}
 	}
 }
