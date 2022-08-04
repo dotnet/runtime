@@ -116,15 +116,13 @@ public:
     void DoMethodHandle(CORINFO_METHOD_HANDLE p)
     {
         uintptr_t up = reinterpret_cast<uintptr_t>(p);
-        if (sizeof(CORINFO_METHOD_HANDLE) == 4)
-        {
-            m_w.WriteUnencodedU32(static_cast<uint32_t>(up));
-        }
-        else
-        {
-            m_w.WriteUnencodedU32(static_cast<uint32_t>(up));
-            m_w.WriteUnencodedU32(static_cast<uint32_t>(up >> 32));
-        }
+
+#ifdef TARGET_64BIT
+        m_w.WriteUnencodedU32(static_cast<uint32_t>(up));
+        m_w.WriteUnencodedU32(static_cast<uint32_t>(up >> 32));
+#else
+        m_w.WriteUnencodedU32(static_cast<uint32_t>(up));
+#endif
     }
 
 protected:
@@ -205,17 +203,14 @@ public:
 
     void DoMethodHandle(CORINFO_METHOD_HANDLE& p)
     {
-        if (sizeof(CORINFO_METHOD_HANDLE) == 4)
-        {
-            uint32_t val = m_r.ReadUnencodedU32();
-            p = reinterpret_cast<CORINFO_METHOD_HANDLE>(static_cast<uintptr_t>(val));
-        }
-        else
-        {
-            uint32_t lo = m_r.ReadUnencodedU32();
-            uint32_t hi = m_r.ReadUnencodedU32();
-            p = reinterpret_cast<CORINFO_METHOD_HANDLE>(uintptr_t(lo) | (uintptr_t(hi) << 32));
-        }
+#ifdef TARGET_64BIT
+        uint32_t lo = m_r.ReadUnencodedU32();
+        uint32_t hi = m_r.ReadUnencodedU32();
+        p = reinterpret_cast<CORINFO_METHOD_HANDLE>(uintptr_t(lo) | (uintptr_t(hi) << 32));
+#else
+        uint32_t val = m_r.ReadUnencodedU32();
+        p = reinterpret_cast<CORINFO_METHOD_HANDLE>(static_cast<uintptr_t>(val));
+#endif
     }
 
     // For debugging purposes, inject cookies into the Compression.
