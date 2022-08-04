@@ -35,7 +35,6 @@ namespace System.Runtime.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void CancelOnTimeout_ThrowFromCatch()
         {
-            Console.WriteLine("CancelOnTimeout_ThrowFromCatch");
             var cts = new CancellationTokenSource();
             cts.CancelAfter(200);
             RunTest(LengthyAction_ThrowFromCatch, cts.Token);
@@ -50,7 +49,6 @@ namespace System.Runtime.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void CancelOnTimeout_ThrowFromFinally()
         {
-            Console.WriteLine("CancelOnTimeout_ThrowFromFinally");
             var cts = new CancellationTokenSource();
             cts.CancelAfter(200);
             RunTest(LengthyAction_ThrowFromFinally, cts.Token);
@@ -63,7 +61,6 @@ namespace System.Runtime.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void CancelOnTimeout_Finally()
         {
-            Console.WriteLine("CancelOnTimeout_Finally");
             var cts = new CancellationTokenSource();
             cts.CancelAfter(200);
             RunTest(LengthyAction_Finally, cts.Token);
@@ -77,7 +74,6 @@ namespace System.Runtime.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void CancelBeforeRun()
         {
-            Console.WriteLine("CancelBeforeRun");
             var cts = new CancellationTokenSource();
             cts.Cancel();
             Thread.Sleep(100);
@@ -90,7 +86,6 @@ namespace System.Runtime.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void CancelItself()
         {
-            Console.WriteLine("CancelItself");
             _cts = new CancellationTokenSource();
             RunTest(Action_CancelItself, _cts.Token);
 
