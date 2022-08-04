@@ -15,6 +15,7 @@ namespace System.IO.Pipes.Tests
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS 10.0+ blocks UNIX sockets")]
         public void InheritHandles_AvailableInChildProcess()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
@@ -47,6 +48,7 @@ namespace System.IO.Pipes.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS 10.0+ blocks UNIX sockets")]
         public void PingPong_Sync()
         {
             // Create names for two pipes
@@ -74,6 +76,7 @@ namespace System.IO.Pipes.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS 10.0+ blocks UNIX sockets")]
         public async Task PingPong_Async()
         {
             // Create names for two pipes
