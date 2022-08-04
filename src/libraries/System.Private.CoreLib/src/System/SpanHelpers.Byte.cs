@@ -599,8 +599,8 @@ namespace System
                         Vector128<byte> search = Vector128.LoadUnsafe(ref searchSpace, offset);
 
                         // Same method as above
-                        uint matches = Vector128.Equals(values, search).ExtractMostSignificantBits();
-                        if (matches == 0)
+                        Vector128<byte> compareResult = Vector128.Equals(values, search);
+                        if (compareResult == Vector128<byte>.Zero)
                         {
                             // Zero flags set so no matches
                             offset += (nuint)Vector128<byte>.Count;
@@ -608,6 +608,7 @@ namespace System
                         }
 
                         // Find bitflag offset of first match and add to current offset
+                        uint matches = compareResult.ExtractMostSignificantBits();
                         return (int)(offset + (uint)BitOperations.TrailingZeroCount(matches));
                     }
 
