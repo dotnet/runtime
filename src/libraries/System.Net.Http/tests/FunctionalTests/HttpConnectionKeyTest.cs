@@ -23,7 +23,8 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { "Http", "localhost", 80, "localhost-ssl", new Uri("http://localhost"), "domain1/userA", true };
         }
 
-        [Theory, MemberData(nameof(KeyComponents))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [MemberData(nameof(KeyComponents))]
         public void Equals_DifferentParameters_ReturnsTrueIfAllEqual(string kindString, string host, int port, string sslHostName, Uri proxyUri, string identity, bool expected)
         {
             Assembly assembly = typeof(HttpClientHandler).Assembly;
