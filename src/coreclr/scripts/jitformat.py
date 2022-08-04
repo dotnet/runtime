@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 ## Licensed to the .NET Foundation under one or more agreements.
 ## The .NET Foundation licenses this file to you under the MIT license.
 #
 ##
-# Title               :format.py
+# Title               :jitformat.py
 #
 ################################################################################
 # Script to install and run jit-format over jit source for all configurations.
@@ -12,13 +12,15 @@
 
 
 import argparse
+import jitutil
+import logging
 import os
+import shutil
+import subprocess
 import sys
 import tarfile
 import tempfile
 import zipfile
-import subprocess
-import shutil
 
 class ChangeDir:
     def __init__(self, dir):
@@ -46,13 +48,6 @@ class TempDir:
     def __exit__(self, exc_type, exc_val, exc_tb):
         os.chdir(self.cwd)
 
-# Version specific imports
-
-if sys.version_info.major < 3:
-    from urllib import urlretrieve
-else:
-    from urllib.request import urlretrieve
-
 def expandPath(path):
     return os.path.abspath(os.path.expanduser(path))
 
@@ -62,14 +57,18 @@ def del_rw(action, name, exc):
 
 def cleanup(jitUtilsPath, bootstrapPath):
     if os.path.isdir(jitUtilsPath):
-        print("Deleting " + jitUtilsPath)
+        logging.info("Deleting " + jitUtilsPath)
         shutil.rmtree(jitUtilsPath, onerror=del_rw)
 
     if os.path.isfile(bootstrapPath):
-        print("Deleting " + bootstrapPath)
+        logging.info("Deleting " + bootstrapPath)
         os.remove(bootstrapPath)
 
 def main(argv):
+    logging.basicConfig(format="[%(asctime)s] %(message)s", datefmt="%H:%M:%S")
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
     parser = argparse.ArgumentParser()
     required = parser.add_argument_group('required arguments')
     required.add_argument('-a', '--arch', type=str,
@@ -82,20 +81,20 @@ def main(argv):
     args, unknown = parser.parse_known_args(argv)
 
     if unknown:
-        print('Ignoring argument(s): ', ','.join(unknown))
+        logging.warn('Ignoring argument(s): {}'.format(','.join(unknown)))
 
     if args.coreclr is None:
-        print('Specify --coreclr')
+        logging.error('Specify --coreclr')
         return -1
     if args.os is None:
-        print('Specify --os')
+        logging.error('Specify --os')
         return -1
     if args.arch is None:
-        print('Specify --arch')
+        logging.error('Specify --arch')
         return -1
 
     if not os.path.isdir(expandPath(args.coreclr)):
-        print('Bad path to coreclr')
+        logging.error('Bad path to coreclr')
         return -1
 
     coreclr = args.coreclr.replace('/', os.sep)
@@ -117,7 +116,7 @@ def main(argv):
     proc = subprocess.Popen(formattingDownloadScriptCommand)
 
     if proc.wait() != 0:
-        print("Formatting tool download failed")
+        logging.error("Formatting tool download failed")
         return -1
 
     my_env["PATH"] = os.path.join(repoRoot, "artifacts", "tools") + os.pathsep + my_env["PATH"]
@@ -142,17 +141,14 @@ def main(argv):
 
         assert len(os.listdir(os.path.dirname(bootstrapPath))) == 0
 
-        print('Downloading', bootstrapUrl, 'to', bootstrapPath)
-        urlretrieve(bootstrapUrl, bootstrapPath)
-
-        if not os.path.isfile(bootstrapPath):
-            print("Did not download bootstrap!")
+        if not jitutil.download_one_url(bootstrapUrl, bootstrapPath):
+            logging.error("Did not download bootstrap!")
             return -1
 
         if platform == 'windows':
             # Need to ensure we have Windows line endings on the downloaded script file,
             # which is downloaded with Unix line endings.
-            print('Convert', bootstrapPath, 'to Windows line endings')
+            logging.info('Convert {} to Windows line endings'.format(bootstrapPath))
 
             content = None
             with open(bootstrapPath, 'rb') as open_file:
@@ -166,22 +162,22 @@ def main(argv):
         # On *nix platforms, we need to make the bootstrap file executable
 
         if platform == 'Linux' or platform == 'OSX':
-            print("Making bootstrap executable")
+            logging.info("Making bootstrap executable")
             os.chmod(bootstrapPath, 0o751)
 
         # Run bootstrap
         if platform == 'Linux' or platform == 'OSX':
-            print('Running:', 'bash', bootstrapPath)
+            logging.info('Running: bash {}'.format(bootstrapPath))
             proc = subprocess.Popen(['bash', bootstrapPath], env=my_env)
             output,error = proc.communicate()
         elif platform == 'windows':
-            print('Running:', bootstrapPath)
+            logging.info('Running: {}'.format(bootstrapPath))
             proc = subprocess.Popen([bootstrapPath], env=my_env)
             output,error = proc.communicate()
 
         if proc.returncode != 0:
             cleanup('', bootstrapPath)
-            print("Bootstrap failed")
+            logging.error("Bootstrap failed")
             return -1
 
         # Run jit-format
@@ -191,7 +187,7 @@ def main(argv):
         my_env["PATH"] = jitutilsBin + os.pathsep + my_env["PATH"]
 
         if not os.path.isdir(jitutilsBin):
-            print("Jitutils not built!")
+            logging.error("Jitutils not built!")
             return -1
 
         jitformat = jitutilsBin
@@ -208,7 +204,7 @@ def main(argv):
         for build in builds:
             for project in projects:
                 command = jitformat + " -a " + arch + " -b " + build + " -o " + platform + " -c " + coreclr + " --verbose --projects " + project
-                print('Running:', command)
+                logging.info('Running: {}'.format(command))
                 proc = subprocess.Popen([jitformat, "-a", arch, "-b", build, "-o", platform, "-c", coreclr, "--verbose", "--projects", project], env=my_env)
                 output,error = proc.communicate()
                 errorcode = proc.returncode
@@ -234,7 +230,7 @@ def main(argv):
 
     if returncode != 0:
         # Create a patch file
-        print("Creating patch file " + patchFilePath)
+        logging.info("Creating patch file {}".format(patchFilePath))
         jitSrcPath = os.path.join(coreclr, "jit")
         patchFile = open(patchFilePath, "w")
         proc = subprocess.Popen(["git", "diff", "--patch", "-U20", "--", jitSrcPath], env=my_env, stdout=patchFile)
@@ -243,19 +239,19 @@ def main(argv):
     cleanup(jitUtilsPath, bootstrapPath)
 
     if returncode != 0:
-        print("There were errors in formatting. Please run jit-format locally with: \n")
-        print(errorMessage)
-        print("\nOr download and apply generated patch:")
-        print("1. From the GitHub 'Checks' page on the Pull Request, with the failing Formatting")
-        print("   job selected (e.g., 'Formatting Linux x64'), click the 'View more details on")
-        print("   Azure Pipelines' link.")
-        print("2. Select the '1 artifact produced' at the end of the log.")
-        print("3. Artifacts are located in alphabetical order, target artifact name is")
-        print("   'format.<OS>.<architecture>.patch.'. Find appropriate format patch artifact.")
-        print("4. On the right side of the artifact there is a 'More actions' menu shown by a")
-        print("   vertical three-dot symbol. Click on it and select 'Download artifacts' option.")
-        print("5. Unzip the patch file.")
-        print("6. git apply format.patch")
+        logging.info("There were errors in formatting. Please run jit-format locally with: \n")
+        logging.info(errorMessage)
+        logging.info("\nOr download and apply generated patch:")
+        logging.info("1. From the GitHub 'Checks' page on the Pull Request, with the failing Formatting")
+        logging.info("   job selected (e.g., 'Formatting Linux x64'), click the 'View more details on")
+        logging.info("   Azure Pipelines' link.")
+        logging.info("2. Select the '1 artifact produced' at the end of the log.")
+        logging.info("3. Artifacts are located in alphabetical order, target artifact name is")
+        logging.info("   'format.<OS>.<architecture>.patch.'. Find appropriate format patch artifact.")
+        logging.info("4. On the right side of the artifact there is a 'More actions' menu shown by a")
+        logging.info("   vertical three-dot symbol. Click on it and select 'Download artifacts' option.")
+        logging.info("5. Unzip the patch file.")
+        logging.info("6. git apply format.patch")
 
     if (returncode != 0) and (os.environ.get("TF_BUILD") == "True"):
         print("##vso[task.logissue type=error](NETCORE_ENGINEERING_TELEMETRY=Build) Format job found errors, please apply the format patch.")
