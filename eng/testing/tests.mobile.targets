@@ -154,9 +154,9 @@
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
-    <ItemGroup>
-      <RuntimeComponents Include="marshal-ilgen" /> 
-    </ItemGroup>
+    <PropertyGroup>
+      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
+    </PropertyGroup>
 
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
