@@ -3,19 +3,21 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.JavaScript;
 using System.Collections.Generic;
 using System.Threading;
 using System.Runtime.Versioning;
 
 namespace Sample
 {
-    public class Test
+    public partial class Test
     {
         public static void Main(string[] args)
         {
             Console.WriteLine ("Hello, World!");
         }
 
+        [JSExport]
         [MethodImpl(MethodImplOptions.NoInlining)]
         [SupportedOSPlatform("browser")] // ask the analyzer to warn if we use APIs not supported on browser-wasm
         public static int TestMeaning()

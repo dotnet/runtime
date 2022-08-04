@@ -29,7 +29,7 @@ function saveProfile(aotProfileData) {
 }
 
 try {
-    const { MONO, BINDING, INTERNAL } = await createDotnetRuntime({
+    const { MONO, INTERNAL, getAssemblyExports: getAssemblyExports } = await createDotnetRuntime({
         configSrc: "./mono-config.json",
         disableDotnet6Compatibility: true,
         onConfigLoaded: (config) => {
@@ -42,8 +42,9 @@ try {
         }
     });
     console.log("not ready yet")
-    const testMeaning = BINDING.bind_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:TestMeaning");
-    const stopProfile = BINDING.bind_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:StopProfile");
+    const exports = await getAssemblyExports("Wasm.BrowserProfile.Sample");
+    const testMeaning = exports.Sample.Test.TestMeaning;
+    const stopProfile = exports.Sample.Test.StopProfile;
     console.log("ready");
     const ret = testMeaning();
     document.getElementById("out").innerHTML = ret;

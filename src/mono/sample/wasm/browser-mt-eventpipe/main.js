@@ -22,7 +22,7 @@ function Uint8ToString(u8a) {
 }
 
 async function main() {
-    const { MONO, BINDING, Module, runtimeBuildInfo } = await createDotnetRuntime({
+    const { MONO, Module, runtimeBuildInfo, getAssemblyExports } = await createDotnetRuntime({
         disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
         preInit: () => { console.log('user code Module.preInit') },
@@ -35,8 +35,8 @@ async function main() {
     console.log('after createDotnetRuntime')
 
     try {
-        const testMeaning = BINDING.bind_static_method("[Wasm.Browser.ThreadsEP.Sample] Sample.Test:TestMeaning");
-        const ret = testMeaning();
+        const exports = await getAssemblyExports("Wasm.Browser.ThreadsEP.Sample.dll");
+        const ret = exports.Sample.Test.TestMeaning();
         document.getElementById("out").innerHTML = `${ret} as computed on dotnet ver ${runtimeBuildInfo.productVersion}`;
 
         console.debug(`ret: ${ret}`);
