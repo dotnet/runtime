@@ -121,11 +121,7 @@ namespace System.Reflection
         }
 
         public override bool Equals(object? obj) =>
-            ReferenceEquals(this, obj) ||
-            (MetadataUpdater.IsSupported &&
-                obj is RuntimeConstructorInfo ci &&
-                MetadataToken == ci.MetadataToken &&
-                m_declaringType.Equals(ci.m_declaringType));
+            obj is RuntimeConstructorInfo ci && m_handle == ci.m_handle;
 
         public override int GetHashCode() => RuntimeHelpers.GetHashCodeOfPtr(m_handle);
         #endregion

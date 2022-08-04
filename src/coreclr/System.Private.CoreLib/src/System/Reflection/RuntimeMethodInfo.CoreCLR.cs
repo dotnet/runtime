@@ -160,12 +160,10 @@ namespace System.Reflection
 
         public override int GetHashCode() => RuntimeHelpers.GetHashCodeOfPtr(m_handle);
 
-        public override bool Equals(object? obj) =>
-            ReferenceEquals(this, obj) ||
-                (MetadataUpdater.IsSupported &&
-                obj is RuntimeMethodInfo m &&
-                m.MetadataToken == MetadataToken &&
-                m_declaringType.Equals(m.m_declaringType));
+        public override bool Equals(object? obj)
+        {
+            return obj is RuntimeMethodInfo m && m_handle == m.m_handle;
+        }
         #endregion
 
         #region ICustomAttributeProvider
