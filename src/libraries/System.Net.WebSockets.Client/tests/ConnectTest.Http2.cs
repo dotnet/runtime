@@ -15,9 +15,27 @@ using static System.Net.Http.Functional.Tests.TestHelper;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public class ConnectTest_Http2 : ClientWebSocketTestBase
+    public sealed class InvokerConnectTestt_Http2 : ConnectTest_Http2
+    {
+        public InvokerConnectTestt_Http2(ITestOutputHelper output) : base(output) { }
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, new HttpMessageInvoker(CreateSocketsHttpHandler(allowAllCertificates: true)), cancellationToken);
+    }
+
+    public sealed class HttpClientConnectTestt_Http2 : ConnectTest_Http2
+    {
+        public HttpClientConnectTestt_Http2(ITestOutputHelper output) : base(output) { }
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, new HttpClient(CreateSocketsHttpHandler(allowAllCertificates: true)), cancellationToken);
+    }
+
+    public abstract class ConnectTest_Http2 : ClientWebSocketTestBase
     {
         public ConnectTest_Http2(ITestOutputHelper output) : base(output) { }
+
+        protected abstract Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken);
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Self-signed certificates are not supported on browser")]
@@ -31,7 +49,7 @@ namespace System.Net.WebSockets.Client.Tests
                     clientSocket.Options.HttpVersion = HttpVersion.Version20;
                     clientSocket.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
                     using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
-                    Task t = clientSocket.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
+                    Task t = ConnectAsync(clientSocket, uri, cts.Token);
                     var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
                     Assert.IsType<HttpRequestException>(ex.InnerException);
                     Assert.True(ex.InnerException.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL"));
@@ -55,8 +73,7 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     cws.Options.HttpVersion = HttpVersion.Version20;
                     cws.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
-                    using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
-                    await cws.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
+                    await ConnectAsync(cws, uri, cts.Token);
                 }
             },
             async server =>

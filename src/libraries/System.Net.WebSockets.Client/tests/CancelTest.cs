@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,9 +10,45 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public class CancelTest : ClientWebSocketTestBase
+    public sealed class InternalHandlerCancelTest : CancelTest
+    {
+        public InternalHandlerCancelTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output);
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, cancellationToken);
+    }
+
+    public sealed class InvokerCancelTest : CancelTest
+    {
+        public InvokerCancelTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpMessageInvoker(new SocketsHttpHandler()));
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, new HttpMessageInvoker(new SocketsHttpHandler()), cancellationToken);
+    }
+
+    public sealed class HttpClientCancelTest : CancelTest
+    {
+        public HttpClientCancelTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpClient(new HttpClientHandler()));
+
+        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, new HttpClient(new HttpClientHandler()), cancellationToken);
+    }
+
+    public abstract class CancelTest : ClientWebSocketTestBase
     {
         public CancelTest(ITestOutputHelper output) : base(output) { }
+
+        protected abstract Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output);
+        protected abstract Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken);
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
@@ -24,7 +61,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var ub = new UriBuilder(server);
                 ub.Query = PlatformDetection.IsBrowser ? "delay20sec" : "delay10sec";
 
-                var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cws.ConnectAsync(ub.Uri, cts.Token));
+                var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ConnectAsync(cws, ub.Uri, cts.Token));
                 Assert.True(WebSocketState.Closed == cws.State, $"Actual {cws.State} when {ex}");
             }
         }
@@ -116,7 +153,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_CancelThenReceive_ThrowsOperationCanceledException(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var recvBuffer = new byte[100];
                 var segment = new ArraySegment<byte>(recvBuffer);
@@ -132,7 +169,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_ReceiveThenCancel_ThrowsOperationCanceledException(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var recvBuffer = new byte[100];
                 var segment = new ArraySegment<byte>(recvBuffer);
@@ -148,7 +185,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var recvBuffer = new byte[100];
                 var segment = new ArraySegment<byte>(recvBuffer);

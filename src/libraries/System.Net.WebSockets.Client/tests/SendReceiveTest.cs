@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading;
@@ -11,7 +12,55 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class MemorySendReceiveTest : SendReceiveTest
+    public sealed class InternalHandlerMemorySendReceiveTest : MemorySendReceiveTest
+    {
+        public InternalHandlerMemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output);
+    }
+
+    public sealed class InvokerMemorySendReceiveTest : MemorySendReceiveTest
+    {
+        public InvokerMemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpMessageInvoker(new SocketsHttpHandler()));
+    }
+
+    public sealed class HttpClientMemorySendReceiveTest : MemorySendReceiveTest
+    {
+        public HttpClientMemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpClient(new HttpClientHandler()));
+    }
+
+    public sealed class InternalHandlerArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
+    {
+        public InternalHandlerArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output);
+    }
+
+    public sealed class InvokerArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
+    {
+        public InvokerArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpMessageInvoker(new SocketsHttpHandler()));
+    }
+
+    public sealed class HttpClientArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
+    {
+        public HttpClientArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpClient(new HttpClientHandler()));
+    }
+
+    public abstract class MemorySendReceiveTest : SendReceiveTest
     {
         public MemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
 
@@ -31,7 +80,7 @@ namespace System.Net.WebSockets.Client.Tests
                 cancellationToken).AsTask();
     }
 
-    public sealed class ArraySegmentSendReceiveTest : SendReceiveTest
+    public abstract class ArraySegmentSendReceiveTest : SendReceiveTest
     {
         public ArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
 
@@ -49,6 +98,8 @@ namespace System.Net.WebSockets.Client.Tests
 
         public SendReceiveTest(ITestOutputHelper output) : base(output) { }
 
+        protected abstract Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output);
+
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server)
@@ -60,7 +111,7 @@ namespace System.Net.WebSockets.Client.Tests
             var receiveBuffer = new byte[SendBufferSize / 2];
             var receiveSegment = new ArraySegment<byte>(receiveBuffer);
 
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -132,7 +183,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendAsync_SendCloseMessageType_ThrowsArgumentExceptionWithMessage(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -161,7 +212,7 @@ namespace System.Net.WebSockets.Client.Tests
         // This will also pass when no exception is thrown. Current implementation doesn't throw.
         public async Task SendAsync_MultipleOutstandingSendOperations_Throws(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -221,7 +272,7 @@ namespace System.Net.WebSockets.Client.Tests
         // This will also pass when no exception is thrown. Current implementation doesn't throw.
         public async Task ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -285,7 +336,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
                 string message = "hello";
@@ -364,7 +415,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_Concurrent_Success(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 CancellationTokenSource ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -463,7 +514,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
