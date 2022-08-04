@@ -1565,9 +1565,7 @@ namespace System
                 // y100 = number of whole 100-year periods since 1/1/0001
                 // r1 = (day number within 100-year period) * 4
                 (uint y100, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U), DaysPer400Years);
-                return 100 * (int)y100
-                    + ((int)r1 | 3) / DaysPer4Years
-                    + 1;
+                return 1 + (int)(100 * y100 + (r1 | 3) / DaysPer4Years);
             }
         }
 
