@@ -1412,11 +1412,13 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
             break;
         }
 
+#ifdef FEATURE_THREAD_ACTIVATION
         if (UseActivationInjection())
         {
             InjectActivation(ActivationReason::ThreadAbort);
         }
         else
+#endif // FEATURE_THREAD_ACTIVATION
         {
             BOOL fOutOfRuntime = FALSE;
             BOOL fNeedStackCrawl = FALSE;
