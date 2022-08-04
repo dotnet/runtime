@@ -3186,8 +3186,7 @@ namespace System.Net.Sockets
             SetToDisconnected();
 
             SafeSocketHandle? handle = _handle;
-            // Avoid side effects when we don't own the handle.
-            if (handle?.OwnsHandle == true)
+            if (handle is not null)
             {
                 if (!disposing)
                 {
@@ -3197,7 +3196,7 @@ namespace System.Net.Sockets
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.Dispose()");
                     handle.Dispose();
                 }
-                else
+                else if (handle.OwnsHandle)
                 {
                     // Close the handle in one of several ways depending on the timeout.
                     // Ignore ObjectDisposedException just in case the handle somehow gets disposed elsewhere.
@@ -3284,6 +3283,11 @@ namespace System.Net.Sockets
                     catch (ObjectDisposedException)
                     {
                     }
+                }
+                else
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Calling _handle.CloseAsIs() for non-owned handle");
+                    handle.CloseAsIs(abortive: false);
                 }
 
                 // Delete file of bound UnixDomainSocketEndPoint.
