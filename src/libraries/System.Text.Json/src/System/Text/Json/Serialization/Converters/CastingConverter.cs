@@ -1,6 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Text.Json.Reflection;
+
 namespace System.Text.Json.Serialization.Converters
 {
     /// <summary>
@@ -18,6 +21,9 @@ namespace System.Text.Json.Serialization.Converters
 
         internal CastingConverter(JsonConverter<TSource> sourceConverter) : base(initialize: false)
         {
+            Debug.Assert(typeof(T).IsInSubtypeRelationshipWith(typeof(TSource)));
+            Debug.Assert(sourceConverter.SourceConverterForCastingConverter is null, "casting converters should not be layered.");
+
             _sourceConverter = sourceConverter;
             Initialize();
 
@@ -27,6 +33,8 @@ namespace System.Text.Json.Serialization.Converters
             CanUseDirectReadOrWrite = sourceConverter.CanUseDirectReadOrWrite;
             CanBePolymorphic = sourceConverter.CanBePolymorphic;
         }
+
+        internal override JsonConverter? SourceConverterForCastingConverter => _sourceConverter;
 
         public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             => CastOnRead(_sourceConverter.Read(ref reader, typeToConvert, options));

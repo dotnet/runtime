@@ -49,18 +49,13 @@ namespace System.Text.Json.Serialization
 
         protected static JsonConverter<TElement> GetElementConverter(JsonTypeInfo elementTypeInfo)
         {
-            JsonConverter<TElement> converter = (JsonConverter<TElement>)elementTypeInfo.Converter;
-            Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
-
-            return converter;
+            return ((JsonTypeInfo<TElement>)elementTypeInfo).EffectiveConverter;
         }
 
         protected static JsonConverter<TElement> GetElementConverter(ref WriteStack state)
         {
-            JsonConverter<TElement> converter = (JsonConverter<TElement>)state.Current.JsonPropertyInfo!.EffectiveConverter;
-            Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
-
-            return converter;
+            Debug.Assert(state.Current.JsonPropertyInfo != null);
+            return (JsonConverter<TElement>)state.Current.JsonPropertyInfo.EffectiveConverter;
         }
 
         internal override bool OnTryRead(

@@ -16,6 +16,11 @@ namespace System.Text.Json.Serialization.Metadata
 
         private Func<T>? _typedCreateObject;
 
+        /// <summary>
+        /// A Converter whose declared type always matches that of the current JsonTypeInfo.
+        /// It might be the same instance as JsonTypeInfo.Converter or it could be wrapped
+        /// in a CastingConverter in cases where a polymorphic converter is being used.
+        /// </summary>
         internal JsonConverter<T> EffectiveConverter { get; }
 
         /// <summary>
@@ -84,7 +89,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
             : base(typeof(T), converter, options)
         {
-            EffectiveConverter = converter is JsonConverter<T> jsonConverter ? jsonConverter : converter.CreateCastingConverter<T>();
+            EffectiveConverter = converter.CreateCastingConverter<T>();
         }
 
         /// <summary>
