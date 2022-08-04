@@ -14,7 +14,9 @@ namespace System.Net
         public static bool OSSupportsIPv6 { get; } = IsSupported(AddressFamily.InterNetworkV6) && !IsIPv6Disabled();
         public static bool OSSupportsIPv4 { get; } = IsSupported(AddressFamily.InterNetwork);
         // iOS/tvOS ostensibly has AF_UNIX, but throws EPERM on iOS/tvOS 10.0+ on bind
-        public static bool OSSupportsUnixDomainSockets { get; } = IsSupported(AddressFamily.Unix) && !RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS")) && !RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
+        // Mac Catalyst returns true on iOS tests, so we need to explicitly check for the case 
+        // "is iOS but not Catalyst" as unsupported, but Catalyst itself is supported.
+        public static bool OSSupportsUnixDomainSockets { get; } = IsSupported(AddressFamily.Unix) && !RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS")) && (!RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST")));
 
         private static bool IsIPv6Disabled()
         {
