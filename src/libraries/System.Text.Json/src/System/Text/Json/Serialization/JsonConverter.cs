@@ -25,6 +25,12 @@ namespace System.Text.Json.Serialization
 
         internal abstract ConverterStrategy ConverterStrategy { get; }
 
+        /// <summary>
+        /// Indicates that the converter can consume the <see cref="JsonTypeInfo.CreateObject"/> delegate.
+        /// Needed because certain collection converters cannot support arbitrary delegates.
+        /// TODO remove once https://github.com/dotnet/runtime/pull/73395/ and
+        /// https://github.com/dotnet/runtime/issues/71944 have been addressed.
+        /// </summary>
         internal virtual bool SupportsCreateObjectDelegate => false;
 
         /// <summary>
