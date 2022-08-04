@@ -64,7 +64,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NetCoreAppNativeLibrary Include="@(NetCoreAppNativeLibrary->'%(Identity)')">
         <EscapedPath>$(IlcFrameworkNativePath)lib%(Identity).a</EscapedPath>
       </NetCoreAppNativeLibrary>
-      <NativeLibrary Include="$(IntermediateOutputPath)/shim_source_code/libs/System.Globalization.Native/build/libSystem.Globalization.Native-Static.a" Condition="'$(LocalSystemGlobalizationNative)' != ''"/>
+      <NativeLibrary Include="$(IntermediateOutputPath)/source_code/libs/System.Globalization.Native/build/libSystem.Globalization.Native-Static.a" Condition="'$(LocalSystemGlobalizationNative)' != ''"/>
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
       <StaticICULibs Include="-Wl,-Bstatic -licuio -licutu -licui18n -licuuc -licudata -Wl,-Bdynamic" Condition="'$(LocalSystemGlobalizationNative)' != ''" />
     </ItemGroup>
@@ -76,7 +76,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeFramework Include="GSS" />
     </ItemGroup>
 
-    <Exec Command="$(IlcSdkPath)/../shim_source_code/libs/System.Globalization.Native/build-nativeaot-shim-standalone.sh $(IlcSdkPath)/../ $(IntermediateOutputPath)" Condition="'$(LocalSystemGlobalizationNative)' != ''"/>
+    <Message Text="IlcPath = $(IlcPath)" />
+    <Message Text="IlcHostPackagePath = $(IlcHostPackagePath)" />
+
+    <Exec Command="$(IlcPath)/source_code/libs/System.Globalization.Native/build-nativeaot-shim-standalone.sh $(IlcPath)/../ $(IntermediateOutputPath)" Condition="'$(LocalSystemGlobalizationNative)' != '' and '$(IlcPath)' != ''"/>
+
+    <Exec Command="$(IlcHostPackagePath)/source_code/libs/System.Globalization.Native/build-nativeaot-shim-standalone.sh $(IlcHostPackagePath)/ $(IntermediateOutputPath)" Condition="'$(LocalSystemGlobalizationNative)' != '' and '$(IlcHostPackagePath)' != '' and '$(IlcPath)' == ''"/>
 
     <ItemGroup>
       <LinkerArg Include="@(NativeLibrary)" />

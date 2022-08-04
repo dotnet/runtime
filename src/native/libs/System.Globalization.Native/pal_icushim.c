@@ -481,10 +481,6 @@ int32_t GlobalizationNative_LoadICU()
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
 
-#if defined(USE_ICUSHIM_STATIC_BUILD)
-    InitWithStaticLibICUFunctions();
-#endif
-
     InitializeVariableMaxAndTopPointers(symbolVersion);
     InitializeUColClonePointers(symbolVersion);
 
