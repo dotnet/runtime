@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData("FOO")]
         public void SignWithUnsupportedHashAlgorithm(string hashAlgorithm)
         {
-            Assert.Throws<CryptographicException>(() => Sign(s_sampleContent, GetCoseSigner(DefaultKey, new HashAlgorithmName(hashAlgorithm))));
+            Assert.Throws<ArgumentException>(() => Sign(s_sampleContent, GetCoseSigner(DefaultKey, new HashAlgorithmName(hashAlgorithm))));
         }
 
         [Theory]

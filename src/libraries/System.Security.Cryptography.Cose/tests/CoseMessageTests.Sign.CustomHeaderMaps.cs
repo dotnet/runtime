@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Cose.Tests
             CoseHeaderMap protectedHeaders = GetEmptyHeaderMap();
             CoseHeaderMap unprotectedHeaders = GetHeaderMapWithAlgorithm(DefaultAlgorithm);
 
-            Assert.Throws<CryptographicException>(() => Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders));
+            Assert.Throws<ArgumentException>(() => Sign(s_sampleContent, DefaultKey, DefaultHash, protectedHeaders, unprotectedHeaders));
         }
 
         [Fact]

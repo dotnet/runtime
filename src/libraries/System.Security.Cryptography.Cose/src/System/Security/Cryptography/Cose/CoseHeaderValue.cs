@@ -6,8 +6,15 @@ using System.Formats.Cbor;
 
 namespace System.Security.Cryptography.Cose
 {
+    /// <summary>
+    /// Represents a COSE header value.
+    /// </summary>
     public readonly struct CoseHeaderValue : IEquatable<CoseHeaderValue>
     {
+        /// <summary>
+        /// Gets the CBOR encoded value of this instance.
+        /// </summary>
+        /// <value>A view of the CBOR encoded value as a contiguous region of memory.</value>
         public readonly ReadOnlyMemory<byte> EncodedValue { get; }
 
         private CoseHeaderValue(ReadOnlyMemory<byte> encodedValue)
@@ -22,12 +29,23 @@ namespace System.Security.Cryptography.Cose
             return value;
         }
 
+        /// <summary>
+        /// Creates a <see cref="CoseHeaderValue"/> instance from an encoded CBOR value provided as a <see cref="ReadOnlySpan{T}"/>.
+        /// </summary>
+        /// <param name="encodedValue">The encoded value that the instance will represent.</param>
+        /// <returns>An instance that represents the encoded value.</returns>
         public static CoseHeaderValue FromEncodedValue(ReadOnlySpan<byte> encodedValue)
         {
             var encodedValueCopy = new ReadOnlyMemory<byte>(encodedValue.ToArray());
             return FromEncodedValue(encodedValueCopy);
         }
 
+        /// <summary>
+        /// Creates a <see cref="CoseHeaderValue"/> instance from an encoded CBOR value provided as a byte array"/>.
+        /// </summary>
+        /// <param name="encodedValue">The encoded value that the instance will represent.</param>
+        /// <returns>An instance that represents the encoded value.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="encodedValue"/> is <see langword="null"/>.</exception>
         public static CoseHeaderValue FromEncodedValue(byte[] encodedValue)
         {
             if (encodedValue == null)
@@ -46,6 +64,11 @@ namespace System.Security.Cryptography.Cose
             return buffer.AsMemory();
         }
 
+        /// <summary>
+        /// Creates a <see cref="CoseHeaderValue"/> instance from a signed integer."/>.
+        /// </summary>
+        /// <param name="value">The signed integer to be encoded and that the instance will represent.</param>
+        /// <returns>An instance that represents the CBOR encoded <paramref name="value"/>.</returns>
         public static CoseHeaderValue FromInt32(int value)
         {
             var writer = new CborWriter();
@@ -54,6 +77,12 @@ namespace System.Security.Cryptography.Cose
             return FromEncodedValue(Encode(writer));
         }
 
+        /// <summary>
+        /// Creates a <see cref="CoseHeaderValue"/> instance from a string."/>.
+        /// </summary>
+        /// <param name="value">The string to be encoded and that the instance will represent.</param>
+        /// <returns>An instance that represents the CBOR encoded <paramref name="value"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
         public static CoseHeaderValue FromString(string value)
         {
             if (value == null)
@@ -67,6 +96,11 @@ namespace System.Security.Cryptography.Cose
             return FromEncodedValue(Encode(writer));
         }
 
+        /// <summary>
+        /// Creates a <see cref="CoseHeaderValue"/> instance from a span of bytes./>
+        /// </summary>
+        /// <param name="value">The bytes to be encoded and that the instance will represent.</param>
+        /// <returns>An instance that represents the CBOR encoded <paramref name="value"/>.</returns>
         public static CoseHeaderValue FromBytes(ReadOnlySpan<byte> value)
         {
             var writer = new CborWriter();
@@ -75,6 +109,12 @@ namespace System.Security.Cryptography.Cose
             return FromEncodedValue(Encode(writer));
         }
 
+        /// <summary>
+        /// Creates a <see cref="CoseHeaderValue"/> instance from a byte array./>
+        /// </summary>
+        /// <param name="value">The bytes to be encoded and that the instance will represent.</param>
+        /// <returns>An instance that represents the CBOR encoded <paramref name="value"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
         public static CoseHeaderValue FromBytes(byte[] value)
         {
             if (value == null)
@@ -85,6 +125,13 @@ namespace System.Security.Cryptography.Cose
             return FromBytes(value.AsSpan());
         }
 
+        /// <summary>
+        /// Gets the CBOR encoded value as a signed integer.
+        /// </summary>
+        /// <returns>The decoded value as a signed integer.</returns>
+        /// <exception cref="InvalidOperationException">Decodification failed, see the inner exception for the exact exception that was thrown.
+        /// -or
+        /// The encoded bytes contain trailing data or more than one CBOR value.</exception>
         public int GetValueAsInt32()
         {
             var reader = new CborReader(EncodedValue);
@@ -107,6 +154,13 @@ namespace System.Security.Cryptography.Cose
             return retVal;
         }
 
+        /// <summary>
+        /// Gets the CBOR encoded value as a text string.
+        /// </summary>
+        /// <returns>The decoded value as a string.</returns>
+        /// <exception cref="InvalidOperationException">Decodification failed, see the inner exception for the exact exception that was thrown.
+        /// -or
+        /// The encoded bytes contain trailing data or more than one CBOR value.</exception>
         public string GetValueAsString()
         {
             var reader = new CborReader(EncodedValue);
@@ -129,6 +183,13 @@ namespace System.Security.Cryptography.Cose
             return retVal;
         }
 
+        /// <summary>
+        /// Gets the CBOR encoded value as a byte string.
+        /// </summary>
+        /// <returns>The decoded value as a byte array.</returns>
+        /// <exception cref="InvalidOperationException">Decodification failed, see the inner exception for the exact exception that was thrown.
+        /// -or
+        /// The encoded bytes contain trailing data or more than one CBOR value.</exception>
         public byte[] GetValueAsBytes()
         {
             var reader = new CborReader(EncodedValue);
@@ -151,6 +212,15 @@ namespace System.Security.Cryptography.Cose
             return retVal;
         }
 
+        /// <summary>
+        /// Gets the CBOR encoded value as a byte string.
+        /// </summary>
+        /// <param name="destination">The buffer in which to write the decoded value.</param>
+        /// <returns>The number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentException"><paramref name="destination"/> is too small to hold the value.</exception>
+        /// <exception cref="InvalidOperationException">Decodification failed, see the inner exception for the exact exception that was thrown.
+        /// -or
+        /// The encoded bytes contain trailing data or more than one CBOR value.</exception>
         public int GetValueAsBytes(Span<byte> destination)
         {
             var reader = new CborReader(EncodedValue);
@@ -160,7 +230,7 @@ namespace System.Security.Cryptography.Cose
             {
                 if (!reader.TryReadByteString(destination, out bytesWritten))
                 {
-                    throw new ArgumentException(SR.Argument_EncodeDestinationTooSmall);
+                    throw new ArgumentException(SR.Argument_DestinationTooSmall);
                 }
             }
             catch (Exception ex) when (ex is CborContentException or InvalidOperationException)
@@ -176,10 +246,24 @@ namespace System.Security.Cryptography.Cose
             return bytesWritten;
         }
 
+        /// <summary>
+        /// Returns a value indicating whether the value of this instance is equal to the value of the specified <see cref="CoseHeaderValue"/> instance.
+        /// </summary>
+        /// <param name="obj">The object to compare to this instance.</param>
+        /// <returns><see langword="true"/> if the value parameter equals the value of this instance; otherwise, <see langword="false"/>.</returns>
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is CoseHeaderValue otherObj && Equals(otherObj);
 
+        /// <summary>
+        /// Returns a value indicating whether this instance is equal to a specified object.
+        /// </summary>
+        /// <param name="other">The object to compare to this instance.</param>
+        /// <returns><see langword="true"/> if value is an instance of <see cref="CoseHeaderValue"/> and equals the value of this instance; otherwise, <see langword="false"/>.</returns>
         public bool Equals(CoseHeaderValue other) => EncodedValue.Span.SequenceEqual(other.EncodedValue.Span);
 
+        /// <summary>
+        /// Returns the hash code for this instance.
+        /// </summary>
+        /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
             HashCode hashCode = default;
@@ -190,8 +274,20 @@ namespace System.Security.Cryptography.Cose
             return hashCode.ToHashCode();
         }
 
+        /// <summary>
+        /// Determines whether two specified instances of <see cref="CoseHeaderValue"/> are equal.
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns><see langword="true"/> if left and right represent the same value; otherwise, <see langword="false"/>.</returns>
         public static bool operator ==(CoseHeaderValue left, CoseHeaderValue right) => left.Equals(right);
 
+        /// <summary>
+        /// Determines whether two specified instances of <see cref="CoseHeaderValue"/> are not equal.
+        /// </summary>
+        /// <param name="left">The first object to compare.</param>
+        /// <param name="right">The second object to compare.</param>
+        /// <returns><see langword="true"/> if left and right do not represent the same value; otherwise, <see langword="false"/>.</returns>
         public static bool operator !=(CoseHeaderValue left, CoseHeaderValue right) => !left.Equals(right);
     }
 }

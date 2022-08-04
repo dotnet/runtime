@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 
 namespace System.Security.Cryptography.Cose
 {
+    /// <summary>
+    /// Represents a COSE_Signature that carries one signature and information about that signature associated with a <see cref="CoseMultiSignMessage"/>.
+    /// </summary>
     public sealed class CoseSignature
     {
         private readonly byte[] _encodedBodyProtectedHeaders;
@@ -16,7 +19,14 @@ namespace System.Security.Cryptography.Cose
         internal readonly byte[] _signature;
         private CoseMultiSignMessage? _message;
 
+        /// <summary>
+        /// Gets the protected header parameters of this instance.
+        /// </summary>
         public CoseHeaderMap ProtectedHeaders { get; }
+
+        /// <summary>
+        /// Gets the unprotected header parameters of this instance.
+        /// </summary>
         public CoseHeaderMap UnprotectedHeaders { get; }
 
 
@@ -47,6 +57,16 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
+        /// <summary>
+        /// Verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">Content is detached from the associated message, use an overload that accepts a detached content.</exception>
+        /// <exception cref="CryptographicException"><see cref="CoseHeaderLabel.Algorithm"/> was missing, was incorrectly formatted, was not one of the supported values or doesn't match with the algorithms supported by the specified <paramref name="key"/>.</exception>
         public bool VerifyEmbedded(AsymmetricAlgorithm key, ReadOnlySpan<byte> associatedData)
         {
             if (key is null)
@@ -62,6 +82,16 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, Message.Content.Value.Span, null, associatedData, CoseHelpers.GetKeyType(key));
         }
 
+        /// <summary>
+        /// Verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">Content is detached from the associated message, use an overload that accepts a detached content.</exception>
+        /// <exception cref="CryptographicException"><see cref="CoseHeaderLabel.Algorithm"/> was missing, was incorrectly formatted, was not one of the supported values or doesn't match with the algorithms supported by the specified <paramref name="key"/>.</exception>
         public bool VerifyEmbedded(AsymmetricAlgorithm key, byte[]? associatedData = null)
         {
             if (key is null)
@@ -77,6 +107,19 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, Message.Content.Value.Span, null, associatedData, CoseHelpers.GetKeyType(key));
         }
 
+        /// <summary>
+        /// Verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.
+        /// -or-
+        /// <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">Content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException"><see cref="CoseHeaderLabel.Algorithm"/> was missing, was incorrectly formatted, was not one of the supported values or doesn't match with the algorithms supported by the specified <paramref name="key"/>.</exception>
         public bool VerifyDetached(AsymmetricAlgorithm key, byte[] detachedContent, byte[]? associatedData = null)
         {
             if (key is null)
@@ -97,6 +140,17 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, detachedContent, null, associatedData, CoseHelpers.GetKeyType(key));
         }
 
+        /// <summary>
+        /// Verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">Content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException"><see cref="CoseHeaderLabel.Algorithm"/> was missing, was incorrectly formatted, was not one of the supported values or doesn't match with the algorithms supported by the specified <paramref name="key"/>.</exception>
         public bool VerifyDetached(AsymmetricAlgorithm key, ReadOnlySpan<byte> detachedContent, ReadOnlySpan<byte> associatedData = default)
         {
             if (key is null)
@@ -112,6 +166,23 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, detachedContent, null, associatedData, CoseHelpers.GetKeyType(key));
         }
 
+        /// <summary>
+        /// Verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.
+        /// -or-
+        /// <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.
+        /// -or-
+        /// <paramref name="detachedContent"/> does not support reading.
+        /// -or-
+        /// <paramref name="detachedContent"/> does not support seeking.</exception>
+        /// <exception cref="InvalidOperationException">Content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException"><see cref="CoseHeaderLabel.Algorithm"/> was missing, was incorrectly formatted, was not one of the supported values or doesn't match with the algorithms supported by the specified <paramref name="key"/>.</exception>
         public bool VerifyDetached(AsymmetricAlgorithm key, Stream detachedContent, ReadOnlySpan<byte> associatedData = default)
         {
             if (key is null)
@@ -142,6 +213,24 @@ namespace System.Security.Cryptography.Cose
             return VerifyCore(key, default, detachedContent, associatedData, CoseHelpers.GetKeyType(key));
         }
 
+        /// <summary>
+        /// Asynchronously verifies that the signature is valid for the message's content using the specified key.
+        /// </summary>
+        /// <param name="key">The private key used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task whose <see cref="Task{TResult}"/> property is <see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.
+        /// -or-
+        /// <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.
+        /// -or-
+        /// <paramref name="detachedContent"/> does not support reading.
+        /// -or-
+        /// <paramref name="detachedContent"/> does not support seeking.</exception>
+        /// <exception cref="InvalidOperationException">Content is embedded on the associated message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException"><see cref="CoseHeaderLabel.Algorithm"/> was missing, was incorrectly formatted, was not one of the supported values or doesn't match with the algorithms supported by the specified <paramref name="key"/>.</exception>
         public Task<bool> VerifyDetachedAsync(AsymmetricAlgorithm key, Stream detachedContent, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
         {
             if (key is null)

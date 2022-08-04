@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Argument_DestinationTooSmall" xml:space="preserve">
+    <value>The destination is too small to hold the value.</value>
+  </data>
   <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
     <value>The destination is too small to hold the encoded value.</value>
   </data>
@@ -162,6 +165,9 @@
   <data name="DecodeErrorWhileDecodingSeeInnerEx" xml:space="preserve">
     <value>Error while decoding COSE message. See the inner exception for details.</value>
   </data>
+  <data name="DecodeMessageContainedTrailingData" xml:space="preserve">
+    <value>CBOR payload contained trailing data after message was complete.</value>
+  </data>
   <data name="DecodeMultiSignIncorrectTag" xml:space="preserve">
     <value>Incorrect tag. Expected Sign(98) or Untagged, Actual '{0}'.</value>
   </data>
@@ -176,9 +182,6 @@
   </data>
   <data name="DecodeSign1MapLabelWasIncorrect" xml:space="preserve">
     <value>Map label was incorrect.</value>
-  </data>
-  <data name="DecodeSign1MessageContainedTrailingData" xml:space="preserve">
-    <value>CBOR payload contained trailing data after Sign1 message was complete.</value>
   </data>
   <data name="DecodeSign1PayloadWasIncorrect" xml:space="preserve">
     <value>Payload was incorrect.</value>
@@ -208,7 +211,7 @@
     <value>Protected and Unprotected buckets must not contain duplicate labels.</value>
   </data>
   <data name="Sign1SignUnsupportedHashAlgorithm" xml:space="preserve">
-    <value>Unsuppoerted hash algorithm '{0}'.</value>
+    <value>Unsupported hash algorithm '{0}'.</value>
   </data>
   <data name="Sign1UnknownCoseAlgorithm" xml:space="preserve">
     <value>COSE algorithm '{0}' is unknown.</value>

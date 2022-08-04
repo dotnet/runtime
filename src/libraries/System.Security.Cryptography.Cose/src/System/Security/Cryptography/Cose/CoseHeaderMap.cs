@@ -4,19 +4,28 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Formats.Cbor;
 
 namespace System.Security.Cryptography.Cose
 {
+    /// <summary>
+    /// Represents a bucket of header parameters of a COSE message.
+    /// </summary>
     public sealed class CoseHeaderMap : IDictionary<CoseHeaderLabel, CoseHeaderValue>, IReadOnlyDictionary<CoseHeaderLabel, CoseHeaderValue>
     {
         private static readonly CoseHeaderMap s_emptyMap = new CoseHeaderMap(isReadOnly: true);
 
         private readonly Dictionary<CoseHeaderLabel, CoseHeaderValue> _headerParameters = new Dictionary<CoseHeaderLabel, CoseHeaderValue>();
 
+        /// <summary>
+        /// Gets a value that indicates whether the map cannot be modified.
+        /// </summary>
+        /// <remarks>A read-only map is a protected map of a decoded COSE message.</remarks>
         public bool IsReadOnly { get; internal set; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CoseHeaderMap" /> class.
+        /// </summary>
         public CoseHeaderMap() : this(isReadOnly: false) { }
 
         private CoseHeaderMap(bool isReadOnly)
@@ -26,16 +35,35 @@ namespace System.Security.Cryptography.Cose
 
         private ICollection<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>> HeaderParametersAsCollection => _headerParameters;
 
+        /// <summary>
+        /// Gets a collection containing the labels in the <see cref="CoseHeaderMap"/>.
+        /// </summary>
         public ICollection<CoseHeaderLabel> Keys => _headerParameters.Keys;
 
+        /// <summary>
+        /// Gets a collection containing the values in the <see cref="CoseHeaderMap"/>.
+        /// </summary>
         public ICollection<CoseHeaderValue> Values => _headerParameters.Values;
 
+        /// <summary>
+        ///   Gets the number of label/value pairs contained in the <see cref="CoseHeaderMap"/>.
+        /// </summary>
         public int Count => _headerParameters.Count;
 
+        /// <inheritdoc/>
         IEnumerable<CoseHeaderLabel> IReadOnlyDictionary<CoseHeaderLabel, CoseHeaderValue>.Keys => _headerParameters.Keys;
 
+        /// <inheritdoc/>
         IEnumerable<CoseHeaderValue> IReadOnlyDictionary<CoseHeaderLabel, CoseHeaderValue>.Values => _headerParameters.Values;
 
+        /// <summary>
+        /// Gets or sets the value associated with the specified label.
+        /// </summary>
+        /// <param name="key">The label of the value to get or set.</param>
+        /// <returns>The value associated with the specified label.</returns>
+        /// <exception cref="InvalidOperationException">The property is set and the <see cref="CoseHeaderMap"/> is read-only.</exception>
+        /// <exception cref="ArgumentException">The property is set and the encoded bytes in the specified <see cref="CoseHeaderValue"/> contain trailing data or more than one CBOR value.</exception>
+        /// <exception cref="KeyNotFoundException">The property is retrieved and <paramref name="key"/> is not found.</exception>
         public CoseHeaderValue this[CoseHeaderLabel key]
         {
             get => _headerParameters[key];
@@ -47,14 +75,55 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
+        /// <summary>
+        /// Gets the CBOR encoded value associated with the specified label, as a signed integer.
+        /// </summary>
+        /// <param name="label">The label of the value to get.</param>
+        /// <returns>The decoded value associated with the specified label, as a signed integer.</returns>
+        /// <exception cref="InvalidOperationException">Decodification failed, see the inner exception for the exact exception that was thrown.
+        /// -or
+        /// The encoded bytes contain trailing data or more than one CBOR value.</exception>
         public int GetValueAsInt32(CoseHeaderLabel label) => _headerParameters[label].GetValueAsInt32();
 
+        /// <summary>
+        /// Gets the CBOR encoded value associated with the specified label, as a text string.
+        /// </summary>
+        /// <param name="label">The label of the value to get.</param>
+        /// <returns>The decoded value associated with the specified label, as a text string.</returns>
+        /// <exception cref="InvalidOperationException">Decodification failed, see the inner exception for the exact exception that was thrown.
+        /// -or
+        /// The encoded bytes contain trailing data or more than one CBOR value.</exception>
         public string GetValueAsString(CoseHeaderLabel label) => _headerParameters[label].GetValueAsString();
 
+        /// <summary>
+        /// Gets the CBOR encoded value associated with the specified label, as a byte string.
+        /// </summary>
+        /// <param name="label">The label of the value to get.</param>
+        /// <returns>The decoded value associated with the specified label, as a byte string.</returns>
+        /// <exception cref="InvalidOperationException">Decodification failed, see the inner exception for the exact exception that was thrown.
+        /// -or
+        /// The encoded bytes contain trailing data or more than one CBOR value.</exception>
         public byte[] GetValueAsBytes(CoseHeaderLabel label) => _headerParameters[label].GetValueAsBytes();
 
+        /// <summary>
+        /// Gets the CBOR encoded value associated with the specified label, as a byte string.
+        /// </summary>
+        /// <param name="label">The label of the value to get.</param>
+        /// <param name="destination">The buffer in which to write the decoded value.</param>
+        /// <returns>The number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentException"><paramref name="destination"/> is too small to hold the value.</exception>
+        /// <exception cref="InvalidOperationException">Decodification failed, see the inner exception for the exact exception that was thrown.
+        /// -or
+        /// The encoded bytes contain trailing data or more than one CBOR value.</exception>
         public int GetValueAsBytes(CoseHeaderLabel label, Span<byte> destination) => _headerParameters[label].GetValueAsBytes(destination);
 
+        /// <summary>
+        /// Adds the specified key and value to the dictionary.
+        /// </summary>
+        /// <param name="key">The key of the element to add.</param>
+        /// <param name="value">The value of the element to add.</param>
+        /// <exception cref="InvalidOperationException">The <see cref="CoseHeaderMap"/> is read-only.</exception>
+        /// <exception cref="ArgumentException">The property is set and the encoded bytes in the specified <see cref="CoseHeaderValue"/> contain trailing data or more than one CBOR value.</exception>
         public void Add(CoseHeaderLabel key, CoseHeaderValue value)
         {
             ValidateIsReadOnly();
@@ -62,44 +131,96 @@ namespace System.Security.Cryptography.Cose
             _headerParameters.Add(key, value);
         }
 
+        /// <summary>
+        /// Adds the specified value to the <see cref="ICollection{T}"/> with the specified key.
+        /// </summary>
+        /// <param name="item">The <see cref="KeyValuePair{CoseHeaderLabel, CoseHeaderValue}"/> structure representing the key and value to add to the <see cref="CoseHeaderMap"/>.</param>
+        /// <exception cref="InvalidOperationException">The <see cref="CoseHeaderMap"/> is read-only.</exception>
+        /// <exception cref="ArgumentException">The property is set and the encoded bytes in the specified <see cref="CoseHeaderValue"/> contain trailing data or more than one CBOR value.</exception>
         public void Add(KeyValuePair<CoseHeaderLabel, CoseHeaderValue> item) => Add(item.Key, item.Value);
 
+        /// <summary>
+        /// Adds the specified key and value to the <see cref="CoseHeaderMap"/>. The specified value will be encoded as CBOR and stored as a <see cref="CoseHeaderValue"/>.
+        /// </summary>
+        /// <param name="label">The key of the element to add.</param>
+        /// <param name="value">The value of the element to encode and then add.</param>
+        /// <exception cref="InvalidOperationException">The <see cref="CoseHeaderMap"/> is read-only.</exception>
         public void Add(CoseHeaderLabel label, int value) => Add(label, CoseHeaderValue.FromInt32(value));
 
+        /// <summary>
+        /// Adds the specified key and value to the <see cref="CoseHeaderMap"/>. The specified value will be encoded as CBOR and stored as a <see cref="CoseHeaderValue"/>.
+        /// </summary>
+        /// <param name="label">The key of the element to add.</param>
+        /// <param name="value">The value of the element to encode and then add.</param>
+        /// <exception cref="InvalidOperationException">The <see cref="CoseHeaderMap"/> is read-only.</exception>
         public void Add(CoseHeaderLabel label, string value) => Add(label, CoseHeaderValue.FromString(value));
 
+        /// <summary>
+        /// Adds the specified key and value to the <see cref="CoseHeaderMap"/>. The specified value will be encoded as CBOR and stored as a <see cref="CoseHeaderValue"/>.
+        /// </summary>
+        /// <param name="label">The key of the element to add.</param>
+        /// <param name="value">The value of the element to encode and then add.</param>
+        /// <exception cref="InvalidOperationException">The <see cref="CoseHeaderMap"/> is read-only.</exception>
         public void Add(CoseHeaderLabel label, byte[] value) => Add(label, CoseHeaderValue.FromBytes(value));
 
+        /// <summary>
+        /// Adds the specified key and value to the <see cref="CoseHeaderMap"/>. The specified value will be encoded as CBOR and stored as a <see cref="CoseHeaderValue"/>.
+        /// </summary>
+        /// <param name="label">The key of the element to add.</param>
+        /// <param name="value">The value of the element to encode and then add.</param>
+        /// <exception cref="InvalidOperationException">The <see cref="CoseHeaderMap"/> is read-only.</exception>
         public void Add(CoseHeaderLabel label, ReadOnlySpan<byte> value) => Add(label, CoseHeaderValue.FromBytes(value));
 
+        /// <inheritdoc/>
         public bool ContainsKey(CoseHeaderLabel key) => _headerParameters.ContainsKey(key);
 
+        /// <inheritdoc/>
         public bool TryGetValue(CoseHeaderLabel key, out CoseHeaderValue value) => _headerParameters.TryGetValue(key, out value);
 
+        /// <summary>
+        /// Removes all keys and values from the <see cref="CoseHeaderMap"/>.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The <see cref="CoseHeaderMap"/> is read-only.</exception>
         public void Clear()
         {
             ValidateIsReadOnly();
             _headerParameters.Clear();
         }
 
+        /// <inheritdoc/>
         public bool Contains(KeyValuePair<CoseHeaderLabel, CoseHeaderValue> item)
             => HeaderParametersAsCollection.Contains(item);
 
+        /// <inheritdoc/>
         public void CopyTo(KeyValuePair<CoseHeaderLabel, CoseHeaderValue>[] array, int arrayIndex)
             => HeaderParametersAsCollection.CopyTo(array, arrayIndex);
 
+        /// <inheritdoc/>
         public IEnumerator<KeyValuePair<CoseHeaderLabel, CoseHeaderValue>> GetEnumerator()
             => _headerParameters.GetEnumerator();
 
+        /// <inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator()
             => _headerParameters.GetEnumerator();
 
+        /// <summary>
+        /// Removes the value with the specified label from the <see cref="CoseHeaderMap"/>.
+        /// </summary>
+        /// <param name="label">The label of the element to remove.</param>
+        /// <returns><see langword="true"/> if the element is successfully found and removed; otherwise, <see langword="false"/>. This method returns false if <paramref name="label"/> is not found in the map.</returns>
+        /// <exception cref="InvalidOperationException">The <see cref="CoseHeaderMap"/> is read-only.</exception>
         public bool Remove(CoseHeaderLabel label)
         {
             ValidateIsReadOnly();
             return _headerParameters.Remove(label);
         }
 
+        /// <summary>
+        /// Removes the first occurrence of a specific object from the <see cref="CoseHeaderMap"/>.
+        /// </summary>
+        /// <param name="item">The object to remove from the map.</param>
+        /// <returns><see langword="true"/> if item was successfully removed from the map; otherwise, <see langword="false"/>. This method also returns <see langword="false"/> if item is not found in the map.</returns>
+        /// <exception cref="InvalidOperationException">The <see cref="CoseHeaderMap"/> is read-only.</exception>
         public bool Remove(KeyValuePair<CoseHeaderLabel, CoseHeaderValue> item)
         {
             ValidateIsReadOnly();
