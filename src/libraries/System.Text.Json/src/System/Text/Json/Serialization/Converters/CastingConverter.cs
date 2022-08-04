@@ -18,6 +18,7 @@ namespace System.Text.Json.Serialization.Converters
 
         public override bool HandleNull => _sourceConverter.HandleNull;
         internal override ConverterStrategy ConverterStrategy => _sourceConverter.ConverterStrategy;
+        internal override bool SupportsCreateObjectDelegate => _sourceConverter.SupportsCreateObjectDelegate;
 
         internal CastingConverter(JsonConverter<TSource> sourceConverter) : base(initialize: false)
         {
