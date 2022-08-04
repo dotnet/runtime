@@ -122,6 +122,7 @@ namespace Wasm.Build.Tests
             string code = 
             """
             using System;
+            using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
 
             [assembly: DisableRuntimeMarshalling]
@@ -130,7 +131,7 @@ namespace Wasm.Build.Tests
             {
                 public static int Main()
                 {
-                    var x = new A.S { Value = 5 };
+                    var x = new S { Value = 5 };
             
                     Console.WriteLine("Main running " + x.Value);
                     return 42;
@@ -144,10 +145,8 @@ namespace Wasm.Build.Tests
             """;
 
             (buildArgs, string output) = BuildForVariadicFunctionTests(code,
-                                                          buildArgs with { ProjectName = $"fnptr_variadic_{buildArgs.Config}_{id}" },
+                                                          buildArgs with { ProjectName = $"blittable_{buildArgs.Config}_{id}" },
                                                           id);
-            Assert.Matches("warning.*Skipping.*because.*function pointer", output);
-            Assert.Matches("warning.*using_sum_one", output);
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running 5", output);
