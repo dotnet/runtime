@@ -11,17 +11,17 @@ using System.Threading.Tasks;
 
 namespace System.Xml
 {
-    internal sealed class XmlDictionaryAsyncCheckWriter : XmlDictionaryWriter
+    internal sealed class XmlDictionaryAsyncCheckWriter<T> : XmlDictionaryWriter, IXmlTextWriterInitializer where T : XmlDictionaryWriter, IXmlTextWriterInitializer
     {
-        private readonly XmlDictionaryWriter _coreWriter;
+        private readonly T _coreWriter;
         private Task? _lastTask;
 
-        public XmlDictionaryAsyncCheckWriter(XmlDictionaryWriter writer)
+        public XmlDictionaryAsyncCheckWriter(T writer)
         {
             _coreWriter = writer;
         }
 
-        internal XmlDictionaryWriter CoreWriter
+        internal T CoreWriter
         {
             get
             {
@@ -693,6 +693,12 @@ namespace System.Xml
         {
             CheckAsync();
             CoreWriter.Dispose();
+        }
+
+        public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
+        {
+            CheckAsync();
+            CoreWriter.SetOutput(stream, encoding, ownsStream);
         }
     }
 }
