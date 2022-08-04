@@ -145,7 +145,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<AccessViolationException>(() => Marshal.ReadByte(null, 2));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [SkipOnMono("Marshal.ReadByte will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void ReadByte_NotReadable_ThrowsArgumentException()
         {
@@ -173,7 +173,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<AccessViolationException>(() => Marshal.WriteByte(null, 2, 0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [SkipOnMono("Marshal.WriteByte will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
         public void WriteByte_NotReadable_ThrowsArgumentException()
         {
