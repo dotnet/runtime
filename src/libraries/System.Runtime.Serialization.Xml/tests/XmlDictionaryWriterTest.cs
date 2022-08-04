@@ -331,7 +331,7 @@ public static class XmlDictionaryWriterTest
         writer.WriteStartElement("root");
 
         int[] lengths = new[] { 7, 8, 9, 15, 16, 17, 31, 32, 36, 258 };
-        byte[] buffer = new byte[lengths.Max() + 1];
+        byte[] buffer = new byte[lengths.Max() * 1];
 
         foreach (var length in lengths)
         {
@@ -344,16 +344,16 @@ public static class XmlDictionaryWriterTest
             {
                 for (int i = 0; i < chars.Length; ++i)
                     chars[i] = (char)(i % 128);
-                chars[^1] = 'ä';
+                chars[^1] = '\u00E4'; // 'ä' - Latin Small Letter a with Diaeresis. Latin-1 Supplement.
             });
 
             int numBytes = Encoding.UTF8.GetBytes(allAscii, buffer);
-            Debug.Assert(numBytes == length);
-            ValidateWriteText(ms, writer, allAscii, buffer.AsSpan(0, numBytes));
+            Assert.True(numBytes == length, "Test setup wrong - allAscii");
+            ValidateWriteText(ms, writer, allAscii, expected: buffer.AsSpan(0, numBytes));
 
             numBytes = Encoding.UTF8.GetBytes(multiByteLast, buffer);
-            Debug.Assert(numBytes == length + 1);
-            ValidateWriteText(ms, writer, multiByteLast, buffer.AsSpan(0, numBytes));
+            Assert.True(numBytes == length + 1, "Test setup wrong - multiByte");
+            ValidateWriteText(ms, writer, multiByteLast, expected: buffer.AsSpan(0, numBytes));
         }
 
         static void ValidateWriteText(MemoryStream ms, XmlDictionaryWriter writer, string text, ReadOnlySpan<byte> expected)
