@@ -6,6 +6,34 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    public sealed class EncryptDecrypt_Span : EncryptDecrypt
+    {
+        protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
+            WithOutputArray(dest => rsa.Encrypt(data, dest, padding));
+
+        protected override byte[] Decrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
+            WithOutputArray(dest => rsa.Decrypt(data, dest, padding));
+
+        private static byte[] WithOutputArray(Func<byte[], int> func)
+        {
+            for (int length = 1; ; length = checked(length * 2))
+            {
+                byte[] result = new byte[length];
+
+                try
+                {
+                    int written = func(result);
+                    Array.Resize(ref result, written);
+                    return result;
+                }
+                catch (ArgumentException ae) when (ae.ParamName == "destination")
+                {
+                    continue;
+                }
+            }
+        }
+    }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public sealed class EncryptDecrypt_AllocatingSpan : EncryptDecrypt

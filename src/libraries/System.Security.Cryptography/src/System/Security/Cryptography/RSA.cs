@@ -116,7 +116,7 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para> -or- </para>
         ///   <para>
-        ///     The length of data is too long for the combination of <see cref="KeySize" /> and the selected padding.
+        ///     The length of data is too long for the combination of <see cref="AsymmetricAlgorithm.KeySize" /> and the selected padding.
         ///   </para>
         ///   <para> -or- </para>
         ///   <para>
@@ -124,9 +124,12 @@ namespace System.Security.Cryptography
         ///   </para>
         /// </exception>
         /// <exception cref="NotImplementedException">
-        ///   This implementation has not implemented one of <see cref="Encrypt(byte[], RSASignaturePadding)" /> or
+        ///   This implementation has not implemented one of <see cref="Encrypt(byte[], RSAEncryptionPadding)" /> or
         ///   <see cref="TryEncrypt" />.
         /// </exception>
+        /// <seealso cref="Encrypt(byte[], RSAEncryptionPadding)" />
+        /// <seealso cref="Encrypt(ReadOnlySpan{byte}, Span{byte}, RSAEncryptionPadding)" />
+        /// <seealso cref="TryEncrypt" />
         public byte[] Encrypt(ReadOnlySpan<byte> data, RSAEncryptionPadding padding)
         {
             ArgumentNullException.ThrowIfNull(padding);
@@ -144,6 +147,76 @@ namespace System.Security.Cryptography
             return TryWithKeyBuffer(data, padding, TryWithEncrypt);
         }
 
+        /// <summary>
+        ///   Encrypts the input data using the specified padding mode.
+        /// </summary>
+        /// <param name="data">The data to encrypt.</param>
+        /// <param name="destination">The buffer to receive the encrypted data.</param>
+        /// <param name="padding">The padding mode.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="padding" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The buffer in <paramref name="destination"/> is too small to hold the encrypted data.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <paramref name="padding" /> is unknown, or not supported by this implementation.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The length of data is too long for the combination of <see cref="AsymmetricAlgorithm.KeySize" /> and the selected padding.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The encryption operation failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="NotImplementedException">
+        ///   This implementation has not implemented one of <see cref="Encrypt(byte[], RSAEncryptionPadding)" /> or
+        ///   <see cref="TryEncrypt" />.
+        /// </exception>
+        /// <seealso cref="Encrypt(byte[], RSAEncryptionPadding)" />
+        /// <seealso cref="Encrypt(ReadOnlySpan{byte}, RSAEncryptionPadding)" />
+        /// <seealso cref="TryEncrypt" />
+        public int Encrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding)
+        {
+            ArgumentNullException.ThrowIfNull(padding);
+
+            if (TryEncrypt(data, destination, padding, out int written))
+            {
+                return written;
+            }
+
+            throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+        }
+
+        /// <summary>
+        ///   Decrypts the input data using the specified padding mode.
+        /// </summary>
+        /// <param name="data">The data to decrypt.</param>
+        /// <param name="padding">The padding mode.</param>
+        /// <returns>The decrypted data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="padding" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <paramref name="padding" /> is unknown, or not supported by this implementation.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The decryption operation failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="NotImplementedException">
+        ///   This implementation has not implemented one of <see cref="Decrypt(byte[], RSAEncryptionPadding)" /> or
+        ///   <see cref="TryDecrypt" />.
+        /// </exception>
+        /// <seealso cref="Decrypt(byte[], RSAEncryptionPadding)" />
+        /// <seealso cref="Decrypt(ReadOnlySpan{byte}, Span{byte}, RSAEncryptionPadding)" />
+        /// <seealso cref="TryDecrypt" />
         public byte[] Decrypt(ReadOnlySpan<byte> data, RSAEncryptionPadding padding)
         {
             ArgumentNullException.ThrowIfNull(padding);
@@ -158,7 +231,48 @@ namespace System.Security.Cryptography
                 return rsa.TryDecrypt(input, destination, padding, out bytesWritten);
             }
 
-            return TryWithKeyBuffer(data, padding, TryWithDecrypt);
+            return TryWithKeyBuffer(data, padding, TryWithDecrypt, tryKeySizeFirst: false);
+        }
+
+        /// <summary>
+        ///   Decrypts the input data using the specified padding mode.
+        /// </summary>
+        /// <param name="data">The data to decrypt.</param>
+        /// <param name="destination">The buffer to receive the decrypted data.</param>
+        /// <param name="padding">The padding mode.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="padding" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The buffer in <paramref name="destination"/> is too small to hold the decrypted data.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <paramref name="padding" /> is unknown, or not supported by this implementation.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The decryption operation failed.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="NotImplementedException">
+        ///   This implementation has not implemented one of <see cref="Decrypt(byte[], RSAEncryptionPadding)" /> or
+        ///   <see cref="TryDecrypt" />.
+        /// </exception>
+        /// <seealso cref="Decrypt(byte[], RSAEncryptionPadding)" />
+        /// <seealso cref="Decrypt(ReadOnlySpan{byte}, RSAEncryptionPadding)" />
+        /// <seealso cref="TryDecrypt" />
+        public int Decrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding)
+        {
+            ArgumentNullException.ThrowIfNull(padding);
+
+            if (TryDecrypt(data, destination, padding, out int written))
+            {
+                return written;
+            }
+
+            throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
         }
 
         protected virtual bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
@@ -1253,42 +1367,59 @@ namespace System.Security.Cryptography
         private byte[] TryWithKeyBuffer<TState>(
             ReadOnlySpan<byte> input,
             TState state,
-            TryFunc<TState> callback)
+            TryFunc<TState> callback,
+            bool tryKeySizeFirst = true)
         {
             // In normal circumstances, the signing and encryption size is the key size.
             // In the case of decryption, it will be at most the size of the key, but the final output size is not
             // deterministic, so start with the key size.
             int resultSize = (KeySize + 7) / 8;
-            byte[] result = new byte[resultSize];
             int written;
 
-            if (callback(this, input, result, state, out written))
+            // For scenarios where we are confident that we can get the output side right on the first try, we allocate
+            // and use that as the buffer. This is the case for signing and encryption since that is always going to be
+            // the modulus size.
+            // For decryption, we go straight to renting as there is no way to know the size of the final output prior
+            // to decryption, so the allocation would probably be wasted.
+            if (tryKeySizeFirst)
             {
-                if (written <= resultSize)
+                byte[] result = new byte[resultSize];
+
+                if (callback(this, input, result, state, out written))
                 {
-                    // In a typical sign or encrypt scenario, Resize won't do anything so we return the array as-is.
-                    // On the offchance some implementation returns less than what we expected, shrink the result.
-                    // For decryption, this will account for removed padding.
-                    Array.Resize(ref result, written);
-                    return result;
+                    if (written <= resultSize)
+                    {
+                        // In a typical sign or encrypt scenario, Resize won't do anything so we return the array as-is.
+                        // On the offchance some implementation returns less than what we expected, shrink the result.
+                        Array.Resize(ref result, written);
+                        return result;
+                    }
+
+                    // The Try virtual returned a bogus value for written. It returned a written value larger
+                    // than the buffer passed in. This means the Try implementation is not reliable, so throw
+                    // the best exception we can.
+                    throw new CryptographicException(SR.Argument_DestinationTooShort);
                 }
 
-                // The Try virtual returned a bogus value for written. It returned a written value larger
-                // than the buffer passed in. This means the Try implementation is not reliable, so throw
-                // the best exception we can.
-                throw new CryptographicException(SR.Argument_DestinationTooShort);
+                // We're about to try renting from the pool, so the next rental should be bigger than what we just tried.
+                resultSize = checked(resultSize * 2);
             }
 
-            // If we are here, then Try is trying to return a signature larger than the KeySize. For decryption, we should
-            // not get here under normal cirumstances, unless the implementation is doing something non-standard.
-            for (int i = checked(resultSize * 2); ; i = checked(i * 2))
+            while (true)
             {
                 // Use ArrayPool instead of CryptoPool since we are handing this out to a virtual.
-                byte[] rented = ArrayPool<byte>.Shared.Rent(i);
+                byte[] rented = ArrayPool<byte>.Shared.Rent(resultSize);
                 byte[]? rentResult = null;
 
                 if (callback(this, input, rented, state, out written))
                 {
+                    if (written > rented.Length)
+                    {
+                        // The virtual did something unexpected, so don't return the array to the pool.
+                        // Consistency throw the same exception if the Try method wrote an impossible amount of data.
+                        throw new CryptographicException(SR.Argument_DestinationTooShort);
+                    }
+
                     rentResult = rented.AsSpan(0, written).ToArray();
                 }
 
@@ -1299,6 +1430,8 @@ namespace System.Security.Cryptography
                 {
                     return rentResult;
                 }
+
+                resultSize = checked(resultSize * 2);
             }
         }
 

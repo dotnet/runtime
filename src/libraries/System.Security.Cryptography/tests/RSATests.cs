@@ -536,33 +536,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void SignData_SpanData_BrokenTrySignDataGivesUp()
-        {
-            const int KeySizeInBits = 2048;
-
-            static bool TrySignData(
-                ReadOnlySpan<byte> data,
-                Span<byte> signature,
-                HashAlgorithmName hashAlgorithm,
-                RSASignaturePadding padding,
-                out int bytesWritten)
-            {
-                // This RSA implementation for some reason claims it produces at least 2 GB signatures.
-                bytesWritten = 0;
-                return false;
-            }
-
-            using (DelegateRSA rsa = new DelegateRSA())
-            {
-                rsa.KeySize = KeySizeInBits;
-                rsa.TrySignDataDelegate = TrySignData;
-
-                Assert.Throws<OverflowException>(() =>
-                    rsa.SignData((ReadOnlySpan<byte>)new byte[] { 1, 2, 3 }, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
-            }
-        }
-
-        [Fact]
         public static void SignData_SpanData_NonAllocating_BufferExact()
         {
             const int KeySizeInBits = 2048;
@@ -827,33 +800,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void SignHash_SpanHash_BrokenTrySignHashGivesUp()
-        {
-            const int KeySizeInBits = 2048;
-
-            static bool TrySignHash(
-                ReadOnlySpan<byte> hash,
-                Span<byte> signature,
-                HashAlgorithmName hashAlgorithm,
-                RSASignaturePadding padding,
-                out int bytesWritten)
-            {
-                // This RSA implementation for some reason claims it produces at least 2 GB signatures.
-                bytesWritten = 0;
-                return false;
-            }
-
-            using (DelegateRSA rsa = new DelegateRSA())
-            {
-                rsa.KeySize = KeySizeInBits;
-                rsa.TrySignHashDelegate = TrySignHash;
-
-                Assert.Throws<OverflowException>(() =>
-                    rsa.SignHash((ReadOnlySpan<byte>)new byte[20], HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1));
-            }
-        }
-
-        [Fact]
         public static void SignHash_SpanHash_NonAllocating_BufferExact()
         {
             const int KeySizeInBits = 2048;
@@ -946,6 +892,239 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Fact]
+        public static void Encrypt_SpanData_StandardKeySize()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TryEncrypt(
+                ReadOnlySpan<byte> data,
+                Span<byte> destination,
+                RSAEncryptionPadding padding,
+                out int bytesWritten)
+            {
+                Assert.Equal(KeySizeInBits / 8, destination.Length);
+                destination.Fill(0xCC);
+                bytesWritten = destination.Length;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TryEncryptDelegate = TryEncrypt;
+
+                ReadOnlySpan<byte> data = new byte[] { 1, 2, 3 };
+                byte[] encrypted = rsa.Encrypt(data, RSAEncryptionPadding.Pkcs1);
+
+                Assert.Equal(KeySizeInBits / 8, encrypted.Length);
+                AssertExtensions.FilledWith<byte>(0xCC, encrypted);
+
+                encrypted = new byte[KeySizeInBits / 8];
+                int written = rsa.Encrypt(data, encrypted, RSAEncryptionPadding.Pkcs1);
+                Assert.Equal(KeySizeInBits / 8, written);
+                AssertExtensions.FilledWith<byte>(0xCC, encrypted);
+            }
+        }
+
+        [Fact]
+        public static void Encrypt_SpanData_TryEncryptProducesSmallEncryptedData()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TryEncrypt(
+                ReadOnlySpan<byte> data,
+                Span<byte> destination,
+                RSAEncryptionPadding padding,
+                out int bytesWritten)
+            {
+                Assert.Equal(KeySizeInBits / 8, destination.Length);
+                bytesWritten = destination.Length - 12;
+
+                // This RSA implementation for some reason generates encrypted data
+                // smaller than the modulus.
+                destination.Slice(0, bytesWritten).Fill(0xCC);
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TryEncryptDelegate = TryEncrypt;
+
+                ReadOnlySpan<byte> data = new byte[] { 1, 2, 3 };
+                byte[] encrypted = rsa.Encrypt(data, RSAEncryptionPadding.Pkcs1);
+
+                Assert.Equal(KeySizeInBits / 8 - 12, encrypted.Length);
+                AssertExtensions.FilledWith<byte>(0xCC, encrypted);
+
+                encrypted = new byte[KeySizeInBits / 8];
+                int written = rsa.Encrypt(data, encrypted, RSAEncryptionPadding.Pkcs1);
+                Assert.Equal(KeySizeInBits / 8 - 12, written);
+                AssertExtensions.FilledWith<byte>(0xCC, encrypted.AsSpan(0, written));
+                AssertExtensions.FilledWith<byte>(0x00, encrypted.AsSpan(written));
+            }
+        }
+
+        [Fact]
+        public static void Encrypt_SpanData_UnusualKeySizeRoundsUp()
+        {
+            const int KeySizeInBits = 2049;
+
+            static bool TryEncrypt(
+                ReadOnlySpan<byte> data,
+                Span<byte> destination,
+                RSAEncryptionPadding padding,
+                out int bytesWritten)
+            {
+                Assert.Equal(257, destination.Length);
+                destination.Fill(0xCC);
+
+                bytesWritten = destination.Length;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TryEncryptDelegate = TryEncrypt;
+
+                ReadOnlySpan<byte> data = new byte[] { 1, 2, 3 };
+                byte[] encrypted = rsa.Encrypt(data, RSAEncryptionPadding.Pkcs1);
+
+                Assert.Equal(257, encrypted.Length);
+                AssertExtensions.FilledWith<byte>(0xCC, encrypted);
+            }
+        }
+
+        [Fact]
+        public static void Encrypt_SpanData_ImpossibleBytesWritten()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TryEncrypt(
+                ReadOnlySpan<byte> data,
+                Span<byte> destination,
+                RSAEncryptionPadding padding,
+                out int bytesWritten)
+            {
+                Assert.Equal(KeySizeInBits / 8, destination.Length);
+
+                // This implementation somehow writes more data than possible.
+                bytesWritten = destination.Length + 1;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TryEncryptDelegate = TryEncrypt;
+
+                Assert.Throws<CryptographicException>(() =>
+                    rsa.Encrypt((ReadOnlySpan<byte>)new byte[] { 1, 2, 3 }, RSAEncryptionPadding.Pkcs1));
+            }
+        }
+
+        [Theory]
+        [InlineData(8192)] // power-of-two
+        [InlineData(6144)] // not a power-of-two
+        public static void Encrypt_SpanData_Oversized(int encryptedDataSizeInBits)
+        {
+            const int KeySizeInBits = 2048;
+            int encryptedDataSize = encryptedDataSizeInBits / 8;
+
+            bool TryEncrypt(
+                ReadOnlySpan<byte> data,
+                Span<byte> destination,
+                RSAEncryptionPadding padding,
+                out int bytesWritten)
+            {
+                if (destination.Length <= encryptedDataSize)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                // This implementation produces oversides RSA encrypted data larger than the modulus.
+                destination.Fill(0xCC);
+                bytesWritten = encryptedDataSize;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TryEncryptDelegate = TryEncrypt;
+
+                ReadOnlySpan<byte> data = new byte[] { 1, 2, 3 };
+                byte[] encrypted = rsa.Encrypt(data, RSAEncryptionPadding.Pkcs1);
+
+                Assert.Equal(encryptedDataSize, encrypted.Length);
+                AssertExtensions.FilledWith<byte>(0xCC, encrypted);
+            }
+        }
+
+        [Fact]
+        public static void Decrypt_SpanData_StandardKeySize()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TryDecrypt(
+                ReadOnlySpan<byte> data,
+                Span<byte> destination,
+                RSAEncryptionPadding padding,
+                out int bytesWritten)
+            {
+                destination[0] = 1;
+                destination[1] = 2;
+                destination[2] = 3;
+                bytesWritten = 3;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TryDecryptDelegate = TryDecrypt;
+
+                byte[] expected = new byte[] { 1, 2, 3 };
+                ReadOnlySpan<byte> data = new byte[KeySizeInBits / 8];
+
+                byte[] decrypted = rsa.Decrypt(data, RSAEncryptionPadding.Pkcs1);
+                Assert.Equal(expected, decrypted);
+
+                int written = rsa.Decrypt(data, decrypted, RSAEncryptionPadding.Pkcs1);
+                Assert.Equal(expected.Length, written);
+                Assert.Equal(expected, decrypted);
+            }
+        }
+
+        [Fact]
+        public static void Decrypt_SpanData_ImpossibleDecryptedSize()
+        {
+            const int KeySizeInBits = 2048;
+
+            static bool TryDecrypt(
+                ReadOnlySpan<byte> data,
+                Span<byte> destination,
+                RSAEncryptionPadding padding,
+                out int bytesWritten)
+            {
+                // Somehow decryption succeeded but wrote more to the buffer than possible.
+                bytesWritten = destination.Length + 1;
+                return true;
+            }
+
+            using (DelegateRSA rsa = new DelegateRSA())
+            {
+                rsa.KeySize = KeySizeInBits;
+                rsa.TryDecryptDelegate = TryDecrypt;
+
+                Assert.Throws<CryptographicException>(() =>
+                    rsa.Decrypt(new ReadOnlySpan<byte>(new byte[KeySizeInBits / 8]), RSAEncryptionPadding.Pkcs1));
+            }
+        }
+
         private sealed class EmptyRSA : RSA
         {
             public override RSAParameters ExportParameters(bool includePrivateParameters) => throw new NotImplementedException();
@@ -976,6 +1155,16 @@ namespace System.Security.Cryptography.Tests
                 HashAlgorithmName hashAlgorithm,
                 RSASignaturePadding padding,
                 out int bytesWritten);
+            public delegate bool TryEncryptFunc(
+                ReadOnlySpan<byte> data,
+                Span<byte> destination,
+                RSAEncryptionPadding padding,
+                out int bytesWritten);
+            public delegate bool TryDecryptFunc(
+                ReadOnlySpan<byte> data,
+                Span<byte> destination,
+                RSAEncryptionPadding padding,
+                out int bytesWritten);
             public delegate bool TryExportFunc(Span<byte> destination, out int bytesWritten);
             public Func<byte[], RSAEncryptionPadding, byte[]> DecryptDelegate;
             public Func<byte[], RSAEncryptionPadding, byte[]> EncryptDelegate;
@@ -989,6 +1178,8 @@ namespace System.Security.Cryptography.Tests
             public TryExportFunc TryExportRSAPrivateKeyDelegate = null;
             public TrySignDataFunc TrySignDataDelegate = null;
             public TrySignHashFunc TrySignHashDelegate = null;
+            public TryEncryptFunc TryEncryptDelegate = null;
+            public TryDecryptFunc TryDecryptDelegate = null;
 
             public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding) =>
                 EncryptDelegate(data, padding);
@@ -1045,6 +1236,26 @@ namespace System.Security.Cryptography.Tests
                 }
 
                 return base.TrySignHash(hash, signature, hashAlgorithm, padding, out bytesWritten);
+            }
+
+            public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
+            {
+                if (TryEncryptDelegate is not null)
+                {
+                    return TryEncryptDelegate(data, destination, padding, out bytesWritten);
+                }
+
+                return base.TryEncrypt(data, destination, padding, out bytesWritten);
+            }
+
+            public override bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
+            {
+                if (TryDecryptDelegate is not null)
+                {
+                    return TryDecryptDelegate(data, destination, padding, out bytesWritten);
+                }
+
+                return base.TryDecrypt(data, destination, padding, out bytesWritten);
             }
 
             public new bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>

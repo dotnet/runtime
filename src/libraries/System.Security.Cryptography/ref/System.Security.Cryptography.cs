@@ -1830,9 +1830,11 @@ namespace System.Security.Cryptography
         public static new System.Security.Cryptography.RSA? Create(string algName) { throw null; }
         public virtual byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         public byte[] Decrypt(System.ReadOnlySpan<byte> data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
+        public int Decrypt(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         public virtual byte[] DecryptValue(byte[] rgb) { throw null; }
         public virtual byte[] Encrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         public byte[] Encrypt(System.ReadOnlySpan<byte> data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
+        public int Encrypt(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         public virtual byte[] EncryptValue(byte[] rgb) { throw null; }
         public abstract System.Security.Cryptography.RSAParameters ExportParameters(bool includePrivateParameters);
         public virtual byte[] ExportRSAPrivateKey() { throw null; }
