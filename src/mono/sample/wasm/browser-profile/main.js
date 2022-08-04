@@ -29,7 +29,7 @@ function saveProfile(aotProfileData) {
 }
 
 try {
-    const { MONO, BINDING, INTERNAL } = await createDotnetRuntime(({ MONO }) => ({
+    const { MONO, BINDING, INTERNAL } = await createDotnetRuntime({
         configSrc: "./mono-config.json",
         disableDotnet6Compatibility: true,
         onConfigLoaded: (config) => {
@@ -39,8 +39,8 @@ try {
                     sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
                 }
             }
-        },
-    }));
+        }
+    });
     console.log("not ready yet")
     const testMeaning = BINDING.bind_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:TestMeaning");
     const stopProfile = BINDING.bind_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:StopProfile");

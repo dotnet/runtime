@@ -25,30 +25,28 @@ function sub(a, b) {
     return a - b;
 }
 try {
-    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain } = await createDotnetRuntimeTyped(() => {
-        // this callback usually needs no statements, the API objects are only empty shells here and are populated later
-        return {
-            configSrc: "./mono-config.json",
-            onConfigLoaded: (config) => {
-                // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
-                console.log('user code Module.onConfigLoaded');
-                // config is loaded and could be tweaked before the rest of the runtime startup sequence
-                config.environmentVariables["MONO_LOG_LEVEL"] = "debug"
-            },
-            preInit: () => { console.log('user code Module.preInit'); },
-            preRun: () => { console.log('user code Module.preRun'); },
-            onRuntimeInitialized: () => {
-                console.log('user code Module.onRuntimeInitialized');
-                // here we could use API passed into this callback
-                // Module.FS.chdir("/");
-            },
-            onDotnetReady: () => {
-                // This is called after all assets are loaded.
-                console.log('user code Module.onDotnetReady');
-            },
-            postRun: () => { console.log('user code Module.postRun'); },
-        }
+    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain } = await createDotnetRuntimeTyped({
+        configSrc: "./mono-config.json",
+        onConfigLoaded: (config) => {
+            // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
+            console.log('user code Module.onConfigLoaded');
+            // config is loaded and could be tweaked before the rest of the runtime startup sequence
+            config.environmentVariables["MONO_LOG_LEVEL"] = "debug"
+        },
+        preInit: () => { console.log('user code Module.preInit'); },
+        preRun: () => { console.log('user code Module.preRun'); },
+        onRuntimeInitialized: () => {
+            console.log('user code Module.onRuntimeInitialized');
+            // here we could use API passed into this callback
+            // Module.FS.chdir("/");
+        },
+        onDotnetReady: () => {
+            // This is called after all assets are loaded.
+            console.log('user code Module.onDotnetReady');
+        },
+        postRun: () => { console.log('user code Module.postRun'); },
     });
+    
     // at this point both emscripten and monoVM are fully initialized.
     // we could use the APIs returned and resolved from createDotnetRuntime promise
     // both exports are receiving the same object instances

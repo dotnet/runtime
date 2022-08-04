@@ -22,16 +22,13 @@ function Uint8ToString(u8a) {
 }
 
 async function main() {
-    const { MONO, BINDING, Module, runtimeBuildInfo } = await createDotnetRuntime(() => {
-        console.log('user code in createDotnetRuntime')
-        return {
-            disableDotnet6Compatibility: true,
-            configSrc: "./mono-config.json",
-            preInit: () => { console.log('user code Module.preInit') },
-            preRun: () => { console.log('user code Module.preRun') },
-            onRuntimeInitialized: () => { console.log('user code Module.onRuntimeInitialized') },
-            postRun: () => { console.log('user code Module.postRun') },
-        }
+    const { MONO, BINDING, Module, runtimeBuildInfo } = await createDotnetRuntime({
+        disableDotnet6Compatibility: true,
+        configSrc: "./mono-config.json",
+        preInit: () => { console.log('user code Module.preInit') },
+        preRun: () => { console.log('user code Module.preRun') },
+        onRuntimeInitialized: () => { console.log('user code Module.onRuntimeInitialized') },
+        postRun: () => { console.log('user code Module.postRun') }
     });
     globalThis.__Module = Module;
     globalThis.MONO = MONO;

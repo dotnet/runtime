@@ -12,7 +12,7 @@
 2. Initialize the profiler in the main javascript (e.g. main.js)
 
 ```
-await createDotnetRuntime(() => ({
+await createDotnetRuntime({
     onConfigLoaded: () => {
         if (config.enableProfiler) {
             config.aotProfilerOptions = {
@@ -21,7 +21,7 @@ await createDotnetRuntime(() => ({
             }
         }
     },
-}));
+});
 ```
 
 3. Call the `write_at` method at the end of the app, either in C# or in JS. To call the `write_at` method in JS, make use of bindings:

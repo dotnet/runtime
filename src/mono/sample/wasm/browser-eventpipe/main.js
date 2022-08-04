@@ -85,11 +85,9 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
 }
 
 async function main() {
-    const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
-        return {
-            disableDotnet6Compatibility: true,
-            configSrc: "./mono-config.json",
-        }
+    const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime({
+        disableDotnet6Compatibility: true,
+        configSrc: "./mono-config.json",
     });
     globalThis.__Module = Module;
     globalThis.MONO = MONO;
