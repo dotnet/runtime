@@ -50,5 +50,8 @@ See also [Android debugging](../mono/android-debugging.md) and [WebAssembly debu
   ```
 
   Note that you also have to set `DOTNET_REMOTEEXECUTOR_SUPPORTED=0` otherwise multiple instances of the runtime will attempt to listen on the same port.
+
+  On Windows, do not pass `--debug` in `MONO_ENV_OPTIONS`.
+
 - Set a breakpoint in a test in VS Code and start debugging in the "Attach to Mono" configuration.
 - Note that Mono does not stop on first chance exceptions and xunit catches all exceptions, so if a test is throwing, the debugger won't break on an uncaught exception.
