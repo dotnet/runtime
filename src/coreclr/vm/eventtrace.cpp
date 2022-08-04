@@ -6957,6 +6957,13 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
         FireEtwMethodDCEndILToNativeMap_V1(ullMethodIdentifier, nativeCodeId, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId(), ilCodeId);
 }
 
+template<typename T>
+static void WriteToBuffer(BYTE** pBuffer, const T& val)
+{
+    memcpy(*pBuffer, &val, sizeof(T));
+    *pBuffer += sizeof(T);
+}
+
 VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId, MethodDescSet* sentMethodDetailsSet)
 {
     CONTRACTL
@@ -6986,20 +6993,48 @@ VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNat
     ULONG32 numMappings = 0;
     if (DebugInfoManager::GetRichDebugInfo(request, fpNew, NULL, &inlineTree, &numInlineTree, &mappings, &numMappings))
     {
-        unsigned dataSize = 8 + numInlineTree * sizeof(ICorDebugInfo::InlineTreeNode) + numMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
+        static_assert_no_msg((std::is_same<decltype(inlineTree->Method), CORINFO_METHOD_HANDLE>::value));
+        static_assert_no_msg((std::is_same<decltype(inlineTree->ILOffset), uint32_t>::value));
+        static_assert_no_msg((std::is_same<decltype(inlineTree->Child), uint32_t>::value));
+        static_assert_no_msg((std::is_same<decltype(inlineTree->Sibling), uint32_t>::value));
+
+        static_assert_no_msg((std::is_same<decltype(mappings->ILOffset), uint32_t>::value));
+        static_assert_no_msg((std::is_same<decltype(mappings->Inlinee), uint32_t>::value));
+        static_assert_no_msg((std::is_same<decltype(mappings->NativeOffset), uint32_t>::value));
+
+        const uint32_t inlineTreeNodeDataSize =
+            sizeof(CORINFO_METHOD_HANDLE) +
+            sizeof(uint32_t) * 3;
+
+        const uint32_t richOffsetMappingDataSize =
+            sizeof(uint32_t) * 3 +
+            1; // source type
+
+        unsigned dataSize = 8 + numInlineTree * inlineTreeNodeDataSize + numMappings * richOffsetMappingDataSize;
 
         InlineSBuffer<1024> buffer;
         buffer.Preallocate(dataSize);
 
         BYTE* pBuffer = &buffer[0];
-        memcpy(pBuffer, &numInlineTree, 4);
-        pBuffer += 4;
-        memcpy(pBuffer, &numMappings, 4);
-        pBuffer += 4;
-        memcpy(pBuffer, inlineTree, numInlineTree * sizeof(ICorDebugInfo::InlineTreeNode));
-        pBuffer += numInlineTree * sizeof(ICorDebugInfo::InlineTreeNode);
-        memcpy(pBuffer, mappings, numMappings * sizeof(ICorDebugInfo::RichOffsetMapping));
-        pBuffer += numMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
+        WriteToBuffer(&pBuffer, numInlineTree);
+        WriteToBuffer(&pBuffer, numMappings);
+        for (uint32_t i = 0; i < numInlineTree; i++)
+        {
+            WriteToBuffer(&pBuffer, inlineTree[i].Method);
+            WriteToBuffer(&pBuffer, inlineTree[i].ILOffset);
+            WriteToBuffer(&pBuffer, inlineTree[i].Child);
+            WriteToBuffer(&pBuffer, inlineTree[i].Sibling);
+        }
+
+        for (uint32_t i = 0; i < numMappings; i++)
+        {
+            WriteToBuffer(&pBuffer, mappings[i].ILOffset);
+            WriteToBuffer(&pBuffer, mappings[i].Inlinee);
+            WriteToBuffer(&pBuffer, mappings[i].NativeOffset);
+            WriteToBuffer(&pBuffer, static_cast<uint8_t>(mappings[i].Source));
+        }
+
+        _ASSERTE((pBuffer - &buffer[0]) == dataSize);
 
         const uint32_t chunkSize = 40000;
         const uint32_t finalChunkFlag = 0x80000000;
@@ -7111,8 +7146,8 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
     _ASSERTE(pLoaderAllocatorFilter == nullptr || !fGetCodeIds);
 
     // Set of methods for which we already have sent a MethodDetails event.
-    // Only used when sending rich debug info that would other send a lot of
-    // duplicate events.
+    // Only used when sending rich debug info that would otherwise send a lot
+    // of duplicate events.
     MethodDescSet sentMethodDetailsSet;
     MethodDescSet* pSentMethodDetailsSet = fSendRichDebugInfoEvent ? &sentMethodDetailsSet : NULL;
 
@@ -7177,8 +7212,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
                     NULL,           // methodSignature
                     codeStart,
                     &config,
-                    pSentMethodDetailsSet
-                    );
+                    pSentMethodDetailsSet);
             }
         }
 

@@ -113,6 +113,20 @@ public:
 #endif
     }
 
+    void DoMethodHandle(CORINFO_METHOD_HANDLE p)
+    {
+        uintptr_t up = reinterpret_cast<uintptr_t>(p);
+        if (sizeof(CORINFO_METHOD_HANDLE) == 4)
+        {
+            m_w.WriteUnencodedU32(static_cast<uint32_t>(up));
+        }
+        else
+        {
+            m_w.WriteUnencodedU32(static_cast<uint32_t>(up));
+            m_w.WriteUnencodedU32(static_cast<uint32_t>(up >> 32));
+        }
+    }
+
 protected:
     NibbleWriter & m_w;
 
@@ -189,6 +203,21 @@ public:
         reg = (ICorDebugInfo::RegNum) m_r.ReadEncodedU32();
     }
 
+    void DoMethodHandle(CORINFO_METHOD_HANDLE& p)
+    {
+        if (sizeof(CORINFO_METHOD_HANDLE) == 4)
+        {
+            uint32_t val = m_r.ReadUnencodedU32();
+            p = reinterpret_cast<CORINFO_METHOD_HANDLE>(static_cast<uintptr_t>(val));
+        }
+        else
+        {
+            uint32_t lo = m_r.ReadUnencodedU32();
+            uint32_t hi = m_r.ReadUnencodedU32();
+            p = reinterpret_cast<CORINFO_METHOD_HANDLE>(uintptr_t(lo) | (uintptr_t(hi) << 32));
+        }
+    }
+
     // For debugging purposes, inject cookies into the Compression.
     void DoCookie(BYTE b)
     {
@@ -217,13 +246,16 @@ static int g_CDI_bMethodTotalCompress   = 0;
 
 static int g_CDI_bVarsTotalUncompress   = 0;
 static int g_CDI_bVarsTotalCompress     = 0;
+
+static int g_CDI_bRichDebugInfoTotalUncompress = 0;
+static int g_CDI_bRichDebugInfoTotalCompress = 0;
 #endif
 
 //-----------------------------------------------------------------------------
 // Serialize Bounds info.
 //-----------------------------------------------------------------------------
 template <class T>
-void DoBounds(
+static void DoBounds(
     T trans, // transfer object.
     ULONG32                       cMap,
     ICorDebugInfo::OffsetMapping *pMap
@@ -267,7 +299,7 @@ void DoBounds(
 
 // Helper to write a compressed Native Var Info
 template<class T>
-void DoNativeVarInfo(
+static void DoNativeVarInfo(
     T trans,
     ICorDebugInfo::NativeVarInfo * pVar
 )
@@ -352,6 +384,56 @@ void DoNativeVarInfo(
 
 
     trans.DoCookie(0xC);
+}
+
+template<typename T>
+static void DoInlineTreeNodes(
+    T trans,
+    ULONG32 cNodes,
+    ICorDebugInfo::InlineTreeNode* nodes)
+{
+    uint32_t lastChildIndex = 0;
+    uint32_t lastSiblingIndex = 0;
+
+    for (uint32_t i = 0; i < cNodes; i++)
+    {
+        ICorDebugInfo::InlineTreeNode* node = &nodes[i];
+
+        trans.DoMethodHandle(node->Method);
+
+        trans.DoEncodedAdjustedU32(node->ILOffset, (DWORD) ICorDebugInfo::MAX_MAPPING_VALUE);
+
+        trans.DoEncodedDeltaU32(node->Child, lastChildIndex);
+        lastChildIndex = node->Child;
+
+        trans.DoEncodedDeltaU32(node->Sibling, lastSiblingIndex);
+        lastSiblingIndex = node->Sibling;
+    }
+}
+
+template<typename T>
+static void DoRichOffsetMappings(
+    T trans,
+    ULONG32 cMappings,
+    ICorDebugInfo::RichOffsetMapping* mappings)
+{
+    // Loop through and transfer each Entry in the Mapping.
+    uint32_t lastNativeOffset = 0;
+    uint32_t lastInlinee = 0;
+    for (uint32_t i = 0; i < cMappings; i++)
+    {
+        ICorDebugInfo::RichOffsetMapping* mapping = &mappings[i];
+
+        trans.DoEncodedDeltaU32(mapping->NativeOffset, lastNativeOffset);
+        lastNativeOffset = mapping->NativeOffset;
+
+        trans.DoEncodedDeltaU32(mapping->Inlinee, lastInlinee);
+        lastInlinee = mapping->Inlinee;
+
+        trans.DoEncodedAdjustedU32(mapping->ILOffset, (DWORD)ICorDebugInfo::MAX_MAPPING_VALUE);
+
+        trans.DoEncodedSourceType(mapping->Source);
+    }
 }
 
 enum EXTRA_DEBUG_INFO_FLAGS
@@ -441,6 +523,41 @@ void CompressDebugInfo::CompressVars(
 #endif
 }
 
+void CompressDebugInfo::CompressRichDebugInfo(
+    IN ULONG32                           cInlineTree,
+    IN ICorDebugInfo::InlineTreeNode*    pInlineTree,
+    IN ULONG32                           cRichOffsetMappings,
+    IN ICorDebugInfo::RichOffsetMapping* pRichOffsetMappings,
+    IN OUT NibbleWriter*                 pWriter)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pWriter != NULL);
+    _ASSERTE((cInlineTree > 0) || (cRichOffsetMappings > 0));
+    pWriter->WriteEncodedU32(cInlineTree);
+    pWriter->WriteEncodedU32(cRichOffsetMappings);
+
+    TransferWriter t(*pWriter);
+    DoInlineTreeNodes(t, cInlineTree, pInlineTree);
+    DoRichOffsetMappings(t, cRichOffsetMappings, pRichOffsetMappings);
+
+    pWriter->Flush();
+
+#ifdef _DEBUG
+    DWORD cbBlob;
+    PVOID pBlob = pWriter->GetBlob(&cbBlob);
+
+    g_CDI_bRichDebugInfoTotalUncompress += 8 + cInlineTree * sizeof(ICorDebugInfo::InlineTreeNode) + cRichOffsetMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
+    g_CDI_bRichDebugInfoTotalCompress   += 4 + cbBlob;
+#endif
+}
+
 PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     IN ICorDebugInfo::OffsetMapping*     pOffsetMapping,
     IN ULONG                             iOffsetMapping,
@@ -477,16 +594,6 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     _ASSERTE(patchpointInfo == NULL);
 #endif
 
-    DWORD cbRichDebugInfo = 0;
-    if ((iInlineTree > 0) || (iRichOffsetMappings > 0))
-    {
-        // Lengths
-        cbRichDebugInfo += 8;
-        // Data
-        cbRichDebugInfo += iInlineTree * sizeof(ICorDebugInfo::InlineTreeNode);
-        cbRichDebugInfo += iRichOffsetMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
-    }
-
     // Actually do the compression. These will throw on oom.
     NibbleWriter boundsBuffer;
     DWORD cbBounds = 0;
@@ -506,6 +613,15 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         pVars = varsBuffer.GetBlob(&cbVars);
     }
 
+    NibbleWriter richDebugInfoBuffer;
+    DWORD cbRichDebugInfo = 0;
+    PVOID pRichDebugInfo = NULL;
+    if ((iInlineTree > 0) || (iRichOffsetMappings > 0))
+    {
+        CompressDebugInfo::CompressRichDebugInfo(iInlineTree, pInlineTree, iRichOffsetMappings, pRichOffsetMappings, &richDebugInfoBuffer);
+        pRichDebugInfo = richDebugInfoBuffer.GetBlob(&cbRichDebugInfo);
+    }
+
     // Now write it all out to the buffer in a compact fashion.
     NibbleWriter w;
     w.WriteEncodedU32(cbBounds);
@@ -520,7 +636,7 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         cbFinalSize += 1;
 
     cbFinalSize += cbPatchpointInfo;
-    cbFinalSize += cbRichDebugInfo;
+    cbFinalSize += S_UINT32(4) + S_UINT32(cbRichDebugInfo);
     cbFinalSize += S_UINT32(cbHeader) + S_UINT32(cbBounds) + S_UINT32(cbVars);
 
     if (cbFinalSize.IsOverflow())
@@ -545,14 +661,10 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
 
     if (cbRichDebugInfo > 0)
     {
-        memcpy(ptr, &iInlineTree, 4);
+        memcpy(ptr, &cbRichDebugInfo, 4);
         ptr += 4;
-        memcpy(ptr, &iRichOffsetMappings, 4);
-        ptr += 4;
-        memcpy(ptr, pInlineTree, iInlineTree * sizeof(ICorDebugInfo::InlineTreeNode));
-        ptr += iInlineTree * sizeof(ICorDebugInfo::InlineTreeNode);
-        memcpy(ptr, pRichOffsetMappings, iRichOffsetMappings * sizeof(ICorDebugInfo::RichOffsetMapping));
-        ptr += iRichOffsetMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
+        memcpy(ptr, pRichDebugInfo, cbRichDebugInfo);
+        ptr += cbRichDebugInfo;
     }
 
     memcpy(ptr, pHeader, cbHeader);
@@ -613,12 +725,9 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
 
         if ((flagByte & EXTRA_DEBUG_INFO_RICH) != 0)
         {
-            UINT32 iInlineTree = *PTR_UINT32(pDebugInfo);
+            UINT32 cbRichDebugInfo = *PTR_UINT32(pDebugInfo);
             pDebugInfo += 4;
-            UINT32 iRichMappings = *PTR_UINT32(pDebugInfo);
-            pDebugInfo += 4;
-            pDebugInfo += iInlineTree * sizeof(ICorDebugInfo::InlineTreeNode);
-            pDebugInfo += iRichMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
+            pDebugInfo += cbRichDebugInfo;
             flagByte &= ~EXTRA_DEBUG_INFO_RICH;
         }
 
@@ -750,26 +859,26 @@ void CompressDebugInfo::RestoreRichDebugInfo(
     }
 #endif
 
-    *pNumInlineTree = *PTR_UINT32(pDebugInfo);
+    UINT32 cbRichDebugInfo = *PTR_UINT32(pDebugInfo);
+    pDebugInfo += 4;
+    NibbleReader r(pDebugInfo, cbRichDebugInfo);
+
+    *pNumInlineTree = r.ReadEncodedU32();
+    *pNumRichMappings = r.ReadEncodedU32();
+
     UINT32 cbInlineTree = *pNumInlineTree * sizeof(ICorDebugInfo::InlineTreeNode);
-    pDebugInfo += 4;
-
-    *pNumRichMappings = *PTR_UINT32(pDebugInfo);
-    UINT32 cbRichOffsetMappings = *pNumRichMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
-    pDebugInfo += 4;
-
     *ppInlineTree = reinterpret_cast<ICorDebugInfo::InlineTreeNode*>(fpNew(pNewData, cbInlineTree));
     if (*ppInlineTree == NULL)
         ThrowOutOfMemory();
 
-    memcpy(*ppInlineTree, PTR_READ(dac_cast<TADDR>(pDebugInfo), cbInlineTree), cbInlineTree);
-    pDebugInfo += cbInlineTree;
-
+    UINT32 cbRichOffsetMappings = *pNumRichMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
     *ppRichMappings = reinterpret_cast<ICorDebugInfo::RichOffsetMapping*>(fpNew(pNewData, cbRichOffsetMappings));
     if (*ppRichMappings == NULL)
         ThrowOutOfMemory();
 
-    memcpy(*ppRichMappings, PTR_READ(dac_cast<TADDR>(pDebugInfo), cbRichOffsetMappings), cbRichOffsetMappings);
+    TransferReader t(r);
+    DoInlineTreeNodes(t, *pNumInlineTree, *ppInlineTree);
+    DoRichOffsetMappings(t, *pNumRichMappings, *ppRichMappings);
 }
 
 #ifdef DACCESS_COMPILE
@@ -800,12 +909,9 @@ void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE
 
         if ((flagByte & EXTRA_DEBUG_INFO_RICH) != 0)
         {
-            UINT32 iInlineTree = *PTR_UINT32(pDebugInfo);
+            UINT32 cbRichDebugInfo = *PTR_UINT32(pDebugInfo);
             pDebugInfo += 4;
-            UINT32 iRichMappings = *PTR_UINT32(pDebugInfo);
-            pDebugInfo += 4;
-            pDebugInfo += iInlineTree * sizeof(ICorDebugInfo::InlineTreeNode);
-            pDebugInfo += iRichMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
+            pDebugInfo += cbRichDebugInfo;
             flagByte &= ~EXTRA_DEBUG_INFO_RICH;
         }
 
