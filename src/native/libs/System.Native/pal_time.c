@@ -137,7 +137,7 @@ double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
     double cpuUtilization = 0.0;
     if (cpuTotalTime > 0 && cpuBusyTime > 0)
     {
-        cpuUtilization = (cpuBusyTime * 100.0 / cpuTotalTime);
+        cpuUtilization = ((double)cpuBusyTime * 100.0 / (double)cpuTotalTime);
     }
 
     previousCpuInfo->lastRecordedCurrentTime = currentTime;
