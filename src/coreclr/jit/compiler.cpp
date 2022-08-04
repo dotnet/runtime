@@ -2882,8 +2882,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 opts.disAsmSpilled = true;
             }
 
-            if (JitConfig.JitUnwindDump().contains(info.compMethodName, info.compClassName,
-                                                    &info.compMethodInfo->args))
+            if (JitConfig.JitUnwindDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
                 opts.dspUnwind = true;
             }
@@ -2893,8 +2892,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 opts.dspEHTable = true;
             }
 
-            if (JitConfig.JitDebugDump().contains(info.compMethodName, info.compClassName,
-                                                    &info.compMethodInfo->args))
+            if (JitConfig.JitDebugDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
                 opts.dspDebugInfo = true;
             }

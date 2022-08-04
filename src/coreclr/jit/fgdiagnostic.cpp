@@ -467,10 +467,9 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     }
 
 #ifdef DEBUG
-    dumpFunction =
-        JitConfig.JitDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
-    filename = JitConfig.JitDumpFgFile();
-    pathname = JitConfig.JitDumpFgDir();
+    dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
+    filename     = JitConfig.JitDumpFgFile();
+    pathname     = JitConfig.JitDumpFgDir();
 
     prePhasePattern  = JitConfig.JitDumpFgPrePhase();
     postPhasePattern = JitConfig.JitDumpFgPhase();
