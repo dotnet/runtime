@@ -2184,10 +2184,8 @@ private:
     // continues to track GC info as if there was no label.
     void* emitAddInlineLabel();
 
-#ifdef DEBUG
     void emitPrintLabel(insGroup* ig);
     const char* emitLabelString(insGroup* ig);
-#endif
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 

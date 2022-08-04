@@ -2638,15 +2638,17 @@ void* emitter::emitAddInlineLabel()
     return emitCurIG;
 }
 
-#ifdef DEBUG
-
 //-----------------------------------------------------------------------------
 // emitPrintLabel: Print the assembly label for an insGroup. We could use emitter::emitLabelString()
 // to be consistent, but that seems silly.
 //
 void emitter::emitPrintLabel(insGroup* ig)
 {
+#ifdef DEBUG
     printf("G_M%03u_IG%02u", emitComp->compMethodID, ig->igNum);
+#else
+    printf("IG_%02u", ig->igNum);
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -2664,13 +2666,15 @@ const char* emitter::emitLabelString(insGroup* ig)
     static char     buf[4][TEMP_BUFFER_LEN];
     const char*     retbuf;
 
+#ifdef DEBUG
     sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "G_M%03u_IG%02u", emitComp->compMethodID, ig->igNum);
+#else
+    sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "IG_%02u", ig->igNum);
+#endif
     retbuf = buf[curBuf];
     curBuf = (curBuf + 1) % 4;
     return retbuf;
 }
-
-#endif // DEBUG
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 
@@ -6675,7 +6679,13 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 printf("\n");
             }
         }
-#endif // DEBUG
+#else // DEBUG
+        if (emitComp->opts.disAsm)
+        {
+            printf("\n%s:", emitLabelString(ig));
+            printf("\n");
+        }
+#endif // !DEBUG
 
         BYTE* bp = cp;
 

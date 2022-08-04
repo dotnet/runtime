@@ -2819,14 +2819,15 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
 
+    opts.disAsm          = false;
+    opts.disDiffable     = false;
+    opts.dspDiffable     = false;
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
     opts.varNames        = false;
     opts.dmpHex          = false;
-    opts.disAsm          = false;
     opts.disAsmSpilled   = false;
-    opts.disDiffable     = false;
     opts.disAddr         = false;
     opts.disAlignment    = false;
     opts.dspCode         = false;
@@ -3069,8 +3070,38 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
         s_pJitFunctionFileInitialized = true;
     }
+#else // DEBUG
+    if (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    {
+        if (!JitConfig.JitDisasm().isEmpty())
+        {
+            const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
+            const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
 
-#endif // DEBUG
+            if (JitConfig.JitDisasm().contains(methodName, className, &info.compMethodInfo->args))
+            {
+                opts.disAsm = true;
+            }
+        }
+    }
+    else
+    {
+        if (!JitConfig.NgenDisasm().isEmpty())
+        {
+            const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
+            const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
+
+            if (JitConfig.NgenDisasm().contains(methodName, className, &info.compMethodInfo->args))
+            {
+                opts.disAsm = true;
+            }
+        }
+    }
+
+    bool diffable = JitConfig.DiffableDasm();
+    opts.disDiffable = diffable;
+    opts.dspDiffable = diffable;
+#endif // !DEBUG
 
 //-------------------------------------------------------------------------
 

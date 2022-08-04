@@ -218,7 +218,6 @@ CONFIG_METHODSET(JitUnwindDump, W("JitUnwindDump")) // Dump the unwind codes for
 ///
 /// NGEN
 ///
-CONFIG_METHODSET(NgenDisasm, W("NgenDisasm")) // Same as JitDisasm, but for ngen
 CONFIG_METHODSET(NgenDump, W("NgenDump"))     // Same as JitDump, but for ngen
 CONFIG_METHODSET(NgenEHDump, W("NgenEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(NgenGCDump, W("NgenGCDump"))
@@ -270,7 +269,14 @@ CONFIG_STRING(NgenDumpFgFile, W("NgenDumpFgFile")) // Ngen Xml/Dot flowgraph dum
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
                                                                            // intrinsic classes
 
-#endif // defined(DEBUG)
+#else // defined(DEBUG)
+
+// JitDisasm works in Release too
+CONFIG_METHODSET(JitDisasm, W("JitDisasm"))
+CONFIG_INTEGER(DiffableDasm, W("JitDiffableDasm"), 0)
+CONFIG_METHODSET(NgenDisasm, W("NgenDisasm")) // Same as JitDisasm, but for R2R/ILC
+
+#endif // !defined(DEBUG)
 
 CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug info and report it back to the EE
 

@@ -1740,11 +1740,18 @@ void CodeGen::genGenerateMachineCode()
     {
         compiler->opts.disAsm = true;
     }
+#endif
     compiler->compCurBB = compiler->fgFirstBB;
 
     if (compiler->opts.disAsm)
     {
-        printf("; Assembly listing for method %s\n", compiler->info.compFullName);
+#ifdef DEBUG
+        const char* fullName = compiler->info.compFullName;
+#else
+        const char* fullName = compiler->eeGetMethodFullName(compiler->info.compMethodHnd);
+#endif
+
+        printf("; Assembly listing for method %s\n", fullName);
 
         printf("; Emitting ");
 
@@ -1905,7 +1912,6 @@ void CodeGen::genGenerateMachineCode()
             printf("; invoked as altjit\n");
         }
     }
-#endif // DEBUG
 
     // We compute the final frame layout before code generation. This is because LSRA
     // has already computed exactly the maximum concurrent number of spill temps of each type that are
@@ -2056,6 +2062,11 @@ void CodeGen::genEmitMachineCode()
     {
         printf("*************** After end code gen, before unwindEmit()\n");
         GetEmitter()->emitDispIGlist(true);
+    }
+#else
+    if (compiler->opts.disAsm)
+    {
+        printf("\n; Total bytes of code %d\n", codeSize);
     }
 #endif
 
