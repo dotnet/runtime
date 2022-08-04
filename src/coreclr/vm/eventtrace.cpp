@@ -7034,7 +7034,7 @@ VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNat
             WriteToBuffer(&pBuffer, static_cast<uint8_t>(mappings[i].Source));
         }
 
-        _ASSERTE((pBuffer - &buffer[0]) == dataSize);
+        _ASSERTE(static_cast<size_t>(pBuffer - &buffer[0]) == static_cast<size_t>(dataSize));
 
         const uint32_t chunkSize = 40000;
         const uint32_t finalChunkFlag = 0x80000000;
