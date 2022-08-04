@@ -310,7 +310,7 @@ public:
 
         for (int i = 0; i < 8; i++)
         {
-            result |= ReadNibble() << (i * 4);
+            result |= static_cast<DWORD>(ReadNibble()) << (i * 4);
         }
 
         return result;
