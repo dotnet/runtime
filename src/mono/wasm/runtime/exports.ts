@@ -170,7 +170,7 @@ export function get_dotnet_instance(): DotnetPublicAPI {
     return exportedAPI;
 }
 
-export interface APIType {
+export type APIType = {
     runMain: (mainAssemblyName: string, args: string[]) => Promise<number>,
     runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<void>,
     setEnvironmentVariable: (name: string, value: string) => void,
@@ -220,5 +220,5 @@ export type DotnetPublicAPI = {
     runtimeBuildInfo: {
         productVersion: string,
         buildConfiguration: string,
-    } & APIType
-}
+    }
+} & APIType
