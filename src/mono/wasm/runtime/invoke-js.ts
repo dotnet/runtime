@@ -6,11 +6,11 @@ import { marshal_exception_to_cs, generate_arg_marshal_to_cs } from "./marshal-t
 import { get_signature_argument_count, JavaScriptMarshalerArgSize, bound_js_function_symbol, JSMarshalerTypeSize, get_sig, JSMarshalerSignatureHeaderSize, get_signature_version, MarshalerType, get_signature_type } from "./marshal";
 import { setI32 } from "./memory";
 import { conv_string_root, js_string_to_mono_string_root } from "./strings";
-import { mono_assert, JSHandle, MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments } from "./types";
+import { mono_assert, JSHandle, MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot } from "./types";
 import { Int32Ptr } from "./types/emscripten";
 import { IMPORTS, INTERNAL, Module, runtimeHelpers } from "./imports";
 import { generate_arg_marshal_to_js } from "./marshal-to-js";
-import { mono_wasm_new_external_root, WasmRoot } from "./roots";
+import { mono_wasm_new_external_root } from "./roots";
 import { mono_wasm_symbolicate_string } from "./debug";
 
 export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_name: MonoStringRef, signature: JSFunctionSignature, function_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {

@@ -379,3 +379,34 @@ export interface JSMarshalerArgument extends NativePointer {
     __brand: "JSMarshalerArgument"
 }
 
+export type _MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
+export type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
+
+export interface WasmRoot<T extends MonoObject> {
+    get_address(): MonoObjectRef;
+    get_address_32(): number;
+    get address(): MonoObjectRef;
+    get(): T;
+    set(value: T): T;
+    get value(): T;
+    set value(value: T);
+    copy_from_address(source: MonoObjectRef): void;
+    copy_to_address(destination: MonoObjectRef): void;
+    copy_from(source: WasmRoot<T>): void;
+    copy_to(destination: WasmRoot<T>): void;
+    valueOf(): T;
+    clear(): void;
+    release(): void;
+    toString(): string;
+}
+
+export interface WasmRootBuffer {
+    get_address(index: number): MonoObjectRef
+    get_address_32(index: number): number
+    get(index: number): ManagedPointer
+    set(index: number, value: ManagedPointer): ManagedPointer
+    copy_value_from_address(index: number, sourceAddress: MonoObjectRef): void
+    clear(): void;
+    release(): void;
+    toString(): string;
+}

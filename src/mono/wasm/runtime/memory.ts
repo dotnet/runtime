@@ -1,7 +1,7 @@
 import monoWasmThreads from "consts:monoWasmThreads";
 import { Module, runtimeHelpers } from "./imports";
-import { mono_assert } from "./types";
-import { VoidPtr, NativePointer, ManagedPointer } from "./types/emscripten";
+import { mono_assert, _MemOffset, _NumberOrPointer } from "./types";
+import { VoidPtr } from "./types/emscripten";
 import * as cuint64 from "./cuint64";
 import cwraps, { I52Error } from "./cwraps";
 
@@ -44,8 +44,6 @@ export function _release_temp_frame(): void {
     alloca_offset = <VoidPtr>alloca_stack.pop();
 }
 
-type _MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
-type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
 
 function assert_int_in_range(value: Number, min: Number, max: Number) {
     mono_assert(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
