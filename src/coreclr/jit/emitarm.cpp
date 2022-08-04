@@ -4837,8 +4837,14 @@ void emitter::emitIns_Call(EmitCallType          callType,
         }
     }
     id->idDebugOnlyInfo()->idCallSig = sigInfo;
-#endif
     id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
+#else
+    if (emitComp->opts.disAsm)
+    {
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
+    }
+#endif
+
 
 #ifdef LATE_DISASM
     if (addr != nullptr)

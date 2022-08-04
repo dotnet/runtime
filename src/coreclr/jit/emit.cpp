@@ -1506,18 +1506,19 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     emitInsCount++;
 
-    instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
-
-    info->idNum         = emitInsCount;
-    info->idSize        = sz;
-    info->idVarRefOffs  = 0;
-    info->idMemCookie   = 0;
-    info->idFlags       = GTF_EMPTY;
-    info->idFinallyCall = false;
-    info->idCatchRet    = false;
-    info->idCallSig     = nullptr;
-
-    id->idDebugOnlyInfo(info);
+    if (emitComp->opts.disAsm)
+    {
+        instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
+        info->idNum = emitInsCount;
+        info->idSize = sz;
+        info->idVarRefOffs = 0;
+        info->idMemCookie = 0;
+        info->idFlags = GTF_EMPTY;
+        info->idFinallyCall = false;
+        info->idCatchRet = false;
+        info->idCallSig = nullptr;
+        id->idDebugOnlyInfo(info);
+    }
 
     /* Store the size and handle the two special values
        that indicate GCref and ByRef */
@@ -4259,12 +4260,12 @@ void emitter::emitRemoveJumpToNextInst()
                     emitDispIG(targetGroup, nullptr, false);
                     assert(jmp == id);
                 }
-#endif // DEBUG
 
                 JITDUMP("IG%02u IN%04x is the last instruction in the group and jumps to the next instruction group "
                         "IG%02u %s, removing.\n",
                         jmpGroup->igNum, jmp->idDebugOnlyInfo()->idNum, targetGroup->igNum,
                         emitLabelString(targetGroup));
+#endif // DEBUG
 
                 // Unlink the jump from emitJumpList while keeping the previousJmp the same.
                 if (previousJmp != nullptr)

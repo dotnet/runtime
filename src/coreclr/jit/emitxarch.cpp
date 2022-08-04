@@ -4367,7 +4367,15 @@ void emitter::emitIns_IJ(emitAttr attr, regNumber reg, unsigned base)
     id->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
     id->idAddr()->iiaAddrMode.amIndxReg = reg;
     id->idAddr()->iiaAddrMode.amScale   = emitter::OPSZP;
+
+#ifdef DEBUG 
     id->idDebugOnlyInfo()->idMemCookie  = base;
+#else
+    if (emitComp->opts.disAsm)
+    {
+        id->idDebugOnlyInfo()->idMemCookie = base;
+    }
+#endif
 
     id->idCodeSize(sz);
 
@@ -7989,8 +7997,13 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idCallSig = sigInfo;
-#endif
     id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
+#else
+    if (emitComp->opts.disAsm)
+    {
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
+    }
+#endif
 
 #ifdef LATE_DISASM
     if (addr != nullptr)
