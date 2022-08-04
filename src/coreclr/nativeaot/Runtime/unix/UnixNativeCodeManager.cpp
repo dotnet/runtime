@@ -527,63 +527,87 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
 
 #elif defined(TARGET_ARM64)
 
-#define RET_LR       0xd65f03c0
+// ldr with unsigned immediate
+// 1x11 1001 x1xx xxxx xxxx xxxx xxxx xxxx
+#define LDR_BITS1 0xB9400000
+#define LDR_MASK1 0xBF400000
 
-    uint32_t* pNextInstruction = (uint32_t*)pvAddress;
+// ldr with pre/post/no offset
+// 1x11 1000 010x xxxx xxxx xxxx xxxx xxxx
+#define LDR_BITS2 0xB8400000
+#define LDR_MASK2 0xBFE00000
 
-    // HACK, HACK, HACK
-    // 
-    // detecting RET will handle nearly all cases of epilogs, but "nearly" is not enough.
-    // in complex cases epilogs can be fairly complex. (see: genPopCalleeSavedRegistersAndFreeLclFrame )
-    // 
-    // If we are in a region after restoring FP or LR and up to the subsequent RET,
-    // we cannot reliably hijack.
-    // 
-    // We need to add detection for such ranges.
+// ldr with register offset
+// 1x11 1000 011x xxxx xxxx 10xx xxxx xxxx
+#define LDR_BITS3 0xB8600800
+#define LDR_MASK3 0xBFE00C00
 
-    if (*pNextInstruction == RET_LR)
+// ldp with signed offset
+// x010 1001 01xx xxxx xxxx xxxx xxxx xxxx
+#define LDP_BITS1 0x29400000
+#define LDP_MASK1 0x7FC00000
+
+// ldp with pre/post/no offset
+// x010 100x x1xx xxxx xxxx xxxx xxxx xxxx
+#define LDP_BITS2 0x28400000
+#define LDP_MASK2 0x7E400000
+
+// Branches, Exception Generating and System instruction group
+// xxx1 01xx xxxx xxxx xxxx xxxx xxxx xxxx
+#define BEGS_BITS 0x14000000
+#define BEGS_MASK 0x1C000000
+
+    MethodInfo pMethodInfo;
+    FindMethodInfo(pvAddress, &pMethodInfo);
+    UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)&pMethodInfo;
+
+    uint32_t* start  = (uint32_t*)pNativeMethodInfo->pMethodStartAddress;
+
+    // Since we stop on branches, the search is roughly limited by the containing basic block.
+    // We typically examine just 1-5 instructions and in rare cases up to 30.
+    // 
+    // TODO: we can also limit the search by the longest possible epilogue length, but
+    // we must be sure the longest length considers all possibilities,
+    // which is somewhat nontrivial to derive/prove.
+    // It does not seem urgent, but it could be nice to have a constant upper bound.
+    for (uint32_t* pInstr = (uint32_t*)pvAddress - 1; pInstr > start; pInstr--)
     {
-        return -1;
-    }
+        uint32_t instr = *pInstr;
+    
+        // check for Branches, Exception Generating and System instruction group.
+        // If we see such instruction before seeing FP or LR restored, we are not in an epilog.
+        // Note: this includes RET, BRK, branches, calls, tailcalls, fences, etc...
+        if ((instr & BEGS_MASK) == BEGS_BITS)
+        {
+            // not in an epilogue
+            break;
+        }
 
-    //
-    // TODO:   here is the idea. Let's search backwards for FP or LR restores.
-    //
-    // uint32_t* pInstr = (uint32_t*)pvAddress;
-    // uint32_t* start = get addr of the first instruction in the method
-    //
-    // // we can also limit search by the longest possible epilogue length
-    // for (uint32_t* pInstr = (uint32_t*)pvAddress; pInstr > start; pInstr--)
-    // {
-    //     uint32_t instr = *pInstr;
-    //
-    //     // check for common instructions that cannot be in epilogue  (ret, br, call)
-    //     // alternatively check for instructions that _can_ be in epilogue, if not too many
-    //     if (instr == RET_LR)
-    //     {
-    //         // did not see epilogue start ==> we are not in epilogue
-    //         break;
-    //     }
-    //
-    //     // check for brk - we do not expect debugger to insert brk in epilogue,
-    //     // so this must be actual brk in the code, which is not in epilogue either
-    //     if (instr is brk)
-    //     {
-    //         break;
-    //     }
-    //
-    //     // instructions that restore LR or FP
-    //     if (instr is ldp and either of operands is fp or lr)
-    //     {
-    //         return -1;
-    //     }
-    //
-    //     // restoring LR/FP not as a pair should be extremely uncommon, but in theory possible
-    //     if (instr == LDR_LR || instr == LDR_FP)
-    //     {
-    //         return -1;
-    //     }
-    // }
+        // check for restoring FP or LR with ldr or ldp
+        int operand = instr & 0x1f;
+        if (operand == 30 || operand == 29)
+        {
+            if ((instr & LDP_MASK1) == LDP_BITS1 ||
+                (instr & LDP_MASK2) == LDP_BITS2 ||
+                (instr & LDR_MASK1) == LDR_BITS1 ||
+                (instr & LDR_MASK2) == LDR_BITS2 ||
+                (instr & LDR_MASK3) == LDR_BITS3)
+            {
+                return -1;
+            }
+        }
+
+        // check for restoring FP or LR with ldp (as Rt2)
+        operand = (instr >> 10) & 0x1f;
+        if (operand == 30 || operand == 29)
+        {
+            if ((instr & LDP_MASK1) == LDP_BITS1 ||
+                (instr & LDP_MASK2) == LDP_BITS2)
+            {
+                return -1;
+            }
+        }
+    }
 
 #endif
 
