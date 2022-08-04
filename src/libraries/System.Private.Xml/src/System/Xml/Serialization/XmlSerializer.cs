@@ -140,6 +140,8 @@ namespace System.Xml.Serialization
 
         private static readonly TempAssemblyCache s_cache = new TempAssemblyCache();
         private static volatile XmlSerializerNamespaces? s_defaultNamespaces;
+        private static readonly XmlWriterSettings s_writerSettings = new XmlWriterSettings() { Encoding = new UTF8Encoding(false), Indent = true };
+
         private static XmlSerializerNamespaces DefaultNamespaces
         {
             get
@@ -334,7 +336,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(TextWriter textWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
-            XmlWriter xmlWriter = XmlWriter.Create(textWriter);
+            XmlWriter xmlWriter = XmlWriter.Create(textWriter, s_writerSettings);
             Serialize(xmlWriter, o, namespaces);
         }
 
@@ -347,7 +349,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(Stream stream, object? o, XmlSerializerNamespaces? namespaces)
         {
-            XmlWriter xmlWriter = XmlWriter.Create(stream);
+            XmlWriter xmlWriter = XmlWriter.Create(stream, s_writerSettings);
             Serialize(xmlWriter, o, namespaces);
         }
 

@@ -715,7 +715,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     {
         var obj = new TypeWithTimeSpanProperty { TimeSpanProperty = TimeSpan.FromMilliseconds(1) };
         var deserializedObj = SerializeAndDeserialize(obj,
-@"<?xml version=""1.0"" encoding=""utf-16""?>
+@"<?xml version=""1.0"" encoding=""utf-8""?>
 <TypeWithTimeSpanProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
 <TimeSpanProperty>PT0.001S</TimeSpanProperty>
 </TypeWithTimeSpanProperty>");
@@ -949,7 +949,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     {
         var obj = new SimpleType { P1 = "foo", P2 = 1 };
         var deserializedObj = SerializeAndDeserialize(obj,
-@"<?xml version=""1.0"" encoding=""utf-16""?>
+@"<?xml version=""1.0"" encoding=""utf-8""?>
 <SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
   <P1>foo</P1>
   <P2>1</P2>
@@ -957,6 +957,34 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.NotNull(deserializedObj);
         Assert.Equal(obj.P1, deserializedObj.P1);
         Assert.StrictEqual(obj.P2, deserializedObj.P2);
+    }
+
+    [Fact]
+    public static void Xml_SerializedFormat()
+    {
+        var obj = new SimpleType { P1 = "foo", P2 = 1 };
+        XmlSerializer serializer = new XmlSerializer(typeof(SimpleType));
+        using (MemoryStream ms = new MemoryStream())
+        {
+            serializer.Serialize(ms, obj);
+
+            // No BOM?
+            byte[] expectedBytes = new byte[] { (byte)'<', (byte)'?', (byte)'x', (byte)'m', (byte)'l' };
+            byte[] firstBytes = new byte[5];
+            ms.Position = 0;
+            ms.Read(firstBytes, 0, firstBytes.Length);
+            Assert.Equal(expectedBytes, firstBytes);
+
+            // Human readable?
+            ms.Position = 0;
+            string actualFormatting = new StreamReader(ms).ReadToEnd();
+            string expectedFormatting = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <P1>foo</P1>
+  <P2>1</P2>
+</SimpleType>";
+            Assert.Equal(expectedFormatting, actualFormatting);
+        }
     }
 
     [Fact]
