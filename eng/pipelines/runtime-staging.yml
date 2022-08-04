@@ -66,6 +66,7 @@ jobs:
   parameters:
     platforms:
       - Browser_wasm_win
+    shouldContinueOnError: forceFalse
     alwaysRun: ${{ variables.isRollingBuild }}
     scenarios:
       - WasmTestOnBrowser
@@ -78,12 +79,14 @@ jobs:
     nameSuffix: _AOT
     runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
     runAOT: true
+    shouldContinueOnError: forceFalse
     alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-build-tests.yml
   parameters:
     platforms:
       - Browser_wasm_win
+    shouldContinueOnError: forceFalse
     alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
@@ -91,6 +94,7 @@ jobs:
     platforms:
       - Browser_wasm
       - Browser_wasm_win
+    shouldContinueOnError: forceFalse
     alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
