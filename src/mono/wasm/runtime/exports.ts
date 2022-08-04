@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
-import Configuration from "consts:configuration";
+import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { ENVIRONMENT_IS_PTHREAD, set_imports_exports } from "./imports";
-import { DotnetModule, is_nullish, DotnetPublicAPI, EarlyImports, EarlyExports, EarlyReplacements } from "./types";
+import { DotnetModule, is_nullish, EarlyImports, EarlyExports, EarlyReplacements, MonoConfig } from "./types";
 import { configure_emscripten_startup, mono_wasm_pthread_worker_init } from "./startup";
 import { mono_bind_static_method } from "./net6-legacy/method-calls";
 
@@ -15,6 +15,8 @@ import { export_binding_api, export_mono_api } from "./net6-legacy/exports-legac
 import { export_internal } from "./exports-internal";
 import { export_linker } from "./exports-linker";
 import { init_polyfills } from "./polyfills";
+import { EmscriptenModule, NativePointer } from "./types/emscripten";
+import { export_api } from "./export-api";
 
 export const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
 export let __linker_exports: any = null;
@@ -41,19 +43,20 @@ function initializeImportsAndExports(
     Object.assign(exports.mono, export_mono_api());
     Object.assign(exports.binding, export_binding_api());
     Object.assign(exports.internal, export_internal());
+    const API = export_api();
     __linker_exports = export_linker();
 
     exportedAPI = <any>{
         MONO: exports.mono,
         BINDING: exports.binding,
         INTERNAL: exports.internal,
-        EXPORTS: exports.marshaled_exports,
         IMPORTS: exports.marshaled_imports,
         Module: module,
-        RuntimeBuildInfo: {
-            ProductVersion,
-            Configuration
-        }
+        runtimeBuildInfo: {
+            productVersion: ProductVersion,
+            buildConfiguration: BuildConfiguration
+        },
+        ...API,
     };
     if (exports.module.__undefinedConfig) {
         module.disableDotnet6Compatibility = true;
@@ -78,7 +81,7 @@ function initializeImportsAndExports(
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
-            console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
+            console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
             return mono_bind_static_method(fqn, signature);
         };
 
@@ -150,9 +153,9 @@ class RuntimeList {
     private list: { [runtimeId: number]: WeakRef<DotnetPublicAPI> } = {};
 
     public registerRuntime(api: DotnetPublicAPI): number {
-        api.RuntimeId = Object.keys(this.list).length;
-        this.list[api.RuntimeId] = create_weak_ref(api);
-        return api.RuntimeId;
+        api.runtimeId = Object.keys(this.list).length;
+        this.list[api.runtimeId] = create_weak_ref(api);
+        return api.runtimeId;
     }
 
     public getRuntime(runtimeId: number): DotnetPublicAPI | undefined {
@@ -163,4 +166,57 @@ class RuntimeList {
 
 export function get_dotnet_instance(): DotnetPublicAPI {
     return exportedAPI;
+}
+
+export interface APIType {
+    runMain: (mainAssemblyName: string, args: string[]) => Promise<number>,
+    runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<void>,
+    setEnvironmentVariable: (name: string, value: string) => void,
+    getAssemblyExports(assemblyName: string): Promise<any>,
+    setModuleImports(moduleName: string, moduleImports: any): void,
+    getConfig: () => MonoConfig,
+    setHeapB32: (offset: NativePointer, value: number | boolean) => void,
+    setHeapU8: (offset: NativePointer, value: number) => void,
+    setHeapU16: (offset: NativePointer, value: number) => void,
+    setHeapU32: (offset: NativePointer, value: NativePointer | number) => void,
+    setHeapI8: (offset: NativePointer, value: number) => void,
+    setHeapI16: (offset: NativePointer, value: number) => void,
+    setHeapI32: (offset: NativePointer, value: number) => void,
+    setHeapI52: (offset: NativePointer, value: number) => void,
+    setHeapU52: (offset: NativePointer, value: number) => void,
+    setHeapI64Big: (offset: NativePointer, value: bigint) => void,
+    setHeapF32: (offset: NativePointer, value: number) => void,
+    setHeapF64: (offset: NativePointer, value: number) => void,
+    getHeapB32: (offset: NativePointer) => boolean,
+    getHeapU8: (offset: NativePointer) => number,
+    getHeapU16: (offset: NativePointer) => number,
+    getHeapU32: (offset: NativePointer) => number,
+    getHeapI8: (offset: NativePointer) => number,
+    getHeapI16: (offset: NativePointer) => number,
+    getHeapI32: (offset: NativePointer) => number,
+    getHeapI52: (offset: NativePointer) => number,
+    getHeapU52: (offset: NativePointer) => number,
+    getHeapI64Big: (offset: NativePointer) => bigint,
+    getHeapF32: (offset: NativePointer) => number,
+    getHeapF64: (offset: NativePointer) => number,
+}
+
+// this represents visibility in the javascript
+// like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts
+export type DotnetPublicAPI = {
+    /**
+     * @deprecated Please use API object instead. See also MONOType in dotnet-legacy.d.ts
+     */
+    MONO: any,
+    /**
+     * @deprecated Please use API object instead. See also BINDINGType in dotnet-legacy.d.ts
+     */
+    BINDING: any,
+    INTERNAL: any,
+    Module: EmscriptenModule,
+    runtimeId: number,
+    runtimeBuildInfo: {
+        productVersion: string,
+        buildConfiguration: string,
+    } & APIType
 }

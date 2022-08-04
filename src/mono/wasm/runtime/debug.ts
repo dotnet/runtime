@@ -150,7 +150,7 @@ export function mono_wasm_get_loaded_files(): string[] {
 export function mono_wasm_wait_for_debugger(): Promise<void> {
     return new Promise<void>((resolve) => {
         const interval = setInterval(() => {
-            if (runtimeHelpers.wait_for_debugger != 1) {
+            if (runtimeHelpers.waitForDebugger != 1) {
                 return;
             }
             clearInterval(interval);
@@ -160,8 +160,8 @@ export function mono_wasm_wait_for_debugger(): Promise<void> {
 }
 
 export function mono_wasm_debugger_attached(): void {
-    if (runtimeHelpers.wait_for_debugger == -1)
-        runtimeHelpers.wait_for_debugger = 1;
+    if (runtimeHelpers.waitForDebugger == -1)
+        runtimeHelpers.waitForDebugger = 1;
     cwraps.mono_wasm_set_is_debugger_attached(true);
 }
 

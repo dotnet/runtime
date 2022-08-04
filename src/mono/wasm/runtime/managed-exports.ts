@@ -1,26 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { GCHandle, MonoMethod, mono_assert } from "./types";
+import { GCHandle, MarshalerToCs, MarshalerToJs, MonoMethod, mono_assert } from "./types";
 import cwraps from "./cwraps";
 import { Module, runtimeHelpers } from "./imports";
-import { alloc_stack_frame, get_arg, get_arg_gc_handle, MarshalerToCs, MarshalerToJs, MarshalerType, set_arg_type, set_gc_handle } from "./marshal";
+import { alloc_stack_frame, get_arg, get_arg_gc_handle, MarshalerType, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_method_and_handle_exception } from "./invoke-cs";
 import { marshal_exception_to_cs } from "./marshal-to-cs";
-
-// in all the exported internals methods, we use the same data structures for stack frame as normal full blow interop
-// see src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.cs
-export interface JavaScriptExports {
-    // the marshaled signature is: void ReleaseJSOwnedObjectByGCHandle(GCHandle gcHandle)
-    _release_js_owned_object_by_gc_handle(gc_handle: GCHandle): void;
-    // the marshaled signature is: GCHandle CreateTaskCallback()
-    _create_task_callback(): GCHandle;
-    // the marshaled signature is: void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
-    _complete_task(holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs): void;
-    // the marshaled signature is: TRes? CallDelegate<T1,T2,T3TRes>(GCHandle callback, T1? arg1, T2? arg2, T3? arg3)
-    _call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any,
-        res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs): any;
-}
 
 export function init_managed_exports(): void {
     const anyModule = Module as any;

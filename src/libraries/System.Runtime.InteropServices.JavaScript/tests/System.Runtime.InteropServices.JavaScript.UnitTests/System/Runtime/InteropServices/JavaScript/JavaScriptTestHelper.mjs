@@ -5,8 +5,8 @@ class JSData {
     constructor(name) {
         this.name = name;
     }
-    echoMemberMethod(arg1){
-        return arg1 + "-w-i-t-h-"+ this.name;
+    echoMemberMethod(arg1) {
+        return arg1 + "-w-i-t-h-" + this.name;
     }
     toString() {
         return `JSData("${this.name}")`;
@@ -146,14 +146,14 @@ export function getClass1() {
     // console.log(`getClass1(arg1:${cname !== null ? cname : '<null>'})`)
     return cname;
 }
-
+let dllExports;
 export function invoke1(arg1, name) {
     if (globalThis.gc) {
         // console.log('globalThis.gc');
         globalThis.gc();
     }
     // console.log(`invoke1: ${name}(arg1:${arg1 !== null ? typeof arg1 : '<null>'})`)
-    const JavaScriptTestHelper = globalThis.App.EXPORTS.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
     const fn = JavaScriptTestHelper[name];
 
     // console.log("invoke1:" + typeof fn);
@@ -164,8 +164,7 @@ export function invoke1(arg1, name) {
 }
 
 export function invoke2(arg1, name) {
-    const JavaScriptTestHelperNoNamespace = globalThis.App.EXPORTS.JavaScriptTestHelperNoNamespace
-    const fn = JavaScriptTestHelperNoNamespace[name];
+    const fn = dllExports.JavaScriptTestHelperNoNamespace[name];
     //console.log("invoke1:" + fn.toString());
     const res = fn(arg1);
     // console.log(`invoke1: res ${res !== null ? typeof res : '<null>'}`)
@@ -272,5 +271,8 @@ globalThis.rebound = {
     echoMemberMethod: globalThis.data.echoMemberMethod.bind(globalThis.data)
 }
 
+export async function setup() {
+    dllExports = await App.runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests.dll");
+}
 
 // console.log('JavaScriptTestHelper:' Object.keys(globalThis.JavaScriptTestHelper));
