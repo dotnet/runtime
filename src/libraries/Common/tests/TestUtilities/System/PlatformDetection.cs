@@ -139,9 +139,9 @@ namespace System
         public static bool IsBuiltInComEnabled => SupportsComInterop;
 #endif
 
-        // Automation refers to COM Automation support. Automation support here means the OS
+        // Automation refers to OLE Automation support. Automation support here means the OS
         // and runtime provide support for the following: IDispatch, STA apartments, etc. This
-        // is typically available whenever COM support is enabled, but Windows nano-server is an exception.
+        // is typically available whenever COM support is enabled, but Windows Nano Server is an exception.
         public static bool IsBuiltInComEnabledWithOSAutomationSupport => IsBuiltInComEnabled && IsNotWindowsNanoServer;
 
         public static bool SupportsSsl3 => GetSsl3Support();

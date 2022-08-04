@@ -91,13 +91,13 @@ namespace System.Runtime.InteropServices.Tests.Common
         private struct VTable
         {
             // IUnknown
-            public delegate* unmanaged[Stdcall]<void*, Guid*, void**, int> QueryInterface;
-            public delegate* unmanaged[Stdcall]<void*, uint> AddRef;
-            public delegate* unmanaged[Stdcall]<void*, uint> Release;
+            public delegate* unmanaged<void*, Guid*, void**, int> QueryInterface;
+            public delegate* unmanaged<void*, uint> AddRef;
+            public delegate* unmanaged<void*, uint> Release;
 
             // IClassFactory
-            public delegate* unmanaged[Stdcall]<void*, void*, Guid*, void**, int> CreateInstance;
-            public delegate* unmanaged[Stdcall]<void*, int, int> LockServer;
+            public delegate* unmanaged<void*, void*, Guid*, void**, int> CreateInstance;
+            public delegate* unmanaged<void*, int, int> LockServer;
         }
 
         // The COM ABI requires the first pointer field to be the vtable
@@ -106,7 +106,7 @@ namespace System.Runtime.InteropServices.Tests.Common
         // Additional instance fields for this COM object
         private uint _refCount;
 
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static int QueryInterface(void* instance, Guid* iid, void** obj)
         {
             if (ComConstants.IID_IUnknown == *iid || ComConstants.IID_IClassFactory == *iid)
@@ -122,7 +122,7 @@ namespace System.Runtime.InteropServices.Tests.Common
             return ComConstants.S_OK;
         }
 
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static uint AddRef(void* instance) => _AddRef(instance);
 
         private static uint _AddRef(void* instance)
@@ -131,7 +131,7 @@ namespace System.Runtime.InteropServices.Tests.Common
             return Interlocked.Increment(ref inst->_refCount);
         }
 
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static uint Release(void* instance)
         {
             var inst = (ComObjectFactory*)instance;
@@ -144,14 +144,14 @@ namespace System.Runtime.InteropServices.Tests.Common
             return c;
         }
 
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static int CreateInstance(void* instance, void* outer, Guid* riid, void** obj)
         {
             *obj = ComObject.Create();
             return ComConstants.S_OK;
         }
 
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static int LockServer(void* instance, int shouldLock) => ComConstants.S_OK;
     }
 
@@ -183,15 +183,15 @@ namespace System.Runtime.InteropServices.Tests.Common
         private struct VTable
         {
             // IUnknown
-            public delegate* unmanaged[Stdcall]<void*, Guid*, void**, int> QueryInterface;
-            public delegate* unmanaged[Stdcall]<void*, uint> AddRef;
-            public delegate* unmanaged[Stdcall]<void*, uint> Release;
+            public delegate* unmanaged<void*, Guid*, void**, int> QueryInterface;
+            public delegate* unmanaged<void*, uint> AddRef;
+            public delegate* unmanaged<void*, uint> Release;
 
             // IDispatch
-            public delegate* unmanaged[Stdcall]<void*, uint*, int> GetTypeInfoCount;
-            public delegate* unmanaged[Stdcall]<void*, int, int, void**, int> GetTypeInfo;
-            public delegate* unmanaged[Stdcall]<void*, Guid*, void**, uint, uint, int*, int> GetIDsOfNames;
-            public delegate* unmanaged[Stdcall]<void*, int, Guid*, uint, short, void*, void*, void*, uint*, int> Invoke;
+            public delegate* unmanaged<void*, uint*, int> GetTypeInfoCount;
+            public delegate* unmanaged<void*, int, int, void**, int> GetTypeInfo;
+            public delegate* unmanaged<void*, Guid*, void**, uint, uint, int*, int> GetIDsOfNames;
+            public delegate* unmanaged<void*, int, Guid*, uint, short, void*, void*, void*, uint*, int> Invoke;
         }
 
         // The COM ABI requires the first pointer field to be the vtable
@@ -200,7 +200,7 @@ namespace System.Runtime.InteropServices.Tests.Common
         // Additional instance fields for this COM object
         private uint _refCount;
 
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static int QueryInterface(void* instance, Guid* iid, void** obj)
         {
             if (ComConstants.IID_IUnknown == *iid || ComConstants.IID_IDispatch == *iid)
@@ -216,7 +216,7 @@ namespace System.Runtime.InteropServices.Tests.Common
             return ComConstants.S_OK;
         }
 
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static uint AddRef(void* instance) => _AddRef(instance);
 
         private static uint _AddRef(void* instance)
@@ -225,7 +225,7 @@ namespace System.Runtime.InteropServices.Tests.Common
             return Interlocked.Increment(ref inst->_refCount);
         }
 
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static uint Release(void* instance)
         {
             var inst = (ComObject*)instance;
@@ -238,13 +238,13 @@ namespace System.Runtime.InteropServices.Tests.Common
             return c;
         }
 
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static int GetTypeInfoCount(void* instance, uint* i) => ComConstants.E_NOTIMPL;
 
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static int GetTypeInfo(void* instance, int itinfo, int lcid, void** i) => ComConstants.E_NOTIMPL;
 
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static int GetIDsOfNames(
             void* instance,
             Guid* iid,
@@ -253,7 +253,7 @@ namespace System.Runtime.InteropServices.Tests.Common
             uint lcid,
             int* dispIdsRaw) => ComConstants.E_NOTIMPL;
 
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly]
         private static int Invoke(
             void* instance,
             int dispIdMember,
