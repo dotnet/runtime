@@ -167,17 +167,17 @@ public class ComparisonTestAnd2Chains
         }
         if (!Eq_ushort_2(10, 11))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Eq_short_2(10, 11) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Eq_ushort_2(10, 11) failed");
             return 101;
         }
         if (!Eq_uint_2(10, 11))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Eq_int_2(10, 11) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Eq_uint_2(10, 11) failed");
             return 101;
         }
         if (!Eq_ulong_2(10, 11))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Eq_long_2(10, 11) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Eq_ulong_2(10, 11) failed");
             return 101;
         }
 
@@ -203,17 +203,17 @@ public class ComparisonTestAnd2Chains
         }
         if (!Ne_ushort_2(10, 11))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Ne_short_2(10, 11) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Ne_ushort_2(10, 11) failed");
             return 101;
         }
         if (!Ne_uint_2(10, 11))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Ne_int_2(10, 11) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Ne_uint_2(10, 11) failed");
             return 101;
         }
         if (!Ne_ulong_2(10, 11))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Ne_long_2(10, 11) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Ne_ulong_2(10, 11) failed");
             return 101;
         }
 
@@ -239,17 +239,17 @@ public class ComparisonTestAnd2Chains
         }
         if (!Lt_ushort_2(3, 4))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Lt_short_2(3, 4) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Lt_ushort_2(3, 4) failed");
             return 101;
         }
         if (!Lt_uint_2(3, 4))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Lt_int_2(3, 4) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Lt_uint_2(3, 4) failed");
             return 101;
         }
         if (!Lt_ulong_2(3, 4))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Lt_long_2(3, 4) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Lt_ulong_2(3, 4) failed");
             return 101;
         }
 
@@ -275,17 +275,17 @@ public class ComparisonTestAnd2Chains
         }
         if (!Le_ushort_2(3, 4))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Le_short_2(3, 4) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Le_ushort_2(3, 4) failed");
             return 101;
         }
         if (!Le_uint_2(3, 4))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Le_int_2(3, 4) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Le_uint_2(3, 4) failed");
             return 101;
         }
         if (!Le_ulong_2(3, 4))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Le_long_2(3, 4) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Le_ulong_2(3, 4) failed");
             return 101;
         }
 
@@ -311,17 +311,17 @@ public class ComparisonTestAnd2Chains
         }
         if (!Gt_ushort_2(10, 11))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Gt_short_2(10, 11) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Gt_ushort_2(10, 11) failed");
             return 101;
         }
         if (!Gt_uint_2(10, 11))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Gt_int_2(10, 11) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Gt_uint_2(10, 11) failed");
             return 101;
         }
         if (!Gt_ulong_2(10, 11))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Gt_long_2(10, 11) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Gt_ulong_2(10, 11) failed");
             return 101;
         }
 
@@ -347,17 +347,17 @@ public class ComparisonTestAnd2Chains
         }
         if (!Ge_ushort_2(10, 11))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Ge_short_2(10, 11) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Ge_ushort_2(10, 11) failed");
             return 101;
         }
         if (!Ge_uint_2(10, 11))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Ge_int_2(10, 11) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Ge_uint_2(10, 11) failed");
             return 101;
         }
         if (!Ge_ulong_2(10, 11))
         {
-            Console.WriteLine("ComparisonTestAnd2Chains:Le_long_2(10, 11) failed");
+            Console.WriteLine("ComparisonTestAnd2Chains:Le_ulong_2(10, 11) failed");
             return 101;
         }
 
