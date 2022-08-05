@@ -834,17 +834,7 @@ namespace System.Tests
                 var startOfYear = new DateTime(year, 1, 1);
                 for (int expectedDayOfYear = 1, lastDayOfYear = DateTime.IsLeapYear(expectedDayOfYear) ? 366 : 365; expectedDayOfYear <= lastDayOfYear; ++expectedDayOfYear)
                 {
-                    var dateTime = startOfYear.AddDays(expectedDayOfYear - 1);  // .DayOfYear implementation uses 6-hour granularity value
-                    Assert.Equal(expectedDayOfYear, dateTime.DayOfYear);        // and we check 4 time points per day
-
-                    dateTime = dateTime.AddTicks(ticksPer6hours);
-                    Assert.Equal(expectedDayOfYear, dateTime.DayOfYear);
-
-                    dateTime = dateTime.AddTicks(ticksPer6hours);
-                    Assert.Equal(expectedDayOfYear, dateTime.DayOfYear);
-
-                    dateTime = dateTime.AddTicks(ticksPer6hours);
-                    Assert.Equal(expectedDayOfYear, dateTime.DayOfYear);
+                    Assert.Equal(expectedDayOfYear, startOfYear.AddDays(expectedDayOfYear - 1).DayOfYear);
                 }
             }
         }
