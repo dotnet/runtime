@@ -2098,11 +2098,11 @@ bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
 bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** startOfChain)
 {
     assert(parent->OperIs(GT_AND) || parent->OperIs(GT_SELECT));
+    *startOfChain = nullptr; // Nothing found yet.
 
     if (child->isContainedAndNotIntOrIImmed())
     {
         // Already have a chain.
-        *startOfChain = nullptr;
         return true;
     }
     // Can the child be contained.

@@ -2560,6 +2560,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         GenCondition cond;
         bool         chain = false;
 
+        JITDUMP("Generating compare chain:\n");
         if (op1->isContained())
         {
             // Generate Op1 into flags.
@@ -4498,10 +4499,6 @@ void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCon
 void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, GenCondition* prevCond)
 {
     assert(tree->isContained());
-    if (!*inChain)
-    {
-        JITDUMP("Generating compare chain:\n");
-    }
 
     if (tree->OperIs(GT_AND))
     {
@@ -4571,17 +4568,18 @@ void CodeGen::genCodeForSelect(GenTreeConditional* tree)
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
     GenCondition prevCond;
+    genConsumeRegs(opcond);
     if (opcond->isContained())
     {
         // Generate the contained condition.
         bool chain = false;
+        JITDUMP("Generating compare chain:\n");
         genCodeForContainedCompareChain(opcond, &chain, &prevCond);
         assert(chain);
     }
     else
     {
         // Condition has been generated into a register - move it into flags.
-        genConsumeReg(opcond);
         emit->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
         prevCond = GenCondition::NE;
     }
