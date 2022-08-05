@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import { mono_assert } from "./types";
 
 class OperationFailedError extends Error { }
@@ -112,11 +112,13 @@ export function init_crypto(): void {
             channel: chan,
             worker: worker,
         };
-        worker.postMessage({
+        const messageData: InitCryptoMessageData = {
+            config: JSON.stringify(runtimeHelpers.config),
             comm_buf: chan.get_comm_buffer(),
             msg_buf: chan.get_msg_buffer(),
             msg_char_len: chan.get_msg_len()
-        });
+        };
+        worker.postMessage(messageData);
         worker.onerror = event => {
             console.warn(`MONO_WASM: Error in Crypto WebWorker. Cryptography digest calls will fallback to managed implementation. Error: ${event.message}`);
             mono_wasm_crypto = null;
@@ -385,4 +387,11 @@ class LibraryChannel {
         }
         return new LibraryChannel(msg_char_len);
     }
+}
+
+export type InitCryptoMessageData = {
+    config: string,// serialized to avoid passing non-clonable objects
+    comm_buf: SharedArrayBuffer,
+    msg_buf: SharedArrayBuffer,
+    msg_char_len: number
 }
