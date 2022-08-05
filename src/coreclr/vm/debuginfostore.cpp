@@ -407,6 +407,7 @@ static void DoInlineTreeNodes(
     ULONG32 cNodes,
     ICorDebugInfo::InlineTreeNode* nodes)
 {
+    uint32_t lastILOffset = static_cast<uint32_t>(ICorDebugInfo::PROLOG);
     uint32_t lastChildIndex = 0;
     uint32_t lastSiblingIndex = 0;
 
@@ -416,7 +417,8 @@ static void DoInlineTreeNodes(
 
         trans.DoMethodHandle(node->Method);
 
-        trans.DoEncodedAdjustedU32(node->ILOffset, (DWORD) ICorDebugInfo::MAX_MAPPING_VALUE);
+        trans.DoEncodedDeltaU32NonMonotonic(node->ILOffset, lastILOffset);
+        lastILOffset = node->ILOffset;
 
         trans.DoEncodedDeltaU32NonMonotonic(node->Child, lastChildIndex);
         lastChildIndex = node->Child;
@@ -435,6 +437,7 @@ static void DoRichOffsetMappings(
     // Loop through and transfer each Entry in the Mapping.
     uint32_t lastNativeOffset = 0;
     uint32_t lastInlinee = 0;
+    uint32_t lastILOffset = static_cast<uint32_t>(ICorDebugInfo::PROLOG);
     for (uint32_t i = 0; i < cMappings; i++)
     {
         ICorDebugInfo::RichOffsetMapping* mapping = &mappings[i];
@@ -445,7 +448,8 @@ static void DoRichOffsetMappings(
         trans.DoEncodedDeltaU32NonMonotonic(mapping->Inlinee, lastInlinee);
         lastInlinee = mapping->Inlinee;
 
-        trans.DoEncodedAdjustedU32(mapping->ILOffset, (DWORD)ICorDebugInfo::MAX_MAPPING_VALUE);
+        trans.DoEncodedDeltaU32NonMonotonic(mapping->ILOffset, lastILOffset);
+        lastILOffset = mapping->ILOffset;
 
         trans.DoEncodedSourceType(mapping->Source);
     }
