@@ -41,7 +41,7 @@ namespace System.IO.Pipes.Tests
             bool isRoot = AdminHelpers.IsProcessElevated();
             if (clientPipeOptions == PipeOptions.CurrentUserOnly && isRoot)
             {
-                throw new SkipTestException("Current user is root, PipeOptions.CurrentUserOnly is unable to use a different user.");
+                throw new SkipTestException("Current user is root, RemoteExecutor is unable to use a different user for CurrentUserOnly.");
             }
 
             // Use an absolute path, otherwise, the test can fail if the remote invoker and test runner have
