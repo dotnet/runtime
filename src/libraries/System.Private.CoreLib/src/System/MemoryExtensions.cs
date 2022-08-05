@@ -500,17 +500,48 @@ namespace System
         /// The index in the span of the first occurrence of any value other than <paramref name="value"/>.
         /// If all of the values are <paramref name="value"/>, returns -1.
         /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>
         {
-            for (int i = 0; i < span.Length; i++)
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
-                if (!EqualityComparer<T>.Default.Equals(span[i], value))
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
-                    return i;
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref value),
+                        span.Length);
+                }
+
+                if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, short>(ref value),
+                        span.Length);
+                }
+
+                if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, int>(ref value),
+                        span.Length);
+                }
+
+                if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    return SpanHelpers.IndexOfAnyExceptValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, long>(ref value),
+                        span.Length);
                 }
             }
 
-            return -1;
+            return SpanHelpers.IndexOfAnyExcept(
+                ref MemoryMarshal.GetReference(span),
+                value,
+                span.Length);
         }
 
         /// <summary>Searches for the first index of any value other than the specified <paramref name="value0"/> or <paramref name="value1"/>.</summary>

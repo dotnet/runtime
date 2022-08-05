@@ -1147,6 +1147,77 @@ namespace System
             return -1; // not found
         }
 
+        public static int IndexOfAnyExcept<T>(ref T searchSpace, T value0, int length) where T : IEquatable<T>
+        {
+            Debug.Assert(length >= 0, "Expected non-negative length");
+
+            for (int i = 0; i < length; i++)
+            {
+                if (!Unsafe.Add(ref searchSpace, i).Equals(value0))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, int length) where T : struct, IEquatable<T>
+        {
+            Debug.Assert(length >= 0, "Expected non-negative length");
+            Debug.Assert(value0 is byte or short or int or long, "Expected caller to normalize to one of these types");
+
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<T>.Count)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    if (!Unsafe.Add(ref searchSpace, i).Equals(value0))
+                    {
+                        return i;
+                    }
+                }
+            }
+            else
+            {
+                Vector128<T> notEquals, value0Vector = Vector128.Create(value0);
+                ref T current = ref searchSpace;
+                ref T oneVectorAwayFromEnd = ref Unsafe.Add(ref searchSpace, length - Vector128<T>.Count);
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
+                {
+                    notEquals = ~Vector128.Equals(value0Vector, Vector128.LoadUnsafe(ref current));
+                    if (notEquals != Vector128<T>.Zero)
+                    {
+                        return ComputeIndex(ref searchSpace, ref current, notEquals);
+                    }
+
+                    current = ref Unsafe.Add(ref current, Vector128<T>.Count);
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd));
+
+                // If any elements remain, process the last vector in the search space.
+                if ((uint)length % Vector128<T>.Count != 0)
+                {
+                    notEquals = ~Vector128.Equals(value0Vector, Vector128.LoadUnsafe(ref oneVectorAwayFromEnd));
+                    if (notEquals != Vector128<T>.Zero)
+                    {
+                        return ComputeIndex(ref searchSpace, ref oneVectorAwayFromEnd, notEquals);
+                    }
+                }
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                static int ComputeIndex(ref T searchSpace, ref T current, Vector128<T> notEquals)
+                {
+                    uint notEqualsElements = notEquals.ExtractMostSignificantBits();
+                    int index = BitOperations.TrailingZeroCount(notEqualsElements);
+                    return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / Unsafe.SizeOf<T>());
+                }
+            }
+
+            return -1;
+        }
+
         public static bool SequenceEqual<T>(ref T first, ref T second, int length) where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
