@@ -421,7 +421,7 @@ namespace System.Net.Http
         [DoesNotReturn]
         private static void ThrowGetVersionException(HttpRequestMessage request, int desiredVersion, Exception? inner = null)
         {
-            Debug.Assert(desiredVersion == 2 || desiredVersion == 3);
+            Debug.Assert(desiredVersion >= 2);
 
             throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner);
         }
@@ -1014,6 +1014,12 @@ namespace System.Net.Http
                 try
                 {
                     HttpResponseMessage? response = null;
+
+                    // We could not use version higher than HTTP/3. Do not continue if downgrade is not allowed.
+                    if (request.Version.Major > 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
+                    {
+                        ThrowGetVersionException(request, request.Version.Major);
+                    }
 
                     // Use HTTP/3 if possible.
                     if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
