@@ -59,8 +59,7 @@ jobs:
   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
-# WebAssembly legs - run windows builds. Also, debugger tests which are currently
-# unstable
+# WebAssembly legs - library tests, Wasm.Build.Tests, and debugger tests
 #
 - template: /eng/pipelines/common/templates/wasm-library-tests.yml
   parameters:
