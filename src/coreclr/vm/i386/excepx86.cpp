@@ -28,6 +28,7 @@
 #include "eeconfig.h"
 #include "vars.hpp"
 #include "generics.h"
+#include "corinfo.h"
 
 #include "asmconstants.h"
 #include "virtualcallstub.h"
@@ -2970,6 +2971,8 @@ void ResumeAtJitEH(CrawlFrame* pCf,
         // Check that the InlinedCallFrame is in the method with the exception handler. There can be other
         // InlinedCallFrame somewhere up the call chain that is not related to the current exception
         // handling.
+        
+        // See the usages for USE_PER_FRAME_PINVOKE_INIT for more information.
 
 #ifdef DEBUG
         TADDR handlerFrameSP = pCf->GetRegisterSet()->SP;
@@ -2982,10 +2985,22 @@ void ResumeAtJitEH(CrawlFrame* pCf,
                                                                      NULL /* StackwalkCacheUnwindInfo* */);
         _ASSERTE(unwindSuccess);
 
-        if (((TADDR)pThread->m_pFrame < pCf->GetRegisterSet()->SP) && ExecutionManager::IsReadyToRunCode(((InlinedCallFrame*)pThread->m_pFrame)->m_pCallerReturnAddress))
+        if (((TADDR)pThread->m_pFrame < pCf->GetRegisterSet()->SP))
         {
-            _ASSERTE((TADDR)pThread->m_pFrame >= handlerFrameSP);
-            pThread->m_pFrame->Pop(pThread);
+            TADDR returnAddress = ((InlinedCallFrame*)pThread->m_pFrame)->m_pCallerReturnAddress;
+#ifdef USE_PER_FRAME_PINVOKE_INIT
+            // If we're setting up the frame for each P/Invoke for the given platform,
+            // then we do this for all P/Invokes except ones in IL stubs.
+            if (!ExecutionManager::GetCodeMethodDesc(returnAddress)->IsILStub())
+#else
+            // If we aren't setting up the frame for each P/Invoke (instead setting up once per method),
+            // then ReadyToRun code is the only code using the per-P/Invoke logic.
+            if (ExecutionManager::IsReadyToRunCode(returnAddress))
+#endif
+            {
+                _ASSERTE((TADDR)pThread->m_pFrame >= handlerFrameSP);
+                pThread->m_pFrame->Pop(pThread);
+            }
         }
     }
 

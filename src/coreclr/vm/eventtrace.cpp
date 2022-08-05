@@ -7636,6 +7636,8 @@ void ETW::CompilationLog::TieredCompilation::GetSettings(UINT32 *flagsRef)
         None = 0x0,
         QuickJit = 0x1,
         QuickJitForLoops = 0x2,
+        TieredPGO = 0x4,
+        ReadyToRun = 0x8,
     };
 
     UINT32 flags = (UINT32)Flags::None;
@@ -7647,6 +7649,18 @@ void ETW::CompilationLog::TieredCompilation::GetSettings(UINT32 *flagsRef)
             flags |= (UINT32)Flags::QuickJitForLoops;
         }
     }
+#ifdef FEATURE_PGO
+    if (g_pConfig->TieredPGO())
+    {
+        flags |= (UINT32)Flags::TieredPGO;
+    }
+#endif
+#ifdef FEATURE_READYTORUN
+    if (g_pConfig->ReadyToRun())
+    {
+        flags |= (UINT32)Flags::ReadyToRun;
+    }
+#endif
     *flagsRef = flags;
 }
 

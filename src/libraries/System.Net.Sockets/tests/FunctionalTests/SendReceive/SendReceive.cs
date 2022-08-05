@@ -922,25 +922,36 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        public static readonly TheoryData<IPAddress> UdpReceiveGetsCanceledByDispose_Data = new TheoryData<IPAddress>
+        public static readonly TheoryData<IPAddress, bool> UdpReceiveGetsCanceledByDispose_Data = new TheoryData<IPAddress, bool>
         {
-            { IPAddress.Loopback },
-            { IPAddress.IPv6Loopback },
-            { IPAddress.Loopback.MapToIPv6() }
+            { IPAddress.Loopback, true },
+            { IPAddress.IPv6Loopback, true },
+            { IPAddress.Loopback.MapToIPv6(), true },
+            { IPAddress.Loopback, false },
+            { IPAddress.IPv6Loopback, false },
+            { IPAddress.Loopback.MapToIPv6(), false }
         };
 
         [Theory]
         [MemberData(nameof(UdpReceiveGetsCanceledByDispose_Data))]
         [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        public async Task UdpReceiveGetsCanceledByDispose(IPAddress address)
+        public async Task UdpReceiveGetsCanceledByDispose(IPAddress address, bool owning)
         {
+            // Aborting sync operations for non-owning handles is not supported on Unix.
+            if (!owning && UsesSync && !PlatformDetection.IsWindows)
+            {
+                return;
+            }
+
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
                 var socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+                using SafeSocketHandle? owner = ReplaceWithNonOwning(ref socket, owning);
+
                 if (address.IsIPv4MappedToIPv6) socket.DualMode = true;
                 socket.BindToAnonymousPort(address);
                 ConfigureNonBlocking(socket);
@@ -987,21 +998,33 @@ namespace System.Net.Sockets.Tests
             }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
-        public static readonly TheoryData<bool, bool, bool> TcpReceiveSendGetsCanceledByDispose_Data = new TheoryData<bool, bool, bool>
+        public static readonly TheoryData<bool, bool, bool, bool> TcpReceiveSendGetsCanceledByDispose_Data = new TheoryData<bool, bool, bool, bool>
         {
-            { true, false, false },
-            { true, false, true },
-            { true, true, false },
-            { false, false, false },
-            { false, false, true },
-            { false, true, false },
+            { true, false, false, true },
+            { true, false, true, true },
+            { true, true, false, true },
+            { false, false, false, true },
+            { false, false, true, true },
+            { false, true, false, true },
+            { true, false, false, false },
+            { true, false, true, false },
+            { true, true, false, false },
+            { false, false, false, false },
+            { false, false, true, false },
+            { false, true, false, false },
         };
 
         [Theory]
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
-        public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient)
+        public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient, bool owning)
         {
+            // Aborting sync operations for non-owning handles is not supported on Unix.
+            if (!owning && UsesSync && !PlatformDetection.IsWindows)
+            {
+                return;
+            }
+
             // RHEL7 kernel has a bug preventing close(AF_UNKNOWN) to succeed with IPv6 sockets.
             // In this case Dispose will trigger a graceful shutdown, which means that receive will succeed on socket2.
             // This bug is fixed in kernel 3.10.0-1160.25+.
@@ -1015,6 +1038,8 @@ namespace System.Net.Sockets.Tests
             await RetryHelper.ExecuteAsync(async () =>
             {
                 (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair(ipv6Server, dualModeClient);
+                using SafeSocketHandle? owner = ReplaceWithNonOwning(ref socket1, owning);
+
                 using (socket2)
                 {
                     Task socketOperation;
@@ -1075,6 +1100,8 @@ namespace System.Net.Sockets.Tests
                     {
                         Assert.Equal(SocketError.OperationAborted, localSocketError);
                     }
+
+                    owner?.Dispose();
 
                     // On OSX, we're unable to unblock the on-going socket operations and
                     // perform an abortive close.

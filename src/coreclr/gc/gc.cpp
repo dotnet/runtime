@@ -28245,9 +28245,9 @@ void gc_heap::add_plug_in_condemned_info (generation* gen, size_t plug_size)
 
 inline void save_allocated(heap_segment* seg)
 {
-#ifndef MULTIPLE_HEAP
+#ifndef MULTIPLE_HEAPS
     if (!heap_segment_saved_allocated(seg))
-#endif // !MULTIPLE_HEAP
+#endif // !MULTIPLE_HEAPS
     {
         heap_segment_saved_allocated (seg) = heap_segment_allocated (seg);
     }
@@ -28421,6 +28421,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
             heap_segment* sseg = seg;
             do
             {
+                heap_segment_saved_allocated(seg) = 0;
                 uint8_t* start_unmarked = heap_segment_mem (seg);
 #ifndef USE_REGIONS
                 // shorten it to minimum

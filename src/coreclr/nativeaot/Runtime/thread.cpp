@@ -251,9 +251,6 @@ void Thread::Construct()
              (offsetof(Thread, m_pTransitionFrame)));
 #endif // USE_PORTABLE_HELPERS
 
-    m_pThreadLocalModuleStatics = NULL;
-    m_numThreadLocalModuleStatics = 0;
-
     // NOTE: We do not explicitly defer to the GC implementation to initialize the alloc_context.  The
     // alloc_context will be initialized to 0 via the static initialization of tls_CurrentThread. If the
     // alloc_context ever needs different initialization, a matching change to the tls_CurrentThread
@@ -281,12 +278,19 @@ void Thread::Construct()
         m_pThreadStressLog = StressLog::CreateThreadStressLog(this);
 #endif // STRESS_LOG
 
-    m_threadAbortException = NULL;
+    // Everything else should be initialized to 0 via the static initialization of tls_CurrentThread.
+
+    ASSERT(m_pThreadLocalModuleStatics == NULL);
+    ASSERT(m_numThreadLocalModuleStatics == 0);
+
+    ASSERT(m_pGCFrameRegistrations == NULL);
+
+    ASSERT(m_threadAbortException == NULL);
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
-    m_redirectionContextBuffer = NULL;
+    ASSERT(m_redirectionContextBuffer == NULL);
 #endif //FEATURE_SUSPEND_REDIRECTION
-    m_interruptedContext = NULL;
+    ASSERT(m_interruptedContext == NULL);
 }
 
 bool Thread::IsInitialized()
@@ -370,6 +374,8 @@ void Thread::Destroy()
         delete[] m_redirectionContextBuffer;
     }
 #endif //FEATURE_SUSPEND_REDIRECTION
+
+    ASSERT(m_pGCFrameRegistrations == NULL);
 }
 
 #ifdef HOST_WASM
@@ -534,6 +540,17 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
     {
         PTR_RtuObjectRef pExceptionObj = dac_cast<PTR_RtuObjectRef>(&curExInfo->m_exception);
         RedhawkGCInterface::EnumGcRef(pExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
+    }
+
+    for (GCFrameRegistration* pCurGCFrame = m_pGCFrameRegistrations; pCurGCFrame != NULL; pCurGCFrame = pCurGCFrame->m_pNext)
+    {
+        ASSERT(pCurGCFrame->m_pThread == this);
+
+        for (uint32_t i = 0; i < pCurGCFrame->m_numObjRefs; i++)
+        {
+            RedhawkGCInterface::EnumGcRef(dac_cast<PTR_RtuObjectRef>(pCurGCFrame->m_pObjRefs + i),
+                pCurGCFrame->m_MaybeInterior ? GCRK_Byref : GCRK_Object, pfnEnumCallback, pvCallbackData);
+        }
     }
 
     // Keep alive the ThreadAbortException that's stored in the target thread during thread abort

@@ -51,7 +51,7 @@ namespace R2RDump
                 instrSize = DumpInstruction(Disasm, new IntPtr(rtf.StartAddress + rtfOffset), ptr, new IntPtr(rtf.Size));
             }
             IntPtr pBuffer = GetOutputBuffer();
-            instr = Marshal.PtrToStringAnsi(pBuffer);
+            instr = Marshal.PtrToStringUTF8(pBuffer);
             ClearOutputBuffer();
             return instrSize;
         }

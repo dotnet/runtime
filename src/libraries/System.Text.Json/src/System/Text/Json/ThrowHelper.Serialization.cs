@@ -351,6 +351,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_CreateObjectConverterNotCompatible(Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.CreateObjectConverterNotCompatible, type));
+        }
+
+        [DoesNotReturn]
         public static void ReThrowWithPath(ref ReadStack state, JsonReaderException ex)
         {
             Debug.Assert(ex.Path == null);
@@ -707,6 +713,13 @@ namespace System.Text.Json
         public static void ThrowNotSupportedException_NoMetadataForType(Type type, IJsonTypeInfoResolver? resolver)
         {
             throw new NotSupportedException(SR.Format(SR.NoMetadataForType, type, resolver?.GetType().FullName ?? "<null>"));
+        }
+
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_ConstructorContainsNullParameterNames(Type declaringType)
+        {
+            throw new NotSupportedException(SR.Format(SR.ConstructorContainsNullParameterNames, declaringType));
         }
 
         [DoesNotReturn]

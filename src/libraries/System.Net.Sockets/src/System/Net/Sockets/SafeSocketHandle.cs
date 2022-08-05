@@ -42,18 +42,19 @@ namespace System.Net.Sockets
         /// <param name="preexistingHandle">Handle to wrap</param>
         /// <param name="ownsHandle">Whether to control the handle lifetime</param>
         public SafeSocketHandle(IntPtr preexistingHandle, bool ownsHandle)
-            : base(ownsHandle)
+            : base(ownsHandle: true) // To support canceling on-going operations we need to detect
+                                     // there are no more on-going operations.
+                                     // For that the base-SafeHandle needs to be owning even
+                                     // when the SafeSocketHandle is not.
         {
-            OwnsHandle = ownsHandle;
+            OwnsHandle = ownsHandle; // Track if the SafesocketHandle is owning.
             SetHandleAndValid(preexistingHandle);
         }
 
         internal bool OwnsHandle { get; }
 
         private bool TryOwnClose()
-        {
-            return OwnsHandle && Interlocked.CompareExchange(ref _ownClose, 1, 0) == 0;
-        }
+            => Interlocked.CompareExchange(ref _ownClose, 1, 0) == 0;
 
         private volatile bool _released;
         private bool _hasShutdownSend;
@@ -97,7 +98,7 @@ namespace System.Net.Sockets
 #endif
                 bool shouldClose = TryOwnClose();
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"shouldClose={shouldClose}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"abortive={abortive}, shouldClose ={shouldClose}");
 
                 Dispose();
 
@@ -148,8 +149,8 @@ namespace System.Net.Sockets
                     abortive = true;
                 }
 
-                SocketError errorCode = DoCloseHandle(abortive);
-                return ret = errorCode == SocketError.Success;
+                ret = !OwnsHandle || DoCloseHandle(abortive) == SocketError.Success;
+                return ret;
 #if DEBUG
             }
             catch (Exception exception)

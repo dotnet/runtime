@@ -9,12 +9,12 @@
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
+        <target state="translated">Pokud se obrazec „Ze spravovaných na nespravované s vyrovnávací pamětí přidělenou volajícímu“ používá metodou FromManaged, která přebírá Span&lt;T&gt; u zařazovacího typu, musí typ poskytovat statickou vlastnost BufferSize, která určuje počet elementů ve vyrovnávací paměti přidělené volajícímu.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
+        <target state="translated">Zařazovací typ {0} musí obsahovat statickou celočíselnou vlastnost BufferSize určenou jen pro čtení, která určuje velikost vyrovnávací paměti přidělené volajícímu, protože obsahuje metodu FromManaged, která přebírá Span&lt;{1}&gt; přidělený volajícímu.</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportDescription">
@@ -79,7 +79,7 @@
       </trans-unit>
       <trans-unit id="ConvertToLibraryImportAddUnsafe">
         <source>Convert to 'LibraryImport' and enable unsafe code</source>
-        <target state="new">Convert to 'LibraryImport' and enable unsafe code</target>
+        <target state="translated">Převést na LibraryImport a povolit nebezpečný kód</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToLibraryImportDescription">
@@ -89,7 +89,7 @@
       </trans-unit>
       <trans-unit id="ConvertToLibraryImportMayRequireCustomMarshalling">
         <source>Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</source>
-        <target state="new">Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</target>
+        <target state="translated">Převod tohoto rozhraní API na LibraryImport bude vyžadovat další kód, který poskytne vlastní zařazovače pro některé parametry.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToLibraryImportMessage">
@@ -109,7 +109,7 @@
       </trans-unit>
       <trans-unit id="ConvertToLibraryImportWithSuffixAddUnsafe">
         <source>Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</source>
-        <target state="new">Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</target>
+        <target state="translated">Převést na LibraryImport s příponou {0} a povolit nebezpečný kód</target>
         <note />
       </trans-unit>
       <trans-unit id="CustomMarshallerTypeMustHaveRequiredShapeTitle">
@@ -119,12 +119,12 @@
       </trans-unit>
       <trans-unit id="ElementMarshallerCannotBeStatefulDescription">
         <source>A marshaller for an element scenario cannot be stateful.</source>
-        <target state="new">A marshaller for an element scenario cannot be stateful.</target>
+        <target state="translated">Zařazovač pro scénář elementu nemůže být stavový.</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementMarshallerCannotBeStatefulMessage">
         <source>The specified marshaller type '{0}' is a stateful marshaller, but stateful marshallers are not allowed in the provided marshal mode '{1}'</source>
-        <target state="new">The specified marshaller type '{0}' is a stateful marshaller, but stateful marshallers are not allowed in the provided marshal mode '{1}'</target>
+        <target state="translated">Zadaný zařazovací typ {0} je stavový zařazovač, ale stavové zařazovače nejsou v poskytnutém režimu zařazování {1} povolené.</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementTypesOfReturnTypesMustMatchDescription">
@@ -174,7 +174,7 @@
       </trans-unit>
       <trans-unit id="FromUnmanagedOverloadsNotSupportedMessage">
         <source>The type '{0}' overloads the 'FromUnmanaged' method, which is not supported in custom marshallers</source>
-        <target state="new">The type '{0}' overloads the 'FromUnmanaged' method, which is not supported in custom marshallers</target>
+        <target state="translated">Typ {0} přetíží metodu FromUnmanaged, která se ve vlastních zařazováních nepodporuje.</target>
         <note />
       </trans-unit>
       <trans-unit id="GetPinnableReferenceReturnTypeBlittableDescription">
@@ -399,62 +399,62 @@
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFreeDescription">
         <source>A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</source>
-        <target state="new">A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</target>
+        <target state="translated">Stavový zařazovač musí mít instanční metodu s názvem Free, která nemá žádné parametry a vrací void.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFreeMessage">
         <source>The type '{0}' is a stateful marshaller and does not have a zero-parameter void-returning instance method named 'Free'</source>
-        <target state="new">The type '{0}' is a stateful marshaller and does not have a zero-parameter void-returning instance method named 'Free'</target>
+        <target state="translated">Typ {0} je stavový zařazovač a nemá instanční metodu s názvem Free, která je bez parametrů a vrací void.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFromManagedDescription">
         <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</source>
-        <target state="new">A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</target>
+        <target state="translated">Stavový zařazovač, který podporuje zařazování ze spravovaného do nespravovaného, musí poskytovat instanční metodu FromManaged, která přebírá spravovanou hodnotu jako parametr a vrací void.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFromManagedMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromManaged' that takes a '{2}' as a parameter and returns 'void'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromManaged' that takes a '{2}' as a parameter and returns 'void'</target>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1} pro {2}, ale neposkytuje instanční metodu FromManaged s jedním parametrem, která přijímá jako parametr {2} a vrací void.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFromUnmanagedDescription">
         <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</source>
-        <target state="new">A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</target>
+        <target state="translated">Stavový zařazovač, který podporuje zařazování z nespravovaného do spravovaného, musí poskytovat instanční metodu FromUnmanaged, která přebírá nespravovanou hodnotu jako parametr a vrací void.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFromUnmanagedMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromUnmanaged' that takes the 'unmanaged' value as a parameter and returns 'void'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromUnmanaged' that takes the 'unmanaged' value as a parameter and returns 'void'</target>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1} pro {2}, ale neposkytuje instanční metodu FromUnmanaged s jedním parametrem, která jako parametr přebírá hodnotu unmanaged a vrací void.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresToManagedDescription">
         <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</source>
-        <target state="new">A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</target>
+        <target state="translated">Stavový zařazovač, který podporuje zařazování z nespravovaného do spravovaného, musí poskytovat instanční metodu ToManaged, která nepřebírá žádné parametry a vrací typ managed.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresToManagedMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToManaged' that returns '{2}'</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToManaged' that returns '{2}'</target>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1} pro {2}, ale neposkytuje instanční metodu bez parametrů s názvem ToManaged, která vrací {2}</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresToUnmanagedDescription">
         <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</source>
-        <target state="new">A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</target>
+        <target state="translated">Stavový zařazovač, který podporuje zařazování ze spravovaného do nespravovaného, musí poskytovat instanční metodu ToUnmanaged, která nepřebírá žádné parametry a vrací typ unmanaged.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresToUnmanagedMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToUnmanaged' that returns the 'unmanaged' type for the marshaller</source>
-        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToUnmanaged' that returns the 'unmanaged' type for the marshaller</target>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1} pro {2}, ale neposkytuje instanční metodu bez parametrů s názvem ToUnmanaged, která pro zařazovač vrací typ unmanaged.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
+        <target state="translated">Když se použije obrazec Spravovaný na nespravovaný s vyrovnávací pamětí přidělenou volajícím poskytnutím metody AllocateContainerForUnmanagedElements, která přebírá span&lt;T&gt; typu zařazovače, musí typ poskytnout statickou vlastnost BufferSize, aby bylo možné poskytnout počet prvků ve vyrovnávací paměti přidělené volajícím.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
+        <target state="translated">Typ zařazovacího modulu {0} musí mít statickou vlastnost BufferSize jen pro čtení int, aby bylo možné určit velikost vyrovnávací paměti přidělené volajícím, protože má metodu AllocateContainerForUnmanagedElements, která přebírá metodu Span&lt;{1}&gt; přidělenou volajícím.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">
