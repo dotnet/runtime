@@ -482,12 +482,10 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.0.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.PerformanceCounter\tests\System.Diagnostics.PerformanceCounter.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml\tests\System.Security.Cryptography.Xml.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.EventSource\tests\Microsoft.Extensions.Logging.EventSource.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Annotations\tests\System.ComponentModel.Annotations.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.RateLimiting\tests\System.Threading.RateLimiting.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Caching.Memory\tests\Microsoft.Extensions.Caching.Memory.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Xml\tests\Microsoft.Extensions.Configuration.Xml.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Console\tests\Microsoft.Extensions.Logging.Console.Tests\Microsoft.Extensions.Logging.Console.Tests.csproj" />
@@ -502,9 +500,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.HostFactoryResolver\tests\Microsoft.Extensions.HostFactoryResolver.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging\tests\Common\Microsoft.Extensions.Logging.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.Platforms\tests\Microsoft.NETCore.Platforms.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\tests\Microsoft.VisualBasic.Core.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Win32.SystemEvents\tests\Microsoft.Win32.SystemEvents.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.CodeDom\tests\System.CodeDom.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition\tests\System.ComponentModel.Composition.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition.Registration\tests\System.ComponentModel.Composition.Registration.Tests.csproj" />
@@ -525,8 +521,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.DirectoryServices.Protocols\tests\System.DirectoryServices.Protocols.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime\tests\System.Dynamic.Runtime.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization\tests\NlsTests\System.Globalization.Nls.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Globalization.Calendars\tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Queryable\tests\System.Linq.Queryable.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Management\tests\System.Management.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets\tests\System.Net.WebSockets.Tests.csproj" />
@@ -536,8 +530,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XsltCompiler\XsltCompiler.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Context\tests\System.Reflection.Context.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Extensions\tests\System.Reflection.Extensions.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.TypeExtensions\tests\System.Reflection.TypeExtensions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Extensions\tests\System.Resources.Extensions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.ResourceManager\tests\System.Resources.ResourceManager.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\NlsTests\System.Runtime.Nls.Tests.csproj" />
