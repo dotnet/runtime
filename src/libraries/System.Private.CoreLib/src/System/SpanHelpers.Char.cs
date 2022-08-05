@@ -1373,8 +1373,8 @@ namespace System
                     {
                         search = Vector128.LoadUnsafe(ref ushortSearchStart, offset);
 
-                        compareResult = Vector128.Equals(values0, search) | Vector128.Equals(values1, search);
-                        compareResult |= Vector128.Equals(values2, search) | Vector128.Equals(values3, search);
+                        compareResult = Vector128.Equals(values0, search) | Vector128.Equals(values1, search)
+                                      | Vector128.Equals(values2, search) | Vector128.Equals(values3, search);
                         if (compareResult == Vector128<ushort>.Zero)
                         {
                             // None matched
@@ -1391,8 +1391,8 @@ namespace System
                     search = Vector128.LoadUnsafe(ref ushortSearchStart, lengthToExamine);
                     offset = lengthToExamine;
                     // Same as method as above
-                    compareResult = Vector128.Equals(values0, search) | Vector128.Equals(values1, search);
-                    compareResult |= Vector128.Equals(values2, search) | Vector128.Equals(values3, search);
+                    compareResult = Vector128.Equals(values0, search) | Vector128.Equals(values1, search)
+                                  | Vector128.Equals(values2, search) | Vector128.Equals(values3, search);
                     if (compareResult == Vector128<ushort>.Zero)
                     {
                         // None matched
@@ -1593,6 +1593,7 @@ namespace System
                         // Same as method as above
                         matches = (Vector256.Equals(values0, search) | Vector256.Equals(values1, search) | Vector256.Equals(values2, search)
                                  | Vector256.Equals(values3, search) | Vector256.Equals(values4, search))
+                            .AsByte().ExtractMostSignificantBits();
                         if (matches == 0)
                         {
                             // None matched
@@ -1617,8 +1618,8 @@ namespace System
                     {
                         search = Vector128.LoadUnsafe(ref ushortSearchStart, offset);
 
-                        compareResult = Vector128.Equals(values0, search) | Vector128.Equals(values1, search) | Vector128.Equals(values2, search);
-                        compareResult |= Vector128.Equals(values3, search) | Vector128.Equals(values4, search);
+                        compareResult = Vector128.Equals(values0, search) | Vector128.Equals(values1, search) | Vector128.Equals(values2, search)
+                                      | Vector128.Equals(values3, search) | Vector128.Equals(values4, search);
                         if (compareResult == Vector128<ushort>.Zero)
                         {
                             // None matched
@@ -1635,8 +1636,8 @@ namespace System
                     search = Vector128.LoadUnsafe(ref ushortSearchStart, lengthToExamine);
                     offset = lengthToExamine;
                     // Same as method as above
-                    compareResult = Vector128.Equals(values0, search) | Vector128.Equals(values1, search) | Vector128.Equals(values2, search);
-                    compareResult |= Vector128.Equals(values3, search) | Vector128.Equals(values4, search);
+                    compareResult = Vector128.Equals(values0, search) | Vector128.Equals(values1, search) | Vector128.Equals(values2, search)
+                                  | Vector128.Equals(values3, search) | Vector128.Equals(values4, search);
                     if (compareResult == Vector128<ushort>.Zero)
                     {
                         // None matched
