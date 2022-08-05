@@ -230,29 +230,27 @@ namespace System.Net.Sockets
 
         internal Socket CopyStateFromSource(Socket source)
         {
-            #region Copy State of Socket
-            instance._addressFamily = source._addressFamily;
-            instance._closeTimeout = source._closeTimeout;
-            instance._disposed = source._disposed;
-            instance._handle = source._handle;
-            instance._isConnected = source._isConnected;
-            instance._isDisconnected = source._isDisconnected;
-            instance._isListening = source._isListening;
-            instance._nonBlockingConnectInProgress = source._nonBlockingConnectInProgress;
-            instance._protocolType = source._protocolType;
-            instance._receivingPacketInformation = source._receivingPacketInformation;
-            instance._remoteEndPoint = source._remoteEndPoint;
-            instance._rightEndPoint = source._rightEndPoint;
-            instance._socketType = source._socketType;
-            instance._willBlock = source._willBlock;
-            instance._willBlockInternal = source._willBlockInternal;
-            instance._localEndPoint = source._localEndPoint;
-            instance._multiBufferReceiveEventArgs = source._multiBufferReceiveEventArgs;
-            instance._multiBufferSendEventArgs = source._multiBufferSendEventArgs;
-            instance._pendingConnectRightEndPoint = source._pendingConnectRightEndPoint;
-            instance._singleBufferReceiveEventArgs = source._singleBufferReceiveEventArgs;
-            #endregion
-            return instance;
+            _addressFamily = source._addressFamily;
+            _closeTimeout = source._closeTimeout;
+            _disposed = source._disposed;
+            _handle = source._handle;
+            _isConnected = source._isConnected;
+            _isDisconnected = source._isDisconnected;
+            _isListening = source._isListening;
+            _nonBlockingConnectInProgress = source._nonBlockingConnectInProgress;
+            _protocolType = source._protocolType;
+            _receivingPacketInformation = source._receivingPacketInformation;
+            _remoteEndPoint = source._remoteEndPoint;
+            _rightEndPoint = source._rightEndPoint;
+            _socketType = source._socketType;
+            _willBlock = source._willBlock;
+            _willBlockInternal = source._willBlockInternal;
+            _localEndPoint = source._localEndPoint;
+            _multiBufferReceiveEventArgs = source._multiBufferReceiveEventArgs;
+            _multiBufferSendEventArgs = source._multiBufferSendEventArgs;
+            _pendingConnectRightEndPoint = source._pendingConnectRightEndPoint;
+            _singleBufferReceiveEventArgs = source._singleBufferReceiveEventArgs;
+            return this;
         }
     }
 }

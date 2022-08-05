@@ -340,7 +340,6 @@ namespace System.Net.Sockets
             _acceptSocket = _currentSocket!.CreateAcceptSocket(
                 SocketPal.CreateSocket(_acceptedFileDescriptor),
                 _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
-            
             // TODO (aaksoy): Clear sukru's handle.
             sukru.CopyStateFromSource(_acceptSocket);
             // We keep this socket to make clean-up.
