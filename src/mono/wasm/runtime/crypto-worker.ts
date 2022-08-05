@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import { mono_assert } from "./types";
 
 class OperationFailedError extends Error { }
@@ -113,6 +113,7 @@ export function init_crypto(): void {
             worker: worker,
         };
         worker.postMessage({
+            config: JSON.stringify(runtimeHelpers.config), // there could be things in config which could not be cloned to worker
             comm_buf: chan.get_comm_buffer(),
             msg_buf: chan.get_msg_buffer(),
             msg_char_len: chan.get_msg_len()
