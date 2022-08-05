@@ -22,6 +22,7 @@ namespace System.Net.WebSockets.Client.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
         public async Task ReceiveNoThrowAfterSend_NoSsl(bool useHandler)
         {
             var serverMessage = new byte[] { 4, 5, 6 };

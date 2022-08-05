@@ -22,6 +22,7 @@ namespace System.Net.WebSockets.Client.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
         public async Task ConnectAsync_VersionNotSupported_NoSsl_Throws(bool useHandler)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -83,6 +84,7 @@ namespace System.Net.WebSockets.Client.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
         public async Task ConnectAsync_VersionSupported_NoSsl_Success(bool useHandler)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
