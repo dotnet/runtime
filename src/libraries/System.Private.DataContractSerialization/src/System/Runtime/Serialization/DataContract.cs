@@ -345,7 +345,7 @@ namespace System.Runtime.Serialization
 
         internal class DataContractCriticalHelper
         {
-            private static readonly ConcurrentDictionary<RuntimeTypeHandle, Lazy<int>> s_typeToIDCache = new();
+            private static readonly ConcurrentDictionary<RuntimeTypeHandle, int> s_typeToIDCache = new();
             private static DataContract[] s_dataContractCache = new DataContract[32];
             private static int s_dataContractID;
             private static readonly ConcurrentDictionary<Type, DataContract?> s_typeToBuiltInContract = new();
@@ -442,31 +442,29 @@ namespace System.Runtime.Serialization
             {
                 typeHandle = GetDataContractAdapterTypeHandle(typeHandle);
 
+                if (s_typeToIDCache.TryGetValue(typeHandle, out int id))
+                    return id;
+
                 try
                 {
-                    Lazy<int> lazy = s_typeToIDCache.GetOrAdd(typeHandle, static (key) =>
+                    lock (s_cacheLock)
                     {
-                        // Lazy is used to ensure we only ever allocate a single slot from s_dataContractCache per handle
-                        return new Lazy<int>(() =>
+                        return s_typeToIDCache.GetOrAdd(typeHandle, static _ =>
                         {
-                            lock (s_cacheLock)
+                            int nextId = s_dataContractID++;
+                            if (nextId >= s_dataContractCache.Length)
                             {
-                                int value = s_dataContractID++;
-                                if (value >= s_dataContractCache.Length)
+                                int newSize = (nextId < int.MaxValue / 2) ? nextId * 2 : int.MaxValue;
+                                if (newSize <= nextId)
                                 {
-                                    int newSize = (value < int.MaxValue / 2) ? value * 2 : int.MaxValue;
-                                    if (newSize <= value)
-                                    {
-                                        DiagnosticUtility.DebugAssert("DataContract cache overflow");
-                                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.DataContractCacheOverflow));
-                                    }
-                                    Array.Resize<DataContract>(ref s_dataContractCache, newSize);
+                                    DiagnosticUtility.DebugAssert("DataContract cache overflow");
+                                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.DataContractCacheOverflow));
                                 }
-                                return value;
+                                Array.Resize<DataContract>(ref s_dataContractCache, newSize);
                             }
-                        }, isThreadSafe: true);
-                    });
-                    return lazy.Value;
+                            return nextId;
+                        });
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -1003,10 +1001,10 @@ namespace System.Runtime.Serialization
             {
                 if (type != null)
                 {
-                    var typeHandle = GetDataContractAdapterTypeHandle(type.TypeHandle);
+                    RuntimeTypeHandle typeHandle = GetDataContractAdapterTypeHandle(type.TypeHandle);
                     try
                     {
-                        s_typeToIDCache.TryRemove(typeHandle, out var _);
+                        s_typeToIDCache.TryRemove(typeHandle, out _);
                     }
                     catch (Exception ex)
                     {
