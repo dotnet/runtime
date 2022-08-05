@@ -340,9 +340,13 @@ internal sealed class PInvokeTableGenerator
         {
             MethodInfo method = cb.Method;
             bool isVoid = method.ReturnType.FullName == "System.Void";
+            
+            if (method.DeclaringType.Assembly.GetCustomAttributesData().Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute"))
+                continue;
 
             if (!isVoid && !IsBlittable(method.ReturnType))
                 Error($"The return type '{method.ReturnType.FullName}' of pinvoke callback method '{method}' needs to be blittable.");
+            
             foreach (var p in method.GetParameters())
             {
                 if (!IsBlittable(p.ParameterType))
@@ -459,9 +463,6 @@ internal sealed class PInvokeTableGenerator
 
     private static bool IsBlittable(Type type)
     {
-        if (type.Assembly.GetCustomAttributesData().Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute"))
-            return true;
-
         if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
             return true;
         else
