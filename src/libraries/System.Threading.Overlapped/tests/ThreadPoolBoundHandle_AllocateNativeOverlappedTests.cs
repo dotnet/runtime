@@ -80,6 +80,7 @@ public partial class ThreadPoolBoundHandleTests
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/73421", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
     public unsafe void AllocateNativeOverlapped_NonBlittableTypeAsPinData_Throws()
     {
         using (ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
@@ -129,6 +130,7 @@ public partial class ThreadPoolBoundHandleTests
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/73421", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
     public unsafe void AllocateNativeOverlapped_ObjectArrayWithNonBlittableTypeAsPinData_Throws()
     {
         var array = new object[]
