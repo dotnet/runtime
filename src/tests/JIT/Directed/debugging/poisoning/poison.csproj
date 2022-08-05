@@ -4,7 +4,6 @@
     <DebugType>PdbOnly</DebugType>
     <Optimize>False</Optimize>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <_IlasmSwitches>$(_IlasmSwitches) -DEBUG</_IlasmSwitches>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
