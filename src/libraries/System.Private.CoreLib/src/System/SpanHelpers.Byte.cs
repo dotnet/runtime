@@ -1969,15 +1969,6 @@ namespace System
                     goto BytewiseCheck;
                 }
             }
-            //else if (AdvSimd.Arm64.IsSupported)
-            //{
-            //    // This API is not optimized with ARM64 intrinsics because there is not much performance win seen
-            //    // when compared to the vectorized implementation below. There were some wins if the mismatch happen
-            //    // after 8th index of the chunk because with ARM64 intrinsic, using fewer instructions the first mismatched
-            //    // index can be retrieved. In case of vectorization, sequential scan has to be done instead. However, at the
-            //    // same time, there are losses if the mismatch index is less than 7~8. So the overall benefit doesn't justify
-            //    // to optimize this method with ARM64 hardware intrinsics.
-            //}
             else if (Vector.IsHardwareAccelerated)
             {
                 if (lengthToExamine > (nuint)Vector<byte>.Count)
