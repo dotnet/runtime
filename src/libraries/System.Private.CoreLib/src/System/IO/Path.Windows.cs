@@ -195,8 +195,8 @@ namespace System.IO
                     Marshal.SetLastSystemError(0);
                     retVal = func(bufferLen, ptr);
                     lastError = Marshal.GetLastSystemError();
-
                 }
+                
                 Marshal.SetLastPInvokeError(lastError);
                 return retVal;
             }
