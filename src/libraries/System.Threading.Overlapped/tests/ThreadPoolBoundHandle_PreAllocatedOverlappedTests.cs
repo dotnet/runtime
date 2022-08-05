@@ -41,8 +41,9 @@ public partial class ThreadPoolBoundHandleTests
         using (PreAllocatedOverlapped.UnsafeCreate((_, __, ___) => { }, new object(), new byte[0])) { }
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPinnedGCHandleBlittabilityEnforced))]
+    [Fact]
     [ActiveIssue("https://github.com/mono/mono/issues/15313", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/73421", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
     public unsafe void PreAllocatedOverlapped_NonBlittableTypeAsPinData_Throws()
     {
         AssertExtensions.Throws<ArgumentException>(null, () => new PreAllocatedOverlapped((_, __, ___) => { }, new object(), new NonBlittableType() { s = "foo" }));
@@ -73,8 +74,9 @@ public partial class ThreadPoolBoundHandleTests
         using (PreAllocatedOverlapped.UnsafeCreate((_, __, ___) => { }, new object(), array)) { }
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPinnedGCHandleBlittabilityEnforced))]
+    [Fact]
     [ActiveIssue("https://github.com/mono/mono/issues/15313", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/73421", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
     public unsafe void PreAllocatedOverlapped_ObjectArrayWithNonBlittableTypeAsPinData_Throws()
     {
         var array = new object[]
