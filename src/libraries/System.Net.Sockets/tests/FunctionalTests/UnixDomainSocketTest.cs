@@ -30,7 +30,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_Success()
         {
@@ -86,7 +85,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_NotServer()
         {
             string path = GetRandomNonExistingFilePath();
@@ -125,7 +123,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public void Socket_SendReceive_Success()
         {
@@ -158,7 +155,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public void Socket_SendReceive_Clone_Success()
         {
@@ -204,7 +200,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task Socket_SendReceiveAsync_Success()
         {
@@ -242,7 +237,6 @@ namespace System.Net.Sockets.Tests
         [InlineData(500, 18, 21)]
         [InlineData(500, 21, 18)]
         [InlineData(5, 128000, 64000)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task Socket_SendReceiveAsync_PropagateToStream_Success(int iterations, int writeBufferSize, int readBufferSize)
         {
@@ -299,7 +293,6 @@ namespace System.Net.Sockets.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26189", TestPlatforms.Windows)]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task ConcurrentSendReceive(bool forceNonBlocking)
         {
@@ -343,7 +336,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task ConcurrentSendReceiveAsync()
         {
@@ -399,7 +391,6 @@ namespace System.Net.Sockets.Tests
         [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public void UnixDomainSocketEndPoint_RemoteEndPointEqualsBindAddress(bool abstractAddress)
         {
@@ -534,7 +525,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void FilePathEquality()
         {
             string path1 = "relative" + Path.DirectorySeparatorChar + "path";
