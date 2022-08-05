@@ -16,7 +16,7 @@ namespace System.Net
         // iOS/tvOS ostensibly has AF_UNIX, but throws EPERM on iOS/tvOS 10.0+ on bind
         // Mac Catalyst returns true on IsIOS, so we need to explicitly check for the case
         // "is iOS but not Catalyst" as unsupported, but Catalyst itself is supported.
-        public static bool OSSupportsUnixDomainSockets { get; } = IsSupported(AddressFamily.Unix) && !OperatingSystem.IsTvOS() && (!OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst());
+        public static bool OSSupportsUnixDomainSockets { get; } = !OperatingSystem.IsTvOS() && (!OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst()) && IsSupported(AddressFamily.Unix);
 
         private static bool IsIPv6Disabled()
         {
