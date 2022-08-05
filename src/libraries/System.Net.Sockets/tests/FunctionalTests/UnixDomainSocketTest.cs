@@ -544,11 +544,22 @@ namespace System.Net.Sockets.Tests
 
         private static string GetRandomNonExistingFilePath()
         {
+            FieldInfo fi = typeof(UnixDomainSocketEndPoint).GetField("s_nativePathLength", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(fi);
+            int maxNativeSize = (int)fi.GetValue(null);
+            // check whether path lengths could even work on this platform
+            Assert.True(Path.GetTempPath() + 1 < maxNativeSize)
+
             string result;
             do
             {
                 // get random name and append random number of characters to get variable name length.
                 result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + new string('A', Random.Shared.Next(1, 32)));
+                // truncate result to fit
+                if (result.Length > maxNativeSize)
+                {
+                    result = result.SubString(maxNativeSize);
+                }
             }
             while (File.Exists(result));
 
