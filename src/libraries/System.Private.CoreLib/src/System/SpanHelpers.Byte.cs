@@ -1948,47 +1948,25 @@ namespace System
                 if (lengthToExamine >= (nuint)Vector128<byte>.Count)
                 {
                     lengthToExamine -= (nuint)Vector128<byte>.Count;
-                    uint matches;
-                    Vector128<byte> left, right;
                     while (lengthToExamine > offset)
                     {
-                        left = Vector128.LoadUnsafe(ref first, offset);
-                        right = Vector128.LoadUnsafe(ref second, offset);
-
-                        if (left == right)
+                        if (Vector128.LoadUnsafe(ref first, offset) == Vector128.LoadUnsafe(ref second, offset))
                         {
                             // All matched
                             offset += (nuint)Vector128<byte>.Count;
                             continue;
                         }
 
-                        // Note that ExtractMostSignificantBits has converted the equal vector elements into a set of bit flags,
-                        // So the bit position in 'matches' corresponds to the element offset.
-                        matches = Vector128.Equals(left, right).ExtractMostSignificantBits();
-                        goto Difference;
+                        goto BytewiseCheck;
                     }
                     // Move to Vector length from end for final compare
                     offset = lengthToExamine;
-                    // Same as method as above
-                    left = Vector128.LoadUnsafe(ref first, offset);
-                    right = Vector128.LoadUnsafe(ref second, offset);
-
-                    if (left == right)
+                    if (Vector128.LoadUnsafe(ref first, offset) == Vector128.LoadUnsafe(ref second, offset))
                     {
                         // All matched
                         goto Equal;
                     }
-                    matches = Vector128.Equals(left, right).ExtractMostSignificantBits();
-                Difference:
-                    // Invert matches to find differences
-                    uint differences = ~matches;
-                    // Find bitflag offset of first difference and add to current offset
-                    offset += (uint)BitOperations.TrailingZeroCount(differences);
-
-                    int result = Unsafe.AddByteOffset(ref first, offset).CompareTo(Unsafe.AddByteOffset(ref second, offset));
-                    Debug.Assert(result != 0);
-
-                    return result;
+                    goto BytewiseCheck;
                 }
             }
             //else if (AdvSimd.Arm64.IsSupported)
