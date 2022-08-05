@@ -101,7 +101,6 @@ namespace System.Net.WebSockets.Client.Tests
                     {
                         await cws.ConnectAsync(uri, cts.Token);
                     }
-
                 }
             },
             async server =>
