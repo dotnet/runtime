@@ -15,7 +15,6 @@ namespace System.Text.RegularExpressions.Generator
 {
     public partial class RegexGenerator
     {
-        private const string Int32Name = "System.Int32";
         private const string RegexName = "System.Text.RegularExpressions.Regex";
         private const string GeneratedRegexAttributeName = "System.Text.RegularExpressions.GeneratedRegexAttribute";
 
@@ -29,9 +28,8 @@ namespace System.Text.RegularExpressions.Generator
             Compilation compilation = sm.Compilation;
             INamedTypeSymbol? regexSymbol = compilation.GetBestTypeByMetadataName(RegexName);
             INamedTypeSymbol? generatedRegexAttributeSymbol = compilation.GetBestTypeByMetadataName(GeneratedRegexAttributeName);
-            INamedTypeSymbol? intSymbol = compilation.GetBestTypeByMetadataName(Int32Name);
 
-            if (regexSymbol is null || generatedRegexAttributeSymbol is null || intSymbol is null)
+            if (regexSymbol is null || generatedRegexAttributeSymbol is null)
             {
                 // Required types aren't available
                 return null;
@@ -97,7 +95,7 @@ namespace System.Text.RegularExpressions.Generator
                     // int matchTimeoutMilliseconds, or string cultureName.
                     else if (items.Length == 3)
                     {
-                        if (SymbolEqualityComparer.Default.Equals(items[2].Type, intSymbol))
+                        if (items[2].Type.SpecialType == SpecialType.System_Int32)
                         {
                             matchTimeout = items[2].Value as int?;
                         }

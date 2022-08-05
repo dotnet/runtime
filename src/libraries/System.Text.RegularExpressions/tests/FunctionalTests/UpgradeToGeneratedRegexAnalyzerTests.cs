@@ -982,7 +982,7 @@ public partial class Program
             }
         }
 
-        public static IEnumerable<object[]> NoOptionsCulutreTestData()
+        public static IEnumerable<object[]> NoOptionsCultureTestData()
         {
             foreach (InvocationType invocationType in new[] { InvocationType.Constructor, InvocationType.StaticMethods })
             {
@@ -1014,7 +1014,7 @@ public partial class Program
 
         [Theory]
         [MemberData(nameof(DetectsCurrentCultureTestData))]
-        [MemberData(nameof(NoOptionsCulutreTestData))]
+        [MemberData(nameof(NoOptionsCultureTestData))]
         public async Task DetectsCurrentCulture(string test, string fixedSource)
             => await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
 

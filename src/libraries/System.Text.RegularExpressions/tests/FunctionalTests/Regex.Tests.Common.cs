@@ -52,13 +52,13 @@ namespace System.Text.RegularExpressions.Tests
 
         public static async Task<Regex> GetRegexAsync(RegexEngine engine, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexOptions options, Globalization.CultureInfo culture)
         {
+            if (engine == RegexEngine.SourceGenerated)
+            {
+                return await RegexGeneratorHelper.SourceGenRegexAsync(pattern, culture, options);
+            }
+
             using (new System.Tests.ThreadCultureChange(culture))
             {
-                if (engine == RegexEngine.SourceGenerated)
-                {
-                    return await RegexGeneratorHelper.SourceGenRegexAsync(pattern, culture, options, null);
-                }
-
                 return await GetRegexAsync(engine, pattern, options);
             }
         }
