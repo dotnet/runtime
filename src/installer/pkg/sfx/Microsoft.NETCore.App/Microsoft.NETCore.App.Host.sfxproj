@@ -49,7 +49,7 @@
                     IsSymbolFile="true"
                     IsNative="true" />
     <_SymbolFiles Condition="'$(TargetOS)' != 'windows'"
-                    Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)PDB/%(Filename)%(Extension)%(SymbolsSuffix)')"
+                    Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)%(Filename)%(Extension)%(SymbolsSuffix)')"
                     IsSymbolFile="true"
                     IsNative="true" />
 

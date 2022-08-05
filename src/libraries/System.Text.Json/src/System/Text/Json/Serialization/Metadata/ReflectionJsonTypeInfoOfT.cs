@@ -31,11 +31,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             Func<object>? createObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));
-            if (converter.UsesDefaultConstructor)
-            {
-                SetCreateObject(createObject);
-            }
-
+            SetCreateObjectIfCompatible(createObject);
             CreateObjectForExtensionDataProperty = createObject;
 
             // Plug in any converter configuration -- should be run last.

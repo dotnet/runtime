@@ -3929,6 +3929,9 @@
   <data name="InvalidProgram_CallVirtFinalize" xml:space="preserve">
     <value>Object.Finalize() can not be called directly. It is only callable by the runtime.</value>
   </data>
+  <data name="InvalidProgram_MultipleCallConv" xml:space="preserve">
+    <value>Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.</value>
+  </data>
   <data name="Delegate_GarbageCollected" xml:space="preserve">
     <value>The corresponding delegate has been garbage collected. Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer.</value>
   </data>
