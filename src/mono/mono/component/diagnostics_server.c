@@ -128,7 +128,7 @@ extern void mono_wasm_diagnostic_server_on_server_thread_created (char *websocke
  * server_thread called: no runtime yet
  * server_thread calls emscripten_exit_with_live_runtime - thread is live in JS; no C stack.
  * {runtime starts}
- * server_thread_attach_to_runtime called from JS: MonoThradInfo* for server_thread is set,
+ * server_thread_attach_to_runtime called from JS: MonoThreadInfo* for server_thread is set,
  *    thread transitions to GC Unsafe mode and immediately transitions to GC Safe before returning to JS.
  * server loop (diagnostics/server_pthread/index.ts serverLoop) starts
  *   - diagnostic server calls into the runtime
