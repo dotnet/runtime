@@ -6,9 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection.Emit;
 using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
 using ILCompiler.Logging;
 using ILLink.Shared;
 using Internal.IL;
@@ -118,7 +116,6 @@ namespace ILCompiler.Dataflow
                                 case ILOpcode.ldtoken:
                                 case ILOpcode.call:
                                 case ILOpcode.callvirt:
-                                case ILOpcode.initobj:
                                 case ILOpcode.newobj:
                                     {
                                         MethodDesc? referencedMethod = methodBody.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as MethodDesc;
@@ -387,7 +384,6 @@ namespace ILCompiler.Dataflow
                         MethodDesc? methodOperand = null;
                         switch (opcode)
                         {
-                            case ILOpcode.initobj:
                             case ILOpcode.newobj:
                                 {
                                     methodOperand = body.GetObject(reader.ReadILToken()) as MethodDesc;
@@ -427,7 +423,7 @@ namespace ILCompiler.Dataflow
                         // (such as AsyncTaskMethodBuilder::Start<TStateMachine>).
                         if (!handled && methodOperand is not null)
                         {
-                            if (methodOperand != methodOperand.GetTypicalMethodDefinition())
+                            if (methodOperand != methodOperand.GetMethodDefinition())
                             {
                                 foreach (var tr in methodOperand.Instantiation)
                                 {
