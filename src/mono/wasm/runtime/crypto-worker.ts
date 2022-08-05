@@ -204,9 +204,10 @@ class LibraryChannel {
 
     public send_msg(msg: string): string {
         try {
-            // const state = Atomics.load(this.comm, this.STATE_IDX);
-            // if (state !== this.STATE_IDLE) console.debug(`MONO_WASM_ENCRYPT_DECRYPT: send_msg, waiting for idle now, ${state}`);
-            this.wait_for_state(pstate => pstate == this.STATE_IDLE, "waiting");
+            let state = Atomics.load(this.comm, this.STATE_IDX);
+            // FIXME: this console write is possibly serializing the access and prevents a deadlock
+            if (state !== this.STATE_IDLE) console.debug(`MONO_WASM_ENCRYPT_DECRYPT: send_msg, waiting for idle now, ${state}`);
+            state = this.wait_for_state(pstate => pstate == this.STATE_IDLE, "waiting");
 
             this.send_request(msg);
             return this.read_response();
@@ -215,13 +216,14 @@ class LibraryChannel {
             throw err;
         }
         finally {
-            // const state = Atomics.load(this.comm, this.STATE_IDX);
-            // if (state !== this.STATE_IDLE) console.debug(`MONO_WASM_ENCRYPT_DECRYPT: state at end of send_msg: ${state}`);
+            const state = Atomics.load(this.comm, this.STATE_IDX);
+            // FIXME: this console write is possibly serializing the access and prevents a deadlock
+            if (state !== this.STATE_IDLE) console.debug(`MONO_WASM_ENCRYPT_DECRYPT: state at end of send_msg: ${state}`);
         }
     }
 
     public shutdown(): void {
-        // console.debug("MONO_WASM_ENCRYPT_DECRYPT: Shutting down crypto");
+        console.debug("MONO_WASM_ENCRYPT_DECRYPT: Shutting down crypto");
         const state = Atomics.load(this.comm, this.STATE_IDX);
         if (state !== this.STATE_IDLE)
             throw new Error(`OWNER: Invalid sync communication channel state: ${state}`);
@@ -232,15 +234,14 @@ class LibraryChannel {
         Atomics.notify(this.comm, this.STATE_IDX);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private reset(reason: string): void {
-        // console.debug(`MONO_WASM_ENCRYPT_DECRYPT: reset: ${reason}`);
+        console.debug(`MONO_WASM_ENCRYPT_DECRYPT: reset: ${reason}`);
         const state = Atomics.load(this.comm, this.STATE_IDX);
         if (state === this.STATE_SHUTDOWN)
             return;
 
         if (state === this.STATE_RESET || state === this.STATE_IDLE) {
-            // console.debug(`MONO_WASM_ENCRYPT_DECRYPT: state is already RESET or idle: ${state}`);
+            console.debug(`MONO_WASM_ENCRYPT_DECRYPT: state is already RESET or idle: ${state}`);
             return;
         }
 
