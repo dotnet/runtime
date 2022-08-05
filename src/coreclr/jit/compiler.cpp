@@ -2633,29 +2633,14 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         //
         if (!compIsForInlining())
         {
-            if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+            if (JitConfig.JitDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
-                if (JitConfig.NgenDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                {
-                    verboseDump = true;
-                }
-                unsigned ngenHashDumpVal = (unsigned)JitConfig.NgenHashDump();
-                if ((ngenHashDumpVal != (DWORD)-1) && (ngenHashDumpVal == info.compMethodHash()))
-                {
-                    verboseDump = true;
-                }
+                verboseDump = true;
             }
-            else
+            unsigned jitHashDumpVal = (unsigned)JitConfig.JitHashDump();
+            if ((jitHashDumpVal != (DWORD)-1) && (jitHashDumpVal == info.compMethodHash()))
             {
-                if (JitConfig.JitDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                {
-                    verboseDump = true;
-                }
-                unsigned jitHashDumpVal = (unsigned)JitConfig.JitHashDump();
-                if ((jitHashDumpVal != (DWORD)-1) && (jitHashDumpVal == info.compMethodHash()))
-                {
-                    verboseDump = true;
-                }
+                verboseDump = true;
             }
         }
     }
@@ -2849,109 +2834,67 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     //
     if (!altJitConfig || opts.altJit)
     {
-        if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        bool disEnabled = true;
+
+        // Setup assembly name list for disassembly, if not already set up.
+        if (!s_pJitDisasmIncludeAssembliesListInitialized)
         {
-            if ((JitConfig.NgenOrder() & 1) == 1)
+            const WCHAR* assemblyNameList = JitConfig.JitDisasmAssemblies();
+            if (assemblyNameList != nullptr)
+            {
+                s_pJitDisasmIncludeAssembliesList = new (HostAllocator::getHostAllocator())
+                    AssemblyNamesList2(assemblyNameList, HostAllocator::getHostAllocator());
+            }
+            s_pJitDisasmIncludeAssembliesListInitialized = true;
+        }
+
+        // If we have an assembly name list for disassembly, also check this method's assembly.
+        if (s_pJitDisasmIncludeAssembliesList != nullptr && !s_pJitDisasmIncludeAssembliesList->IsEmpty())
+        {
+            const char* assemblyName = info.compCompHnd->getAssemblyName(
+                info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
+
+            if (!s_pJitDisasmIncludeAssembliesList->IsInList(assemblyName))
+            {
+                disEnabled = false;
+            }
+        }
+
+        if (disEnabled)
+        {
+            if ((JitConfig.JitOrder() & 1) == 1)
             {
                 opts.dspOrder = true;
             }
 
-            if (JitConfig.NgenGCDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitGCDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
                 opts.dspGCtbls = true;
             }
 
-            if (JitConfig.NgenDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
                 opts.disAsm = true;
             }
-            if (JitConfig.NgenDisasm().contains("SPILLED", nullptr, nullptr))
+
+            if (JitConfig.JitDisasm().contains("SPILLED", nullptr, nullptr))
             {
                 opts.disAsmSpilled = true;
             }
 
-            if (JitConfig.NgenUnwindDump().contains(info.compMethodName, info.compClassName,
-                                                    &info.compMethodInfo->args))
+            if (JitConfig.JitUnwindDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
                 opts.dspUnwind = true;
             }
 
-            if (JitConfig.NgenEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
                 opts.dspEHTable = true;
             }
 
-            if (JitConfig.NgenDebugDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitDebugDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
             {
                 opts.dspDebugInfo = true;
-            }
-        }
-        else
-        {
-            bool disEnabled = true;
-
-            // Setup assembly name list for disassembly, if not already set up.
-            if (!s_pJitDisasmIncludeAssembliesListInitialized)
-            {
-                const WCHAR* assemblyNameList = JitConfig.JitDisasmAssemblies();
-                if (assemblyNameList != nullptr)
-                {
-                    s_pJitDisasmIncludeAssembliesList = new (HostAllocator::getHostAllocator())
-                        AssemblyNamesList2(assemblyNameList, HostAllocator::getHostAllocator());
-                }
-                s_pJitDisasmIncludeAssembliesListInitialized = true;
-            }
-
-            // If we have an assembly name list for disassembly, also check this method's assembly.
-            if (s_pJitDisasmIncludeAssembliesList != nullptr && !s_pJitDisasmIncludeAssembliesList->IsEmpty())
-            {
-                const char* assemblyName = info.compCompHnd->getAssemblyName(
-                    info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
-
-                if (!s_pJitDisasmIncludeAssembliesList->IsInList(assemblyName))
-                {
-                    disEnabled = false;
-                }
-            }
-
-            if (disEnabled)
-            {
-                if ((JitConfig.JitOrder() & 1) == 1)
-                {
-                    opts.dspOrder = true;
-                }
-
-                if (JitConfig.JitGCDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                {
-                    opts.dspGCtbls = true;
-                }
-
-                if (JitConfig.JitDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                {
-                    opts.disAsm = true;
-                }
-
-                if (JitConfig.JitDisasm().contains("SPILLED", nullptr, nullptr))
-                {
-                    opts.disAsmSpilled = true;
-                }
-
-                if (JitConfig.JitUnwindDump().contains(info.compMethodName, info.compClassName,
-                                                       &info.compMethodInfo->args))
-                {
-                    opts.dspUnwind = true;
-                }
-
-                if (JitConfig.JitEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-                {
-                    opts.dspEHTable = true;
-                }
-
-                if (JitConfig.JitDebugDump().contains(info.compMethodName, info.compClassName,
-                                                      &info.compMethodInfo->args))
-                {
-                    opts.dspDebugInfo = true;
-                }
             }
         }
         if (opts.disAsm && JitConfig.JitDisasmWithGC())

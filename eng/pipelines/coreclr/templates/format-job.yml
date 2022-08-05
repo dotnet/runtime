@@ -39,7 +39,7 @@ jobs:
           value: ${{ variable.value }}
       - ${{ if ne(variable.group, '') }}:
         - group: ${{ variable.group }}
-        
+
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'py -3'
@@ -58,8 +58,8 @@ jobs:
         version: '3.x'
         includePreviewVersions: true
         installationPath: $(Agent.ToolsDirectory)/dotnet
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/tests/Common/scripts/format.py -c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)
-      displayName: Run format.py
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitformat.py -c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)
+      displayName: Run jitformat.py
     - task: PublishBuildArtifacts@1
       displayName: Publish format.patch
       inputs:

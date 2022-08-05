@@ -54,7 +54,7 @@ public class WasmAppBuilder : Task
     // - Value: can be a number, bool, quoted string, or json string
     //
     // Examples:
-    //      <WasmExtraConfig Include="enable_profiler" Value="true" />
+    //      <WasmExtraConfig Include="enableProfiler" Value="true" />
     //      <WasmExtraConfig Include="json" Value="{ &quot;abc&quot;: 4 }" />
     //      <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
     //       <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
@@ -73,13 +73,13 @@ public class WasmAppBuilder : Task
 
     private sealed class WasmAppConfig
     {
-        [JsonPropertyName("assembly_root")]
+        [JsonPropertyName("assemblyRootFolder")]
         public string AssemblyRoot { get; set; } = "managed";
-        [JsonPropertyName("debug_level")]
+        [JsonPropertyName("debugLevel")]
         public int DebugLevel { get; set; } = 0;
         [JsonPropertyName("assets")]
         public List<object> Assets { get; } = new List<object>();
-        [JsonPropertyName("remote_sources")]
+        [JsonPropertyName("remoteSources")]
         public List<string> RemoteSources { get; set; } = new List<string>();
         [JsonExtensionData]
         public Dictionary<string, object?> Extra { get; set; } = new();
@@ -117,14 +117,14 @@ public class WasmAppBuilder : Task
     private sealed class VfsEntry : AssetEntry
     {
         public VfsEntry(string name) : base(name, "vfs") {}
-        [JsonPropertyName("virtual_path")]
+        [JsonPropertyName("virtualPath")]
         public string? VirtualPath { get; set; }
     }
 
     private sealed class IcuData : AssetEntry
     {
         public IcuData(string name) : base(name, "icu") {}
-        [JsonPropertyName("load_remote")]
+        [JsonPropertyName("loadRemote")]
         public bool LoadRemote { get; set; }
     }
 

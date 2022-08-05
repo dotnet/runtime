@@ -37,6 +37,9 @@
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.cs">
       <Link>IL\Stubs\DynamicInvokeMethodThunk.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.Mangling.cs">
+      <Link>IL\Stubs\DynamicInvokeMethodThunk.Mangling.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs">
       <Link>IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs</Link>
     </Compile>
@@ -371,7 +374,6 @@
     <Compile Include="Compiler\DependencyAnalysis\DefaultConstructorMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributeAlgorithm.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\DynamicInvokeTemplateNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IndirectionExtensions.cs" />
@@ -421,7 +423,6 @@
     <Compile Include="Compiler\NoMetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsPreInitDataNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\DynamicInvokeTemplateDataNode.cs" />
     <Compile Include="Compiler\MetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectableMethodNode.cs" />

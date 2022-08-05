@@ -825,6 +825,7 @@ namespace Microsoft.Extensions.Configuration
             Type genericTypeDefinition = type.GetGenericTypeDefinition();
             return genericTypeDefinition == typeof(IEnumerable<>)
                 || genericTypeDefinition == typeof(ICollection<>)
+                || genericTypeDefinition == typeof(IList<>)
                 || genericTypeDefinition == typeof(IReadOnlyCollection<>)
                 || genericTypeDefinition == typeof(IReadOnlyList<>);
         }

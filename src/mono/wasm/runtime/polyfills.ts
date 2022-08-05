@@ -120,7 +120,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     }
 
     // require replacement
-    const imports = anyModule.imports = Module.imports || <DotnetModuleConfigImports>{};
+    const imports = anyModule.imports = (Module.imports || {}) as DotnetModuleConfigImports;
     const requireWrapper = (wrappedRequire: Function) => (name: string) => {
         const resolved = (<any>Module.imports)[name];
         if (resolved) {

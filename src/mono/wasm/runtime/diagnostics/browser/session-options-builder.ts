@@ -15,7 +15,7 @@ export const eventLevel = {
 export type EventLevel = typeof eventLevel;
 
 type UnnamedProviderConfiguration = Partial<{
-    keyword_mask: string | 0;
+    keywordMask: string | 0;
     level: number;
     args: string;
 }>
@@ -40,19 +40,19 @@ const sampleProfilerProviderName = "Microsoft-DotNETCore-SampleProfiler";
 
 const runtimeProviderDefault: ProviderConfiguration = {
     name: runtimeProviderName,
-    keyword_mask: "4c14fccbd",
+    keywordMask: "4c14fccbd",
     level: eventLevel.Verbose,
 };
 
 const runtimePrivateProviderDefault: ProviderConfiguration = {
     name: runtimePrivateProviderName,
-    keyword_mask: "4002000b",
+    keywordMask: "4002000b",
     level: eventLevel.Verbose,
 };
 
 const sampleProfilerProviderDefault: ProviderConfiguration = {
     name: sampleProfilerProviderName,
-    keyword_mask: "0",
+    keywordMask: "0",
     level: eventLevel.Verbose,
 };
 
@@ -83,21 +83,21 @@ export class SessionOptionsBuilder {
         return this;
     }
     /// Add the Microsoft-Windows-DotNETRuntime provider.  Use override options to change the event level or keyword mask.
-    /// The default is { keyword_mask: "4c14fccbd", level: eventLevel.Verbose }
+    /// The default is { keywordMask: "4c14fccbd", level: eventLevel.Verbose }
     addRuntimeProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder {
         const options = { ...runtimeProviderDefault, ...overrideOptions };
         this._providers.push(options);
         return this;
     }
     /// Add the Microsoft-Windows-DotNETRuntimePrivate provider. Use override options to change the event level or keyword mask.
-    /// The default is { keyword_mask: "4002000b", level: eventLevel.Verbose}
+    /// The default is { keywordMask: "4002000b", level: eventLevel.Verbose}
     addRuntimePrivateProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder {
         const options = { ...runtimePrivateProviderDefault, ...overrideOptions };
         this._providers.push(options);
         return this;
     }
     /// Add the Microsoft-DotNETCore-SampleProfiler. Use override options to change the event level or keyword mask.
-    // The default is { keyword_mask: 0, level: eventLevel.Verbose }
+    // The default is { keywordMask: 0, level: eventLevel.Verbose }
     addSampleProfilerProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder {
         const options = { ...sampleProfilerProviderDefault, ...overrideOptions };
         this._providers.push(options);
@@ -107,11 +107,11 @@ export class SessionOptionsBuilder {
     build(): EventPipeSessionOptions {
         const providers = this._providers.map(p => {
             const name = p.name;
-            const keyword_mask = "" + (p?.keyword_mask ?? "");
+            const keywordMask = "" + (p?.keywordMask ?? "");
             const level = p?.level ?? eventLevel.Verbose;
             const args = p?.args ?? "";
             const maybeArgs = args != "" ? `:${args}` : "";
-            return `${name}:${keyword_mask}:${level}${maybeArgs}`;
+            return `${name}:${keywordMask}:${level}${maybeArgs}`;
         });
         return {
             collectRundownEvents: this._rundown,

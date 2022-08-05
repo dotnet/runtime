@@ -38,43 +38,4 @@ await createDotnetRuntime(() => ({
 }));
 ```
 
-More complex scenario with using APIs, commented
-```
-import createDotnetRuntime from './dotnet.js'
-
-export const { MONO, BINDING } = await createDotnetRuntime(({ MONO, BINDING, Module }) =>
-// this is callback with no statement, the APIs are only empty shells here and are populated later.
-({
-    disableDotnet6Compatibility: true,
-    configSrc: "./mono-config.json",
-    onConfigLoaded: () => {
-        // This is called during emscripten `preInit` event, after we fetched config.
-
-        // Module.config is loaded and could be tweaked before application
-        Module.config.environment_variables["MONO_LOG_LEVEL"]="debug"
-
-        // here we could use API passed into this callback
-        // call some early available functions
-        MONO.mono_wasm_setenv("HELLO", "WORLD);
-    }
-    onDotnetReady: () => {
-        // Only when there is no `onRuntimeInitialized` override.
-        // This is called after all assets are loaded.
-        // It happens during emscripten `onRuntimeInitialized` after monoVm init + globalization + assemblies.
-        // This also matches when the top level promise is resolved.
-        // The original emscripten `Module.ready` promise is replaced with this.
-
-        // at this point both emscripten and monoVM are fully initialized.
-        Module.FS.chdir(processedArguments.working_dir);
-    },
-    onAbort: (error) => {
-        set_exit_code(1, error);
-    },
-}));
-
-// at this point both emscripten and monoVM are fully initialized.
-// we could use the APIs returned and resolved from createDotnetRuntime promise
-// both API exports are receiving the same API object instances, i.e. same `MONO` instance.
-const run_all = BINDING.bind_static_method ("[debugger-test] DebuggerTest:run_all");
-run_all();
-```
+For more complex scenario with using APIs see `src\mono\sample\wasm`

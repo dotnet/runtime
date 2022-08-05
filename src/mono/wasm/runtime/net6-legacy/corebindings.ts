@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { JSHandle, GCHandle, MonoObjectRef, MonoMethod, MonoObject } from "../types";
+import { JSHandle, GCHandle, MonoObjectRef, MonoMethod, MonoObject, WasmRoot } from "../types";
 import { mono_bind_method, _create_primitive_converters } from "./method-binding";
-import { WasmRoot } from "../roots";
-import { runtimeHelpers } from "../imports";
+import { mono_wasm_new_root } from "../roots";
+import { Module, runtimeHelpers } from "../imports";
 import cwraps from "../cwraps";
 import { PromiseController } from "../promise-controller";
+import { legacyHelpers, wasm_type_symbol } from "./imports";
+import { find_corlib_class } from "../class-loader";
 type SigLine = [lazy: boolean, jsname: string, csname: string, signature: string/*ArgsMarshalString*/];
 const fn_signatures: SigLine[] = [
     [true, "_get_cs_owned_object_by_js_handle_ref", "GetCSOwnedObjectByJSHandleRef", "iim"],
@@ -64,11 +66,28 @@ export function bind_runtime_method(method_name: string, signature: string): Fun
 }
 
 export function init_legacy_exports(): void {
+    // please keep System.Runtime.InteropServices.JavaScript.JSHostImplementation.MappedType in sync
+    (<any>Object.prototype)[wasm_type_symbol] = 0;
+    (<any>Array.prototype)[wasm_type_symbol] = 1;
+    (<any>ArrayBuffer.prototype)[wasm_type_symbol] = 2;
+    (<any>DataView.prototype)[wasm_type_symbol] = 3;
+    (<any>Function.prototype)[wasm_type_symbol] = 4;
+    (<any>Uint8Array.prototype)[wasm_type_symbol] = 11;
+
+    const box_buffer_size = 65536;
+    legacyHelpers._unbox_buffer_size = 65536;
+    legacyHelpers._box_buffer = Module._malloc(box_buffer_size);
+    legacyHelpers._unbox_buffer = Module._malloc(legacyHelpers._unbox_buffer_size);
+    legacyHelpers._class_int32 = find_corlib_class("System", "Int32");
+    legacyHelpers._class_uint32 = find_corlib_class("System", "UInt32");
+    legacyHelpers._class_double = find_corlib_class("System", "Double");
+    legacyHelpers._class_boolean = find_corlib_class("System", "Boolean");
+    legacyHelpers._null_root = mono_wasm_new_root<MonoObject>();
     _create_primitive_converters();
 
-    runtimeHelpers.runtime_legacy_exports_classname = "LegacyExports";
-    runtimeHelpers.runtime_legacy_exports_class = cwraps.mono_wasm_assembly_find_class(runtimeHelpers.runtime_interop_module, runtimeHelpers.runtime_interop_namespace, runtimeHelpers.runtime_legacy_exports_classname);
-    if (!runtimeHelpers.runtime_legacy_exports_class)
+    legacyHelpers.runtime_legacy_exports_classname = "LegacyExports";
+    legacyHelpers.runtime_legacy_exports_class = cwraps.mono_wasm_assembly_find_class(runtimeHelpers.runtime_interop_module, runtimeHelpers.runtime_interop_namespace, legacyHelpers.runtime_legacy_exports_classname);
+    if (!legacyHelpers.runtime_legacy_exports_class)
         throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + " class";
 
     for (const sig of fn_signatures) {
@@ -90,8 +109,8 @@ export function init_legacy_exports(): void {
 }
 
 export function get_method(method_name: string): MonoMethod {
-    const res = cwraps.mono_wasm_assembly_find_method(runtimeHelpers.runtime_legacy_exports_class, method_name, -1);
+    const res = cwraps.mono_wasm_assembly_find_method(legacyHelpers.runtime_legacy_exports_class, method_name, -1);
     if (!res)
-        throw "Can't find method " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_legacy_exports_classname + "." + method_name;
+        throw "Can't find method " + runtimeHelpers.runtime_interop_namespace + "." + legacyHelpers.runtime_legacy_exports_classname + "." + method_name;
     return res;
 }
