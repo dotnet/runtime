@@ -56,7 +56,7 @@
         <KnownILCompilerPack Include="Microsoft.DotNet.ILCompiler"
               TargetFramework="@(OldKnownIlPack->'%(TargetFramework)')"
               ILCompilerPackNamePattern="@(OldKnownIlPack->'%(ILCompilerPackNamePattern)')"
-              ILCompilerPackVersion="@(ILCompilerRefernece->'%(Version)')"
+              ILCompilerPackVersion="@(ILCompilerReference->'%(Version)')"
               ILCompilerRuntimeIdentifiers="@(OldKnownIlPack->'%(ILCompilerRuntimeIdentifiers)')"/>
     </ItemGroup>
   </Target>
