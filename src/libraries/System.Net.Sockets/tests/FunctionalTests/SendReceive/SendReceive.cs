@@ -961,7 +961,7 @@ namespace System.Net.Sockets.Tests
                 }
                 catch (ObjectDisposedException)
                 {
-                    Assert.Fail("Dispose happened before he operation, retry.");
+                    Assert.Fail("Dispose happened before the operation, retry.");
                 }
 
                 if (UsesSync)
@@ -1046,7 +1046,7 @@ namespace System.Net.Sockets.Tests
                     }
                     catch (ObjectDisposedException)
                     {
-                        Assert.Fail("Dispose happened before he operation, retry.");
+                        Assert.Fail("Dispose happened before the operation, retry.");
                     }
 
                     if (UsesSync)
