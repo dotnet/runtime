@@ -56,6 +56,7 @@
 
   <!-- Samples that require a multi-threaded runtime -->
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(WasmEnableThreads)' != 'true'" >
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads\Wasm.Browser.Threads.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-mt-eventpipe\Wasm.Browser.ThreadsEP.Sample.csproj" />
   </ItemGroup>
 
