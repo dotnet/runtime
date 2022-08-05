@@ -152,18 +152,6 @@ void jitShutdown(bool processIsTerminating)
 
 /*****************************************************************************/
 
-struct CILJitSingletonAllocator
-{
-    int x;
-};
-const CILJitSingletonAllocator CILJitSingleton = {0};
-
-void* __cdecl operator new(size_t, const CILJitSingletonAllocator&)
-{
-    static char CILJitBuff[sizeof(CILJit)];
-    return CILJitBuff;
-}
-
 DLLEXPORT ICorJitCompiler* getJit()
 {
     if (!g_jitInitialized)
@@ -173,7 +161,8 @@ DLLEXPORT ICorJitCompiler* getJit()
 
     if (ILJitter == nullptr)
     {
-        ILJitter = new (CILJitSingleton) CILJit();
+        alignas(alignof(CILJit)) static char CILJitBuff[sizeof(CILJit)];
+        ILJitter = new (CILJitBuff, jitstd::placement_t()) CILJit();
     }
     return (ILJitter);
 }
