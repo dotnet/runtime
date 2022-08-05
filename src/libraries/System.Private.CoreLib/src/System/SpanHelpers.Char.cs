@@ -1328,14 +1328,10 @@ namespace System
                         while (lengthToExamine > offset)
                         {
                             search = Vector256.LoadUnsafe(ref ushortSearchStart, offset);
-                            // We preform the Or at non-Vector level as we are using the maximum number of non-preserved registers,
-                            // and more causes them first to be pushed to stack and then popped on exit to preseve their values.
-                            matches = Vector256.Equals(values0, search).AsByte().ExtractMostSignificantBits();
-                            // Bitwise Or to combine the flagged matches for the second, third and fourth values to our match flags
-                            matches |= Vector256.Equals(values1, search).AsByte().ExtractMostSignificantBits();
-                            matches |= Vector256.Equals(values2, search).AsByte().ExtractMostSignificantBits();
-                            matches |= Vector256.Equals(values3, search).AsByte().ExtractMostSignificantBits();
-                            // Note that MoveMask has converted the equal vector elements into a set of bit flags,
+                            matches = (Vector256.Equals(values0, search) | Vector256.Equals(values1, search)
+                                     | Vector256.Equals(values2, search) | Vector256.Equals(values3, search))
+                                .AsByte().ExtractMostSignificantBits();
+                            // Note that ExtractMostSignificantBits has converted the equal vector elements into a set of bit flags,
                             // So the bit position in 'matches' corresponds to the element offset.
                             if (matches == 0)
                             {
@@ -1351,11 +1347,9 @@ namespace System
                         search = Vector256.LoadUnsafe(ref ushortSearchStart, lengthToExamine);
                         offset = lengthToExamine;
                         // Same as method as above
-                        matches = Vector256.Equals(values0, search).AsByte().ExtractMostSignificantBits();
-                        // Bitwise Or to combine the flagged matches for the second, third and fourth values to our match flags
-                        matches |= Vector256.Equals(values1, search).AsByte().ExtractMostSignificantBits();
-                        matches |= Vector256.Equals(values2, search).AsByte().ExtractMostSignificantBits();
-                        matches |= Vector256.Equals(values3, search).AsByte().ExtractMostSignificantBits();
+                        matches = (Vector256.Equals(values0, search) | Vector256.Equals(values1, search)
+                                 | Vector256.Equals(values2, search) | Vector256.Equals(values3, search))
+                            .AsByte().ExtractMostSignificantBits();
                         if (matches == 0)
                         {
                             // None matched
@@ -1578,14 +1572,9 @@ namespace System
                         while (lengthToExamine > offset)
                         {
                             search = Vector256.LoadUnsafe(ref ushortSearchStart, offset);
-                            // We preform the Or at non-Vector level as we are using the maximum number of non-preserved registers (+ 1),
-                            // and more causes them first to be pushed to stack and then popped on exit to preseve their values.
-                            matches = Vector256.Equals(values0, search).AsByte().ExtractMostSignificantBits();
-                            // Bitwise Or to combine the flagged matches for the second, third and fourth values to our match flags
-                            matches |= Vector256.Equals(values1, search).AsByte().ExtractMostSignificantBits();
-                            matches |= Vector256.Equals(values2, search).AsByte().ExtractMostSignificantBits();
-                            matches |= Vector256.Equals(values3, search).AsByte().ExtractMostSignificantBits();
-                            matches |= Vector256.Equals(values4, search).AsByte().ExtractMostSignificantBits();
+                            matches = (Vector256.Equals(values0, search) | Vector256.Equals(values1, search) | Vector256.Equals(values2, search)
+                                     | Vector256.Equals(values3, search) | Vector256.Equals(values4, search))
+                                .AsByte().ExtractMostSignificantBits();
                             // Note that ExtractMostSignificantBits has converted the equal vector elements into a set of bit flags,
                             // So the bit position in 'matches' corresponds to the element offset.
                             if (matches == 0)
@@ -1602,12 +1591,8 @@ namespace System
                         search = Vector256.LoadUnsafe(ref ushortSearchStart, lengthToExamine);
                         offset = lengthToExamine;
                         // Same as method as above
-                        matches = Vector256.Equals(values0, search).AsByte().ExtractMostSignificantBits();
-                        // Bitwise Or to combine the flagged matches for the second, third and fourth values to our match flags
-                        matches |= Vector256.Equals(values1, search).AsByte().ExtractMostSignificantBits();
-                        matches |= Vector256.Equals(values2, search).AsByte().ExtractMostSignificantBits();
-                        matches |= Vector256.Equals(values3, search).AsByte().ExtractMostSignificantBits();
-                        matches |= Vector256.Equals(values4, search).AsByte().ExtractMostSignificantBits();
+                        matches = (Vector256.Equals(values0, search) | Vector256.Equals(values1, search) | Vector256.Equals(values2, search)
+                                 | Vector256.Equals(values3, search) | Vector256.Equals(values4, search))
                         if (matches == 0)
                         {
                             // None matched
