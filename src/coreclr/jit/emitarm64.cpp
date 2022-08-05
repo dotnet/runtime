@@ -11743,10 +11743,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         emitDispGCInfoDelta();
     }
-#else
     size_t expected = emitSizeOfInsDsc(id);
     assert(sz == expected);
-
+#else
     if (emitComp->opts.disAsm)
     {
         emitDispIns(id, false, 0, true, emitCurCodeOffs(odst), *dp, (dst - *dp), ig);
