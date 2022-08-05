@@ -368,7 +368,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 #ifdef TARGET_ARM64
         else
         {
-            ContainCheckAndChain(binOp);
+            ContainCheckCompareChainForAnd(binOp);
         }
 #endif
     }
@@ -2050,7 +2050,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 
 #ifdef TARGET_ARM64
 //------------------------------------------------------------------------
-// IsValidCompareChain : Determine if the node contains a valid compare chain.
+// IsValidCompareChain : Determine if the node contains a valid chain of ANDs and CMPs.
 //
 // Arguments:
 //    child - pointer to the node being checked.
@@ -2058,6 +2058,15 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 // Return value:
 //    True if a valid chain is found.
+//
+// Notes:
+//    A compare chain is a sequence of CMP nodes connected by AND nodes.
+//    For example:   AND (AND (CMP A B) (CMP C D)) (CMP E F)
+//    The chain can just be a single compare node, however it's parent
+//    must always be an AND or SELECT node.
+//    If a CMP or AND node is contained then it and all it's children are
+//    considered to be in a valid chain.
+//    Chains are built up during the lowering of each successive parent.
 //
 bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
 {
@@ -2094,6 +2103,12 @@ bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
 //    child - pointer to the node being checked.
 //    parent - parent node of the child.
 //    startOfChain - If found, returns the earliest valid op in the chain.
+//
+// Return value:
+//    True if a valid chain is was contained.
+//
+// Notes:
+//    Assumes the chain was checked via IsValidCompareChain.
 //
 bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** startOfChain)
 {
@@ -2150,12 +2165,12 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
 }
 
 //------------------------------------------------------------------------
-// ContainCheckAndCompareChain : Determine if an AND is a containable chain
+// ContainCheckCompareChainForAnd : Determine if an AND is a containable chain
 //
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckAndChain(GenTree* tree)
+void Lowering::ContainCheckCompareChainForAnd(GenTree* tree)
 {
     assert(tree->OperIs(GT_AND));
 
@@ -2187,7 +2202,7 @@ void Lowering::ContainCheckAndChain(GenTree* tree)
             }
         }
 
-        JITDUMP("Lowered And chain:\n");
+        JITDUMP("Lowered `AND` chain:\n");
         DISPTREE(tree);
     }
 }

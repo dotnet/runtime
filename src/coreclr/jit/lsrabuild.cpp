@@ -3145,7 +3145,7 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     if (node->OperIs(GT_MUL) || node->OperIsCompare() || node->OperIs(GT_AND))
     {
         // Can be contained for MultiplyAdd on arm64.
-        // Compare and And may be contained due to If Conversion.
+        // Compare and AND may be contained due to If Conversion.
         return BuildBinaryUses(node->AsOp(), candidates);
     }
     if (node->OperIs(GT_NEG, GT_CAST, GT_LSH))
