@@ -1554,7 +1554,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return ("^\\p{Lo}", RegexOptions.None, "\u4DB5", true);
             if (PlatformDetection.IsNotNetFramework)
             {
-                yield return ("^\\p{Lo}", RegexOptions.None, "\u4DB6", true); // this was broken prior .NET 7
+                yield return ("^\\p{Lo}", RegexOptions.None, "\u4DB6", true); // This was fixed in .NET 7
             }
             yield return ("^\\p{Lo}", RegexOptions.None, "a", false);
             yield return ("^\\p{Lo}", RegexOptions.None, "\u02B0", false);
@@ -2749,7 +2749,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return ("(?<=X(?(DEFINE)(.*))Y).", RegexOptions.None, "AXYZ", true);
                 if (PlatformDetection.IsNotNetFramework)
                 {
-                    yield return ("(?(DEFINE)(?<foo>bar))(?<![-a-z0-9])word", RegexOptions.None, "word", true); // this was broken prior .NET 7
+                    yield return ("(?(DEFINE)(?<foo>bar))(?<![-a-z0-9])word", RegexOptions.None, "word", true); // This was fixed in .NET 7
                 }
                 yield return ("^(xa|=?\\1a){2}$", RegexOptions.None, "xa=xaa", true);
                 yield return ("^(xa|=?\\1a){2}$", RegexOptions.None, "xa=xaaa", false);
@@ -2828,7 +2828,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return ("(?(?=ab)ab)", RegexOptions.None, "ca", true);
                 if (PlatformDetection.IsNotNetFramework)
                 {
-                    yield return ("(?(?=ab)ab)", RegexOptions.None, "cd", true); // This was broken prior .NET 7
+                    yield return ("(?(?=ab)ab)", RegexOptions.None, "cd", true); // This was fixed in .NET 7
                 }
                 yield return ("(?(VERSION>=10.04)yes|no)", RegexOptions.None, "yesno", true);
                 yield return ("\\k<A>*(?<A>aa)(?<A>bb)", RegexOptions.None, "aabb", true);
