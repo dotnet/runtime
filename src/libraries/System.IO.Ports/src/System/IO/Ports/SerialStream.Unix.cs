@@ -31,9 +31,15 @@ namespace System.IO.Ports
         private byte[] _tempBuf = new byte[1];
         private Task _ioLoop;
         private object _ioLoopLock = new object();
-        private SynchronizedQueue<SerialStreamIORequest> _readQueue = new();
-        private SynchronizedQueue<SerialStreamIORequest> _writeQueue = new();
         private bool _hasCancelledTasksToProcess;
+        // Use a Queue with locking instead of ConcurrentQueue because ConcurrentQueue preserves segments for
+        // observation when using TryPeek(). These segments will not clear out references after a dequeue
+        // and as a result they hold on to SerialStreamIORequest instances so that they cannot be GC'ed.
+        // This in turn means that any buffers that the client supplied are not eligible for GC either.
+        private readonly Queue<SerialStreamIORequest> _readQueue = new();
+        private readonly object _readQueueLock = new();
+        private readonly Queue<SerialStreamIORequest> _writeQueue = new();
+        private readonly object _writeQueueLock = new();
 
         private long _totalBytesRead;
         private long TotalBytesAvailable => _totalBytesRead + BytesToRead;
@@ -393,7 +399,7 @@ namespace System.IO.Ports
             if (_handle == null) InternalResources.FileNotOpen();
 
             SpinWait sw = default;
-            while (!_writeQueue.IsEmpty)
+            while (!IsWriteQueueEmpty())
             {
                 sw.SpinOnce();
             }
@@ -441,7 +447,10 @@ namespace System.IO.Ports
 
             Memory<byte> buffer = new Memory<byte>(array, offset, count);
             SerialStreamReadRequest result = new SerialStreamReadRequest(this, cancellationToken, buffer);
-            _readQueue.Enqueue(result);
+            lock (_readQueueLock)
+            {
+                _readQueue.Enqueue(result);
+            }
 
             EnsureIOLoopRunning();
 
@@ -457,7 +466,10 @@ namespace System.IO.Ports
                 return new ValueTask<int>(0);
 
             SerialStreamReadRequest result = new SerialStreamReadRequest(this, cancellationToken, buffer);
-            _readQueue.Enqueue(result);
+            lock (_readQueueLock)
+            {
+                _readQueue.Enqueue(result);
+            }
 
             EnsureIOLoopRunning();
 
@@ -474,7 +486,10 @@ namespace System.IO.Ports
 
             ReadOnlyMemory<byte> buffer = new ReadOnlyMemory<byte>(array, offset, count);
             SerialStreamWriteRequest result = new SerialStreamWriteRequest(this, cancellationToken, buffer);
-            _writeQueue.Enqueue(result);
+            lock (_writeQueueLock)
+            {
+                _writeQueue.Enqueue(result);
+            }
 
             EnsureIOLoopRunning();
 
@@ -490,7 +505,10 @@ namespace System.IO.Ports
                 return ValueTask.CompletedTask; // return immediately if no bytes to write; no need for overhead.
 
             SerialStreamWriteRequest result = new SerialStreamWriteRequest(this, cancellationToken, buffer);
-            _writeQueue.Enqueue(result);
+            lock (_writeQueueLock)
+            {
+                _writeQueue.Enqueue(result);
+            }
 
             EnsureIOLoopRunning();
 
@@ -671,18 +689,24 @@ namespace System.IO.Ports
 
         private void FinishPendingIORequests(Interop.ErrorInfo? error = null)
         {
-            while (_readQueue.TryDequeue(out SerialStreamIORequest r))
+            lock (_readQueueLock)
             {
-                r.Complete(error.HasValue ?
-                           Interop.GetIOException(error.Value) :
-                           InternalResources.FileNotOpenException());
+                while (_readQueue.TryDequeue(out SerialStreamIORequest r))
+                {
+                    r.Complete(error.HasValue ?
+                               Interop.GetIOException(error.Value) :
+                               InternalResources.FileNotOpenException());
+                }
             }
 
-            while (_writeQueue.TryDequeue(out SerialStreamIORequest r))
+            lock (_writeQueueLock)
             {
-                r.Complete(error.HasValue ?
-                           Interop.GetIOException(error.Value) :
-                           InternalResources.FileNotOpenException());
+                while (_writeQueue.TryDequeue(out SerialStreamIORequest r))
+                {
+                    r.Complete(error.HasValue ?
+                               Interop.GetIOException(error.Value) :
+                               InternalResources.FileNotOpenException());
+                }
             }
         }
 
@@ -819,30 +843,43 @@ namespace System.IO.Ports
         }
 
         // returns number of bytes read/written
-        private static int DoIORequest(SynchronizedQueue<SerialStreamIORequest> q, RequestProcessor op)
+        private static int DoIORequest(Queue<SerialStreamIORequest> q, object queueLock, RequestProcessor op)
         {
             // assumes dequeue-ing happens on a single thread
-            while (q.TryPeek(out SerialStreamIORequest r))
+            while (TryPeekNextRequest(out SerialStreamIORequest r))
             {
-                if (r.IsCompleted)
-                {
-                    q.TryDequeue(out _);
-                    // take another item since we haven't processed anything
-                    continue;
-                }
-
                 int ret = op(r);
                 Debug.Assert(ret >= 0);
 
                 if (r.IsCompleted)
                 {
-                    q.TryDequeue(out _);
+                    lock (queueLock)
+                    {
+                        q.TryDequeue(out _);
+                    }
                 }
 
                 return ret;
             }
 
             return 0;
+
+            bool TryPeekNextRequest(out SerialStreamIORequest r)
+            {
+                lock (queueLock)
+                {
+                    while (q.TryPeek(out r))
+                    {
+                        if (!r.IsCompleted)
+                        {
+                            return true;
+                        }
+                        q.TryDequeue(out _);
+                    }
+                }
+                r = default;
+                return false;
+            }
         }
 
         private void IOLoop()
@@ -862,12 +899,12 @@ namespace System.IO.Ports
                 if (HasCancelledTasksToProcess)
                 {
                     HasCancelledTasksToProcess = false;
-                    RemoveCompletedTasks(_readQueue);
-                    RemoveCompletedTasks(_writeQueue);
+                    RemoveCompletedTasks(_readQueue, _readQueueLock);
+                    RemoveCompletedTasks(_writeQueue, _writeQueueLock);
                 }
 
-                bool hasPendingReads = !_readQueue.IsEmpty;
-                bool hasPendingWrites = !_writeQueue.IsEmpty;
+                bool hasPendingReads = !IsReadQueueEmpty();
+                bool hasPendingWrites = !IsWriteQueueEmpty();
 
                 bool hasPendingIO = hasPendingReads || hasPendingWrites;
                 bool isIdle = IsNoEventRegistered() && !hasPendingIO;
@@ -889,7 +926,7 @@ namespace System.IO.Ports
                             lock (_ioLoopLock)
                             {
                                 // double check we are done under lock
-                                if (IsNoEventRegistered() && _readQueue.IsEmpty && _writeQueue.IsEmpty)
+                                if (IsNoEventRegistered() && IsReadQueueEmpty() && IsWriteQueueEmpty())
                                 {
                                     _ioLoop = null;
                                     break;
@@ -929,13 +966,13 @@ namespace System.IO.Ports
 
                     if (events.HasFlag(Interop.PollEvents.POLLIN))
                     {
-                        int bytesRead = DoIORequest(_readQueue, _processReadDelegate);
+                        int bytesRead = DoIORequest(_readQueue, _readQueueLock, _processReadDelegate);
                         _totalBytesRead += bytesRead;
                     }
 
                     if (events.HasFlag(Interop.PollEvents.POLLOUT))
                     {
-                        DoIORequest(_writeQueue, _processWriteDelegate);
+                        DoIORequest(_writeQueue, _writeQueueLock, _processWriteDelegate);
                     }
                 }
 
@@ -975,11 +1012,30 @@ namespace System.IO.Ports
             }
         }
 
-        private static void RemoveCompletedTasks(SynchronizedQueue<SerialStreamIORequest> queue)
+        private static void RemoveCompletedTasks(Queue<SerialStreamIORequest> queue, object queueLock)
         {
             // assumes dequeue-ing happens on a single thread
-            while (queue.TryPeek(out var r) && r.IsCompleted)
-                queue.TryDequeue(out _);
+            lock (queueLock)
+            {
+                while (queue.TryPeek(out var r) && r.IsCompleted)
+                    queue.TryDequeue(out _);
+            }
+        }
+
+        private bool IsReadQueueEmpty()
+        {
+            lock (_readQueueLock)
+            {
+                return _readQueue.Count == 0;
+            }
+        }
+
+        private bool IsWriteQueueEmpty()
+        {
+            lock (_writeQueueLock)
+            {
+                return _writeQueue.Count == 0;
+            }
         }
 
         private void NotifyPinChanges(Signals signals)
@@ -1078,63 +1134,6 @@ namespace System.IO.Ports
             internal void ProcessBytes(int numBytes)
             {
                 Buffer = Buffer.Slice(numBytes);
-            }
-        }
-
-        // Use a custom queue instead of ConcurrentQueue because ConcurrentQueue preserves segments for
-        // observation when using TryPeek(). These segments will not clear out references after a dequeue
-        // and as a result they hold on to SerialStreamIORequest instances so that they cannot be GC'ed.
-        // This in turn means that any buffers that the client supplied are not eligible for GC either.
-        private sealed class SynchronizedQueue<T>
-        {
-            private readonly Queue<T> _queue = new();
-            private readonly object _lock = new();
-
-            public bool IsEmpty
-            {
-                get
-                {
-                    lock (_lock)
-                    {
-                        return _queue.Count == 0;
-                    }
-                }
-            }
-
-            public void Enqueue(T item)
-            {
-                lock (_lock)
-                {
-                    _queue.Enqueue(item);
-                }
-            }
-
-            public bool TryPeek(out T result)
-            {
-                lock (_lock)
-                {
-                    if (_queue.Count > 0)
-                    {
-                        result = _queue.Peek();
-                        return true;
-                    }
-                }
-                result = default;
-                return false;
-            }
-
-            public bool TryDequeue(out T result)
-            {
-                lock (_lock)
-                {
-                    if (_queue.Count > 0)
-                    {
-                        result = _queue.Dequeue();
-                        return true;
-                    }
-                }
-                result = default;
-                return false;
             }
         }
     }
