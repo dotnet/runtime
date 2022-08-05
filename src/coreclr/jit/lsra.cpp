@@ -6732,7 +6732,8 @@ void LinearScan::resolveRegisters()
 
             // Handle the DummyDefs, updating the incoming var location.
             for (; refPosIterator != refPositions.end() && currentRefPosition->refType == RefTypeDummyDef;
-                 ++refPosIterator, currentRefPosition = refPosIterator != refPositions.end() ? &refPosIterator : nullptr)
+                 ++refPosIterator,
+                 currentRefPosition = refPosIterator != refPositions.end() ? &refPosIterator : nullptr)
             {
                 assert(currentRefPosition->isIntervalRef());
                 // Don't mark dummy defs as reload
@@ -9618,7 +9619,8 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                         currentRefPosition->refType == RefTypeKill || currentRefPosition->refType == RefTypeDef) &&
                        (currentRefPosition->nodeLocation == tree->gtSeqNum ||
                         currentRefPosition->nodeLocation == tree->gtSeqNum + 1);
-                     ++refPosIterator, currentRefPosition = refPosIterator != refPositions.end() ? &refPosIterator : nullptr)
+                     ++refPosIterator,
+                     currentRefPosition = refPosIterator != refPositions.end() ? &refPosIterator : nullptr)
                 {
                     Interval* interval = nullptr;
                     if (currentRefPosition->isIntervalRef())
