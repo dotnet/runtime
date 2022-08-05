@@ -16,7 +16,7 @@ namespace Microsoft.Interop.JavaScript
         public bool CanProvideMarshallingInfoForType(ITypeSymbol type) => true;
         public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
         {
-            return new JSMissingMarshallingInfo();
+            return new JSMissingMarshallingInfo(JSTypeInfo.CreateJSTypeInfoForTypeSymbol(type));
         }
     }
 }

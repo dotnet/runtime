@@ -49,10 +49,10 @@ namespace Microsoft.Interop.JavaScript
 
             if (jsType == JSTypeFlags.None)
             {
-                return new JSMissingMarshallingInfo();
+                return new JSMissingMarshallingInfo(JSTypeInfo.CreateJSTypeInfoForTypeSymbol(type));
             }
 
-            return new JSMarshallingInfo(NoMarshallingInfo.Instance)
+            return new JSMarshallingInfo(NoMarshallingInfo.Instance, JSTypeInfo.CreateJSTypeInfoForTypeSymbol(type))
             {
                 JSType = jsType,
                 JSTypeArguments = jsTypeArguments.ToArray(),

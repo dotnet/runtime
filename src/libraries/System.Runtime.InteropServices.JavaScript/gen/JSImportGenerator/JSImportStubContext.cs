@@ -160,9 +160,7 @@ namespace Microsoft.Interop.JavaScript
                 IParameterSymbol param = method.Parameters[i];
                 MarshallingInfo jsMarshallingInfo = jsMarshallingAttributeParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
 
-                var typeInfo = TypePositionInfo.CreateForParameter(param, jsMarshallingInfo, env.Compilation);
-                typeInfo = JSTypeInfo.CreateForType(typeInfo, param.Type, jsMarshallingInfo, env.Compilation);
-                typeInfo = typeInfo with
+                var typeInfo = TypePositionInfo.CreateForParameter(param, jsMarshallingInfo, env.Compilation) with
                 {
                     ManagedIndex = i,
                     NativeIndex = typeInfos.Count,
@@ -172,9 +170,7 @@ namespace Microsoft.Interop.JavaScript
 
             MarshallingInfo retJSMarshallingInfo = jsMarshallingAttributeParser.ParseMarshallingInfo(method.ReturnType, method.GetReturnTypeAttributes());
 
-            var retTypeInfo = new TypePositionInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), retJSMarshallingInfo);
-            retTypeInfo = JSTypeInfo.CreateForType(retTypeInfo, method.ReturnType, retJSMarshallingInfo, env.Compilation);
-            retTypeInfo = retTypeInfo with
+            var retTypeInfo = new TypePositionInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(method.ReturnType), retJSMarshallingInfo)
             {
                 ManagedIndex = TypePositionInfo.ReturnIndex,
                 NativeIndex = TypePositionInfo.ReturnIndex,
