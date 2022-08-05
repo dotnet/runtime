@@ -163,7 +163,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                if (type.isHiddenGlobalType)
+                if (type.is_hidden_global_type)
                     return null;
                 return type;
             }
