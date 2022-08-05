@@ -468,31 +468,31 @@ namespace Microsoft.Interop.Analyzers
                         gen.GetAccessorDeclaration(statements: new[] { DefaultMethodStatement(gen, editor.SemanticModel.Compilation) })));
             }
 
-            if (missingMemberNames.Contains(ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesSource))
+            if (missingMemberNames.Contains(ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesSource))
             {
                 newMembers.Add(
                     gen.MethodDeclaration(
-                        ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesSource,
+                        ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesSource,
                         returnType: gen.TypeExpression(readOnlySpanOfT.Construct(managedElementTypeSymbol.Value)),
                         accessibility: Accessibility.Public,
                         statements: new[] { DefaultMethodStatement(gen, editor.SemanticModel.Compilation) }));
             }
 
-            if (missingMemberNames.Contains(ShapeMemberNames.LinearCollection.Stateless.GetUnmanagedValuesDestination))
+            if (missingMemberNames.Contains(ShapeMemberNames.LinearCollection.Stateful.GetUnmanagedValuesDestination))
             {
                 newMembers.Add(
                     gen.MethodDeclaration(
-                        ShapeMemberNames.LinearCollection.Stateless.GetUnmanagedValuesDestination,
+                        ShapeMemberNames.LinearCollection.Stateful.GetUnmanagedValuesDestination,
                         returnType: gen.TypeExpression(spanOfT.Construct(typeParameters[typeParameters.Length - 1])),
                         accessibility: Accessibility.Public,
                         statements: new[] { DefaultMethodStatement(gen, editor.SemanticModel.Compilation) }));
             }
 
-            if (missingMemberNames.Contains(ShapeMemberNames.LinearCollection.Stateless.GetUnmanagedValuesSource))
+            if (missingMemberNames.Contains(ShapeMemberNames.LinearCollection.Stateful.GetUnmanagedValuesSource))
             {
                 newMembers.Add(
                     gen.MethodDeclaration(
-                        ShapeMemberNames.LinearCollection.Stateless.GetUnmanagedValuesSource,
+                        ShapeMemberNames.LinearCollection.Stateful.GetUnmanagedValuesSource,
                         parameters: new[]
                         {
                             gen.ParameterDeclaration("numElements", gen.TypeExpression(SpecialType.System_Int32))
@@ -502,11 +502,11 @@ namespace Microsoft.Interop.Analyzers
                         statements: new[] { DefaultMethodStatement(gen, editor.SemanticModel.Compilation) }));
             }
 
-            if (missingMemberNames.Contains(ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesDestination))
+            if (missingMemberNames.Contains(ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesDestination))
             {
                 newMembers.Add(
                     gen.MethodDeclaration(
-                        ShapeMemberNames.LinearCollection.Stateless.GetManagedValuesDestination,
+                        ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesDestination,
                         parameters: new[]
                         {
                             gen.ParameterDeclaration("numElements", gen.TypeExpression(SpecialType.System_Int32))
