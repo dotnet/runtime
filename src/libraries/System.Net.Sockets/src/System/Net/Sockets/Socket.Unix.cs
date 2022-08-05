@@ -166,16 +166,15 @@ namespace System.Net.Sockets
         }
 
 #pragma warning disable CA1822
-        private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool unused, string propertyName, out SafeSocketHandle? handle)
+        private Socket GetOrCreateAcceptSocket(Socket? acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle? handle)
         {
-            // AcceptSocket is not supported on Unix.
-            if (acceptSocket != null)
+            if (acceptSocket != null && acceptSocket._rightEndPoint != null && (!checkDisconnected || !acceptSocket._isDisconnected))
             {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_AcceptSocket);
+                throw new InvalidOperationException(SR.Format(SR.net_sockets_namedmustnotbebound, propertyName));
             }
 
             handle = null;
-            return null;
+            return acceptSocket ?? new Socket(_addressFamily, _socketType, _protocolType);
         }
 #pragma warning restore CA1822
 
@@ -227,6 +226,33 @@ namespace System.Net.Sockets
             {
                 Send(postBuffer);
             }
+        }
+
+        internal Socket CopyStateFromSource(Socket source)
+        {
+            #region Copy State of Socket
+            instance._addressFamily = source._addressFamily;
+            instance._closeTimeout = source._closeTimeout;
+            instance._disposed = source._disposed;
+            instance._handle = source._handle;
+            instance._isConnected = source._isConnected;
+            instance._isDisconnected = source._isDisconnected;
+            instance._isListening = source._isListening;
+            instance._nonBlockingConnectInProgress = source._nonBlockingConnectInProgress;
+            instance._protocolType = source._protocolType;
+            instance._receivingPacketInformation = source._receivingPacketInformation;
+            instance._remoteEndPoint = source._remoteEndPoint;
+            instance._rightEndPoint = source._rightEndPoint;
+            instance._socketType = source._socketType;
+            instance._willBlock = source._willBlock;
+            instance._willBlockInternal = source._willBlockInternal;
+            instance._localEndPoint = source._localEndPoint;
+            instance._multiBufferReceiveEventArgs = source._multiBufferReceiveEventArgs;
+            instance._multiBufferSendEventArgs = source._multiBufferSendEventArgs;
+            instance._pendingConnectRightEndPoint = source._pendingConnectRightEndPoint;
+            instance._singleBufferReceiveEventArgs = source._singleBufferReceiveEventArgs;
+            #endregion
+            return instance;
         }
     }
 }

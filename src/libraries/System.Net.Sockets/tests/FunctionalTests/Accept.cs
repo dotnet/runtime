@@ -142,9 +142,8 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop]
+        
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
         public async Task Accept_WithTargetSocket_Success()
         {
             if (!SupportsAcceptIntoExistingSocket)
