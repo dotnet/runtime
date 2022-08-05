@@ -23,6 +23,8 @@ monoaot_path=
 run_categories="Libraries Runtime"
 csproj="src\benchmarks\micro\MicroBenchmarks.csproj"
 configurations="CompliationMode=$compilation_mode RunKind=$kind"
+perf_fork=""
+perf_fork_branch="main"
 run_from_perf_repo=false
 use_core_run=true
 use_baseline_core_run=true
@@ -156,6 +158,14 @@ while (($# > 0)); do
       ;;
     --mauiversion)
       maui_version=$2
+      shift 2
+      ;;
+    --perffork)
+      perf_fork=$2
+      shift 2
+      ;;
+    --perfforkbranch)
+      perf_fork_branch=$2
       shift 2
       ;;
     --only-sanity)
@@ -306,7 +316,11 @@ if [[ "$run_from_perf_repo" == true ]]; then
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    if [[ -n "$perf_fork" ]]; then
+        git clone --branch $perf_fork_branch --depth 1 --quiet $perf_fork $performance_directory
+    else
+        git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    fi
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
