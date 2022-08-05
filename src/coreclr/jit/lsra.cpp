@@ -6681,14 +6681,14 @@ void LinearScan::resolveRegisters()
 
     // handle incoming arguments and special temps
     RefPositionIterator refPosIterator     = refPositions.begin();
-    RefPosition*        currentRefPosition = &refPosIterator;
+    RefPosition*        currentRefPosition = refPosIterator != refPositions.end() ? &refPosIterator : nullptr;
 
     if (enregisterLocalVars)
     {
         VarToRegMap entryVarToRegMap = inVarToRegMaps[compiler->fgFirstBB->bbNum];
         for (; refPosIterator != refPositions.end() &&
                (currentRefPosition->refType == RefTypeParamDef || currentRefPosition->refType == RefTypeZeroInit);
-             ++refPosIterator, currentRefPosition = &refPosIterator)
+             ++refPosIterator, currentRefPosition = refPosIterator != refPositions.end() ? &refPosIterator : nullptr)
         {
             Interval* interval = currentRefPosition->getInterval();
             assert(interval != nullptr && interval->isLocalVar);
@@ -6732,7 +6732,7 @@ void LinearScan::resolveRegisters()
 
             // Handle the DummyDefs, updating the incoming var location.
             for (; refPosIterator != refPositions.end() && currentRefPosition->refType == RefTypeDummyDef;
-                 ++refPosIterator, currentRefPosition = &refPosIterator)
+                 ++refPosIterator, currentRefPosition = refPosIterator != refPositions.end() ? &refPosIterator : nullptr)
             {
                 assert(currentRefPosition->isIntervalRef());
                 // Don't mark dummy defs as reload
@@ -6761,7 +6761,7 @@ void LinearScan::resolveRegisters()
         // Handle the RefPositions for the block
         for (; refPosIterator != refPositions.end() && currentRefPosition->refType != RefTypeBB &&
                currentRefPosition->refType != RefTypeDummyDef;
-             ++refPosIterator, currentRefPosition = &refPosIterator)
+             ++refPosIterator, currentRefPosition = refPosIterator != refPositions.end() ? &refPosIterator : nullptr)
         {
             currentLocation = currentRefPosition->nodeLocation;
 
@@ -9489,7 +9489,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
     {
         printf("Incoming Parameters: ");
         for (; refPosIterator != refPositions.end() && currentRefPosition->refType != RefTypeBB;
-             ++refPosIterator, currentRefPosition = &refPosIterator)
+             ++refPosIterator, currentRefPosition = refPosIterator != refPositions.end() ? &refPosIterator : nullptr)
         {
             Interval* interval = currentRefPosition->getInterval();
             assert(interval != nullptr && interval->isLocalVar);
@@ -9618,7 +9618,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                         currentRefPosition->refType == RefTypeKill || currentRefPosition->refType == RefTypeDef) &&
                        (currentRefPosition->nodeLocation == tree->gtSeqNum ||
                         currentRefPosition->nodeLocation == tree->gtSeqNum + 1);
-                     ++refPosIterator, currentRefPosition = &refPosIterator)
+                     ++refPosIterator, currentRefPosition = refPosIterator != refPositions.end() ? &refPosIterator : nullptr)
                 {
                     Interval* interval = nullptr;
                     if (currentRefPosition->isIntervalRef())
