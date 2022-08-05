@@ -2690,21 +2690,27 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 }
 
 static void
-emit_thunk (guint8 *code, gconstpointer target)
+emit_thunk (guint8 *code, gconstpointer target, gboolean is_memory_slot_thunk)
 {
-	guint8 *p = code;
+	if (!is_memory_slot_thunk){
+		guint8 *p = code;
 
-	/* 2 bytes on 32bit, 5 bytes on 64bit */
-	ppc_load_sequence (code, ppc_r0, target);
+		/* 2 bytes on 32bit, 5 bytes on 64bit */
+		ppc_load_sequence (code, ppc_r0, target);
 
-	ppc_mtctr (code, ppc_r0);
-	ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+		ppc_mtctr (code, ppc_r0);
+		ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 
-	mono_arch_flush_icache (p, code - p);
+		mono_arch_flush_icache (p, code - p);
+	}
+	else{
+		*(guint64*)code = (guint64)target;
+		code += sizeof (guint64);
+	}
 }
 
 static void
-handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
+handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target, gboolean is_memory_slot_thunk)
 {
 	MonoJitInfo *ji = NULL;
 	MonoThunkJitInfo *info;
@@ -2731,11 +2737,14 @@ handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 		}
 
 		g_assert (*(guint32*)thunks == 0);
-		emit_thunk (thunks, target);
-		ppc_patch (code, thunks);
 
-		cfg->arch.thunks += THUNK_SIZE;
-		cfg->arch.thunks_size -= THUNK_SIZE;
+		// memory patching
+		emit_thunk (thunks, target, is_memory_slot_thunk);
+		// code patching
+		ppc_load_ptr_sequence (code, PPC_CALL_REG, thunks);
+
+		cfg->arch.thunks += MEMORY_SLOT_THUNK_SIZE;
+		cfg->arch.thunks_size -= MEMORY_SLOT_THUNK_SIZE;
 	} else {
 		ji = mini_jit_info_table_find (code);
 		g_assert (ji);
@@ -2745,7 +2754,7 @@ handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 		thunks = (guint8 *) ji->code_start + info->thunks_offset;
 		thunks_size = info->thunks_size;
 
-		orig_target = mono_arch_get_call_target (code + 4);
+		orig_target = mono_arch_get_call_target (code);
 
 		mono_mini_arch_lock ();
 
@@ -2786,8 +2795,11 @@ handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 			g_assert_not_reached ();
 		}
 
-		emit_thunk (target_thunk, target);
-		ppc_patch (code, target_thunk);
+		emit_thunk (target_thunk, target, is_memory_slot_thunk);
+
+		if (!is_memory_slot_thunk) {
+			ppc_patch (code, target_thunk);
+		}
 
 		mono_mini_arch_unlock ();
 	}
@@ -2841,7 +2853,7 @@ ppc_patch_full (MonoCompile *cfg, guchar *code, const guchar *target, gboolean i
 			}
 		}
 
-		handle_thunk (cfg, code, target);
+		handle_thunk (cfg, code, target, DEFAULT_THUNK);
 		return;
 
 		g_assert_not_reached ();
@@ -2875,54 +2887,8 @@ ppc_patch_full (MonoCompile *cfg, guchar *code, const guchar *target, gboolean i
 
 	if (prim == 15 || ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
 #ifdef TARGET_POWERPC64
-		guint32 *seq = (guint32*)code;
-		guint32 *branch_ins;
 
-		/* the trampoline code will try to patch the blrl, blr, bcctr */
-		if (ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
-			branch_ins = seq;
-			if (ppc_is_load_op (seq [-3]) || ppc_opcode (seq [-3]) == 31) /* ld || lwz || mr */
-				code -= 32;
-			else
-				code -= 24;
-		} else {
-			if (ppc_is_load_op (seq [5])
-#ifdef PPC_USES_FUNCTION_DESCRIPTOR
-			    /* With function descs we need to do more careful
-			       matches.  */
-			    || ppc_opcode (seq [5]) == 31 /* ld || lwz || mr */
-#endif
-			   )
-				branch_ins = seq + 8;
-			else
-				branch_ins = seq + 6;
-		}
-
-		seq = (guint32*)code;
-		/* this is the lis/ori/sldi/oris/ori/(ld/ld|mr/nop)/mtlr/blrl sequence */
-		g_assert (mono_ppc_is_direct_call_sequence (branch_ins));
-
-		if (ppc_is_load_op (seq [5])) {
-			g_assert (ppc_is_load_op (seq [6]));
-
-			if (!is_fd) {
-				guint8 *buf = (guint8*)&seq [5];
-				ppc_mr (buf, PPC_CALL_REG, ppc_r12);
-				ppc_nop (buf);
-			}
-		} else {
-			if (is_fd)
-				target = (const guchar*)mono_get_addr_from_ftnptr ((gpointer)target);
-		}
-
-		/* FIXME: make this thread safe */
-#ifdef PPC_USES_FUNCTION_DESCRIPTOR
-		/* FIXME: we're assuming we're using r12 here */
-		ppc_load_ptr_sequence (code, ppc_r12, target);
-#else
-		ppc_load_ptr_sequence (code, PPC_CALL_REG, target);
-#endif
-		mono_arch_flush_icache ((guint8*)seq, 28);
+		handle_thunk (cfg, code, target, MEMORY_SLOT_THUNK);
 #else
 		guint32 *seq;
 		/* the trampoline code will try to patch the blrl, blr, bcctr */
@@ -3349,8 +3315,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_break));
 			if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
 				ppc_load_func (code, PPC_CALL_REG, 0);
+				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				ppc_mtlr (code, PPC_CALL_REG);
 				ppc_blrl (code);
+				cfg->thunk_area += MEMORY_SLOT_THUNK_SIZE;
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -3823,8 +3791,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_call_add_patch_info (cfg, call, offset);
 			if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
 				ppc_load_func (code, PPC_CALL_REG, 0);
+				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				ppc_mtlr (code, PPC_CALL_REG);
 				ppc_blrl (code);
+				cfg->thunk_area += MEMORY_SLOT_THUNK_SIZE;
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -3926,8 +3896,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_throw_exception));
 			if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
 				ppc_load_func (code, PPC_CALL_REG, 0);
+				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				ppc_mtlr (code, PPC_CALL_REG);
 				ppc_blrl (code);
+				cfg->thunk_area += MEMORY_SLOT_THUNK_SIZE;
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -3940,8 +3912,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_rethrow_exception));
 			if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
 				ppc_load_func (code, PPC_CALL_REG, 0);
+				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				ppc_mtlr (code, PPC_CALL_REG);
 				ppc_blrl (code);
+				cfg->thunk_area += MEMORY_SLOT_THUNK_SIZE;
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -4584,8 +4558,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_threads_state_poll));
 			if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
 				ppc_load_func (code, PPC_CALL_REG, 0);
+				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				ppc_mtlr (code, PPC_CALL_REG);
 				ppc_blrl (code);
+				cfg->thunk_area += MEMORY_SLOT_THUNK_SIZE;
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -5185,8 +5161,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_tls_get_lmf_addr_extern));
 		if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
 			ppc_load_func (code, PPC_CALL_REG, 0);
+			ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 			ppc_mtlr (code, PPC_CALL_REG);
 			ppc_blrl (code);
+			cfg->thunk_area += MEMORY_SLOT_THUNK_SIZE;
 		} else {
 			ppc_bl (code, 0);
 		}
@@ -5466,8 +5444,10 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			patch_info->ip.i = code - cfg->native_code;
 			if (FORCE_INDIR_CALL || cfg->method->dynamic) {
 				ppc_load_func (code, PPC_CALL_REG, 0);
+				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				ppc_mtctr (code, PPC_CALL_REG);
 				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+				cfg->thunk_area += MEMORY_SLOT_THUNK_SIZE;
 			} else {
 				ppc_bl (code, 0);
 			}

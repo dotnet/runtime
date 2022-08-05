@@ -38,6 +38,12 @@
 #define THUNK_SIZE ((2 + 2) * 4)
 #endif
 
+#ifdef TARGET_POWERPC64
+#define MEMORY_SLOT_THUNK_SIZE 8
+#define MEMORY_SLOT_THUNK 1
+#define DEFAULT_THUNK 0
+#endif
+
 void ppc_patch (guchar *code, const guchar *target);
 
 struct MonoLMF {

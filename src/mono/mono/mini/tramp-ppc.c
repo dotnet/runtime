@@ -178,7 +178,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 	}
 
 	/* Sanity check */
-	g_assert (mono_ppc_is_direct_call_sequence (code));
+	//g_assert (mono_ppc_is_direct_call_sequence (code));
 
 	ppc_patch ((guint8*)code, addr);
 }
@@ -669,6 +669,13 @@ mono_arch_get_call_target (guint8 *code)
 		guint8 *target = code - 4 + (disp * 4);
 
 		return target;
+	} else if (((guint32*)(code - 28)) [0] >> 26 == 15) {
+		guint8 *thunk = ((((guint64*)(code - 28)) [0] & 0x0000ffff) << 48)
+						+ ((((guint64*)(code - 24)) [0] & 0x0000ffff) << 32)
+						+ ((((guint64*)(code - 16)) [0] & 0x0000ffff) << 16)
+						+ (((guint64*)(code - 12)) [0] & 0x0000ffff);
+
+		return thunk;
 	} else {
 		return NULL;
 	}
