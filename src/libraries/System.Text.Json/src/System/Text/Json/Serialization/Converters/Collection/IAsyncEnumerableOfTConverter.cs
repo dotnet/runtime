@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Converters
         : JsonCollectionConverter<TAsyncEnumerable, TElement>
         where TAsyncEnumerable : IAsyncEnumerable<TElement>
     {
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out TAsyncEnumerable value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out TAsyncEnumerable value)
         {
             if (!typeToConvert.IsAssignableFrom(typeof(IAsyncEnumerable<TElement>)))
             {
@@ -22,13 +22,13 @@ namespace System.Text.Json.Serialization.Converters
             return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value!);
         }
 
-        protected override void Add(in TElement value, ref ReadStack state)
+        protected override void Add(in TElement value, scoped ref ReadStack state)
         {
             ((BufferedAsyncEnumerable)state.Current.ReturnValue!)._buffer.Add(value);
         }
 
         internal override bool SupportsCreateObjectDelegate => false;
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
             state.Current.ReturnValue = new BufferedAsyncEnumerable();
         }

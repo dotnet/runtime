@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization.Converters
             _mapConstructor = FSharpCoreReflectionProxy.Instance.CreateFSharpMapConstructor<TMap, TKey, TValue>();
         }
 
-        protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, scoped ref ReadStack state)
         {
             ((List<Tuple<TKey, TValue>>)state.Current.ReturnValue!).Add (new Tuple<TKey, TValue>(key, value));
         }
@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override bool CanHaveMetadata => false;
 
         internal override bool SupportsCreateObjectDelegate => false;
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
+        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             state.Current.ReturnValue = new List<Tuple<TKey, TValue>>();
         }

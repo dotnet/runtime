@@ -356,7 +356,7 @@ namespace System.Globalization
                 return ret;
             }
 
-            private static unsafe bool ParseNumber(ref char* str, char* strEnd, NumberStyles options, ref NumberBuffer number, StringBuilder? sb, NumberFormatInfo numfmt, bool parseDecimal)
+            private static unsafe bool ParseNumber(ref char* str, char* strEnd, NumberStyles options, scoped ref NumberBuffer number, StringBuilder? sb, NumberFormatInfo numfmt, bool parseDecimal)
             {
                 Debug.Assert(str != null);
                 Debug.Assert(strEnd != null);
@@ -589,7 +589,7 @@ namespace System.Globalization
                 // For compatibility, we need to allow trailing zeros at the end of a number string
                 s.Slice(index).IndexOfAnyExcept('\0') < 0;
 
-            internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
+            internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, scoped ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
             {
                 Debug.Assert(numfmt != null);
 
@@ -732,7 +732,7 @@ namespace System.Globalization
                     '\0';
             }
 
-            internal static unsafe void NumberToString(ref ValueStringBuilder sb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info, bool isDecimal)
+            internal static unsafe void NumberToString(ref ValueStringBuilder sb, scoped ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info, bool isDecimal)
             {
                 int nMinDigits = -1;
 
@@ -892,7 +892,7 @@ namespace System.Globalization
                 }
             }
 
-            private static void FormatCurrency(ref ValueStringBuilder sb, ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info)
+            private static void FormatCurrency(ref ValueStringBuilder sb, scoped ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info)
             {
                 string fmt = number.sign ?
                     s_negCurrencyFormats[info.CurrencyNegativePattern] :
@@ -918,7 +918,7 @@ namespace System.Globalization
                 }
             }
 
-            private static unsafe void FormatFixed(ref ValueStringBuilder sb, ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, int[]? groupDigits, string sDecimal, string? sGroup)
+            private static unsafe void FormatFixed(ref ValueStringBuilder sb, scoped ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, int[]? groupDigits, string sDecimal, string? sGroup)
             {
                 Debug.Assert(sGroup != null || groupDigits == null);
 
@@ -1039,7 +1039,7 @@ namespace System.Globalization
                 }
             }
 
-            private static void FormatNumber(ref ValueStringBuilder sb, ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info)
+            private static void FormatNumber(ref ValueStringBuilder sb, scoped ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info)
             {
                 string fmt = number.sign ?
                     s_negNumberFormats[info.NumberNegativePattern] :
@@ -1062,7 +1062,7 @@ namespace System.Globalization
                 }
             }
 
-            private static unsafe void FormatScientific(ref ValueStringBuilder sb, ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, char expChar)
+            private static unsafe void FormatScientific(ref ValueStringBuilder sb, scoped ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, char expChar)
             {
                 char* dig = number.digits;
 
@@ -1109,7 +1109,7 @@ namespace System.Globalization
                 }
             }
 
-            private static unsafe void FormatGeneral(ref ValueStringBuilder sb, ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, char expChar, bool bSuppressScientific)
+            private static unsafe void FormatGeneral(ref ValueStringBuilder sb, scoped ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, char expChar, bool bSuppressScientific)
             {
                 int digPos = number.scale;
                 bool scientific = false;
@@ -1160,7 +1160,7 @@ namespace System.Globalization
                 }
             }
 
-            private static void FormatPercent(ref ValueStringBuilder sb, ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info)
+            private static void FormatPercent(ref ValueStringBuilder sb, scoped ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info)
             {
                 string fmt = number.sign ?
                     s_negPercentFormats[info.PercentNegativePattern] :
@@ -1280,7 +1280,7 @@ namespace System.Globalization
                 }
             }
 
-            internal static unsafe void NumberToStringFormat(ref ValueStringBuilder sb, ref NumberBuffer number, ReadOnlySpan<char> format, NumberFormatInfo info)
+            internal static unsafe void NumberToStringFormat(ref ValueStringBuilder sb, scoped ref NumberBuffer number, ReadOnlySpan<char> format, NumberFormatInfo info)
             {
                 int digitCount;
                 int decimalPos;

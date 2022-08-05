@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         protected override bool ReadAndCacheConstructorArgument(
-            ref ReadStack state,
+            scoped ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonParameterInfo jsonParameterInfo)
         {
@@ -54,7 +54,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         private static bool TryRead<TArg>(
-            ref ReadStack state,
+            scoped ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonParameterInfo jsonParameterInfo,
             out TArg arg)
@@ -79,7 +79,7 @@ namespace System.Text.Json.Serialization.Converters
             return success;
         }
 
-        protected override void InitializeConstructorArgumentCaches(ref ReadStack state, JsonSerializerOptions options)
+        protected override void InitializeConstructorArgumentCaches(scoped ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 

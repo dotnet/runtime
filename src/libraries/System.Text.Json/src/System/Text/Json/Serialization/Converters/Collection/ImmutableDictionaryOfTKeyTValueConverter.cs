@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Converters
         where TDictionary : IReadOnlyDictionary<TKey, TValue>
         where TKey : notnull
     {
-        protected sealed override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
+        protected sealed override void Add(TKey key, in TValue value, JsonSerializerOptions options, scoped ref ReadStack state)
         {
             ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
         }
@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Converters
         internal sealed override bool CanHaveMetadata => false;
 
         internal override bool SupportsCreateObjectDelegate => false;
-        protected sealed override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
+        protected sealed override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             state.Current.ReturnValue = new Dictionary<TKey, TValue>();
         }

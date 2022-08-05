@@ -19,7 +19,7 @@ namespace System.Text.Json
         internal static JsonPropertyInfo LookupProperty(
             object? obj,
             ReadOnlySpan<byte> unescapedPropertyName,
-            ref ReadStack state,
+            scoped ref ReadStack state,
             JsonSerializerOptions options,
             out bool useExtensionProperty,
             bool createExtensionProperty = true)
@@ -71,7 +71,7 @@ namespace System.Text.Json
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<byte> GetPropertyName(
-            ref ReadStack state,
+            scoped ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonSerializerOptions options)
         {

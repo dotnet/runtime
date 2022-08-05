@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : ISet<TElement>
     {
-        protected override void Add(in TElement value, ref ReadStack state)
+        protected override void Add(in TElement value, scoped ref ReadStack state)
         {
             TCollection collection = (TCollection)state.Current.ReturnValue!;
             collection.Add(value);
@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization.Converters
             };
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
             base.CreateCollection(ref reader, ref state, options);
             TCollection returnValue = (TCollection)state.Current.ReturnValue!;

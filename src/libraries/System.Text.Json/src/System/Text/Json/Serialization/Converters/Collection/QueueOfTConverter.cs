@@ -9,12 +9,12 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : Queue<TElement>
     {
-        protected override void Add(in TElement value, ref ReadStack state)
+        protected override void Add(in TElement value, scoped ref ReadStack state)
         {
             ((TCollection)state.Current.ReturnValue!).Enqueue(value);
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
             if (state.Current.JsonTypeInfo.CreateObject == null)
             {
