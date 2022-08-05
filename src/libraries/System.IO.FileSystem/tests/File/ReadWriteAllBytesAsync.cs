@@ -204,7 +204,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS 10.0+ blocks mkfifo")]
         public async Task ReadAllBytesAsync_NonSeekableFileStream_InUnix()
         {
             string fifoPath = GetTestFilePath();
