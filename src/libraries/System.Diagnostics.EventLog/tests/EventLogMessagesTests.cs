@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tests
             Assert.Empty(messageAssembly.GetTypes());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(65535)]
