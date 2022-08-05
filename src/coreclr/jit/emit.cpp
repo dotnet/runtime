@@ -1506,17 +1506,19 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     emitInsCount++;
 
+#ifndef DEBUG
     if (emitComp->opts.disAsm)
+#endif
     {
         instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
-        info->idNum = emitInsCount;
-        info->idSize = sz;
-        info->idVarRefOffs = 0;
-        info->idMemCookie = 0;
-        info->idFlags = GTF_EMPTY;
-        info->idFinallyCall = false;
-        info->idCatchRet = false;
-        info->idCallSig = nullptr;
+        info->idNum              = emitInsCount;
+        info->idSize             = sz;
+        info->idVarRefOffs       = 0;
+        info->idMemCookie        = 0;
+        info->idFlags            = GTF_EMPTY;
+        info->idFinallyCall      = false;
+        info->idCatchRet         = false;
+        info->idCallSig          = nullptr;
         id->idDebugOnlyInfo(info);
     }
 

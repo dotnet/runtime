@@ -4368,8 +4368,8 @@ void emitter::emitIns_IJ(emitAttr attr, regNumber reg, unsigned base)
     id->idAddr()->iiaAddrMode.amIndxReg = reg;
     id->idAddr()->iiaAddrMode.amScale   = emitter::OPSZP;
 
-#ifdef DEBUG 
-    id->idDebugOnlyInfo()->idMemCookie  = base;
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = base;
 #else
     if (emitComp->opts.disAsm)
     {
@@ -7996,7 +7996,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
 
 #ifdef DEBUG
-    id->idDebugOnlyInfo()->idCallSig = sigInfo;
+    id->idDebugOnlyInfo()->idCallSig   = sigInfo;
     id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
 #else
     if (emitComp->opts.disAsm)
