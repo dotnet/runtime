@@ -154,11 +154,13 @@ namespace System.Text.Json
 #else
         internal Task WriteToStreamAsync(Stream destination, CancellationToken cancellationToken)
         {
+            Debug.Assert(_rentedBuffer != null);
             return destination.WriteAsync(_rentedBuffer, 0, _index, cancellationToken);
         }
 
         internal void WriteToStream(Stream destination)
         {
+            Debug.Assert(_rentedBuffer != null);
             destination.Write(_rentedBuffer, 0, _index);
         }
 #endif
