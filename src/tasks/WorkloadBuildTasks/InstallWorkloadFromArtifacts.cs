@@ -4,9 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Build.Framework;
@@ -94,11 +94,18 @@ namespace Microsoft.Workload.Build.Tasks
         {
             Log.LogMessage(MessageImportance.High, $"Installing workload manifest for {name}/{version} for sdk band {VersionBand}");
 
+            string sdkManifestsVersionBadDir = Path.Combine(SdkDir, "sdk-manifests", VersionBand);
+            if (!Directory.Exists(sdkManifestsVersionBadDir))
+            {
+                Log.LogMessage(MessageImportance.Low, $"Creating directory {sdkManifestsVersionBadDir} because it does not already exist.");
+                Directory.CreateDirectory(sdkManifestsVersionBadDir);
+            }
+
             // Find any existing directory with the manifest name, ignoring the case
             // Multiple directories for a manifest, differing only in case causes
             // workload install to fail due to duplicate manifests!
             // This is applicable only on case-sensitive filesystems
-            string outputDir = FindSubDirIgnoringCase(Path.Combine(SdkDir, "sdk-manifests", VersionBand), name);
+            string outputDir = FindOrCreateSubDirIgnoringCase(sdkManifestsVersionBadDir, name);
 
             PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBand}",
                                           Version: version,
@@ -171,7 +178,7 @@ namespace Microsoft.Workload.Build.Tasks
             return false;
         }
 
-        private string FindSubDirIgnoringCase(string parentDir, string dirName)
+        private string FindOrCreateSubDirIgnoringCase(string parentDir, string dirName)
         {
             IEnumerable<string> matchingDirs = Directory.EnumerateDirectories(parentDir,
                                                             dirName,
@@ -184,7 +191,7 @@ namespace Microsoft.Workload.Build.Tasks
                                 + $"{Environment.NewLine}Using the first one: {first}");
             }
 
-            return first ?? Path.Combine(parentDir, dirName);
+            return first ?? Path.Combine(parentDir, dirName.ToLower(CultureInfo.InvariantCulture));
         }
 
         private record ManifestInformation(
