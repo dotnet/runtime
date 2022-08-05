@@ -609,6 +609,28 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""non_public, static"": 0, ""NonPublic, Public"": 1}", options));
         }
 
+        [Fact]
+        public static void EnumDictionaryKeySerialization()
+        {
+            JsonSerializerOptions options = new()
+            {
+                DictionaryKeyPolicy = new SimpleSnakeCasePolicy()
+            };
+
+            Dictionary<BindingFlags, int> dict = new()
+            {
+                [BindingFlags.NonPublic | BindingFlags.Public] = 1,
+                [BindingFlags.Static] = 2,
+            };
+
+            string expected = @"{
+    ""public, non_public"": 1,
+    ""static"": 2
+}";
+
+            JsonTestHelper.AssertJsonEqual(expected, JsonSerializer.Serialize(dict, options));
+        }
+
         private class ZeroAppenderPolicy : JsonNamingPolicy
         {
             public override string ConvertName(string name) => name + "0";

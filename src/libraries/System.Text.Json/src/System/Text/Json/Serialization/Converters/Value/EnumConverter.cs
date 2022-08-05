@@ -26,13 +26,15 @@ namespace System.Text.Json.Serialization.Converters
 
         /// <summary>
         /// Holds a mapping from enum value to text that might be formatted with <see cref="_namingPolicy" />.
+        /// <see cref="ulong"/> is as the key used rather than <typeparamref name="T"/> given measurements that
+        /// show private memory savings when a single type is used https://github.com/dotnet/runtime/pull/36726#discussion_r428868336.
         /// </summary>
         private readonly ConcurrentDictionary<ulong, JsonEncodedText> _nameCacheForWriting;
 
         /// <summary>
         /// Holds a mapping from text that might be formatted with <see cref="_namingPolicy" /> to enum value.
         /// </summary>
-        private ConcurrentDictionary<string, T>? _nameCacheForReading;
+        private readonly ConcurrentDictionary<string, T>? _nameCacheForReading;
 
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
@@ -80,7 +82,7 @@ namespace System.Text.Json.Serialization.Converters
                 ulong key = ConvertToUInt64(value);
                 string name = names[i];
 
-                string jsonName = namingPolicy is null ? name : FormatUsingNamingPolicy(name, namingPolicy);
+                string jsonName = FormatJsonName(name, namingPolicy);
                 _nameCacheForWriting.TryAdd(key, JsonEncodedText.Encode(jsonName, encoder));
                 _nameCacheForReading?.TryAdd(jsonName, value);
             }
@@ -190,7 +192,7 @@ namespace System.Text.Json.Serialization.Converters
                     if (_nameCacheForWriting.Count < NameCacheSizeSoftLimit)
                     {
                         formatted = JsonEncodedText.Encode(
-                            _namingPolicy == null ? original : FormatUsingNamingPolicy(original, _namingPolicy),
+                            FormatJsonName(original, _namingPolicy),
                             encoder);
 
                         writer.WriteStringValue(formatted);
@@ -201,10 +203,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         // We also do not create a JsonEncodedText instance here because passing the string
                         // directly to the writer is cheaper than creating one and not caching it for reuse.
-                        writer.WriteStringValue(
-                            _namingPolicy == null
-                            ? original
-                            : FormatUsingNamingPolicy(original, _namingPolicy));
+                        writer.WriteStringValue(FormatJsonName(original, _namingPolicy));
                     }
 
                     return;
@@ -273,13 +272,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (options.DictionaryKeyPolicy != null)
                 {
-                    original = options.DictionaryKeyPolicy.ConvertName(original);
-
-                    if (original == null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(options.DictionaryKeyPolicy);
-                    }
-
+                    original = FormatJsonName(original, options.DictionaryKeyPolicy);
                     writer.WritePropertyName(original);
                     return;
                 }
@@ -375,8 +368,13 @@ namespace System.Text.Json.Serialization.Converters
                 (!s_isSignedEnum || !value.StartsWith(NumberFormatInfo.CurrentInfo.NegativeSign)));
         }
 
-        private static string FormatUsingNamingPolicy(string value, JsonNamingPolicy namingPolicy)
+        private static string FormatJsonName(string value, JsonNamingPolicy? namingPolicy)
         {
+            if (namingPolicy is null)
+            {
+                return value;
+            }
+
             string converted;
             if (!value.Contains(ValueSeparator))
             {
@@ -388,7 +386,12 @@ namespace System.Text.Json.Serialization.Converters
 
                 for (int i = 0; i < enumValues.Length; i++)
                 {
-                    enumValues[i] = namingPolicy.ConvertName(enumValues[i]);
+                    string name = namingPolicy.ConvertName(enumValues[i]);
+                    if (name == null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(namingPolicy);
+                    }
+                    enumValues[i] = name;
                 }
 
                 converted = string.Join(ValueSeparator, enumValues);
@@ -409,28 +412,23 @@ namespace System.Text.Json.Serialization.Converters
                 );
         }
 
+        private T ReadEnumFromString(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        {
 #if NETCOREAPP
-        private T ReadEnumFromString(ref Utf8JsonReader reader, JsonSerializerOptions options)
-        {
             if (TryParseEnumCore(ref reader, options, out T value))
-            {
-                return value;
-            }
-
-            return ReadEnumUsingNamingPolicy(reader.GetString());
-        }
 #else
-        private T ReadEnumFromString(ref Utf8JsonReader reader, JsonSerializerOptions options)
-        {
             string? enumString = reader.GetString();
             if (TryParseEnumCore(enumString, options, out T value))
+#endif
             {
                 return value;
             }
-
+#if NETCOREAPP
+            return ReadEnumUsingNamingPolicy(reader.GetString());
+#else
             return ReadEnumUsingNamingPolicy(enumString);
-        }
 #endif
+        }
 
 #if NETCOREAPP
         private static bool TryParseEnumCore(ref Utf8JsonReader reader, JsonSerializerOptions options, out T value)
@@ -496,7 +494,7 @@ namespace System.Text.Json.Serialization.Converters
                         break;
                     }
 
-                    result += ConvertToUInt64(value);
+                    result |= ConvertToUInt64(value);
                 }
 
                 value = (T)Enum.ToObject(typeof(T), result);
