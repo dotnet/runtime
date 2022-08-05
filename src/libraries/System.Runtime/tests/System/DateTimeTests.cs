@@ -814,10 +814,39 @@ namespace System.Tests
         [Fact]
         public void DayOfYear_Random()
         {
-            var dateTime = new DateTime(Random.Shared.NextInt64(DateTime.MaxValue.Ticks));
-            var startOfYear = new DateTime(dateTime.Year, 1, 1);
-            var expectedDayOfYear = 1 + (dateTime - startOfYear).Days;
-            Assert.Equal(expectedDayOfYear, dateTime.DayOfYear);
+            var random = new Random(2022);
+            var tries = 1000;
+            for (int i = 0; i < tries; ++i)
+            {
+                var dateTime = new DateTime(random.NextInt64(DateTime.MaxValue.Ticks));
+                var startOfYear = new DateTime(dateTime.Year, 1, 1);
+                var expectedDayOfYear = 1 + (dateTime - startOfYear).Days;
+                Assert.Equal(expectedDayOfYear, dateTime.DayOfYear);
+            }
+        }
+
+        [Fact]
+        public void DayOfYear_Exhaustive()
+        {
+            var ticksPer6hours = TimeSpan.TicksPerHour * 6;
+            for (int year = DateTime.MinValue.Year, lastYear = DateTime.MaxValue.Year; year <= lastYear; ++year)
+            {
+                var startOfYear = new DateTime(year, 1, 1);
+                for (int expectedDayOfYear = 1, lastDayOfYear = DateTime.IsLeapYear(expectedDayOfYear) ? 366 : 365; expectedDayOfYear < lastDayOfYear; ++expectedDayOfYear)
+                {
+                    var dateTime = startOfYear.AddDays(expectedDayOfYear - 1);  // .DayOfYear implementation uses 6-hour granularity value
+                    Assert.Equal(expectedDayOfYear, dateTime.DayOfYear);        // and we check 4 time points per day
+
+                    dateTime = dateTime.AddTicks(ticksPer6hours);
+                    Assert.Equal(expectedDayOfYear, dateTime.DayOfYear);
+
+                    dateTime = dateTime.AddTicks(ticksPer6hours);
+                    Assert.Equal(expectedDayOfYear, dateTime.DayOfYear);
+
+                    dateTime = dateTime.AddTicks(ticksPer6hours);
+                    Assert.Equal(expectedDayOfYear, dateTime.DayOfYear);
+                }
+            }
         }
 
         [Fact]
