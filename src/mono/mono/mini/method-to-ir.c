@@ -9585,9 +9585,9 @@ calli_end:
 							TYPE_LOAD_ERROR (iface_method->klass);
 					}
 
-					MonoMethod* struct_method = mono_class_get_virtual_method(klass, iface_method, error);
-					
-					if(is_ok(error)) {
+					ERROR_DECL(struct_method_error);
+					MonoMethod* struct_method = mono_class_get_virtual_method(klass, iface_method, struct_method_error);
+					if(is_ok(struct_method_error)) {
 						MonoClass* struct_obj = mono_method_get_class(struct_method);
 
 						if(	!struct_method ||
@@ -9610,7 +9610,7 @@ calli_end:
 						}
 						
 					} else {
-						mono_error_cleanup(error);
+						mono_error_cleanup(struct_method_error);
 					}
 				} 
 			}			
