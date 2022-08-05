@@ -6035,6 +6035,9 @@ protected:
     // Mark a loop as removed.
     void optMarkLoopRemoved(unsigned loopNum);
 
+    // Condition uses of ValueNumStore
+    ValueNum optConservativeVN(GenTree* tree);
+
 private:
     // Requires "lnum" to be the index of an outermost loop in the loop table.  Traverses the body of that loop,
     // including all nested loops, and records the set of "side effects" of the loop: fields (object instance and

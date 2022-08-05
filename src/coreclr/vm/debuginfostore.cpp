@@ -540,7 +540,8 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
         *ptr++ = flagByte;
     }
 
-    memcpy(ptr, (BYTE*) patchpointInfo, cbPatchpointInfo);
+    if (cbPatchpointInfo > 0)
+        memcpy(ptr, (BYTE*) patchpointInfo, cbPatchpointInfo);
     ptr += cbPatchpointInfo;
 
     if (cbRichDebugInfo > 0)
@@ -558,10 +559,12 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
     memcpy(ptr, pHeader, cbHeader);
     ptr += cbHeader;
 
-    memcpy(ptr, pBounds, cbBounds);
+    if (cbBounds > 0)
+        memcpy(ptr, pBounds, cbBounds);
     ptr += cbBounds;
 
-    memcpy(ptr, pVars, cbVars);
+    if (cbVars > 0)
+        memcpy(ptr, pVars, cbVars);
     ptr += cbVars;
 
     return ptrStart;
