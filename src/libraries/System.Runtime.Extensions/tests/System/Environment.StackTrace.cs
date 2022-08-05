@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -15,8 +16,9 @@ namespace System.Tests
         static string s_stackTrace;
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73051", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/mono/mono/issues/15315", TestRuntimes.Mono)]
+        // Retain parameter names for NativeAOT
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, typeof(EnvironmentStackTrace))]
         public void StackTraceTest()
         {
             //arrange
