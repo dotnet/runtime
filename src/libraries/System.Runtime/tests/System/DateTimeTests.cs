@@ -812,6 +812,15 @@ namespace System.Tests
         }
 
         [Fact]
+        public void DayOfYear_Random()
+        {
+            var dateTime = new DateTime(Random.Shared.NextInt64(DateTime.MaxValue.Ticks));
+            var startOfYear = new DateTime(dateTime.Year, 1, 1);
+            var expectedDayOfYear = 1 + (int)(dateTime - startOfYear).TotalDays;
+            Assert.Equal(expectedDayOfYear, dateTime.DayOfYear);
+        }
+
+        [Fact]
         public void TimeOfDay_Get_ReturnsExpected()
         {
             var dateTime = new DateTime(2012, 6, 18, 10, 5, 1, 0);
