@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -333,7 +334,7 @@ namespace System.Net.Sockets.Tests
                 await disposeTask;
 
                 SocketError? localSocketError = null;
-                bool disposedException = false;
+
                 try
                 {
                     await acceptTask;
@@ -342,17 +343,8 @@ namespace System.Net.Sockets.Tests
                 {
                     localSocketError = se.SocketErrorCode;
                 }
-                catch (ObjectDisposedException)
-                {
-                    disposedException = true;
-                }
 
-                if (UsesApm)
-                {
-                    Assert.Null(localSocketError);
-                    Assert.True(disposedException);
-                }
-                else if (UsesSync)
+                if (UsesSync)
                 {
                     Assert.Equal(SocketError.Interrupted, localSocketError);
                 }
@@ -401,6 +393,49 @@ namespace System.Net.Sockets.Tests
     public sealed class AcceptApm : Accept<SocketHelperApm>
     {
         public AcceptApm(ITestOutputHelper output) : base(output) {}
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void AbortedByDispose_LeaksNoUnobservedExceptions()
+        {
+            RemoteExecutor.Invoke(static async () =>
+            {
+                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.BindToAnonymousPort(IPAddress.Loopback);
+                socket.Listen(10);
+
+                bool unobservedThrown = false;
+                TaskScheduler.UnobservedTaskException += (_, __) => unobservedThrown = true;
+
+                await Task.Run(() =>
+                {
+                    socket.BeginAccept(asyncResult =>
+                    {
+                        try
+                        {
+                            socket.EndAccept(asyncResult);
+                        }
+                        catch
+                        {
+                        }
+                    }, socket);
+                });
+
+                // Give some time for the Accept operation to start
+                await Task.Delay(30);
+
+                // Close the socket aborting Accept
+                socket.Dispose();
+
+                // Wait for the internal AcceptAsync Task to complete with the exception.
+                await Task.Delay(30);
+
+                // Ensure that the internal TaskExceptionHolder is finalized and the exception published to UnobservedTaskException.
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                Assert.False(unobservedThrown);
+            }).Dispose();   
+        }
     }
 
     public sealed class AcceptTask : Accept<SocketHelperTask>
