@@ -34,11 +34,6 @@ namespace System.Text.Json.Serialization.Converters
         /// </summary>
         private ConcurrentDictionary<string, T>? _nameCacheForReading;
 
-        /// <summary>
-        /// Holds a mapping from enum value to text that might be formatted with a dictionary key policy.
-        /// </summary>
-        private ConcurrentDictionary<ulong, JsonEncodedText>? _dictionaryKeyPolicyCache;
-
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
         private const int NameCacheSizeSoftLimit = 64;
@@ -272,30 +267,10 @@ namespace System.Text.Json.Serialization.Converters
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             ulong key = ConvertToUInt64(value);
-
-            // Try to obtain values from caches
-            if (options.DictionaryKeyPolicy != null)
-            {
-                Debug.Assert(!isWritingExtensionDataProperty);
-
-                if (_dictionaryKeyPolicyCache != null && _dictionaryKeyPolicyCache.TryGetValue(key, out JsonEncodedText formatted))
-                {
-                    writer.WritePropertyName(formatted);
-                    return;
-                }
-            }
-            else if (_nameCacheForWriting.TryGetValue(key, out JsonEncodedText formatted))
-            {
-                writer.WritePropertyName(formatted);
-                return;
-            }
-
-            // if there are not cached values
             string original = value.ToString();
+
             if (IsValidIdentifier(original))
             {
-                Debug.Assert(original.Contains(ValueSeparator));
-
                 if (options.DictionaryKeyPolicy != null)
                 {
                     original = options.DictionaryKeyPolicy.ConvertName(original);
@@ -305,31 +280,13 @@ namespace System.Text.Json.Serialization.Converters
                         ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(options.DictionaryKeyPolicy);
                     }
 
-                    _dictionaryKeyPolicyCache ??= new ConcurrentDictionary<ulong, JsonEncodedText>();
-
-                    if (_dictionaryKeyPolicyCache.Count < NameCacheSizeSoftLimit)
-                    {
-                        JavaScriptEncoder? encoder = options.Encoder;
-
-                        JsonEncodedText formatted = JsonEncodedText.Encode(original, encoder);
-
-                        writer.WritePropertyName(formatted);
-
-                        _dictionaryKeyPolicyCache.TryAdd(key, formatted);
-                    }
-                    else
-                    {
-                        // We also do not create a JsonEncodedText instance here because passing the string
-                        // directly to the writer is cheaper than creating one and not caching it for reuse.
-                        writer.WritePropertyName(original);
-                    }
-
+                    writer.WritePropertyName(original);
                     return;
                 }
                 else
                 {
                     // We might be dealing with a combination of flag constants since all constant values were
-                    // likely cached during warm - up(assuming the number of constants <= NameCacheSizeSoftLimit).
+                    // likely cached during warm - up (assuming the number of constants <= NameCacheSizeSoftLimit).
 
                     JavaScriptEncoder? encoder = options.Encoder;
 
