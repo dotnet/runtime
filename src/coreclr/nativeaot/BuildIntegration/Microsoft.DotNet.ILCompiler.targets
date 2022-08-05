@@ -49,7 +49,7 @@
   <Target Name="SetILCompilerVersionForPackageReference" Condition="'$(AotRuntimePackageLoadedViaSDK)' != 'true' and '$(PublishAot)' == 'true'" BeforeTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <OldKnownIlPack Include="@(KnownILCompilerPack)"/>
-      <ILCompilerRefernece Include="@(PackageReference)" Condition="'%(Identity)'=='Microsoft.DotNet.ILCompiler'"/>
+      <ILCompilerReference Include="@(PackageReference)" Condition="'%(Identity)'=='Microsoft.DotNet.ILCompiler'"/>
     </ItemGroup>
     <ItemGroup>
         <KnownILCompilerPack Remove="@(OldKnownIlPack)" />
