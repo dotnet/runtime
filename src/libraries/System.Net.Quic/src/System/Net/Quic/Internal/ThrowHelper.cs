@@ -83,12 +83,10 @@ internal static class ThrowHelper
             }
 
             //
-            // Although ALPN negotiation failure is triggered by a TLS Alert, it is mapped differently
+            // Some TLS Alerts are mapped to dedicated QUIC_STATUS codes so we need to handle them individually.
             //
-            if (status == QUIC_STATUS_ALPN_NEG_FAILURE)
-            {
-                return new AuthenticationException(SR.net_quic_alpn_neg_error);
-            }
+            if (status == QUIC_STATUS_ALPN_NEG_FAILURE) return new AuthenticationException(SR.net_quic_alpn_neg_error);
+            if (status == QUIC_STATUS_USER_CANCELED) return new AuthenticationException(SR.Format(SR.net_auth_tls_alert, TlsAlertMessage.UserCanceled));
 
             //
             // other TLS Alerts: MsQuic maps TLS alerts by offsetting them by a
