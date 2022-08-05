@@ -548,7 +548,7 @@ namespace System.Net.Sockets.Tests
             FieldInfo fi = typeof(UnixDomainSocketEndPoint).GetField("s_nativePathLength", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(fi);
             int maxNativeSize = (int)fi.GetValue(null);
-            int remainingUDSPathChars = maxNativeSize - Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()).Length;
+            int remainingUDSPathChars = Math.Min(32, maxNativeSize - Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()).Length);
             Assert.True(remainingUDSPathChars > 0);
 
             string result;
