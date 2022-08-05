@@ -2413,9 +2413,8 @@ namespace System.Net.Sockets
         {
             if (TaskToApm.GetTask(asyncResult) is not Task<int> ti)
             {
-                throw asyncResult is null ?
-                    new ArgumentNullException(nameof(asyncResult)) :
-                    new ArgumentException(null, nameof(asyncResult));
+                ArgumentNullException.ThrowIfNull(asyncResult);
+                throw new ArgumentException(null, nameof(asyncResult));
             }
 
             if (!ti.IsCompleted)
