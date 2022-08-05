@@ -51,6 +51,11 @@ namespace ILCompiler
                 if (ecmaMethod.OwningType == GetArrayOfTType(ecmaMethod))
                     return true;
 
+                // Also don't expose the ValueType.__GetFieldOverride method.
+                if (ecmaMethod.Name == Internal.IL.Stubs.ValueTypeGetFieldHelperMethodOverride.MetadataName
+                    && ecmaMethod.OwningType.IsWellKnownType(WellKnownType.ValueType))
+                    return true;
+
                 return false;
             }
 

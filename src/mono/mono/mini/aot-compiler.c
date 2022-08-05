@@ -5239,6 +5239,25 @@ MONO_RESTORE_WARNING
 			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
 		}
 	}
+
+	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPESPEC]);
+	for (int i = 0; i < rows; ++i) {
+		ERROR_DECL (error);
+		MonoClass *klass;
+
+		token = MONO_TOKEN_TYPE_SPEC | (i + 1);
+		klass = mono_class_get_checked (acfg->image, token, error);
+
+		if (!klass) {
+			mono_error_cleanup (error);
+			continue;
+		}
+
+		if (m_class_is_ginst (klass) && !mono_class_is_open_constructed_type (m_class_get_byval_arg (klass)) && can_marshal_struct (klass)) {
+			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
+			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
+		}
+	}
 }
 
 static gboolean

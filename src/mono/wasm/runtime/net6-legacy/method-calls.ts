@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { assembly_load } from "../class-loader";
-import cwraps from "../cwraps";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
 import { Module, runtimeHelpers, INTERNAL } from "../imports";
 import { wrap_error_root } from "../invoke-js";
 import { _release_temp_frame } from "../memory";
-import { WasmRoot, mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
+import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
+import { find_entry_point } from "../run";
 import { conv_string_root, js_string_to_mono_string_root } from "../strings";
-import { JSHandle, MonoStringRef, MonoObjectRef, MonoArray, MonoString, MonoObject, is_nullish, mono_assert } from "../types";
+import { JSHandle, MonoStringRef, MonoObjectRef, MonoArray, MonoString, MonoObject, is_nullish, mono_assert, WasmRoot } from "../types";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
 import { js_array_to_mono_array, js_to_mono_obj_root } from "./js-to-cs";
@@ -52,7 +51,7 @@ export function _teardown_after_call(
 }
 
 export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMarshalString*/): Function {
-    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Expected binding to be initialized later during startup sequence.");
+    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
 
     const key = `${fqn}-${signature}`;
     let js_method = boundMethodsByFqn.get(key);
@@ -69,19 +68,7 @@ export function mono_bind_static_method(fqn: string, signature?: string/*ArgsMar
 }
 
 export function mono_bind_assembly_entry_point(assembly: string, signature?: string/*ArgsMarshalString*/): Function {
-    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Expected binding to be initialized later during startup sequence.");
-    const asm = assembly_load(assembly);
-    if (!asm)
-        throw new Error("Could not find assembly: " + assembly);
-
-    let auto_set_breakpoint = 0;
-    if (runtimeHelpers.waitForDebugger == 1)
-        auto_set_breakpoint = 1;
-
-    const method = cwraps.mono_wasm_assembly_get_entry_point(asm, auto_set_breakpoint);
-    if (!method)
-        throw new Error("Could not find entry point for assembly: " + assembly);
-
+    const method = find_entry_point(assembly);
     if (typeof (signature) !== "string")
         signature = mono_method_get_call_signature_ref(method, undefined);
 
@@ -95,7 +82,7 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: str
 }
 
 export function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: string/*ArgsMarshalString*/): number {
-    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Expected binding to be initialized later during startup sequence.");
+    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
     if (!args) {
         args = [[]];
     }

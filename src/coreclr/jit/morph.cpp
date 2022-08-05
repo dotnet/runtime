@@ -2787,6 +2787,12 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 {
                     if ((size > 1) && ((intArgRegNum + 1) == maxRegArgs) && (nextOtherRegNum == REG_STK))
                     {
+                        // This indicates a partial enregistration of a struct type
+                        assert((isStructArg) || argx->OperIs(GT_FIELD_LIST) || argx->OperIsCopyBlkOp() ||
+                               (argx->gtOper == GT_COMMA && (argx->gtFlags & GTF_ASG)));
+                        unsigned numRegsPartial = MAX_REG_ARG - intArgRegNum;
+                        assert((unsigned char)numRegsPartial == numRegsPartial);
+                        SplitArg(&arg, numRegsPartial, size - numRegsPartial);
                         assert(!passUsingFloatRegs);
                         assert(size == 2);
                         intArgRegNum = maxRegArgs;
@@ -3720,7 +3726,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             }
             else
 #elif defined(TARGET_LOONGARCH64)
-            if (arg->AbiInfo.StructFloatFieldType[inx] != TYP_UNDEF)
+            if ((arg->AbiInfo.StructFloatFieldType[inx] != TYP_UNDEF) &&
+                !varTypeIsGC(getSlotType(offset / TARGET_POINTER_SIZE)))
             {
                 elems[inx].Type = arg->AbiInfo.StructFloatFieldType[inx];
                 offset += (structSize > TARGET_POINTER_SIZE) ? 8 : 4;
@@ -3779,6 +3786,11 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
         loadExtent = elems[idx].Offset + genTypeSize(elems[idx].Type);
     }
 
+#ifdef TARGET_LOONGARCH64
+    // For LoongArch64's ABI, the struct {long a; float b;} may be passed
+    // by integer and float registers and it needs to include the padding here.
+    assert(roundUp(structSize, TARGET_POINTER_SIZE) == roundUp(loadExtent, TARGET_POINTER_SIZE));
+#else
     if (argValue->IsLocal())
     {
         assert((structSize <= loadExtent) && (loadExtent <= roundUp(structSize, TARGET_POINTER_SIZE)));
@@ -3787,6 +3799,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     {
         assert(loadExtent == structSize);
     }
+#endif // TARGET_LOONGARCH64
 #endif // DEBUG
 
     // We should still have a TYP_STRUCT
@@ -3922,8 +3935,12 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                 newArg->AddField(this, argIndir, offset, argIndir->TypeGet());
             }
 
+#ifndef TARGET_LOONGARCH64
             // Make sure we loaded exactly the required amount of bytes.
+            // But for LoongArch64's ABI, the struct {long a; float b;} may be passed
+            // by integer and float registers and it needs to include the padding here.
             assert(structSize == (lastElem.Offset + genTypeSize(lastElem.Type)));
+#endif
         }
     }
 

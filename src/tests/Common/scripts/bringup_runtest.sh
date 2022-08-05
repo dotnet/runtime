@@ -985,8 +985,14 @@ function check_cpu_architecture {
         armv7l)
             __arch=arm
             ;;
-        aarch64)
+        aarch64|arm64)
             __arch=arm64
+            ;;
+        loongarch64)
+            __arch=loongarch64
+            ;;
+        riscv64)
+            __arch=riscv64
             ;;
         *)
             echo "Unknown CPU $CPUName detected, configuring as if for x64"

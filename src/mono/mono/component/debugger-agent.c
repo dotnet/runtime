@@ -5196,7 +5196,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 			if (mono_field_is_deleted (f))
 				continue;
 
-			if (mono_vtype_get_field_addr (addr, f) == addr) //to avoid infinite recursion 
+			if (mono_vtype_get_field_addr (addr, f) == addr && mono_class_from_mono_type_internal (t) == mono_class_from_mono_type_internal (f->type) && !boxed_vtype) //to avoid infinite recursion 
 			{
 				gssize val = *(gssize*)addr;
 				buffer_add_byte (buf, MONO_TYPE_PTR);

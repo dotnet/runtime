@@ -1,16 +1,5 @@
-import { mono_wasm_runtime_ready } from "../debug";
-import { mono_wasm_load_icu_data } from "../icu";
-import { mono_wasm_get_assembly_exports } from "../invoke-cs";
-import { mono_wasm_load_bytes_into_heap, setB32, setI8, setI16, setI32, setI52, setU52, setI64Big, setU8, setU16, setU32, setF32, setF64, getB32, getI8, getI16, getI32, getI52, getU52, getI64Big, getU8, getU16, getU32, getF32, getF64 } from "../memory";
-import { mono_wasm_new_root_buffer, mono_wasm_new_root, mono_wasm_new_external_root, mono_wasm_release_roots } from "../roots";
-import { mono_run_main, mono_run_main_and_exit } from "../run";
-import { mono_wasm_setenv, mono_wasm_load_data_archive, mono_wasm_load_config } from "../startup";
-import { js_string_to_mono_string, conv_string, js_string_to_mono_string_root, conv_string_root } from "../strings";
-import { MonoArray, MonoObject, MonoObjectRef } from "../types";
+import { MonoArray, MonoObject, MonoObjectRef, MonoString, WasmRoot, WasmRootBuffer, MemOffset, NumberOrPointer } from "../types";
 import { VoidPtr } from "../types/emscripten";
-import { mono_array_to_js_array, unbox_mono_obj, unbox_mono_obj_root, mono_array_root_to_js_array } from "./cs-to-js";
-import { js_typed_array_to_array, js_to_mono_obj, js_typed_array_to_array_root, js_to_mono_obj_root } from "./js-to-cs";
-import { mono_bind_static_method, mono_call_assembly_entry_point } from "./method-calls";
 
 /**
  * @deprecated Please use methods in top level API object instead
@@ -19,11 +8,11 @@ export type BINDINGType = {
     /**
      * @deprecated Please use [JSExportAttribute] instead
      */
-    bind_static_method: typeof mono_bind_static_method;
+    bind_static_method: (fqn: string, signature?: string) => Function;
     /**
      * @deprecated Please use runMain() instead
      */
-    call_assembly_entry_point: typeof mono_call_assembly_entry_point;
+    call_assembly_entry_point: (assembly: string, args?: any[], signature?: string) => number;
     /**
      * @deprecated Not GC or thread safe
      */
@@ -35,27 +24,27 @@ export type BINDINGType = {
     /**
      * @deprecated Not GC or thread safe
      */
-    js_string_to_mono_string: typeof js_string_to_mono_string;
+    js_string_to_mono_string: (string: string) => MonoString;
     /**
      * @deprecated Not GC or thread safe
      */
-    js_typed_array_to_array: typeof js_typed_array_to_array;
+    js_typed_array_to_array: (js_obj: any) => MonoArray;
     /**
      * @deprecated Not GC or thread safe
      */
-    mono_array_to_js_array: typeof mono_array_to_js_array;
+    mono_array_to_js_array: (mono_array: MonoArray) => any[] | null;
     /**
      * @deprecated Not GC or thread safe
      */
-    js_to_mono_obj: typeof js_to_mono_obj;
+    js_to_mono_obj: (js_obj: any) => MonoObject;
     /**
      * @deprecated Not GC or thread safe
      */
-    conv_string: typeof conv_string;
+    conv_string: (mono_obj: MonoString) => string | null;
     /**
      * @deprecated Not GC or thread safe
      */
-    unbox_mono_obj: typeof unbox_mono_obj;
+    unbox_mono_obj: (mono_obj: MonoObject) => any;
     /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
@@ -67,28 +56,28 @@ export type BINDINGType = {
     /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
-    js_string_to_mono_string_root: typeof js_string_to_mono_string_root;
+    js_string_to_mono_string_root: (string: string, result: WasmRoot<MonoString>) => void;
     /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
-    js_typed_array_to_array_root: typeof js_typed_array_to_array_root;
+    js_typed_array_to_array_root: (js_obj: any, result: WasmRoot<MonoArray>) => void;
     /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
-    js_to_mono_obj_root: typeof js_to_mono_obj_root;
+    js_to_mono_obj_root: (js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean) => void;
     /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
-    conv_string_root: typeof conv_string_root;
+    conv_string_root: (root: WasmRoot<MonoString>) => string | null;
     /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
-    unbox_mono_obj_root: typeof unbox_mono_obj_root;
+    unbox_mono_obj_root: (root: WasmRoot<any>) => any;
     /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
-    mono_array_root_to_js_array: typeof mono_array_root_to_js_array;
-}
+    mono_array_root_to_js_array: (arrayRoot: WasmRoot<MonoArray>) => any[] | null;
+};
 
 /**
  * @deprecated Please use methods in top level API object instead
@@ -97,27 +86,27 @@ export type MONOType = {
     /**
      * @deprecated Please use setEnvironmentVariable() instead
      */
-    mono_wasm_setenv: typeof mono_wasm_setenv;
+    mono_wasm_setenv: (name: string, value: string) => void;
     /**
      * @deprecated Please use config.assets instead
      */
-    mono_wasm_load_bytes_into_heap: typeof mono_wasm_load_bytes_into_heap;
+    mono_wasm_load_bytes_into_heap: (bytes: Uint8Array) => VoidPtr;
     /**
      * @deprecated Please use config.assets instead
      */
-    mono_wasm_load_icu_data: typeof mono_wasm_load_icu_data;
+    mono_wasm_load_icu_data: (offset: VoidPtr) => boolean;
     /**
      * @deprecated Please use config.assets instead
      */
-    mono_wasm_runtime_ready: typeof mono_wasm_runtime_ready;
+    mono_wasm_runtime_ready: () => void;
     /**
      * @deprecated Please use config.assets instead
      */
-    mono_wasm_load_data_archive: typeof mono_wasm_load_data_archive;
+    mono_wasm_load_data_archive: (data: Uint8Array, prefix: string) => boolean;
     /**
      * @deprecated Please use configSrc instead
      */
-    mono_wasm_load_config: typeof mono_wasm_load_config;
+    mono_wasm_load_config: (configFilePath: string) => Promise<void>;
     /**
      * @deprecated Please use runMain instead
      */
@@ -125,31 +114,27 @@ export type MONOType = {
     /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
-    mono_wasm_new_root_buffer: typeof mono_wasm_new_root_buffer;
+    mono_wasm_new_root_buffer: (capacity: number, name?: string) => WasmRootBuffer;
     /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
-    mono_wasm_new_root: typeof mono_wasm_new_root;
+    mono_wasm_new_root: <T extends MonoObject>(value?: T | undefined) => WasmRoot<T>;
     /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
-    mono_wasm_new_external_root: typeof mono_wasm_new_external_root;
+    mono_wasm_new_external_root: <T extends MonoObject>(address: VoidPtr | MonoObjectRef) => WasmRoot<T>;
     /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
-    mono_wasm_release_roots: typeof mono_wasm_release_roots;
+    mono_wasm_release_roots: (...args: WasmRoot<any>[]) => void;
     /**
      * @deprecated Please use runMain instead
      */
-    mono_run_main: typeof mono_run_main;
+    mono_run_main: (main_assembly_name: string, args: string[]) => Promise<number>;
     /**
      * @deprecated Please use runMainAndExit instead
      */
-    mono_run_main_and_exit: typeof mono_run_main_and_exit;
-    /**
-     * @deprecated Please use getAssemblyExports instead
-     */
-    mono_wasm_get_assembly_exports: typeof mono_wasm_get_assembly_exports;
+    mono_run_main_and_exit: (main_assembly_name: string, args: string[]) => Promise<void>;
     /**
      * @deprecated Please use config.assets instead
      */
@@ -169,97 +154,97 @@ export type MONOType = {
     /**
      * @deprecated Please use setHeapB32
      */
-    setB32: typeof setB32;
+    setB32: (offset: MemOffset, value: number | boolean) => void;
     /**
      * @deprecated Please use setHeapI8
      */
-    setI8: typeof setI8;
+    setI8: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapI16
      */
-    setI16: typeof setI16;
+    setI16: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapI32
      */
-    setI32: typeof setI32;
+    setI32: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapI52
      */
-    setI52: typeof setI52;
+    setI52: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapU52
      */
-    setU52: typeof setU52;
+    setU52: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapI64Big
      */
-    setI64Big: typeof setI64Big;
+    setI64Big: (offset: MemOffset, value: bigint) => void;
     /**
      * @deprecated Please use setHeapU8
      */
-    setU8: typeof setU8;
+    setU8: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapU16
      */
-    setU16: typeof setU16;
+    setU16: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapU32
      */
-    setU32: typeof setU32;
+    setU32: (offset: MemOffset, value: NumberOrPointer) => void;
     /**
      * @deprecated Please use setHeapF32
      */
-    setF32: typeof setF32;
+    setF32: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use setHeapF64
      */
-    setF64: typeof setF64;
+    setF64: (offset: MemOffset, value: number) => void;
     /**
      * @deprecated Please use getHeapB32
      */
-    getB32: typeof getB32;
+    getB32: (offset: MemOffset) => boolean;
     /**
      * @deprecated Please use getHeapI8
      */
-    getI8: typeof getI8;
+    getI8: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapI16
      */
-    getI16: typeof getI16;
+    getI16: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapI32
      */
-    getI32: typeof getI32;
+    getI32: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapI52
      */
-    getI52: typeof getI52;
+    getI52: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapU52
      */
-    getU52: typeof getU52;
+    getU52: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapI64Big
      */
-    getI64Big: typeof getI64Big;
+    getI64Big: (offset: MemOffset) => bigint;
     /**
      * @deprecated Please use getHeapU8
      */
-    getU8: typeof getU8;
+    getU8: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapU16
      */
-    getU16: typeof getU16;
+    getU16: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapU32
      */
-    getU32: typeof getU32;
+    getU32: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapF32
      */
-    getF32: typeof getF32;
+    getF32: (offset: MemOffset) => number;
     /**
      * @deprecated Please use getHeapF64
      */
-    getF64: typeof getF64;
-}
+    getF64: (offset: MemOffset) => number;
+};
