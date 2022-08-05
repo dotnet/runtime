@@ -89,6 +89,10 @@ namespace System.Text.Json
         /// </summary>
         public int CurrentDepth => _currentDepth & JsonConstants.RemoveFlagsBitMask;
 
+        private Utf8JsonWriter()
+        {
+        }
+
         /// <summary>
         /// Constructs a new <see cref="Utf8JsonWriter"/> instance with a specified <paramref name="bufferWriter"/>.
         /// </summary>
@@ -225,6 +229,29 @@ namespace System.Text.Json
 
             ResetHelper();
         }
+
+        internal void ResetAllStateForCacheReuse()
+        {
+            ResetHelper();
+
+            _stream = null;
+            _arrayBufferWriter = null;
+            _output = null;
+        }
+
+        internal void Reset(IBufferWriter<byte> bufferWriter, JsonWriterOptions options)
+        {
+            Debug.Assert(_output is null && _stream is null && _arrayBufferWriter is null);
+
+            _output = bufferWriter;
+            _options = options;
+            if (_options.MaxDepth == 0)
+            {
+                _options.MaxDepth = JsonWriterOptions.DefaultMaxDepth; // If max depth is not set, revert to the default depth.
+            }
+        }
+
+        internal static Utf8JsonWriter CreateEmptyInstanceForCaching() => new Utf8JsonWriter();
 
         private void ResetHelper()
         {
