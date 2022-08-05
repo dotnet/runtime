@@ -107,19 +107,11 @@ namespace System.Net.WebSockets
                             externalAndAbortCancellation = _abortSource;
                         }
 
-                        Task<HttpResponseMessage> sendTask;
-                        if (invoker is HttpClient)
-                        {
-                            HttpClient? client = invoker as HttpClient;
-                            sendTask = client!.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, externalAndAbortCancellation.Token);
-                        }
-                        else
-                        {
-                            sendTask = invoker.SendAsync(request, externalAndAbortCancellation.Token);
-                        }
-
                         using (linkedCancellation)
                         {
+                            Task<HttpResponseMessage> sendTask = invoker is HttpClient client
+                                ? client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, externalAndAbortCancellation.Token)
+                                : invoker.SendAsync(request, externalAndAbortCancellation.Token);
                             response = await sendTask.ConfigureAwait(false);
                             externalAndAbortCancellation.Token.ThrowIfCancellationRequested(); // poll in case sends/receives in request/response didn't observe cancellation
                         }
