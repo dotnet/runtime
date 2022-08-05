@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -1147,13 +1148,13 @@ namespace System
             return -1; // not found
         }
 
-        public static int IndexOfAnyExcept<T>(ref T searchSpace, T value0, int length) where T : IEquatable<T>
+        public static int IndexOfAnyExcept<T>(ref T searchSpace, T value0, int length)
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
 
             for (int i = 0; i < length; i++)
             {
-                if (!Unsafe.Add(ref searchSpace, i).Equals(value0))
+                if (!EqualityComparer<T>.Default.Equals(Unsafe.Add(ref searchSpace, i), value0))
                 {
                     return i;
                 }
