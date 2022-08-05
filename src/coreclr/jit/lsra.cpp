@@ -6756,7 +6756,7 @@ void LinearScan::resolveRegisters()
         assert(refPosIterator != refPositions.end());
         assert(currentRefPosition->refType == RefTypeBB);
         ++refPosIterator;
-        currentRefPosition = &refPosIterator;
+        currentRefPosition = refPosIterator != refPositions.end() ? &refPosIterator : nullptr;
 
         // Handle the RefPositions for the block
         for (; refPosIterator != refPositions.end() && currentRefPosition->refType != RefTypeBB &&

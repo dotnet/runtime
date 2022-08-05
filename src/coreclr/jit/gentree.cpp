@@ -9364,7 +9364,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             return;
 
         case GT_CALL:
-            m_statePtr = &*m_node->AsCall()->gtArgs.Args().begin();
+            m_statePtr = m_node->AsCall()->gtArgs.Args().begin().GetArg();
             m_advance  = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ARGS>;
             AdvanceCall<CALL_ARGS>();
             return;
@@ -9649,7 +9649,7 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
                     return;
                 }
             }
-            m_statePtr = &*call->gtArgs.LateArgs().begin();
+            m_statePtr = call->gtArgs.LateArgs().begin().GetArg();
             m_advance  = &GenTreeUseEdgeIterator::AdvanceCall<CALL_LATE_ARGS>;
             FALLTHROUGH;
 
