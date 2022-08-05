@@ -5900,6 +5900,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			MonoType *ftype = mono_field_get_type_internal (field);
 			gboolean is_static = !!(ftype->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init_internal (klass);
+			mono_class_setup_fields (klass);
 			{
 				if (is_static) {
 					td->sp--;
@@ -5939,6 +5940,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			MonoType *ftype = mono_field_get_type_internal (field);
 			gboolean is_static = !!(ftype->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init_internal (klass);
+			mono_class_setup_fields (klass);
 
 			MonoClass *field_klass = mono_class_from_mono_type_internal (ftype);
 			mt = mint_type (ftype);
@@ -6014,6 +6016,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			gboolean is_static = !!(ftype->attrs & FIELD_ATTRIBUTE_STATIC);
 			MonoClass *field_klass = mono_class_from_mono_type_internal (ftype);
 			mono_class_init_internal (klass);
+			mono_class_setup_fields (klass);
 			mt = mint_type (ftype);
 
 			BARRIER_IF_VOLATILE (td, MONO_MEMORY_BARRIER_REL);
