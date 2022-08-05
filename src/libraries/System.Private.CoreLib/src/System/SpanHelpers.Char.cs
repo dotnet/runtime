@@ -923,7 +923,7 @@ namespace System
                         goto IntrinsicsMatch;
                     }
                     // Move to Vector length from end for final compare
-                    search = LoadVector128(ref searchStart, lengthToExamine);
+                    search = Vector128.LoadUnsafe(ref ushortSearchStart, lengthToExamine);
                     offset = lengthToExamine;
                     // Same as method as above
                     compareResult = Vector128.Equals(values0, search) | Vector128.Equals(values1, search);
@@ -1586,7 +1586,7 @@ namespace System
                             matches |= Vector256.Equals(values2, search).AsByte().ExtractMostSignificantBits();
                             matches |= Vector256.Equals(values3, search).AsByte().ExtractMostSignificantBits();
                             matches |= Vector256.Equals(values4, search).AsByte().ExtractMostSignificantBits();
-                            // Note that MoveMask has converted the equal vector elements into a set of bit flags,
+                            // Note that ExtractMostSignificantBits has converted the equal vector elements into a set of bit flags,
                             // So the bit position in 'matches' corresponds to the element offset.
                             if (matches == 0)
                             {
