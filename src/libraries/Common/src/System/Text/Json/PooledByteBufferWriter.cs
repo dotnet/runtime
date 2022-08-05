@@ -141,7 +141,7 @@ namespace System.Text.Json
             return _rentedBuffer.AsSpan(_index);
         }
 
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
         internal ValueTask WriteToStreamAsync(Stream destination, CancellationToken cancellationToken)
         {
             return destination.WriteAsync(WrittenMemory, cancellationToken);
