@@ -2172,10 +2172,8 @@ void LinearScan::checkLastUses(BasicBlock* block)
     VARSET_TP computedLive(VarSetOps::MakeCopy(compiler, block->bbLiveOut));
 
     bool                       foundDiff       = false;
-    RefPositionReverseIterator reverseIterator = refPositions.rbegin();
-    RefPosition*               currentRefPosition;
-    for (currentRefPosition = &reverseIterator; currentRefPosition->refType != RefTypeBB;
-         reverseIterator++, currentRefPosition = &reverseIterator)
+    RefPositionReverseIterator currentRefPosition = refPositions.rbegin();
+    for (; currentRefPosition->refType != RefTypeBB; currentRefPosition++)
     {
         // We should never see ParamDefs or ZeroInits within a basic block.
         assert(currentRefPosition->refType != RefTypeParamDef && currentRefPosition->refType != RefTypeZeroInit);
@@ -2234,7 +2232,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
             }
         }
 
-        assert(reverseIterator != refPositions.rend());
+        assert(currentRefPosition != refPositions.rend());
     }
 
     VARSET_TP liveInNotComputedLive(VarSetOps::Diff(compiler, block->bbLiveIn, computedLive));
@@ -9479,8 +9477,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
     // currentRefPosition is not used for LSRA_DUMP_PRE
     // We keep separate iterators for defs, so that we can print them
     // on the lhs of the dump
-    RefPositionIterator refPosIterator     = refPositions.begin();
-    RefPosition*        currentRefPosition = &refPosIterator;
+    RefPositionIterator currentRefPosition = refPositions.begin();
 
     switch (mode)
     {
@@ -9501,9 +9498,8 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
     if (mode != LSRA_DUMP_PRE)
     {
         printf("Incoming Parameters: ");
-        for (; refPosIterator != refPositions.end(); ++refPosIterator)
+        for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
         {
-            currentRefPosition = &refPosIterator;
             if (currentRefPosition->refType == RefTypeBB)
             {
                 break;
@@ -9548,9 +9544,8 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
         {
             bool printedBlockHeader = false;
             // We should find the boundary RefPositions in the order of exposed uses, dummy defs, and the blocks
-            for (; refPosIterator != refPositions.end(); ++refPosIterator)
+            for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
             {
-                currentRefPosition = &refPosIterator;
                 if (currentRefPosition->refType != RefTypeExpUse && currentRefPosition->refType != RefTypeDummyDef &&
                     !(currentRefPosition->refType == RefTypeBB && !printedBlockHeader))
                 {
@@ -9635,9 +9630,8 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 // and combining the fixed regs with their associated def or use
                 bool         killPrinted        = false;
                 RefPosition* lastFixedRegRefPos = nullptr;
-                for (; refPosIterator != refPositions.end(); ++refPosIterator)
+                for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
                 {
-                    currentRefPosition = &refPosIterator;
                     if (!(currentRefPosition->refType == RefTypeUse || currentRefPosition->refType == RefTypeFixedReg ||
                           currentRefPosition->refType == RefTypeKill || currentRefPosition->refType == RefTypeDef) ||
                         !(currentRefPosition->nodeLocation == tree->gtSeqNum ||
@@ -10400,46 +10394,45 @@ void LinearScan::verifyFinalAllocation()
     BasicBlock*  currentBlock                = nullptr;
     GenTree*     firstBlockEndResolutionNode = nullptr;
     LsraLocation currentLocation             = MinLocation;
-    for (RefPosition& refPosition : refPositions)
+    for (RefPosition& currentRefPosition : refPositions)
     {
-        RefPosition* currentRefPosition = &refPosition;
         Interval*    interval           = nullptr;
         RegRecord*   regRecord          = nullptr;
         regNumber    regNum             = REG_NA;
-        activeRefPosition               = currentRefPosition;
+        activeRefPosition               = &currentRefPosition;
 
-        if (currentRefPosition->refType != RefTypeBB)
+        if (currentRefPosition.refType != RefTypeBB)
         {
-            if (currentRefPosition->IsPhysRegRef())
+            if (currentRefPosition.IsPhysRegRef())
             {
-                regRecord                    = currentRefPosition->getReg();
-                regRecord->recentRefPosition = currentRefPosition;
+                regRecord                    = currentRefPosition.getReg();
+                regRecord->recentRefPosition = &currentRefPosition;
                 regNum                       = regRecord->regNum;
             }
-            else if (currentRefPosition->isIntervalRef())
+            else if (currentRefPosition.isIntervalRef())
             {
-                interval                    = currentRefPosition->getInterval();
-                interval->recentRefPosition = currentRefPosition;
-                if (currentRefPosition->registerAssignment != RBM_NONE)
+                interval                    = currentRefPosition.getInterval();
+                interval->recentRefPosition = &currentRefPosition;
+                if (currentRefPosition.registerAssignment != RBM_NONE)
                 {
-                    if (!genMaxOneBit(currentRefPosition->registerAssignment))
+                    if (!genMaxOneBit(currentRefPosition.registerAssignment))
                     {
-                        assert(currentRefPosition->refType == RefTypeExpUse ||
-                               currentRefPosition->refType == RefTypeDummyDef);
+                        assert(currentRefPosition.refType == RefTypeExpUse ||
+                               currentRefPosition.refType == RefTypeDummyDef);
                     }
                     else
                     {
-                        regNum    = currentRefPosition->assignedReg();
+                        regNum    = currentRefPosition.assignedReg();
                         regRecord = getRegisterRecord(regNum);
                     }
                 }
             }
         }
 
-        LsraLocation newLocation = currentRefPosition->nodeLocation;
+        LsraLocation newLocation = currentRefPosition.nodeLocation;
         currentLocation          = newLocation;
 
-        switch (currentRefPosition->refType)
+        switch (currentRefPosition.refType)
         {
             case RefTypeBB:
             {
@@ -10523,7 +10516,7 @@ void LinearScan::verifyFinalAllocation()
 
                     if (VERBOSE)
                     {
-                        dumpRefPositionShort(currentRefPosition, currentBlock);
+                        dumpRefPositionShort(&currentRefPosition, currentBlock);
                         dumpRegRecords();
                     }
 
@@ -10588,7 +10581,7 @@ void LinearScan::verifyFinalAllocation()
                     dumpLsraAllocationEvent(LSRA_EVENT_SPECIAL_PUTARG, interval, regNum);
                     break;
                 }
-                if (currentRefPosition->reload)
+                if (currentRefPosition.reload)
                 {
                     interval->isActive = true;
                     assert(regNum != REG_NA);
@@ -10603,7 +10596,7 @@ void LinearScan::verifyFinalAllocation()
                     if (interval->physReg != REG_NA)
                     {
                         // then unassign it if no new register was assigned to the RefTypeDef
-                        if (RefTypeIsDef(currentRefPosition->refType))
+                        if (RefTypeIsDef(currentRefPosition.refType))
                         {
                             assert(interval->assignedReg != nullptr);
                             if (interval->assignedReg->assignedInterval == interval)
@@ -10617,14 +10610,14 @@ void LinearScan::verifyFinalAllocation()
 
                     dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, interval);
                 }
-                else if (RefTypeIsDef(currentRefPosition->refType))
+                else if (RefTypeIsDef(currentRefPosition.refType))
                 {
                     interval->isActive = true;
 
                     if (VERBOSE)
                     {
-                        if (interval->isConstant && (currentRefPosition->treeNode != nullptr) &&
-                            currentRefPosition->treeNode->IsReuseRegVal())
+                        if (interval->isConstant && (currentRefPosition.treeNode != nullptr) &&
+                            currentRefPosition.treeNode->IsReuseRegVal())
                         {
                             dumpLsraAllocationEvent(LSRA_EVENT_REUSE_REG, nullptr, regRecord->regNum, currentBlock);
                         }
@@ -10634,11 +10627,11 @@ void LinearScan::verifyFinalAllocation()
                         }
                     }
                 }
-                else if (currentRefPosition->copyReg)
+                else if (currentRefPosition.copyReg)
                 {
                     dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, interval, regRecord->regNum, currentBlock);
                 }
-                else if (currentRefPosition->moveReg)
+                else if (currentRefPosition.moveReg)
                 {
                     assert(interval->assignedReg != nullptr);
                     interval->assignedReg->assignedInterval = nullptr;
@@ -10655,13 +10648,13 @@ void LinearScan::verifyFinalAllocation()
                 {
                     dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, nullptr, regRecord->regNum, currentBlock);
                 }
-                if (currentRefPosition->lastUse || (currentRefPosition->spillAfter && !currentRefPosition->writeThru))
+                if (currentRefPosition.lastUse || (currentRefPosition.spillAfter && !currentRefPosition.writeThru))
                 {
                     interval->isActive = false;
                 }
                 if (regNum != REG_NA)
                 {
-                    if (currentRefPosition->spillAfter)
+                    if (currentRefPosition.spillAfter)
                     {
                         if (VERBOSE)
                         {
@@ -10669,14 +10662,14 @@ void LinearScan::verifyFinalAllocation()
                             // is the homeReg of the interval not the reg currently assigned
                             // to refPos.
                             regNumber spillReg = regNum;
-                            if (currentRefPosition->copyReg)
+                            if (currentRefPosition.copyReg)
                             {
                                 assert(interval != nullptr);
                                 spillReg = interval->physReg;
                             }
                             dumpRegRecords();
                             dumpEmptyRefPosition();
-                            if (currentRefPosition->writeThru)
+                            if (currentRefPosition.writeThru)
                             {
                                 printf("WThru    %-4s ", getRegName(spillReg));
                             }
@@ -10686,13 +10679,13 @@ void LinearScan::verifyFinalAllocation()
                             }
                         }
                     }
-                    else if (currentRefPosition->copyReg)
+                    else if (currentRefPosition.copyReg)
                     {
                         regRecord->assignedInterval = interval;
                     }
                     else
                     {
-                        if (RefTypeIsDef(currentRefPosition->refType))
+                        if (RefTypeIsDef(currentRefPosition.refType))
                         {
                             // Interval was assigned to a different register.
                             // Clear the assigned interval of current register.
@@ -10712,7 +10705,7 @@ void LinearScan::verifyFinalAllocation()
                 // However, we will assert that, at resolution time, no registers contain GC refs.
                 {
                     DBEXEC(VERBOSE, printf("           "));
-                    regMaskTP candidateRegs = currentRefPosition->registerAssignment;
+                    regMaskTP candidateRegs = currentRefPosition.registerAssignment;
                     while (candidateRegs != RBM_NONE)
                     {
                         regMaskTP nextRegBit = genFindLowestBit(candidateRegs);
@@ -10728,32 +10721,32 @@ void LinearScan::verifyFinalAllocation()
             case RefTypeExpUse:
             case RefTypeDummyDef:
                 // Do nothing; these will be handled by the RefTypeBB.
-                DBEXEC(VERBOSE, dumpRefPositionShort(currentRefPosition, currentBlock));
+                DBEXEC(VERBOSE, dumpRefPositionShort(&currentRefPosition, currentBlock));
                 DBEXEC(VERBOSE, printf("              "));
                 break;
 
             case RefTypeInvalid:
-                // for these 'currentRefPosition->refType' values, No action to take
+                // for these 'currentRefPosition.refType' values, No action to take
                 break;
         }
 
-        if (currentRefPosition->refType != RefTypeBB)
+        if (currentRefPosition.refType != RefTypeBB)
         {
             DBEXEC(VERBOSE, dumpRegRecords());
             if (interval != nullptr)
             {
-                if (currentRefPosition->copyReg)
+                if (currentRefPosition.copyReg)
                 {
                     assert(interval->physReg != regNum);
                     regRecord->assignedInterval = nullptr;
                     assert(interval->assignedReg != nullptr);
                     regRecord = interval->assignedReg;
                 }
-                if (currentRefPosition->spillAfter || currentRefPosition->lastUse)
+                if (currentRefPosition.spillAfter || currentRefPosition.lastUse)
                 {
-                    assert(!currentRefPosition->spillAfter || currentRefPosition->IsActualRef());
+                    assert(!currentRefPosition.spillAfter || currentRefPosition.IsActualRef());
 
-                    if (RefTypeIsDef(currentRefPosition->refType))
+                    if (RefTypeIsDef(currentRefPosition.refType))
                     {
                         // If an interval got assigned to a different register (while the different
                         // register got spilled), then clear the assigned interval of current register.
@@ -10772,12 +10765,12 @@ void LinearScan::verifyFinalAllocation()
                         regRecord->assignedInterval = nullptr;
                     }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                    else if (interval->isUpperVector && !currentRefPosition->RegOptional())
+                    else if (interval->isUpperVector && !currentRefPosition.RegOptional())
                     {
                         // These only require a register if they are not RegOptional, and their lclVar
                         // interval is living in a register and not already partially spilled.
-                        if ((currentRefPosition->refType == RefTypeUpperVectorSave) ||
-                            (currentRefPosition->refType == RefTypeUpperVectorRestore))
+                        if ((currentRefPosition.refType == RefTypeUpperVectorSave) ||
+                            (currentRefPosition.refType == RefTypeUpperVectorRestore))
                         {
                             Interval* lclVarInterval = interval->relatedInterval;
                             assert((lclVarInterval->physReg == REG_NA) || lclVarInterval->isPartiallySpilled);
@@ -10786,7 +10779,7 @@ void LinearScan::verifyFinalAllocation()
 #endif
                     else
                     {
-                        assert(currentRefPosition->RegOptional());
+                        assert(currentRefPosition.RegOptional());
                     }
                 }
             }
