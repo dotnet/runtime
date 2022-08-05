@@ -38,7 +38,21 @@
       <_DotNetInstallScriptName Condition=" $([MSBuild]::IsOSPlatform('windows'))">dotnet-install.ps1</_DotNetInstallScriptName>
 
       <_DotNetInstallScriptPath>$(ArtifactsObjDir)$(_DotNetInstallScriptName)</_DotNetInstallScriptPath>
-     </PropertyGroup>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' != ''">
+      <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
+              >$(_DotNetInstallScriptPath) -i $(SdkWithNoWorkloadForTestingPath) -v $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
+      <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
+              >$(_DotNetInstallScriptPath) -InstallDir $(SdkWithNoWorkloadForTestingPath) -Version $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' == ''">
+      <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
+              >$(_DotNetInstallScriptPath) -i $(SdkWithNoWorkloadForTestingPath) -q daily -c $(SdkChannelForWorkloadTesting)</_DotNetInstallCommand>
+      <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
+              >$(_DotNetInstallScriptPath) -InstallDir $(SdkWithNoWorkloadForTestingPath) -Quality daily -Channel $(SdkChannelForWorkloadTesting)</_DotNetInstallCommand>
+    </PropertyGroup>
 
     <DownloadFile SourceUrl="https://dot.net/v1/$(_DotNetInstallScriptName)"
                   DestinationFolder="$(ArtifactsObjDir)"
@@ -47,10 +61,10 @@
 
     <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
-          Command="chmod +x $(_DotNetInstallScriptPath); $(_DotNetInstallScriptPath) -i $(SdkWithNoWorkloadForTestingPath) -v $(SdkVersionForWorkloadTesting)" />
+          Command="chmod +x $(_DotNetInstallScriptPath); $(_DotNetInstallCommand)" />
 
     <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
-          Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallScriptPath) -InstallDir $(SdkWithNoWorkloadForTestingPath) -Version $(SdkVersionForWorkloadTesting)"' />
+          Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
 
     <WriteLinesToFile File="$(SdkWithNoWorkloadStampPath)" Lines="" Overwrite="true" />
   </Target>
