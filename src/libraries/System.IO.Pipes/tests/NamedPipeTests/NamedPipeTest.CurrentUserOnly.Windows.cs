@@ -134,7 +134,7 @@ namespace System.IO.Pipes.Tests
 
         [OuterLoop]
         [ConditionalFact(nameof(IsAdminOnSupportedWindowsVersions))]
-        public async Task Connection_UnderDifferentUsers_CurrentUserOnlyOnServer_InvalidClientConnectionAttempts_DoNotBlockSuccessfulClient()
+        public async Task Connection_UnderDifferentUsers_CurrentUserOnlyOnServer_OneInvalidClientConnectionAttempt_DoesNotBlockSuccessfulClient()
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
             ManualResetEvent @event = new ManualResetEvent(false);
@@ -166,6 +166,40 @@ namespace System.IO.Pipes.Tests
             await server.WaitForConnectionAsync();
 
             Task.WaitAll(validClient, invalidClient);
+        }
+
+        [OuterLoop]
+        [ConditionalFact(nameof(IsAdminOnSupportedWindowsVersions))]
+        public async Task Connection_UnderDifferentUsers_CurrentUserOnlyOnServer_InvalidClientConnectionAttempts_DoNotBlockSuccessfulClient()
+        {
+            string name = PipeStreamConformanceTests.GetUniquePipeName();
+            bool invalidClientShouldStop = false;
+
+            using var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            Task serverWait = server.WaitForConnectionAsync();
+
+            Task invalidClient = Task.Run(() =>
+            {
+                // invalid non-current user tries to connect to server.
+                _testAccountImpersonator.RunImpersonated(() =>
+                {
+                    while (!Volatile.Read(ref invalidClientShouldStop))
+                    {
+                        using var client = new NamedPipeClientStream(".", name, PipeDirection.In, PipeOptions.Asynchronous);
+                        Assert.Throws<UnauthorizedAccessException>(() => client.Connect());
+                    }
+                });
+            });
+
+            Thread.Sleep(1000); // give it a sec to allow above tasks to perform some work before this.
+
+            Assert.False(serverWait.IsCompleted);
+
+            // valid client tries to connect and succeeds.
+            using var client = new NamedPipeClientStream(".", name, PipeDirection.In, PipeOptions.Asynchronous);
+            client.Connect();
+            await serverWait;
+            Volatile.Write(ref invalidClientShouldStop, true);
         }
 
         [OuterLoop]
