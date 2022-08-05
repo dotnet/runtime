@@ -3,11 +3,12 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Numerics;
 using System.Reflection.Metadata;
 
+using Internal.IL;
 using Internal.TypeSystem.Ecma;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
@@ -191,6 +192,53 @@ namespace Internal.TypeSystem
                 ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramMultipleCallConv);
 
             return existing | addedCallConv.Value;
+        }
+
+        public static EmbeddedSignatureData[] EncodeAsEmbeddedSignatureData(this UnmanagedCallingConventions callingConventions, TypeSystemContext context)
+        {
+            UnmanagedCallingConventions convention = (callingConventions & UnmanagedCallingConventions.CallingConventionMask);
+            UnmanagedCallingConventions modifiers = (callingConventions & UnmanagedCallingConventions.ModifiersMask);
+
+            UnmanagedCallingConventions platformDefault = GetPlatformDefaultUnmanagedCallingConvention(context);
+
+            int count = ((convention != platformDefault) ? 1 : 0) + BitOperations.PopCount((uint)modifiers);
+
+            if (count == 0)
+                return null;
+
+            EmbeddedSignatureData[] ret = new EmbeddedSignatureData[count];
+
+            int index = 0;
+
+            if (convention != platformDefault)
+            {
+                ret[index++] = CreateCallConvEmbeddedSignatureData(context, convention switch
+                {
+                    UnmanagedCallingConventions.Cdecl => "CallConvCdecl",
+                    UnmanagedCallingConventions.Stdcall => "CallConvStdcall",
+                    UnmanagedCallingConventions.Fastcall => "CallConvFastcall",
+                    UnmanagedCallingConventions.Thiscall => "CallConvThiscall",
+                    _ => throw new InvalidProgramException()
+                });
+            }
+
+            if ((modifiers & UnmanagedCallingConventions.IsMemberFunction) != 0)
+                ret[index++] = CreateCallConvEmbeddedSignatureData(context, "CallConvMemberFunction");
+
+            if ((modifiers & UnmanagedCallingConventions.IsSuppressGcTransition) != 0)
+                ret[index++] = CreateCallConvEmbeddedSignatureData(context, "CallConvSuppressGCTransition");
+
+            Debug.Assert(index == count);
+
+            return ret;
+
+            static EmbeddedSignatureData CreateCallConvEmbeddedSignatureData(TypeSystemContext context, string name)
+                => new()
+                {
+                    index = MethodSignature.IndexOfCustomModifiersOnReturnType,
+                    kind = EmbeddedSignatureDataKind.OptionalCustomModifier,
+                    type = context.SystemModule.GetKnownType("System.Runtime.CompilerServices", name)
+                };
         }
 
         private static UnmanagedCallingConventions GetPlatformDefaultUnmanagedCallingConvention(TypeSystemContext context)

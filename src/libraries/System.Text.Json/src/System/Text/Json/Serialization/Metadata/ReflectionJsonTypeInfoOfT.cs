@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -29,11 +31,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             Func<object>? createObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));
-            if (converter.UsesDefaultConstructor)
-            {
-                SetCreateObject(createObject);
-            }
-
+            SetCreateObjectIfCompatible(createObject);
             CreateObjectForExtensionDataProperty = createObject;
 
             // Plug in any converter configuration -- should be run last.
@@ -55,6 +53,11 @@ namespace System.Text.Json.Serialization.Metadata
 
             Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
             bool propertyOrderSpecified = false;
+            // Compiler adds RequiredMemberAttribute to type if any of the members is marked with 'required' keyword.
+            // SetsRequiredMembersAttribute means that all required members are assigned by constructor and therefore there is no enforcement
+            bool shouldCheckMembersForRequiredMemberAttribute =
+                typeof(T).HasRequiredMemberAttribute()
+                && !(Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false);
 
             // Walk through the inheritance hierarchy, starting from the most derived type upward.
             for (Type? currentType = Type; currentType != null; currentType = currentType.BaseType)
@@ -85,7 +88,8 @@ namespace System.Text.Json.Serialization.Metadata
                             typeToConvert: propertyInfo.PropertyType,
                             memberInfo: propertyInfo,
                             ref propertyOrderSpecified,
-                            ref ignoredMembers);
+                            ref ignoredMembers,
+                            shouldCheckMembersForRequiredMemberAttribute);
                     }
                     else
                     {
@@ -117,7 +121,8 @@ namespace System.Text.Json.Serialization.Metadata
                                 typeToConvert: fieldInfo.FieldType,
                                 memberInfo: fieldInfo,
                                 ref propertyOrderSpecified,
-                                ref ignoredMembers);
+                                ref ignoredMembers,
+                                shouldCheckMembersForRequiredMemberAttribute);
                         }
                     }
                     else
@@ -144,9 +149,10 @@ namespace System.Text.Json.Serialization.Metadata
             Type typeToConvert,
             MemberInfo memberInfo,
             ref bool propertyOrderSpecified,
-            ref Dictionary<string, JsonPropertyInfo>? ignoredMembers)
+            ref Dictionary<string, JsonPropertyInfo>? ignoredMembers,
+            bool shouldCheckForRequiredKeyword)
         {
-            JsonPropertyInfo? jsonPropertyInfo = CreateProperty(typeToConvert, memberInfo, Options);
+            JsonPropertyInfo? jsonPropertyInfo = CreateProperty(typeToConvert, memberInfo, Options, shouldCheckForRequiredKeyword);
             if (jsonPropertyInfo == null)
             {
                 // ignored invalid property
@@ -166,7 +172,8 @@ namespace System.Text.Json.Serialization.Metadata
         private JsonPropertyInfo? CreateProperty(
             Type typeToConvert,
             MemberInfo memberInfo,
-            JsonSerializerOptions options)
+            JsonSerializerOptions options,
+            bool shouldCheckForRequiredKeyword)
         {
             JsonIgnoreCondition? ignoreCondition = memberInfo.GetCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
 
@@ -191,7 +198,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             JsonPropertyInfo jsonPropertyInfo = CreatePropertyUsingReflection(typeToConvert);
-            jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo, customConverter, ignoreCondition);
+            jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo, customConverter, ignoreCondition, shouldCheckForRequiredKeyword);
             return jsonPropertyInfo;
         }
 
@@ -219,12 +226,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal override JsonParameterInfoValues[] GetParameterInfoValues()
         {
-            ParameterInfo[] parameters = Converter.ConstructorInfo!.GetParameters();
-            return GetParameterInfoArray(parameters);
-        }
-
-        private static JsonParameterInfoValues[] GetParameterInfoArray(ParameterInfo[] parameters)
-        {
+            Debug.Assert(Converter.ConstructorInfo != null);
+            ParameterInfo[] parameters = Converter.ConstructorInfo.GetParameters();
             int parameterCount = parameters.Length;
             JsonParameterInfoValues[] jsonParameters = new JsonParameterInfoValues[parameterCount];
 
@@ -232,9 +235,16 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 ParameterInfo reflectionInfo = parameters[i];
 
+                // Trimmed parameter names are reported as null in CoreCLR or "" in Mono.
+                if (string.IsNullOrEmpty(reflectionInfo.Name))
+                {
+                    Debug.Assert(Converter.ConstructorInfo.DeclaringType != null);
+                    ThrowHelper.ThrowNotSupportedException_ConstructorContainsNullParameterNames(Converter.ConstructorInfo.DeclaringType);
+                }
+
                 JsonParameterInfoValues jsonInfo = new()
                 {
-                    Name = reflectionInfo.Name!,
+                    Name = reflectionInfo.Name,
                     ParameterType = reflectionInfo.ParameterType,
                     Position = reflectionInfo.Position,
                     HasDefaultValue = reflectionInfo.HasDefaultValue,

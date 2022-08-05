@@ -22,6 +22,7 @@ namespace System.Text.Json.Serialization.Converters
             ((List<object?>)state.Current.ReturnValue!).Add(value);
         }
 
+        internal override bool SupportsCreateObjectDelegate => false;
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             if (!_isDeserializable)

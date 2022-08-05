@@ -70,7 +70,7 @@ namespace ILCompiler.Dataflow
                     decoded = ecmaMethod.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
                     break;
                 case MetadataType type:
-                    var ecmaType = type as EcmaType;
+                    var ecmaType = type.GetTypeDefinition() as EcmaType;
                     if (ecmaType == null)
                         return false;
                     decoded = ecmaType.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);

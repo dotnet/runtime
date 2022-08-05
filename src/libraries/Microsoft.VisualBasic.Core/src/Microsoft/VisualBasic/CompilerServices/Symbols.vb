@@ -597,7 +597,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             If IsGenericParameter(referringType) Then
                 'Is T a generic parameter of Type. Note that the clr way of representing type params will
-                'return true for the copies of the type params of all the parent types that are on the 
+                'return true for the copies of the type params of all the parent types that are on the
                 'passed in Typ.
 
                 If referringType.DeclaringType Is typ Then
@@ -731,7 +731,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Dim declaringType As System.Type = member.DeclaringType
 
             ' For nested types IsNotPublic doesn't return the right value so
-            ' we need to use Not IsPublic. 
+            ' we need to use Not IsPublic.
             '
             ' The following code will only allow calls to members of top level public types
             ' in the runtime library. Read the reflection documentation and test with
@@ -922,8 +922,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return Nothing
             End Function
 
-            ' For a WinRT object, we want to treat members of it's collection interfaces as members of the object 
-            ' itself. So GetMembers calls here to find the member in all the collection interfaces that this object 
+            ' For a WinRT object, we want to treat members of it's collection interfaces as members of the object
+            ' itself. So GetMembers calls here to find the member in all the collection interfaces that this object
             ' implements.
             <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
                 Justification:="_type is annotated with .All, so it's Interfaces will be annotated as well and it is safe to call GetMember on the Interfaces.
@@ -989,7 +989,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Return result
             End Function
 
-            ' For a WinRT object, we want to treat members of it's collection interfaces as members of the object 
+            ' For a WinRT object, we want to treat members of it's collection interfaces as members of the object
             ' itself. Search through all the collection interfaces for default members.
             <RequiresUnreferencedCode("Calls Container.LookupDefaultMembers")>
             Private Function LookupWinRTCollectionDefaultMembers(ByRef defaultMemberName As String) As List(Of MemberInfo)
@@ -1462,12 +1462,12 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 'This function instantiates a generic method with the type arguments supplied or inferred
                 'for this method.
                 '
-                ' Constructing the generic binding using Reflection peforms
+                ' Constructing the generic binding using Reflection performs
                 ' constraint checking. This is bad if the binding will be used
                 ' to resolve overloaded calls since constraints should not participate
                 ' in the selection process. Instead, constraints should be checked
                 ' after overload resolution has selected a method. For now, there is
-                ' nothing reasonble we can do since Reflection does not allow the 
+                ' nothing reasonble we can do since Reflection does not allow the
                 ' instantiation of generic methods with arguments that violate the
                 ' constraints. If a violation occurs, catch the exception and return
                 ' false signifying that the binding failed.

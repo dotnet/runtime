@@ -942,7 +942,7 @@ namespace System.Configuration
                             // We don't need a factory record unless this is the root declaration.
                             // We know it is not the root declaration if there is no factory
                             // declared here. This is important to avoid a walk up the config
-                            // hierachy when there is no input in this record.
+                            // hierarchy when there is no input in this record.
                             factoryRecord = GetFactoryRecord(configKey, false);
                             if (factoryRecord == null) isRootDeclaration = false;
                             else

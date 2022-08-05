@@ -28,11 +28,12 @@ namespace IntelHardwareIntrinsicTest
 
             bool isAuthenticAmd = (ebx == 0x68747541) && (ecx == 0x444D4163) && (edx == 0x69746E65);
             bool isGenuineIntel = (ebx == 0x756E6547) && (ecx == 0x6C65746E) && (edx == 0x49656E69);
+            bool isVirtualCPU = (ebx == 0x74726956) && (ecx == 0x20555043) && (edx == 0x206C6175);
 
-            if (!isAuthenticAmd && !isGenuineIntel)
+            if (!isAuthenticAmd && !isGenuineIntel && !isVirtualCPU)
             {
                 // CPUID checks are vendor specific and aren't guaranteed to match up, even across Intel/AMD
-                // as such, we limit ourselves to just AuthenticAMD and GenuineIntel right now. Any other
+                // as such, we limit ourselves to just AuthenticAMD, GenuineIntel and "Virtual CPU" right now. Any other
                 // vendors would need to be validated against the checks below and added to the list as necessary.
 
                 // An example of a difference is Intel/AMD for LZCNT. While the same underlying bit is used to

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -170,12 +171,26 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[2] = z", output);
         }
 
+        public static TheoryData<string, bool, bool> TestDataForConsolePublishAndRun()
+        {
+            var data = new TheoryData<string, bool, bool>();
+            data.Add("Debug", false, false);
+            data.Add("Debug", false, false);
+            data.Add("Debug", false, true);
+            data.Add("Release", false, false); // Release relinks by default
+
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/71887", TestPlatforms.Windows)]
+            if (!OperatingSystem.IsWindows())
+            {
+                data.Add("Debug", true, false);
+                data.Add("Release", true, false);
+            }
+
+            return data;
+        }
+
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [InlineData("Debug", false, false)]
-        [InlineData("Debug", false, true)]
-        [InlineData("Debug", true, false)]
-        [InlineData("Release", false, false)] // Release relinks by default
-        [InlineData("Release", true, false)]
+        [MemberData(nameof(TestDataForConsolePublishAndRun))]
         public void ConsolePublishAndRun(string config, bool aot, bool relinking)
         {
             string id = $"{config}_{Path.GetRandomFileName()}";

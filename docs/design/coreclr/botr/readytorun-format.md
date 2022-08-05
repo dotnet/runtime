@@ -797,6 +797,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GenericGcTlsBase          = 0x66,
     READYTORUN_HELPER_GenericNonGcTlsBase       = 0x67,
     READYTORUN_HELPER_VirtualFuncPtr            = 0x68,
+    READYTORUN_HELPER_IsInstanceOfException     = 0x69,
 
     // Long mul/div/shift ops
     READYTORUN_HELPER_LMul                      = 0xC0,

@@ -821,7 +821,7 @@ namespace Tests.Integration
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
-        public void InheritedExport_InterfaceHiearchy()
+        public void InheritedExport_InterfaceHierarchy()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(FooWithInterfaceWithMultipleFoos));
 

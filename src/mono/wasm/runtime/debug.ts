@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import Configuration from "consts:configuration";
-import { INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
+import { INTERNAL, Module, runtimeHelpers } from "./imports";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
+import { MONO } from "./net6-legacy/imports";
 const commands_received: any = new Map<number, CommandResponse>();
 const wasm_func_map = new Map<number, string>();
 commands_received.remove = function (key: number): CommandResponse { const value = this.get(key); this.delete(key); return value; };
@@ -34,7 +35,7 @@ regexes.push(/(?<replaceSection>[a-z]+:\/\/[^ )]*:wasm-function\[(?<funcNum>\d+)
 regexes.push(/(?<replaceSection><[^ >]+>[.:]wasm-function\[(?<funcNum>[0-9]+)\])/);
 
 export function mono_wasm_runtime_ready(): void {
-    runtimeHelpers.mono_wasm_runtime_is_ready = true;
+    INTERNAL.mono_wasm_runtime_is_ready = runtimeHelpers.mono_wasm_runtime_is_ready = true;
 
     // FIXME: where should this go?
     _next_call_function_res_id = 0;
@@ -150,7 +151,7 @@ export function mono_wasm_get_loaded_files(): string[] {
 export function mono_wasm_wait_for_debugger(): Promise<void> {
     return new Promise<void>((resolve) => {
         const interval = setInterval(() => {
-            if (runtimeHelpers.wait_for_debugger != 1) {
+            if (runtimeHelpers.waitForDebugger != 1) {
                 return;
             }
             clearInterval(interval);
@@ -160,8 +161,8 @@ export function mono_wasm_wait_for_debugger(): Promise<void> {
 }
 
 export function mono_wasm_debugger_attached(): void {
-    if (runtimeHelpers.wait_for_debugger == -1)
-        runtimeHelpers.wait_for_debugger = 1;
+    if (runtimeHelpers.waitForDebugger == -1)
+        runtimeHelpers.waitForDebugger = 1;
     cwraps.mono_wasm_set_is_debugger_attached(true);
 }
 

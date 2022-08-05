@@ -100,17 +100,29 @@ namespace System.Text.Json
 
             if (jsonTypeInfo?.Type != type)
             {
-                jsonTypeInfo = GetTypeInfoInternal(type);
-                _lastTypeInfo = jsonTypeInfo;
+                _lastTypeInfo = jsonTypeInfo = GetTypeInfoInternal(type);
             }
 
             return jsonTypeInfo;
         }
 
+        // Caches the resolved JsonTypeInfo<object> for faster access during root-level object type serialization.
+        internal JsonTypeInfo ObjectTypeInfo
+        {
+            get
+            {
+                Debug.Assert(IsImmutable);
+                return _objectTypeInfo ??= GetTypeInfoInternal(JsonTypeInfo.ObjectType);
+            }
+        }
+
+        private JsonTypeInfo? _objectTypeInfo;
+
         internal void ClearCaches()
         {
             _cachingContext?.Clear();
             _lastTypeInfo = null;
+            _objectTypeInfo = null;
         }
 
         private CachingContext? GetCachingContext()

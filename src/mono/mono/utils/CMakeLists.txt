@@ -85,9 +85,6 @@ set(utils_common_sources
     mono-property-hash.c
     mono-value-hash.h
     mono-value-hash.c
-    freebsd-elf_common.h
-    freebsd-elf32.h
-    freebsd-elf64.h
     freebsd-dwarf.h
     dtrace.h
     mono-error.c
@@ -215,6 +212,8 @@ elseif(TARGET_ARM64)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm64.c")
 elseif(TARGET_ARM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm.c")
+elseif(TARGET_RISCV64)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-riscv.c")
 elseif(TARGET_S390X)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
@@ -226,6 +225,12 @@ else()
 endif()
 
 addprefix(utils_sources ../utils/ "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
+
+set(utils_sources
+    ${utils_sources}
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf_common.h
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf32.h
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf64.h)
 
 if(ENABLE_DTRACE)
     find_program(DTRACE dtrace)

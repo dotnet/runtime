@@ -66,20 +66,12 @@ const inlineAssert = [
 const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock }), typescript()];
 
 const externalDependencies = [
-    "node/buffer"
 ];
 
 const iffeConfig = {
     treeshake: !isDebug,
     input: "exports.ts",
     output: [
-        {
-            file: nativeBinDir + "/src/cjs/runtime.cjs.iffe.js",
-            name,
-            banner,
-            format,
-            plugins,
-        },
         {
             file: nativeBinDir + "/src/es6/runtime.es6.iffe.js",
             name,
@@ -104,6 +96,19 @@ const typesConfig = {
     external: externalDependencies,
     plugins: [dts()],
 };
+const legacyConfig = {
+    input: "./net6-legacy/export-types.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet-legacy.d.ts",
+            banner: banner_dts,
+            plugins: [writeOnChangePlugin()],
+        }
+    ],
+    external: externalDependencies,
+    plugins: [dts()],
+};
 
 
 let diagnosticMockTypesConfig = undefined;
@@ -114,6 +119,12 @@ if (isDebug) {
     typesConfig.output.push({
         format: "es",
         file: "./dotnet.d.ts",
+        banner: banner_dts,
+        plugins: [alwaysLF(), writeOnChangePlugin()],
+    });
+    legacyConfig.output.push({
+        format: "es",
+        file: "./dotnet-legacy.d.ts",
         banner: banner_dts,
         plugins: [alwaysLF(), writeOnChangePlugin()],
     });
@@ -157,6 +168,7 @@ const workerConfigs = findWebWorkerInputs("./workers").map((workerInput) => make
 const allConfigs = [
     iffeConfig,
     typesConfig,
+    legacyConfig,
 ].concat(workerConfigs)
     .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
 export default defineConfig(allConfigs);

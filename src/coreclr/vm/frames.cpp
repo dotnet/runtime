@@ -1061,7 +1061,7 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 #ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_INTERPRETER
-// Methods of IntepreterFrame.
+// Methods of InterpreterFrame.
 InterpreterFrame::InterpreterFrame(Interpreter* interp)
   : Frame(), m_interp(interp)
 {

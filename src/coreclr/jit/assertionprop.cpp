@@ -2200,7 +2200,7 @@ AssertionIndex Compiler::optAssertionGenCast(GenTreeCast* cast)
         return NO_ASSERTION_INDEX;
     }
 
-    // This condition exists to preverve previous behavior.
+    // This condition exists to preserve previous behavior.
     if (!cast->CastOp()->OperIs(GT_LCL_VAR))
     {
         return NO_ASSERTION_INDEX;

@@ -14,14 +14,14 @@ namespace System.Threading.RateLimiting.Tests
         public void ThrowsWhenAcquiringLessThanZero()
         {
             using var limiter = new NotImplementedPartitionedRateLimiter<string>();
-            Assert.Throws<ArgumentOutOfRangeException>(() => limiter.Acquire(string.Empty, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => limiter.AttemptAcquire(string.Empty, -1));
         }
 
         [Fact]
         public async Task ThrowsWhenWaitingForLessThanZero()
         {
             using var limiter = new NotImplementedPartitionedRateLimiter<string>();
-            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.WaitAndAcquireAsync(string.Empty, -1));
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await limiter.AcquireAsync(string.Empty, -1));
         }
 
         [Fact]
@@ -29,7 +29,7 @@ namespace System.Threading.RateLimiting.Tests
         {
             using var limiter = new NotImplementedPartitionedRateLimiter<string>();
             await Assert.ThrowsAsync<TaskCanceledException>(
-                async () => await limiter.WaitAndAcquireAsync(string.Empty, 1, new CancellationToken(true)));
+                async () => await limiter.AcquireAsync(string.Empty, 1, new CancellationToken(true)));
         }
 
         [Fact]
@@ -41,7 +41,7 @@ namespace System.Threading.RateLimiting.Tests
                 return RateLimitPartition.Get(1, key => limiterFactory.GetLimiter(key));
             });
 
-            limiter.Acquire("");
+            limiter.AttemptAcquire("");
             Assert.Equal(1, limiterFactory.Limiters.Count);
             Assert.Equal(1, limiterFactory.Limiters[0].Limiter.AcquireCallCount);
         }
@@ -55,9 +55,9 @@ namespace System.Threading.RateLimiting.Tests
                 return RateLimitPartition.Get(1, key => limiterFactory.GetLimiter(key));
             });
 
-            await limiter.WaitAndAcquireAsync("");
+            await limiter.AcquireAsync("");
             Assert.Equal(1, limiterFactory.Limiters.Count);
-            Assert.Equal(1, limiterFactory.Limiters[0].Limiter.WaitAndAcquireAsyncCallCount);
+            Assert.Equal(1, limiterFactory.Limiters[0].Limiter.AcquireAsyncCallCount);
         }
 
         [Fact]
@@ -83,13 +83,13 @@ namespace System.Threading.RateLimiting.Tests
                 return RateLimitPartition.Get(1, key => limiterFactory.GetLimiter(key));
             });
 
-            limiter.Acquire("");
-            await limiter.WaitAndAcquireAsync("");
-            limiter.Acquire("");
-            await limiter.WaitAndAcquireAsync("");
+            limiter.AttemptAcquire("");
+            await limiter.AcquireAsync("");
+            limiter.AttemptAcquire("");
+            await limiter.AcquireAsync("");
             Assert.Equal(1, limiterFactory.Limiters.Count);
             Assert.Equal(2, limiterFactory.Limiters[0].Limiter.AcquireCallCount);
-            Assert.Equal(2, limiterFactory.Limiters[0].Limiter.WaitAndAcquireAsyncCallCount);
+            Assert.Equal(2, limiterFactory.Limiters[0].Limiter.AcquireAsyncCallCount);
         }
 
         [Fact]
@@ -108,10 +108,10 @@ namespace System.Threading.RateLimiting.Tests
                 }
             });
 
-            limiter.Acquire("1");
-            limiter.Acquire("2");
-            limiter.Acquire("1");
-            limiter.Acquire("2");
+            limiter.AttemptAcquire("1");
+            limiter.AttemptAcquire("2");
+            limiter.AttemptAcquire("1");
+            limiter.AttemptAcquire("2");
 
             Assert.Equal(2, limiterFactory.Limiters.Count);
 
@@ -141,19 +141,19 @@ namespace System.Threading.RateLimiting.Tests
                 });
             });
 
-            var lease = await limiter.WaitAndAcquireAsync("2");
-            var wait = limiter.WaitAndAcquireAsync("2");
+            var lease = await limiter.AcquireAsync("2");
+            var wait = limiter.AcquireAsync("2");
             Assert.False(wait.IsCompleted);
 
             // Different partition, should not be blocked by the wait in the other partition
-            await limiter.WaitAndAcquireAsync("1");
+            await limiter.AcquireAsync("1");
 
             lease.Dispose();
             await wait;
 
             Assert.Equal(1, limiterFactory.Limiters.Count);
             Assert.Equal(0, limiterFactory.Limiters[0].Limiter.AcquireCallCount);
-            Assert.Equal(1, limiterFactory.Limiters[0].Limiter.WaitAndAcquireAsyncCallCount);
+            Assert.Equal(1, limiterFactory.Limiters[0].Limiter.AcquireAsyncCallCount);
         }
 
         // Uses Task.Wait in a Task.Run to purposefully test a blocking scenario, this doesn't work on WASM currently
@@ -179,21 +179,21 @@ namespace System.Threading.RateLimiting.Tests
                     key => limiterFactory.GetLimiter(key));
             });
 
-            var lease = await limiter.WaitAndAcquireAsync("2");
+            var lease = await limiter.AcquireAsync("2");
 
             var blockedTask = Task.Run(async () =>
             {
-                await limiter.WaitAndAcquireAsync("1");
+                await limiter.AcquireAsync("1");
             });
             await startedTcs.Task;
 
             // Other partitions aren't blocked
-            await limiter.WaitAndAcquireAsync("2");
+            await limiter.AcquireAsync("2");
 
             // Try to acquire from the blocking limiter, this should wait until the blocking limiter has been resolved and not create a new one
             var blockedTask2 = Task.Run(async () =>
             {
-                await limiter.WaitAndAcquireAsync("1");
+                await limiter.AcquireAsync("1");
             });
 
             // unblock limiter factory
@@ -203,8 +203,8 @@ namespace System.Threading.RateLimiting.Tests
 
             // Only 2 limiters should have been created
             Assert.Equal(2, limiterFactory.Limiters.Count);
-            Assert.Equal(2, limiterFactory.Limiters[0].Limiter.WaitAndAcquireAsyncCallCount);
-            Assert.Equal(2, limiterFactory.Limiters[1].Limiter.WaitAndAcquireAsyncCallCount);
+            Assert.Equal(2, limiterFactory.Limiters[0].Limiter.AcquireAsyncCallCount);
+            Assert.Equal(2, limiterFactory.Limiters[1].Limiter.AcquireAsyncCallCount);
         }
 
         [Fact]
@@ -221,15 +221,15 @@ namespace System.Threading.RateLimiting.Tests
                 return RateLimitPartition.Get(2, key => limiterFactory.GetLimiter(key));
             }, equality);
 
-            limiter.Acquire("1");
+            limiter.AttemptAcquire("1");
             // GetHashCode to add item to dictionary (skips TryGet for empty dictionary)
             Assert.Equal(0, equality.EqualsCallCount);
             Assert.Equal(1, equality.GetHashCodeCallCount);
-            limiter.Acquire("1");
+            limiter.AttemptAcquire("1");
             // GetHashCode and Equal from TryGet to see if item is in dictionary
             Assert.Equal(1, equality.EqualsCallCount);
             Assert.Equal(2, equality.GetHashCodeCallCount);
-            limiter.Acquire("2");
+            limiter.AttemptAcquire("2");
             // GetHashCode from TryGet (fails check) and second GetHashCode to add item to dictionary
             Assert.Equal(1, equality.EqualsCallCount);
             Assert.Equal(4, equality.GetHashCodeCallCount);
@@ -266,8 +266,8 @@ namespace System.Threading.RateLimiting.Tests
                 return RateLimitPartition.Get(2, key => limiterFactory.GetLimiter(key));
             });
 
-            limiter.Acquire("1");
-            limiter.Acquire("2");
+            limiter.AttemptAcquire("1");
+            limiter.AttemptAcquire("2");
 
             limiter.Dispose();
 
@@ -295,8 +295,8 @@ namespace System.Threading.RateLimiting.Tests
                 return RateLimitPartition.Get(2, _ => limiter2);
             });
 
-            limiter.Acquire("1");
-            limiter.Acquire("2");
+            limiter.AttemptAcquire("1");
+            limiter.AttemptAcquire("2");
 
             var ex = Assert.Throws<AggregateException>(() => limiter.Dispose());
             Assert.Equal(2, ex.InnerExceptions.Count);
@@ -313,7 +313,7 @@ namespace System.Threading.RateLimiting.Tests
 
             limiter.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() => limiter.Acquire("1"));
+            Assert.Throws<ObjectDisposedException>(() => limiter.AttemptAcquire("1"));
 
             Assert.Equal(0, limiterFactory.Limiters.Count);
         }
@@ -331,8 +331,8 @@ namespace System.Threading.RateLimiting.Tests
                 return RateLimitPartition.Get(2, key => limiterFactory.GetLimiter(key));
             });
 
-            limiter.Acquire("1");
-            limiter.Acquire("2");
+            limiter.AttemptAcquire("1");
+            limiter.AttemptAcquire("2");
 
             await limiter.DisposeAsync();
 
@@ -362,8 +362,8 @@ namespace System.Threading.RateLimiting.Tests
                 return RateLimitPartition.Get(2, _ => limiter2);
             });
 
-            limiter.Acquire("1");
-            limiter.Acquire("2");
+            limiter.AttemptAcquire("1");
+            limiter.AttemptAcquire("2");
 
             var ex = await Assert.ThrowsAsync<AggregateException>(() => limiter.DisposeAsync().AsTask());
             Assert.Equal(2, ex.InnerExceptions.Count);
@@ -386,10 +386,10 @@ namespace System.Threading.RateLimiting.Tests
                 });
             });
 
-            var lease = limiter.Acquire("");
+            var lease = limiter.AttemptAcquire("");
             Assert.True(lease.IsAcquired);
 
-            lease = await limiter.WaitAndAcquireAsync("");
+            lease = await limiter.AcquireAsync("");
             Assert.True(lease.IsAcquired);
         }
 
@@ -411,10 +411,10 @@ namespace System.Threading.RateLimiting.Tests
                 }));
             });
 
-            var lease = limiter.Acquire("");
+            var lease = limiter.AttemptAcquire("");
             Assert.True(lease.IsAcquired);
 
-            lease = await limiter.WaitAndAcquireAsync("");
+            lease = await limiter.AcquireAsync("");
             Assert.True(lease.IsAcquired);
         }
 
@@ -448,20 +448,20 @@ namespace System.Threading.RateLimiting.Tests
                 });
             });
 
-            var lease = limiter.Acquire("1");
+            var lease = limiter.AttemptAcquire("1");
             Assert.True(lease.IsAcquired);
 
-            lease = await limiter.WaitAndAcquireAsync("1");
+            lease = await limiter.AcquireAsync("1");
             Assert.True(lease.IsAcquired);
 
             // Creates the second Replenishing limiter
             // Indirectly tests that the cached list of limiters used by the timer is probably updated by making sure a limiter already made use of it before we create a second replenishing one
-            lease = limiter.Acquire("2");
+            lease = limiter.AttemptAcquire("2");
             Assert.True(lease.IsAcquired);
 
-            lease = await limiter.WaitAndAcquireAsync("1");
+            lease = await limiter.AcquireAsync("1");
             Assert.True(lease.IsAcquired);
-            lease = await limiter.WaitAndAcquireAsync("2");
+            lease = await limiter.AcquireAsync("2");
             Assert.True(lease.IsAcquired);
         }
 
@@ -479,11 +479,11 @@ namespace System.Threading.RateLimiting.Tests
                 });
             });
 
-            var lease = limiter.Acquire("");
+            var lease = limiter.AttemptAcquire("");
             Assert.True(lease.IsAcquired);
 
             var cts = new CancellationTokenSource();
-            var waitTask = limiter.WaitAndAcquireAsync("", 1, cts.Token);
+            var waitTask = limiter.AcquireAsync("", 1, cts.Token);
             Assert.False(waitTask.IsCompleted);
             cts.Cancel();
             await Assert.ThrowsAsync<TaskCanceledException>(async () => await waitTask);
@@ -504,7 +504,7 @@ namespace System.Threading.RateLimiting.Tests
                 });
             });
 
-            var lease = limiter.Acquire("");
+            var lease = limiter.AttemptAcquire("");
             Assert.True(lease.IsAcquired);
 
             Assert.Equal(1, factoryCallCount);
@@ -524,7 +524,7 @@ namespace System.Threading.RateLimiting.Tests
             innerLimiter.DisposeAsyncCoreImpl = () => default;
 
             // Acquire will call limiter factory again as the limiter was disposed and removed
-            lease = limiter.Acquire("");
+            lease = limiter.AttemptAcquire("");
             Assert.True(lease.IsAcquired);
             Assert.Equal(2, factoryCallCount);
         }
@@ -554,10 +554,10 @@ namespace System.Threading.RateLimiting.Tests
                 }
             });
 
-            var lease = limiter.Acquire("1");
+            var lease = limiter.AttemptAcquire("1");
             Assert.True(lease.IsAcquired);
             Assert.NotNull(innerLimiter1);
-            limiter.Acquire("2");
+            limiter.AttemptAcquire("2");
             Assert.NotNull(innerLimiter2);
 
             var dispose1Called = false;
@@ -608,8 +608,8 @@ namespace System.Threading.RateLimiting.Tests
             });
 
             // Add the replenishing limiter to the internal storage
-            limiter.Acquire("2");
-            var lease = limiter.Acquire("1");
+            limiter.AttemptAcquire("2");
+            var lease = limiter.AttemptAcquire("1");
             Assert.True(lease.IsAcquired);
             Assert.Equal(1, factoryCallCount);
 
@@ -668,16 +668,16 @@ namespace System.Threading.RateLimiting.Tests
                 return i.ToString();
             });
 
-            var lease = translateLimiter.Acquire(1);
+            var lease = translateLimiter.AttemptAcquire(1);
             Assert.True(lease.IsAcquired);
             Assert.Equal(1, translateCallCount);
 
-            var lease2 = limiter.Acquire("1");
+            var lease2 = limiter.AttemptAcquire("1");
             Assert.False(lease2.IsAcquired);
 
             lease.Dispose();
 
-            lease = limiter.Acquire("1");
+            lease = limiter.AttemptAcquire("1");
             Assert.True(lease.IsAcquired);
 
             Assert.Equal(1, translateCallCount);
@@ -717,16 +717,16 @@ namespace System.Threading.RateLimiting.Tests
                 return i.ToString();
             });
 
-            var lease = await translateLimiter.WaitAndAcquireAsync(1);
+            var lease = await translateLimiter.AcquireAsync(1);
             Assert.True(lease.IsAcquired);
             Assert.Equal(1, translateCallCount);
 
-            var lease2 = limiter.Acquire("1");
+            var lease2 = limiter.AttemptAcquire("1");
             Assert.False(lease2.IsAcquired);
 
             lease.Dispose();
 
-            lease = limiter.Acquire("1");
+            lease = limiter.AttemptAcquire("1");
             Assert.True(lease.IsAcquired);
 
             Assert.Equal(1, translateCallCount);
@@ -769,13 +769,13 @@ namespace System.Threading.RateLimiting.Tests
             Assert.Equal(1, translateLimiter.GetAvailablePermits(1));
             Assert.Equal(1, translateCallCount);
 
-            var lease = translateLimiter.Acquire(1);
+            var lease = translateLimiter.AttemptAcquire(1);
             Assert.True(lease.IsAcquired);
             Assert.Equal(2, translateCallCount);
             Assert.Equal(0, translateLimiter.GetAvailablePermits(1));
             Assert.Equal(3, translateCallCount);
 
-            var lease2 = limiter.Acquire("1");
+            var lease2 = limiter.AttemptAcquire("1");
             Assert.False(lease2.IsAcquired);
 
             lease.Dispose();
@@ -783,7 +783,7 @@ namespace System.Threading.RateLimiting.Tests
             Assert.Equal(1, translateLimiter.GetAvailablePermits(1));
             Assert.Equal(4, translateCallCount);
 
-            lease = limiter.Acquire("1");
+            lease = limiter.AttemptAcquire("1");
             Assert.True(lease.IsAcquired);
 
             Assert.Equal(0, translateLimiter.GetAvailablePermits(1));
@@ -826,10 +826,10 @@ namespace System.Threading.RateLimiting.Tests
 
             translateLimiter.Dispose();
 
-            var lease = limiter.Acquire("1");
+            var lease = limiter.AttemptAcquire("1");
             Assert.True(lease.IsAcquired);
 
-            Assert.Throws<ObjectDisposedException>(() => translateLimiter.Acquire(1));
+            Assert.Throws<ObjectDisposedException>(() => translateLimiter.AttemptAcquire(1));
         }
 
         [Fact]
@@ -868,10 +868,10 @@ namespace System.Threading.RateLimiting.Tests
 
             await translateLimiter.DisposeAsync();
 
-            var lease = limiter.Acquire("1");
+            var lease = limiter.AttemptAcquire("1");
             Assert.True(lease.IsAcquired);
 
-            Assert.Throws<ObjectDisposedException>(() => translateLimiter.Acquire(1));
+            Assert.Throws<ObjectDisposedException>(() => translateLimiter.AttemptAcquire(1));
         }
     }
 }

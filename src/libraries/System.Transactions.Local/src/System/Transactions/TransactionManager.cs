@@ -279,7 +279,7 @@ namespace System.Transactions
         private static MachineSettingsSection MachineSettings => s_machineSettings ??= MachineSettingsSection.GetSection();
 
         private static bool s_defaultTimeoutValidated;
-        private static TimeSpan s_defaultTimeout;
+        private static long s_defaultTimeoutTicks;
         public static TimeSpan DefaultTimeout
         {
             get
@@ -292,23 +292,45 @@ namespace System.Transactions
 
                 if (!s_defaultTimeoutValidated)
                 {
-                    s_defaultTimeout = ValidateTimeout(DefaultSettingsSection.Timeout);
-                    // If the timeout value got adjusted, it must have been greater than MaximumTimeout.
-                    if (s_defaultTimeout != DefaultSettingsSection.Timeout)
+                    LazyInitializer.EnsureInitialized(ref s_defaultTimeoutTicks, ref s_defaultTimeoutValidated, ref s_classSyncObject, () => ValidateTimeout(DefaultSettingsSection.Timeout).Ticks);
+                    if (Interlocked.Read(ref s_defaultTimeoutTicks) != DefaultSettingsSection.Timeout.Ticks)
                     {
                         if (etwLog.IsEnabled())
                         {
                             etwLog.ConfiguredDefaultTimeoutAdjusted();
                         }
                     }
-                    s_defaultTimeoutValidated = true;
                 }
 
                 if (etwLog.IsEnabled())
                 {
                     etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultTimeout");
                 }
-                return s_defaultTimeout;
+                return new TimeSpan(Interlocked.Read(ref s_defaultTimeoutTicks));
+            }
+            set
+            {
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
+                {
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.set_DefaultTimeout");
+                }
+
+                Interlocked.Exchange(ref s_defaultTimeoutTicks, ValidateTimeout(value).Ticks);
+                if (Interlocked.Read(ref s_defaultTimeoutTicks) != value.Ticks)
+                {
+                    if (etwLog.IsEnabled())
+                    {
+                        etwLog.ConfiguredDefaultTimeoutAdjusted();
+                    }
+                }
+
+                s_defaultTimeoutValidated = true;
+
+                if (etwLog.IsEnabled())
+                {
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.set_DefaultTimeout");
+                }
             }
         }
 
@@ -325,7 +347,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultMaximumTimeout");
                 }
 
-                LazyInitializer.EnsureInitialized(ref s_maximumTimeout, ref s_cachedMaxTimeout, ref s_classSyncObject, () => DefaultSettingsSection.Timeout);
+                LazyInitializer.EnsureInitialized(ref s_maximumTimeout, ref s_cachedMaxTimeout, ref s_classSyncObject, () => MachineSettingsSection.MaxTimeout);
 
                 if (etwLog.IsEnabled())
                 {
@@ -333,6 +355,38 @@ namespace System.Transactions
                 }
 
                 return s_maximumTimeout;
+            }
+            set
+            {
+                TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+                if (etwLog.IsEnabled())
+                {
+                    etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.set_DefaultMaximumTimeout");
+                }
+
+                if (value < TimeSpan.Zero)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                s_cachedMaxTimeout = true;
+                s_maximumTimeout = value;
+                LazyInitializer.EnsureInitialized(ref s_defaultTimeoutTicks, ref s_defaultTimeoutValidated, ref s_classSyncObject, () => DefaultSettingsSection.Timeout.Ticks);
+
+                long defaultTimeoutTicks = Interlocked.Read(ref s_defaultTimeoutTicks);
+                Interlocked.Exchange(ref s_defaultTimeoutTicks, ValidateTimeout(new TimeSpan(defaultTimeoutTicks)).Ticks);
+                if (Interlocked.Read(ref s_defaultTimeoutTicks) != defaultTimeoutTicks)
+                {
+                    if (etwLog.IsEnabled())
+                    {
+                        etwLog.ConfiguredDefaultTimeoutAdjusted();
+                    }
+                }
+
+                if (etwLog.IsEnabled())
+                {
+                    etwLog.MethodExit(TraceSourceType.TraceSourceBase, "TransactionManager.set_DefaultMaximumTimeout");
+                }
             }
         }
 

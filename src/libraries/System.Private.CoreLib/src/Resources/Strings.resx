@@ -2500,6 +2500,10 @@
   <data name="InvalidOperation_NativeOverlappedReused" xml:space="preserve">
     <value>NativeOverlapped cannot be reused for multiple operations.</value>
   </data>
+  <data name="InvalidOperation_NestedControlledExecutionRun" xml:space="preserve">
+    <value>The thread is already executing the ControlledExecution.Run method.</value>
+    <comment>{Locked="ControlledExecution.Run"}</comment>
+  </data>
   <data name="InvalidOperation_NoMultiModuleAssembly" xml:space="preserve">
     <value>You cannot have more than one dynamic module in each dynamic assembly in this version of the runtime.</value>
   </data>
@@ -3924,6 +3928,9 @@
   </data>
   <data name="InvalidProgram_CallVirtFinalize" xml:space="preserve">
     <value>Object.Finalize() can not be called directly. It is only callable by the runtime.</value>
+  </data>
+  <data name="InvalidProgram_MultipleCallConv" xml:space="preserve">
+    <value>Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.</value>
   </data>
   <data name="Delegate_GarbageCollected" xml:space="preserve">
     <value>The corresponding delegate has been garbage collected. Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer.</value>
