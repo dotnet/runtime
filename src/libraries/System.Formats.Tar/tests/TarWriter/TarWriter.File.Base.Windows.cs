@@ -12,7 +12,7 @@ namespace System.Formats.Tar.Tests
         {
             Assert.True(entry.ModificationTime > DateTimeOffset.UnixEpoch);
 
-            UnixFileMode expectedMode = Directory.Exists(filePath) ? DefaultDirectoryMode : WindowsFileMode;
+            UnixFileMode expectedMode = DefaultWindowsMode;
             Assert.Equal(expectedMode, entry.Mode);
 
             Assert.Equal(DefaultUid, entry.Uid);

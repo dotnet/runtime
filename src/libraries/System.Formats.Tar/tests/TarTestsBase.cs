@@ -17,8 +17,8 @@ namespace System.Formats.Tar.Tests
         protected const UnixFileMode DefaultFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead; // 644 in octal, internally used as default
         protected const UnixFileMode DefaultDirectoryMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
 
-        // Mode assumed for files on Windows.
-        protected const UnixFileMode WindowsFileMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
+        // Mode assumed for files and directories on Windows.
+        protected const UnixFileMode DefaultWindowsMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
 
         // Permissions used by tests. User has all permissions to avoid permission errors.
         protected const UnixFileMode UserAll = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
@@ -400,8 +400,7 @@ namespace System.Formats.Tar.Tests
             if (PlatformDetection.IsWindows)
             {
                 // Windows files don't have a mode. Set the expected value.
-                bool isDirectory = entry.EntryType == TarEntryType.Directory;
-                fileMode = isDirectory ? DefaultDirectoryMode : WindowsFileMode;
+                fileMode = DefaultWindowsMode;
             }
             Assert.Equal(fileMode, entry.Mode);
         }

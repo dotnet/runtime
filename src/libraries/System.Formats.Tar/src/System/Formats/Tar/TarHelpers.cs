@@ -29,13 +29,7 @@ namespace System.Formats.Tar
             UnixFileMode.OtherRead;
 
         // Default mode for TarEntry created for a directory-type.
-        internal const UnixFileMode DefaultDirectoryMode =
-            DefaultFileMode |
-            UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
-
-        // Windows files don't have a mode.
-        // Use the default mode with the x-bit set for all.
-        internal const UnixFileMode WindowsFileMode =
+        private const UnixFileMode DefaultDirectoryMode =
             DefaultFileMode |
             UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
 
