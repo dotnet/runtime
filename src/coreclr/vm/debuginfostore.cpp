@@ -67,7 +67,6 @@ public:
         m_w.WriteEncodedU32(dwDelta);
     }
 
-
     // Some U32 may have a few sentinel negative values .
     // We adjust it to be a real U32 and then encode that.
     // dwAdjust should be the lower bound on the enum.
@@ -75,6 +74,20 @@ public:
     {
         //_ASSERTE(dwAdjust < 0); // some negative lower bound.
         m_w.WriteEncodedU32(dw - dwAdjust);
+    }
+
+    void DoEncodedDeltaU32NonMonotonic(uint32_t& dw, uint32_t dwLast)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        int32_t dwDelta = static_cast<int32_t>(dw) - static_cast<int32_t>(dwLast);
+        m_w.WriteEncodedI32(dwDelta);
     }
 
     // Typesafe versions of EncodeU32.
@@ -162,6 +175,13 @@ public:
         SUPPORTS_DAC;
         //_ASSERTE(dwAdjust < 0);
         dw = m_r.ReadEncodedU32() + dwAdjust;
+    }
+
+    void DoEncodedDeltaU32NonMonotonic(uint32_t& dw, uint32_t dwLast)
+    {
+        SUPPORTS_DAC;
+        int32_t dwDelta = m_r.ReadEncodedI32();
+        dw = static_cast<uint32_t>(static_cast<int32_t>(dwLast) + dwDelta);
     }
 
     void DoEncodedSourceType(ICorDebugInfo::SourceTypes & dw)
@@ -398,10 +418,10 @@ static void DoInlineTreeNodes(
 
         trans.DoEncodedAdjustedU32(node->ILOffset, (DWORD) ICorDebugInfo::MAX_MAPPING_VALUE);
 
-        trans.DoEncodedDeltaU32(node->Child, lastChildIndex);
+        trans.DoEncodedDeltaU32NonMonotonic(node->Child, lastChildIndex);
         lastChildIndex = node->Child;
 
-        trans.DoEncodedDeltaU32(node->Sibling, lastSiblingIndex);
+        trans.DoEncodedDeltaU32NonMonotonic(node->Sibling, lastSiblingIndex);
         lastSiblingIndex = node->Sibling;
     }
 }
@@ -422,7 +442,7 @@ static void DoRichOffsetMappings(
         trans.DoEncodedDeltaU32(mapping->NativeOffset, lastNativeOffset);
         lastNativeOffset = mapping->NativeOffset;
 
-        trans.DoEncodedDeltaU32(mapping->Inlinee, lastInlinee);
+        trans.DoEncodedDeltaU32NonMonotonic(mapping->Inlinee, lastInlinee);
         lastInlinee = mapping->Inlinee;
 
         trans.DoEncodedAdjustedU32(mapping->ILOffset, (DWORD)ICorDebugInfo::MAX_MAPPING_VALUE);
