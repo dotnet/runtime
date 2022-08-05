@@ -1949,12 +1949,13 @@ namespace System
                 {
                     lengthToExamine -= (nuint)Vector128<byte>.Count;
                     uint matches;
-                    Vector128<byte> compareResult;
+                    Vector128<byte> left, right;
                     while (lengthToExamine > offset)
                     {
-                        compareResult = Vector128.Equals(Vector128.LoadUnsafe(ref first, offset), Vector128.LoadUnsafe(ref second, offset));
-                        // 16 elements in Vector128<byte> so we compare to Vector128<byte>.AllBitsSet to check if everything matched
-                        if (compareResult == Vector128<byte>.AllBitsSet)
+                        left = Vector128.LoadUnsafe(ref first, offset);
+                        right = Vector128.LoadUnsafe(ref second, offset);
+
+                        if (left == right)
                         {
                             // All matched
                             offset += (nuint)Vector128<byte>.Count;
@@ -1963,19 +1964,21 @@ namespace System
 
                         // Note that ExtractMostSignificantBits has converted the equal vector elements into a set of bit flags,
                         // So the bit position in 'matches' corresponds to the element offset.
-                        matches = compareResult.ExtractMostSignificantBits();
+                        matches = Vector128.Equals(left, right).ExtractMostSignificantBits();
                         goto Difference;
                     }
                     // Move to Vector length from end for final compare
                     offset = lengthToExamine;
                     // Same as method as above
-                    compareResult = Vector128.Equals(Vector128.LoadUnsafe(ref first, offset), Vector128.LoadUnsafe(ref second, offset));
-                    if (compareResult == Vector128<byte>.AllBitsSet)
+                    left = Vector128.LoadUnsafe(ref first, offset);
+                    right = Vector128.LoadUnsafe(ref second, offset);
+
+                    if (left == right)
                     {
                         // All matched
                         goto Equal;
                     }
-                    matches = compareResult.ExtractMostSignificantBits();
+                    matches = Vector128.Equals(left, right).ExtractMostSignificantBits();
                 Difference:
                     // Invert matches to find differences
                     uint differences = ~matches;
