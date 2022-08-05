@@ -5,7 +5,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { setup_proxy_console } from "../debug";
+import { setup_proxy_console } from "../logging";
 
 class FailedOrStoppedLoopError extends Error { }
 class ArgumentsError extends Error { }

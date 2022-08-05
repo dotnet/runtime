@@ -3,6 +3,7 @@
 
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/v8.d.ts" />
+/// <reference path="./types/node.d.ts" />
 
 import { DotnetModule, EarlyExports, EarlyImports, RuntimeHelpers } from "./types";
 import { EmscriptenModule } from "./types/emscripten";

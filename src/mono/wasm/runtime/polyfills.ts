@@ -1,4 +1,4 @@
-import Configuration from "consts:configuration";
+import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, Module, runtimeHelpers } from "./imports";
 import { afterUpdateGlobalBufferAndViews } from "./memory";
@@ -144,7 +144,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     // script location
     runtimeHelpers.scriptDirectory = replacements.scriptDirectory = detectScriptDirectory(replacements);
     anyModule.mainScriptUrlOrBlob = replacements.scriptUrl;// this is needed by worker threads
-    if (Configuration === "Debug") {
+    if (BuildConfiguration === "Debug") {
         console.debug(`MONO_WASM: starting script ${replacements.scriptUrl}`);
         console.debug(`MONO_WASM: starting in ${runtimeHelpers.scriptDirectory}`);
     }
