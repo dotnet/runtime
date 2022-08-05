@@ -826,19 +826,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public void DayOfYear_Exhaustive()
-        {
-            for (int year = DateTime.MinValue.Year, lastYear = DateTime.MaxValue.Year; year <= lastYear; ++year)
-            {
-                var startOfYear = new DateTime(year, 1, 1);
-                for (int expectedDayOfYear = 1, lastDayOfYear = DateTime.IsLeapYear(expectedDayOfYear) ? 366 : 365; expectedDayOfYear <= lastDayOfYear; ++expectedDayOfYear)
-                {
-                    Assert.Equal(expectedDayOfYear, startOfYear.AddDays(expectedDayOfYear - 1).DayOfYear);
-                }
-            }
-        }
-
-        [Fact]
         public void TimeOfDay_Get_ReturnsExpected()
         {
             var dateTime = new DateTime(2012, 6, 18, 10, 5, 1, 0);
