@@ -125,7 +125,7 @@ check_thread_state (MonoThreadInfo* info)
 		g_assert (!no_safepoints);
 		/* fallthru */
 	case STATE_ASYNC_SUSPEND_REQUESTED:
-		g_assertf (suspend_count > 0, "epxected suspend_count > 0 in current state: %s, suspend_count == %d", state_name(cur_state), suspend_count);
+		g_assertf (suspend_count > 0, "expected suspend_count > 0 in current state: %s, suspend_count == %d", state_name(cur_state), suspend_count);
 		break;
 	case STATE_BLOCKING:
 		g_assert (!no_safepoints);
