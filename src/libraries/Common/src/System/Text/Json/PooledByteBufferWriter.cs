@@ -13,14 +13,17 @@ namespace System.Text.Json
 {
     internal sealed class PooledByteBufferWriter : IBufferWriter<byte>, IDisposable
     {
-        private byte[] _rentedBuffer;
+        // This class allows two possible configurations: if rentedBuffer is not null then
+        // it can be used as an IBufferWriter and holds a buffer that should eventually be
+        // returned to the shared pool. If rentedBuffer is null, then the instance is in a
+        // cleared/disposed state and it must re-rent a buffer before it can be used again.
+        private byte[]? _rentedBuffer;
         private int _index;
 
         private const int MinimumBufferSize = 256;
 
         private PooledByteBufferWriter()
         {
-            _rentedBuffer = null!;
         }
 
         public PooledByteBufferWriter(int initialCapacity)
@@ -79,7 +82,7 @@ namespace System.Text.Json
 
             ClearHelper();
             byte[] toReturn = _rentedBuffer;
-            _rentedBuffer = null!;
+            _rentedBuffer = null;
             ArrayPool<byte>.Shared.Return(toReturn);
         }
 
@@ -102,7 +105,7 @@ namespace System.Text.Json
 
             ClearHelper();
             byte[] toReturn = _rentedBuffer;
-            _rentedBuffer = null!;
+            _rentedBuffer = null;
             ArrayPool<byte>.Shared.Return(toReturn);
         }
 

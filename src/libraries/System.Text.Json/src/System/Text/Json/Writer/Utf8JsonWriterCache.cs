@@ -11,11 +11,11 @@ namespace System.Text.Json
     internal static class Utf8JsonWriterCache
     {
         [ThreadStatic]
-        private static ThreadLocalState? s_threadLocalState;
+        private static ThreadLocalState? t_threadLocalState;
 
         public static Utf8JsonWriter RentWriterAndBuffer(JsonSerializerOptions options, out PooledByteBufferWriter bufferWriter)
         {
-            ThreadLocalState state = s_threadLocalState ??= new();
+            ThreadLocalState state = t_threadLocalState ??= new();
             Utf8JsonWriter writer;
 
             if (state.RentedWriters++ == 0)
@@ -39,7 +39,7 @@ namespace System.Text.Json
 
         public static Utf8JsonWriter RentWriter(JsonSerializerOptions options, PooledByteBufferWriter bufferWriter)
         {
-            ThreadLocalState state = s_threadLocalState ??= new();
+            ThreadLocalState state = t_threadLocalState ??= new();
             Utf8JsonWriter writer;
 
             if (state.RentedWriters++ == 0)
@@ -59,8 +59,8 @@ namespace System.Text.Json
 
         public static void ReturnWriterAndBuffer(Utf8JsonWriter writer, PooledByteBufferWriter bufferWriter)
         {
-            Debug.Assert(s_threadLocalState != null);
-            ThreadLocalState state = s_threadLocalState;
+            Debug.Assert(t_threadLocalState != null);
+            ThreadLocalState state = t_threadLocalState;
 
             writer.ResetAllStateForCacheReuse();
             bufferWriter.ClearAndReturnBuffers();
@@ -71,8 +71,8 @@ namespace System.Text.Json
 
         public static void ReturnWriter(Utf8JsonWriter writer)
         {
-            Debug.Assert(s_threadLocalState != null);
-            ThreadLocalState state = s_threadLocalState;
+            Debug.Assert(t_threadLocalState != null);
+            ThreadLocalState state = t_threadLocalState;
 
             writer.ResetAllStateForCacheReuse();
 
