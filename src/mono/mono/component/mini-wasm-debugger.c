@@ -1,4 +1,4 @@
-#ifndef HOST_WASI
+#if defined(HOST_WASM) && !defined(HOST_WASI)
 #include <glib.h>
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>

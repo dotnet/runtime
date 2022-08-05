@@ -1,7 +1,7 @@
 include ../../Makefile.variable
 include ../SampleMakefile.variable
 
-BIN_DIR=WasiConsoleApp/bin/Debug/net7.0
+BIN_DIR=WasiConsoleApp/bin/$(CONFIG)/net7.0
 
 all: console.wasm $(BIN_DIR)/WasiConsoleApp.dll
 
@@ -20,4 +20,6 @@ $(BIN_DIR)/WasiConsoleApp.dll: WasiConsoleApp/*.csproj WasiConsoleApp/*.cs
 	cp -R $(BROWSER_WASM_RUNTIME_PATH) $(BIN_DIR)/runtime
 
 debug: all
+	CONFIG=DEBUG
+#wasmtime has a bug when passing --tcplisten and --dir, to make it work we should use this PR https://github.com/bytecodealliance/wasmtime/pull/3995 and then the fd of the socket will be 4.
 	wasmtime --tcplisten localhost:64000 --dir=. console.wasm --env DEBUGGER_FD=4

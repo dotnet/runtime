@@ -34,12 +34,10 @@ wasi_transport_recv (void *buf, int len)
 		if (res > 0)
 			total += res;
 		num_recv_calls++;
-		if (errno != 0)
-			return -1;
 		if ((res > 0 && total < len) || (res == -1 && num_recv_calls  < retry_receive_message)) {
 			// Wasmtime on Windows doesn't seem to be able to sleep for short periods like 1ms so we'll have to spinlock
 			long long start = timeInMilliseconds ();
-			while (timeInMilliseconds () < start + connection_wait_ms);
+			while (timeInMilliseconds () < start + (connection_wait_ms/1000));
 		} else {
 			break;
 		}
@@ -73,14 +71,18 @@ wasi_transport_connect (const char *socket_fd)
 	while (!handshake_ok) {
 		PRINT_DEBUG_MSG (1, "Waiting for connection from client, socket fd=%s.\n", socket_fd);
 		long socket_fd_long = strtol(socket_fd, &ptr, 10);
-		if (socket_fd_long == 0)
+		if (socket_fd_long == 0) {
+			PRINT_DEBUG_MSG (1, "Invalid socked fd = %s.\n", socket_fd);
 			return;
-		sock_accept (socket_fd_long, __WASI_FDFLAGS_NONBLOCK, &conn_fd);
+		}
+		int ret_accept = sock_accept (socket_fd_long, __WASI_FDFLAGS_NONBLOCK, &conn_fd);
+		if (ret_accept < 0) {
+			PRINT_DEBUG_MSG (1, "Error while accepting connection from client = %d.\n", ret_accept);
+			return;
+		}
 		int res = -1;
 		if (conn_fd != -1) {
 			res = write (conn_fd, (const char*)"", 0);
-			if (errno != 0)
-				return;
 			if (res != -1) {
 				handshake_ok = mono_component_debugger ()->transport_handshake ();
 			}
@@ -140,9 +142,9 @@ mono_wasi_debugger_init (void)
 static void 
 mono_wasi_receive_and_process_command_from_debugger_agent (void)
 {
-	retry_receive_message = 2;
+	retry_receive_message = 2; //when it comes from interpreter we don't want to spend a long time waiting for messages
 	mono_debugger_agent_receive_and_process_command ();
-	retry_receive_message = 50;
+	retry_receive_message = 50; //when it comes from debugger we are waiting for a debugger command (resume/step), we want to retry more times
 }
 
 static void
