@@ -8,8 +8,6 @@ namespace System.IO
 {
     public static partial class Directory
     {
-        private static readonly char[] s_directorySeparators = new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
-
         private static DirectoryInfo CreateDirectoryCore(string path, UnixFileMode unixCreateMode)
             => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
 

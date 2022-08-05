@@ -8,8 +8,6 @@ namespace System.IO
 {
     public static partial class Directory
     {
-        private static readonly char[] s_directorySeparators = new char[] { Path.DirectorySeparatorChar };
-
         private static DirectoryInfo CreateDirectoryCore(string path, UnixFileMode unixCreateMode)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
@@ -41,7 +39,7 @@ namespace System.IO
             }
 
             // 'name' is now the name of the directory
-            Debug.Assert(name[name.Length - 1] == '\0');
+            Debug.Assert(name[^1] == '\0');
             return Encoding.UTF8.GetString(name, 0, name.Length - 1); // trim off the trailing '\0'
         }
     }

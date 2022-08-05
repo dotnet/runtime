@@ -31,12 +31,14 @@ namespace System.IO.Tests
             {
                 Assert.True(tmpDir.Exists);
                 Assert.Equal(-1, tmpDir.FullName.IndexOfAny(Path.GetInvalidPathChars()));
-                Assert.Empty(Directory.GetFiles(tmpDir.FullName));
+                Assert.Empty(Directory.GetFileSystemEntries(tmpDir.FullName));
                 Assert.Equal(Path.TrimEndingDirectorySeparator(Path.GetTempPath()), tmpDir.Parent.FullName);
 
                 if (!string.IsNullOrEmpty(prefix))
                 {
                     Assert.StartsWith(prefix, tmpDir.Name);
+                    int expectedNameLength = prefix.Length + (OperatingSystem.IsWindows() ? 12 : 6);
+                    Assert.Equal(expectedNameLength, tmpDir.Name.Length);
                 }
 
                 // Ensure a file can be written to the directory

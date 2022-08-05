@@ -70,7 +70,7 @@ namespace System.IO
 
         private static void EnsureNoDirectorySeparators(string? value, [CallerArgumentExpression("value")] string? paramName = null)
         {
-            if (!string.IsNullOrEmpty(value) && value.IndexOfAny(s_directorySeparators) != -1)
+            if (value is not null && value.AsSpan().IndexOfAny(PathInternal.DirectorySeparators) >= 0)
             {
                 throw new ArgumentException(SR.Argument_DirectorySeparatorInvalid, paramName);
             }
