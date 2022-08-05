@@ -2771,55 +2771,43 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task ConnectCallback_NamedPipeConnectionPrefix_Success(bool useSsl)
+        public async Task ConnectCallback_UseNamedPipe_Success(bool useSsl)
         {
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
 
-            byte[] RequestPrefix = "request prefix\r\n"u8.ToArray();
-            byte[] ResponsePrefix = "response prefix\r\n"u8.ToArray();
-
-            string pipeName = Guid.NewGuid().ToString();
-            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: useSsl);
-            var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-            socketsHandler.ConnectCallback = async (context, token) =>
+            string guid = $"{Guid.NewGuid():N}";
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
             {
+                var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                using (NamedPipeServerStream serverStream = new NamedPipeServerStream(pipeName: guid, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.WriteThrough | PipeOptions.Asynchronous))
+                using (NamedPipeClientStream clientStream = new NamedPipeClientStream(".", pipeName: guid, PipeDirection.InOut, PipeOptions.WriteThrough | PipeOptions.Asynchronous, System.Security.Principal.TokenImpersonationLevel.Anonymous))
+                {
+                    await Task.WhenAll(serverStream.WaitForConnectionAsync(), clientStream.ConnectAsync());
+                    socketsHandler.ConnectCallback = (context, token) =>
+                    {
+                        return new ValueTask<Stream>(clientStream);
+                    };
 
-                NamedPipeClientStream clientStream = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.WriteThrough | PipeOptions.Asynchronous, System.Security.Principal.TokenImpersonationLevel.Anonymous);
+                    using (HttpClient client = CreateHttpClient(handler))
+                    {
+                        client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-                await clientStream.ConnectAsync();
-                await clientStream.WriteAsync(RequestPrefix);
+                        Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://{guid}/foo");
+                        await using (GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options))
+                        {
+                            await loopbackConnection.InitializeConnectionAsync();
 
-                byte[] buffer = new byte[ResponsePrefix.Length];
-                await clientStream.ReadAsync(buffer);
-                Assert.True(buffer.SequenceEqual(ResponsePrefix));
+                            HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
+                            Assert.Equal("/foo", requestData.Path);
 
-                return clientStream;
-            };
+                            await loopbackConnection.SendResponseAsync(content: "foo");
 
-            using HttpClient client = CreateHttpClient(handler);
-            client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-
-            Task<string> clientTask = client.GetStringAsync($"{(options.UseSsl ? "https" : "http")}://nowhere.invalid/foo");
-
-            NamedPipeServerStream serverStream = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.WriteThrough | PipeOptions.Asynchronous);
-            await serverStream.WaitForConnectionAsync();
-
-            byte[] buffer = new byte[RequestPrefix.Length];
-            await serverStream.ReadAsync(buffer);
-            Assert.True(buffer.SequenceEqual(RequestPrefix));
-
-            await serverStream.WriteAsync(ResponsePrefix);
-
-            await using GenericLoopbackConnection loopbackConnection = await LoopbackServerFactory.CreateConnectionAsync(socket: null, serverStream, options);
-            await loopbackConnection.InitializeConnectionAsync();
-
-            HttpRequestData requestData = await loopbackConnection.ReadRequestDataAsync();
-            Assert.Equal("/foo", requestData.Path);
-
-            await loopbackConnection.SendResponseAsync(content: "foo");
-
-            string response = await clientTask;
-            Assert.Equal("foo", response);
+                            string response = await clientTask;
+                            Assert.Equal("foo", response);
+                        }
+                    }
+                }
+            }
         }
 
         [Theory]
