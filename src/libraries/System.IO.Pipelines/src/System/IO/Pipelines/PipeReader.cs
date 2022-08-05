@@ -44,7 +44,7 @@ namespace System.IO.Pipelines
         ///     further data is available. You should instead call <see cref="System.IO.Pipelines.PipeReader.TryRead" /> to avoid a blocking call.
         ///     </para>
         ///     <para>
-        ///     Subsequent calls to <see cref="System.IO.Pipelines.PipeReader.AdvanceTo(System.SequencePosition,System.SequencePosition)" should
+        ///     Subsequent calls to <see cref="System.IO.Pipelines.PipeReader.AdvanceTo(System.SequencePosition,System.SequencePosition)" /> should
         ///     examine at least <paramref name="minimumSize" /> bytes in order to avoid an <see cref="System.InvalidOperationException" />.
         ///     </para>
         /// </remarks>
