@@ -816,7 +816,7 @@ namespace System.Tests
         {
             var dateTime = new DateTime(Random.Shared.NextInt64(DateTime.MaxValue.Ticks));
             var startOfYear = new DateTime(dateTime.Year, 1, 1);
-            var expectedDayOfYear = 1 + (int)(dateTime - startOfYear).TotalDays;
+            var expectedDayOfYear = 1 + (dateTime - startOfYear).Days;
             Assert.Equal(expectedDayOfYear, dateTime.DayOfYear);
         }
 
