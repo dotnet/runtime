@@ -47,7 +47,6 @@ i=ini_i.i.i.i
 ";
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60583", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void DifferentConfigSources_Merged_KeysAreSorted()
         {
             var config = BuildConfig();
@@ -98,6 +97,7 @@ i=ini_i.i.i.i
             configurationBuilder.AddIniFile(_iniConfigFilePath);
             configurationBuilder.AddJsonFile(_json2ConfigFilePath);
             configurationBuilder.AddXmlFile(_xmlConfigFilePath);
+
             return configurationBuilder.Build();
         }
 
