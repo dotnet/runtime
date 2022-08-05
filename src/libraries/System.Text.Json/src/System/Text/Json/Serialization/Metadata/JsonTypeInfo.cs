@@ -26,6 +26,11 @@ namespace System.Text.Json.Serialization.Metadata
 
         private JsonPropertyInfoList? _properties;
 
+        /// <summary>
+        /// Indices of required properties.
+        /// </summary>
+        internal int NumberOfRequiredProperties { get; private set; }
+
         private Action<object>? _onSerializing;
         private Action<object>? _onSerialized;
         private Action<object>? _onDeserializing;
@@ -60,7 +65,7 @@ namespace System.Text.Json.Serialization.Metadata
         private protected abstract void SetCreateObject(Delegate? createObject);
         private protected Func<object>? _createObject;
 
-        internal Func<object>? CreateObjectForExtensionDataProperty { get; private protected set; }
+        internal Func<object>? CreateObjectForExtensionDataProperty { get; set; }
 
         /// <summary>
         /// Gets or sets a callback to be invoked before serialization occurs.
@@ -266,17 +271,17 @@ namespace System.Text.Json.Serialization.Metadata
         // If enumerable or dictionary, the JsonTypeInfo for the element type.
         private JsonTypeInfo? _elementTypeInfo;
 
-        // Avoids having to perform an expensive cast to JsonTypeInfo<T> to check if there is a Serialize method.
-        internal bool HasSerialize { get; private protected set; }
+        // Flag indicating that JsonTypeInfo<T>.SerializeHandler is populated and is compatible with the associated Options instance.
+        internal bool CanUseSerializeHandler { get; private protected set; }
 
         // Configure would normally have thrown why initializing properties for source gen but type had SerializeHandler
-        // so it is allowed to be used for serialization but it will throw if used for deserialization
-        internal bool ThrowOnDeserialize { get; private protected set; }
+        // so it is allowed to be used for fast-path serialization but it will throw if used for metadata-based serialization
+        internal bool MetadataSerializationNotSupported { get; private protected set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ValidateCanBeUsedForDeserialization()
+        internal void ValidateCanBeUsedForMetadataSerialization()
         {
-            if (ThrowOnDeserialize)
+            if (MetadataSerializationNotSupported)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
             }
@@ -523,11 +528,11 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal virtual void Configure()
+        internal void Configure()
         {
             Debug.Assert(Monitor.IsEntered(_configureLock), "Configure called directly, use EnsureConfigured which locks this method");
 
-            if (!Options.IsLockedInstance)
+            if (!Options.IsImmutable)
             {
                 Options.InitializeForMetadataGeneration();
             }
@@ -535,11 +540,11 @@ namespace System.Text.Json.Serialization.Metadata
             PropertyInfoForTypeInfo.EnsureChildOf(this);
             PropertyInfoForTypeInfo.EnsureConfigured();
 
+            CanUseSerializeHandler &= Options.SerializerContext?.CanUseSerializationLogic == true;
+
             JsonConverter converter = Converter;
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == Converter.ConverterStrategy,
                 $"ConverterStrategy from PropertyInfoForTypeInfo.ConverterStrategy ({PropertyInfoForTypeInfo.ConverterStrategy}) does not match converter's ({Converter.ConverterStrategy})");
-
-            converter.ConfigureJsonTypeInfo(this, Options);
 
             if (Kind == JsonTypeInfoKind.Object)
             {
@@ -880,13 +885,21 @@ namespace System.Text.Json.Serialization.Metadata
                 ExtensionDataProperty.EnsureConfigured();
             }
 
+            int numberOfRequiredProperties = 0;
             foreach (KeyValuePair<string, JsonPropertyInfo> jsonPropertyInfoKv in PropertyCache.List)
             {
                 JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value;
 
+                if (jsonPropertyInfo.IsRequired)
+                {
+                    jsonPropertyInfo.RequiredPropertyIndex = numberOfRequiredProperties++;
+                }
+
                 jsonPropertyInfo.EnsureChildOf(this);
                 jsonPropertyInfo.EnsureConfigured();
             }
+
+            NumberOfRequiredProperties = numberOfRequiredProperties;
         }
 
         internal void InitializeConstructorParameters(JsonParameterInfoValues[] jsonParameters, bool sourceGenMode = false)
@@ -1055,7 +1068,7 @@ namespace System.Text.Json.Serialization.Metadata
                 _jsonTypeInfo = jsonTypeInfo;
             }
 
-            protected override bool IsLockedInstance => _jsonTypeInfo.IsConfigured || _jsonTypeInfo.Kind != JsonTypeInfoKind.Object;
+            protected override bool IsImmutable => _jsonTypeInfo.IsConfigured || _jsonTypeInfo.Kind != JsonTypeInfoKind.Object;
             protected override void VerifyMutable()
             {
                 _jsonTypeInfo.VerifyMutable();
@@ -1073,6 +1086,6 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Type:{Type.Name}, TypeInfoKind:{Kind}";
+        private string DebuggerDisplay => $"Type = {Type.Name}, Kind = {Kind}";
     }
 }

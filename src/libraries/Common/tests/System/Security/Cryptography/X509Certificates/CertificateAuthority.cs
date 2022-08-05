@@ -42,7 +42,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         private static readonly Asn1Tag s_context0 = new Asn1Tag(TagClass.ContextSpecific, 0);
         private static readonly Asn1Tag s_context1 = new Asn1Tag(TagClass.ContextSpecific, 1);
         private static readonly Asn1Tag s_context2 = new Asn1Tag(TagClass.ContextSpecific, 2);
-        private static readonly Asn1Tag s_context4 = new Asn1Tag(TagClass.ContextSpecific, 4);
 
         private static readonly X500DistinguishedName s_nonParticipatingName =
             new X500DistinguishedName("CN=The Ghost in the Machine");
@@ -80,7 +79,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         private byte[] _certData;
         private X509Extension _cdpExtension;
         private X509Extension _aiaExtension;
-        private X509Extension _akidExtension;
+        private X509AuthorityKeyIdentifierExtension _akidExtension;
 
         private List<(byte[], DateTimeOffset)> _revocationList;
         private byte[] _crl;
@@ -142,8 +141,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 _revocationList = new List<(byte[], DateTimeOffset)>();
             }
 
-            byte[] serial = certificate.GetSerialNumber();
-            Array.Reverse(serial);
+            byte[] serial = certificate.SerialNumberBytes.ToArray();
             _revocationList.Add((serial, revocationTime));
             _crl = null;
         }
@@ -219,8 +217,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             req.CertificateExtensions.Add(cdpExtension);
             req.CertificateExtensions.Add(aiaExtension);
 
-            byte[] serial = _cert.GetSerialNumber();
-            Array.Reverse(serial);
+            byte[] serial = _cert.SerialNumberBytes.ToArray();
 
             X509Certificate2 dispose = _cert;
 
@@ -308,7 +305,67 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
 
             DateTimeOffset newExpiry = now.AddSeconds(2);
+            X509AuthorityKeyIdentifierExtension akid = _akidExtension ??= CreateAkidExtension();
 
+            if (OmitNextUpdateInCrl)
+            {
+                crl = BuildCrlManually(now, newExpiry, akid);
+            }
+            else
+            {
+                CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+                if (_revocationList is not null)
+                {
+                    foreach ((byte[] serial, DateTimeOffset when) in _revocationList)
+                    {
+                        builder.AddEntry(serial, when);
+                    }
+                }
+
+                DateTimeOffset thisUpdate;
+                DateTimeOffset nextUpdate;
+
+                if (RevocationExpiration.HasValue)
+                {
+                    nextUpdate = RevocationExpiration.GetValueOrDefault();
+                    thisUpdate = _cert.NotBefore;
+                }
+                else
+                {
+                    thisUpdate = now;
+                    nextUpdate = newExpiry;
+                }
+
+                using (RSA key = _cert.GetRSAPrivateKey())
+                {
+                    crl = builder.Build(
+                        CorruptRevocationIssuerName ? s_nonParticipatingName : _cert.SubjectName,
+                        X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pkcs1),
+                        _crlNumber,
+                        nextUpdate,
+                        HashAlgorithmName.SHA256,
+                        _akidExtension,
+                        thisUpdate);
+                }
+            }
+
+            if (CorruptRevocationSignature)
+            {
+                crl[^2] ^= 0xFF;
+            }
+
+            _crl = crl;
+            _crlExpiry = newExpiry;
+            _crlNumber++;
+            return crl;
+        }
+
+        private byte[] BuildCrlManually(
+            DateTimeOffset now,
+            DateTimeOffset newExpiry,
+            X509AuthorityKeyIdentifierExtension akidExtension)
+        {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
             using (writer.PushSequence())
@@ -386,22 +443,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     // Extensions (SEQUENCE OF)
                     using (writer.PushSequence())
                     {
-                        if (_akidExtension == null)
-                        {
-                            _akidExtension = CreateAkidExtension();
-                        }
-
                         // Authority Key Identifier Extension
                         using (writer.PushSequence())
                         {
-                            writer.WriteObjectIdentifier(_akidExtension.Oid.Value);
+                            writer.WriteObjectIdentifier(akidExtension.Oid.Value);
 
-                            if (_akidExtension.Critical)
+                            if (akidExtension.Critical)
                             {
                                 writer.WriteBoolean(true);
                             }
 
-                            writer.WriteOctetString(_akidExtension.RawData);
+                            writer.WriteOctetString(akidExtension.RawData);
                         }
 
                         // CRL Number Extension
@@ -442,11 +494,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 writer.WriteBitString(signature);
             }
 
-            _crl = writer.Encode();
-
-            _crlExpiry = newExpiry;
-            _crlNumber++;
-            return _crl;
+            return writer.Encode();
         }
 
         internal void DesignateOcspResponder(X509Certificate2 responder)
@@ -706,83 +754,23 @@ SingleResponse ::= SEQUENCE {
 
         private static X509Extension CreateCdpExtension(string cdp)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-            // SEQUENCE OF
-            using (writer.PushSequence())
-            {
-                // DistributionPoint
-                using (writer.PushSequence())
-                {
-                    // Because DistributionPointName is a CHOICE type this tag is explicit.
-                    // (ITU-T REC X.680-201508 C.3.2.2(g)(3rd bullet))
-                    // distributionPoint [0] DistributionPointName
-                    using (writer.PushSequence(s_context0))
-                    {
-                        // [0] DistributionPointName (GeneralNames (SEQUENCE OF))
-                        using (writer.PushSequence(s_context0))
-                        {
-                            // GeneralName ([6]  IA5String)
-                            writer.WriteCharacterString(
-                                UniversalTagNumber.IA5String,
-                                cdp,
-                                new Asn1Tag(TagClass.ContextSpecific, 6));
-                        }
-                    }
-                }
-            }
-
-            return new X509Extension("2.5.29.31", writer.Encode(), false);
+            return CertificateRevocationListBuilder.BuildCrlDistributionPointExtension(new[] { cdp });
         }
 
-        private X509Extension CreateAkidExtension()
+        private X509AuthorityKeyIdentifierExtension CreateAkidExtension()
         {
             X509SubjectKeyIdentifierExtension skid =
                 _cert.Extensions.OfType<X509SubjectKeyIdentifierExtension>().SingleOrDefault();
 
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-            // AuthorityKeyIdentifier
-            using (writer.PushSequence())
+            if (skid is null)
             {
-                if (skid == null)
-                {
-                    // authorityCertIssuer [1] GeneralNames (SEQUENCE OF)
-                    using (writer.PushSequence(s_context1))
-                    {
-                        // directoryName [4] Name
-                        byte[] dn = _cert.SubjectName.RawData;
-
-                        if (s_context4.Encode(dn) != 1)
-                        {
-                            throw new InvalidOperationException();
-                        }
-
-                        writer.WriteEncodedValue(dn);
-                    }
-
-                    // authorityCertSerialNumber [2] CertificateSerialNumber (INTEGER)
-                    byte[] serial = _cert.GetSerialNumber();
-                    Array.Reverse(serial);
-                    writer.WriteInteger(serial, s_context2);
-                }
-                else
-                {
-                    // keyIdentifier [0] KeyIdentifier (OCTET STRING)
-                    AsnReader reader = new AsnReader(skid.RawData, AsnEncodingRules.BER);
-                    ReadOnlyMemory<byte> contents;
-
-                    if (!reader.TryReadPrimitiveOctetString(out contents))
-                    {
-                        throw new InvalidOperationException();
-                    }
-
-                    reader.ThrowIfNotEmpty();
-                    writer.WriteOctetString(contents.Span, s_context0);
-                }
+                return X509AuthorityKeyIdentifierExtension.CreateFromCertificate(
+                    _cert,
+                    includeKeyIdentifier: false,
+                    includeIssuerAndSerial: true);
             }
 
-            return new X509Extension("2.5.29.35", writer.Encode(), false);
+            return X509AuthorityKeyIdentifierExtension.CreateFromSubjectKeyIdentifier(skid);
         }
 
         private enum OcspResponseStatus

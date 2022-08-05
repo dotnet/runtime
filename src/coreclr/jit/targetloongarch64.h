@@ -8,7 +8,7 @@
 
 // NOTE for LoongArch64:
 //  The `REG_R21` which alias `REG_X0` is specially reserved !!!
-//  It can be used only manully and very carefully!!!
+//  It can be used only manually and very carefully!!!
 
 // clang-format off
   #define CPU_LOAD_STORE_ARCH      1
@@ -41,7 +41,7 @@
   #define MAX_RET_MULTIREG_BYTES       16  // Maximum size of a struct that could be returned in more than one register (Max is an HFA of 2 doubles)
   #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass a single argument in multiple registers.
   #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
-  #define MAX_MULTIREG_COUNT            2  // Maxiumum number of registers defined by a single instruction (including calls).
+  #define MAX_MULTIREG_COUNT            2  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
 
   #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers

@@ -6,28 +6,31 @@
 import createDotnetRuntime from './dotnet.js'
 
 class FrameApp {
-    async init({ MONO }) {
-        const exports = await MONO.mono_wasm_get_assembly_exports("Wasm.Browser.Bench.Sample.dll");
+    async init({ getAssemblyExports }) {
+        const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
         exports.Sample.AppStartTask.FrameApp.ReachedManaged();
     }
 
     reachedCallback() {
-        window.parent.resolveAppStartEvent("reached");
+        if (window.parent != window) {
+            window.parent.resolveAppStartEvent("reached");
+        }
     }
 }
 
+let mute = false;
 try {
     globalThis.frameApp = new FrameApp();
     globalThis.frameApp.ReachedCallback = globalThis.frameApp.reachedCallback.bind(globalThis.frameApp);
-
-    let mute = false;
-    window.addEventListener("pageshow", event => { window.parent.resolveAppStartEvent("pageshow"); })
+    if (window.parent != window) {
+        window.addEventListener("pageshow", event => { window.parent.resolveAppStartEvent("pageshow"); })
+    }
 
     window.muteErrors = () => {
         mute = true;
     }
 
-    const { MONO } = await createDotnetRuntime(() => ({
+    const runtime = await createDotnetRuntime(() => ({
         disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
         printErr: function () {
@@ -36,16 +39,20 @@ try {
             }
         },
         onConfigLoaded: () => {
-            window.parent.resolveAppStartEvent("onConfigLoaded");
-            // Module.config.diagnostic_tracing = true;
+            if (window.parent != window) {
+                window.parent.resolveAppStartEvent("onConfigLoaded");
+            }
+            // Module.config.diagnosticTracing = true;
         },
         onAbort: (error) => {
             wasm_exit(1, error);
         },
     }));
 
-    window.parent.resolveAppStartEvent("onDotnetReady");
-    await frameApp.init({ MONO });
+    if (window.parent != window) {
+        window.parent.resolveAppStartEvent("onDotnetReady");
+    }
+    await frameApp.init(runtime);
 }
 catch (err) {
     if (!mute) {

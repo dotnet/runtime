@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // A --> B --> C --> D --> E --> A
-// We should detect the deadlock and allow one thread to proceed (and see unitialized state).
+// We should detect the deadlock and allow one thread to proceed (and see uninitialized state).
 /*
 A --> B --> C --> D --> E --> A
 4 threads:
-Thread T1 starts initialization at A 
+Thread T1 starts initialization at A
 Thread T2 starts initialization at C
 Thread T3 starts initialization at D
 Thread T4 starts initialization at E
@@ -25,22 +25,22 @@ In E.cctor: thread T4: A.i 5
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
-public struct A 
+public struct A
 {
 	public static int i;
 
 	static A()
-	{	
+	{
 		Thread.Sleep(1000*2); // 1 second
 		Console.WriteLine("In A.cctor: thread {0}: B.i {1}",Thread.CurrentThread.Name,B.i);
 		A.i = 5;
 	}
 
 	    // invoking this should trigger the cctor
-	    [MethodImpl(MethodImplOptions.NoInlining)] 
+	    [MethodImpl(MethodImplOptions.NoInlining)]
 	    public static void SomeMethod()
 	    {
-	        Console.WriteLine("In MyClass.SomeMethod(): thread {0}",Thread.CurrentThread.Name);    
+	        Console.WriteLine("In MyClass.SomeMethod(): thread {0}",Thread.CurrentThread.Name);
 	    }
 
 }
@@ -48,19 +48,19 @@ public struct A
 public class B
 {
 	public static int i;
-	
+
 	static B()
-	{	
+	{
 		Console.WriteLine("In B.cctor: thread {0}: C.i {1}",Thread.CurrentThread.Name,C.i);
 
 		B.i = 6;
 	}
 
 	// invoking this should trigger the cctor
-	[MethodImpl(MethodImplOptions.NoInlining)] 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void SomeMethod()
 	{
-	    Console.WriteLine("In MyClass.SomeMethod(): thread {0}",Thread.CurrentThread.Name);    
+	    Console.WriteLine("In MyClass.SomeMethod(): thread {0}",Thread.CurrentThread.Name);
 	}
 
 }
@@ -68,19 +68,19 @@ public class B
 public struct C
 {
 	public static int i;
-	
+
 	static C()
-	{	
+	{
 		Thread.Sleep(1000*2); // 1 second
 		Console.WriteLine("In C.cctor: thread {0}: D.i {1}",Thread.CurrentThread.Name,D.i);
 		C.i = 7;
 	}
 
 	// invoking this should trigger the cctor
-	[MethodImpl(MethodImplOptions.NoInlining)] 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void SomeMethod()
 	{
-	    Console.WriteLine("In MyClass.SomeMethod(): thread {0}",Thread.CurrentThread.Name);    
+	    Console.WriteLine("In MyClass.SomeMethod(): thread {0}",Thread.CurrentThread.Name);
 	}
 
 }
@@ -88,19 +88,19 @@ public struct C
 public class D
 {
 	public static int i;
-	
+
 	static D()
-	{	
+	{
 		Thread.Sleep(1000*5); // 1 second
 		Console.WriteLine("In D.cctor: thread {0}: E.i {1}",Thread.CurrentThread.Name,E.i);
 		D.i = 8;
 	}
 
 	// invoking this should trigger the cctor
-	[MethodImpl(MethodImplOptions.NoInlining)] 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void SomeMethod()
 	{
-	    Console.WriteLine("In MyClass.SomeMethod(): thread {0}",Thread.CurrentThread.Name);    
+	    Console.WriteLine("In MyClass.SomeMethod(): thread {0}",Thread.CurrentThread.Name);
 	}
 
 }
@@ -108,19 +108,19 @@ public class D
 public struct E
 {
 	public static int i;
-	
+
 	static E()
-	{	
-		
+	{
+
 		Console.WriteLine("In E.cctor: thread {0}: A.i {1}",Thread.CurrentThread.Name,A.i);
 		E.i = 9;
 	}
 
 	// invoking this should trigger the cctor
-	[MethodImpl(MethodImplOptions.NoInlining)] 
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void SomeMethod()
 	{
-	    Console.WriteLine("In MyClass.SomeMethod(): thread {0}",Thread.CurrentThread.Name);    
+	    Console.WriteLine("In MyClass.SomeMethod(): thread {0}",Thread.CurrentThread.Name);
 	}
 
 }
@@ -160,9 +160,9 @@ public class Test_CircularCctorFourThreads
 	        t3.Name = "T3";
 	        Thread t4 = new Thread(RunGetE);
 	        t4.Name = "T4";
-	    
-		  
-			
+
+
+
 	        t1.Start();
 	        Thread.Sleep(1000*1); // 1 second
 	        t2.Start();
@@ -170,7 +170,7 @@ public class Test_CircularCctorFourThreads
 	        t3.Start();
 		 Thread.Sleep(1000*1); // 1 second
 	        t4.Start();
-	
+
 	        t4.Join();
 	        t3.Join();
 	        t2.Join();

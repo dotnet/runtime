@@ -199,7 +199,7 @@ namespace System.Globalization
         ///
         /// We don't build the stringbuilder unless we find something to change
         /// </summary>
-        [return: NotNullIfNotNull("str")]
+        [return: NotNullIfNotNull(nameof(str))]
         internal static string? ReescapeWin32String(string? str)
         {
             // If we don't have data, then don't try anything
@@ -265,7 +265,7 @@ namespace System.Globalization
             return result.ToString();
         }
 
-        [return: NotNullIfNotNull("array")]
+        [return: NotNullIfNotNull(nameof(array))]
         internal static string[]? ReescapeWin32Strings(string[]? array)
         {
             if (array != null)

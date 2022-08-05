@@ -59,7 +59,7 @@ public:
     static OBJECTREF CreateObjectAfterInvoke(TypeHandle th, void * pValue);
 
     // This is a special purpose Exception creation function.  It
-    //  creates the TargetInvocationExeption placing the passed
+    //  creates the TargetInvocationException placing the passed
     //  exception into it.
     static OBJECTREF CreateTargetExcept(OBJECTREF* except);
 

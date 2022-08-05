@@ -1785,7 +1785,7 @@ void Thread::RemoveAbortRequestBit()
 }
 
 // Make sure that when AbortRequest bit is cleared, we also dec TrapReturningThreads count.
-void Thread::UnmarkThreadForAbort()
+void Thread::UnmarkThreadForAbort(EEPolicy::ThreadAbortTypes abortType /* = EEPolicy::TA_Rude */)
 {
     CONTRACTL
     {
@@ -1794,10 +1794,13 @@ void Thread::UnmarkThreadForAbort()
     }
     CONTRACTL_END;
 
-    // Switch to COOP (for ClearAbortReason) before acquiring AbortRequestLock
-    GCX_COOP();
-
     AbortRequestLockHolder lh(this);
+
+    if (m_AbortType > (DWORD)abortType)
+    {
+        // Aborting at a higher level
+        return;
+    }
 
     m_AbortType = EEPolicy::TA_None;
     m_AbortEndTime = MAXULONGLONG;
@@ -2877,7 +2880,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     // This should not normally fail.
     // The system silently ignores any feature specified in the FeatureMask
     // which is not enabled on the processor.
-    bRes &= SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX);
+    SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX);
 #endif //defined(TARGET_X86) || defined(TARGET_AMD64)
 
     // Make sure we specify CONTEXT_EXCEPTION_REQUEST to detect "trap frame reporting".
@@ -2978,7 +2981,7 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     _ASSERTE(PreemptiveGCDisabledOther());
     _ASSERTE(IsAddrOfRedirectFunc(pTgt));
     _ASSERTE(pCurrentThreadCtx);
-    _ASSERTE((pCurrentThreadCtx->ContextFlags & CONTEXT_COMPLETE) == CONTEXT_COMPLETE);
+    _ASSERTE((pCurrentThreadCtx->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
     _ASSERTE(ExecutionManager::IsManagedCode(GetIP(pCurrentThreadCtx)));
 
     ////////////////////////////////////////////////////////////////
@@ -5073,7 +5076,7 @@ static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo, ReturnKind *pRetur
 //
 // Race #1: failure to hijack a thread in HandledJITCase.
 //
-// In HandledJITCase, if we see that a thread's Eip is in managed code at an interruptable point, we will attempt
+// In HandledJITCase, if we see that a thread's Eip is in managed code at an interruptible point, we will attempt
 // to move the thread to a hijack in order to stop it's execution for a variety of reasons (GC, debugger, user-mode
 // supension, etc.) We do this by suspending the thread, inspecting Eip, changing Eip to the address of the hijack
 // routine, and resuming the thread.

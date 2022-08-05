@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Tests
 
         // The returned types on .NET Framework can differ when the machine is in FIPS mode.
         // So check hash algorithms via a more complicated manner.
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("MD5", typeof(MD5))]
         [InlineData("http://www.w3.org/2001/04/xmldsig-more#md5", typeof(MD5))]
@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("System.Security.Cryptography.HMAC", typeof(HMACSHA1))]
         [InlineData("System.Security.Cryptography.KeyedHashAlgorithm", typeof(HMACSHA1))]
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [MemberData(nameof(NamedSymmetricAlgorithmCreateData))]
         public static void NamedSymmetricAlgorithmCreate(string identifier, Type baseType)
         {
@@ -145,7 +145,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("RSA", typeof(RSA))]
         [InlineData("System.Security.Cryptography.RSA", typeof(RSA))]
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("DSA", typeof(DSA))]
         [InlineData("System.Security.Cryptography.DSA", typeof(DSA))]
@@ -182,7 +182,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Null(AsymmetricAlgorithm.Create(identifier));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public static void NamedCreate_Mismatch()
         {
@@ -247,7 +247,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentNullException>("names", () => CryptoConfig.AddOID(string.Empty, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void AddAlgorithm_CreateFromName_ReturnsMapped()
         {
@@ -295,7 +295,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentNullException>("names", () => CryptoConfig.AddAlgorithm(typeof(CryptoConfigTests), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void StaticCreateMethods()
         {
@@ -475,10 +475,13 @@ namespace System.Security.Cryptography.Tests
                     yield return new object[] { "http://www.w3.org/2001/04/xmldsig-more#hmac-sha512", typeof(HMACSHA512).FullName, true };
 
                     // X509
+                    yield return new object[] { "1.3.6.1.5.5.7.1.1", "System.Security.Cryptography.X509Certificates.X509AuthorityInformationAccessExtension", true };
                     yield return new object[] { "2.5.29.10", "System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension", true };
                     yield return new object[] { "2.5.29.19", "System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension", true };
                     yield return new object[] { "2.5.29.14", "System.Security.Cryptography.X509Certificates.X509SubjectKeyIdentifierExtension", true };
                     yield return new object[] { "2.5.29.15", "System.Security.Cryptography.X509Certificates.X509KeyUsageExtension", true };
+                    yield return new object[] { "2.5.29.17", "System.Security.Cryptography.X509Certificates.X509SubjectAlternativeNameExtension", true };
+                    yield return new object[] { "2.5.29.35", "System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension", true };
                     yield return new object[] { "2.5.29.37", "System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension", true };
                     yield return new object[] { "X509Chain", "System.Security.Cryptography.X509Certificates.X509Chain", true };
 
@@ -492,7 +495,8 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory, MemberData(nameof(AllValidNames))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [MemberData(nameof(AllValidNames))]
         public static void CreateFromName_AllValidNames(string name, string typeName, bool supportsUnixMac)
         {
             bool isWindows = OperatingSystem.IsWindows();

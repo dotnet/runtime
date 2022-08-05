@@ -260,6 +260,13 @@
       <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/lib/pkgconfig" />
     </ItemGroup>
 
+    <!-- riscv64 Linux cross build options -->
+    <ItemGroup Condition="'$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'riscv64'">
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
+      <_MonoBuildEnv Include="TARGET_BUILD_ARCH=riscv64" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/riscv64-linux-gnu/pkgconfig" />
+    </ItemGroup>
+
     <!-- s390x Linux cross build options -->
     <ItemGroup Condition="'$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 's390x'">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
@@ -483,6 +490,7 @@
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1"/>
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
+      <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_CONNECT_PORTS=1" />
     </ItemGroup>
 
     <!-- Components -->
@@ -553,16 +561,24 @@
       <_Objcopy Condition="'$(Platform)' == 'arm'">arm-linux-$(_LinuxAbi)eabi$(_LinuxFloatAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'armv6'">arm-linux-$(_LinuxAbi)eabi$(_LinuxFloatAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'arm64'">aarch64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'riscv64'">riscv64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 's390x'">s390x-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'ppc64le'">powerpc64le-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'x64'">x86_64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'x86'">i686-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/bin/llvm-objcopy</_Objcopy>
+
+      <_ObjcopyPrefix Condition="'$(MonoCrossDir)' != '' and '$(Platform)' == 'riscv64'">llvm-objcopy-</_ObjcopyPrefix>
     </PropertyGroup>
     <!-- test viability of objcopy command -->
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true')" Command="$(_Objcopy) -V" IgnoreStandardErrorWarningFormat="true" ContinueOnError="WarnAndContinue" IgnoreExitCode="true" EchoOff="true" ConsoleToMsBuild="true">
       <Output TaskParameter="ExitCode" PropertyName="_ObjcopyFound"/>
     </Exec>
+    <Exec Condition="'$(_ObjcopyPrefix)' != ''" Command="find /usr/bin -name $(_ObjcopyPrefix)* | sort -V | tail -1" IgnoreStandardErrorWarningFormat="true" ContinueOnError="WarnAndContinue" IgnoreExitCode="true" EchoOff="true" ConsoleToMsBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_ObjcopyFound"/>
+      <Output TaskParameter="ConsoleOutput" PropertyName="_Objcopy"/>
+    </Exec>
+
     <PropertyGroup>
       <!-- if all else fails in finding a valid objcopy, fall back to no-prefix from $PATH (used for x64 on CentOS) -->
       <_Objcopy Condition="'$(_ObjcopyFound)' != '0'">objcopy</_Objcopy>

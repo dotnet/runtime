@@ -549,7 +549,7 @@ namespace System.Reflection.Runtime.General
         //
         // Lightweight check to see if a custom attribute's is of a well-known type.
         //
-        // This check performs without instantating the Type object and bloating memory usage. On the flip side,
+        // This check performs without instantiating the Type object and bloating memory usage. On the flip side,
         // it doesn't check on whether the type is defined in a paricular assembly. The desktop CLR typically doesn't
         // check this either so this is useful from a compat perspective as well.
         //

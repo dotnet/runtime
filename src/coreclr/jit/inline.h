@@ -46,7 +46,7 @@
 // Creates / Uses: InlineContext
 // Creates: InlineInfo, InlArgInfo, InlLocalVarInfo
 //
-// During the inlining optimation pass, each candidate is further
+// During the inlining optimization pass, each candidate is further
 // analyzed. Viable candidates will eventually inspire creation of an
 // InlineInfo and a set of InlArgInfos (for call arguments) and
 // InlLocalVarInfos (for callee locals).
@@ -84,7 +84,7 @@ const unsigned int MAX_INL_LCLS = 32;
 class InlineStrategy;
 
 // InlineCallsiteFrequency gives a rough classification of how
-// often a call site will be excuted at runtime.
+// often a call site will be executed at runtime.
 
 enum class InlineCallsiteFrequency
 {
@@ -337,7 +337,7 @@ protected:
 };
 
 // InlineResult summarizes what is known about the viability of a
-// particular inline candiate.
+// particular inline candidate.
 
 class InlineResult
 {
@@ -714,7 +714,7 @@ struct InlineInfo
 // Notes:
 //
 // InlineContexts form a tree with the root method as the root and
-// inlines as children. Nested inlines are represented as granchildren
+// inlines as children. Nested inlines are represented as grandchildren
 // and so on.
 //
 // Leaves in the tree represent successful inlines of leaf methods.

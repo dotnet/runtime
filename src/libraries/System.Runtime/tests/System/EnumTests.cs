@@ -1589,6 +1589,76 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.GetValues(null));
         }
 
+        [Fact]
+        public void GetValuesAsUnderlyingType_InvokeSByteEnum_ReturnsExpected()
+        {
+            Array expected = new sbyte[] { 1, 2, sbyte.MaxValue, sbyte.MinValue };
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType(typeof(SByteEnum)));
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType<SByteEnum>());
+        }
+
+        [Fact]
+        public void GetValuesAsUnderlyingType_InvokeByteEnum_ReturnsExpected()
+        {
+            Array expected = new byte[] { byte.MinValue, 1, 2, byte.MaxValue };
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType(typeof(ByteEnum)));
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType<ByteEnum>());
+        }
+
+        [Fact]
+        public void GetValuesAsUnderlyingType_InvokeInt16Enum_ReturnsExpected()
+        {
+            Array expected = new short[] { 1, 2, short.MaxValue, short.MinValue };
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType(typeof(Int16Enum)));
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType<Int16Enum>());
+        }
+
+        [Fact]
+        public void GetValuesAsUnderlyingType_InvokeUInt16Enum_ReturnsExpected()
+        {
+            Array expected = new ushort[] { ushort.MinValue, 1, 2, ushort.MaxValue };
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType(typeof(UInt16Enum)));
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType<UInt16Enum>());
+        }
+
+        [Fact]
+        public void GetValuesAsUnderlyingType_InvokeInt32Enum_ReturnsExpected()
+        {
+            Array expected = new int[] { 1, 2, int.MaxValue, int.MinValue };
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType(typeof(Int32Enum)));
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType<Int32Enum>());
+        }
+
+        [Fact]
+        public void GetValuesAsUnderlyingType_InvokeUInt32Enum_ReturnsExpected()
+        {
+            Array expected = new uint[] { uint.MinValue, 1, 2, uint.MaxValue };
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType(typeof(UInt32Enum)));
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType<UInt32Enum>());
+        }
+
+        [Fact]
+        public void GetValuesAsUnderlyingType_InvokeInt64Enum_ReturnsExpected()
+        {
+            Array expected = new long[] { 1, 2, long.MaxValue, long.MinValue };
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType(typeof(Int64Enum)));
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType<Int64Enum>());
+        }
+
+        [Fact]
+        public void GetValuesAsUnderlyingType_InvokeUInt64Enum_ReturnsExpected()
+        {
+            Array expected = new ulong[] { ulong.MinValue, 1, 2, ulong.MaxValue };
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType(typeof(UInt64Enum)));
+            Assert.Equal(expected, Enum.GetValuesAsUnderlyingType<UInt64Enum>());
+        }
+
+        [Fact]
+        public static void GetValuesAsUnderlyingType_NullEnumType_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("enumType", () => Enum.GetValuesAsUnderlyingType(null));
+        }
+
         [Theory]
         [InlineData(typeof(object))]
         [InlineData(typeof(int))]
@@ -2083,7 +2153,7 @@ namespace System.Tests
             enumBuilder.DefineLiteral("Value1", true);
             enumBuilder.DefineLiteral("Value2", false);
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_charEnumType = GetCharEnumType();
@@ -2104,7 +2174,7 @@ namespace System.Tests
             enumBuilder.DefineLiteral("Value0x0010", (char)0x0010);
             enumBuilder.DefineLiteral("Value0x3f16", (char)0x3f16);
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_floatEnumType = GetFloatEnumType();
@@ -2125,7 +2195,7 @@ namespace System.Tests
             enumBuilder.DefineLiteral("Value0x0010", (float)0x0010);
             enumBuilder.DefineLiteral("Value0x3f16", (float)0x3f16);
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_doubleEnumType = GetDoubleEnumType();
@@ -2146,7 +2216,7 @@ namespace System.Tests
             enumBuilder.DefineLiteral("Value0x0010", (double)0x0010);
             enumBuilder.DefineLiteral("Value0x3f16", (double)0x3f16);
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_intPtrEnumType = GetIntPtrEnumType();
@@ -2156,7 +2226,7 @@ namespace System.Tests
             if (enumBuilder == null)
                 return null;
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
 
         private static Type s_uintPtrEnumType = GetUIntPtrEnumType();
@@ -2166,7 +2236,7 @@ namespace System.Tests
             if (enumBuilder == null)
                 return null;
 
-            return enumBuilder.CreateTypeInfo().AsType();
+            return enumBuilder.CreateType();
         }
     }
 }

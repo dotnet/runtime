@@ -208,6 +208,26 @@ namespace System.Formats.Tar
             return false;
         }
 
+        // When writing an entry that came from an archive of a different format, if its entry type happens to
+        // be an incompatible regular file entry type, convert it to the compatible one.
+        // No change for all other entry types.
+        internal static TarEntryType GetCorrectTypeFlagForFormat(TarEntryFormat format, TarEntryType entryType)
+        {
+            if (format is TarEntryFormat.V7)
+            {
+                if (entryType is TarEntryType.RegularFile)
+                {
+                    return TarEntryType.V7RegularFile;
+                }
+            }
+            else if (entryType is TarEntryType.V7RegularFile)
+            {
+                return TarEntryType.RegularFile;
+            }
+
+            return entryType;
+        }
+
         // Receives a byte array that represents an ASCII string containing a number in octal base.
         // Converts the array to an octal base number, then transforms it to ten base and returns it.
         internal static int GetTenBaseNumberFromOctalAsciiChars(Span<byte> buffer)

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection.Metadata;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -45,6 +44,7 @@ namespace ILCompiler
                 sb.Append(property.Name);
                 sb.Append('.');
                 sb.Append(property.GetMethod == method ? "get" : "set");
+                return sb.ToString();
             }
             else
             {
@@ -104,7 +104,7 @@ namespace ILCompiler
                 .Append('.')
                 .Append(property.Name).ToString();
         }
-        
+
         public static string GetDisplayName(this EventPseudoDesc @event)
         {
             return new StringBuilder(@event.OwningType.GetDisplayName())

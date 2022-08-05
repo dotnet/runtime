@@ -58,12 +58,12 @@ export declare interface EmscriptenModule {
 
 
     ready: Promise<unknown>;
-    preInit?: (() => any)[];
-    preRun?: (() => any)[];
-    postRun?: (() => any)[];
-    onAbort?: { (error: any): void };
+    instantiateWasm?: (imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => any;
+    preInit?: (() => any)[] | (() => any);
+    preRun?: (() => any)[] | (() => any);
     onRuntimeInitialized?: () => any;
-    instantiateWasm: (imports: any, successCallback: Function) => any;
+    postRun?: (() => any)[] | (() => any);
+    onAbort?: { (error: any): void };
 }
 
 export declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;

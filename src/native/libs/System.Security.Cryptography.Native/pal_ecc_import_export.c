@@ -327,10 +327,11 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
     if (!nid)
         return -1;
 
-    *key = EC_KEY_new_by_curve_name(nid);
-    if (!(*key))
+    EC_KEY* tmpKey = EC_KEY_new_by_curve_name(nid);
+    if (tmpKey == NULL)
         return -1;
 
+    int ret = 0;
     BIGNUM* dBn = NULL;
     BIGNUM* qxBn = NULL;
     BIGNUM* qyBn = NULL;
@@ -344,7 +345,7 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
         if (!qxBn || !qyBn)
             goto error;
 
-        if (!EC_KEY_set_public_key_affine_coordinates(*key, qxBn, qyBn))
+        if (!EC_KEY_set_public_key_affine_coordinates(tmpKey, qxBn, qyBn))
             goto error;
 
         // Set private key (optional)
@@ -354,12 +355,12 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
             if (!dBn)
                 goto error;
 
-            if (!EC_KEY_set_private_key(*key, dBn))
+            if (!EC_KEY_set_private_key(tmpKey, dBn))
                 goto error;
         }
 
         // Validate key
-        if (!EC_KEY_check_key(*key))
+        if (!EC_KEY_check_key(tmpKey))
             goto error;
     }
 
@@ -373,10 +374,10 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
         if (!dBn)
             goto error;
 
-        if (!EC_KEY_set_private_key(*key, dBn))
+        if (!EC_KEY_set_private_key(tmpKey, dBn))
             goto error;
 
-        const EC_GROUP* group = EC_KEY_get0_group(*key);
+        const EC_GROUP* group = EC_KEY_get0_group(tmpKey);
 
         if (!group)
             goto error;
@@ -389,27 +390,26 @@ int32_t CryptoNative_EcKeyCreateByKeyParameters(EC_KEY** key, const char* oid, u
         if (!EC_POINT_mul(group, pubG, dBn, NULL, NULL, NULL))
             goto error;
 
-        if (!EC_KEY_set_public_key(*key, pubG))
+        if (!EC_KEY_set_public_key(tmpKey, pubG))
             goto error;
 
-        if (!EC_KEY_check_key(*key))
+        if (!EC_KEY_check_key(tmpKey))
             goto error;
     }
 
     // Success
-    return 1;
+    *key = tmpKey;
+    tmpKey = NULL;
+    ret = 1;
 
 error:
     if (qxBn) BN_free(qxBn);
     if (qyBn) BN_free(qyBn);
     if (dBn) BN_clear_free(dBn);
     if (pubG) EC_POINT_free(pubG);
-    if (*key)
-    {
-        EC_KEY_free(*key);
-        *key = NULL;
-    }
-    return 0;
+    if (tmpKey) EC_KEY_free(tmpKey);
+
+    return ret;
 }
 
 EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
@@ -436,6 +436,7 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     ERR_clear_error();
 
     EC_KEY* key = NULL;
+    EC_KEY* ret = NULL;
     EC_POINT* G = NULL;
     EC_POINT* pubG = NULL;
 
@@ -570,7 +571,8 @@ EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     }
 
     // Success
-    return key;
+    ret = key;
+    key = NULL;
 
 error:
     if (qxBn) BN_free(qxBn);
@@ -587,5 +589,6 @@ error:
     if (pubG) EC_POINT_free(pubG);
     if (group) EC_GROUP_free(group);
     if (key) EC_KEY_free(key);
-    return NULL;
+
+    return ret;
 }

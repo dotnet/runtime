@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -329,6 +330,15 @@ namespace System.Net.Sockets
 
         private int _closeTimeout = Socket.DefaultCloseTimeout; // -1 = respect linger options
 
+        /// <summary>Closes the <see cref="NetworkStream"/> after waiting the specified time to allow data to be sent.</summary>
+        /// <param name="timeout">The number of milliseconds to wait to send any remaining data before closing.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than -1.</exception>
+        /// <remarks>
+        /// The Close method frees both unmanaged and managed resources associated with the <see cref="NetworkStream"/>.
+        /// If the <see cref="NetworkStream"/> owns the underlying <see cref="Socket"/>, it is closed as well.
+        /// If a <see cref="NetworkStream"/> was associated with a <see cref="TcpClient"/>, the <see cref="Close(int)"/> method
+        /// will close the TCP connection, but not dispose of the associated <see cref="TcpClient"/>.
+        /// </remarks>
         public void Close(int timeout)
         {
             if (timeout < -1)
@@ -339,6 +349,15 @@ namespace System.Net.Sockets
             Dispose();
         }
 
+        /// <summary>Closes the <see cref="NetworkStream"/> after waiting the specified time to allow data to be sent.</summary>
+        /// <param name="timeout">The amount of time to wait to send any remaining data before closing.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than -1 milliseconds or greater than <see cref="int.MaxValue"/> milliseconds.</exception>
+        /// <remarks>
+        /// The Close method frees both unmanaged and managed resources associated with the <see cref="NetworkStream"/>.
+        /// If the <see cref="NetworkStream"/> owns the underlying <see cref="Socket"/>, it is closed as well.
+        /// If a <see cref="NetworkStream"/> was associated with a <see cref="TcpClient"/>, the <see cref="Close(int)"/> method
+        /// will close the TCP connection, but not dispose of the associated <see cref="TcpClient"/>.
+        /// </remarks>
         public void Close(TimeSpan timeout) => Close(ToTimeoutMilliseconds(timeout));
 
         private static int ToTimeoutMilliseconds(TimeSpan timeout)
