@@ -1949,31 +1949,33 @@ namespace System
                 {
                     lengthToExamine -= (nuint)Vector128<byte>.Count;
                     uint matches;
+                    Vector128<byte> compareResult;
                     while (lengthToExamine > offset)
                     {
-                        matches = Vector128.Equals(Vector128.LoadUnsafe(ref first, offset), Vector128.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
-                        // Note that MoveMask has converted the equal vector elements into a set of bit flags,
-                        // So the bit position in 'matches' corresponds to the element offset.
-
-                        // 16 elements in Vector128<byte> so we compare to ushort.MaxValue to check if everything matched
-                        if (matches == ushort.MaxValue)
+                        compareResult = Vector128.Equals(Vector128.LoadUnsafe(ref first, offset), Vector128.LoadUnsafe(ref second, offset));
+                        // 16 elements in Vector128<byte> so we compare to Vector128<byte>.AllBitsSet to check if everything matched
+                        if (compareResult == Vector128<byte>.AllBitsSet)
                         {
                             // All matched
                             offset += (nuint)Vector128<byte>.Count;
                             continue;
                         }
 
+                        // Note that ExtractMostSignificantBits has converted the equal vector elements into a set of bit flags,
+                        // So the bit position in 'matches' corresponds to the element offset.
+                        matches = compareResult.ExtractMostSignificantBits();
                         goto Difference;
                     }
                     // Move to Vector length from end for final compare
                     offset = lengthToExamine;
                     // Same as method as above
-                    matches = Vector128.Equals(Vector128.LoadUnsafe(ref first, offset), Vector128.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
-                    if (matches == ushort.MaxValue)
+                    compareResult = Vector128.Equals(Vector128.LoadUnsafe(ref first, offset), Vector128.LoadUnsafe(ref second, offset));
+                    if (compareResult == Vector128<byte>.AllBitsSet)
                     {
                         // All matched
                         goto Equal;
                     }
+                    matches = compareResult.ExtractMostSignificantBits();
                 Difference:
                     // Invert matches to find differences
                     uint differences = ~matches;
