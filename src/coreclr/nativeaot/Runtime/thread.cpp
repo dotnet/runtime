@@ -587,12 +587,6 @@ void Thread::Hijack()
         return;
     }
 
-#if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-    // TODO: RhpGcProbeHijack and related asm helpers NYI for ARM64/UNIX.
-    //       disabling hijacking for now.
-    return;
-#endif
-
     // PalHijack will call HijackCallback or make the target thread call it.
     // It may also do nothing if the target thread is in inconvenient state.
     PalHijack(m_hPalThread, this);
@@ -640,13 +634,15 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
         return;
     }
 
-    ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
-
     // we may be able to do GC stack walk right where the threads is now,
-    // as long as it is on a GC safe point and if we can unwind the stack at that location.
-    if (codeManager->IsSafePoint(pvAddress) &&
-        codeManager->IsUnwindable(pvAddress))
+    // as long as the location is a GC safe point.
+    ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
+    if (codeManager->IsSafePoint(pvAddress))
     {
+        // we may not be able to unwind in some locations, such as epilogs.
+        // such locations should not contain safe points.
+        ASSERT(codeManager->IsUnwindable(pvAddress));
+
         // if we are not given a thread to hijack
         // perform in-line wait on the current thread
         if (pThreadToHijack == NULL)

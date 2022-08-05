@@ -339,6 +339,8 @@ C_FUNC(\Name):
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags
 PTFF_SAVE_SP            = 0x00000400
+PTFF_SAVE_X0            = 0x00000800
+PTFF_SAVE_X1            = 0x00001000
 PTFF_SAVE_ALL_PRESERVED = 0x000003FF  // NOTE: x19-x28
 
 DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
