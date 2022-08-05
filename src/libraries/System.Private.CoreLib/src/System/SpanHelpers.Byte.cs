@@ -1863,7 +1863,7 @@ namespace System
             nuint offset = 0; // Use nuint for arithmetic to avoid unnecessary 64->32->64 truncations
             nuint lengthToExamine = minLength;
 
-            if (Avx2.IsSupported)
+            if (Vector256.IsHardwareAccelerated)
             {
                 if (lengthToExamine >= (nuint)Vector256<byte>.Count)
                 {
@@ -1871,7 +1871,7 @@ namespace System
                     uint matches;
                     while (lengthToExamine > offset)
                     {
-                        matches = (uint)Avx2.MoveMask(Avx2.CompareEqual(LoadVector256(ref first, offset), LoadVector256(ref second, offset)));
+                        matches = Vector256.Equals(Vector256.LoadUnsafe(ref first, offset), Vector256.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
                         // Note that MoveMask has converted the equal vector elements into a set of bit flags,
                         // So the bit position in 'matches' corresponds to the element offset.
 
@@ -1888,7 +1888,7 @@ namespace System
                     // Move to Vector length from end for final compare
                     offset = lengthToExamine;
                     // Same as method as above
-                    matches = (uint)Avx2.MoveMask(Avx2.CompareEqual(LoadVector256(ref first, offset), LoadVector256(ref second, offset)));
+                    matches = Vector256.Equals(Vector256.LoadUnsafe(ref first, offset), Vector256.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
                     if (matches == uint.MaxValue)
                     {
                         // All matched
@@ -1912,7 +1912,7 @@ namespace System
                     uint matches;
                     if (lengthToExamine > offset)
                     {
-                        matches = (uint)Sse2.MoveMask(Sse2.CompareEqual(LoadVector128(ref first, offset), LoadVector128(ref second, offset)));
+                        matches = Vector128.Equals(Vector128.LoadUnsafe(ref first, offset), Vector128.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
                         // Note that MoveMask has converted the equal vector elements into a set of bit flags,
                         // So the bit position in 'matches' corresponds to the element offset.
 
@@ -1925,7 +1925,7 @@ namespace System
                     // Move to Vector length from end for final compare
                     offset = lengthToExamine;
                     // Same as method as above
-                    matches = (uint)Sse2.MoveMask(Sse2.CompareEqual(LoadVector128(ref first, offset), LoadVector128(ref second, offset)));
+                    matches = Vector128.Equals(Vector128.LoadUnsafe(ref first, offset), Vector128.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
                     if (matches == ushort.MaxValue)
                     {
                         // All matched
@@ -1943,7 +1943,7 @@ namespace System
                     return result;
                 }
             }
-            else if (Sse2.IsSupported)
+            else if (Vector128.IsHardwareAccelerated)
             {
                 if (lengthToExamine >= (nuint)Vector128<byte>.Count)
                 {
@@ -1951,7 +1951,7 @@ namespace System
                     uint matches;
                     while (lengthToExamine > offset)
                     {
-                        matches = (uint)Sse2.MoveMask(Sse2.CompareEqual(LoadVector128(ref first, offset), LoadVector128(ref second, offset)));
+                        matches = Vector128.Equals(Vector128.LoadUnsafe(ref first, offset), Vector128.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
                         // Note that MoveMask has converted the equal vector elements into a set of bit flags,
                         // So the bit position in 'matches' corresponds to the element offset.
 
@@ -1968,7 +1968,7 @@ namespace System
                     // Move to Vector length from end for final compare
                     offset = lengthToExamine;
                     // Same as method as above
-                    matches = (uint)Sse2.MoveMask(Sse2.CompareEqual(LoadVector128(ref first, offset), LoadVector128(ref second, offset)));
+                    matches = Vector128.Equals(Vector128.LoadUnsafe(ref first, offset), Vector128.LoadUnsafe(ref second, offset)).ExtractMostSignificantBits();
                     if (matches == ushort.MaxValue)
                     {
                         // All matched
