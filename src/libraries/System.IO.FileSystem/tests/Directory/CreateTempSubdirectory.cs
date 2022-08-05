@@ -63,7 +63,7 @@ namespace System.IO.Tests
                 DirectoryInfo tempPathWithUnicode = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + "\u00F6"));
                 tempPathWithUnicode.Create();
                 
-                string tempEnvVar = OperatingSystem.IsWindows() ? "TEMP" : "TMPDIR";
+                string tempEnvVar = OperatingSystem.IsWindows() ? "TMP" : "TMPDIR";
                 Environment.SetEnvironmentVariable(tempEnvVar, tempPathWithUnicode.FullName);
                 
                 try
@@ -100,8 +100,7 @@ namespace System.IO.Tests
         [MemberData(nameof(InvalidPrefixData))]
         public void CreateTempSubdirectoryThrowsWithPrefixContainingDirectorySeparator(string prefix)
         {
-            ArgumentException e = Assert.Throws<ArgumentException>(() => Directory.CreateTempSubdirectory(prefix));
-            Assert.Equal("prefix", e.ParamName);
+            AssertExtensions.Throws<ArgumentException>("prefix", () => Directory.CreateTempSubdirectory(prefix));
         }
     }
 }
