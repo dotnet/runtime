@@ -234,8 +234,7 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>
-        /// Gets or sets the collecting upgrade response details.
-        /// When true, <see cref="ClientWebSocket"/> provides response headers and status code.
+        /// Indicates whether <see cref="ClientWebSocket.HttpStatusCode" /> and <see cref="ClientWebSocket.HttpResponseHeaders" /> should be set when establishing the connection.
         /// </summary>
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool CollectHttpResponseDetails

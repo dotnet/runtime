@@ -53,13 +53,13 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>
-        /// Gets upgrade response status code if <see cref="ClientWebSocketOptions.CollectHttpResponseDetails" /> is set to true.
+        /// Gets the upgrade response status code if <see cref="ClientWebSocketOptions.CollectHttpResponseDetails" /> is set.
         /// </summary>
         public System.Net.HttpStatusCode HttpStatusCode => _innerWebSocket?.HttpStatusCode ?? 0;
 
         /// <summary>
-        /// Gets upgrade response headers if <see cref="ClientWebSocketOptions.CollectHttpResponseDetails" /> is set to true.
-        /// Sets might be used to clean up when headers are not needed anymore.
+        /// Gets the upgrade response headers if <see cref="ClientWebSocketOptions.CollectHttpResponseDetails" /> is set.
+        /// The setter may be used to reduce the memory usage of an active WebSocket connection once headers are no longer needed.
         /// </summary>
         public IReadOnlyDictionary<string, IEnumerable<string>>? HttpResponseHeaders
         {
