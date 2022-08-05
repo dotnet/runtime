@@ -6518,6 +6518,11 @@ done:;
 
 VOID ETW::MethodLog::SendNonDuplicateMethodDetailsEvent(MethodDesc* pMethodDesc, MethodDescSet* set)
 {
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
     if (set == NULL || !set->Contains(pMethodDesc))
     {
         SendMethodDetailsEvent(pMethodDesc);
