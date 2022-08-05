@@ -80,13 +80,12 @@ public partial class ThreadPoolBoundHandleTests
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/73421", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
     public unsafe void AllocateNativeOverlapped_NonBlittableTypeAsPinData_Throws()
     {
         using (ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => handle.AllocateNativeOverlapped((_, __, ___) => { }, new object(), new NonBlittableType() { s = "foo" }));
-            AssertExtensions.Throws<ArgumentException>(null, () => handle.UnsafeAllocateNativeOverlapped((_, __, ___) => { }, new object(), new NonBlittableType() { s = "foo" }));
+            Assert.Throws<ArgumentException>(() => handle.AllocateNativeOverlapped((_, __, ___) => { }, new object(), new NonBlittableType() { s = "foo" }));
+            Assert.Throws<ArgumentException>(() => handle.UnsafeAllocateNativeOverlapped((_, __, ___) => { }, new object(), new NonBlittableType() { s = "foo" }));
         }
     }
 
@@ -130,7 +129,6 @@ public partial class ThreadPoolBoundHandleTests
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/73421", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
     public unsafe void AllocateNativeOverlapped_ObjectArrayWithNonBlittableTypeAsPinData_Throws()
     {
         var array = new object[]
@@ -141,8 +139,8 @@ public partial class ThreadPoolBoundHandleTests
 
         using (ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => handle.AllocateNativeOverlapped((_, __, ___) => { }, new object(), array));
-            AssertExtensions.Throws<ArgumentException>(null, () => handle.UnsafeAllocateNativeOverlapped((_, __, ___) => { }, new object(), array));
+            Assert.Throws<ArgumentException>(() => handle.AllocateNativeOverlapped((_, __, ___) => { }, new object(), array));
+            Assert.Throws<ArgumentException>(() => handle.UnsafeAllocateNativeOverlapped((_, __, ___) => { }, new object(), array));
         }
     }
 
