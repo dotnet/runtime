@@ -959,6 +959,10 @@ namespace System.Net.Sockets.Tests
                 {
                     localSocketError = se.SocketErrorCode;
                 }
+                catch (ObjectDisposedException)
+                {
+                    Assert.Fail("Dispose happened before he operation, retry.");
+                }
 
                 if (UsesSync)
                 {
@@ -1039,6 +1043,10 @@ namespace System.Net.Sockets.Tests
                     catch (SocketException se)
                     {
                         localSocketError = se.SocketErrorCode;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        Assert.Fail("Dispose happened before he operation, retry.");
                     }
 
                     if (UsesSync)
