@@ -86,7 +86,6 @@ namespace System.IO.Pipes.Tests
         [InlineData(1)]
         [InlineData(3)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS 10.0+ blocks UNIX sockets")]
         public async Task MultipleWaitingClients_ServerServesOneAtATime(int numClients)
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
@@ -123,7 +122,6 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS 10.0+ blocks UNIX sockets")]
         public void MaxNumberOfServerInstances_TooManyServers_Throws()
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
@@ -162,7 +160,6 @@ namespace System.IO.Pipes.Tests
         [InlineData(1)]
         [InlineData(4)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS 10.0+ blocks UNIX sockets")]
         public async Task MultipleServers_ServeMultipleClientsConcurrently(int numServers)
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
@@ -360,7 +357,6 @@ namespace System.IO.Pipes.Tests
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invoke to verify the user name
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS 10.0+ blocks UNIX sockets")]
         public async Task Unix_GetImpersonationUserName_Succeed()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
@@ -392,7 +388,6 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.InOut)]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix implementation uses bidirectional sockets
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS 10.0+ blocks UNIX sockets")]
         public static void Unix_BufferSizeRoundtripping(PipeDirection direction)
         {
             int desiredBufferSize = 0;
@@ -457,7 +452,6 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS 10.0+ blocks UNIX sockets")]
         public async Task PipeTransmissionMode_Returns_Byte()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
@@ -514,7 +508,6 @@ namespace System.IO.Pipes.Tests
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix doesn't currently support message mode
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS 10.0+ blocks UNIX sockets")]
         public void Unix_SetReadModeTo__PipeTransmissionModeByte()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
@@ -556,7 +549,6 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.Out, PipeDirection.In)]
         [InlineData(PipeDirection.In, PipeDirection.Out)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS 10.0+ blocks UNIX sockets")]
         public void InvalidReadMode_Throws_ArgumentOutOfRangeException(PipeDirection serverDirection, PipeDirection clientDirection)
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
@@ -575,7 +567,6 @@ namespace System.IO.Pipes.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks MaxLength for PipeName on Unix
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS 10.0+ blocks UNIX sockets")]
         public void NameTooLong_MaxLengthPerPlatform()
         {
             // Increase a name's length until it fails
