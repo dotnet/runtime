@@ -71,6 +71,7 @@ namespace System.Reflection.Emit
         private PackingSize packing_size;
         private IntPtr generic_container;
         private GenericTypeParameterBuilder[]? generic_params;
+        internal bool isHiddenGlobalType;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? created;
@@ -100,6 +101,7 @@ namespace System.Reflection.Emit
             this.nspace = string.Empty;
             this.fullname = TypeIdentifiers.WithoutEscape(this.tname);
             pmodule = mb;
+            this.isHiddenGlobalType = true;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:UnrecognizedReflectionPattern",
@@ -109,6 +111,7 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(IsAssignableToInternal))] // Used from reflection.c: mono_reflection_call_is_assignable_to
         internal TypeBuilder(ModuleBuilder mb, string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
+            this.isHiddenGlobalType = false;
             int sep_index;
             this.parent = ResolveUserType(parent);
             this.attrs = attr;
