@@ -7535,6 +7535,31 @@ HRESULT DacDbiInterfaceImpl::EnableGCNotificationEvents(BOOL fEnable)
     return hr;
 }
 
+HRESULT DacDbiInterfaceImpl::ReadData(TADDR pRemoteBuf, DWORD size, BYTE *pLocalBuf)
+{
+    DD_ENTER_MAY_THROW
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        ULONG32 cbRead = 0;
+
+        HRESULT hr = m_pTarget->ReadVirtual(pRemoteBuf, pLocalBuf, size, &cbRead);
+
+        if (FAILED(hr))
+        {
+            ThrowHR(CORDBG_E_READVIRTUAL_FAILURE);
+        }
+
+        if (cbRead != size)
+        {
+            ThrowWin32(ERROR_PARTIAL_COPY);
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
+}
+
 DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask)
     : mDac(dac), mWalkStacks(walkStacks), mWalkFQ(walkFQ), mHandleMask(handleMask), mStackWalker(NULL),
       mHandleWalker(NULL), mFQStart(PTR_NULL), mFQEnd(PTR_NULL), mFQCurr(PTR_NULL)

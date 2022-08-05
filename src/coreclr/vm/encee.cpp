@@ -835,7 +835,14 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
 #if defined(TARGET_X86)
     ResumeAtJit(pContext, oldSP);
 #elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    ClrRestoreNonvolatileContextWorker(pContext, ssp);
+    if (g_pDebugInterface->IsOutOfProcessSetContextEnabled())
+    {
+        g_pDebugInterface->SendSetThreadContextNeeded(pContext);
+    }
+    else
+    {
+        ClrRestoreNonvolatileContextWorker(pContext, ssp);
+    }
 #else
     ClrRestoreNonvolatileContext(pContext);
 #endif

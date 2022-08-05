@@ -486,6 +486,12 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
     pDebuggerRuntimeOffsets->m_debuggerWordTLSIndex = g_debuggerWordTLSIndex;
 #endif // FEATURE_INTEROP_DEBUGGING
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    pDebuggerRuntimeOffsets->m_setThreadContextNeededAddr = (void*) SetThreadContextNeededFlare;
+#else
+    pDebuggerRuntimeOffsets->m_setThreadContextNeededAddr = NULL;
+#endif
+
     pDebuggerRuntimeOffsets->m_pPatches = DebuggerController::GetPatchTable();
     pDebuggerRuntimeOffsets->m_pPatchTableValid = (BOOL*)DebuggerController::GetPatchTableValidAddr();
     pDebuggerRuntimeOffsets->m_offRgData = DebuggerPatchTable::GetOffsetOfEntries();

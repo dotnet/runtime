@@ -2748,6 +2748,9 @@ public:
     HRESULT IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped) = 0;
 
     virtual
+    HRESULT ReadData(TADDR pRemoteBuf, DWORD size, BYTE *pLocalBuf) = 0;
+
+    virtual
     bool MetadataUpdatesApplied() = 0;
 
     // The following tag tells the DD-marshalling tool to stop scanning.
