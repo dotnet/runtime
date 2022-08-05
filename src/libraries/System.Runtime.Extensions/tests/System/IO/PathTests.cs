@@ -195,6 +195,32 @@ namespace System.IO.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void GetTempFileNameTempUnicode()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                DirectoryInfo tempPathWithUnicode = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + "\u00F6"));
+                tempPathWithUnicode.Create();
+
+                string tempEnvVar = OperatingSystem.IsWindows() ? "TEMP" : "TMPDIR";
+                Environment.SetEnvironmentVariable(tempEnvVar, tempPathWithUnicode.FullName);
+                
+                try
+                {
+                    string tmpFile = Path.GetTempFileName();
+                    Assert.True(File.Exists(tmpFile));
+                    Assert.Equal(tempPathWithUnicode.FullName, Path.GetDirectoryName(tmpFile));
+
+                    Environment.SetEnvironmentVariable(tempEnvVar, tempPathWithUnicode.Parent.FullName);
+                }
+                finally
+                {
+                    tempPathWithUnicode.Delete(recursive: true);
+                }
+            }).Dispose();
+        }
+
         [Fact]
         public void GetFullPath_InvalidArgs()
         {

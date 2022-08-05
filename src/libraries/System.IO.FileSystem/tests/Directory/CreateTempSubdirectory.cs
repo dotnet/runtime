@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Tests
@@ -11,7 +12,7 @@ namespace System.IO.Tests
         {
             get
             {
-                var result = new TheoryData<string>() { null, "", "myDir", "my.Dir" };
+                var result = new TheoryData<string>() { null, "", "myDir", "my.Dir", "H\u00EBllo" };
                 if (!OperatingSystem.IsWindows())
                 {
                     // ensure we can use backslashes on Unix since that isn't a directory separator
@@ -52,6 +53,32 @@ namespace System.IO.Tests
             {
                 tmpDir.Delete(recursive: true);
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void CreateTempSubdirectoryTempUnicode()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                DirectoryInfo tempPathWithUnicode = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + "\u00F6"));
+                tempPathWithUnicode.Create();
+                
+                string tempEnvVar = OperatingSystem.IsWindows() ? "TEMP" : "TMPDIR";
+                Environment.SetEnvironmentVariable(tempEnvVar, tempPathWithUnicode.FullName);
+                
+                try
+                {
+                    DirectoryInfo tmpDir = Directory.CreateTempSubdirectory();
+                    Assert.True(tmpDir.Exists);
+                    Assert.Equal(tempPathWithUnicode.FullName, tmpDir.Parent.FullName);
+
+                    Environment.SetEnvironmentVariable(tempEnvVar, tempPathWithUnicode.Parent.FullName);
+                }
+                finally
+                {
+                    tempPathWithUnicode.Delete(recursive: true);
+                }
+            }).Dispose();
         }
 
         public static TheoryData<string> InvalidPrefixData

@@ -93,23 +93,34 @@ namespace System.IO
                 path + PathInternal.DirectorySeparatorChar;
         }
 
-        public static string GetTempFileName()
+        public static unsafe string GetTempFileName()
         {
-            const string Suffix = ".tmp";
-            const int SuffixByteLength = 4;
+            const int SuffixByteLength = 4; // ".tmp"
 
             // mkstemps takes a char* and overwrites the XXXXXX with six characters
-            // that'll result in a unique file name.
-            string template = GetTempPath() + "tmpXXXXXX" + Suffix + "\0";
-            byte[] name = Encoding.UTF8.GetBytes(template);
+            // that'll result in a unique file name. The file template we use is "tmpXXXXXX.tmp".
+            string tempPath = Path.GetTempPath();
+            int tempPathByteCount = Encoding.UTF8.GetByteCount(tempPath);
+            int totalByteCount = tempPathByteCount + 3 + 6 + SuffixByteLength + 1;
+
+            Span<byte> path = totalByteCount <= 256 ? stackalloc byte[256].Slice(0, totalByteCount) : new byte[totalByteCount];
+            int pos = Encoding.UTF8.GetBytes(tempPath, path);
+            "tmp"u8.CopyTo(path.Slice(pos));
+            pos += 3;
+            path.Slice(pos, 6).Fill((byte)'X');
+            pos += 6;
+            ".tmp"u8.CopyTo(path.Slice(pos));
+            path[pos + SuffixByteLength] = 0;
 
             // Create, open, and close the temp file.
-            IntPtr fd = Interop.CheckIo(Interop.Sys.MksTemps(name, SuffixByteLength));
-            Interop.Sys.Close(fd); // ignore any errors from close; nothing to do if cleanup isn't possible
-
-            // 'name' is now the name of the file
-            Debug.Assert(name[name.Length - 1] == '\0');
-            return Encoding.UTF8.GetString(name, 0, name.Length - 1); // trim off the trailing '\0'
+            fixed (byte* pPath = path)
+            {
+                IntPtr fd = Interop.CheckIo(Interop.Sys.MksTemps(pPath, SuffixByteLength));
+                Interop.Sys.Close(fd); // ignore any errors from close; nothing to do if cleanup isn't possible
+            }
+            // 'path' is now the name of the file
+            Debug.Assert(path[^1] == 0);
+            return Encoding.UTF8.GetString(path.Slice(0, path.Length - 1)); // trim off the trailing '\0'
         }
 
         public static bool IsPathRooted([NotNullWhen(true)] string? path)

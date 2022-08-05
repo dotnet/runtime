@@ -27,20 +27,33 @@ namespace System.IO
         private static unsafe string CreateTempSubdirectoryCore(string? prefix)
         {
             // mkdtemp takes a char* and overwrites the XXXXXX with six characters
-            // that'll result in a unique file name.
-            string template = $"{Path.GetTempPath()}{prefix}XXXXXX\0";
-            byte[] name = Encoding.UTF8.GetBytes(template);
+            // that'll result in a unique directory name.
+            string tempPath = Path.GetTempPath();
+            int tempPathByteCount = Encoding.UTF8.GetByteCount(tempPath);
+            int prefixByteCount = prefix is not null ? Encoding.UTF8.GetByteCount(prefix) : 0;
+            int totalByteCount = tempPathByteCount + prefixByteCount + 6 + 1;
+
+            Span<byte> path = totalByteCount <= 256 ? stackalloc byte[256].Slice(0, totalByteCount) : new byte[totalByteCount];
+            int pos = Encoding.UTF8.GetBytes(tempPath, path);
+            if (prefix is not null)
+            {
+                pos += Encoding.UTF8.GetBytes(prefix, path.Slice(pos));
+            }
+            path.Slice(pos, 6).Fill((byte)'X');
+            path[pos + 6] = 0;
 
             // Create the temp directory.
-            byte* result = Interop.Sys.MkdTemp(name);
-            if (result == null)
+            fixed (byte* pPath = path)
             {
-                Interop.CheckIo(-1);
+                if (Interop.Sys.MkdTemp(pPath) is null)
+                {
+                    Interop.CheckIo(-1);
+                }
             }
 
-            // 'name' is now the name of the directory
-            Debug.Assert(name[^1] == '\0');
-            return Encoding.UTF8.GetString(name, 0, name.Length - 1); // trim off the trailing '\0'
+            // 'path' is now the name of the directory
+            Debug.Assert(path[^1] == 0);
+            return Encoding.UTF8.GetString(path.Slice(0, path.Length - 1)); // trim off the trailing '\0'
         }
     }
 }
