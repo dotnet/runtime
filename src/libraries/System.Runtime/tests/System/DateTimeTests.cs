@@ -828,7 +828,6 @@ namespace System.Tests
         [Fact]
         public void DayOfYear_Exhaustive()
         {
-            var ticksPer6hours = TimeSpan.TicksPerHour * 6;
             for (int year = DateTime.MinValue.Year, lastYear = DateTime.MaxValue.Year; year <= lastYear; ++year)
             {
                 var startOfYear = new DateTime(year, 1, 1);
