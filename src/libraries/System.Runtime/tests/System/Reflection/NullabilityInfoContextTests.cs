@@ -1249,18 +1249,16 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> TestNullabilityInfoCreationOnPropertiesWithNestedGenericTypeArgumentsData() => new[]
         {
-            new object[] { typeof(bool), NullabilityState.NotNull },
-            new object[] { typeof(bool?), NullabilityState.Nullable },
-            new object[] { typeof(object), NullabilityState.Nullable },
+            new object[] { typeof(TypeWithPropertiesNestingItsGenericTypeArgument<bool>), NullabilityState.NotNull },
+            new object[] { typeof(TypeWithPropertiesNestingItsGenericTypeArgument<bool?>), NullabilityState.Nullable },
+            new object[] { typeof(TypeWithPropertiesNestingItsGenericTypeArgument<object>), NullabilityState.Nullable },
         };
 
         [Theory]
         [SkipOnMono("Nullability attributes trimmed on Mono")]
         [MemberData(nameof(TestNullabilityInfoCreationOnPropertiesWithNestedGenericTypeArgumentsData))]
-        public void TestNullabilityInfoCreationOnPropertiesWithNestedGenericTypeArguments(Type genericArgumentType, NullabilityState expectedGenericArgumentNullability)
+        public void TestNullabilityInfoCreationOnPropertiesWithNestedGenericTypeArguments(Type type, NullabilityState expectedGenericArgumentNullability)
         {
-            Type type = typeof(TypeWithPropertiesNestingItsGenericTypeArgument<>).MakeGenericType(genericArgumentType);
-
             NullabilityInfo shallow1Info = nullabilityContext.Create(type.GetProperty("Shallow1")!);
             NullabilityInfo deep1Info = nullabilityContext.Create(type.GetProperty("Deep1")!);
             NullabilityInfo deep2Info = nullabilityContext.Create(type.GetProperty("Deep2")!);
