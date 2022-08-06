@@ -1147,24 +1147,16 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
     switch (nativeCodeVersion.GetOptimizationTier())
     {
         case NativeCodeVersion::OptimizationTierInstrumented:
-            if (g_pConfig->TieredCompilation_QuickJit())
-            {
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-                break;
-            }
-            nativeCodeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
-            goto Optimized;
+            _ASSERT(g_pConfig->TieredCompilation_QuickJit());
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+            break;
 
         case NativeCodeVersion::OptimizationTierInstrumentedOptimized:
-            if (g_pConfig->TieredCompilation_QuickJit())
-            {
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
-                break;
-            }
-            nativeCodeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
-            goto Optimized;
+            _ASSERT(g_pConfig->TieredCompilation_QuickJit());
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
+            break;
 
         case NativeCodeVersion::OptimizationTier0:
             if (g_pConfig->TieredCompilation_QuickJit())
