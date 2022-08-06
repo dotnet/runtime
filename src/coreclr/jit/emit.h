@@ -1660,7 +1660,8 @@ protected:
     public:
         inlineInstrDesc() : idDebugInfo(nullptr), idStorage()
         {
-            static_assert_no_msg(offsetof(inlineInstrDesc<T>, idStorage) == sizeof(instrDescDebugInfo*));
+            static_assert_no_msg((offsetof(inlineInstrDesc<T>, idStorage) - sizeof(instrDescDebugInfo*)) ==
+                                 offsetof(inlineInstrDesc<T>, idDebugInfo));
         }
 
         T* id()
