@@ -615,8 +615,13 @@ unsigned emitLclVarAddr::lvaOffset() // returns the offset into the variable to 
 
 void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 {
-    emitComp      = comp;
-    emitCmpHandle = cmpHandle;
+    emitComp        = comp;
+    emitCmpHandle   = cmpHandle;
+    m_debugInfoSize = sizeof(instrDescDebugInfo*);
+#ifndef DEBUG
+    if (!comp->opts.disAsm)
+        m_debugInfoSize = 0;
+#endif
 }
 
 void emitter::emitEndCG()
@@ -1475,6 +1480,8 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     // Make sure we have enough space for the new instruction.
     // `igInsCnt` is currently a byte, so we can't have more than 255 instructions in a single insGroup.
 
+    sz += m_debugInfoSize;
+
     if ((emitCurIGfreeNext + sz >= emitCurIGfreeEndp) || emitForceNewIG || (emitCurIGinsCnt >= 255))
     {
         emitNxtIG(true);
@@ -1482,11 +1489,12 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     /* Grab the space for the instruction */
 
-    emitLastIns = id = (instrDesc*)emitCurIGfreeNext;
+    memset(emitCurIGfreeNext, 0, sz);
+
+    emitLastIns = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
     emitCurIGfreeNext += sz;
 
     assert(sz >= sizeof(void*));
-    memset(id, 0, sz);
 
     // These fields should have been zero-ed by the above
     assert(id->idReg1() == regNumber(0));
@@ -1506,13 +1514,11 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     emitInsCount++;
 
-#ifndef DEBUG
-    if (emitComp->opts.disAsm)
-#endif
+    if (m_debugInfoSize > 0)
     {
         instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
         info->idNum              = emitInsCount;
-        info->idSize             = sz;
+        info->idSize             = sz - m_debugInfoSize;
         info->idVarRefOffs       = 0;
         info->idMemCookie        = 0;
         info->idFlags            = GTF_EMPTY;
@@ -2927,7 +2933,7 @@ bool emitter::emitGetLocationInfo(emitLocation* emitLoc,
     int i;
     for (i = 0; i != insNum; ++i)
     {
-        castto(id, BYTE*) += emitSizeOfInsDsc(id);
+        castto(id, BYTE*) += emitSizeOfInsDsc(id) + m_debugInfoSize;
     }
 
     // Return the info we found
@@ -2955,7 +2961,7 @@ bool emitter::emitNextID(insGroup*& ig, instrDesc*& id, int& insRemaining)
 {
     if (insRemaining > 0)
     {
-        castto(id, BYTE*) += emitSizeOfInsDsc(id);
+        castto(id, BYTE*) += emitSizeOfInsDsc(id) + m_debugInfoSize;
         --insRemaining;
         return true;
     }
@@ -3797,7 +3803,7 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
 
         if (verbose)
         {
-            BYTE*          ins = ig->igData;
+            BYTE*          ins = ig->igData + m_debugInfoSize;
             UNATIVE_OFFSET ofs = ig->igOffs;
             unsigned       cnt = ig->igInsCnt;
 
@@ -3821,7 +3827,7 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
 #endif
                     emitDispIns(id, false, true, false, ofs, nullptr, 0, ig);
 
-                    ins += emitSizeOfInsDsc(id);
+                    ins += emitSizeOfInsDsc(id) + m_debugInfoSize;
                     ofs += id->idCodeSize();
 
                 } while (--cnt);
@@ -4239,11 +4245,11 @@ void emitter::emitRemoveJumpToNextInst()
                 assert(instructionCount > 0);
                 instrDesc* id = nullptr;
                 {
-                    BYTE* dataPtr = jmpGroup->igData;
+                    BYTE* dataPtr = jmpGroup->igData + m_debugInfoSize;
                     while (instructionCount > 0)
                     {
                         id = (instrDesc*)dataPtr;
-                        dataPtr += emitSizeOfInsDsc(id);
+                        dataPtr += emitSizeOfInsDsc(id) + m_debugInfoSize;
                         instructionCount -= 1;
                     }
                 }
@@ -6643,7 +6649,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         // if it were the instruction following a call.
         emitGenGCInfoIfFuncletRetTarget(ig, cp);
 
-        instrDesc* id = (instrDesc*)ig->igData;
+        instrDesc* id = (instrDesc*)(ig->igData + m_debugInfoSize);
 
 #ifdef DEBUG
         /* Print the IG label, but only if it is a branch label */
@@ -6819,7 +6825,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
 #endif
 
-            castto(id, BYTE*) += emitIssue1Instr(ig, id, &cp);
+            castto(id, BYTE*) += emitIssue1Instr(ig, id, &cp) + m_debugInfoSize;
 
 #ifdef DEBUG
             // Print the alignment boundary
@@ -7185,7 +7191,7 @@ void emitter::emitGenGCInfoIfFuncletRetTarget(insGroup* ig, BYTE* cp)
 
 unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
 {
-    instrDesc* id = (instrDesc*)ig->igData;
+    instrDesc* id = (instrDesc*)(ig->igData + m_debugInfoSize);
 
     // Check if we are the first instruction in the group
     if (id == idMatch)
@@ -7199,7 +7205,7 @@ unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
 
     while (insRemaining > 0)
     {
-        castto(id, BYTE*) += emitSizeOfInsDsc(id);
+        castto(id, BYTE*) += emitSizeOfInsDsc(id) + m_debugInfoSize;
         insNum++;
         insRemaining--;
 
@@ -7221,7 +7227,7 @@ unsigned emitter::emitFindInsNum(insGroup* ig, instrDesc* idMatch)
 
 UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
 {
-    instrDesc*     id = (instrDesc*)ig->igData;
+    instrDesc*     id = (instrDesc*)(ig->igData + m_debugInfoSize);
     UNATIVE_OFFSET of = 0;
 
 #ifdef DEBUG
@@ -7236,7 +7242,7 @@ UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
     {
         of += id->idCodeSize();
 
-        castto(id, BYTE*) += emitSizeOfInsDsc(id);
+        castto(id, BYTE*) += emitSizeOfInsDsc(id) + m_debugInfoSize;
 
         insNum--;
     }

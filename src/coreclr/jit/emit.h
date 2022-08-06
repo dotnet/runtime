@@ -461,6 +461,8 @@ protected:
     GCInfo*   gcInfo;
     CodeGen*  codeGen;
 
+    size_t m_debugInfoSize;
+
     typedef GCInfo::varPtrDsc varPtrDsc;
     typedef GCInfo::regPtrDsc regPtrDsc;
     typedef GCInfo::CallDsc   callDsc;
@@ -806,16 +808,14 @@ protected:
         ////////////////////////////////////////////////////////////////////////
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-        instrDescDebugInfo* _idDebugOnlyInfo;
-
     public:
         instrDescDebugInfo* idDebugOnlyInfo() const
         {
-            return _idDebugOnlyInfo;
+            return ((instrDescDebugInfo**)(this))[-1];
         }
         void idDebugOnlyInfo(instrDescDebugInfo* info)
         {
-            _idDebugOnlyInfo = info;
+            ((instrDescDebugInfo**)this)[-1] = info;
         }
 
     private:
@@ -834,7 +834,7 @@ protected:
 // as various flags), you might need to update the body of
 // emitter::emitAllocInstr() to clear them.
 
-#define SMALL_IDSC_SIZE (8 + sizeof(void*))
+#define SMALL_IDSC_SIZE 8
 
         void checkSizes();
 
@@ -2679,7 +2679,7 @@ public:
 
 inline void emitter::instrDesc::checkSizes()
 {
-    C_ASSERT(SMALL_IDSC_SIZE == (offsetof(instrDesc, _idDebugOnlyInfo) + sizeof(instrDescDebugInfo*)));
+    C_ASSERT(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
 }
 
 /*****************************************************************************
