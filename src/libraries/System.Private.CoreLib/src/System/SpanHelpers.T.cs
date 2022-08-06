@@ -1005,7 +1005,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             T lookUp;
-            if (default(T) != null || ((object?)value0 != null && (object?)value1 != null))
+            if (default(T) != null || ((object?)value0 != null && (object?)value1 != null && (object?)value2 != null))
             {
                 Debug.Assert(value0 is not null && value1 is not null && value2 is not null);
 
