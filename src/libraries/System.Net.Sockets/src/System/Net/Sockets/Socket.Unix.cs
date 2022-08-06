@@ -228,6 +228,16 @@ namespace System.Net.Sockets
             }
         }
 
+        internal void DisposeHandle()
+        {
+            _handle.Dispose();
+        }
+
+        internal void ClearHandle()
+        {
+            _handle = null!;
+        }
+
         internal Socket CopyStateFromSource(Socket source)
         {
             _addressFamily = source._addressFamily;
