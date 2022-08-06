@@ -307,9 +307,8 @@ void TieredCompilationManager::AsyncPromoteToTier1(
         {
             switch (g_pConfig->TieredPGO_Strategy())
             {
-                // 0: Always use TierInstrumented for new ILOnly code
+                // 0: Since previous tier is not instrumented we just promote to Tier1 without any Dynamic PGO
                 case InstrumentColdNonPrejittedCode:
-                    nextTier = NativeCodeVersion::OptimizationTierInstrumented;
                     break;
 
                 // 1: Promote hot R2R code to TierInstrumented
