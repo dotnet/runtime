@@ -153,5 +153,14 @@ namespace System.Net.Quic.Tests
                 }
             }
         }
+
+        [OuterLoop("May take several seconds")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73377")]
+        public override Task Parallel_ReadWriteMultipleStreamsConcurrently()
+        {
+            return Task.CompletedTask;
+        }
     }
 }

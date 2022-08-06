@@ -1103,8 +1103,6 @@ begin_suspend_peek_and_preempt (MonoThreadInfo *info);
 MonoThreadBeginSuspendResult
 mono_thread_info_begin_suspend (MonoThreadInfo *info, MonoThreadSuspendPhase phase)
 {
-	if (phase == MONO_THREAD_SUSPEND_PHASE_INITIAL && mono_threads_platform_stw_defer_initial_suspend (info))
-		return MONO_THREAD_BEGIN_SUSPEND_NEXT_PHASE;
 	if (phase == MONO_THREAD_SUSPEND_PHASE_MOPUP && mono_threads_is_hybrid_suspension_enabled ())
 		return begin_suspend_peek_and_preempt (info);
 	else
@@ -1663,7 +1661,7 @@ sleep_interrupt (gpointer data)
 }
 
 static guint32
-sleep_interruptable (guint32 ms, gboolean *alerted)
+sleep_interruptible (guint32 ms, gboolean *alerted)
 {
 	gint64 now = 0, end = 0;
 
@@ -1725,7 +1723,7 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 	}
 
 	if (alerted)
-		return sleep_interruptable (ms, alerted);
+		return sleep_interruptible (ms, alerted);
 
 	MONO_ENTER_GC_SAFE;
 
@@ -2176,10 +2174,3 @@ mono_thread_info_get_tools_data (void)
 	return info ? info->tools_data : NULL;
 }
 
-#ifndef HOST_WASM
-gboolean
-mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
-{
-	return FALSE;
-}
-#endif

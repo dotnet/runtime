@@ -42,7 +42,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
         add_compile_options(-Wno-strict-prototypes)
     endif ()
 
-    # Delete this supression once brotli is upgraded to vNext (current latest v1.0.9
+    # Delete this suppression once brotli is upgraded to vNext (current latest v1.0.9
     # does not contain upstream fix: https://github.com/google/brotli/commit/0a3944c)
     set(FLAGS "${FLAGS} -Wno-vla-parameter")
 

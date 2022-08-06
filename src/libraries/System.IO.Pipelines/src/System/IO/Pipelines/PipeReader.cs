@@ -259,7 +259,7 @@ namespace System.IO.Pipelines
                         }
                     }
 
-                    // The while loop completed succesfully, so we've consumed the entire buffer.
+                    // The while loop completed successfully, so we've consumed the entire buffer.
                     consumed = buffer.End;
 
                     if (result.IsCompleted)

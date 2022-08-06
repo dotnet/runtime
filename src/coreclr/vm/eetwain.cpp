@@ -752,7 +752,7 @@ void EECodeManager::FixContext( ContextType     ctxType,
     /* make sure that we have an ebp stack frame */
 
     _ASSERTE(stateBuf->hdrInfoBody.ebpFrame);
-    _ASSERTE(stateBuf->hdrInfoBody.handlers); // <TODO>@TODO : This will alway be set. Remove it</TODO>
+    _ASSERTE(stateBuf->hdrInfoBody.handlers); // <TODO>@TODO : This will always be set. Remove it</TODO>
 
     TADDR      baseSP;
     GetHandlerFrameInfo(&stateBuf->hdrInfoBody, ctx->Ebp,
@@ -777,7 +777,7 @@ void EECodeManager::FixContext( ContextType     ctxType,
     if (ctxType == FILTER_CONTEXT)
         *ppEndRegion = (size_t *)pBaseSPslots + 1;
 
-    /*  This is just a simple assigment of throwObject to ctx->Eax,
+    /*  This is just a simple assignment of throwObject to ctx->Eax,
         just pretend the cast goo isn't there.
      */
 
@@ -2115,7 +2115,7 @@ unsigned scanArgRegTable(PTR_CBYTE    table,
  *
  * Note on the encoding used for interior pointers
  *
- *   The iptr encoding must immediately preceed a call encoding.  It is used to
+ *   The iptr encoding must immediately precede a call encoding.  It is used to
  *   transform a normal GC pointer addresses into an interior pointers for GC purposes.
  *   The mask supplied to the iptr encoding is read from the least signicant bit
  *   to the most signicant bit. (i.e the lowest bit is read first)
@@ -2763,7 +2763,7 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
 
                 if  (argOfs >= MAX_PTRARG_OFS)
                 {
-                     _ASSERTE_ALL_BUILDS("clr/src/VM/eetwain.cpp", !"scanArgRegTableI: args pushed 'too deep'");
+                     _ASSERTE_ALL_BUILDS(!"scanArgRegTableI: args pushed 'too deep'");
                 }
                 else
                 {
@@ -2877,7 +2877,7 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
                 }
             }
 
-            // For partial arg info, need to find the next higest pointer for argHigh
+            // For partial arg info, need to find the next highest pointer for argHigh
 
             if (hasPartialArgInfo)
             {
@@ -4282,7 +4282,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
          *  First, handle the epilog
          */
 
-        PTR_CBYTE epilogBase = (PTR_CBYTE) (breakPC - info->epilogOffs);
+        PTR_CBYTE epilogBase = methodStart + (curOffs - info->epilogOffs);
         UnwindEpilog(pContext, info, epilogBase, flags);
     }
     else if (!info->ebpFrame && !info->doubleAlign)
@@ -6004,7 +6004,7 @@ unsigned int EECodeManager::GetFrameSize(GCInfoToken gcInfoToken)
     DecodeGCHdrInfo(gcInfoToken, 0, &info);
 
     // currently only used by E&C callers need to know about doubleAlign
-    // in all likelyhood
+    // in all likelihood
     _ASSERTE(!info.doubleAlign);
     return info.stackSize;
 }
@@ -6043,7 +6043,7 @@ BOOL EECodeManager::IsInFilter(GCInfoToken gcInfoToken,
     /* make sure that we have an ebp stack frame */
 
     _ASSERTE(info.ebpFrame);
-    _ASSERTE(info.handlers); // <TODO> This will alway be set. Remove it</TODO>
+    _ASSERTE(info.handlers); // <TODO> This will always be set. Remove it</TODO>
 
     TADDR       baseSP;
     DWORD       nestingLevel;

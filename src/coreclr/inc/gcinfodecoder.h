@@ -157,7 +157,7 @@ inline BOOL IS_ALIGNED( void* val, size_t alignment )
 
 typedef void (*GCEnumCallback)(
     void *          hCallback,      // callback data
-    OBJECTREF*      pObject,        // address of obect-reference we are reporting
+    OBJECTREF*      pObject,        // address of object-reference we are reporting
     uint32_t        flags           // is this a pinned and/or interior pointer
 );
 

@@ -132,7 +132,7 @@ namespace System.IO
             if (error == 0)
             {
                 Debug.Assert(passwd.HomeDirectory != null);
-                path = Marshal.PtrToStringAnsi((IntPtr)passwd.HomeDirectory);
+                path = Marshal.PtrToStringUTF8((IntPtr)passwd.HomeDirectory);
                 return true;
             }
 

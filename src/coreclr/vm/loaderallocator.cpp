@@ -581,7 +581,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         // (we have now a LoaderAllocator with 0-n DomainAssembly)
 
         // This cleanup code starts resembling parts of AppDomain::Terminate too much.
-        // It would be useful to reduce duplication and also establish clear responsibilites
+        // It would be useful to reduce duplication and also establish clear responsibilities
         // for LoaderAllocator::Destroy, Assembly::Terminate, LoaderAllocator::Terminate
         // and LoaderAllocator::~LoaderAllocator. We need to establish how these
         // cleanup paths interact with app-domain unload and process tear-down, too.

@@ -3067,7 +3067,7 @@ mini_get_rgctx_access_for_method (MonoMethod *method)
  * @parts: debug flag
  *
  * Returns: a MonoCompile* pointer. Caller must check the exception_type
- * field in the returned struct to see if compilation succeded.
+ * field in the returned struct to see if compilation succeeded.
  */
 MonoCompile*
 mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts, int aot_method_index)
@@ -4044,7 +4044,7 @@ mono_cfg_set_exception (MonoCompile *cfg, MonoExceptionType type)
 
 /* Assumes ownership of the MSG argument */
 void
-mono_cfg_set_exception_invalid_program (MonoCompile *cfg, char *msg)
+mono_cfg_set_exception_invalid_program (MonoCompile *cfg, const char *msg)
 {
 	mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 	mono_error_set_generic_error (cfg->error, "System", "InvalidProgramException", "%s", msg);

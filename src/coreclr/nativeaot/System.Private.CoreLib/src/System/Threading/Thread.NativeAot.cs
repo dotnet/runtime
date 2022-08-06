@@ -27,6 +27,7 @@ namespace System.Threading
         private ManagedThreadId _managedThreadId;
         private string? _name;
         private StartHelper? _startHelper;
+        private Exception? _startException;
 
         // Protects starting the thread and setting its priority
         private Lock _lock = new Lock();
@@ -321,7 +322,30 @@ namespace System.Threading
         /// </summary>
         internal const int OptimalMaxSpinWaitsPerSpinIteration = 64;
 
-        public static void SpinWait(int iterations) => RuntimeImports.RhSpinWait(iterations);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void LongSpinWait(int iterations)
+        {
+            RuntimeImports.RhLongSpinWait(iterations);
+        }
+
+        public static void SpinWait(int iterations)
+        {
+            if (iterations <= 0)
+                return;
+
+            // Max iterations to be done in RhSpinWait.
+            // RhSpinWait does not switch GC modes and we want to avoid native spinning in coop mode for too long.
+            const int spinWaitCoopThreshold = 10000;
+
+            if (iterations > spinWaitCoopThreshold)
+            {
+                LongSpinWait(iterations);
+            }
+            else
+            {
+                RuntimeImports.RhSpinWait(iterations);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
         public static bool Yield() => RuntimeImports.RhYield();
@@ -367,9 +391,13 @@ namespace System.Threading
 
                 if (GetThreadStateBit(ThreadState.Unstarted))
                 {
-                    // Lack of memory is the only expected reason for thread creation failure
-                    throw new ThreadStartException(new OutOfMemoryException());
+                    Exception? startException = _startException;
+                    _startException = null;
+
+                    throw new ThreadStartException(startException ?? new OutOfMemoryException());
                 }
+
+                Debug.Assert(_startException == null);
             }
         }
 
@@ -384,8 +412,10 @@ namespace System.Threading
                 System.Threading.ManagedThreadId.SetForCurrentThread(thread._managedThreadId);
                 thread.InitializeComOnNewThread();
             }
-            catch (OutOfMemoryException)
+            catch (Exception e)
             {
+                thread._startException = e;
+
 #if TARGET_UNIX
                 // This should go away once OnThreadExit stops using t_currentThread to signal
                 // shutdown of the thread on Unix.

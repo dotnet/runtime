@@ -218,7 +218,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         public class MyNestedGenericClass<T1>
         {
             public class MyNestedGenericNestedClass { }
-            public class MyNestedGenericNestedGenericClass<T2> { }
+            public class MyNestedGenericNestedGenericClass<T2>
+            {
+                public T DataT { get; set; }
+                public T1 DataT1 { get; set; }
+                public T2 DataT2 { get; set; }
+            }
         }
     }
 }

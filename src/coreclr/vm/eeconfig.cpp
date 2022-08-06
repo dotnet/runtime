@@ -239,7 +239,10 @@ HRESULT EEConfig::Init()
 
 #if defined(FEATURE_PGO)
     fTieredPGO = false;
-    fTieredPGO_Strategy = (TieredPGOStrategy)0;
+#endif
+
+#if defined(FEATURE_READYTORUN)
+    fReadyToRun = false;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
@@ -477,8 +480,11 @@ HRESULT EEConfig::sync()
     }
 
     pReadyToRunExcludeList = NULL;
+
 #if defined(FEATURE_READYTORUN)
-    if (ReadyToRunInfo::IsReadyToRunEnabled())
+    fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
+
+    if (fReadyToRun)
     {
         NewArrayHolder<WCHAR> wszReadyToRunExcludeList;
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunExcludeList, &wszReadyToRunExcludeList));
@@ -693,6 +699,10 @@ HRESULT EEConfig::sync()
 
     dwSleepOnExit = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_SleepOnExit);
 
+#if defined(FEATURE_PGO)
+    fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
+#endif
+
 #if defined(FEATURE_TIERED_COMPILATION)
     fTieredCompilation = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredCompilation"), CLRConfig::EXTERNAL_TieredCompilation);
     if (fTieredCompilation)
@@ -771,30 +781,6 @@ HRESULT EEConfig::sync()
         {
             ETW::CompilationLog::TieredCompilation::Runtime::SendSettings();
         }
-    }
-#endif
-
-#if defined(FEATURE_PGO)
-    fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
-    fTieredPGO_Strategy = (TieredPGOStrategy)CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_Strategy);
-
-    // We need quick jit for TieredPGO
-    if (!fTieredCompilation_QuickJit)
-    {
-        fTieredPGO = false;
-    }
-    else
-    {
-        if (fTieredPGO_Strategy == UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier ||
-            fTieredPGO_Strategy == PromoteHotTier0ToInstrumentedTier)
-        {
-            // When we're not using optimizations in the instrumented tiers we produce a lot of new first-time compilation 
-            // due to disabled inlining even for very small methods - such first-time compilations delay promotions by
-            // tieredCompilation_CallCountingDelayMs
-            tieredCompilation_CallCountingDelayMs /= 3;
-            tieredCompilation_CallCountingDelayMs = max(1, tieredCompilation_CallCountingDelayMs);
-        }
-        _ASSERTE(fTieredPGO_Strategy >= 0 && fTieredPGO_Strategy <= 4);
     }
 #endif
 

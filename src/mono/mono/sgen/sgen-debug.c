@@ -55,7 +55,7 @@ static const char*descriptor_types [] = {
 	"small pointer-free",
 	"complex",
 	"vector",
-	"complex arrray",
+	"complex array",
 	"complex pointer-free"
 };
 
@@ -676,7 +676,7 @@ sgen_debug_verify_nursery (gboolean do_dump_nursery_content)
 }
 
 /*
- * Checks that no objects in the nursery are fowarded or pinned.  This
+ * Checks that no objects in the nursery are forwarded or pinned.  This
  * is a precondition to restarting the mutator while doing a
  * concurrent collection.  Note that we don't clear fragments because
  * we depend on that having happened earlier.

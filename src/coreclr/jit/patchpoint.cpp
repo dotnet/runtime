@@ -12,7 +12,7 @@
 // Insert patchpoint checks into Tier0 methods, based on locations identified
 // during importation (see impImportBlockCode).
 //
-// There are now two diffrent types of patchpoints:
+// There are now two different types of patchpoints:
 //   * loop based: enable OSR transitions in loops
 //   * partial compilation: allows partial compilation of original method
 //

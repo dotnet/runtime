@@ -314,7 +314,7 @@ namespace System.Diagnostics
                         idle = false;
                         break;
                     default:
-                        throw new InvalidOperationException(SR.InputIdleUnkownError);
+                        throw new InvalidOperationException(SR.InputIdleUnknownError);
                 }
             }
             return idle;

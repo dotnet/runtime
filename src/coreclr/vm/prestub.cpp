@@ -364,9 +364,9 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         if (codeVersion.IsDefaultVersion())
         {
             pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
-            _ASSERTE(codeVersion.IsFinalTier());
+            _ASSERTE(codeVersion.GetOptimizationTier() != NativeCodeVersion::OptimizationTier0);
         }
-        else if (!codeVersion.IsFinalTier())
+        else if (codeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)
         {
             codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
         }
@@ -438,58 +438,49 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier
     STANDARD_VM_CONTRACT;
     PCODE pCode = NULL;
 
+#ifdef FEATURE_READYTORUN
+    pCode = GetPrecompiledR2RCode(pConfig);
     if (pCode != NULL)
     {
-    #ifdef FEATURE_CODE_VERSIONING
-        pConfig->SetGeneratedOrLoadedNewCode();
-    #endif
-    }
-#ifdef FEATURE_READYTORUN
-    else
-    {
-        pCode = GetPrecompiledR2RCode(pConfig);
-        if (pCode != NULL)
+        LOG_USING_R2R_CODE(this);
+
+#ifdef FEATURE_TIERED_COMPILATION
+        // Finalize the optimization tier before SetNativeCode() is called
+        bool shouldCountCalls = shouldTier && pConfig->FinalizeOptimizationTierForTier0Load();
+#endif
+
+        if (pConfig->SetNativeCode(pCode, &pCode))
         {
-            LOG_USING_R2R_CODE(this);
-
-#ifdef FEATURE_TIERED_COMPILATION
-            // Finalize the optimization tier before SetNativeCode() is called
-            bool shouldCountCalls = shouldTier && pConfig->FinalizeOptimizationTierForTier0Load();
-#endif
-
-            if (pConfig->SetNativeCode(pCode, &pCode))
-            {
 #ifdef FEATURE_CODE_VERSIONING
-                pConfig->SetGeneratedOrLoadedNewCode();
+            pConfig->SetGeneratedOrLoadedNewCode();
 #endif
 #ifdef FEATURE_TIERED_COMPILATION
-                if (shouldCountCalls)
-                {
-                    _ASSERTE(!pConfig->GetCodeVersion().IsFinalTier());
-                    pConfig->SetShouldCountCalls();
-                }
+            if (shouldCountCalls)
+            {
+                _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+                pConfig->SetShouldCountCalls();
+            }
 #endif
 
 #ifdef FEATURE_MULTICOREJIT
-                // Multi-core JIT is only applicable to the default code version. A method is recorded in the profile only when
-                // SetNativeCode() above succeeds to avoid recording duplicates in the multi-core JIT profile. Successful loads
-                // of R2R code are also recorded.
-                if (pConfig->NeedsMulticoreJitNotification())
-                {
-                    _ASSERTE(pConfig->GetCodeVersion().IsDefaultVersion());
-                    _ASSERTE(!pConfig->IsForMulticoreJit());
+            // Multi-core JIT is only applicable to the default code version. A method is recorded in the profile only when
+            // SetNativeCode() above succeeds to avoid recording duplicates in the multi-core JIT profile. Successful loads
+            // of R2R code are also recorded.
+            if (pConfig->NeedsMulticoreJitNotification())
+            {
+                _ASSERTE(pConfig->GetCodeVersion().IsDefaultVersion());
+                _ASSERTE(!pConfig->IsForMulticoreJit());
 
-                    MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
-                    if (mcJitManager.IsRecorderActive())
+                MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+                if (mcJitManager.IsRecorderActive())
+                {
+                    if (MulticoreJitManager::IsMethodSupported(this))
                     {
-                        if (MulticoreJitManager::IsMethodSupported(this))
-                        {
-                            mcJitManager.RecordMethodJitOrLoad(this);
-                        }
+                        mcJitManager.RecordMethodJitOrLoad(this);
                     }
                 }
-#endif
             }
+#endif
         }
     }
 #endif // FEATURE_READYTORUN
@@ -1234,12 +1225,6 @@ PrepareCodeConfig::JitOptimizationTier PrepareCodeConfig::GetJitOptimizationTier
                 case NativeCodeVersion::OptimizationTierOptimized:
                     return JitOptimizationTier::Optimized;
 
-                case NativeCodeVersion::OptimizationTierInstrumented:
-                    return JitOptimizationTier::InstrumentedTier;
-
-                case NativeCodeVersion::OptimizationTierInstrumentedOptimized:
-                    return JitOptimizationTier::InstrumentedTierOptimized;
-
                 default:
                     UNREACHABLE();
             }
@@ -1262,8 +1247,6 @@ const char *PrepareCodeConfig::GetJitOptimizationTierStr(PrepareCodeConfig *conf
         case JitOptimizationTier::QuickJitted: return "QuickJitted";
         case JitOptimizationTier::OptimizedTier1: return "OptimizedTier1";
         case JitOptimizationTier::OptimizedTier1OSR: return "OptimizedTier1OSR";
-        case JitOptimizationTier::InstrumentedTier: return "InstrumentedTier";
-        case JitOptimizationTier::InstrumentedTierOptimized: return "InstrumentedTierOptimized";
 
         default:
             UNREACHABLE();
@@ -1310,7 +1293,10 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
         // native code version of a method. The current optimization tier should be consistent with the change being made
         // (Tier 0 to Optimized), such that the tier is not changed in an unexpected way or at an unexpected time. Since changes
         // to the optimization tier are unlocked, this assertion is just a speculative check on possible values.
-        _ASSERTE(!GetCodeVersion().IsFinalTier());
+        NativeCodeVersion::OptimizationTier previousOptimizationTier = GetCodeVersion().GetOptimizationTier();
+        _ASSERTE(
+            previousOptimizationTier == NativeCodeVersion::OptimizationTier0 ||
+            previousOptimizationTier == NativeCodeVersion::OptimizationTierOptimized);
     #endif // _DEBUG
 
         // Update the tier in the code version. The JIT may have decided to switch from tier 0 to optimized, in which case

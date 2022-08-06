@@ -2064,7 +2064,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
         }
     }
 
-    // Verify we instrumented everthing we created schemas for.
+    // Verify we instrumented everything we created schemas for.
     //
     assert(fgCountInstrumentor->InstrCount() == fgCountInstrumentor->SchemaCount());
 

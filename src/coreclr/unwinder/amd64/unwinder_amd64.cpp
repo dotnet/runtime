@@ -827,7 +827,7 @@ Return Value:
 
                     //
                     // Save nonvolatile integer register on the stack using a
-                    // 16-bit displacment.
+                    // 16-bit displacement.
                     //
                     // The operation information is the register number.
                     //
@@ -846,7 +846,7 @@ Return Value:
 
                     //
                     // Save nonvolatile integer register on the stack using a
-                    // 32-bit displacment.
+                    // 32-bit displacement.
                     //
                     // The operation information is the register number.
                     //

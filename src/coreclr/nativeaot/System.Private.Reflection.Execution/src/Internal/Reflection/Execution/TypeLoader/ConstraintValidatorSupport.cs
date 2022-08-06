@@ -19,7 +19,7 @@ namespace Internal.Reflection.Execution
         //
         // InstantiatedType allows us to use TypeInfo for constraint validation without creating a real TypeInfo.
         // It implements just enough methods for constraint validation to work, and performs type variable substitution
-        // as necesary.
+        // as necessary.
         //
 
         private struct SigTypeContext

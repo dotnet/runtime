@@ -597,7 +597,7 @@ private:
 //    * code:Module.m_pAvailableClasses - this is a table that lets you look up the types (the code:EEClass)
 //        for all the types in the module
 //
-// See file:..\inc\corhdr.h#ManagedHeader for more on the layout of managed exectuable files.
+// See file:..\inc\corhdr.h#ManagedHeader for more on the layout of managed executable files.
 class Module : public ModuleBase
 {
 #ifdef DACCESS_COMPILE
@@ -1907,10 +1907,6 @@ private:
     // the debugger to get metadata of dynamic modules from out of process.
     // A dynamic module will eagerly serialize its metadata to this buffer.
     PTR_SBuffer m_pDynamicMetadata;
-
-    // If true, does not eagerly serialize metadata in code:ReflectionModule.CaptureModuleMetaDataToMemory.
-    // This is used to allow bulk emitting types without re-emitting the metadata between each type.
-    bool m_fSuppressMetadataCapture;
 
 #if !defined DACCESS_COMPILE
     ReflectionModule(Assembly *pAssembly, mdFile token, PEAssembly *pPEAssembly);

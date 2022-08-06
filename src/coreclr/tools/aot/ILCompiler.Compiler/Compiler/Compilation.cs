@@ -142,10 +142,7 @@ namespace ILCompiler
             else
             {
                 // Use the typical field definition in case this is an instantiated generic type
-                field = field.GetTypicalFieldDefinition();
-                int fieldTypePack = (field.FieldType as MetadataType)?.GetClassLayout().PackingSize ?? 1;
-                return NodeFactory.ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field),
-                    ((EcmaField)field).GetFieldRvaData(), Math.Max(NodeFactory.Target.PointerSize, fieldTypePack));
+                return NodeFactory.FieldRvaData((EcmaField)field.GetTypicalFieldDefinition());
             }
         }
 
@@ -666,5 +663,11 @@ namespace ILCompiler
                 result = comparer.Compare(Method, other.Method);
             return result;
         }
+        public override bool Equals(object obj) =>
+            obj is ConstrainedCallInfo other
+            && ConstrainedType == other.ConstrainedType
+            && Method == other.Method;
+
+        public override int GetHashCode() => HashCode.Combine(ConstrainedType, Method);
     }
 }
