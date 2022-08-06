@@ -126,6 +126,11 @@ namespace System.Threading.Tasks.Tests
         [InlineData(128)]
         public async Task Dop_WorkersCreatedRespectingLimitAndTaskScheduler_Sync(int dop)
         {
+            if (PlatformDetection.IsAndroid && dop == -1)
+            {
+                throw new SkipTestException("https://github.com/dotnet/runtime/issues/50566");
+            }
+
             static IEnumerable<int> IterateUntilSet(StrongBox<bool> box)
             {
                 int counter = 0;
