@@ -5188,13 +5188,32 @@ void emitter::emitCheckAlignFitInCurIG(unsigned nAlignInstr)
 //
 void emitter::emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp))
 {
-    // Insert a pseudo-instruction to ensure that we align
-    // the next instruction properly
+    // Determine if 'align' instruction about to be generated will
+    // fall in current IG or next.
+    bool alignInstrInNewIG = emitForceNewIG;
+
+    if (!alignInstrInNewIG)
+    {
+        // If align fits in current IG, then mark that it contains alignment
+        // instruction in the end.
+        emitCurIG->igFlags |= IGF_HAS_ALIGN;
+    }
+
+    /* Insert a pseudo-instruction to ensure that we align
+       the next instruction properly */
     instrDescAlign* id = emitNewInstrAlign();
 
-    // Mark this IG has alignment in the end, so during emitter we can check the instruction count
-    // heuristics of all IGs that follows this IG that participate in a loop.
-    emitCurIG->igFlags |= IGF_HAS_ALIGN;
+    if (alignInstrInNewIG)
+    {
+        // Mark this IG has alignment in the end, so during emitter we can check the instruction count
+        // heuristics of all IGs that follows this IG that participate in a loop.
+        emitCurIG->igFlags |= IGF_HAS_ALIGN;
+    }
+    else
+    {
+        // Otherwise, make sure it was already marked such.
+        assert(emitCurIG->endsWithAlignInstr());
+    }
 
 #if defined(TARGET_XARCH)
     assert(paddingBytes <= MAX_ENCODED_SIZE);
