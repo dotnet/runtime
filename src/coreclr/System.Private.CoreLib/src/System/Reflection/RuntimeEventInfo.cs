@@ -73,8 +73,8 @@ namespace System.Reflection
             ReferenceEquals(this, obj) ||
             (MetadataUpdater.IsSupported && CacheEquals(obj));
 
-        public override int GetHashCode() => MetadataUpdater.IsSupported ?
-            HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetHashCode()) : base.GetHashCode();
+        public override int GetHashCode() =>
+            HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
         #endregion
 
         #region ICustomAttributeProvider

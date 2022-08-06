@@ -158,13 +158,17 @@ namespace System.Reflection
             return m_toString;
         }
 
-        public override int GetHashCode() => (MetadataUpdater.IsSupported || IsGenericMethod) ?
-            HashCode.Combine(RuntimeHelpers.GetHashCodeOfPtr(m_handle), m_declaringType.GetHashCode()) : base.GetHashCode();
+        // We cannot do simple object identity comparisons due to generic methods.
+        // Equals and GetHashCode will be called in CerHashTable when RuntimeType+RuntimeTypeCache.GetGenericMethodInfo()
+        // retrieve items from and insert items into s_methodInstantiations.
+
+        public override int GetHashCode() =>
+            HashCode.Combine(m_handle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
 
         public override bool Equals(object? obj) =>
             obj is RuntimeMethodInfo m && m_handle == m.m_handle &&
             ReferenceEquals(m_declaringType, m.m_declaringType) &&
-            ReferenceEquals(ReflectedType, m.ReflectedType);
+            ReferenceEquals(m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType());
 
         #endregion
 
