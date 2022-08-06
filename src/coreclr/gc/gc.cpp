@@ -2660,7 +2660,9 @@ bool          gc_heap::use_large_pages_p = 0;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
 size_t        gc_heap::last_gc_end_time_us = 0;
 #endif //HEAP_BALANCE_INSTRUMENTATION
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+bool          gc_heap::enable_special_regions_p = false;
+#else //USE_REGIONS
 size_t        gc_heap::min_segment_size = 0;
 size_t        gc_heap::min_uoh_segment_size = 0;
 #endif //!USE_REGIONS
@@ -5622,7 +5624,6 @@ gc_heap::soh_get_segment_to_expand()
     dprintf (GTC_LOG, ("(gen%d)creating new segment %Ix", settings.condemned_generation, result));
     return result;
 }
-#endif //!USE_REGIONS
 
 //returns 0 in case of allocation failure
 heap_segment*
@@ -5768,6 +5769,7 @@ void gc_heap::release_segment (heap_segment* sg)
     FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem(sg));
     virtual_free (sg, (uint8_t*)heap_segment_reserved (sg)-(uint8_t*)sg, sg);
 }
+#endif //!USE_REGIONS
 
 heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
 #ifdef MULTIPLE_HEAPS
@@ -8886,6 +8888,7 @@ void gc_heap::set_fgm_result (failure_get_memory f, size_t s, BOOL loh_p)
 #endif //MULTIPLE_HEAPS
 }
 
+#ifndef USE_REGIONS
 //returns 0 for success, -1 otherwise
 // We are doing all the decommitting here because we want to make sure we have
 // enough memory to do so - if we do this during copy_brick_card_table and
@@ -9195,6 +9198,7 @@ fail:
 
     return 0;
 }
+#endif //!USE_REGIONS
 
 //copy all of the arrays managed by the card table for a page aligned range
 void gc_heap::copy_brick_card_range (uint8_t* la, uint32_t* old_card_table,
@@ -11146,7 +11150,6 @@ void gc_heap::clear_region_info (heap_segment* region)
 }
 
 // Note that returning a region to free does not decommit.
-// REGIONS PERF TODO: should decommit if needed.
 void gc_heap::return_free_region (heap_segment* region)
 {
     gc_oh_num oh = heap_segment_oh (region);
@@ -30798,6 +30801,11 @@ void gc_heap::update_start_tail_regions (generation* gen,
 inline
 bool gc_heap::should_sweep_in_plan (heap_segment* region)
 {
+    if (!enable_special_regions_p)
+    {
+        return false;
+    }
+
     if (settings.reason == reason_induced_aggressive)
     {
         return false;
@@ -44328,6 +44336,7 @@ HRESULT GCHeap::Initialize()
     GCConfig::SetHeapCount(static_cast<int64_t>(nhp));
 
 #ifdef USE_REGIONS
+    gc_heap::enable_special_regions_p = (bool)GCConfig::GetGCEnableSpecialRegions();
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
     if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * 19) > gc_heap::regions_range))
     {

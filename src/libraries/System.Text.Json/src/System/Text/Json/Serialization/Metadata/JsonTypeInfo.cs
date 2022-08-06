@@ -982,7 +982,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private static bool IsByRefLike(Type type)
         {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             return type.IsByRefLike;
 #else
             if (!type.IsValueType)
