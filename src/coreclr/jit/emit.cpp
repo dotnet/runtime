@@ -2840,12 +2840,12 @@ void emitter::emitGetInstrDescs(insGroup* ig, instrDesc** id, int* insCnt)
     assert(!(ig->igFlags & IGF_PLACEHOLDER));
     if (ig == emitCurIG)
     {
-        *id     = (instrDesc*)emitCurIGfreeBase;
+        *id     = (instrDesc*)(emitCurIGfreeBase + m_debugInfoSize);
         *insCnt = emitCurIGinsCnt;
     }
     else
     {
-        *id     = (instrDesc*)ig->igData;
+        *id     = (instrDesc*)(ig->igData + m_debugInfoSize);
         *insCnt = ig->igInsCnt;
     }
 
