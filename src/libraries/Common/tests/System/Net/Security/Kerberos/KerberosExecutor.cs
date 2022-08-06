@@ -29,8 +29,9 @@ public class KerberosExecutor : IDisposable
     private readonly ITestOutputHelper _testOutputHelper;
 
     public static bool IsSupported { get; } =
-        RemoteExecutor.IsSupported && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS());
-
+        RemoteExecutor.IsSupported && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) &&
+        // ARM32 is cursed (https://github.com/dotnet/runtime/issues/73343)
+        !PlatformDetection.IsArmProcess;
     public const string DefaultAdminPassword = "PLACEHOLDERadmin.";
 
     public const string DefaultUserPassword = "PLACEHOLDERcorrect20";
