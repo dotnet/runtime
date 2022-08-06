@@ -13505,11 +13505,14 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             // Make an instrDesc that looks like IF_RWR_ARD so that emitOutputAM emits the r/m32 for us.
             // We basically are doing what emitIns_R_AI does.
             // TODO-XArch-Cleanup: revisit this.
-            instrDescAmd  idAmdStackLocal;
-            instrDescAmd* idAmd = &idAmdStackLocal;
-            *(instrDesc*)idAmd  = *(instrDesc*)id; // copy all the "core" fields
-            memset((BYTE*)idAmd + sizeof(instrDesc), 0,
-                   sizeof(instrDescAmd) - sizeof(instrDesc)); // zero out the tail that wasn't copied
+            inlineInstrDesc<instrDescAmd> idAmdStackLocal;
+            instrDescAmd* idAmd = idAmdStackLocal.id();
+            *(instrDesc*)idAmd = *(instrDesc*)id; // copy all the "core" fields
+
+            if (m_debugInfoSize > 0)
+            {
+                idAmd->idDebugOnlyInfo(id->idDebugOnlyInfo());
+            }
 
             idAmd->idInsFmt(IF_RWR_ARD);
             idAmd->idAddr()->iiaAddrMode.amBaseReg = REG_NA;

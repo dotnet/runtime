@@ -12367,10 +12367,8 @@ void emitter::emitDispLargeJmp(
     // Note: don't touch the actual instrDesc. If we accidentally messed it up, it would create a very
     // difficult-to-find bug.
 
-    instrDescJmp  idJmp;
-    instrDescJmp* pidJmp = &idJmp;
-
-    memset(&idJmp, 0, sizeof(idJmp));
+    inlineInstrDesc<instrDescJmp> idJmp;
+    instrDescJmp* pidJmp = idJmp.id();
 
     const instruction ins = id->idIns();
     instruction       reverseIns;
@@ -12416,7 +12414,7 @@ void emitter::emitDispLargeJmp(
     // Next, display the unconditional branch.
 
     // Reset the local instrDesc.
-    memset(&idJmp, 0, sizeof(idJmp));
+    memset(pidJmp, 0, sizeof(instrDescJmp));
 
     pidJmp->idIns(INS_b);
     pidJmp->idInsFmt(IF_LARGEJMP);

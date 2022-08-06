@@ -7696,10 +7696,8 @@ void emitter::emitDispLargeJmp(
     // Note: don't touch the actual instrDesc. If we accidentally messed it up, it would create a very
     // difficult to find bug.
 
-    instrDescJmp  idJmp;
-    instrDescJmp* pidJmp = &idJmp;
-
-    memset(&idJmp, 0, sizeof(idJmp));
+    inlineInstrDesc<instrDescJmp> idJmp;
+    instrDescJmp* pidJmp = idJmp.id();
 
     pidJmp->idIns(emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(id->idIns())))); // reverse the
                                                                                            // conditional

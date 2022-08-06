@@ -622,6 +622,8 @@ protected:
 #endif
 
     public:
+        instrDesc() = delete; // Do not stack alloc this due to debug info that has to come before it.
+
         instruction idIns() const
         {
             return _idIns;
@@ -1509,6 +1511,8 @@ protected:
 
     struct instrDescJmp : instrDesc
     {
+        instrDescJmp() = delete;
+
         instrDescJmp* idjNext; // next jump in the group/method
         insGroup*     idjIG;   // containing group
 
@@ -1536,6 +1540,8 @@ protected:
 #if FEATURE_LOOP_ALIGN
     struct instrDescAlign : instrDesc
     {
+        instrDescAlign() = delete;
+
         instrDescAlign* idaNext;           // next align in the group/method
         insGroup*       idaIG;             // containing group
         insGroup*       idaLoopHeadPredIG; // The IG before the loop IG.
@@ -1571,16 +1577,22 @@ protected:
 
     struct instrDescCns : instrDesc // large const
     {
+        instrDescCns() = delete;
+
         cnsval_ssize_t idcCnsVal;
     };
 
     struct instrDescDsp : instrDesc // large displacement
     {
+        instrDescDsp() = delete;
+
         target_ssize_t iddDspVal;
     };
 
     struct instrDescCnsDsp : instrDesc // large cons + disp
     {
+        instrDescCnsDsp() = delete;
+
         target_ssize_t iddcCnsVal;
         int            iddcDspVal;
     };
@@ -1589,11 +1601,15 @@ protected:
 
     struct instrDescAmd : instrDesc // large addrmode disp
     {
+        instrDescAmd() = delete;
+
         ssize_t idaAmdVal;
     };
 
     struct instrDescCnsAmd : instrDesc // large cons + addrmode disp
     {
+        instrDescCnsAmd() = delete;
+
         ssize_t idacCnsVal;
         ssize_t idacAmdVal;
     };
@@ -1602,6 +1618,8 @@ protected:
 
     struct instrDescCGCA : instrDesc // call with ...
     {
+        instrDescCGCA() = delete;
+
         VARSET_TP idcGCvars;    // ... updated GC vars or
         ssize_t   idcDisp;      // ... big addrmode disp
         regMaskTP idcGcrefRegs; // ... gcref registers
@@ -1631,10 +1649,34 @@ protected:
 #endif                                     // MULTIREG_HAS_SECOND_GC_RET
     };
 
+    // TODO-Cleanup: Uses of stack-allocated instrDescs should be refactored to be unnecessary.
+    template<typename T>
+    struct inlineInstrDesc
+    {
+    private:
+        instrDescDebugInfo* idDebugInfo;
+        char idStorage[sizeof(T)];
+
+    public:
+        inlineInstrDesc()
+            : idDebugInfo(nullptr)
+            , idStorage()
+        {
+            static_assert_no_msg(offsetof(inlineInstrDesc<T>, idStorage) == sizeof(instrDescDebugInfo*));
+        }
+
+        T* id()
+        {
+            return reinterpret_cast<T*>(idStorage);
+        }
+    };
+
 #ifdef TARGET_ARM
 
     struct instrDescReloc : instrDesc
     {
+        instrDescReloc() = delete;
+
         BYTE* idrRelocVal;
     };
 
