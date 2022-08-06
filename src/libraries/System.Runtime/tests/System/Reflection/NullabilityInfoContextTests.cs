@@ -1335,7 +1335,7 @@ namespace System.Reflection.Tests
         bool NotNullWhenParameter([DisallowNull] string? disallowNull, [NotNullWhen(true)] ref string? notNullWhen, Type? nullableType) { return false; }
         public bool MaybeNullParameters([MaybeNull] string maybeNull, [MaybeNullWhen(false)] out string maybeNullWhen, Type? nullableType) { maybeNullWhen = null; return false; }
         public string? AllowNullParameter([AllowNull] string allowNull, [NotNullIfNotNull(nameof(allowNull))] string? notNullIfNotNull) { return null; }
-        [return: NotNullIfNotNull("nullable")] public string? NullableNotNullIfNotNullReturn(string? nullable, [NotNull] ref string? readNotNull) { readNotNull = string.Empty; return null!; }
+        [return: NotNullIfNotNull(nameof(nullable))] public string? NullableNotNullIfNotNullReturn(string? nullable, [NotNull] ref string? readNotNull) { readNotNull = string.Empty; return null!; }
         public ref string? RefReturnNullable([AllowNull] ref string id) { return ref id!; }
         [return: MaybeNull] public ref string RefReturnMaybeNull([DisallowNull] ref string? id) { return ref id; }
         [return: NotNull] public ref string? RefReturnNotNull([NotNull] ref string? id) { id = string.Empty; return ref id!; }
