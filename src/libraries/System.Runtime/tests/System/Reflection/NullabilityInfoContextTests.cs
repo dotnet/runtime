@@ -670,6 +670,135 @@ namespace System.Reflection.Tests
             Assert.Null(dictionaryNullability.ElementType);
         }
 
+        public static IEnumerable<object[]> MethodByRefParametersTestData() => new[]
+        {
+            new object[] { -1, NullabilityState.Nullable }, // ref readonly int?
+            new object[] { 0, NullabilityState.Nullable }, // out int? a
+            new object[] { 1, NullabilityState.NotNull }, // out string b
+            new object[] { 2, NullabilityState.Nullable }, // ref object? c
+            new object[] { 3, NullabilityState.NotNull }, // ref Type d
+            new object[] { 4, NullabilityState.Nullable }, // in decimal? e
+            new object[] { 5, NullabilityState.NotNull }, // in ICloneable f
+        };
+
+        [Theory]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        [MemberData(nameof(MethodByRefParametersTestData))]
+        public void MethodByRefParametersTest(int parameterIndex, NullabilityState state)
+        {
+            MethodInfo method = typeof(TypeWithNotNullContext).GetMethod(nameof(TypeWithNotNullContext.MethodWithByRefs))!;
+            ParameterInfo parameter = parameterIndex == -1 ? method.ReturnParameter : method.GetParameters()[parameterIndex];
+            NullabilityInfo info = nullabilityContext.Create(parameter);
+
+            Assert.Equal(parameter.ParameterType, info.Type);
+            Assert.Equal(state, info.ReadState);
+            Assert.Equal(state, info.WriteState);
+        }
+
+        public static IEnumerable<object?[]> MethodGenericByRefParametersTestData() => new[]
+{
+            // ref Tuple<int?, string, IDisposable?>
+            new object?[] { -1, NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable },
+            // out KeyValuePair<string?, object> a
+            new object?[] { 0, NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull, null }, 
+            // ref Tuple<Type?, decimal>? b
+            new object?[] { 1, NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.NotNull, null },
+            // in KeyValuePair<ICloneable, IFormatProvider?>? c
+            new object?[] { 2, NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable, null },
+        };
+
+        [Theory]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        [MemberData(nameof(MethodGenericByRefParametersTestData))]
+        public void MethodGenericByRefParametersTest(
+            int parameterIndex,
+            NullabilityState state,
+            NullabilityState genericArgument0State,
+            NullabilityState genericArgument1State,
+            NullabilityState? genericArgument2State)
+        {
+            MethodInfo method = typeof(TypeWithNotNullContext).GetMethod(nameof(TypeWithNotNullContext.MethodWithGenericByRefs))!;
+            ParameterInfo parameter = parameterIndex == -1 ? method.ReturnParameter : method.GetParameters()[parameterIndex];
+            NullabilityInfo info = nullabilityContext.Create(parameter);
+            Assert.Equal(parameter.ParameterType, info.Type);
+            Assert.Equal(state, info.ReadState);
+            Assert.Equal(state, info.WriteState);
+
+            NullabilityState?[] genericArgumentStates = new[] { genericArgument0State, genericArgument1State, genericArgument2State };
+            for (var i = 0; i < genericArgumentStates.Length; ++i)
+            {
+                if (genericArgumentStates[i] is null)
+                {
+                    Assert.Equal(i, info.GenericTypeArguments.Length);
+                    break;
+                }
+
+                Assert.Equal(genericArgumentStates[i], info.GenericTypeArguments[i].ReadState);
+                Assert.Equal(genericArgumentStates[i], info.GenericTypeArguments[i].WriteState);
+            }
+        }
+
+        [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void ConstrainedGenericMethodWithByRefTest()
+        {
+            // ref T ConstrainedGenericMethodWithByRef<T>(out T[] array) where T : class?
+            MethodInfo method = typeof(TypeWithNotNullContext).GetMethod(nameof(TypeWithNotNullContext.ConstrainedGenericMethodWithByRef))!
+                .MakeGenericMethod(typeof(string));
+
+            NullabilityInfo info = nullabilityContext.Create(method.ReturnParameter);
+            Assert.Equal(method.ReturnType, info.Type);
+            Assert.Equal(NullabilityState.Nullable, info.ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.WriteState);
+
+            info = nullabilityContext.Create(method.GetParameters()[0]);
+            Assert.Equal(typeof(string[]).MakeByRefType(), info.Type);
+            Assert.Equal(NullabilityState.NotNull, info.ReadState);
+            Assert.Equal(NullabilityState.NotNull, info.WriteState);
+            Assert.Equal(typeof(string), info.ElementType!.Type);
+            Assert.Equal(NullabilityState.Nullable, info.ElementType.ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.ElementType.WriteState);
+        }
+
+        [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void MethodWithPointersTest()
+        {
+            // MethodWithPointers(int* a, int?* b)
+            MethodInfo method = typeof(TypeWithNotNullContext).GetMethod(nameof(TypeWithNotNullContext.MethodWithPointers))!;
+            ParameterInfo[] parameters = method.GetParameters();
+
+            NullabilityInfo info = nullabilityContext.Create(parameters[0]);
+            Assert.Equal(parameters[0].ParameterType, info.Type);
+            Assert.Equal(NullabilityState.NotNull, info.ReadState);
+            Assert.Equal(NullabilityState.NotNull, info.WriteState);
+
+            info = nullabilityContext.Create(parameters[1]);
+            Assert.Equal(parameters[1].ParameterType, info.Type);
+            Assert.Equal(NullabilityState.Nullable, info.ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.WriteState);
+        }
+
+        [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void GenericMethodWithPointersTest()
+        {
+            // GenericMethodWithPointers<T>(T* a, T?* b)
+            MethodInfo method = typeof(TypeWithNotNullContext).GetMethod(nameof(TypeWithNotNullContext.GenericMethodWithPointers))!
+                .MakeGenericMethod(typeof(float));
+            ParameterInfo[] parameters = method.GetParameters();
+
+            NullabilityInfo info = nullabilityContext.Create(parameters[0]);
+            Assert.Equal(parameters[0].ParameterType, info.Type);
+            Assert.Equal(NullabilityState.NotNull, info.ReadState);
+            Assert.Equal(NullabilityState.NotNull, info.WriteState);
+
+            info = nullabilityContext.Create(parameters[1]);
+            Assert.Equal(parameters[1].ParameterType, info.Type);
+            Assert.Equal(NullabilityState.Nullable, info.ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.WriteState);
+        }
+
         public static IEnumerable<object[]> MethodGenericParametersTestData()
         {
             yield return new object[] { "MethodParametersUnknown", NullabilityState.Unknown, NullabilityState.Unknown, NullabilityState.Unknown, NullabilityState.Unknown };
@@ -690,6 +819,34 @@ namespace System.Reflection.Tests
             Assert.NotEmpty(dictionaryNullability.GenericTypeArguments);
             Assert.Equal(dictKey, dictionaryNullability.GenericTypeArguments[0].ReadState);
             Assert.Equal(dictValue, dictionaryNullability.GenericTypeArguments[1].ReadState);
+        }
+
+        [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void PropertyWithByRefGenericParametersTest()
+        {
+            // ref T? this[in T a, in List<T?> b] { get; }
+            PropertyInfo property = typeof(GenericTest<string>).GetProperty("Item", typeof(string).MakeByRefType())!;
+
+            NullabilityInfo info = nullabilityContext.Create(property);
+            Assert.Equal(typeof(string).MakeByRefType(), info.Type);
+            Assert.Equal(NullabilityState.Nullable, info.ReadState);
+            Assert.Equal(NullabilityState.Unknown, info.WriteState);
+
+            info = nullabilityContext.Create(property.GetIndexParameters()[0]);
+            Assert.Equal(typeof(string).MakeByRefType(), info.Type);
+            // in T a is nullable because T is not constrained
+            Assert.Equal(NullabilityState.Nullable, info.ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.WriteState);
+
+            info = nullabilityContext.Create(property.GetIndexParameters()[1]);
+            Assert.Equal(typeof(List<string>).MakeByRefType(), info.Type);
+            Assert.Equal(NullabilityState.NotNull, info.ReadState);
+            Assert.Equal(NullabilityState.NotNull, info.WriteState);
+            info = Assert.Single(info.GenericTypeArguments);
+            Assert.Equal(typeof(string), info.Type);
+            Assert.Equal(NullabilityState.Nullable, info.ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.WriteState);
         }
 
         public static IEnumerable<object[]> StringTypeTestData()
@@ -946,7 +1103,7 @@ namespace System.Reflection.Tests
             yield return new object[] { "RefReturnNotNullable", NullabilityState.NotNull, NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull };
             // [return: NotNull]public ref string? RefReturnNotNull([NotNull] ref string? id)
             yield return new object[] { "RefReturnNotNull", NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable };
-            // publiic ref string? RefReturnNullable([AllowNull] ref string id)
+            // public ref string? RefReturnNullable([AllowNull] ref string id)
             yield return new object[] { "RefReturnNullable", NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable };
         }
 
@@ -1090,11 +1247,19 @@ namespace System.Reflection.Tests
             Assert.Equal(NullabilityState.NotNull, item3Info.ElementType.WriteState);
         }
 
-        [Fact]
-        [SkipOnMono("Nullability attributes trimmed on Mono")]
-        public void TestNullabilityInfoCreationOnPropertiesWithNestedGenericTypeArguments()
+        public static IEnumerable<object[]> TestNullabilityInfoCreationOnPropertiesWithNestedGenericTypeArgumentsData() => new[]
         {
-            Type type = typeof(TypeWithPropertiesNestingItsGenericTypeArgument<int>);
+            new object[] { typeof(bool), NullabilityState.NotNull },
+            new object[] { typeof(bool?), NullabilityState.Nullable },
+            new object[] { typeof(object), NullabilityState.Nullable },
+        };
+
+        [Theory]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        [MemberData(nameof(TestNullabilityInfoCreationOnPropertiesWithNestedGenericTypeArgumentsData))]
+        public void TestNullabilityInfoCreationOnPropertiesWithNestedGenericTypeArguments(Type genericArgumentType, NullabilityState expectedGenericArgumentNullability)
+        {
+            Type type = typeof(TypeWithPropertiesNestingItsGenericTypeArgument<>).MakeGenericType(genericArgumentType);
 
             NullabilityInfo shallow1Info = nullabilityContext.Create(type.GetProperty("Shallow1")!);
             NullabilityInfo deep1Info = nullabilityContext.Create(type.GetProperty("Deep1")!);
@@ -1103,51 +1268,51 @@ namespace System.Reflection.Tests
             NullabilityInfo deep4Info = nullabilityContext.Create(type.GetProperty("Deep4")!);
             NullabilityInfo deep5Info = nullabilityContext.Create(type.GetProperty("Deep5")!);
 
-            //public Tuple<T>? Shallow1 { get; set; }
+            // public Tuple<T>? Shallow1 { get; set; }
             NullabilityInfo info = shallow1Info;
             Assert.Equal(1, info.GenericTypeArguments.Length);
-            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[0].ReadState);
+            Assert.Equal(expectedGenericArgumentNullability, info.GenericTypeArguments[0].ReadState);
 
-            //public Tuple<Tuple<T>>? Deep1 { get; set; }
+            // public Tuple<Tuple<T>>? Deep1 { get; set; }
             info = deep1Info;
             Assert.Equal(1, info.GenericTypeArguments.Length);
             Assert.Equal(1, info.GenericTypeArguments[0].GenericTypeArguments.Length);
             Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[0].ReadState);
-            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[0].GenericTypeArguments[0].ReadState);
+            Assert.Equal(expectedGenericArgumentNullability, info.GenericTypeArguments[0].GenericTypeArguments[0].ReadState);
 
-            //public Tuple<Tuple<T>, int>? Deep2 { get; set; }
+            // public Tuple<Tuple<T>, int>? Deep2 { get; set; }
             info = deep2Info;
             Assert.Equal(2, info.GenericTypeArguments.Length);
             Assert.Equal(1, info.GenericTypeArguments[0].GenericTypeArguments.Length);
             Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[0].ReadState);
             Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[1].ReadState);
-            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[0].GenericTypeArguments[0].ReadState);
+            Assert.Equal(expectedGenericArgumentNullability, info.GenericTypeArguments[0].GenericTypeArguments[0].ReadState);
 
-            //public Tuple<int?, Tuple<T>>? Deep3 { get; set; }
+            // public Tuple<int?, Tuple<T>>? Deep3 { get; set; }
             info = deep3Info;
             Assert.Equal(2, info.GenericTypeArguments.Length);
             Assert.Equal(1, info.GenericTypeArguments[1].GenericTypeArguments.Length);
             Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[0].ReadState);
             Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[1].ReadState);
-            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[1].GenericTypeArguments[0].ReadState);
+            Assert.Equal(expectedGenericArgumentNullability, info.GenericTypeArguments[1].GenericTypeArguments[0].ReadState);
 
-            //public Tuple<int, int?, Tuple<T>>? Deep4 { get; set; }
+            // public Tuple<int, int?, Tuple<T>>? Deep4 { get; set; }
             info = deep4Info;
             Assert.Equal(3, info.GenericTypeArguments.Length);
             Assert.Equal(1, info.GenericTypeArguments[2].GenericTypeArguments.Length);
             Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[0].ReadState);
             Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[1].ReadState);
             Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[2].ReadState);
-            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[2].GenericTypeArguments[0].ReadState);
+            Assert.Equal(expectedGenericArgumentNullability, info.GenericTypeArguments[2].GenericTypeArguments[0].ReadState);
 
-            //public Tuple<int, int, Tuple<T, int>?>? Deep5 { get; set; }
+            // public Tuple<int, int, Tuple<T, int>?>? Deep5 { get; set; }
             info = deep5Info;
             Assert.Equal(3, info.GenericTypeArguments.Length);
             Assert.Equal(2, info.GenericTypeArguments[2].GenericTypeArguments.Length);
             Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[0].ReadState);
             Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[1].ReadState);
             Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[2].ReadState);
-            Assert.Equal(NullabilityState.Nullable, info.GenericTypeArguments[2].GenericTypeArguments[0].ReadState);
+            Assert.Equal(expectedGenericArgumentNullability, info.GenericTypeArguments[2].GenericTypeArguments[0].ReadState);
             Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[2].GenericTypeArguments[1].ReadState);
         }
     }
@@ -1170,7 +1335,7 @@ namespace System.Reflection.Tests
         bool NotNullWhenParameter([DisallowNull] string? disallowNull, [NotNullWhen(true)] ref string? notNullWhen, Type? nullableType) { return false; }
         public bool MaybeNullParameters([MaybeNull] string maybeNull, [MaybeNullWhen(false)] out string maybeNullWhen, Type? nullableType) { maybeNullWhen = null; return false; }
         public string? AllowNullParameter([AllowNull] string allowNull, [NotNullIfNotNull(nameof(allowNull))] string? notNullIfNotNull) { return null; }
-        [return: NotNullIfNotNull(nameof(nullable))] public string? NullableNotNullIfNotNullReturn(string? nullable, [NotNull] ref string? readNotNull) { readNotNull = string.Empty; return null!; }
+        [return: NotNullIfNotNull("nullable")] public string? NullableNotNullIfNotNullReturn(string? nullable, [NotNull] ref string? readNotNull) { readNotNull = string.Empty; return null!; }
         public ref string? RefReturnNullable([AllowNull] ref string id) { return ref id!; }
         [return: MaybeNull] public ref string RefReturnMaybeNull([DisallowNull] ref string? id) { return ref id; }
         [return: NotNull] public ref string? RefReturnNotNull([NotNull] ref string? id) { id = string.Empty; return ref id!; }
@@ -1298,6 +1463,17 @@ namespace System.Reflection.Tests
         public void MethodNonNullNonNullNotNull(string s, [NotNull] IDictionary<Type, string[]?>? dict) { dict = new Dictionary<Type, string[]?>(); }
         public void MethodNullNonNullNullNon(string? s, IDictionary<Type, string?[]?> dict) { }
         public void MethodAllowNullNonNonNonNull([AllowNull] string s, IDictionary<Type, string[]>? dict) { }
+
+        public ref readonly int? MethodWithByRefs(out int? a, out string b, ref object? c, ref Type d, in decimal? e, in ICloneable f) =>
+            throw new NotImplementedException();
+        public ref Tuple<int?, string, IDisposable?> MethodWithGenericByRefs(
+            out KeyValuePair<string?, object> a,
+            ref Tuple<Type?, decimal>? b,
+            in KeyValuePair<ICloneable, IFormatProvider?>? c) =>
+            throw new NotImplementedException();
+        public ref T ConstrainedGenericMethodWithByRef<T>(out T[] array) where T : class? => throw new NotImplementedException();
+        public unsafe void MethodWithPointers(int* a, int?* b) { }
+        public unsafe void GenericMethodWithPointers<T>(T* a, T?* b) where T : unmanaged { }
     }
 
     public struct GenericStruct<T, Y> { }
@@ -1353,6 +1529,8 @@ namespace System.Reflection.Tests
         public List<T>? MethodNullListNonNullGeneric() => null;
         public void MethodArgsNullGenericNullDictValueGeneric(T? s, IDictionary<Type, T>? dict) { }
         public void MethodArgsGenericDictValueNullGeneric(T s, IDictionary<string, T?> dict) { }
+
+        public ref T? this[in T a, in List<T?> b] => throw new NotImplementedException();
     }
 
     internal class GenericTestConstrainedNotNull<T> where T : notnull
