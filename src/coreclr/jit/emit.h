@@ -1655,7 +1655,7 @@ protected:
     {
     private:
         instrDescDebugInfo* idDebugInfo;
-        char                idStorage[sizeof(T)];
+        alignas(alignof(T)) char idStorage[sizeof(T)];
 
     public:
         inlineInstrDesc() : idDebugInfo(nullptr), idStorage()
