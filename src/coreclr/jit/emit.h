@@ -812,11 +812,11 @@ protected:
         instrDescDebugInfo* idDebugOnlyInfo() const
         {
             const char* addr = reinterpret_cast<const char*>(this);
-            return *reinterpret_cast<instrDescDebugInfo* const *>(addr - sizeof(instrDescDebugInfo*));
+            return *reinterpret_cast<instrDescDebugInfo* const*>(addr - sizeof(instrDescDebugInfo*));
         }
         void idDebugOnlyInfo(instrDescDebugInfo* info)
         {
-            char* addr = reinterpret_cast<char*>(this);
+            char* addr                                                                  = reinterpret_cast<char*>(this);
             *reinterpret_cast<instrDescDebugInfo**>(addr - sizeof(instrDescDebugInfo*)) = info;
         }
 
