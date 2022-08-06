@@ -19,7 +19,7 @@ class FakeKerberosPrincipal : IKerberosPrincipal
         this.Type = type;
         this.PrincipalName = principalName;
         this.Realm = realm;
-        this.Expires = DateTimeOffset.UtcNow.AddMonths(9999);
+        this.Expires = DateTimeOffset.UtcNow.AddMonths(1);
         this._password = password;
     }
 
