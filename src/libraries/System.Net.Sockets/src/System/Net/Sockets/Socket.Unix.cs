@@ -168,6 +168,11 @@ namespace System.Net.Sockets
 #pragma warning disable CA1822
         private Socket GetOrCreateAcceptSocket(Socket? acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle? handle)
         {
+            if (acceptSocket != null && acceptSocket._handle.HasShutdownSend)
+            {
+                throw new SocketException((int)SocketError.InvalidArgument);
+            }
+
             if (acceptSocket != null && acceptSocket._rightEndPoint != null && (!checkDisconnected || !acceptSocket._isDisconnected))
             {
                 throw new InvalidOperationException(SR.Format(SR.net_sockets_namedmustnotbebound, propertyName));

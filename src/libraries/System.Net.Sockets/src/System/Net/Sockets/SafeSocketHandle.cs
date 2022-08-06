@@ -50,6 +50,14 @@ namespace System.Net.Sockets
 
         internal bool OwnsHandle { get; }
 
+        internal bool HasShutdownSend
+        {
+            get
+            {
+                return _hasShutdownSend;
+            }
+        }
+
         private bool TryOwnClose()
         {
             return OwnsHandle && Interlocked.CompareExchange(ref _ownClose, 1, 0) == 0;
