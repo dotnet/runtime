@@ -326,11 +326,14 @@ namespace System.Net.Quic.Tests
             await clientConnection.DisposeAsync();
             await serverConnection.DisposeAsync();
 
-            // This should fail when callback return null.
+            // This should fail because server connection options callback returns null.
             clientOptions.ClientAuthenticationOptions.TargetHost = "foobar3";
             Task clientTask = CreateQuicConnection(clientOptions).AsTask();
 
-            await Assert.ThrowsAsync<QuicException>(() => clientTask);
+            // TODO: the exception may change if we implement https://github.com/dotnet/runtime/issues/73152 to make server close
+            // connections with CONNECTION_REFUSED in such cases
+            var authEx = await Assert.ThrowsAsync<AuthenticationException>(() => clientTask);
+            Assert.Contains("UserCanceled", authEx.Message);
             Assert.Equal(clientOptions.ClientAuthenticationOptions.TargetHost, receivedHostName);
             await Assert.ThrowsAsync<ArgumentException>(async () => await listener.AcceptConnectionAsync());
 
@@ -1165,6 +1168,16 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(0, received);
                     Assert.True(serverStream.ReadsClosed.IsCompletedSuccessfully);
                 });
+        }
+
+        [Fact]
+        public async Task IncompatibleAlpn_ThrowsAuthenticationException()
+        {
+            await using QuicListener listener = await CreateQuicListener();
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.ClientAuthenticationOptions.ApplicationProtocols[0] = new SslApplicationProtocol("someprotocol");
+
+            await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateQuicConnection(clientOptions)).WaitAsync(TimeSpan.FromSeconds(30));
         }
     }
 }
