@@ -46,9 +46,11 @@ class ChannelWorker {
             try {
                 // Wait for signal to perform operation
                 let state;
+                const start = new Date().valueOf();
                 do {
                     this._wait(this.STATE_IDLE);
                     state = Atomics.load(this.comm, this.STATE_IDX);
+                    if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER1: Probably deadlock with state=${state}` + (new Error).stack);
                 } while (state !== this.STATE_REQ && state !== this.STATE_REQ_P && state !== this.STATE_SHUTDOWN && state !== this.STATE_REQ_FAILED && state !== this.STATE_RESET);
 
                 this._throw_if_reset_or_shutdown();
@@ -109,6 +111,7 @@ class ChannelWorker {
 
     _read_request(): string {
         let request = "";
+        const start = new Date().valueOf();
         for (; ;) {
             this._acquire_lock();
             try {
@@ -116,6 +119,7 @@ class ChannelWorker {
 
                 // Get the current state and message size
                 const state = Atomics.load(this.comm, this.STATE_IDX);
+                if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER2: Probably deadlock with state=${state}` + (new Error).stack);
                 const size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
 
                 const view = this.msg.subarray(0, size_to_read);
@@ -152,7 +156,9 @@ class ChannelWorker {
         const msg_len = msg.length;
         let msg_written = 0;
 
+        const start = new Date().valueOf();
         for (; ;) {
+            if ((new Date().valueOf()) - start > 1000 * 60) console.warn("WORKER3: Probably deadlock" + (new Error).stack);
             this._acquire_lock();
 
             try {
@@ -198,8 +204,10 @@ class ChannelWorker {
     }
 
     _acquire_lock() {
+        const start = new Date().valueOf();
         for (; ;) {
             const lockState = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED);
+            if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER4: Probably deadlock during  with state=${lockState}` + (new Error).stack);
             this._throw_if_reset_or_shutdown();
 
             if (lockState === this.LOCK_UNLOCKED)

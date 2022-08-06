@@ -256,7 +256,7 @@ class LibraryChannel {
         let msg_written = 0;
 
         for (; ;) {
-            this.acquire_lock();
+            this.acquire_lock(msg);
 
             try {
                 // Write the message and return how much was written.
@@ -300,7 +300,7 @@ class LibraryChannel {
         let response = "";
         for (; ;) {
             const state = this.wait_for_state(state => state == this.STATE_RESP || state == this.STATE_RESP_P, "read_response");
-            this.acquire_lock();
+            this.acquire_lock("-read response-");
 
             try {
                 const size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
@@ -336,10 +336,12 @@ class LibraryChannel {
     }
 
     private wait_for_state(is_ready: (state: number) => boolean, msg: string): number {
+        const start = new Date().valueOf();
         // Wait for webworker
         //  - Atomics.wait() is not permissible on the main thread.
         for (; ;) {
             const lock_state = Atomics.load(this.comm, this.LOCK_IDX);
+            if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`MAIN1: Probably deadlock during ${msg} with state=${lock_state}` + (new Error).stack);
             if (lock_state !== this.LOCK_UNLOCKED)
                 continue;
 
@@ -358,7 +360,8 @@ class LibraryChannel {
         return String.fromCharCode.apply(null, slicedMessage);
     }
 
-    private acquire_lock() {
+    private acquire_lock(msg: string) {
+        const start = new Date().valueOf();
         for (; ;) {
             const lock_state = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED);
 
@@ -368,6 +371,7 @@ class LibraryChannel {
                     throw new OperationFailedError("Worker failed");
                 return;
             }
+            if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`MAIN2: Probably deadlock during ${msg} with state=${lock_state}` + (new Error).stack);
         }
     }
 
