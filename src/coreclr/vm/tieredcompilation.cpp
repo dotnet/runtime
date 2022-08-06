@@ -1086,22 +1086,23 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         if (!methodDesc->RequestedAggressiveOptimization())
         {
             NativeCodeVersion::OptimizationTier currentTier = nativeCodeVersion.GetOptimizationTier();
-            if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTierInstrumented)
-            {
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
-                return flags;
-            }
-
-            if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTierInstrumentedOptimized)
-            {
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
-                return flags;
-            }
 
             if (g_pConfig->TieredCompilation_QuickJit())
             {
+                if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTierInstrumented)
+                {
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+                    return flags;
+                }
+
+                if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTierInstrumentedOptimized)
+                {
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
+                    return flags;
+                }
+
                 _ASSERTE(!nativeCodeVersion.IsFinalTier());
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 return flags;
