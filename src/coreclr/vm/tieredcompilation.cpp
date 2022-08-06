@@ -292,7 +292,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
 
 #ifdef FEATURE_PGO
     // If TieredPGO is enabled, follow TieredPGO_Strategy, see comments in clrconfigvalues.h around it
-    if (g_pConfig->TieredPGO() && pMethodDesc->IsEligibleForTieredCompilation())
+    if (g_pConfig->TieredPGO())
     {
         if (tier0NativeCodeVersion.IsDefaultVersion() &&
             tier0NativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)

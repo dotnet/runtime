@@ -54,8 +54,8 @@ enum ParseCtl {
 // Keep in sync with clrconfigvalues.h, see TieredPGO_Strategy
 enum TieredPGOStrategy
 {
-    // Use InstrumentedTier for new code without R2R (or if it's disabled), R2R won't instrumented
-    UseInstrumentedTierForILOnly = 0, // Default behavior
+    // Use InstrumentedTier for new code without R2R (or if it's disabled), R2R won't be instrumented
+    UseInstrumentedTierForILOnly = 0,
 
     // Use InstrumentedTier for new code without R2R (or if it's disabled), hot R2R
     // will be promoted to an intermediate InstrumentedTier (without optimizations in it)
