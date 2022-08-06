@@ -676,7 +676,9 @@ void emitter::emitGenIG(insGroup* ig)
 
     if (emitCurIGfreeBase == nullptr)
     {
-        emitIGbuffSize    = SC_IG_BUFFER_SIZE;
+        emitIGbuffSize    =
+            (SC_IG_BUFFER_NUM_SMALL_DESCS * (SMALL_IDSC_SIZE + m_debugInfoSize)) +
+            (SC_IG_BUFFER_NUM_LARGE_DESCS * (sizeof(emitter::instrDesc) + m_debugInfoSize));
         emitCurIGfreeBase = (BYTE*)emitGetMem(emitIGbuffSize);
     }
 

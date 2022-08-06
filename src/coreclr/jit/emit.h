@@ -1965,10 +1965,12 @@ private:
 //     movk    xip1, #2 LSL #16
 //     ldr     w8, [fp, xip1]        // [V10 arg10]
 // which eats up our insGroup buffer.
-#define SC_IG_BUFFER_SIZE (200 * sizeof(emitter::instrDesc))
+#define SC_IG_BUFFER_NUM_SMALL_DESCS 0
+#define SC_IG_BUFFER_NUM_LARGE_DESCS 200
 
 #else
-#define SC_IG_BUFFER_SIZE (50 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
+#define SC_IG_BUFFER_NUM_SMALL_DESCS 14
+#define SC_IG_BUFFER_NUM_LARGE_DESCS 50
 #endif // !(TARGET_ARMARCH || TARGET_LOONGARCH64)
 
     size_t emitIGbuffSize;
