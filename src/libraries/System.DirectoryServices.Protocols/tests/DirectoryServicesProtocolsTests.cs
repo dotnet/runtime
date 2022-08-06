@@ -76,6 +76,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
         [InlineData(60)]
         [InlineData(0)]
+        [InlineData(-60)]
         [ConditionalTheory(nameof(IsLdapConfigurationExist))]
         public void TestSearchWithTimeLimit(int timeLimit)
         {
