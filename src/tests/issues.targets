@@ -938,9 +938,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/DiamondShape/svm_diamondshape_r/*">
             <Issue>https://github.com/dotnet/runtime/issues/72589</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/callconvs/TestCallingConventions/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/153</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/RuntimeConfiguration/TestConfig/*">
             <Issue>Test expects being run with corerun</Issue>
         </ExcludeList>

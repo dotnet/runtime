@@ -401,25 +401,20 @@ EXTERN_C void * ReturnFromCallDescrThunk;
 void * ReturnFromCallDescrThunk;
 #endif
 
-#if defined(USE_PORTABLE_HELPERS) || defined(TARGET_UNIX)
+#if defined(USE_PORTABLE_HELPERS)
 //
 // Return address hijacking
 //
-#if !defined (HOST_ARM64)
 COOP_PINVOKE_HELPER(void, RhpGcStressHijack, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
-#else // !defined (HOST_ARM64)
+
 COOP_PINVOKE_HELPER(void, RhpGcProbeHijack, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
-COOP_PINVOKE_HELPER(void, RhpGcStressHijack, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-#endif // !defined (HOST_ARM64)
+
 #endif // defined(USE_PORTABLE_HELPERS) || defined(TARGET_UNIX)
 
 #if defined(USE_PORTABLE_HELPERS)

@@ -122,6 +122,17 @@ ds_websocket_url;
 
 extern void mono_wasm_diagnostic_server_on_server_thread_created (char *websocket_url);
 
+/*
+ * diagnostic server pthread lifetime:
+ *
+ * server_thread called: no runtime yet
+ * server_thread calls emscripten_exit_with_live_runtime - thread is live in JS; no C stack.
+ * {runtime starts}
+ * server_thread_attach_to_runtime called from JS: MonoThreadInfo* for server_thread is set,
+ *    thread transitions to GC Unsafe mode and immediately transitions to GC Safe before returning to JS.
+ * server loop (diagnostics/server_pthread/index.ts serverLoop) starts
+ *   - diagnostic server calls into the runtime
+ */
 static void*
 server_thread (void* unused_arg G_GNUC_UNUSED)
 {
@@ -158,17 +169,24 @@ mono_wasm_diagnostic_server_thread_attach_to_runtime (void)
 	ds_thread_id = pthread_self();
 	MonoThread *thread = mono_thread_internal_attach (mono_get_root_domain ());
 	mono_thread_set_state (thread, ThreadState_Background);
-	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
-	/* diagnostic server thread is now in GC Unsafe mode */
+	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+	/* diagnostic server thread is now in GC Unsafe mode
+	 * we're returning to JS, so switch to GC Safe mode
+	 */
+	gpointer stackdata;
+	mono_threads_enter_gc_safe_region_unbalanced (&stackdata);
+
 }
 
 void
 mono_wasm_diagnostic_server_post_resume_runtime (void)
 {
+	MONO_ENTER_GC_UNSAFE;
 	if (wasm_ds_options.suspend) {
 		/* wake the main thread */
 		mono_coop_sem_post (&wasm_ds_options.suspend_resume);
 	}
+	MONO_EXIT_GC_UNSAFE;
 }
 
 #define QUEUE_CLOSE_SENTINEL ((uint8_t*)(intptr_t)-1)
@@ -195,8 +213,10 @@ queue_wake_reader (void *ptr) {
 static void
 queue_wake_reader_now (WasmIpcStreamQueue *q)
 {
+	MONO_ENTER_GC_SAFE;
 	// call only from the diagnostic server thread!
 	mono_wasm_diagnostic_server_stream_signal_work_available (q, 1);
+	MONO_EXIT_GC_SAFE;
 }
 
 static int32_t
@@ -236,9 +256,13 @@ queue_push_sync (WasmIpcStreamQueue *q, const uint8_t *buf, uint32_t buf_size, u
 			if (G_UNLIKELY (is_browser_thread)) {
 				/* can't use memory.atomic.wait32 on the main thread, spin instead */
 				/* this lets Emscripten run queued calls on the main thread */
+				MONO_ENTER_GC_SAFE;
 				emscripten_thread_sleep (1);
+				MONO_EXIT_GC_SAFE;
 			} else  {
+				MONO_ENTER_GC_SAFE;
 				r = mono_wasm_atomic_wait_i32 (&q->buf_full, 1, -1);
+				MONO_EXIT_GC_SAFE;
 				if (G_UNLIKELY (r == 2)) {
 					/* timed out with infinite wait?? */
 					return -1;
@@ -279,10 +303,14 @@ static IpcStreamVtable wasm_ipc_stream_vtable = {
 EMSCRIPTEN_KEEPALIVE IpcStream *
 mono_wasm_diagnostic_server_create_stream (void)
 {
+	IpcStream *result = NULL;
+	MONO_ENTER_GC_UNSAFE;
 	g_assert (G_STRUCT_OFFSET(WasmIpcStream, queue) == 4); // keep in sync with mono_wasm_diagnostic_server_get_stream_queue
 	WasmIpcStream *stream = g_new0 (WasmIpcStream, 1);
 	ep_ipc_stream_init (&stream->stream, &wasm_ipc_stream_vtable);
-	return &stream->stream;
+	result = &stream->stream;
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 static void
@@ -290,6 +318,7 @@ wasm_ipc_stream_free (void *self)
 {
 	g_free (self);
 }
+
 static bool
 wasm_ipc_stream_read (void *self, uint8_t *buffer, uint32_t bytes_to_read, uint32_t *bytes_read, uint32_t timeout_ms)
 {
