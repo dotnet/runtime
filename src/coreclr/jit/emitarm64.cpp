@@ -12368,7 +12368,7 @@ void emitter::emitDispLargeJmp(
     // difficult-to-find bug.
 
     inlineInstrDesc<instrDescJmp> idJmp;
-    instrDescJmp* pidJmp = idJmp.id();
+    instrDescJmp*                 pidJmp = idJmp.id();
 
     const instruction ins = id->idIns();
     instruction       reverseIns;

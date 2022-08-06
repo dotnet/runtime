@@ -13506,8 +13506,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             // We basically are doing what emitIns_R_AI does.
             // TODO-XArch-Cleanup: revisit this.
             inlineInstrDesc<instrDescAmd> idAmdStackLocal;
-            instrDescAmd* idAmd = idAmdStackLocal.id();
-            *(instrDesc*)idAmd = *(instrDesc*)id; // copy all the "core" fields
+            instrDescAmd*                 idAmd = idAmdStackLocal.id();
+            *(instrDesc*)idAmd                  = *(instrDesc*)id; // copy all the "core" fields
 
             if (m_debugInfoSize > 0)
             {

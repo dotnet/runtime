@@ -7697,7 +7697,7 @@ void emitter::emitDispLargeJmp(
     // difficult to find bug.
 
     inlineInstrDesc<instrDescJmp> idJmp;
-    instrDescJmp* pidJmp = idJmp.id();
+    instrDescJmp*                 pidJmp = idJmp.id();
 
     pidJmp->idIns(emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(id->idIns())))); // reverse the
                                                                                            // conditional

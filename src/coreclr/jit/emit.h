@@ -1650,17 +1650,15 @@ protected:
     };
 
     // TODO-Cleanup: Uses of stack-allocated instrDescs should be refactored to be unnecessary.
-    template<typename T>
+    template <typename T>
     struct inlineInstrDesc
     {
     private:
         instrDescDebugInfo* idDebugInfo;
-        char idStorage[sizeof(T)];
+        char                idStorage[sizeof(T)];
 
     public:
-        inlineInstrDesc()
-            : idDebugInfo(nullptr)
-            , idStorage()
+        inlineInstrDesc() : idDebugInfo(nullptr), idStorage()
         {
             static_assert_no_msg(offsetof(inlineInstrDesc<T>, idStorage) == sizeof(instrDescDebugInfo*));
         }
