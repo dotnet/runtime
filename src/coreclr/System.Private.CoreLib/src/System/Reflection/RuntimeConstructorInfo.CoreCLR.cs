@@ -121,7 +121,8 @@ namespace System.Reflection
         }
 
         public override bool Equals(object? obj) =>
-            obj is RuntimeConstructorInfo ci && m_handle == ci.m_handle && ReferenceEquals(m_declaringType, ci.m_declaringType);
+            ReferenceEquals(this, obj) ||
+            (MetadataUpdater.IsSupported && CacheEquals(obj));
 
         public override int GetHashCode() =>
             HashCode.Combine(m_handle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());

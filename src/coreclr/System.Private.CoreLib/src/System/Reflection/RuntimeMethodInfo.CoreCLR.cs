@@ -168,7 +168,7 @@ namespace System.Reflection
         public override bool Equals(object? obj) =>
             obj is RuntimeMethodInfo m && m_handle == m.m_handle &&
             ReferenceEquals(m_declaringType, m.m_declaringType) &&
-            ReferenceEquals(m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType());
+            ReferenceEquals(m_reflectedTypeCache.GetRuntimeType(), m.m_reflectedTypeCache.GetRuntimeType());
 
         #endregion
 
