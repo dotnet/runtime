@@ -57,7 +57,7 @@ public:
 
 #ifdef FEATURE_READYTORUN
     // Must be called under the LoadLock
-    void DeclareDependencyOnMvid(LPCUTF8 simpleName, GUID mvid, LPCUTF8 requestingAssemblyName);
+    void DeclareDependencyOnMvid(LPCUTF8 simpleName, GUID mvid, bool compositeComponent, LPCUTF8 imageName);
 #endif // FEATURE_READYTORUN
 
 private:
@@ -76,20 +76,24 @@ private:
 
         // If an assembly of this simple name is not yet loaded, but a depedency on an exact mvid is registered, then this field will
         // be filled in with the simple assembly name of the first assembly loaded with an mvid dependency.
-        LPCUTF8 RequiredAssemblySimpleName;
+        LPCUTF8 AssemblyRequirementName;
+
+        // To disambiguate between component images of a composite image and requirements from a non-composite --inputbubble assembly, use this bool
+        bool CompositeComponent;
 
         SimpleNameToExpectedMVIDAndRequiringAssembly() :
             SimpleName(NULL),
             Mvid({0}),
-            RequiredAssemblySimpleName(NULL)
+            AssemblyRequirementName(NULL),
+            CompositeComponent(false)
         {
-            memset(&Mvid, 0, sizeof(GUID));
         }
 
-        SimpleNameToExpectedMVIDAndRequiringAssembly(LPCUTF8 simpleName, GUID mvid, LPCUTF8 requiredAssemblySimpleName) : 
+        SimpleNameToExpectedMVIDAndRequiringAssembly(LPCUTF8 simpleName, GUID mvid, bool compositeComponent, LPCUTF8 AssemblyRequirementName) : 
             SimpleName(simpleName),
             Mvid(mvid),
-            RequiredAssemblySimpleName(requiredAssemblySimpleName)
+            AssemblyRequirementName(AssemblyRequirementName),
+            CompositeComponent(compositeComponent)
         {}
 
         static SimpleNameToExpectedMVIDAndRequiringAssembly GetNull() { return SimpleNameToExpectedMVIDAndRequiringAssembly(); }

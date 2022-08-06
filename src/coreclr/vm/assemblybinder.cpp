@@ -42,8 +42,43 @@ NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 na
 }
 
 #ifdef FEATURE_READYTORUN
-void AssemblyBinder::DeclareDependencyOnMvid(LPCUTF8 simpleName, GUID mvid, LPCUTF8 requestingAssemblyName)
+static void MvidMismatchFatalError(GUID mvidActual, GUID mvidExpected, LPCUTF8 simpleName, bool compositeComponent, LPCUTF8 assemblyRequirementName)
 {
+    static const size_t MVID_TEXT_LENGTH = 39;
+    WCHAR assemblyMvidText[MVID_TEXT_LENGTH];
+    StringFromGUID2(mvidActual, assemblyMvidText, MVID_TEXT_LENGTH);
+
+    WCHAR componentMvidText[MVID_TEXT_LENGTH];
+    StringFromGUID2(mvidExpected, componentMvidText, MVID_TEXT_LENGTH);
+
+    SString message;
+    if (compositeComponent)
+    {
+        message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)"),
+            SString(SString::Utf8, simpleName).GetUnicode(),
+            assemblyMvidText,
+            SString(SString::Utf8, assemblyRequirementName).GetUnicode(),
+            componentMvidText);
+    }
+    else
+    {
+        SString simpleNameUtf8(SString::Utf8, simpleName);
+
+        message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and version of assembly '%s' expected by assembly '%s' (MVID = %s)"),
+            simpleNameUtf8.GetUnicode(),
+            assemblyMvidText,
+            simpleNameUtf8.GetUnicode(),
+            SString(SString::Utf8, assemblyRequirementName).GetUnicode(),
+            componentMvidText);
+    }
+
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
+}
+
+void AssemblyBinder::DeclareDependencyOnMvid(LPCUTF8 simpleName, GUID mvid, bool compositeComponent, LPCUTF8 imageName)
+{
+    _ASSERTE(imageName != NULL);
+    
     // If the table is empty, then we didn't fill it with all the loaded assemblies as they were loaded. Record this detail, and fix after adding the dependency
     bool addAllLoadedModules = false;
     if (m_assemblySimpleNameMvidCheckHash.GetCount() == 0)
@@ -54,7 +89,7 @@ void AssemblyBinder::DeclareDependencyOnMvid(LPCUTF8 simpleName, GUID mvid, LPCU
     SimpleNameToExpectedMVIDAndRequiringAssembly* foundElem = (SimpleNameToExpectedMVIDAndRequiringAssembly*)m_assemblySimpleNameMvidCheckHash.LookupPtr(simpleName);
     if (foundElem == NULL)
     {
-        SimpleNameToExpectedMVIDAndRequiringAssembly newElem(simpleName, mvid, requestingAssemblyName);
+        SimpleNameToExpectedMVIDAndRequiringAssembly newElem(simpleName, mvid, compositeComponent, imageName);
         m_assemblySimpleNameMvidCheckHash.Add(newElem);
     }
     else
@@ -64,26 +99,15 @@ void AssemblyBinder::DeclareDependencyOnMvid(LPCUTF8 simpleName, GUID mvid, LPCU
         if (IsEqualGUID(mvid, foundElem->Mvid))
         {
             // Mvid matches exactly.
-            if (foundElem->RequiredAssemblySimpleName == NULL)
-                foundElem->RequiredAssemblySimpleName = requestingAssemblyName;
+            if (foundElem->AssemblyRequirementName == NULL)
+            {
+                foundElem->AssemblyRequirementName = imageName;
+                foundElem->CompositeComponent = compositeComponent;
+            }
         }
         else
         {
-            static const size_t MVID_TEXT_LENGTH = 39;
-            WCHAR assemblyMvidText[MVID_TEXT_LENGTH];
-            StringFromGUID2(foundElem->Mvid, assemblyMvidText, MVID_TEXT_LENGTH);
-
-            WCHAR componentMvidText[MVID_TEXT_LENGTH];
-            StringFromGUID2(mvid, componentMvidText, MVID_TEXT_LENGTH);
-
-            SString message;
-            message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)"),
-                SString(SString::Utf8, simpleName).GetUnicode(),
-                assemblyMvidText,
-                SString(SString::Utf8, requestingAssemblyName).GetUnicode(),
-                componentMvidText);
-
-            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
+            MvidMismatchFatalError(foundElem->Mvid, mvid, simpleName, compositeComponent, imageName);
         }
     }
 
@@ -110,7 +134,7 @@ void AssemblyBinder::DeclareLoadedAssembly(Assembly* loadedAssembly)
     SimpleNameToExpectedMVIDAndRequiringAssembly* foundElem = (SimpleNameToExpectedMVIDAndRequiringAssembly*)m_assemblySimpleNameMvidCheckHash.LookupPtr(simpleName);
     if (foundElem == NULL)
     {
-        SimpleNameToExpectedMVIDAndRequiringAssembly newElem(simpleName, mvid, NULL);
+        SimpleNameToExpectedMVIDAndRequiringAssembly newElem(simpleName, mvid, false, NULL);
         m_assemblySimpleNameMvidCheckHash.Add(newElem);
     }
     else
@@ -122,28 +146,14 @@ void AssemblyBinder::DeclareLoadedAssembly(Assembly* loadedAssembly)
         {
             // Mvid matches exactly.
         }
-        else if (foundElem->RequiredAssemblySimpleName == NULL)
+        else if (foundElem->AssemblyRequirementName == NULL)
         {
             // Another loaded assembly, set the stored Mvid to all zeroes to indicate that it isn't a unique mvid
             memset(&foundElem->Mvid, 0, sizeof(GUID));
         }
         else
         {
-            static const size_t MVID_TEXT_LENGTH = 39;
-            WCHAR assemblyMvidText[MVID_TEXT_LENGTH];
-            StringFromGUID2(mvid, assemblyMvidText, MVID_TEXT_LENGTH);
-
-            WCHAR componentMvidText[MVID_TEXT_LENGTH];
-            StringFromGUID2(foundElem->Mvid, componentMvidText, MVID_TEXT_LENGTH);
-
-            SString message;
-            message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)"),
-                SString(SString::Utf8, simpleName).GetUnicode(),
-                assemblyMvidText,
-                SString(SString::Utf8, foundElem->RequiredAssemblySimpleName).GetUnicode(),
-                componentMvidText);
-
-            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
+            MvidMismatchFatalError(mvid, foundElem->Mvid, simpleName, foundElem->CompositeComponent, foundElem->AssemblyRequirementName);
         }
     }
 }

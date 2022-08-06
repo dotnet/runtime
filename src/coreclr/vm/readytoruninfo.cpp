@@ -718,7 +718,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::ComputeAlternateGenericLocationForR2RCode(Met
 ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage *pNativeImage, AllocMemTracker *pamTracker)
     : m_pModule(pModule),
     m_pHeader(pHeader),
-    m_pNativeImage(pNativeImage),
+    m_pNativeImage(pModule != NULL ? pNativeImage: NULL), // m_pNativeImage is only set for composite image components, not the composite R2R info itself
     m_readyToRunCodeDisabled(FALSE),
     m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
     m_pPersistentInlineTrackingMap(NULL),
@@ -726,7 +726,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
 {
     STANDARD_VM_CONTRACT;
 
-    if (pNativeImage != NULL)
+    if ((pNativeImage != NULL) && (pModule != NULL))
     {
         // In multi-assembly composite images, per assembly sections are stored next to their core headers.
         m_pCompositeInfo = pNativeImage->GetReadyToRunInfo();
@@ -765,7 +765,8 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                 const GUID *componentMvids = (const GUID *)m_pComposite->GetLayout()->GetDirectoryData(pComponentAssemblyMvids);
                 // Take load lock so that DeclareDependencyOnMvid can be called
 
-                BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
+                BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain(), pNativeImage == NULL); // LoadLock is already held for composite images
+                AppDomain::GetCurrentDomain()->AssertLoadLockHeld();
 
                 while (pNativeMDImport->EnumNext(&assemblyEnum, &assemblyRef))
                 {
@@ -777,21 +778,10 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                         continue;
                     }
 
-                    if ((manifestAssemblyCount == 0) && pNativeImage == NULL)
-                    {
-                        // This is the definition module, and doesn't need to express a dependency.
-#ifdef _DEBUG
-                        LPCSTR assemblyName;
-                        IfFailThrow(pNativeMDImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL));
-                        _ASSERTE(strcmp(assemblyName, pModule->GetSimpleName()) == 0);
-#endif // _DEBUG
-                        continue;
-                    }
-
                     LPCSTR assemblyName;
                     IfFailThrow(pNativeMDImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL));
 
-                    binder->DeclareDependencyOnMvid(assemblyName, *componentMvid, pNativeImage != NULL ? pNativeImage->GetFileName() : pModule->GetSimpleName());
+                    binder->DeclareDependencyOnMvid(assemblyName, *componentMvid, pNativeImage != NULL ? pNativeImage->GetFileName() : NULL, pModule != NULL ? pModule->GetSimpleName() : NULL);
                     manifestAssemblyCount++;
                 }
             }

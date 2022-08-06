@@ -66,7 +66,7 @@ void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoade
 {
     LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
 
-    m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, pLoaderAllocator, m_pImageLayout, pHeader, /*compositeImage*/ NULL, pamTracker);
+    m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, pLoaderAllocator, m_pImageLayout, pHeader, this, pamTracker);
     m_pComponentAssemblies = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ComponentAssemblies);
     m_componentAssemblyCount = m_pComponentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
     
