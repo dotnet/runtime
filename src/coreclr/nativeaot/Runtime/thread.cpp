@@ -77,6 +77,10 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         // set preemptive mode
         VolatileStoreWithoutBarrier(&m_pTransitionFrame, pTransitionFrame);
 
+#ifdef FEATURE_SUSPEND_REDIRECTION
+        ClearState(TSF_Redirected);
+#endif //FEATURE_SUSPEND_REDIRECTION
+
         RedhawkGCInterface::WaitForGCCompletion();
 
         // must be in cooperative mode when checking the trap flag
@@ -587,6 +591,14 @@ void Thread::Hijack()
         return;
     }
 
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    // if the thread is redirected, leave it as-is.
+    if (IsStateSet(TSF_Redirected))
+    {
+        return;
+    }
+#endif //FEATURE_SUSPEND_REDIRECTION
+
     // PalHijack will call HijackCallback or make the target thread call it.
     // It may also do nothing if the target thread is in inconvenient state.
     PalHijack(m_hPalThread, this);
@@ -806,6 +818,8 @@ bool Thread::Redirect()
     if (!PalSetThreadContext(m_hPalThread, redirectionContext))
         return false;
 
+    // the thread will now inevitably try to suspend
+    SetState(TSF_Redirected);
     redirectionContext->SetIp(origIP);
 
     STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalRedirect: TgtThread = %llx, IP = %p\n",

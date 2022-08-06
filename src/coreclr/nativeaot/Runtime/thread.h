@@ -136,6 +136,12 @@ public:
 #ifdef FEATURE_GC_STRESS
         TSF_IsRandSeedSet       = 0x00000040,       // set to indicate the random number generator for GCStress was inited
 #endif // FEATURE_GC_STRESS
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+        TSF_Redirected = 0x00000080,                // Set to indicate the thread is redirected and will inevitably
+                                                    // suspend once resumed.
+                                                    // As an optimization, if we see this flag, we skip hijacking.
+#endif //FEATURE_SUSPEND_REDIRECTION
     };
 private:
 
