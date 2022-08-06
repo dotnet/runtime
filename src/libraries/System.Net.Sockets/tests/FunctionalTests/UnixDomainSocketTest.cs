@@ -549,7 +549,7 @@ namespace System.Net.Sockets.Tests
             Assert.NotNull(fi);
             int maxNativeSize = (int)fi.GetValue(null);
             int remainingUDSPathChars = Math.Min(32, maxNativeSize - Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()).Length);
-            Assert.True(remainingUDSPathChars > 0);
+            Assert.True(remainingUDSPathChars > 0, "Path to UDS on this platform is too long.");
 
             string result;
             do
