@@ -341,7 +341,7 @@ class LibraryChannel {
         //  - Atomics.wait() is not permissible on the main thread.
         for (; ;) {
             const lock_state = Atomics.load(this.comm, this.LOCK_IDX);
-            if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`MAIN1: Probably deadlock during ${msg} with state=${lock_state}` + (new Error).stack);
+            if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`MAIN1: Probably deadlock during ${msg} with lock_state=${lock_state}\n` + (new Error).stack);
             if (lock_state !== this.LOCK_UNLOCKED)
                 continue;
 
