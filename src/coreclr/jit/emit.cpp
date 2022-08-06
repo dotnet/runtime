@@ -1529,6 +1529,8 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         id->idDebugOnlyInfo(info);
     }
 
+    JITDUMP("Allocating %d for ins %d\n", sz, emitInsCount);
+
     /* Store the size and handle the two special values
        that indicate GCref and ByRef */
 
@@ -5165,7 +5167,7 @@ AGAIN:
 //
 void emitter::emitCheckAlignFitInCurIG(unsigned nAlignInstr)
 {
-    unsigned instrDescSize = nAlignInstr * sizeof(instrDescAlign);
+    size_t instrDescSize = nAlignInstr * (m_debugInfoSize + sizeof(instrDescAlign));
 
     // Ensure that all align instructions fall in same IG.
     if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
