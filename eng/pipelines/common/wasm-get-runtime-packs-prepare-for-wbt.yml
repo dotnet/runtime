@@ -1,0 +1,54 @@
+parameters:
+  runtimeFlavor: ''
+  archType: ''
+  buildConfig: ''
+  creator: ''
+  helixQueues: ''
+  osGroup: ''
+  targetRid: ''
+  testRunNamePrefixSuffix: ''
+  testScope: 'innerloop' # innerloop | outerloop | all
+  interpreter: ''
+  condition: always()
+  extraHelixArguments: ''
+  shouldContinueOnError: false
+
+steps:
+  - template: /eng/pipelines/common/download-artifact-step.yml
+    parameters:
+      artifactName: $(WasmThreadingNuGetsName)
+      artifactFileName: $(WasmThreadingNuGetsName).tar.gz
+      displayName: wasm_nugets_Threading_$(_hostedOs)
+      unpackFolder: $(WasmThreadingNuGetsFolderPath)
+
+  - template: /eng/pipelines/common/download-artifact-step.yml
+    parameters:
+      artifactName: $(WasmPerfTracingNuGetsName)
+      artifactFileName: $(WasmPerfTracingNuGetsName).tar.gz
+      displayName: wasm_nugets_PerfTracing_$(_hostedOs)
+      unpackFolder: $(WasmPerfTracingNuGetsFolderPath)
+
+  - task: CopyFiles@2
+    displayName: 'Copy Threading runtimepack to packages'
+    inputs:
+      SourceFolder: $(WasmThreadingNuGetsFolderPath)
+      Contents: '**/Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm**'
+      TargetFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping/
+
+  - task: CopyFiles@2
+    displayName: 'Copy Perftrace runtimepack to packages'
+    inputs:
+      SourceFolder: $(WasmPerfTracingNuGetsFolderPath)
+      Contents: '**/Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm*'
+      TargetFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping/
+
+  - script: >
+      $(Build.SourcesDirectory)$(dir)dotnet$(scriptExt) build
+      /p:TargetArchitecture=wasm
+      /p:TargetOS=browser
+      /p:Configuration=$(_BuildConfig)
+      /p:ArchiveTests=true
+      /p:ContinuousIntegrationBuild=true
+      /p:WasmSkipMissingRuntimePackBuild=true
+      $(Build.SourcesDirectory)/src/tests/BuildWasmApps/Wasm.Build.Tests/Wasm.Build.Tests.csproj
+    displayName: 'Prepare sdk with workload for testing'

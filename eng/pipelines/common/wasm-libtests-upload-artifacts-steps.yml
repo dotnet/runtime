@@ -1,0 +1,49 @@
+parameters:
+  artifactsNameSuffix: ''
+  uploadNuGets: false
+  uploadTests: false
+  testVariants: {}
+
+variables:
+  - name: libtests_eat_deps
+    value:
+      - microsoft.netcore.app.runtime.browser-wasm
+      - emsdk
+
+steps:
+  - ${{ if eq(parameters.uploadNuGets, true) }}:
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping/'
+        artifactName: wasm_nugets_${{ parameters.artifactsNameSuffix }}_$(_hostedOs)_$(_buildConfig)
+        displayName: 'Built nugets'
+        archiveType: tar
+        tarCompression: gz
+        archiveExtension: '.tar.gz'
+
+  - ${{ if eq(parameters.uploadTests, true) }}:
+    - ${{ each variant in parameters.testVariants }}:
+      - ${{ if or(eq(variant, 'libtests_eat'), eq(variant, 'libtests_aot')) }}:
+        - script: >-
+            $(Build.SourcesDirectory)/src/tests/build$(scriptExt) build
+            src/libraries/WasmHelixPrepare.proj
+            /p:PrepareOnBuildJob=true
+            /p:Scenario=${{ variant.scenarios }}
+          displayName: Prepare payloads for ${{ variant.name }}
+
+        - ${{ each payload in $(libtests_eat_deps) }}:
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish ${{ payload }} for ${{ variant.name }}'
+            inputs:
+              pathtoPublish: $(Build.SourceDirectory)/artifacts/staging/${{ variant }}-${{ payload }}
+              artifactName:  ${{ variant }}-${{ payload }}
+
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: '$(Build.SourcesDirectory)/artifacts/helix/'
+        includeRootFolder: true
+        artifactName: wasm_${{ parameters.artifactsNameSuffix }}_$(_hostedOs)_$(_buildConfig)
+        displayName: 'Library tests'
+        archiveType: tar
+        tarCompression: gz
+        archiveExtension: '.tar.gz'

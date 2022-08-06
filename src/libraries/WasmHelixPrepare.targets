@@ -1,0 +1,46 @@
+<Project>
+  <PropertyGroup>
+    <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
+    <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
+
+    <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJs'">true</IsRunningLibraryTests>
+
+    <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
+    <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
+    <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJs' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDKNode>
+    <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnBrowser>
+    <NeedsToRunOnBrowser Condition="'$(NeedsToRunOnBrowser)' == '' and '$(IsWasmDebuggerTests)' == 'true'">true</NeedsToRunOnBrowser>
+  </PropertyGroup>
+
+  <Target Name="PrepareHelixCorrelationPayload_Wasm">
+    <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDirForHelixPayload)" />
+
+    <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
+      <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="chromium" Uri="$(ChromiumUrl)" />
+      <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="chromedriver" Uri="$(ChromeDriverUrl)" />
+
+      <!--<HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="firefox" Uri="$(FirefoxUrl)" />-->
+      <HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="$(FirefoxForHelixPayload)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
+      <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)"              Destination="build/emsdk" />
+      <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"                    Destination="build/WasmAppBuilder" />
+      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
+      <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm" />
+      <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
+      <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
+    </ItemGroup>
+
+    <!-- copy node separately only if EMSDK is not being included -->
+    <ItemGroup Condition="'$(IncludeNodePayload)' == 'true'">
+      <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)node"          Destination="build/emsdk-node" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJS'">
+      <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" Condition="Exists('$(TestEchoMiddleware)')" />
+      <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" Condition="Exists('$(RemoteLoopMiddleware)')" />
+    </ItemGroup>
+  </Target>
+</Project>

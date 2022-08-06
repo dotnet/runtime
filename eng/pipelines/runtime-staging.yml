@@ -80,10 +80,62 @@ jobs:
     runAOT: true
     alwaysRun: ${{ variables.isRollingBuild }}
 
-- template: /eng/pipelines/common/templates/wasm-build-tests.yml
+- template: /eng/pipelines/common/templates/wasm-build-only.yml
   parameters:
     platforms:
       - Browser_wasm_win
+    nameSuffix: Threading
+    extraBuildArgs: /p:WasmEnableThreads=true /p:MonoWasmBuildVariant=multithread
+    uploadNuGets: true
+    useExactNameSuffix: true
+    alwaysRun: ${{ variables.isRollingBuild }}
+
+- template: /eng/pipelines/common/templates/wasm-build-only.yml
+  parameters:
+    platforms:
+      - Browser_wasm_win
+    nameSuffix: Threading_PerfTracing
+    extraBuildArgs: /p:WasmEnablePerfTracing=true /p:MonoWasmBuildVariant=perftrace
+    uploadNuGets: true
+    useExactNameSuffix: true
+    alwaysRun: ${{ variables.isRollingBuild }}
+
+  # FIXME: tests for mt
+#- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm_win
+    #nameSuffix: _Threading
+    #extraBuildArgs: /p:WasmEnableThreads=true
+    #alwaysRun: ${{ variables.isRollingBuild }}
+    #extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+    #extraStepsParameters:
+      #rootFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping/'
+      #artifactName: BrowserWasm_Threading_NuGets_$(_hostedOs)
+      #displayName: 'Built nugets'
+      #archiveType: tar
+      #tarCompression: gz
+      #archiveExtension: '.tar.gz'
+
+#- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+  #parameters:
+    #platforms:
+      #- Browser_wasm_win
+    #nameSuffix: _Threading_PerfTracing
+    #extraBuildArgs: /p:WasmEnablePerfTracing=true
+    #alwaysRun: ${{ variables.isRollingBuild }}
+    #extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+    #extraStepsParameters:
+      #rootFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping/'
+      #artifactName: BrowserWasm_PerfTracing_NuGets_$(_hostedOs)
+      #displayName: 'Built nugets'
+      #archiveType: tar
+      #tarCompression: gz
+      #archiveExtension: '.tar.gz'
+
+- template: /eng/pipelines/common/templates/wasm-build-tests.yml
+  parameters:
+    platform: Browser_wasm_win
     alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml

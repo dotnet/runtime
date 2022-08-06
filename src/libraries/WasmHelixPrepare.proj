@@ -1,0 +1,38 @@
+<Project DefaultTargets="PrepareHelixCorrelationPayload_Wasm" TreatAsLocalProperty="HelixPayloadPrefix">
+  <!--
+    Inputs:
+      $(PrepareOnBuildJob) - if true, zip up non-uri payloads
+      $(HelixPayloadPrefix) - prefix for the payload zip filename
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
+
+  <PropertyGroup Condition="'$(PrepareOnBuildJob)' == 'true'">
+    <NeedsToBuildWasmAppsOnHelix Condition="'$(NeedsToBuildWasmAppsOnHelix)' == ''">true</NeedsToBuildWasmAppsOnHelix>
+    <HelixStagingDestDirName Condition="'$(HelixStagingDestDirName)' == ''">$(ArtifactsDestDirName)staging\</HelixStagingDestDirName>
+    <HelixPayloadPrefix Condition="'$(HelixPayloadPrefix)' != ''">$(HelixPayloadPrefix)-</HelixPayloadPrefix>
+
+    <Scenario Condition="'$(Scenario)' == ''">normal</Scenario>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)\WasmHelixPrepare.targets" />
+
+  <Target Name="_WasmHelixPrepare" AfterTargets="PrepareHelixCorrelationPayload_Wasm" Condition="'$(PrepareOnBuildJob)' == 'true'">
+    <Message Importance="High" Text="Payload: %(HelixCorrelationPayload.Identity), Dest: %(HelixCorrelationPayload.Destination), uri: %(HelixCorrelationPayload.Uri)" />
+
+    <MakeDir Directories="$(HelixStagingDestDirName)" />
+    <ItemGroup>
+      <_ToStage Include="@(HelixCorrelationPayload)"
+                ArchiveFileName="$(HelixPayloadPrefix)$([System.IO.Path]::GetFileName($([System.String]::new('%(HelixCorrelationPayload.Destination)')))).zip" />
+    </ItemGroup>
+
+    <Message Text="%(_ToStage.Identity) to $(HelixStagingDestDirName)%(_ToStage.DestDirName).zip" Importance="High" />
+    <ZipDirectory SourceDirectory="%(_ToStage.Identity)"
+                  DestinationFile="$(HelixStagingDestDirName)%(_ToStage.ArchiveFileName)"
+                  Condition="!Exists('$(HelixStagingDestDirName)%(_ToStage.DestDirName).zip') and '%(_ToStage.Uri)' == ''"
+                  Overwrite="true" />
+
+    <!--<Message Text="##vso[task.setvariable variable=-->
+  </Target>
+
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.targets" />
+</Project>

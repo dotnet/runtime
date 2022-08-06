@@ -81,58 +81,70 @@ jobs:
         - WasmTestOnBrowser
         - WasmTestOnNodeJs
 
-  # Library tests with full threading 
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm
-        #- Browser_wasm_win
-      nameSuffix: _Threading
-      extraBuildArgs: /p:WasmEnableThreads=true
-      # Don't run for rolling builds, as this is covered
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      # NOTE - Since threading is experimental, we don't want to block mainline work
-      shouldContinueOnError: true
-      scenarios:
-        - normal
-        - WasmTestOnBrowser
-        - WasmTestOnNodeJs
+  ## Run tests for threading, and perftrace
+  ## Library tests with full threading 
+  #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    #parameters:
+      #platforms:
+        #- Browser_wasm
+        ##- Browser_wasm_win
+      #nameSuffix: _Threading
+      #extraBuildArgs: /p:WasmEnableThreads=true
+      ## Don't run for rolling builds, as this is covered
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      ## NOTE - Since threading is experimental, we don't want to block mainline work
+      #shouldContinueOnError: true
+      #scenarios:
+        #- normal
+        #- WasmTestOnBrowser
+        #- WasmTestOnNodeJs
 
-  # Library tests with internal threads only
+  ## Library tests with internal threads only
+  #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    #parameters:
+      #platforms:
+        #- Browser_wasm
+        ##- Browser_wasm_win
+      #nameSuffix: _Threading_PerfTracing
+      #extraBuildArgs: /p:WasmEnablePerfTracing=true
+      ## Don't run for rolling builds, as this is covered
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      ## NOTE - Since threading is experimental, we don't want to block mainline work
+      #shouldContinueOnError: true
+      #scenarios:
+        #- normal
+        #- WasmTestOnBrowser
+        #- WasmTestOnNodeJs
+
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
         - Browser_wasm
-        #- Browser_wasm_win
-      nameSuffix: _Threading_PerfTracing
-      extraBuildArgs: /p:WasmEnablePerfTracing=true
       # Don't run for rolling builds, as this is covered
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      # NOTE - Since threading is experimental, we don't want to block mainline work
-      shouldContinueOnError: true
+      testVariants:
+        - libtests_eat
       scenarios:
         - normal
-        - WasmTestOnBrowser
-        - WasmTestOnNodeJs
 
   # EAT Library tests - only run on linux
-  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm
-      nameSuffix: _EAT
-      runAOT: false
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+  #- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    #parameters:
+      #platforms:
+        #- Browser_wasm
+      #nameSuffix: _EAT
+      #runAOT: false
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
-  # AOT Library tests
-  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm
-        - Browser_wasm_win
-      nameSuffix: _AOT
-      runAOT: true
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+  ## AOT Library tests
+  #- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    #parameters:
+      #platforms:
+        #- Browser_wasm
+        #- Browser_wasm_win
+      #nameSuffix: _AOT
+      #runAOT: true
+      #alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
   # High resource AOT Library tests
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -146,12 +158,61 @@ jobs:
       runAOT: true
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
-  # Wasm.Build.Tests
-  - template: /eng/pipelines/common/templates/wasm-build-tests.yml
+  # Threaded runtimes on Linux
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
         - Browser_wasm
+      nameSuffix: Threading
+      extraBuildArgs: /p:WasmEnableThreads=true /p:MonoWasmBuildVariant=multithread
+      uploadNuGets: true
+      uploadTests: true
+      runTests: false
+      useExactNameSuffix: true
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm
+      nameSuffix: Threading_PerfTracing
+      extraBuildArgs: /p:WasmEnablePerfTracing=true /p:MonoWasmBuildVariant=perftrace
+      uploadNuGets: true
+      uploadTests: true
+      runTests: false
+      useExactNameSuffix: true
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+
+  # Threaded runtimes on Windows - no tests
+  - template: /eng/pipelines/common/templates/wasm-build-only.yml
+    parameters:
+      platforms:
         - Browser_wasm_win
+      nameSuffix: Threading
+      extraBuildArgs: /p:WasmEnableThreads=true /p:MonoWasmBuildVariant=multithread
+      uploadNuGets: true
+      useExactNameSuffix: true
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+
+  - template: /eng/pipelines/common/templates/wasm-build-only.yml
+    parameters:
+      platforms:
+        - Browser_wasm_win
+      nameSuffix: Threading_PerfTracing
+      extraBuildArgs: /p:WasmEnablePerfTracing=true /p:MonoWasmBuildVariant=perftrace
+      uploadNuGets: true
+      useExactNameSuffix: true
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+
+  # Wasm.Build.Tests
+  - template: /eng/pipelines/common/templates/wasm-build-tests.yml
+    parameters:
+      platform: Browser_wasm
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+
+  - template: /eng/pipelines/common/templates/wasm-build-tests.yml
+    parameters:
+      platform: Browser_wasm_win
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
   # Debugger tests
@@ -162,12 +223,6 @@ jobs:
         - Browser_wasm_win
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
-  - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-
   - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
     parameters:
       platforms:
@@ -176,6 +231,12 @@ jobs:
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       # ff tests are unstable currently
       shouldContinueOnError: true
+
+  - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
   # Disable for now
   #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml

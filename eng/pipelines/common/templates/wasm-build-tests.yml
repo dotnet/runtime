@@ -1,7 +1,7 @@
 parameters:
   alwaysRun: false
   isExtraPlatformsBuild: false
-  platforms: []
+  platform: Browser_wasm
 
 jobs:
 
@@ -14,7 +14,8 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     buildConfig: Release
     runtimeFlavor: mono
-    platforms: ${{ parameters.platforms }}
+    platforms:
+      - ${{ parameters.platform }}
     variables:
       # map dependencies variables to local variables
       - name: wasmbuildtestsContainsChange
@@ -23,11 +24,23 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
+      - WasmThreadingNuGetsName: BrowserWasm_NuGets_Threading_$(_hostedOs)
+      - WasmThreadingNuGetsFolderPath: '$(Build.SourcesDirectory)/artifacts/threading-nugets'
+      - WasmPerfTracingNuGetsName: BrowserWasm_NuGets_Threading_PerfTracing_$(_hostedOs)
+      - WasmPerfTracingNuGetsFolderPath: '$(Build.SourcesDirectory)/artifacts/perftracing-nugets'
+
     jobParameters:
+      dependsOn:
+        - ${{ if eq(parameters.platform, 'Browser_wasm') }}:
+          - build_Browser_wasm_Linux_Release_Threading
+          - build_Browser_wasm_Linux_Release_Threading_PerfTracing
+        - ${{ if eq(parameters.platform, 'Browser_wasm_win') }}:
+          - build_Browser_wasm_Windows_Release_Threading
+          - build_Browser_wasm_Windows_Release_Threading_PerfTracing
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: WasmBuildTests
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -35,10 +48,13 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
       # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsTemplate: /eng/pipelines/common/templates/pre-steps-with-helix-at-end.yml
       extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs)
-        scenarios:
-        - buildwasmapps
+        preTemplate: /eng/pipelines/common/wasm-get-runtime-packs-prepare-for-wbt.yml
+        preTemplateParameters:
+          artifactsNameSuffix: ${{ parameters.nameSuffix }}
+          uploadNuGets: ${{ parameters.uploadNuGets }}
+          uploadTests: ${{ parameters.uploadTests }}
+        #extraHelixArguments: ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraHelixArguments }}
+        scenarios: buildwasmapps
+        runTests: true

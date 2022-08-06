@@ -1,0 +1,104 @@
+parameters:
+  buildConfig: ''
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  targetRid: ''
+  framework: 'net7.0'
+  isOfficialBuild: false
+  liveRuntimeBuildConfig: ''
+  runtimeFlavor: 'wasm'
+  #runtimeDisplayName: 'wasm'
+  interpreter: ''
+  timeoutInMinutes: 150
+  pool: ''
+  runtimeVariant: ''
+  testScope: ''
+  helixQueues: []
+  dependOnEvaluatePaths: false
+  condition: true
+  shouldContinueOnError: false
+  variables: {}
+  dependsOn: []
+  scenarios: []
+  nameSuffix: ''
+  hostedOs: ''
+
+jobs:
+  - template: /eng/pipelines/libraries/base-job.yml
+    parameters:
+      buildConfig: ${{ parameters.buildConfig }}
+      osGroup:  ${{ parameters.osGroup }}
+      osSubgroup:  ${{ parameters.osSubgroup }}
+      archType:  ${{ parameters.archType }}
+      framework:  ${{ parameters.framework }}
+      isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      runtimeVariant: ${{ parameters.runtimeVariant }}
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+      container: '' # we just send to helix, no need to use a container.
+      condition: ${{ parameters.condition }}
+      testScope: ${{ parameters.testScope }}
+      runTests: true
+      ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+        displayName: ${{ format('Wasm Test Run {0} {1}', parameters.nameSuffix, parameters.osGroup) }}
+        name: ${{ format('test_run_{0}_{1}', parameters.nameSuffix, parameters.osGroup) }}
+      ${{ if eq(parameters.liveRuntimeBuildConfig, '') }}:
+        displayName: 'Wasm Test Run'
+        name: test_run
+      pool: ${{ parameters.pool }}
+
+      dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+      dependsOn:
+      - ${{ if ne(parameters.dependsOn[0], '') }}:
+        - ${{ parameters.dependsOn }}
+      - ${{ if eq(parameters.dependsOn[0], '') }}:
+        - ${{ format('build_Browser_wasm_{0}_{1}_{2}', parameters.hostedOs, parameters.buildConfig, parameters.nameSuffix) }}
+
+      variables:
+        - librariesTestsArtifactName: ${{ format('wasm_{0}_{1}_{2}', parameters.nameSuffix, parameters.hostedOs, parameters.buildConfig) }}
+        #- _archiveTestsParameter: /p:ArchiveTests=true
+
+        - ${{ parameters.variables }}
+
+      steps:
+        #- template: /eng/pipelines/common/download-artifact-step.yml
+          #parameters:
+            #displayName: Build Assets
+            #cleanUnpackFolder: false
+            #artifactName: $(librariesBuildArtifactName)
+            #artifactFileName: $(librariesBuildArtifactName)$(archiveExtension)
+            #unpackFolder: $(Build.SourcesDirectory)/artifacts
+
+        - template: /eng/pipelines/common/download-artifact-step.yml
+          parameters:
+            displayName: Test Assets
+            cleanUnpackFolder: false
+            artifactName: $(librariesTestsArtifactName)
+            artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
+            unpackFolder: $(Build.SourcesDirectory)/artifacts
+
+        #- ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+          #- script: $(_buildScript)
+                    #-subset libs.pretest
+                    #$(_buildArguments)
+                    #/p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
+                    #/bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/overrideRuntimeFromLiveDrop.binlog
+            #displayName: Prepare TestHost with runtime $(runtimeFlavorName)
+
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            runtimeFlavor: ${{ parameters.runtimeFlavor }}
+            osGroup: ${{ parameters.osGroup }}
+            targetRid: ${{ parameters.targetRid }}
+            archType: ${{ parameters.archType }}
+            buildConfig: ${{ parameters.buildConfig }}
+            helixQueues: ${{ parameters.helixQueues }}
+            testScope: ${{ parameters.testScope }}
+            interpreter: ${{ parameters.interpreter }}
+            shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
+            extraHelixArguments: $(_extraHelixArguments)
+            scenarios: ${{ parameters.scenarios }}

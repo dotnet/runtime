@@ -1,13 +1,21 @@
+# build-wasm-and-library-tests.yml
 parameters:
   alwaysRun: false
   extraBuildArgs: ''
-  extraHelixArgs: ''
+  extraHelixArguments: ''
   isExtraPlatformsBuild: false
   nameSuffix: ''
   platforms: []
   runSmokeOnlyArg: ''
+  runTests: true
   scenarios: ['normal']
   shouldContinueOnError: false
+  uploadNuGets: false
+  uploadTests: false
+  useExactNameSuffix: false
+  testVariants: {} # { name, scenario }
+  # perf variant scenarios
+  # platforms also?
 
 jobs:
 
@@ -32,11 +40,29 @@ jobs:
         value: ${{ parameters.alwaysRun }}
       - name: allWasmContainsChange
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
+      - ${{ if containsValue(parameters.testVariants.name, 'libtests_eat') }}:
+        - testsSpecificBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true
+        - testsSpecificHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true
+      - ${{ if containsValue(parameters.testVariants.name, 'libtests_high_aot') }}:
+        - testsSpecificBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true
+
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
-      nameSuffix: LibraryTests${{ parameters.nameSuffix }}
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraBuildArgs }}
+
+      # Different names when building tests
+      #${{ if and(ne(parameters.useExactNameSuffix, true), or(eq(parameters.runTests, true), eq(parameters.uploadTests, true))) }}:
+        #nameSuffix: LibraryTests${{ parameters.nameSuffix }}
+      #${{ if not(and(ne(parameters.useExactNameSuffix, true), or(eq(parameters.runTests, true), eq(parameters.uploadTests, true)))) }}:
+      nameSuffix: ${{ parameters.nameSuffix }}
+
+      # with tests
+      ${{ if or(eq(parameters.runTests, true), eq(parameters.uploadTests, true)) }}:
+        buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraBuildArgs }} $(testsSpecificBuildArgs)
+      # without tests
+      ${{ if not(or(eq(parameters.runTests, true), eq(parameters.uploadTests, true))) }}:
+        buildArgs: -s mono+libs+host -c $(_BuildConfig) /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraBuildArgs }}
+
       timeoutInMinutes: 240
       # always run for runtime-wasm builds (triggered manually)
       # Always run for rolling builds
@@ -47,10 +73,14 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true))
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsTemplate: /eng/pipelines/common/templates/pre-steps-with-helix-at-end.yml
       extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraHelixArgs }}
+        extraHelixArguments: ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraHelixArguments }} $(testsSpecificHelixArgs)
         scenarios: ${{ parameters.scenarios }}
+        runTests: ${{ parameters.runTests }}
+        preTemplate: /eng/pipelines/common/wasm-libtests-upload-artifacts-steps.yml
+        preTemplateParameters:
+          artifactsNameSuffix: ${{ parameters.nameSuffix }}
+          uploadNuGets: ${{ parameters.uploadNuGets }}
+          uploadTests: ${{ parameters.uploadTests }}
+          testVariants: ${{ parameters.testVariants }}
