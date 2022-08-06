@@ -1778,7 +1778,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Process))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void RefreshResetsAllRefreshableFields()
         {
