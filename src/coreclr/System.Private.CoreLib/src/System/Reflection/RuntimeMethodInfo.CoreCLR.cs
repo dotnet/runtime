@@ -158,11 +158,13 @@ namespace System.Reflection
             return m_toString;
         }
 
-        public override int GetHashCode() =>
-            HashCode.Combine(RuntimeHelpers.GetHashCodeOfPtr(m_handle), m_declaringType.GetHashCode());
+        public override int GetHashCode() => (MetadataUpdater.IsSupported || IsGenericMethod) ?
+            HashCode.Combine(RuntimeHelpers.GetHashCodeOfPtr(m_handle), m_declaringType.GetHashCode()) : base.GetHashCode();
 
         public override bool Equals(object? obj) =>
-            obj is RuntimeMethodInfo m && m_handle == m.m_handle && ReferenceEquals(m_declaringType, m.m_declaringType);
+            obj is RuntimeMethodInfo m && m_handle == m.m_handle &&
+            ReferenceEquals(m_declaringType, m.m_declaringType) &&
+            ReferenceEquals(ReflectedType, m.ReflectedType);
 
         #endregion
 

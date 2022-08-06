@@ -123,7 +123,8 @@ namespace System.Reflection
         public override bool Equals(object? obj) =>
             obj is RuntimeConstructorInfo ci && m_handle == ci.m_handle && ReferenceEquals(m_declaringType, ci.m_declaringType);
 
-        public override int GetHashCode() => HashCode.Combine(RuntimeHelpers.GetHashCodeOfPtr(m_handle), m_declaringType.GetHashCode());
+        public override int GetHashCode() => MetadataUpdater.IsSupported ?
+            HashCode.Combine(RuntimeHelpers.GetHashCodeOfPtr(m_handle), m_declaringType.GetHashCode()) : base.GetHashCode();
         #endregion
 
         #region ICustomAttributeProvider
