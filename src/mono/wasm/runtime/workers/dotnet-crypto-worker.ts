@@ -381,11 +381,13 @@ function _stringify_err(err: any) {
 }
 
 let s_channel;
-
+console.log("WORKER A1");
 // Initialize WebWorker
 self.addEventListener("message", (event: MessageEvent) => {
+    console.log("WORKER A2");
     const data = event.data as InitCryptoMessageData;
     setup_proxy_console("crypto-worker", console, self.location.origin);
+    console.log("WORKER A3");
     s_channel = new ChannelWorker(data.comm_buf, data.msg_buf, data.msg_char_len);
     s_channel.run_message_loop(handle_req_async);
 });

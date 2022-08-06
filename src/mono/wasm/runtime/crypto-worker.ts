@@ -118,11 +118,11 @@ export function init_crypto(): void {
             msg_buf: chan.get_msg_buffer(),
             msg_char_len: chan.get_msg_len()
         };
-        worker.postMessage(messageData);
         worker.onerror = event => {
             console.warn(`MONO_WASM: Error in Crypto WebWorker. Cryptography digest calls will fallback to managed implementation. Error: ${event.message}`);
             mono_wasm_crypto = null;
         };
+        worker.postMessage(messageData);
     }
 }
 
