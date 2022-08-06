@@ -615,19 +615,21 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier
 
 // TieredPGO_Strategy values:
 //
-//  0 -    [Default] Use InstrumentedTier for non-R2R code as the initial tier
-//  1 -              Use InstrumentedTier for non-R2R code as the initial tier, promote hot R2R to InstrumentedTier
-//  2 - [Not tested] Use InstrumentedTier for non-R2R code as the initial tier, promote hot R2R to InstrumentedTierOptimized
-//  3 -              Promote hot Tier0/R2R to InstrumentedTier
+// 0) Instrument any non-prejitted code
+// 1) Instrument any non-prejitted code and only hot R2R code
+// 2) Instrument any non-prejitted code and only hot R2R code (use optimizations in the instrumented tier for hot R2R)
+// 3) Instrument only hot non-prejitted code and only hot R2R code
+// 4) Instrument only hot non-prejitted code and only hot R2R code (use optimizations in the instrumented tier for hot R2R)
 //
-// Pros & cons of using optimizations inside the instrumented tiers (mode '2')
+//
+// Pros & cons of using optimizations inside the instrumented tiers (mode '2' and '4')
 // Pros:
-//    * Lower overhead from instrumentation (and thanks to optimizations we _can_ optimize probes and emit less of those)
-//    * Optimized code is able to inline methods so we won't be producing new Compilation units for even small methods
+//   * Lower overhead from instrumentation (and thanks to optimizations we _can_ optimize probes and emit less of those)
+//   * Optimized code is able to inline methods so we won't be producing new Compilation units for even small methods
 //
 // Cons:
-//    * Currently, we won't instrument inlinees -> we'll probably miss a lot of oportunities and produce less accurate profile
-//      leading to a less optimized final tier
+//   * Currently, we won't instrument inlinees -> we'll probably miss a lot of oportunities and produce less accurate profile
+//     leading to a less optimized final tier
 //
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_Strategy, W("TieredPGO_Strategy"), 0, "Strategy for TieredPGO, see comments in clrconfigvalues.h")
 #endif

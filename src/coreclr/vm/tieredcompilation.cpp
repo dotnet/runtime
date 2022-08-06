@@ -117,9 +117,11 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
     {
         switch (g_pConfig->TieredPGO_Strategy())
         {
-            case UseInstrumentedTierForILOnly:
-            case UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier:
-            case UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTierOptimized:
+            // Use OptimizationTierInstrumented for non-prejitted code as the initial tier
+            // and OptimizationTier0 for R2R'd
+            case InstrumentColdNonPrejittedCode:
+            case InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode:
+            case InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode_Optimized:
             {
                 CodeVersionManager::LockHolder codeVersioningLockHolder;
                 NativeCodeVersion version = pMethodDesc->GetCodeVersionManager()->GetActiveILCodeVersion(pMethodDesc)
@@ -130,8 +132,14 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
                 }
                 return NativeCodeVersion::OptimizationTierInstrumented;
             }
-            default:
+
+            // These never start with OptimizationTierInstrumented
+            case InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode:
+            case InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode_Optimized:
                 return NativeCodeVersion::OptimizationTier0;
+
+            default:
+                UNREACHABLE_MSG("Unknown TieredPGO_Strategy");
         }
     }
 #endif
@@ -300,12 +308,12 @@ void TieredCompilationManager::AsyncPromoteToTier1(
             switch (g_pConfig->TieredPGO_Strategy())
             {
                 // 0: Always use TierInstrumented for new ILOnly code
-                case UseInstrumentedTierForILOnly:
+                case InstrumentColdNonPrejittedCode:
                     nextTier = NativeCodeVersion::OptimizationTierInstrumented;
                     break;
 
                 // 1: Promote hot R2R code to TierInstrumented
-                case UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier:
+                case InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode:
                     if (ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
                     {
                         nextTier = NativeCodeVersion::OptimizationTierInstrumented;
@@ -313,7 +321,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
                     break;
 
                 // 2: Promote hot R2R code to TierInstrumentedOptimized
-                case UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTierOptimized:
+                case InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode_Optimized:
                     if (ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
                     {
                         nextTier = NativeCodeVersion::OptimizationTierInstrumentedOptimized;
@@ -321,8 +329,20 @@ void TieredCompilationManager::AsyncPromoteToTier1(
                     break;
 
                 // 3: Promote hot Tier0/R2R code to TierInstrumented
-                case PromoteHotTier0ToInstrumentedTier:
+                case InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode:
                     nextTier = NativeCodeVersion::OptimizationTierInstrumented;
+                    break;
+
+                // 4: Promote hot Tier0 to TierInstrumented and hot R2R to TierInstrumentedOptimized
+                case InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode_Optimized:
+                    if (ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
+                    {
+                        nextTier = NativeCodeVersion::OptimizationTierInstrumentedOptimized;
+                    }
+                    else
+                    {
+                        nextTier = NativeCodeVersion::OptimizationTierInstrumented;
+                    }
                     break;
 
                 default:

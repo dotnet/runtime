@@ -711,8 +711,8 @@ HRESULT EEConfig::sync()
     }
     else
     {
-        if (tieredPGO_Strategy == UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier ||
-            tieredPGO_Strategy == PromoteHotTier0ToInstrumentedTier)
+        if (tieredPGO_Strategy == InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode ||
+            tieredPGO_Strategy == InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode)
         {
             // When we're not using optimizations in the instrumented tiers we produce a lot of new first-time compilation 
             // due to disabled inlining even for very small methods - such first-time compilations delay promotions by

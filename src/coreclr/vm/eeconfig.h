@@ -51,23 +51,23 @@ enum ParseCtl {
     stopAfterRuntimeSection // stop after <runtime>...</runtime> section
 };
 
-// Keep in sync with clrconfigvalues.h, see TieredPGO_Strategy
+// Keep in sync with comments in clrconfigvalues.h around "TieredPGO_Strategy"
 enum TieredPGOStrategy
 {
-    // Use InstrumentedTier for new code without R2R (or if it's disabled), R2R won't be instrumented
-    UseInstrumentedTierForILOnly = 0,
+    // Instrument any non-prejitted code
+    InstrumentColdNonPrejittedCode = 0,
 
-    // Use InstrumentedTier for new code without R2R (or if it's disabled), hot R2R
-    // will be promoted to an intermediate InstrumentedTier (without optimizations in it)
-    UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier = 1,
+    // Instrument any non-prejitted code and only hot R2R code
+    InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode = 1,
 
-    // Use InstrumentedTier for new code without R2R (or if it's disabled), hot R2R
-    // will be promoted to an intermediate InstrumentedTierOptimized (without optimizations in it)
-    UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTierOptimized = 2,
+    // Instrument any non-prejitted code and only hot R2R code (use optimizations in the instrumented tier for hot R2R)
+    InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode_Optimized = 2,
 
-    // In these modes we never instrument Tier0 and only promote hot Tier0 and R2R
-    // code to intermediate tiers with instrumentation
-    PromoteHotTier0ToInstrumentedTier = 3,
+    // Instrument only hot non-prejitted code and only hot R2R code
+    InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode = 3,
+
+    // Instrument only hot non-prejitted code and only hot R2R code (use optimizations in the instrumented tier for hot R2R)
+    InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode_Optimized = 4
 };
 
 class EEConfig
