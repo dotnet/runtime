@@ -9377,10 +9377,8 @@ void emitter::emitDispIns(
                 emitCurStackLvl -= sizeof(int);
 #endif
 
-#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
-#endif
 
 #if !FEATURE_FIXED_OUT_ARGS
             if (ins == INS_pop)
@@ -9396,10 +9394,8 @@ void emitter::emitDispIns(
 
             printf("%s", sstr);
 
-#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
-#endif
 
             printf(", %s", emitRegName(id->idReg1(), attr));
             break;
@@ -9411,10 +9407,8 @@ void emitter::emitDispIns(
 
             printf("%s", sstr);
 
-#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
-#endif
 
             emitGetInsCns(id, &cnsVal);
             val = cnsVal.cnsVal;
@@ -9447,10 +9441,8 @@ void emitter::emitDispIns(
 
             printf("%s", sstr);
 
-#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
-#endif
 
             printf(", %s", emitRegName(id->idReg1(), attr));
 
@@ -9489,10 +9481,8 @@ void emitter::emitDispIns(
             }
 
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
-#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
-#endif
 
             break;
 
@@ -9500,10 +9490,8 @@ void emitter::emitDispIns(
         case IF_RWR_SRD_CNS:
         {
             printf("%s, %s", emitRegName(id->idReg1(), attr), sstr);
-#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
-#endif
             emitGetInsCns(id, &cnsVal);
 
             val = cnsVal.cnsVal;
@@ -9522,19 +9510,15 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_SRD:
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
-#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
-#endif
             break;
 
         case IF_RWR_RRD_SRD_CNS:
         {
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
-#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
-#endif
             emitGetInsCns(id, &cnsVal);
 
             val = cnsVal.cnsVal;
@@ -9555,10 +9539,8 @@ void emitter::emitDispIns(
         {
             printf("%s, ", emitRegName(id->idReg1(), attr));
             printf("%s, ", emitRegName(id->idReg2(), attr));
-#ifdef DEBUG
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
-#endif
 
             emitGetInsCns(id, &cnsVal);
             val = (cnsVal.cnsVal >> 4) + XMMBASE;
