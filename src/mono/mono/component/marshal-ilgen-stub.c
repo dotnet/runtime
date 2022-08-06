@@ -20,6 +20,7 @@ stub_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 static void 
 mono_component_marshal_ilgen_stub_init(void)
 {
+	g_assert_not_reached();
 }
 
 static void
