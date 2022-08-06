@@ -475,7 +475,7 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
         const configResponse = await runtimeHelpers.fetch_like(resolveSrc);
         const configData: MonoConfig = (await configResponse.json()) || {};
         if (configData.environmentVariables && typeof (configData.environmentVariables) !== "object")
-            throw new Error("Expected config.environment_variables to be unset or a dictionary-style object");
+            throw new Error("Expected config.environmentVariables to be unset or a dictionary-style object");
 
         // merge
         configData.assets = [...(config.assets || []), ...(configData.assets || [])];
