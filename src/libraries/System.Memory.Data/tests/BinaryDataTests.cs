@@ -316,7 +316,7 @@ namespace System.Tests
             var data = BinaryData.FromStream(new OverFlowStream(offset: int.MaxValue - 1000));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void CanCreateBinaryDataFromCustomType()
         {
             TestModel payload = new TestModel { A = "value", B = 5, C = true, D = null };
@@ -342,7 +342,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void CanSerializeNullData()
         {
             BinaryData data = new BinaryData(jsonSerializable: null);
@@ -399,7 +399,7 @@ namespace System.Tests
             Assert.Contains("data", ex.Message);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void ToObjectHandlesBOM()
         {
             TestModel payload = new TestModel { A = "string", B = 42, C = true };
@@ -415,7 +415,7 @@ namespace System.Tests
             Assert.Equal(payload.C, model.C);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void ToObjectThrowsExceptionOnIncompatibleType()
         {
             TestModel payload = new TestModel { A = "value", B = 5, C = true };

@@ -60,6 +60,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNothing (type);
 		}
 
+		// NativeAOT doesn't implement this yet: https://github.com/dotnet/runtime/issues/72833
 		[ExpectedWarning ("IL2105",
 			"Type 'System.Invalid.TypeName' was not found in the caller assembly nor in the base library. " +
 			"Type name strings used for dynamically accessing a type should be assembly qualified.",

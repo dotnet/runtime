@@ -3702,7 +3702,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	if (target_method_context_used || invoke_context_used) {
 		tramp_ins = emit_get_rgctx_dele_tramp (cfg, target_method_context_used | invoke_context_used, klass, method, virtual_, MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO);
 
-		//This is emited as a contant store for the non-shared case.
+		//This is emitted as a constant store for the non-shared case.
 		//We copy from the delegate trampoline info as it's faster than a rgctx fetch
 		dreg = alloc_preg (cfg);
 		if (!cfg->llvm_only) {
@@ -6732,7 +6732,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* FIXME: Is there a better way to do this?
 			   We need the variable live for the duration
 			   of the whole method. */
-			cfg->args [0]->flags |= MONO_INST_VOLATILE;
+			if (!cfg->llvm_only)
+				cfg->args [0]->flags |= MONO_INST_VOLATILE;
 		}
 	}
 
@@ -6869,7 +6870,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		 */
 		if (seq_points && ((!sym_seq_points && (sp == stack_start)) || (sym_seq_points && mono_bitset_test_fast (seq_point_locs, ip - header->code)))) {
 			/*
-			 * Make methods interruptable at the beginning, and at the targets of
+			 * Make methods interruptible at the beginning, and at the targets of
 			 * backward branches.
 			 * Also, do this at the start of every bblock in methods with clauses too,
 			 * to be able to handle instructions with inprecise control flow like
@@ -7333,6 +7334,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK (n);
 
 			//g_assert (!virtual_ || fsig->hasthis);
+
+			if (n == 0 && fsig->call_convention == MONO_CALL_THISCALL)
+				mono_cfg_set_exception_invalid_program(cfg, "thiscall with 0 arguments");
 
 			sp -= n;
 
@@ -9331,7 +9335,7 @@ calli_end:
 			 *   <push int/long>
 			 *   box MyFlags
 			 *   constrained. MyFlags
-			 *   callvirt instace bool class [mscorlib] System.Enum::HasFlag (class [mscorlib] System.Enum)
+			 *   callvirt instance bool class [mscorlib] System.Enum::HasFlag (class [mscorlib] System.Enum)
 			 *
 			 * If we find this sequence and the operand types on box and constrained
 			 * are equal, we can emit a specialized instruction sequence instead of
@@ -11842,7 +11846,7 @@ mono_ldptr:
 		MonoBasicBlock *cbb;
 
 		/*
-		 * Make seq points at backward branch targets interruptable.
+		 * Make seq points at backward branch targets interruptible.
 		 */
 		for (cbb = cfg->bb_entry; cbb; cbb = cbb->next_bb)
 			if (cbb->code && cbb->in_count > 1 && cbb->code->opcode == OP_SEQ_POINT)

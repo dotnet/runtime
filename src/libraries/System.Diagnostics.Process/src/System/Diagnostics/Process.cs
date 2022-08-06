@@ -1036,7 +1036,7 @@ namespace System.Diagnostics
         {
             if (!ProcessManager.IsProcessRunning(processId, machineName))
             {
-                throw new ArgumentException(SR.Format(SR.MissingProccess, processId.ToString()));
+                throw new ArgumentException(SR.Format(SR.MissingProcess, processId.ToString()));
             }
 
             return new Process(machineName, ProcessManager.IsRemoteMachine(machineName), processId, null);
@@ -1386,15 +1386,8 @@ namespace System.Diagnostics
                     }
                 }
 
-                if (rwh != null)
-                {
-                    rwh.Unregister(null);
-                }
-
-                if (wh != null)
-                {
-                    wh.Dispose();
-                }
+                rwh?.Unregister(null);
+                wh?.Dispose();
             }
         }
 
@@ -1493,7 +1486,7 @@ namespace System.Diagnostics
             // registering the handler and no special cases are needed.
             //
             // CASE 1.2: PROCESS EXITS BEFORE REGISTERING HANDLER
-            // It's possible that the process can exit after we enable events but before we reigster
+            // It's possible that the process can exit after we enable events but before we register
             // the handler. In that case we must check for exit after registering the handler.
             //
             //

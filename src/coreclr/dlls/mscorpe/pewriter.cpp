@@ -233,7 +233,7 @@ static inline HRESULT SubOvf_U_U32(UINT64 & a, unsigned int b)
 }
 
 #ifndef HOST_AMD64
-/* subtract two unsigned pointers yeilding a signed pointer sized int */
+/* subtract two unsigned pointers yielding a signed pointer sized int */
 static inline HRESULT SubOvf_U_U(INT64 & r, UINT64 a, UINT64 b)
 {
     r = a - b;

@@ -534,10 +534,16 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
 // Currently ClrFlushInstructionCache has no effect on AMD64
 //
 
-inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
+inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool hasCodeExecutedBefore = false)
 {
-    // FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
-    MemoryBarrier();
+    if (hasCodeExecutedBefore)
+    {
+        FlushInstructionCache(GetCurrentProcess(), pCodeAddr, sizeOfCode);
+    }
+    else
+    {
+        MemoryBarrier();
+    }
     return TRUE;
 }
 

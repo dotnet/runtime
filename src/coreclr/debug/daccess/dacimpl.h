@@ -652,7 +652,7 @@ struct DumpMemoryReportStatics
     TSIZE_T    m_cbModuleList;         // number of bytes that we report for module list directly
     TSIZE_T    m_cbClrStatics;         // number of bytes that we report for CLR statics
     TSIZE_T    m_cbClrHeapStatics;     // number of bytes that we report for CLR heap statics
-    TSIZE_T    m_cbImplicity;          // number of bytes that we report implicitly
+    TSIZE_T    m_cbImplicitly;          // number of bytes that we report implicitly
 };
 
 
@@ -1209,7 +1209,7 @@ public:
         size_t *taggedMemorySizeInBytes);
 
     // ISOSDacInterface12
-    virtual HRESULT STDMETHODCALLTYPE GetGlobalAllocationContext( 
+    virtual HRESULT STDMETHODCALLTYPE GetGlobalAllocationContext(
         CLRDATA_ADDRESS *allocPtr,
         CLRDATA_ADDRESS *allocLimit);
 
@@ -1529,7 +1529,7 @@ extern ClrDataAccess* g_dacImpl;
  *     all handles, or filled the array.
  * 3.  Storage variables to hold the overflow.  That is, we were walking the handle
  *     table, filled the array that the user gave us, then needed to store the extra
- *     handles the handle table continued to enumerate to us.  This is implmeneted
+ *     handles the handle table continued to enumerate to us.  This is implemented
  *     as a linked list of arrays (mHead, mHead.Next, etc).
  * 4.  Variables which store the location of where we are in the overflow data.
  *
@@ -1592,7 +1592,7 @@ private:
 };
 
 
-// A stuct representing a thread's allocation context.
+// A struct representing a thread's allocation context.
 struct AllocInfo
 {
     CORDB_ADDRESS Ptr;

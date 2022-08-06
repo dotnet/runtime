@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
@@ -81,6 +83,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="i">The index.</param>
         public object this[int i]
         {
+            [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
             get
             {
                 this.AssertNotDisposed();
@@ -92,6 +95,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 JSHostImplementation.ReleaseInFlight(indexValue);
                 return indexValue;
             }
+            [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
             set
             {
                 this.AssertNotDisposed();

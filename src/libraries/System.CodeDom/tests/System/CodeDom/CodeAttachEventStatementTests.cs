@@ -42,11 +42,11 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(CodeEventReferenceExpression_CodeExpression_TestData))]
-        public void Ctor_CodeEventReferenceExpression_CodeExpression(CodeEventReferenceExpression eventExpresion, CodeExpression listener)
+        public void Ctor_CodeEventReferenceExpression_CodeExpression(CodeEventReferenceExpression eventExpression, CodeExpression listener)
         {
-            var attachEvent = new CodeAttachEventStatement(eventExpresion, listener);
-            Assert.Equal((eventExpresion ?? new CodeEventReferenceExpression()).TargetObject, attachEvent.Event.TargetObject);
-            Assert.Equal((eventExpresion ?? new CodeEventReferenceExpression()).EventName, attachEvent.Event.EventName);
+            var attachEvent = new CodeAttachEventStatement(eventExpression, listener);
+            Assert.Equal((eventExpression ?? new CodeEventReferenceExpression()).TargetObject, attachEvent.Event.TargetObject);
+            Assert.Equal((eventExpression ?? new CodeEventReferenceExpression()).EventName, attachEvent.Event.EventName);
             Assert.Equal(listener, attachEvent.Listener);
         }
 

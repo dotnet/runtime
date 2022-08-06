@@ -1680,7 +1680,7 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 }
 
 //--------------------------------------------------------------------------------------------------------
-// createAddressNodeForSIMDInit: Generate the address node if we want to intialize vector2, vector3 or vector4
+// createAddressNodeForSIMDInit: Generate the address node if we want to initialize vector2, vector3 or vector4
 // from first argument's address.
 //
 // Arguments:
@@ -1992,7 +1992,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 if (areArgsContiguous && simdBaseType == TYP_FLOAT)
                 {
                     // Since Vector2, Vector3 and Vector4's arguments type are only float,
-                    // we intialize the vector from first argument address, only when
+                    // we initialize the vector from first argument address, only when
                     // the simdBaseType is TYP_FLOAT and the arguments are located contiguously in memory
                     initFromFirstArgIndir = true;
                     GenTree*  op2Address  = createAddressNodeForSIMDInit(nodeBuilder.GetOperand(0), size);

@@ -4329,7 +4329,7 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 	guint32 table_size, entry_size, hash;
 	guint32 *table, *entry;
 	guint32 index;
-	static guint32 n_extra_decodes;
+	// static guint32 n_extra_decodes; // used for debugging
 
 	// The AOT module containing the MonoMethod
 	// The reference to the metadata amodule will differ among multiple dedup methods
@@ -4385,10 +4385,10 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 		}
 
 		/* Methods decoded needlessly */
-		if (m) {
+		/*if (m) {
 			//printf ("%d %s %s %p\n", n_extra_decodes, mono_method_full_name (method, TRUE), mono_method_full_name (m, TRUE), orig_p);
 			n_extra_decodes ++;
-		}
+		}*/
 
 		if (next != 0)
 			entry = &table [next * entry_size];
@@ -5641,7 +5641,7 @@ get_new_trampoline_from_page (int tramp_type)
 		page->trampolines += specific_trampoline_size;
 		mono_aot_page_unlock ();
 
-		/* Register the generic part at the beggining of the trampoline page */
+		/* Register the generic part at the beginning of the trampoline page */
 		gen_info = mono_tramp_info_create (NULL, (guint8*)taddr, amodule->info.tramp_page_code_offsets [tramp_type], NULL, NULL);
 		read_page_trampoline_uwinfo (gen_info, tramp_type, TRUE);
 		mono_aot_tramp_info_register (gen_info, NULL);
@@ -6056,9 +6056,7 @@ mono_aot_get_lazy_fetch_trampoline (guint32 slot)
 	gpointer code;
 	MonoAotModule *amodule = mscorlib_aot_module;
 	guint32 index = MONO_RGCTX_SLOT_INDEX (slot);
-	static int count = 0;
 
-	count ++;
 	if (index >= amodule->info.num_rgctx_fetch_trampolines) {
 		static gpointer addr;
 		gpointer *info;
@@ -6189,7 +6187,7 @@ mono_aot_get_ftnptr_arg_trampoline (gpointer arg, gpointer addr)
 /*
  * mono_aot_set_make_unreadable:
  *
- *   Set whenever to make all mmaped memory unreadable. In conjuction with a
+ *   Set whenever to make all mmaped memory unreadable. In conjunction with a
  * SIGSEGV handler, this is useful to find out which pages the runtime tries to read.
  */
 void

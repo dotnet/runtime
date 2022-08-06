@@ -720,9 +720,9 @@ namespace System.Tests
         [InlineData( double.PositiveInfinity,  3,  double.PositiveInfinity, 0.0)]
         [InlineData( double.PositiveInfinity,  4,  double.PositiveInfinity, 0.0)]
         [InlineData( double.PositiveInfinity,  5,  double.PositiveInfinity, 0.0)]
-        public static void Root(double x, int n, double expectedResult, double allowedVariance)
+        public static void RootN(double x, int n, double expectedResult, double allowedVariance)
         {
-            AssertExtensions.Equal(expectedResult, double.Root(x, n), allowedVariance);
+            AssertExtensions.Equal(expectedResult, double.RootN(x, n), allowedVariance);
         }
 
         public static IEnumerable<object[]> ToString_TestData()

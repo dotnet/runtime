@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -97,7 +98,13 @@ namespace System.Net.Http
                     return null;
                 }
 
-                Type taskOfHttpResponseMessageType = typeof(Task<>).MakeGenericType(httpResponseMessageType);
+                // Workaround until https://github.com/dotnet/runtime/issues/72833 is fixed
+                [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                   Justification = "The type HttpResponseMessage is a reference type")]
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+                static Type GetTaskOfHttpResponseMessageType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? httpResponseMessageType) => typeof(Task<>).MakeGenericType(httpResponseMessageType!);
+
+                Type taskOfHttpResponseMessageType = GetTaskOfHttpResponseMessageType(httpResponseMessageType);
 
                 // Get the methods on those types.
                 ConstructorInfo? socketsHttpHandlerCtor = socketsHttpHandlerType.GetConstructor(Type.EmptyTypes);

@@ -398,7 +398,7 @@ namespace System.Data.Tests
             Assert.Equal(-1, findResult);
 
             dv.Sort = "ParentId";
-            // Find 
+            // Find
             findResult = dv.Find("3");
             Assert.Equal(expectedResult, findResult);
         }
@@ -1107,7 +1107,7 @@ namespace System.Data.Tests
             view1.AllowNew = view2.AllowNew;
             Assert.True(view1.Equals(view2));
 
-            //ApplyDefaultSort doesnet affect the comparision
+            //ApplyDefaultSort doesnet affect the comparison
             view1.ApplyDefaultSort = !view2.ApplyDefaultSort;
             Assert.True(view1.Equals(view2));
 

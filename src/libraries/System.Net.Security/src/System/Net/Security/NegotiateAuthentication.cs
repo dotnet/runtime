@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Security.Principal;
+using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net.Security
 {
@@ -17,6 +19,10 @@ namespace System.Net.Security
         private readonly string _requestedPackage;
         private readonly bool _isServer;
         private IIdentity? _remoteIdentity;
+        private TokenImpersonationLevel _requiredImpersonationLevel;
+        private ProtectionLevel _requiredProtectionLevel;
+        private ExtendedProtectionPolicy? _extendedProtectionPolicy;
+        private bool _isSecureConnection;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NegotiateAuthentication"/>
@@ -27,15 +33,28 @@ namespace System.Net.Security
         {
             ArgumentNullException.ThrowIfNull(clientOptions);
 
-            ContextFlagsPal contextFlags = clientOptions.RequiredProtectionLevel switch
+            ContextFlagsPal contextFlags = ContextFlagsPal.Connection;
+
+            contextFlags |= clientOptions.RequiredProtectionLevel switch
             {
                 ProtectionLevel.Sign => ContextFlagsPal.InitIntegrity,
                 ProtectionLevel.EncryptAndSign => ContextFlagsPal.InitIntegrity | ContextFlagsPal.Confidentiality,
                 _ => 0
-            } | ContextFlagsPal.Connection;
+            };
+
+            contextFlags |= clientOptions.RequireMutualAuthentication ? ContextFlagsPal.MutualAuth : 0;
+
+            contextFlags |= clientOptions.AllowedImpersonationLevel switch
+            {
+                TokenImpersonationLevel.Identification => ContextFlagsPal.InitIdentify,
+                TokenImpersonationLevel.Delegation => ContextFlagsPal.Delegate,
+                _ => 0
+            };
 
             _isServer = false;
             _requestedPackage = clientOptions.Package;
+            _requiredImpersonationLevel = TokenImpersonationLevel.None;
+            _requiredProtectionLevel = clientOptions.RequiredProtectionLevel;
             try
             {
                 _ntAuthentication = new NTAuthentication(
@@ -73,8 +92,26 @@ namespace System.Net.Security
                 _ => 0
             } | ContextFlagsPal.Connection;
 
+            if (serverOptions.Policy is not null)
+            {
+                if (serverOptions.Policy.PolicyEnforcement == PolicyEnforcement.WhenSupported)
+                {
+                    contextFlags |= ContextFlagsPal.AllowMissingBindings;
+                }
+
+                if (serverOptions.Policy.PolicyEnforcement != PolicyEnforcement.Never &&
+                    serverOptions.Policy.ProtectionScenario == ProtectionScenario.TrustedProxy)
+                {
+                    contextFlags |= ContextFlagsPal.ProxyBindings;
+                }
+            }
+
             _isServer = true;
             _requestedPackage = serverOptions.Package;
+            _requiredImpersonationLevel = serverOptions.RequiredImpersonationLevel;
+            _requiredProtectionLevel = serverOptions.RequiredProtectionLevel;
+            _extendedProtectionPolicy = serverOptions.Policy;
+            _isSecureConnection = serverOptions.Binding != null;
             try
             {
                 _ntAuthentication = new NTAuthentication(
@@ -215,6 +252,22 @@ namespace System.Net.Security
         }
 
         /// <summary>
+        /// One of the <see cref="TokenImpersonationLevel" /> values, indicating the negotiated
+        /// level of impresonation.
+        /// </summary>
+        public System.Security.Principal.TokenImpersonationLevel ImpersonationLevel
+        {
+            get
+            {
+                // We should suppress the delegate flag in NTLM case.
+                return
+                    _ntAuthentication!.IsDelegationFlag && _ntAuthentication.ProtocolName != NegotiationInfoClass.NTLM ? TokenImpersonationLevel.Delegation :
+                    _ntAuthentication.IsIdentifyFlag ? TokenImpersonationLevel.Identification :
+                    TokenImpersonationLevel.Impersonation;
+            }
+        }
+
+        /// <summary>
         /// Evaluates an authentication token sent by the other party and returns a token in response.
         /// </summary>
         /// <param name="incomingBlob">Incoming authentication token, or empty value when initiating the authentication exchange.</param>
@@ -285,6 +338,23 @@ namespace System.Net.Security
                 _ => NegotiateAuthenticationStatusCode.GenericFailure,
             };
 
+            // Additional policy validation
+            if (statusCode == NegotiateAuthenticationStatusCode.Completed)
+            {
+                if (IsServer && _extendedProtectionPolicy != null && !CheckSpn())
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.TargetUnknown;
+                }
+                else if (_requiredImpersonationLevel != TokenImpersonationLevel.None && ImpersonationLevel < _requiredImpersonationLevel)
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.ImpersonationValidationFailed;
+                }
+                else if (_requiredProtectionLevel != ProtectionLevel.None && ProtectionLevel < _requiredProtectionLevel)
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.SecurityQosFailed;
+                }
+            }
+
             return blob;
         }
 
@@ -321,6 +391,165 @@ namespace System.Net.Security
             }
 
             return outgoingBlob;
+        }
+
+        /// <summary>
+        /// Wrap an input message with signature and optionally with an encryption.
+        /// </summary>
+        /// <param name="input">Input message to be wrapped.</param>
+        /// <param name="outputWriter">Buffer writter where the wrapped message is written.</param>
+        /// <param name="requestEncryption">Specifies whether encryption is requested.</param>
+        /// <param name="isEncrypted">Specifies whether encryption was applied in the wrapping.</param>
+        /// <returns>
+        /// <see cref="NegotiateAuthenticationStatusCode.Completed" /> on success, other
+        /// <see cref="NegotiateAuthenticationStatusCode" /> values on failure.
+        /// </returns>
+        /// <remarks>
+        /// Like the <see href="https://datatracker.ietf.org/doc/html/rfc2743#page-65">GSS_Wrap</see> API
+        /// the authentication protocol implementation may choose to override the requested value in the
+        /// requestEncryption parameter. This may result in either downgrade or upgrade of the protection
+        /// level.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
+        public NegotiateAuthenticationStatusCode Wrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted)
+        {
+            if (!IsAuthenticated || _ntAuthentication == null)
+            {
+                throw new InvalidOperationException(SR.net_auth_noauth);
+            }
+
+            return _ntAuthentication.Wrap(input, outputWriter, requestEncryption, out isEncrypted);
+        }
+
+        /// <summary>
+        /// Unwrap an input message with signature or encryption applied by the other party.
+        /// </summary>
+        /// <param name="input">Input message to be unwrapped.</param>
+        /// <param name="outputWriter">Buffer writter where the unwrapped message is written.</param>
+        /// <param name="wasEncrypted">
+        /// On output specifies whether the wrapped message had encryption applied.
+        /// </param>
+        /// <returns>
+        /// <see cref="NegotiateAuthenticationStatusCode.Completed" /> on success.
+        /// <see cref="NegotiateAuthenticationStatusCode.MessageAltered" /> if the message signature was
+        /// invalid.
+        /// <see cref="NegotiateAuthenticationStatusCode.InvalidToken" /> if the wrapped message was
+        /// in invalid format.
+        /// Other <see cref="NegotiateAuthenticationStatusCode" /> values on failure.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
+        public NegotiateAuthenticationStatusCode Unwrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, out bool wasEncrypted)
+        {
+            if (!IsAuthenticated || _ntAuthentication == null)
+            {
+                throw new InvalidOperationException(SR.net_auth_noauth);
+            }
+
+            return _ntAuthentication.Unwrap(input, outputWriter, out wasEncrypted);
+        }
+
+        /// <summary>
+        /// Unwrap an input message with signature or encryption applied by the other party.
+        /// </summary>
+        /// <param name="input">Input message to be unwrapped. On output contains the decoded data.</param>
+        /// <param name="unwrappedOffset">Offset in the input buffer where the unwrapped message was written.</param>
+        /// <param name="unwrappedLength">Length of the unwrapped message.</param>
+        /// <param name="wasEncrypted">
+        /// On output specifies whether the wrapped message had encryption applied.
+        /// </param>
+        /// <returns>
+        /// <see cref="NegotiateAuthenticationStatusCode.Completed" /> on success.
+        /// <see cref="NegotiateAuthenticationStatusCode.MessageAltered" /> if the message signature was
+        /// invalid.
+        /// <see cref="NegotiateAuthenticationStatusCode.InvalidToken" /> if the wrapped message was
+        /// in invalid format.
+        /// Other <see cref="NegotiateAuthenticationStatusCode" /> values on failure.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
+        public NegotiateAuthenticationStatusCode UnwrapInPlace(Span<byte> input, out int unwrappedOffset, out int unwrappedLength, out bool wasEncrypted)
+        {
+            if (!IsAuthenticated || _ntAuthentication == null)
+            {
+                throw new InvalidOperationException(SR.net_auth_noauth);
+            }
+
+            return _ntAuthentication.UnwrapInPlace(input, out unwrappedOffset, out unwrappedLength, out wasEncrypted);
+        }
+
+        private bool CheckSpn()
+        {
+            Debug.Assert(_ntAuthentication != null);
+            Debug.Assert(_extendedProtectionPolicy != null);
+
+            if (_ntAuthentication.IsKerberos)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_spn_kerberos);
+                return true;
+            }
+
+            if (_extendedProtectionPolicy.PolicyEnforcement == PolicyEnforcement.Never)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_spn_disabled);
+                return true;
+            }
+
+            if (_isSecureConnection &&  _extendedProtectionPolicy.ProtectionScenario == ProtectionScenario.TransportSelected)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_spn_cbt);
+                return true;
+            }
+
+            if (_extendedProtectionPolicy.CustomServiceNames == null)
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_spns);
+                return true;
+            }
+
+            string? clientSpn = _ntAuthentication.ClientSpecifiedSpn;
+
+            if (string.IsNullOrEmpty(clientSpn))
+            {
+                if (_extendedProtectionPolicy.PolicyEnforcement == PolicyEnforcement.WhenSupported)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_spn_whensupported);
+                    return true;
+                }
+                else
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_spn_failed_always);
+                    return false;
+                }
+            }
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_spn, clientSpn);
+            bool found = _extendedProtectionPolicy.CustomServiceNames.Contains(clientSpn);
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                if (found)
+                {
+                    NetEventSource.Info(this, SR.net_log_listener_spn_passed);
+                }
+                else
+                {
+                    NetEventSource.Info(this, SR.net_log_listener_spn_failed);
+
+                    if (_extendedProtectionPolicy.CustomServiceNames.Count == 0)
+                    {
+                        NetEventSource.Info(this, SR.net_log_listener_spn_failed_empty);
+                    }
+                    else
+                    {
+                        NetEventSource.Info(this, SR.net_log_listener_spn_failed_dump);
+                        foreach (string serviceName in _extendedProtectionPolicy.CustomServiceNames)
+                        {
+                            NetEventSource.Info(this, "\t" + serviceName);
+                        }
+                    }
+                }
+            }
+
+            return found;
         }
     }
 }

@@ -167,11 +167,7 @@ namespace System.Linq.Parallel
                 {
                     for (int j = 0; j < _sharedBarriers[i].Length; j++)
                     {
-                        Barrier b = _sharedBarriers[i][j];
-                        if (b != null)
-                        {
-                            b.Dispose();
-                        }
+                        _sharedBarriers[i][j]?.Dispose();
                     }
                 }
             }

@@ -210,7 +210,7 @@ namespace System.Net.WebSockets.Compression
 
         private ZLibStreamHandle CreateDeflater()
         {
-            ZLibStreamHandle stream;
+            ZLibStreamHandle? stream = null;
             ErrorCode errorCode;
             try
             {
@@ -222,6 +222,7 @@ namespace System.Net.WebSockets.Compression
             }
             catch (Exception cause)
             {
+                stream?.Dispose();
                 throw new WebSocketException(SR.ZLibErrorDLLLoadError, cause);
             }
 

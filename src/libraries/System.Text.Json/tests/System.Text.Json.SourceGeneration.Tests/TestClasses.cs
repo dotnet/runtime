@@ -193,4 +193,37 @@ namespace System.Text.Json.SourceGeneration.Tests
             public bool Boolean { get; set; }
         }
     }
+
+    public class MyContainingClass
+    {
+        public class MyNestedClass
+        {
+            public class MyNestedNestedClass { }
+            public class MyNestedNestedGenericClass<T1> { }
+        }
+        public class MyNestedGenericClass<T1>
+        {
+            public class MyNestedGenericNestedClass { }
+            public class MyNestedGenericNestedGenericClass<T2> { }
+        }
+    }
+
+    public class MyContainingGenericClass<T>
+    {
+        public class MyNestedClass
+        {
+            public class MyNestedNestedClass { }
+            public class MyNestedNestedGenericClass<T1> { }
+        }
+        public class MyNestedGenericClass<T1>
+        {
+            public class MyNestedGenericNestedClass { }
+            public class MyNestedGenericNestedGenericClass<T2>
+            {
+                public T DataT { get; set; }
+                public T1 DataT1 { get; set; }
+                public T2 DataT2 { get; set; }
+            }
+        }
+    }
 }

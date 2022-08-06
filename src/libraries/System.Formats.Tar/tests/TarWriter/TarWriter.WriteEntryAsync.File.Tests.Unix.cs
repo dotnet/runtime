@@ -25,7 +25,7 @@ namespace System.Formats.Tar.Tests
                     string fifoName = "fifofile";
                     string fifoPath = Path.Join(root.Path, fifoName);
 
-                    Interop.CheckIo(Interop.Sys.MkFifo(fifoPath, (int)DefaultMode));
+                    Interop.CheckIo(Interop.Sys.MkFifo(fifoPath, (int)DefaultFileMode));
 
                     await using (MemoryStream archive = new MemoryStream())
                     {
@@ -70,7 +70,7 @@ namespace System.Formats.Tar.Tests
                     string blockDevicePath = Path.Join(root.Path, AssetBlockDeviceFileName);
 
                     // Creating device files needs elevation
-                    Interop.CheckIo(Interop.Sys.CreateBlockDevice(blockDevicePath, (int)DefaultMode, TestBlockDeviceMajor, TestBlockDeviceMinor));
+                    Interop.CheckIo(Interop.Sys.CreateBlockDevice(blockDevicePath, (int)DefaultFileMode, TestBlockDeviceMajor, TestBlockDeviceMinor));
 
                     await using (MemoryStream archive = new MemoryStream())
                     {
@@ -117,7 +117,7 @@ namespace System.Formats.Tar.Tests
                     string characterDevicePath = Path.Join(root.Path, AssetCharacterDeviceFileName);
 
                     // Creating device files needs elevation
-                    Interop.CheckIo(Interop.Sys.CreateCharacterDevice(characterDevicePath, (int)DefaultMode, TestCharacterDeviceMajor, TestCharacterDeviceMinor));
+                    Interop.CheckIo(Interop.Sys.CreateCharacterDevice(characterDevicePath, (int)DefaultFileMode, TestCharacterDeviceMajor, TestCharacterDeviceMinor));
 
                     await using (MemoryStream archive = new MemoryStream())
                     {

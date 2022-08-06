@@ -1,8 +1,4 @@
 <Project>
-  <PropertyGroup>
-    <_MicrosoftNetCoreAppRefDir>$(AppRefDir)\</_MicrosoftNetCoreAppRefDir>
-  </PropertyGroup>
-
   <Target Name="PrintRuntimePackPath" BeforeTargets="Publish">
     <Message Text="** MicrosoftNetCoreAppRuntimePackDir : %(ResolvedRuntimePack.PackageDirectory)" Importance="High" />
   </Target>
@@ -11,12 +7,6 @@
   <Target Name="UpdateTargetingAndRuntimePack"
           AfterTargets="ResolveFrameworkReferences">
     <ItemGroup>
-      <ResolvedTargetingPack Path="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
-                             NuGetPackageVersion="$(RuntimePackInWorkloadVersion)"
-                             PackageDirectory="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
-                             Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == 'Microsoft.NETCore.App' and
-                                        Exists('$(_MicrosoftNetCoreAppRefDir)data\FrameworkList.xml')" />
-
       <ResolvedRuntimePack
                             Update="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
                             FrameworkName="Microsoft.NETCore.App"
@@ -26,7 +16,6 @@
                             RuntimeIdentifier="browser-wasm" />
 
        <ResolvedFrameworkReference Update="Microsoft.NETCore.App"
-                                   TargetingPackPath="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
                                    RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
                                    RuntimePackVersion="$(RuntimePackInWorkloadVersion)"
                                    RuntimePackPath="$(MicrosoftNetCoreAppRuntimePackLocationToUse)"

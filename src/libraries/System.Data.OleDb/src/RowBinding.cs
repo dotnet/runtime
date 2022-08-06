@@ -166,7 +166,7 @@ namespace System.Data.OleDb
 
         internal object GetVariantValue(int offset)
         {
-            Debug.Assert(_needToReset, "data type requires reseting and _needToReset is false");
+            Debug.Assert(_needToReset, "data type requires resetting and _needToReset is false");
             Debug.Assert(0 == (ODB.SizeOf_Variant % 8), "unexpected VARIANT size mutiplier");
             Debug.Assert(0 == offset % 8, "invalid alignment");
             ValidateCheck(offset, 2 * ODB.SizeOf_Variant);
@@ -195,8 +195,8 @@ namespace System.Data.OleDb
         // translate to native
         internal void SetVariantValue(int offset, object value)
         {
-            // two contigous VARIANT structures, second should be a binary copy of the first
-            Debug.Assert(_needToReset, "data type requires reseting and _needToReset is false");
+            // two contiguous VARIANT structures, second should be a binary copy of the first
+            Debug.Assert(_needToReset, "data type requires resetting and _needToReset is false");
             Debug.Assert(0 == (ODB.SizeOf_Variant % 8), "unexpected VARIANT size mutiplier");
             Debug.Assert(0 == offset % 8, "invalid alignment");
             ValidateCheck(offset, 2 * ODB.SizeOf_Variant);
@@ -236,8 +236,8 @@ namespace System.Data.OleDb
         // translate to native
         internal void SetBstrValue(int offset, string value)
         {
-            // two contigous BSTR ptr, second should be a binary copy of the first
-            Debug.Assert(_needToReset, "data type requires reseting and _needToReset is false");
+            // two contiguous BSTR ptr, second should be a binary copy of the first
+            Debug.Assert(_needToReset, "data type requires resetting and _needToReset is false");
             Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
             ValidateCheck(offset, 2 * IntPtr.Size);
 
@@ -276,7 +276,7 @@ namespace System.Data.OleDb
         // translate to native
         internal void SetByRefValue(int offset, IntPtr pinnedValue)
         {
-            Debug.Assert(_needToReset, "data type requires reseting and _needToReset is false");
+            Debug.Assert(_needToReset, "data type requires resetting and _needToReset is false");
             Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
             ValidateCheck(offset, 2 * IntPtr.Size);
 
@@ -366,7 +366,7 @@ namespace System.Data.OleDb
                 _haveData = false;
             }
 #if DEBUG
-            // verify types that need reseting are not forgotton, since the code
+            // verify types that need resetting are not forgotton, since the code
             // that sets this up is in dbbinding.cs, MaxLen { set; }
             if (!_needToReset)
             {
@@ -482,7 +482,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(0 == valueOffset % 8, "unexpected unaligned ptr offset");
 
-            // two contigous BSTR ptrs that need to be freed
+            // two contiguous BSTR ptrs that need to be freed
             // the second should only be freed if different from the first
             RuntimeHelpers.PrepareConstrainedRegions();
             try
@@ -511,7 +511,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(0 == valueOffset % 8, "unexpected unaligned ptr offset");
 
-            // two contigous CoTaskMemAlloc ptrs that need to be freed
+            // two contiguous CoTaskMemAlloc ptrs that need to be freed
             // the first should only be freed if different from the first
             RuntimeHelpers.PrepareConstrainedRegions();
             try
@@ -535,7 +535,7 @@ namespace System.Data.OleDb
 
         private static void FreeVariant(IntPtr buffer, int valueOffset)
         {
-            // two contigous VARIANT structures that need to be freed
+            // two contiguous VARIANT structures that need to be freed
             // the second should only be freed if different from the first
 
             Debug.Assert(0 == (ODB.SizeOf_Variant % 8), "unexpected VARIANT size mutiplier");
@@ -567,7 +567,7 @@ namespace System.Data.OleDb
 
         private static unsafe void FreePropVariant(IntPtr buffer, int valueOffset)
         {
-            // two contigous PROPVARIANT structures that need to be freed
+            // two contiguous PROPVARIANT structures that need to be freed
             // the second should only be freed if different from the first
             Debug.Assert(0 == (sizeof(PROPVARIANT) % 8), "unexpected PROPVARIANT size mutiplier");
             Debug.Assert(0 == valueOffset % 8, "unexpected unaligned ptr offset");

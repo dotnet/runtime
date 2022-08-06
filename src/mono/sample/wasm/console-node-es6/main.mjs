@@ -1,10 +1,18 @@
+// @ts-check
+// @ts-ignore
 import createDotnetRuntime from './dotnet.js'
+import process from 'process'
 
-const { MONO } = await createDotnetRuntime(() => ({
+/**
+ * @type {import('../../../wasm/runtime/dotnet').CreateDotnetRuntimeType}
+ */
+const createDotnetRuntimeTyped = createDotnetRuntime;
+
+const { runMainAndExit } = await createDotnetRuntimeTyped(() => ({
     disableDotnet6Compatibility: true,
     configSrc: "./mono-config.json",
 }));
 
 const app_args = process.argv.slice(2);
-const dllName = "Wasm.Console.Node.ES6.Sample.dll";
-await MONO.mono_run_main_and_exit(dllName, app_args);
+const dllName = "Wasm.Console.Node.Sample.dll";
+await runMainAndExit(dllName, app_args);

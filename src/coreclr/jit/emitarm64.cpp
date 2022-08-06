@@ -2545,7 +2545,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     //    'elemWidth' is the number of bits that we will use for the ROR and Replicate operations
     //    'S'         is the number of consecutive 1 bits for the immediate
     //    'R'         is the number of bits that we will Rotate Right the immediate
-    //    'size'      selects the final size of the immedate that we return (64 or 32 bits)
+    //    'size'      selects the final size of the immediate that we return (64 or 32 bits)
 
     assert(S < elemWidth); // 'elemWidth' consecutive one's is a reserved encoding
 
@@ -3297,7 +3297,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 /*****************************************************************************
  *
  *  For the given 'datasize' and arrangement 'opts'
- *  returns true is the pair spcifies a valid arrangement
+ *  returns true is the pair specifies a valid arrangement
  */
 /*static*/ bool emitter::isValidArrangement(emitAttr datasize, insOpts opt)
 {
@@ -7692,7 +7692,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
 /*****************************************************************************
  *
- *  Add an instruction referencing two register and consectutive stack-based local variable slots.
+ *  Add an instruction referencing two register and consecutive stack-based local variable slots.
  */
 void emitter::emitIns_R_R_S_S(
     instruction ins, emitAttr attr1, emitAttr attr2, regNumber reg1, regNumber reg2, int varx, int offs)
@@ -12694,9 +12694,9 @@ void emitter::emitDispInsHelp(
                     emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
                     size_t targetHandle = id->idDebugOnlyInfo()->idMemCookie;
 
-                    if (targetHandle == THT_IntializeArrayIntrinsics)
+                    if (targetHandle == THT_InitializeArrayIntrinsics)
                     {
-                        targetName = "IntializeArrayIntrinsics";
+                        targetName = "InitializeArrayIntrinsics";
                     }
                     else if (targetHandle == THT_GSCookieCheck)
                     {

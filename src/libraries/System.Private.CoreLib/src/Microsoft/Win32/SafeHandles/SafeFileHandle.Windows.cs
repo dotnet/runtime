@@ -52,7 +52,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if ((options & FileOptions.Asynchronous) != 0)
                 {
-                    // the handle has not been exposed yet, so we don't need to aquire a lock
+                    // the handle has not been exposed yet, so we don't need to acquire a lock
                     fileHandle.InitThreadPoolBinding();
                 }
 
@@ -109,6 +109,7 @@ namespace Microsoft.Win32.SafeHandles
                     errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
                 }
 
+                fileHandle.Dispose();
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
 

@@ -984,15 +984,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 finally
                 {
                     // dispose all resources
-                    if (parent != null)
-                    {
-                        parent.Dispose();
-                    }
-
-                    if (tempEntry != null)
-                    {
-                        tempEntry.Dispose();
-                    }
+                    parent?.Dispose();
+                    tempEntry?.Dispose();
                 }
             }
             else
@@ -1031,15 +1024,8 @@ namespace System.DirectoryServices.ActiveDirectory
                     finally
                     {
                         // dispose all resources
-                        if (parent != null)
-                        {
-                            parent.Dispose();
-                        }
-
-                        if (tempEntry != null)
-                        {
-                            tempEntry.Dispose();
-                        }
+                        parent?.Dispose();
+                        tempEntry?.Dispose();
                     }
                 }
                 catch (COMException e)
@@ -1091,10 +1077,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (partitionsEntry != null)
-                {
-                    partitionsEntry.Dispose();
-                }
+                partitionsEntry?.Dispose();
             }
         }
 

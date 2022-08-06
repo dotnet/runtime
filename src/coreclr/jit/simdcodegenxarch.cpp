@@ -731,7 +731,7 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 }
 
 //--------------------------------------------------------------------------------
-// genSIMDIntrinsicRelOp: Generate code for a SIMD Intrinsic relational operater
+// genSIMDIntrinsicRelOp: Generate code for a SIMD Intrinsic relational operator
 // <, <=, >, >= and ==
 //
 // Arguments:
@@ -870,7 +870,7 @@ void CodeGen::genStoreIndTypeSIMD12(GenTree* treeNode)
     assert(writeBarrierForm == GCInfo::WBF_NoBarrier);
 #endif
 
-    // Need an addtional Xmm register to extract upper 4 bytes from data.
+    // Need an additional Xmm register to extract upper 4 bytes from data.
     regNumber tmpReg = treeNode->GetSingleTempReg();
 
     genConsumeOperands(treeNode->AsOp());
@@ -906,7 +906,7 @@ void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
     assert(!op1->isContained());
     regNumber operandReg = genConsumeReg(op1);
 
-    // Need an addtional Xmm register to read upper 4 bytes, which is different from targetReg
+    // Need an additional Xmm register to read upper 4 bytes, which is different from targetReg
     regNumber tmpReg = treeNode->GetSingleTempReg();
     assert(tmpReg != targetReg);
 
@@ -1052,7 +1052,7 @@ void CodeGen::genPutArgStkSIMD12(GenTree* treeNode)
     assert(!op1->isContained());
     regNumber operandReg = genConsumeReg(op1);
 
-    // Need an addtional Xmm register to extract upper 4 bytes from data.
+    // Need an additional Xmm register to extract upper 4 bytes from data.
     regNumber tmpReg = treeNode->GetSingleTempReg();
 
     genStoreSIMD12ToStack(operandReg, tmpReg);

@@ -1609,7 +1609,7 @@ namespace System.Tests
             }
         }
 
-        public static IEnumerable<object[]> Copy_UnreliableCoversion_CantPerform_TestData()
+        public static IEnumerable<object[]> Copy_UnreliableConversion_CantPerform_TestData()
         {
             yield return new object[] { new object[] { "1" }, new int[1] };
 
@@ -1633,8 +1633,8 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Copy_UnreliableCoversion_CantPerform_TestData))]
-        public static void Copy_UnreliableConverson_CantPerform_ThrowsInvalidCastException(Array sourceArray, Array destinationArray)
+        [MemberData(nameof(Copy_UnreliableConversion_CantPerform_TestData))]
+        public static void Copy_UnreliableConversion_CantPerform_ThrowsInvalidCastException(Array sourceArray, Array destinationArray)
         {
             int length = Math.Min(sourceArray.Length, destinationArray.Length);
             Assert.Throws<InvalidCastException>(() => Array.Copy(sourceArray, destinationArray, length));
@@ -1651,7 +1651,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Copy_UnreliableCoversion_CantPerform_TestData))]
+        [MemberData(nameof(Copy_UnreliableConversion_CantPerform_TestData))]
         public static void ConstrainedCopy_UnreliableConversion_CantPerform_ThrowsArrayTypeMismatchException(Array sourceArray, Array destinationArray)
         {
             int length = Math.Min(sourceArray.Length, destinationArray.Length);

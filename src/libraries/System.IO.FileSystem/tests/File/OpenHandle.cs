@@ -11,20 +11,50 @@ namespace System.IO.Tests
     {
         protected override string GetExpectedParamName(string paramName) => paramName;
 
-        protected override FileStream CreateFileStream(string path, FileMode mode)
-        {
-            FileAccess access = mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite;
-            return new FileStream(File.OpenHandle(path, mode, access), access);
-        }
+        protected override FileStream CreateFileStream(string path, FileMode mode) =>
+            CreateFileStream(path, mode, mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite);
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
-            => new FileStream(File.OpenHandle(path, mode, access), access);
+        {
+            SafeFileHandle handle = File.OpenHandle(path, mode, access);
+            try
+            {
+                return new FileStream(handle, access);
+            }
+            catch
+            {
+                handle.Dispose();
+                throw;
+            }
+        }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new FileStream(File.OpenHandle(path, mode, access, share, options), access, bufferSize, (options & FileOptions.Asynchronous) != 0);
+        {
+            SafeFileHandle handle = File.OpenHandle(path, mode, access, share, options);
+            try
+            {
+                return new FileStream(handle, access, bufferSize, (options & FileOptions.Asynchronous) != 0);
+            }
+            catch
+            {
+                handle.Dispose();
+                throw;
+            }
+        }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
-            => new FileStream(File.OpenHandle(path, mode, access, share, options, preallocationSize), access, bufferSize, (options & FileOptions.Asynchronous) != 0);
+        {
+            SafeFileHandle handle = File.OpenHandle(path, mode, access, share, options, preallocationSize);
+            try
+            {
+                return new FileStream(handle, access, bufferSize, (options & FileOptions.Asynchronous) != 0);
+            }
+            catch
+            {
+                handle.Dispose();
+                throw;
+            }
+        }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/53432")]
         [Theory, MemberData(nameof(StreamSpecifiers))]

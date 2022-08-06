@@ -30,10 +30,10 @@ namespace System.IO.Ports.Tests
         //then the contents of the string itself
         private const string DEFAULT_STRING = "DEFAULT_STRING";
 
-        //The string size used when veryifying BytesToWrite
+        //The string size used when verifying BytesToWrite
         private static readonly int s_STRING_SIZE_BYTES_TO_WRITE = TCSupport.MinimumBlockingByteCount;
 
-        //The string size used when veryifying Handshake
+        //The string size used when verifying Handshake
         private static readonly int s_STRING_SIZE_HANDSHAKE = TCSupport.MinimumBlockingByteCount;
         private const int NUM_TRYS = 5;
 

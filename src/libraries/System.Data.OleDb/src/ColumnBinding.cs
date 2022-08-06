@@ -206,10 +206,7 @@ namespace System.Data.OleDb
             StringMemHandle? sptr = _sptr;
             _sptr = null;
 
-            if (null != sptr)
-            {
-                sptr.Dispose();
-            }
+            sptr?.Dispose();
 
             if (_pinnedBuffer.IsAllocated)
             {
