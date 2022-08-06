@@ -372,7 +372,7 @@ jobs:
       - Browser_wasm
     nameSuffix: _EAT
     runAOT: false
-    runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
+    tryRunSmokeOnly: true
     alwaysRun: ${{ variables.isRollingBuild }}
 
 # AOT Library tests
@@ -382,7 +382,7 @@ jobs:
       - Browser_wasm
     nameSuffix: _AOT
     runAOT: true
-    runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
+    tryRunSmokeOnly: true
     alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-build-tests.yml
