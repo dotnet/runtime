@@ -35,10 +35,10 @@ flowchart
     istrTier0Q{"<b>TieredPGO_Strategy:</b><br/>Instrument only<br/>hot Tier0 code?"}
     istrTier0Q-->|No, always instrument tier0|tier0
     istrTier0Q-->|Yes, only hot|tier000
-    tier000["JIT to <b><ins>Tier0</ins></b><br/><br/>(not optimized, not instrumented,<br/> with patchpoints)"]-->ishot555
+    tier000["JIT to <b><ins>Tier0</ins></b><br/><br/>(not optimized, not instrumented,<br/> with patchpoints)"]-->|Running...|ishot555
     ishot555{"Is hot?<br/>(called >30 times)"}
     ishot555-.->|No,<br/>keep running...|ishot555
-    ishot555-->|Yes|istier1inst
+    ishot555-->|Yes|tier0
    
     hasR2R -->|Yes| R2R
     R2R["Use <b><ins>R2R</ins></b> code<br/><br/>(optimized, not instrumented,<br/>with patchpoints)"] -->|Running...|ishot1
@@ -51,12 +51,21 @@ flowchart
 
     tier0["JIT to <b><ins>InstrumentedTier</ins></b><br/><br/>(not optimized, instrumented,<br/> with patchpoints)"]-->|Running...|ishot5
     tier1pgo2["JIT to <b><ins>Tier1</ins></b><br/><br/>(optimized with profile data)"]
+    tier1pgo2_1["JIT to <b><ins>Tier1</ins></b><br/><br/>(optimized with profile data)"]
       
-    istier1inst{"<b>TieredPGO_Strategy:</b><br/>Enable optimizations<br/>for InstrumentedTier?"}-->|"No"|tier0
+    istier1inst{"<b>TieredPGO_Strategy:</b><br/>Enable optimizations<br/>for InstrumentedTier?"}-->|"No"|tier0_1
     istier1inst--->|"Yes"|tier1inst["JIT to <b><ins>InstrumentedTierOptimized</ins></b><br/><br/>(optimized, instrumented, <br/>with patchpoints)"]
-    tier1inst-->|Running...|ishot5
+    tier1inst-->|Running...|ishot5_1
     ishot5{"Is hot?<br/>(called >30 times)"}-->|Yes|tier1pgo2
     ishot5-.->|No,<br/>keep running...|ishot5
+
+    
+    ishot5_1{"Is hot?<br/>(called >30 times)"}
+    ishot5_1-.->|No,<br/>keep running...|ishot5_1
+    ishot5_1{"Is hot?<br/>(called >30 times)"}-->|Yes|tier1pgo2_1
+
+    tier0_1["JIT to <b><ins>InstrumentedTier</ins></b><br/><br/>(not optimized, instrumented,<br/> with patchpoints)"]
+    tier0_1-->|Running...|ishot5_1
 ```
 (_VSCode doesn't support mermaid diagrams, consider installing external add-ins_)
 
