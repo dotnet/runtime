@@ -307,8 +307,9 @@ void TieredCompilationManager::AsyncPromoteToTier1(
         {
             switch (g_pConfig->TieredPGO_Strategy())
             {
-                // 0: Since previous tier is not instrumented we just promote to Tier1 without any Dynamic PGO
+                // 0: In this mode previous tier is OptimizationTier0 only in case of R2R
                 case InstrumentColdNonPrejittedCode:
+                    _ASSERT(ExecutionManager::IsReadyToRunCode(currentNativeCodeVersion.GetNativeCode()));
                     break;
 
                 // 1: Promote hot R2R code to TierInstrumented
