@@ -16,7 +16,7 @@
 m_CallersSP field 8      ; SP at routine entry
             field 2  * 8 ; x0..x1
             field 8      ; alignment padding
-            field 4 * 8  ; d0..d3
+            field 4  * 16; q0..q3
 PROBE_FRAME_SIZE    field 0
 
     ;; See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves return registers
@@ -48,18 +48,20 @@ PROBE_FRAME_SIZE    field 0
         ;; Slot at [sp, #0x70] is reserved for caller sp
 
         ;; Save the integer return registers
-        PROLOG_NOP str         x0,       [sp, #0x78]
-        PROLOG_NOP str         x1,       [sp, #0x80]
+        PROLOG_NOP stp         x0, x1,   [sp, #0x78]
 
         ;; Slot at [sp, #0x88] is alignment padding
 
-        ;; Save the floating return registers
-        PROLOG_NOP stp         d0, d1,   [sp, #0x90]
-        PROLOG_NOP stp         d2, d3,   [sp, #0xA0]
+        ;; Save the FP/HFA/HVA return registers
+        PROLOG_NOP stp         q0, q1,   [sp, #0x90]
+        PROLOG_NOP stp         q2, q3,   [sp, #0xB0]
 
         ;; Perform the rest of the PInvokeTransitionFrame initialization.
-        str         $BITMASK,  [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]         ; save the register bitmask passed in by caller
-        str         $threadReg,[sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]       ; Thread * (unused by stackwalker)
+        ;;   str         $threadReg,[sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]       ; Thread * (unused by stackwalker)
+        ;;   str         $BITMASK,  [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]         ; save the register bitmask passed in by caller
+        ASSERT OFFSETOF__PInvokeTransitionFrame__m_Flags == (OFFSETOF__PInvokeTransitionFrame__m_pThread + 8)
+        stp         $threadReg, $BITMASK, [sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
+
         add         $trashReg, sp,  #PROBE_FRAME_SIZE                                   ; recover value of caller's SP
         str         $trashReg, [sp, #m_CallersSP]                                       ; save caller's SP
 
@@ -77,12 +79,11 @@ PROBE_FRAME_SIZE    field 0
         POP_PROBE_FRAME
 
         ;; Restore the integer return registers
-        PROLOG_NOP ldr          x0,       [sp, #0x78]
-        PROLOG_NOP ldr          x1,       [sp, #0x80]
+        PROLOG_NOP ldp          x0, x1,   [sp, #0x78]
 
-        ; Restore the floating return registers
-        EPILOG_NOP ldp          d0, d1,   [sp, #0x90]
-        EPILOG_NOP ldp          d2, d3,   [sp, #0xA0]
+        ; Restore the FP/HFA/HVA return registers
+        EPILOG_NOP ldp          q0, q1,   [sp, #0x90]
+        EPILOG_NOP ldp          q2, q3,   [sp, #0xB0]
 
         ;; Restore callee saved registers
         EPILOG_RESTORE_REG_PAIR x19, x20, #0x20
@@ -173,11 +174,11 @@ WaitForGC
         bl          RhpWaitForGC2
 
         ldr         x2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
-        tbnz        x2, #PTFF_THREAD_ABORT_BIT, %F1
+        tbnz        x2, #PTFF_THREAD_ABORT_BIT, ThrowThreadAbort
 
         POP_PROBE_FRAME
         EPILOG_RETURN
-1
+ThrowThreadAbort
         POP_PROBE_FRAME
         EPILOG_NOP mov w0, #STATUS_REDHAWK_THREAD_ABORT
         EPILOG_NOP mov x1, lr ;; return address as exception PC

@@ -467,9 +467,9 @@ mini_set_inline_failure (MonoCompile *cfg, const char *msg)
 } while (0)
 
 #define GET_BBLOCK(cfg,tblock,ip) do { \
+		if ((ip) >= end || (ip) < header->code) { UNVERIFIED; }	\
 		(tblock) = cfg->cil_offset_to_bb [(ip) - cfg->cil_start]; \
 		if (!(tblock)) { \
-			if ((ip) >= end || (ip) < header->code) UNVERIFIED; \
 			NEW_BBLOCK (cfg, (tblock)); \
 			(tblock)->cil_code = (ip); \
 			ADD_BBLOCK (cfg, (tblock)); \
