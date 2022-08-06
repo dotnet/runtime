@@ -10250,11 +10250,11 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 
 ValueNum Compiler::optConservativeVN(GenTree* tree)
 {
-  if (optLocalAssertionProp)
-  {
-    return ValueNumStore::NoVN;
-  }
+    if (optLocalAssertionProp)
+    {
+        return ValueNumStore::NoVN;
+    }
 
-  assert(vnStore != nullptr);
-  return vnStore->VNConservativeNormalValue(tree->gtVNPair);
+    assert(vnStore != nullptr);
+    return vnStore->VNConservativeNormalValue(tree->gtVNPair);
 }
