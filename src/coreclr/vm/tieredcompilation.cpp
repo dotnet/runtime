@@ -290,6 +290,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
 
     NativeCodeVersion::OptimizationTier nextTier = NativeCodeVersion::OptimizationTier1;
 
+#ifdef FEATURE_PGO
     // If TieredPGO is enabled, follow TieredPGO_Strategy, see comments in clrconfigvalues.h around it
     if (g_pConfig->TieredPGO() && pMethodDesc->IsEligibleForTieredCompilation())
     {
@@ -303,7 +304,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
                     nextTier = NativeCodeVersion::OptimizationTierInstrumented;
                     break;
 
-                    // 1: Promote hot R2R code to TierInstrumented
+                // 1: Promote hot R2R code to TierInstrumented
                 case UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTier:
                     if (ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
                     {
@@ -311,7 +312,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
                     }
                     break;
 
-                    // 2: Promote hot R2R code to TierInstrumentedOptimized
+                // 2: Promote hot R2R code to TierInstrumentedOptimized
                 case UseInstrumentedTierForILOnly_PromoteHotR2RToInstrumentedTierOptimized:
                     if (ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
                     {
@@ -324,16 +325,12 @@ void TieredCompilationManager::AsyncPromoteToTier1(
                     nextTier = NativeCodeVersion::OptimizationTierInstrumented;
                     break;
 
-                // 4: Promote hot Tier0/R2R code to TierInstrumentedOptimized
-                case PromoteHotTier0ToInstrumentedTierOptimized:
-                    nextTier = NativeCodeVersion::OptimizationTierInstrumentedOptimized;
-                    break;
-
                 default:
-                    _ASSERT("Unknown TieredPGO_Strategy");
+                    UNREACHABLE_MSG("Unknown TieredPGO_Strategy");
             }
         }
     }
+#endif
 
     ILCodeVersion ilCodeVersion = tier0NativeCodeVersion.GetILCodeVersion();
     _ASSERTE(!ilCodeVersion.HasAnyOptimizedNativeCodeVersion(tier0NativeCodeVersion));

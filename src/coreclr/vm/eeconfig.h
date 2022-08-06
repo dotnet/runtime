@@ -70,7 +70,6 @@ enum TieredPGOStrategy
     // In these modes we never instrument Tier0 and only promote hot Tier0 and R2R
     // code to intermediate tiers with instrumentation
     PromoteHotTier0ToInstrumentedTier = 3,
-    PromoteHotTier0ToInstrumentedTierOptimized = 4,
 };
 
 class EEConfig
@@ -114,7 +113,7 @@ public:
 
 #if defined(FEATURE_PGO)
     bool              TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
-    TieredPGOStrategy TieredPGO_Strategy(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO_Strategy; }
+    TieredPGOStrategy TieredPGO_Strategy(void) const { LIMITED_METHOD_CONTRACT;  return tieredPGO_Strategy; }
 #endif
 
 #if defined(FEATURE_READYTORUN)
@@ -681,7 +680,7 @@ private: //----------------------------------------------------------------
 
 #if defined(FEATURE_PGO)
     bool fTieredPGO;
-    TieredPGOStrategy fTieredPGO_Strategy;
+    TieredPGOStrategy tieredPGO_Strategy;
 #endif
 
 #if defined(FEATURE_READYTORUN)

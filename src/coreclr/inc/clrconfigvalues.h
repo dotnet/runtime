@@ -619,9 +619,8 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier
 //  1 -              Use InstrumentedTier for non-R2R code as the initial tier, promote hot R2R to InstrumentedTier
 //  2 - [Not tested] Use InstrumentedTier for non-R2R code as the initial tier, promote hot R2R to InstrumentedTierOptimized
 //  3 -              Promote hot Tier0/R2R to InstrumentedTier
-//  4 - [Not tested] Promote hot Tier0/R2R to InstrumentedTierOptimized
 //
-// Pros & cons of using optimizations inside the instrumented tiers (modes '2' and '4')
+// Pros & cons of using optimizations inside the instrumented tiers (mode '2')
 // Pros:
 //    * Lower overhead from instrumentation (and thanks to optimizations we _can_ optimize probes and emit less of those)
 //    * Optimized code is able to inline methods so we won't be producing new Compilation units for even small methods
