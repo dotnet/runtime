@@ -10248,7 +10248,7 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 #endif // DEBUG
 }
 
-ValueNum Compiler::optConservativeVN(GenTree* tree)
+ValueNum Compiler::optConservativeNormalVN(GenTree* tree)
 {
     if (optLocalAssertionProp)
     {
