@@ -270,7 +270,7 @@ bool TieredCompilationManager::TrySetCodeEntryPointAndRecordMethodForCallCountin
 }
 
 void TieredCompilationManager::AsyncPromoteToTier1(
-    NativeCodeVersion tier0NativeCodeVersion,
+    NativeCodeVersion currentNativeCodeVersion,
     bool *createTieringBackgroundWorkerRef)
 {
     CONTRACTL
@@ -282,8 +282,8 @@ void TieredCompilationManager::AsyncPromoteToTier1(
     CONTRACTL_END;
 
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
-    _ASSERTE(!tier0NativeCodeVersion.IsNull());
-    _ASSERTE(!tier0NativeCodeVersion.IsFinalTier());
+    _ASSERTE(!currentNativeCodeVersion.IsNull());
+    _ASSERTE(!currentNativeCodeVersion.IsFinalTier());
     _ASSERTE(createTieringBackgroundWorkerRef != nullptr);
 
     NativeCodeVersion t1NativeCodeVersion;
@@ -294,7 +294,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
     // particular version of the IL code regardless of any changes that may
     // occur between now and when jitting completes. If the IL does change in that
     // interval the new code entry won't be activated.
-    MethodDesc *pMethodDesc = tier0NativeCodeVersion.GetMethodDesc();
+    MethodDesc *pMethodDesc = currentNativeCodeVersion.GetMethodDesc();
 
     NativeCodeVersion::OptimizationTier nextTier = NativeCodeVersion::OptimizationTier1;
 
@@ -302,8 +302,8 @@ void TieredCompilationManager::AsyncPromoteToTier1(
     // If TieredPGO is enabled, follow TieredPGO_Strategy, see comments in clrconfigvalues.h around it
     if (g_pConfig->TieredPGO())
     {
-        if (tier0NativeCodeVersion.IsDefaultVersion() &&
-            tier0NativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)
+        if (currentNativeCodeVersion.IsDefaultVersion() &&
+            currentNativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)
         {
             switch (g_pConfig->TieredPGO_Strategy())
             {
@@ -314,7 +314,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
 
                 // 1: Promote hot R2R code to TierInstrumented
                 case InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode:
-                    if (ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
+                    if (ExecutionManager::IsReadyToRunCode(currentNativeCodeVersion.GetNativeCode()))
                     {
                         nextTier = NativeCodeVersion::OptimizationTierInstrumented;
                     }
@@ -322,7 +322,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
 
                 // 2: Promote hot R2R code to TierInstrumentedOptimized
                 case InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode_Optimized:
-                    if (ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
+                    if (ExecutionManager::IsReadyToRunCode(currentNativeCodeVersion.GetNativeCode()))
                     {
                         nextTier = NativeCodeVersion::OptimizationTierInstrumentedOptimized;
                     }
@@ -335,7 +335,7 @@ void TieredCompilationManager::AsyncPromoteToTier1(
 
                 // 4: Promote hot Tier0 to TierInstrumented and hot R2R to TierInstrumentedOptimized
                 case InstrumentHotNonPrejittedCode_InstrumentHotPrejittedCode_Optimized:
-                    if (ExecutionManager::IsReadyToRunCode(tier0NativeCodeVersion.GetNativeCode()))
+                    if (ExecutionManager::IsReadyToRunCode(currentNativeCodeVersion.GetNativeCode()))
                     {
                         nextTier = NativeCodeVersion::OptimizationTierInstrumentedOptimized;
                     }
@@ -352,8 +352,8 @@ void TieredCompilationManager::AsyncPromoteToTier1(
     }
 #endif
 
-    ILCodeVersion ilCodeVersion = tier0NativeCodeVersion.GetILCodeVersion();
-    _ASSERTE(!ilCodeVersion.HasAnyOptimizedNativeCodeVersion(tier0NativeCodeVersion));
+    ILCodeVersion ilCodeVersion = currentNativeCodeVersion.GetILCodeVersion();
+    _ASSERTE(!ilCodeVersion.HasAnyOptimizedNativeCodeVersion(currentNativeCodeVersion));
     hr = ilCodeVersion.AddNativeCodeVersion(pMethodDesc, nextTier, &t1NativeCodeVersion);
     if (FAILED(hr))
     {
