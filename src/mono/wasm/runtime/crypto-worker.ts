@@ -204,21 +204,12 @@ class LibraryChannel {
 
     public send_msg(msg: string): string {
         try {
-            let state = Atomics.load(this.comm, this.STATE_IDX);
-            // FIXME: this console write is possibly serializing the access and prevents a deadlock
-            if (state !== this.STATE_IDLE) console.debug(`MONO_WASM_ENCRYPT_DECRYPT: send_msg, waiting for idle now, ${state}`);
-            state = this.wait_for_state(pstate => pstate == this.STATE_IDLE, "waiting");
-
+            this.wait_for_state_change_to(pstate => pstate == this.STATE_IDLE, "waiting");
             this.send_request(msg);
             return this.read_response();
         } catch (err) {
             this.reset(LibraryChannel._stringify_err(err));
             throw err;
-        }
-        finally {
-            const state = Atomics.load(this.comm, this.STATE_IDX);
-            // FIXME: this console write is possibly serializing the access and prevents a deadlock
-            if (state !== this.STATE_IDLE) console.debug(`MONO_WASM_ENCRYPT_DECRYPT: state at end of send_msg: ${state}`);
         }
     }
 
@@ -229,8 +220,10 @@ class LibraryChannel {
             throw new Error(`OWNER: Invalid sync communication channel state: ${state}`);
 
         // Notify webworker
-        Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
-        this._change_state_locked(this.STATE_SHUTDOWN);
+        this.using_lock(() => {
+            Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
+            this._change_state_locked(this.STATE_SHUTDOWN);
+        });
         Atomics.notify(this.comm, this.STATE_IDX);
     }
 
@@ -245,8 +238,10 @@ class LibraryChannel {
             return;
         }
 
-        Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
-        this._change_state_locked(this.STATE_RESET);
+        this.using_lock(() => {
+            Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
+            this._change_state_locked(this.STATE_RESET);
+        });
         Atomics.notify(this.comm, this.STATE_IDX);
     }
 
@@ -256,9 +251,7 @@ class LibraryChannel {
         let msg_written = 0;
 
         for (; ;) {
-            this.acquire_lock();
-
-            try {
+            this.using_lock(() => {
                 // Write the message and return how much was written.
                 const wrote = this.write_to_msg(msg, msg_written, msg_len);
                 msg_written += wrote;
@@ -271,17 +264,14 @@ class LibraryChannel {
 
                 // Notify webworker
                 this._change_state_locked(state);
-            } finally {
-                this.release_lock();
-            }
-
+            });
             Atomics.notify(this.comm, this.STATE_IDX);
 
             // The send message is complete.
             if (state === this.STATE_REQ)
                 break;
 
-            this.wait_for_state(state => state == this.STATE_AWAIT, "send_request");
+            this.wait_for_state_change_to(state => state == this.STATE_AWAIT, "send_request");
         }
     }
 
@@ -299,34 +289,36 @@ class LibraryChannel {
     private read_response(): string {
         let response = "";
         for (; ;) {
-            const state = this.wait_for_state(state => state == this.STATE_RESP || state == this.STATE_RESP_P, "read_response");
-            this.acquire_lock();
-
-            try {
+            this.wait_for_state_change_to(state => state == this.STATE_RESP || state == this.STATE_RESP_P, "read_response");
+            let state;
+            const done = this.using_lock(() => {
                 const size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
 
                 // Append the latest part of the message.
                 response += this.read_from_msg(0, size_to_read);
 
                 // The response is complete.
+                state = Atomics.load(this.comm, this.STATE_IDX);
                 if (state === this.STATE_RESP) {
                     Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
-                    break;
+                    return true;
                 }
 
                 // Reset the size and transition to await state.
                 Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
                 this._change_state_locked(this.STATE_AWAIT);
-            } finally {
-                this.release_lock();
-            }
+                return false;
+            });
+            if (done) break;
             Atomics.notify(this.comm, this.STATE_IDX);
         }
 
         // Reset the communication channel's state and let the
         // webworker know we are done.
-        this._change_state_locked(this.STATE_IDLE);
-        Atomics.notify(this.comm, this.STATE_IDX);
+        this.using_lock(() => {
+            this._change_state_locked(this.STATE_IDLE);
+            Atomics.notify(this.comm, this.STATE_IDX);
+        });
 
         return response;
     }
@@ -335,20 +327,19 @@ class LibraryChannel {
         Atomics.store(this.comm, this.STATE_IDX, newState);
     }
 
-    private wait_for_state(is_ready: (state: number) => boolean, msg: string): number {
+    private wait_for_state_change_to(is_ready: (state: number) => boolean, msg: string): void {
         // Wait for webworker
         //  - Atomics.wait() is not permissible on the main thread.
         for (; ;) {
-            const lock_state = Atomics.load(this.comm, this.LOCK_IDX);
-            if (lock_state !== this.LOCK_UNLOCKED)
-                continue;
+            const done = this.using_lock(() => {
+                const state = Atomics.load(this.comm, this.STATE_IDX);
+                if (state == this.STATE_REQ_FAILED)
+                    throw new OperationFailedError(`Worker failed during ${msg} with state=${state}`);
 
-            const state = Atomics.load(this.comm, this.STATE_IDX);
-            if (state == this.STATE_REQ_FAILED)
-                throw new OperationFailedError(`Worker failed during ${msg} with state=${state}`);
-
-            if (is_ready(state))
-                return state;
+                if (is_ready(state))
+                    return true;
+            });
+            if (done) return;
         }
     }
 
@@ -358,7 +349,16 @@ class LibraryChannel {
         return String.fromCharCode.apply(null, slicedMessage);
     }
 
-    private acquire_lock() {
+    private using_lock(cb: Function) {
+        try {
+            this._acquire_lock();
+            return cb();
+        } finally {
+            this._release_lock();
+        }
+    }
+
+    private _acquire_lock() {
         for (; ;) {
             const lock_state = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED);
 
@@ -371,7 +371,7 @@ class LibraryChannel {
         }
     }
 
-    private release_lock() {
+    private _release_lock() {
         const result = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_OWNED, this.LOCK_UNLOCKED);
         if (result !== this.LOCK_OWNED) {
             throw new Error("CRYPTO: LibraryChannel tried to release a lock that wasn't acquired: " + result);
