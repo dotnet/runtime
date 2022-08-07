@@ -49,7 +49,7 @@ class ChannelWorker {
                 do {
                     this._wait(this.STATE_IDLE);
                     state = Atomics.load(this.comm, this.STATE_IDX);
-                    if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER1: Probably deadlock with state=${state}` + (new Error).stack);
+                    if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER1: Probably deadlock with state=${state}\n` + (new Error).stack);
                 } while (state !== this.STATE_REQ && state !== this.STATE_REQ_P && state !== this.STATE_SHUTDOWN && state !== this.STATE_REQ_FAILED && state !== this.STATE_RESET);
 
                 this._throw_if_reset_or_shutdown();
@@ -118,7 +118,7 @@ class ChannelWorker {
 
                 // Get the current state and message size
                 const state = Atomics.load(this.comm, this.STATE_IDX);
-                if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER2: Probably deadlock with state=${state}` + (new Error).stack);
+                if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER2: Probably deadlock with state=${state}\n` + (new Error).stack);
                 const size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
 
                 const view = this.msg.subarray(0, size_to_read);
@@ -157,7 +157,7 @@ class ChannelWorker {
 
         const start = new Date().valueOf();
         for (; ;) {
-            if ((new Date().valueOf()) - start > 1000 * 60) console.warn("WORKER3: Probably deadlock" + (new Error).stack);
+            if ((new Date().valueOf()) - start > 1000 * 60) console.warn("WORKER3: Probably deadlock\n" + (new Error).stack);
             this._acquire_lock();
 
             try {
@@ -206,7 +206,7 @@ class ChannelWorker {
         const start = new Date().valueOf();
         for (; ;) {
             const lockState = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED);
-            if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER4: Probably deadlock during  with state=${lockState}` + (new Error).stack);
+            if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER4: Probably deadlock during  with lockState=${lockState}\n` + (new Error).stack);
             this._throw_if_reset_or_shutdown();
 
             if (lockState === this.LOCK_UNLOCKED)
@@ -222,8 +222,17 @@ class ChannelWorker {
     }
 
     _wait(expected_state: number) {
-        Atomics.wait(this.comm, this.STATE_IDX, expected_state);
-        this._throw_if_reset_or_shutdown();
+        const start = new Date().valueOf();
+        for (; ;) {
+            const res = Atomics.wait(this.comm, this.STATE_IDX, expected_state, 10000);
+            this._throw_if_reset_or_shutdown();
+            if (res === "ok") {
+                return;
+            }
+            const state = Atomics.load(this.comm, this.STATE_IDX);
+            console.log(`wait failed with ${res}  actual ${state} when waiting for ${expected_state}\n` + (new Error).stack);
+            if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER4: Probably deadlock during  with state=${state}\n` + (new Error).stack);
+        }
     }
 
     _throw_if_reset_or_shutdown() {
