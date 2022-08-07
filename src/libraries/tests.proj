@@ -564,107 +564,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Condition="'$(RunSmokeTestsOnly)' == 'true'"
-                      Include="@(SmokeTestProject)" />
-    <ProjectReference Condition="'$(RunHighAOTResourceRequiringTestsOnly)' == 'true'"
-                      Include="@(HighAOTResourceRequiringProject)"
-                      BuildInParallel="false" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true'">
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(TestAssemblies)' == 'true'" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"
-                      Condition="'$(TestPackages)' == 'true'" />
-    <TrimmingTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(TestTrimming)' == 'true'"
-                      AdditionalProperties="%(AdditionalProperties);SkipTrimmingProjectsRestore=true" />
-    <ProjectReference Include="@(TrimmingTestProjects)" />
-
-    <!-- wasm.build.tests are run on _WasmBuildTests job on CI, and with library tests locally. -->
-    <ProjectReference Include="$(RepoRoot)\src\tests\BuildWasmApps\Wasm.Build.Tests\*.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(TargetOS)' == 'Browser' and
-                                    (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmBuildTests)' == 'true') or
-                                     ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
-                      BuildInParallel="false" />
-
-    <ProjectReference Include="$(RepoRoot)\src\tests\BuildWasmApps\Wasm.Debugger.Tests\*.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(TargetOS)' == 'Browser' and
-                                    (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmDebuggerTests)' == 'true') or
-                                     ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
-                      BuildInParallel="false" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'iOS'">
-    <!-- Only System.Runtime tests on iOS for now -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
-
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\*.Test.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'iOS' and '$(IsManualOrRollingBuild)' == 'true'">
-    <!-- These crash on tvOS, but do not on iOS. Run these only on the rolling builds -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.IO.MemoryMappedFiles\tests\System.IO.MemoryMappedFiles.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime.Numerics\tests\System.Runtime.Numerics.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'iOSSimulator'">
-    <!-- https://github.com/dotnet/runtime/issues/57666 -->
-    <!-- <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
-                      BuildInParallel="false" /> -->
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'tvOS'">
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Device\**\*.Test.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'MacCatalyst'">
-    <!-- https://github.com/dotnet/runtime/issues/57666 -->
-    <!-- <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
-                      BuildInParallel="false" /> -->
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'tvOSSimulator'">
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Simulator\**\*.Test.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'Android'">
-    <ProjectReference Include="$(MonoProjectRoot)sample\Android\AndroidSampleApp.csproj"
-                      BuildInParallel="false" />
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\**\*.Test.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false" />
-  </ItemGroup>
-
-  <PropertyGroup>
-    <Samples_BuildInParallel Condition="'$(OS)' == 'Windows_NT'">false</Samples_BuildInParallel>
-    <Samples_BuildInParallel Condition="'$(OS)' != 'Windows_NT'">true</Samples_BuildInParallel>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunWasmSamples)' == 'true'">
-    <ProjectReference Include="$(MonoProjectRoot)sample\wasm\**\*.Sample.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      BuildInParallel="$(Samples_BuildInParallel)" />
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\WebAssembly\**\*.Test.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
+    <!--<ProjectReference Condition="'$(RunSmokeTestsOnly)' == 'true'"-->
+                      <!--Include="@(SmokeTestProject)" />-->
+    <!--<ProjectReference Condition="'$(RunHighAOTResourceRequiringTestsOnly)' == 'true'"-->
+                      <!--Include="@(HighAOTResourceRequiringProject)"-->
+                      <!--BuildInParallel="false" />-->
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
