@@ -80,6 +80,7 @@ namespace System
                 char valueLc = (char)(value & ~0x20);
                 return SpanHelpers.IndexOfAny(ref _firstChar, valueLc, valueUc, Length);
             }
+
             return SpanHelpers.IndexOf(ref _firstChar, value, Length);
         }
 
