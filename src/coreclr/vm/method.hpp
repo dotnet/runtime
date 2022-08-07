@@ -3330,20 +3330,14 @@ public:
         // No lock needed here. In the case of a generic dictionary expansion, the values of the old dictionary
         // slots are copied to the newly allocated dictionary, and the old dictionary is kept around. Whether we
         // return the old or new dictionary here, the values of the instantiation arguments will always be the same.
-        return Instantiation(IMD_GetMethodDictionary()->GetInstantiation(), m_wNumGenericArgs);
+        return (m_pPerInstInfo != NULL)
+                ? Instantiation(m_pPerInstInfo->GetInstantiation(), m_wNumGenericArgs)
+                : Instantiation();
     }
 
     PTR_Dictionary IMD_GetMethodDictionary()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_pPerInstInfo;
-    }
-
-    PTR_Dictionary IMD_GetMethodDictionaryNonNull()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(m_pPerInstInfo != NULL);
 
         return m_pPerInstInfo;
     }

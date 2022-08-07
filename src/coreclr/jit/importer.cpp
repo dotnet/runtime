@@ -1280,7 +1280,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                     }
                     else
                     {
-                        srcCall->gtArgs.InsertAfter(this, &*srcCall->gtArgs.Args().begin(), newArg);
+                        srcCall->gtArgs.InsertAfter(this, srcCall->gtArgs.Args().begin().GetArg(), newArg);
                     }
 #endif
                 }
@@ -19732,7 +19732,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     CORINFO_SIG_INFO        sig    = info.compMethodInfo->args;
     CORINFO_ARG_LIST_HANDLE sigArg = sig.args;
 
-    CallArg* argUse = pInlineInfo == nullptr ? nullptr : &*pInlineInfo->iciCall->AsCall()->gtArgs.Args().begin();
+    CallArg* argUse = pInlineInfo == nullptr ? nullptr : pInlineInfo->iciCall->AsCall()->gtArgs.Args().begin().GetArg();
 
     for (unsigned i = 0; i < info.compMethodInfo->args.numArgs; i++)
     {
