@@ -207,7 +207,7 @@ class LibraryChannel {
             let state = Atomics.load(this.comm, this.STATE_IDX);
             // FIXME: this console write is possibly serializing the access and prevents a deadlock
             if (state !== this.STATE_IDLE) console.debug(`MONO_WASM_ENCRYPT_DECRYPT: send_msg, waiting for idle now, ${state}`);
-            state = this.wait_for_state(pstate => pstate == this.STATE_IDLE, "waiting");
+            state = this._wait_for_state_change_to(pstate => pstate == this.STATE_IDLE, "waiting for IDLE in send_msg");
 
             this.send_request(msg);
             return this.read_response();
@@ -281,7 +281,7 @@ class LibraryChannel {
             if (state === this.STATE_REQ)
                 break;
 
-            this.wait_for_state(state => state == this.STATE_AWAIT, "send_request");
+            this._wait_for_state_change_to(state => state == this.STATE_AWAIT, "send_request");
         }
     }
 
@@ -299,7 +299,7 @@ class LibraryChannel {
     private read_response(): string {
         let response = "";
         for (; ;) {
-            const state = this.wait_for_state(state => state == this.STATE_RESP || state == this.STATE_RESP_P, "read_response");
+            const state = this._wait_for_state_change_to(state => state == this.STATE_RESP || state == this.STATE_RESP_P, "read_response");
             this.acquire_lock("-read response-");
 
             try {
@@ -335,7 +335,7 @@ class LibraryChannel {
         Atomics.store(this.comm, this.STATE_IDX, newState);
     }
 
-    private wait_for_state(is_ready: (state: number) => boolean, msg: string): number {
+    private _wait_for_state_change_to(is_ready: (state: number) => boolean, msg: string): number {
         const start = new Date().valueOf();
         // Wait for webworker
         //  - Atomics.wait() is not permissible on the main thread.

@@ -47,7 +47,7 @@ class ChannelWorker {
                 let state;
                 const start = new Date().valueOf();
                 do {
-                    this._wait(this.STATE_IDLE);
+                    this._wait_for_state_change_from(this.STATE_IDLE);
                     state = Atomics.load(this.comm, this.STATE_IDX);
                     if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER1: Probably deadlock with state=${state}\n` + (new Error).stack);
                 } while (state !== this.STATE_REQ && state !== this.STATE_REQ_P && state !== this.STATE_SHUTDOWN && state !== this.STATE_REQ_FAILED && state !== this.STATE_RESET);
@@ -141,7 +141,10 @@ class ChannelWorker {
                 this._release_lock();
             }
 
-            this._wait(this.STATE_AWAIT);
+            // we just changed the state to AWAIT, but by the time
+            // _wait_for_state_change_from is run, main thread might have
+            // already switched to the next state
+            this._wait_for_state_change_from(this.STATE_AWAIT);
         }
 
         return request;
@@ -179,7 +182,7 @@ class ChannelWorker {
 
             // Wait for the transition to know the main thread has
             // received the response by moving onto a new state.
-            this._wait(state);
+            this._wait_for_state_change_from(state);
 
             // Done sending response.
             if (state === this.STATE_RESP)
@@ -221,18 +224,9 @@ class ChannelWorker {
         }
     }
 
-    _wait(expected_state: number) {
-        const start = new Date().valueOf();
-        for (; ;) {
-            const res = Atomics.wait(this.comm, this.STATE_IDX, expected_state, 10000);
-            this._throw_if_reset_or_shutdown();
-            if (res === "ok") {
-                return;
-            }
-            const state = Atomics.load(this.comm, this.STATE_IDX);
-            console.log(`wait failed with ${res}  actual ${state} when waiting for ${expected_state}\n` + (new Error).stack);
-            if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER4: Probably deadlock during  with state=${state}\n` + (new Error).stack);
-        }
+    _wait_for_state_change_from(expected_state: number) {
+        Atomics.wait(this.comm, this.STATE_IDX, expected_state);
+        this._throw_if_reset_or_shutdown();
     }
 
     _throw_if_reset_or_shutdown() {
