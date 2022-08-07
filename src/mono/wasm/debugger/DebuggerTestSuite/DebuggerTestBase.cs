@@ -159,28 +159,30 @@ namespace DebuggerTests
         {
             dicScriptsIdToUrl = new Dictionary<string, string>();
             dicFileToUrl = new Dictionary<string, string>();
-            insp.On("Debugger.scriptParsed", async (args, c) =>
-            {
-                var script_id = args?["scriptId"]?.Value<string>();
-                var url = args["url"]?.Value<string>();
-                if (script_id.StartsWith("dotnet://"))
-                {
-                    var dbgUrl = args["dotNetUrl"]?.Value<string>();
-                    var arrStr = dbgUrl.Split("/");
-                    dbgUrl = arrStr[0] + "/" + arrStr[1] + "/" + arrStr[2] + "/" + arrStr[arrStr.Length - 1];
-                    dicScriptsIdToUrl[script_id] = dbgUrl;
-                    dicFileToUrl[dbgUrl] = args["url"]?.Value<string>();
-                }
-                else if (!String.IsNullOrEmpty(url))
-                {
-                    var dbgUrl = args["url"]?.Value<string>();
-                    var arrStr = dbgUrl.Split("/");
-                    dicScriptsIdToUrl[script_id] = arrStr[arrStr.Length - 1];
-                    dicFileToUrl[new Uri(url).AbsolutePath] = url;
-                }
-                await Task.FromResult(0);
-            });
+            insp.On("Debugger.scriptParsed", DefaultScriptParsedHandler);
             return dicScriptsIdToUrl;
+        }
+
+        protected Task<ProtocolEventHandlerReturn> DefaultScriptParsedHandler(JObject args, CancellationToken token)
+        {
+            var script_id = args?["scriptId"]?.Value<string>();
+            var url = args["url"]?.Value<string>();
+            if (script_id.StartsWith("dotnet://"))
+            {
+                var dbgUrl = args["dotNetUrl"]?.Value<string>();
+                var arrStr = dbgUrl.Split("/");
+                dbgUrl = arrStr[0] + "/" + arrStr[1] + "/" + arrStr[2] + "/" + arrStr[arrStr.Length - 1];
+                dicScriptsIdToUrl[script_id] = dbgUrl;
+                dicFileToUrl[dbgUrl] = args["url"]?.Value<string>();
+            }
+            else if (!String.IsNullOrEmpty(url))
+            {
+                var dbgUrl = args["url"]?.Value<string>();
+                var arrStr = dbgUrl.Split("/");
+                dicScriptsIdToUrl[script_id] = arrStr[arrStr.Length - 1];
+                dicFileToUrl[new Uri(url).AbsolutePath] = url;
+            }
+            return Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
         }
 
         internal async Task CheckInspectLocalsAtBreakpointSite(string url_key, int line, int column, string function_name, string eval_expression,
@@ -226,6 +228,48 @@ namespace DebuggerTests
         internal virtual async Task<JObject> WaitFor(string what)
         {
             return await insp.WaitFor(what);
+        }
+
+
+        public async Task WaitForScriptParsedEventsAsync(params string[] paths)
+        {
+            object llock = new();
+            List<string> pathsList = new(paths);
+            var tcs = new TaskCompletionSource();
+            insp.On("Debugger.scriptParsed", async (args, c) =>
+            {
+                await DefaultScriptParsedHandler(args, c);
+
+                string url = args["url"]?.Value<string>();
+                if (string.IsNullOrEmpty(url))
+                    return await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
+
+                lock (llock)
+                {
+                    try
+                    {
+                        int idx = pathsList.FindIndex(p => url?.EndsWith(p) == true);
+                        if (idx >= 0)
+                        {
+                            pathsList.RemoveAt(idx);
+                            if (pathsList.Count == 0)
+                            {
+                                tcs.SetResult();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        tcs.SetException(ex);
+                    }
+                }
+
+                return tcs.Task.IsCompleted
+                            ? await Task.FromResult(ProtocolEventHandlerReturn.RemoveHandler)
+                            : await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
+            });
+
+            await tcs.Task;
         }
 
         // sets breakpoint by method name and line offset
@@ -1239,7 +1283,7 @@ namespace DebuggerTests
             });
 
             Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
-            Assert.True(load_assemblies_res.IsOk);
+            load_assemblies_res.AssertOk();
         }
 
         internal async Task<JObject> LoadAssemblyDynamicallyALCAndRunMethod(string asm_file, string pdb_file, string type_name, string method_name)
@@ -1262,8 +1306,7 @@ namespace DebuggerTests
             });
 
             Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
-
-            Assert.True(load_assemblies_res.IsOk);
+            load_assemblies_res.AssertOk();
             await bpResolved;
 
             var run_method = JObject.FromObject(new
@@ -1297,7 +1340,7 @@ namespace DebuggerTests
                 expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] TestHotReloadUsingSDB:RunMethod', '" + class_name + "', '" + method_name + "'); }, 1);"
             });
 
-            await cli.SendCommand("Runtime.evaluate", run_method, token);
+            (await cli.SendCommand("Runtime.evaluate", run_method, token)).AssertOk();
             return await WaitFor(Inspector.PAUSE);
         }
 
@@ -1411,7 +1454,7 @@ namespace DebuggerTests
 
         internal async Task SetJustMyCode(bool enabled)
         {
-            var req = JObject.FromObject(new { enabled = enabled });
+            var req = JObject.FromObject(new { enabled });
             var res = await cli.SendCommand("DotnetDebugger.justMyCode", req, token);
             Assert.True(res.IsOk);
             Assert.Equal(res.Value["justMyCodeEnabled"], enabled);
