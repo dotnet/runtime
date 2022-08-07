@@ -39,7 +39,7 @@ namespace System
         public override string ToString() { throw null; }
     }
 
-    public sealed class BinaryDataConverter : System.Text.Json.Serialization.JsonConverter<BinaryData>
+    internal sealed class BinaryDataConverter : System.Text.Json.Serialization.JsonConverter<BinaryData>
     {
         public sealed override BinaryData? Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
         public sealed override void Write(System.Text.Json.Utf8JsonWriter writer, BinaryData value, System.Text.Json.JsonSerializerOptions options) { }

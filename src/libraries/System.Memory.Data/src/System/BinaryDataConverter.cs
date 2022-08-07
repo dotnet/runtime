@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace System
 {
-    public sealed class BinaryDataConverter : JsonConverter<BinaryData>
+    internal sealed class BinaryDataConverter : JsonConverter<BinaryData>
     {
         public sealed override BinaryData? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
