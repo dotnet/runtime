@@ -1318,7 +1318,7 @@ namespace DebuggerTests
             return await WaitFor(Inspector.PAUSE);
         }
 
-        internal async Task<JObject> LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(string asm_file, string pdb_file, string class_name, string method_name)
+        internal async Task<JObject> LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(string asm_file, string pdb_file, string class_name, string method_name, bool expectBpResolvedEvent)
         {
             byte[] bytes = File.ReadAllBytes(asm_file);
             string asm_base64 = Convert.ToBase64String(bytes);
@@ -1332,9 +1332,12 @@ namespace DebuggerTests
                 expression
             });
 
-            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
+            Task eventTask = expectBpResolvedEvent
+                                ? WaitForBreakpointResolvedEvent()
+                                : WaitForScriptParsedEventsAsync("MethodBody0.cs", "MethodBody1.cs");
+            (await cli.SendCommand("Runtime.evaluate", load_assemblies, token)).AssertOk();
+            await eventTask;
 
-            Thread.Sleep(1000);
             var run_method = JObject.FromObject(new
             {
                 expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] TestHotReloadUsingSDB:RunMethod', '" + class_name + "', '" + method_name + "'); }, 1);"
@@ -1425,10 +1428,10 @@ namespace DebuggerTests
                 expression
             });
 
-            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
+            Task scriptParsedTask = WaitForScriptParsedEventsAsync("MethodBody0.cs", "MethodBody1.cs");
+            (await cli.SendCommand("Runtime.evaluate", load_assemblies, token)).AssertOk();
+            await scriptParsedTask;
 
-            Assert.True(load_assemblies_res.IsOk);
-            Thread.Sleep(1000);
             var run_method = JObject.FromObject(new
             {
                 expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] TestHotReload:RunMethod', '" + class_name + "', '" + method_name + "'); }, 1);"

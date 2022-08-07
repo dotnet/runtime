@@ -65,7 +65,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
                 dicScriptsIdToUrl[script_id] = arrStr[arrStr.Length - 1];
                 dicFileToUrl[new Uri(url).AbsolutePath] = url;
             }
-            await Task.FromResult(0);
+            return await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
         });
         insp.On("resource-available-form", async (args, c) =>
         {
@@ -86,7 +86,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
                 dicScriptsIdToUrl[script_id] = arrStr[arrStr.Length - 1];
                 dicFileToUrl[new Uri(url).AbsolutePath] = url;
             }
-            await Task.FromResult(0);
+            return await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
         });
         return dicScriptsIdToUrl;
     }

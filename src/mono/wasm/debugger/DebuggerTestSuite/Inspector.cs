@@ -24,7 +24,7 @@ namespace DebuggerTests
         private static Regex _consoleArgsRegex = new(@"(%[sdifoOc])", RegexOptions.Compiled);
 
         Dictionary<string, TaskCompletionSource<JObject>> notifications = new Dictionary<string, TaskCompletionSource<JObject>>();
-        Dictionary<string, Func<JObject, CancellationToken, Task>> eventListeners = new Dictionary<string, Func<JObject, CancellationToken, Task>>();
+        Dictionary<string, Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>> eventListeners = new ();
 
         public const string PAUSE = "pause";
         public const string READY = "ready";
@@ -116,7 +116,7 @@ namespace DebuggerTests
             }
         }
 
-        public void On(string evtName, Func<JObject, CancellationToken, Task> cb)
+        public void On(string evtName, Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>> cb)
         {
             eventListeners[evtName] = cb;
         }
@@ -127,7 +127,7 @@ namespace DebuggerTests
             On(evtName, async (args, token) =>
             {
                 eventReceived.SetResult(args);
-                await Task.CompletedTask;
+                return await Task.FromResult(ProtocolEventHandlerReturn.RemoveHandler);
             });
 
             return eventReceived.Task.WaitAsync(Token);
@@ -236,9 +236,12 @@ namespace DebuggerTests
                     fail = true;
                     break;
             }
-            if (eventListeners.TryGetValue(method, out var listener))
+            if (eventListeners.TryGetValue(method, out Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>? listener)
+                    && listener != null)
             {
-                await listener(args, token).ConfigureAwait(false);
+                ProtocolEventHandlerReturn result = await listener(args, token).ConfigureAwait(false);
+                if (result is ProtocolEventHandlerReturn.RemoveHandler)
+                    eventListeners.Remove(method);
             }
             else if (fail)
             {
@@ -396,5 +399,11 @@ namespace DebuggerTests
                 _cancellationTokenSource.Dispose();
             }
         }
+    }
+
+    public enum ProtocolEventHandlerReturn
+    {
+        KeepHandler,
+        RemoveHandler
     }
 }

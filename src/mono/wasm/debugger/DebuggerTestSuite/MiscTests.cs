@@ -845,7 +845,7 @@ namespace DebuggerTests
 
             var bp = await SetBreakpoint(".*/MethodBody1.cs$", 48, 12, use_regex: true);
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
-                    asm_file, pdb_file, "MethodBody5", "StaticMethod1");
+                    asm_file, pdb_file, "MethodBody5", "StaticMethod1", expectBpResolvedEvent: true);
 
             var sourceToGet = JObject.FromObject(new
             {

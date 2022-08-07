@@ -860,7 +860,6 @@ namespace DebuggerTests
             Assert.Equal(pauseInFunCalledFromDim["callFrames"][1]["functionName"].Value<string>(), dimClassName + "." + prevFrameFromDim);
             Assert.Equal(pauseInFunCalledFromDim["callFrames"][1]["location"]["lineNumber"].Value<int>(), dimAsPrevFrameLine);
 
-
             async Task CheckDefaultMethod(JObject pause_location, string methodName)
             {
                 Assert.Equal("other", pause_location["reason"]?.Value<string>());
