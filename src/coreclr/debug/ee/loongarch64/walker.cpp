@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //*****************************************************************************
-// File: Loongarch64walker.cpp
-//
-
 //
 // LOONGARCH64 instruction decoding/stepping logic
 //

@@ -838,7 +838,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
 
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
-        ${ARCH_SOURCES_DIR}/armsinglestepper.cpp
+        ${ARCH_SOURCES_DIR}/singlestepper.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )
@@ -864,7 +864,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
 
     if(CLR_CMAKE_HOST_UNIX)
         list(APPEND VM_SOURCES_WKS_ARCH
-            ${ARCH_SOURCES_DIR}/arm64singlestepper.cpp
+            ${ARCH_SOURCES_DIR}/singlestepper.cpp
         )
     endif(CLR_CMAKE_HOST_UNIX)
 elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)

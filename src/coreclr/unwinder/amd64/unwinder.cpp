@@ -4,7 +4,7 @@
 //
 
 #include "stdafx.h"
-#include "unwinder_amd64.h"
+#include "unwinder.h"
 
 typedef DPTR(M128A)  PTR_M128A;
 

@@ -20,7 +20,7 @@ ALTERNATE_ENTRY RhpLockCmpXchg32AVLocation
     cbnz    w9, 1b
 
 2: // exit
-    ArmInterlockedOperationBarrier
+    InterlockedOperationBarrier
     ret
 LEAF_END RhpLockCmpXchg32, _TEXT
 
@@ -40,6 +40,6 @@ ALTERNATE_ENTRY RhpLockCmpXchg64AVLocation
     stlxr   w9, x1, [x8]    // if (x0 == x2) { try *x8 = x1 and goto loop if failed or goto exit }
     cbnz    w9, 1b
 2: // exit
-    ArmInterlockedOperationBarrier
+    InterlockedOperationBarrier
     ret
 LEAF_END RhpLockCmpXchg64, _TEXT

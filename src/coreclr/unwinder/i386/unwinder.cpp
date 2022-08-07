@@ -4,7 +4,7 @@
 //
 
 #include "stdafx.h"
-#include "unwinder_i386.h"
+#include "unwinder.h"
 
 #ifdef FEATURE_EH_FUNCLETS
 BOOL OOPStackUnwinderX86::Unwind(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers)

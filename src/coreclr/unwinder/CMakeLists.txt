@@ -14,7 +14,7 @@ set(UNWINDER_SOURCES
 # Include platform specific unwinder for applicable (native and cross-target) builds.
 include_directories(${ARCH_SOURCES_DIR})
 list(APPEND UNWINDER_SOURCES
-    ${ARCH_SOURCES_DIR}/unwinder_${ARCH_SOURCES_DIR}.cpp
+    ${ARCH_SOURCES_DIR}/unwinder.cpp
 )
 
 convert_to_absolute_path(UNWINDER_SOURCES ${UNWINDER_SOURCES})
