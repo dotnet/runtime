@@ -1867,6 +1867,11 @@ namespace System.Text
             }
             ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
+            if (oldValue.Length > count)
+            {
+                return;
+            }
+
             newValue ??= string.Empty;
 
             Span<int> replacements = stackalloc int[5]; // A list of replacement positions in a chunk to apply
