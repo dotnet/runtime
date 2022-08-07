@@ -123,10 +123,7 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
             case InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode:
             case InstrumentColdNonPrejittedCode_InstrumentHotPrejittedCode_Optimized:
             {
-                CodeVersionManager::LockHolder codeVersioningLockHolder;
-                NativeCodeVersion version = pMethodDesc->GetCodeVersionManager()->GetActiveILCodeVersion(pMethodDesc)
-                    .GetActiveNativeCodeVersion(pMethodDesc);
-                if (!version.IsNull() && ExecutionManager::IsReadyToRunCode(version.GetNativeCode()))
+                if (ExecutionManager::IsReadyToRunCode(pMethodDesc->GetNativeCode()))
                 {
                     return NativeCodeVersion::OptimizationTier0;
                 }
