@@ -219,11 +219,11 @@ class LibraryChannel {
         if (state !== this.STATE_IDLE)
             throw new Error(`OWNER: Invalid sync communication channel state: ${state}`);
 
-        // Notify webworker
         this.using_lock(() => {
             Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
             this._change_state_locked(this.STATE_SHUTDOWN);
         });
+        // Notify webworker
         Atomics.notify(this.comm, this.STATE_IDX);
     }
 
@@ -242,6 +242,7 @@ class LibraryChannel {
             Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
             this._change_state_locked(this.STATE_RESET);
         });
+        // Notify webworker
         Atomics.notify(this.comm, this.STATE_IDX);
     }
 
@@ -262,9 +263,9 @@ class LibraryChannel {
                 // Indicate if this was the whole message or part of it.
                 state = msg_written === msg_len ? this.STATE_REQ : this.STATE_REQ_P;
 
-                // Notify webworker
                 this._change_state_locked(state);
             });
+            // Notify webworker
             Atomics.notify(this.comm, this.STATE_IDX);
 
             // The send message is complete.
@@ -310,6 +311,8 @@ class LibraryChannel {
                 return false;
             });
             if (done) break;
+
+            // Notify webworker
             Atomics.notify(this.comm, this.STATE_IDX);
         }
 
@@ -317,8 +320,8 @@ class LibraryChannel {
         // webworker know we are done.
         this.using_lock(() => {
             this._change_state_locked(this.STATE_IDLE);
-            Atomics.notify(this.comm, this.STATE_IDX);
         });
+        Atomics.notify(this.comm, this.STATE_IDX);
 
         return response;
     }
