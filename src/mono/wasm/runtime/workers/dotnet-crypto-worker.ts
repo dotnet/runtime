@@ -130,6 +130,8 @@ class ChannelWorker {
                 // The request is complete.
                 if (state === this.STATE_REQ) {
                     return true;
+                } else if (state !== this.STATE_REQ_P) {
+                    throw new Error(`Unexpected state ${state}`);
                 }
 
                 // Shutdown the worker.
@@ -177,8 +179,11 @@ class ChannelWorker {
             this._wait_for_state_to_change__from(state);
 
             // Done sending response.
-            if (state === this.STATE_RESP)
+            if (state === this.STATE_RESP) {
                 break;
+            } else if (state !== this.STATE_RESP_P) {
+                throw new Error(`Unexpected state ${state}`);
+            }
         }
     }
 

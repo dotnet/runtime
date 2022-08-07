@@ -269,8 +269,12 @@ class LibraryChannel {
             Atomics.notify(this.comm, this.STATE_IDX);
 
             // The send message is complete.
-            if (state === this.STATE_REQ)
+            if (state === this.STATE_REQ) {
                 break;
+            }
+            else if (state !== this.STATE_REQ_P) {
+                throw new Error(`Unexpected state ${state}`);
+            }
 
             this.wait_for_state_change_to(state => state == this.STATE_AWAIT, "send_request");
         }
@@ -303,6 +307,8 @@ class LibraryChannel {
                 if (state === this.STATE_RESP) {
                     Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
                     return true;
+                } else if (state !== this.STATE_RESP_P) {
+                    throw new Error(`Unexpectd state ${state}`);
                 }
 
                 // Reset the size and transition to await state.
