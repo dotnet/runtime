@@ -325,7 +325,14 @@ class LibraryChannel {
 
         // Reset the communication channel's state and let the
         // webworker know we are done.
-        this._change_state_locked(this.STATE_IDLE);
+
+
+        try {
+            this.acquire_lock("to change state to IDLE");
+            this._change_state_locked(this.STATE_IDLE);
+        } finally {
+            this.release_lock();
+        }
         Atomics.notify(this.comm, this.STATE_IDX);
 
         return response;
@@ -340,17 +347,19 @@ class LibraryChannel {
         // Wait for webworker
         //  - Atomics.wait() is not permissible on the main thread.
         for (; ;) {
-            const lock_state = Atomics.load(this.comm, this.LOCK_IDX);
-            if (lock_state !== this.LOCK_UNLOCKED)
-                continue;
+            try {
+                this.acquire_lock("for reading");
+                const state = Atomics.load(this.comm, this.STATE_IDX);
+                if (state == this.STATE_REQ_FAILED)
+                    throw new OperationFailedError(`Worker failed during ${msg} with state=${state}`);
 
-            const state = Atomics.load(this.comm, this.STATE_IDX);
-            if (state == this.STATE_REQ_FAILED)
-                throw new OperationFailedError(`Worker failed during ${msg} with state=${state}`);
+                if (is_ready(state))
+                    return state;
+                if ((new Date().valueOf()) - start > 1000 * 60) throw new Error(`MAIN1: Probably deadlock during ${msg} with state=${state}\n` + (new Error).stack);
 
-            if (is_ready(state))
-                return state;
-            if ((new Date().valueOf()) - start > 1000 * 60) throw new Error(`MAIN1: Probably deadlock during ${msg} with state=${state}\n` + (new Error).stack);
+            } finally {
+                this.release_lock();
+            }
         }
     }
 
