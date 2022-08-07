@@ -2436,7 +2436,7 @@ PROCCreateCrashDump(
         {
             // Ignore any error because on some CentOS and OpenSUSE distros, it isn't
             // supported but createdump works just fine.
-            ERROR("PROCCreateCrashDump: prctl() FAILED %s (%d)\n", errno, strerror(errno));
+            ERROR("PROCCreateCrashDump: prctl() FAILED %s (%d)\n", strerror(errno), errno);
         }
 #endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
         close(child_pipe);

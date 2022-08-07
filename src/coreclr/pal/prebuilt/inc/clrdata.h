@@ -1,14 +1,11 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+
 
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 8.01.0622 */
-/* at Mon Jan 18 19:14:07 2038
- */
-/* Compiler settings for C:/ssd/runtime/src/coreclr/inc/clrdata.idl:
-    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
+ /* File created by MIDL compiler version 8.01.0626 */
+/* Compiler settings for clrdata.idl:
+    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.01.0626 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
     VC __declspec() decoration level: 
@@ -42,6 +39,14 @@
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
+#endif
+
+#ifndef DECLSPEC_XFGVIRT
+#if _CONTROL_FLOW_GUARD_XFG
+#define DECLSPEC_XFGVIRT(base, func) __declspec(xfg_virtual(base, func))
+#else
+#define DECLSPEC_XFGVIRT(base, func)
+#endif
 #endif
 
 /* Forward Declarations */ 
@@ -95,6 +100,13 @@ typedef interface ICLRDataEnumMemoryRegionsCallback2 ICLRDataEnumMemoryRegionsCa
 #endif 	/* __ICLRDataEnumMemoryRegionsCallback2_FWD_DEFINED__ */
 
 
+#ifndef __ICLRDataEnumMemoryRegionsLoggingCallback_FWD_DEFINED__
+#define __ICLRDataEnumMemoryRegionsLoggingCallback_FWD_DEFINED__
+typedef interface ICLRDataEnumMemoryRegionsLoggingCallback ICLRDataEnumMemoryRegionsLoggingCallback;
+
+#endif 	/* __ICLRDataEnumMemoryRegionsLoggingCallback_FWD_DEFINED__ */
+
+
 #ifndef __ICLRDataEnumMemoryRegions_FWD_DEFINED__
 #define __ICLRDataEnumMemoryRegions_FWD_DEFINED__
 typedef interface ICLRDataEnumMemoryRegions ICLRDataEnumMemoryRegions;
@@ -112,6 +124,7 @@ extern "C"{
 
 /* interface __MIDL_itf_clrdata_0000_0000 */
 /* [local] */ 
+
 
 
 
@@ -205,31 +218,38 @@ EXTERN_C const IID IID_ICLRDataTarget;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICLRDataTarget * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICLRDataTarget * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICLRDataTarget * This);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetMachineType)
         HRESULT ( STDMETHODCALLTYPE *GetMachineType )( 
             ICLRDataTarget * This,
             /* [out] */ ULONG32 *machineType);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetPointerSize)
         HRESULT ( STDMETHODCALLTYPE *GetPointerSize )( 
             ICLRDataTarget * This,
             /* [out] */ ULONG32 *pointerSize);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetImageBase)
         HRESULT ( STDMETHODCALLTYPE *GetImageBase )( 
             ICLRDataTarget * This,
             /* [string][in] */ LPCWSTR imagePath,
             /* [out] */ CLRDATA_ADDRESS *baseAddress);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, ReadVirtual)
         HRESULT ( STDMETHODCALLTYPE *ReadVirtual )( 
             ICLRDataTarget * This,
             /* [in] */ CLRDATA_ADDRESS address,
@@ -237,6 +257,7 @@ EXTERN_C const IID IID_ICLRDataTarget;
             /* [in] */ ULONG32 bytesRequested,
             /* [out] */ ULONG32 *bytesRead);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, WriteVirtual)
         HRESULT ( STDMETHODCALLTYPE *WriteVirtual )( 
             ICLRDataTarget * This,
             /* [in] */ CLRDATA_ADDRESS address,
@@ -244,22 +265,26 @@ EXTERN_C const IID IID_ICLRDataTarget;
             /* [in] */ ULONG32 bytesRequested,
             /* [out] */ ULONG32 *bytesWritten);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetTLSValue)
         HRESULT ( STDMETHODCALLTYPE *GetTLSValue )( 
             ICLRDataTarget * This,
             /* [in] */ ULONG32 threadID,
             /* [in] */ ULONG32 index,
             /* [out] */ CLRDATA_ADDRESS *value);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, SetTLSValue)
         HRESULT ( STDMETHODCALLTYPE *SetTLSValue )( 
             ICLRDataTarget * This,
             /* [in] */ ULONG32 threadID,
             /* [in] */ ULONG32 index,
             /* [in] */ CLRDATA_ADDRESS value);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICLRDataTarget * This,
             /* [out] */ ULONG32 *threadID);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICLRDataTarget * This,
             /* [in] */ ULONG32 threadID,
@@ -267,12 +292,14 @@ EXTERN_C const IID IID_ICLRDataTarget;
             /* [in] */ ULONG32 contextSize,
             /* [size_is][out] */ BYTE *context);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, SetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *SetThreadContext )( 
             ICLRDataTarget * This,
             /* [in] */ ULONG32 threadID,
             /* [in] */ ULONG32 contextSize,
             /* [size_is][in] */ BYTE *context);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, Request)
         HRESULT ( STDMETHODCALLTYPE *Request )( 
             ICLRDataTarget * This,
             /* [in] */ ULONG32 reqCode,
@@ -384,31 +411,38 @@ EXTERN_C const IID IID_ICLRDataTarget2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICLRDataTarget2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICLRDataTarget2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICLRDataTarget2 * This);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetMachineType)
         HRESULT ( STDMETHODCALLTYPE *GetMachineType )( 
             ICLRDataTarget2 * This,
             /* [out] */ ULONG32 *machineType);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetPointerSize)
         HRESULT ( STDMETHODCALLTYPE *GetPointerSize )( 
             ICLRDataTarget2 * This,
             /* [out] */ ULONG32 *pointerSize);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetImageBase)
         HRESULT ( STDMETHODCALLTYPE *GetImageBase )( 
             ICLRDataTarget2 * This,
             /* [string][in] */ LPCWSTR imagePath,
             /* [out] */ CLRDATA_ADDRESS *baseAddress);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, ReadVirtual)
         HRESULT ( STDMETHODCALLTYPE *ReadVirtual )( 
             ICLRDataTarget2 * This,
             /* [in] */ CLRDATA_ADDRESS address,
@@ -416,6 +450,7 @@ EXTERN_C const IID IID_ICLRDataTarget2;
             /* [in] */ ULONG32 bytesRequested,
             /* [out] */ ULONG32 *bytesRead);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, WriteVirtual)
         HRESULT ( STDMETHODCALLTYPE *WriteVirtual )( 
             ICLRDataTarget2 * This,
             /* [in] */ CLRDATA_ADDRESS address,
@@ -423,22 +458,26 @@ EXTERN_C const IID IID_ICLRDataTarget2;
             /* [in] */ ULONG32 bytesRequested,
             /* [out] */ ULONG32 *bytesWritten);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetTLSValue)
         HRESULT ( STDMETHODCALLTYPE *GetTLSValue )( 
             ICLRDataTarget2 * This,
             /* [in] */ ULONG32 threadID,
             /* [in] */ ULONG32 index,
             /* [out] */ CLRDATA_ADDRESS *value);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, SetTLSValue)
         HRESULT ( STDMETHODCALLTYPE *SetTLSValue )( 
             ICLRDataTarget2 * This,
             /* [in] */ ULONG32 threadID,
             /* [in] */ ULONG32 index,
             /* [in] */ CLRDATA_ADDRESS value);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICLRDataTarget2 * This,
             /* [out] */ ULONG32 *threadID);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICLRDataTarget2 * This,
             /* [in] */ ULONG32 threadID,
@@ -446,12 +485,14 @@ EXTERN_C const IID IID_ICLRDataTarget2;
             /* [in] */ ULONG32 contextSize,
             /* [size_is][out] */ BYTE *context);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, SetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *SetThreadContext )( 
             ICLRDataTarget2 * This,
             /* [in] */ ULONG32 threadID,
             /* [in] */ ULONG32 contextSize,
             /* [size_is][in] */ BYTE *context);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, Request)
         HRESULT ( STDMETHODCALLTYPE *Request )( 
             ICLRDataTarget2 * This,
             /* [in] */ ULONG32 reqCode,
@@ -460,6 +501,7 @@ EXTERN_C const IID IID_ICLRDataTarget2;
             /* [in] */ ULONG32 outBufferSize,
             /* [size_is][out] */ BYTE *outBuffer);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget2, AllocVirtual)
         HRESULT ( STDMETHODCALLTYPE *AllocVirtual )( 
             ICLRDataTarget2 * This,
             /* [in] */ CLRDATA_ADDRESS addr,
@@ -468,6 +510,7 @@ EXTERN_C const IID IID_ICLRDataTarget2;
             /* [in] */ ULONG32 protectFlags,
             /* [out] */ CLRDATA_ADDRESS *virt);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget2, FreeVirtual)
         HRESULT ( STDMETHODCALLTYPE *FreeVirtual )( 
             ICLRDataTarget2 * This,
             /* [in] */ CLRDATA_ADDRESS addr,
@@ -585,31 +628,38 @@ EXTERN_C const IID IID_ICLRDataTarget3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICLRDataTarget3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICLRDataTarget3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICLRDataTarget3 * This);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetMachineType)
         HRESULT ( STDMETHODCALLTYPE *GetMachineType )( 
             ICLRDataTarget3 * This,
             /* [out] */ ULONG32 *machineType);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetPointerSize)
         HRESULT ( STDMETHODCALLTYPE *GetPointerSize )( 
             ICLRDataTarget3 * This,
             /* [out] */ ULONG32 *pointerSize);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetImageBase)
         HRESULT ( STDMETHODCALLTYPE *GetImageBase )( 
             ICLRDataTarget3 * This,
             /* [string][in] */ LPCWSTR imagePath,
             /* [out] */ CLRDATA_ADDRESS *baseAddress);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, ReadVirtual)
         HRESULT ( STDMETHODCALLTYPE *ReadVirtual )( 
             ICLRDataTarget3 * This,
             /* [in] */ CLRDATA_ADDRESS address,
@@ -617,6 +667,7 @@ EXTERN_C const IID IID_ICLRDataTarget3;
             /* [in] */ ULONG32 bytesRequested,
             /* [out] */ ULONG32 *bytesRead);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, WriteVirtual)
         HRESULT ( STDMETHODCALLTYPE *WriteVirtual )( 
             ICLRDataTarget3 * This,
             /* [in] */ CLRDATA_ADDRESS address,
@@ -624,22 +675,26 @@ EXTERN_C const IID IID_ICLRDataTarget3;
             /* [in] */ ULONG32 bytesRequested,
             /* [out] */ ULONG32 *bytesWritten);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetTLSValue)
         HRESULT ( STDMETHODCALLTYPE *GetTLSValue )( 
             ICLRDataTarget3 * This,
             /* [in] */ ULONG32 threadID,
             /* [in] */ ULONG32 index,
             /* [out] */ CLRDATA_ADDRESS *value);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, SetTLSValue)
         HRESULT ( STDMETHODCALLTYPE *SetTLSValue )( 
             ICLRDataTarget3 * This,
             /* [in] */ ULONG32 threadID,
             /* [in] */ ULONG32 index,
             /* [in] */ CLRDATA_ADDRESS value);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetCurrentThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentThreadID )( 
             ICLRDataTarget3 * This,
             /* [out] */ ULONG32 *threadID);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICLRDataTarget3 * This,
             /* [in] */ ULONG32 threadID,
@@ -647,12 +702,14 @@ EXTERN_C const IID IID_ICLRDataTarget3;
             /* [in] */ ULONG32 contextSize,
             /* [size_is][out] */ BYTE *context);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, SetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *SetThreadContext )( 
             ICLRDataTarget3 * This,
             /* [in] */ ULONG32 threadID,
             /* [in] */ ULONG32 contextSize,
             /* [size_is][in] */ BYTE *context);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget, Request)
         HRESULT ( STDMETHODCALLTYPE *Request )( 
             ICLRDataTarget3 * This,
             /* [in] */ ULONG32 reqCode,
@@ -661,6 +718,7 @@ EXTERN_C const IID IID_ICLRDataTarget3;
             /* [in] */ ULONG32 outBufferSize,
             /* [size_is][out] */ BYTE *outBuffer);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget2, AllocVirtual)
         HRESULT ( STDMETHODCALLTYPE *AllocVirtual )( 
             ICLRDataTarget3 * This,
             /* [in] */ CLRDATA_ADDRESS addr,
@@ -669,24 +727,28 @@ EXTERN_C const IID IID_ICLRDataTarget3;
             /* [in] */ ULONG32 protectFlags,
             /* [out] */ CLRDATA_ADDRESS *virt);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget2, FreeVirtual)
         HRESULT ( STDMETHODCALLTYPE *FreeVirtual )( 
             ICLRDataTarget3 * This,
             /* [in] */ CLRDATA_ADDRESS addr,
             /* [in] */ ULONG32 size,
             /* [in] */ ULONG32 typeFlags);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget3, GetExceptionRecord)
         HRESULT ( STDMETHODCALLTYPE *GetExceptionRecord )( 
             ICLRDataTarget3 * This,
             /* [in] */ ULONG32 bufferSize,
             /* [out] */ ULONG32 *bufferUsed,
             /* [size_is][out] */ BYTE *buffer);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget3, GetExceptionContextRecord)
         HRESULT ( STDMETHODCALLTYPE *GetExceptionContextRecord )( 
             ICLRDataTarget3 * This,
             /* [in] */ ULONG32 bufferSize,
             /* [out] */ ULONG32 *bufferUsed,
             /* [size_is][out] */ BYTE *buffer);
         
+        DECLSPEC_XFGVIRT(ICLRDataTarget3, GetExceptionThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetExceptionThreadID )( 
             ICLRDataTarget3 * This,
             /* [out] */ ULONG32 *threadID);
@@ -802,18 +864,22 @@ EXTERN_C const IID IID_ICLRRuntimeLocator;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICLRRuntimeLocator * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICLRRuntimeLocator * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICLRRuntimeLocator * This);
         
+        DECLSPEC_XFGVIRT(ICLRRuntimeLocator, GetRuntimeBase)
         HRESULT ( STDMETHODCALLTYPE *GetRuntimeBase )( 
             ICLRRuntimeLocator * This,
             /* [out] */ CLRDATA_ADDRESS *baseAddress);
@@ -890,18 +956,22 @@ EXTERN_C const IID IID_ICLRMetadataLocator;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICLRMetadataLocator * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICLRMetadataLocator * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICLRMetadataLocator * This);
         
+        DECLSPEC_XFGVIRT(ICLRMetadataLocator, GetMetadata)
         HRESULT ( STDMETHODCALLTYPE *GetMetadata )( 
             ICLRMetadataLocator * This,
             /* [in] */ LPCWSTR imagePath,
@@ -979,18 +1049,22 @@ EXTERN_C const IID IID_ICLRDataEnumMemoryRegionsCallback;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICLRDataEnumMemoryRegionsCallback * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICLRDataEnumMemoryRegionsCallback * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICLRDataEnumMemoryRegionsCallback * This);
         
+        DECLSPEC_XFGVIRT(ICLRDataEnumMemoryRegionsCallback, EnumMemoryRegion)
         HRESULT ( STDMETHODCALLTYPE *EnumMemoryRegion )( 
             ICLRDataEnumMemoryRegionsCallback * This,
             /* [in] */ CLRDATA_ADDRESS address,
@@ -1062,23 +1136,28 @@ EXTERN_C const IID IID_ICLRDataEnumMemoryRegionsCallback2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICLRDataEnumMemoryRegionsCallback2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICLRDataEnumMemoryRegionsCallback2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICLRDataEnumMemoryRegionsCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICLRDataEnumMemoryRegionsCallback, EnumMemoryRegion)
         HRESULT ( STDMETHODCALLTYPE *EnumMemoryRegion )( 
             ICLRDataEnumMemoryRegionsCallback2 * This,
             /* [in] */ CLRDATA_ADDRESS address,
             /* [in] */ ULONG32 size);
         
+        DECLSPEC_XFGVIRT(ICLRDataEnumMemoryRegionsCallback2, UpdateMemoryRegion)
         HRESULT ( STDMETHODCALLTYPE *UpdateMemoryRegion )( 
             ICLRDataEnumMemoryRegionsCallback2 * This,
             /* [in] */ CLRDATA_ADDRESS address,
@@ -1126,7 +1205,91 @@ EXTERN_C const IID IID_ICLRDataEnumMemoryRegionsCallback2;
 #endif 	/* __ICLRDataEnumMemoryRegionsCallback2_INTERFACE_DEFINED__ */
 
 
-/* interface __MIDL_itf_clrdata_0000_0007 */
+#ifndef __ICLRDataEnumMemoryRegionsLoggingCallback_INTERFACE_DEFINED__
+#define __ICLRDataEnumMemoryRegionsLoggingCallback_INTERFACE_DEFINED__
+
+/* interface ICLRDataEnumMemoryRegionsLoggingCallback */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ICLRDataEnumMemoryRegionsLoggingCallback;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("F315248D-8B79-49DB-B184-37426559F703")
+    ICLRDataEnumMemoryRegionsLoggingCallback : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE LogMessage( 
+            /* [in] */ LPCSTR message) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ICLRDataEnumMemoryRegionsLoggingCallbackVtbl
+    {
+        BEGIN_INTERFACE
+        
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ICLRDataEnumMemoryRegionsLoggingCallback * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ICLRDataEnumMemoryRegionsLoggingCallback * This);
+        
+        DECLSPEC_XFGVIRT(IUnknown, Release)
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ICLRDataEnumMemoryRegionsLoggingCallback * This);
+        
+        DECLSPEC_XFGVIRT(ICLRDataEnumMemoryRegionsLoggingCallback, LogMessage)
+        HRESULT ( STDMETHODCALLTYPE *LogMessage )( 
+            ICLRDataEnumMemoryRegionsLoggingCallback * This,
+            /* [in] */ LPCSTR message);
+        
+        END_INTERFACE
+    } ICLRDataEnumMemoryRegionsLoggingCallbackVtbl;
+
+    interface ICLRDataEnumMemoryRegionsLoggingCallback
+    {
+        CONST_VTBL struct ICLRDataEnumMemoryRegionsLoggingCallbackVtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ICLRDataEnumMemoryRegionsLoggingCallback_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ICLRDataEnumMemoryRegionsLoggingCallback_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ICLRDataEnumMemoryRegionsLoggingCallback_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ICLRDataEnumMemoryRegionsLoggingCallback_LogMessage(This,message)	\
+    ( (This)->lpVtbl -> LogMessage(This,message) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ICLRDataEnumMemoryRegionsLoggingCallback_INTERFACE_DEFINED__ */
+
+
+/* interface __MIDL_itf_clrdata_0000_0008 */
 /* [local] */ 
 
 typedef 
@@ -1140,8 +1303,8 @@ enum CLRDataEnumMemoryFlags
 
 
 
-extern RPC_IF_HANDLE __MIDL_itf_clrdata_0000_0007_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_clrdata_0000_0007_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_clrdata_0000_0008_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_clrdata_0000_0008_v0_0_s_ifspec;
 
 #ifndef __ICLRDataEnumMemoryRegions_INTERFACE_DEFINED__
 #define __ICLRDataEnumMemoryRegions_INTERFACE_DEFINED__
@@ -1172,18 +1335,22 @@ EXTERN_C const IID IID_ICLRDataEnumMemoryRegions;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICLRDataEnumMemoryRegions * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICLRDataEnumMemoryRegions * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICLRDataEnumMemoryRegions * This);
         
+        DECLSPEC_XFGVIRT(ICLRDataEnumMemoryRegions, EnumMemoryRegions)
         HRESULT ( STDMETHODCALLTYPE *EnumMemoryRegions )( 
             ICLRDataEnumMemoryRegions * This,
             /* [in] */ ICLRDataEnumMemoryRegionsCallback *callback,

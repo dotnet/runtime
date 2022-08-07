@@ -25,6 +25,7 @@ import "unknwn.idl";
 interface ICLRDataEnumMemoryRegions;
 interface ICLRDataEnumMemoryRegionsCallback;
 interface ICLRDataEnumMemoryRegionsCallback2;
+interface ICLRDataEnumMemoryRegionsCallback3;
 interface ICLRDataTarget;
 interface ICLRDataTarget2;
 interface ICLRMetadataLocator;
@@ -285,6 +286,20 @@ interface ICLRDataEnumMemoryRegionsCallback2 : ICLRDataEnumMemoryRegionsCallback
         [in] CLRDATA_ADDRESS address,
         [in] ULONG32 bufferSize,
         [in, size_is(bufferSize)] BYTE* buffer);
+}
+
+/*
+ * Optional callback interface for logging EnumMemoryRegions operations and errors.
+ */
+[
+    object,
+    local,
+    uuid(F315248D-8B79-49DB-B184-37426559F703)
+]
+interface ICLRDataEnumMemoryRegionsLoggingCallback : IUnknown
+{
+    HRESULT LogMessage(
+        [in] LPCSTR message);
 }
 
 /*
