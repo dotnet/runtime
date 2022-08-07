@@ -1893,10 +1893,10 @@ void CodeGen::genGenerateMachineCode()
                     pgoKind = "Blend";
                     break;
                 case ICorJitInfo::PgoSource::Text:
-                    pgoKind = "Text";
+                    pgoKind = "Textual";
                     break;
                 case ICorJitInfo::PgoSource::Sampling:
-                    pgoKind = "Sampling";
+                    pgoKind = "Sample-based";
                     break;
                 default:
                     pgoKind = "Unknown";
