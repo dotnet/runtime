@@ -13,6 +13,7 @@ using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using System.Runtime.ExceptionServices;
 using Xunit.Abstractions;
+using System.Collections.Concurrent;
 
 #nullable enable
 
@@ -23,8 +24,8 @@ namespace DebuggerTests
         // https://console.spec.whatwg.org/#formatting-specifiers
         private static Regex _consoleArgsRegex = new(@"(%[sdifoOc])", RegexOptions.Compiled);
 
-        Dictionary<string, TaskCompletionSource<JObject>> notifications = new Dictionary<string, TaskCompletionSource<JObject>>();
-        Dictionary<string, Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>> eventListeners = new ();
+        ConcurrentDictionary<string, TaskCompletionSource<JObject>> notifications = new ();
+        ConcurrentDictionary<string, Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>> eventListeners = new ();
 
         public const string PAUSE = "pause";
         public const string READY = "ready";
@@ -78,7 +79,7 @@ namespace DebuggerTests
             {
                 if (tcs.Task.IsCompleted)
                 {
-                    notifications.Remove(what);
+                    notifications.Remove(what, out _);
                     return tcs.Task;
                 }
 
@@ -95,7 +96,7 @@ namespace DebuggerTests
         public void ClearWaiterFor(string what)
         {
             if (notifications.ContainsKey(what))
-                notifications.Remove(what);
+                notifications.Remove(what, out _);
         }
 
         void NotifyOf(string what, JObject args)
@@ -106,7 +107,7 @@ namespace DebuggerTests
                     throw new Exception($"Invalid internal state. Notifying for {what} again, but the previous one hasn't been read.");
 
                 notifications[what].SetResult(args);
-                notifications.Remove(what);
+                notifications.Remove(what, out _);
             }
             else
             {
@@ -241,7 +242,7 @@ namespace DebuggerTests
             {
                 ProtocolEventHandlerReturn result = await listener(args, token).ConfigureAwait(false);
                 if (result is ProtocolEventHandlerReturn.RemoveHandler)
-                    eventListeners.Remove(method);
+                    eventListeners.Remove(method, out _);
             }
             else if (fail)
             {
