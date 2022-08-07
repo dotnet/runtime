@@ -669,11 +669,12 @@ mono_arch_get_call_target (guint8 *code)
 		guint8 *target = code - 4 + (disp * 4);
 
 		return target;
-	} else if (((guint32*)(code - 28)) [0] >> 26 == 15) {
-		guint8 *thunk = ((((guint64*)(code - 28)) [0] & 0x0000ffff) << 48)
-						+ ((((guint64*)(code - 24)) [0] & 0x0000ffff) << 32)
-						+ ((((guint64*)(code - 16)) [0] & 0x0000ffff) << 16)
-						+ (((guint64*)(code - 12)) [0] & 0x0000ffff);
+	} else if (((guint32*)(code - 32)) [0] >> 26 == 15) {
+ 
+		guint8 *thunk = GET_MEMORY_SLOT_ADDR_PART(((guint64*)(code - 32)) [0], 48)
+						+ GET_MEMORY_SLOT_ADDR_PART(((guint64*)(code - 28)) [0], 32)
+						+ GET_MEMORY_SLOT_ADDR_PART(((guint64*)(code - 20)) [0], 16)
+						+ GET_MEMORY_SLOT_ADDR_PART(((guint64*)(code - 16)) [0], 0);
 
 		return thunk;
 	} else {

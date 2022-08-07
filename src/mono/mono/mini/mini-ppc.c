@@ -2740,11 +2740,14 @@ handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target, gboolean is_
 
 		// memory patching
 		emit_thunk (thunks, target, is_memory_slot_thunk);
-		// code patching
-		ppc_load_ptr_sequence (code, PPC_CALL_REG, thunks);
 
-		cfg->arch.thunks += MEMORY_SLOT_THUNK_SIZE;
-		cfg->arch.thunks_size -= MEMORY_SLOT_THUNK_SIZE;
+		if (is_memory_slot_thunk) {
+			// code patching
+			ppc_load_ptr_sequence (code, PPC_CALL_REG, thunks);
+
+			cfg->arch.thunks += MEMORY_SLOT_THUNK_SIZE;
+			cfg->arch.thunks_size -= MEMORY_SLOT_THUNK_SIZE;
+		}
 	} else {
 		ji = mini_jit_info_table_find (code);
 		g_assert (ji);
@@ -2754,7 +2757,7 @@ handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target, gboolean is_
 		thunks = (guint8 *) ji->code_start + info->thunks_offset;
 		thunks_size = info->thunks_size;
 
-		orig_target = mono_arch_get_call_target (code);
+		orig_target = mono_arch_get_call_target (code + 4);
 
 		mono_mini_arch_lock ();
 
@@ -2763,7 +2766,7 @@ handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target, gboolean is_
 			/* The call already points to a thunk, because of trampolines etc. */
 			target_thunk = orig_target;
 		} else {
-			for (p = thunks; p < thunks + thunks_size; p += THUNK_SIZE) {
+			for (p = thunks; p < thunks + thunks_size; p += MEMORY_SLOT_THUNK_SIZE) {
 				if (((guint32 *) p) [0] == 0) {
 					/* Free entry */
 					target_thunk = p;
@@ -2853,7 +2856,7 @@ ppc_patch_full (MonoCompile *cfg, guchar *code, const guchar *target, gboolean i
 			}
 		}
 
-		handle_thunk (cfg, code, target, DEFAULT_THUNK);
+		handle_thunk (cfg, code, target, CODE_SEQUENCE_THUNK);
 		return;
 
 		g_assert_not_reached ();
@@ -2887,7 +2890,6 @@ ppc_patch_full (MonoCompile *cfg, guchar *code, const guchar *target, gboolean i
 
 	if (prim == 15 || ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
 #ifdef TARGET_POWERPC64
-
 		handle_thunk (cfg, code, target, MEMORY_SLOT_THUNK);
 #else
 		guint32 *seq;
@@ -3749,7 +3751,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			ppc_mr (code, ppc_sp, ppc_r12);
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method);
-			cfg->thunk_area += THUNK_SIZE;
+			cfg->thunk_area += MEMORY_SLOT_THUNK_SIZE;
 			if (cfg->compile_aot) {
 				/* arch_emit_got_access () patches this */
 				ppc_load32 (code, ppc_r0, 0);
@@ -3762,7 +3764,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_mtctr (code, ppc_r0);
 				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 			} else {
-				ppc_b (code, 0);
+				ppc_load_func (code, ppc_r0, 0);
+				ppc_ldr (code, ppc_r0, 0, ppc_r0);
+				ppc_mtctr (code, ppc_r0);
+				ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 			}
 			break;
 		}

@@ -41,7 +41,10 @@
 #ifdef TARGET_POWERPC64
 #define MEMORY_SLOT_THUNK_SIZE 8
 #define MEMORY_SLOT_THUNK 1
-#define DEFAULT_THUNK 0
+#define CODE_SEQUENCE_THUNK 0
+
+#define GET_MEMORY_SLOT_ADDR_PART(v, o) ((v & 0x0000FFFF) << o)
+
 #endif
 
 void ppc_patch (guchar *code, const guchar *target);
