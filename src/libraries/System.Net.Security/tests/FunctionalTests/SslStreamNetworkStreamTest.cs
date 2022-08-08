@@ -863,13 +863,14 @@ namespace System.Net.Security.Tests
         [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
-            List<SslStream> streams = new List<SslStream>();
-            TestHelper.CleanupCertificates();
-            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates("SslStream_ClinetCertificate_SendsChain", serverCertificate: false);
-
             // macOS ignores CertificateAuthority
             // https://github.com/dotnet/runtime/issues/48207
-            using (X509Store store = new X509Store(OperatingSystem.IsMacOS() ? StoreName.My : StoreName.CertificateAuthority, StoreLocation.CurrentUser))
+            StoreName storeName = OperatingSystem.IsMacOS() ? StoreName.My : StoreName.CertificateAuthority;
+            List<SslStream> streams = new List<SslStream>();
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates(nameof(SslStream_ClientCertificate_SendsChain), serverCertificate: false);
+
+            using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
             {
                 // add chain certificate so we can construct chain since there is no way how to pass intermediates directly.
                 store.Open(OpenFlags.ReadWrite);
@@ -888,18 +889,9 @@ namespace System.Net.Security.Tests
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                     chain.ChainPolicy.DisableCertificateDownloads = true;
                     bool chainStatus = chain.Build(clientCertificate);
-                    if (chainStatus)
+                    if (chainStatus && chain.ChainElements.Count >= clientChain.Count)
                     {
-                        if (chain.ChainElements.Count >= clientChain.Count)
-                        {
-                            break;
-                        }
-
-                        // Verify we can construct full chain
-                        if (chain.ChainElements.Count < clientChain.Count && retries == 0)
-                        {
-                            throw new SkipTestException($"chain cannot be built {chain.ChainElements.Count}");
-                        }
+                        break;
                     }
                 }
 
@@ -950,7 +942,7 @@ namespace System.Net.Security.Tests
                 streams.Add(server);
             }
 
-            TestHelper.CleanupCertificates();
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
             clientCertificate.Dispose();
             foreach (X509Certificate c in clientChain)
             {
