@@ -1348,8 +1348,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             GenTreeBoundsChk* arrBndsChk = op1->AsBoundsChk();
             assertion.assertionKind      = assertionKind;
             assertion.op1.kind           = O1K_ARR_BND;
-            assertion.op1.bnd.vnIdx      = vnStore->VNConservativeNormalValue(arrBndsChk->GetIndex()->gtVNPair);
-            assertion.op1.bnd.vnLen      = vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair);
+            assertion.op1.bnd.vnIdx      = optConservativeNormalVN(arrBndsChk->GetIndex());
+            assertion.op1.bnd.vnLen      = optConservativeNormalVN(arrBndsChk->GetArrayLength());
             goto DONE_ASSERTION;
         }
     }
@@ -1410,7 +1410,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 goto DONE_ASSERTION; // Don't make an assertion
             }
 
-            vn = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+            vn = optConservativeNormalVN(op1);
             VNFuncApp funcAttr;
 
             // Try to get value number corresponding to the GC ref of the indirection
@@ -1453,7 +1453,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             assertion.op1.kind       = O1K_LCLVAR;
             assertion.op1.lcl.lclNum = lclNum;
             assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
-            vn                       = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+            vn                       = optConservativeNormalVN(op1);
         }
 
         assertion.op1.vn           = vn;
@@ -1510,10 +1510,10 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             //
             assertion.op1.kind         = O1K_SUBTYPE;
             assertion.op1.lcl.lclNum   = lclNum;
-            assertion.op1.vn           = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+            assertion.op1.vn           = optConservativeNormalVN(op1);
             assertion.op1.lcl.ssaNum   = op1->AsLclVarCommon()->GetSsaNum();
             assertion.op2.u1.iconVal   = op2->AsIntCon()->gtIconVal;
-            assertion.op2.vn           = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+            assertion.op2.vn           = optConservativeNormalVN(op2);
             assertion.op2.u1.iconFlags = op2->GetIconHandleFlag();
 
             //
@@ -1531,7 +1531,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
             assertion.op1.kind       = O1K_LCLVAR;
             assertion.op1.lcl.lclNum = lclNum;
-            assertion.op1.vn         = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+            assertion.op1.vn         = optConservativeNormalVN(op1);
             assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
 
             switch (op2->gtOper)
@@ -1581,7 +1581,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
                     assertion.op2.kind    = op2Kind;
                     assertion.op2.lconVal = 0;
-                    assertion.op2.vn      = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+                    assertion.op2.vn      = optConservativeNormalVN(op2);
 
                     if (op2->gtOper == GT_CNS_INT)
                     {
@@ -1670,7 +1670,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     }
 
                     assertion.op2.kind       = O2K_LCLVAR_COPY;
-                    assertion.op2.vn         = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+                    assertion.op2.vn         = optConservativeNormalVN(op2);
                     assertion.op2.lcl.lclNum = lclNum2;
                     assertion.op2.lcl.ssaNum = op2->AsLclVarCommon()->GetSsaNum();
 
@@ -1730,7 +1730,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
             assertion.op1.kind       = O1K_EXACT_TYPE;
             assertion.op1.lcl.lclNum = lclNum;
-            assertion.op1.vn         = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+            assertion.op1.vn         = optConservativeNormalVN(op1);
             assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
 
             assert((assertion.op1.lcl.ssaNum == SsaConfig::RESERVED_SSA_NUM) ||
@@ -1751,7 +1751,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 assertion.assertionKind  = assertionKind;
                 assertion.op2.kind       = O2K_IND_CNS_INT;
                 assertion.op2.u1.iconVal = cnsValue;
-                assertion.op2.vn         = vnStore->VNConservativeNormalValue(op2->AsOp()->gtOp1->gtVNPair);
+                assertion.op2.vn         = optConservativeNormalVN(op2->AsOp()->gtOp1);
 
                 /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
                 assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
@@ -1763,7 +1763,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 assertion.assertionKind  = assertionKind;
                 assertion.op2.kind       = O2K_CONST_INT;
                 assertion.op2.u1.iconVal = cnsValue;
-                assertion.op2.vn         = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+                assertion.op2.vn         = optConservativeNormalVN(op2);
 
                 /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
                 assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);

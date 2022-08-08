@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
@@ -16,26 +17,24 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// When overridden, constructs a new <see cref="JsonConverter{T}"/> instance.
         /// </summary>
-        protected internal JsonConverter()
-        {
-            Initialize();
-        }
+        protected internal JsonConverter() : this(initialize: true)
+        { }
 
         internal JsonConverter(bool initialize)
         {
+            IsValueType = typeof(T).IsValueType;
+            IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
+
             // Initialize uses abstract members, in order for them to be initialized correctly
-            // without throwing we need to delay call to Initialize
+            // without throwing we might need to delay call to Initialize
             if (initialize)
             {
                 Initialize();
             }
         }
 
-        internal void Initialize()
+        private protected void Initialize()
         {
-            IsValueType = typeof(T).IsValueType;
-            IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
-
             if (HandleNull)
             {
                 HandleNullOnRead = true;
@@ -69,6 +68,18 @@ namespace System.Text.Json.Serialization
 
         internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Value;
 
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal sealed override JsonTypeInfo CreateReflectionJsonTypeInfo(JsonSerializerOptions options)
+        {
+            return new ReflectionJsonTypeInfo<T>(this, options);
+        }
+
+        internal sealed override JsonTypeInfo CreateCustomJsonTypeInfo(JsonSerializerOptions options)
+        {
+            return new CustomJsonTypeInfo<T>(this, options);
+        }
+
         internal sealed override JsonParameterInfo CreateJsonParameterInfo()
         {
             return new JsonParameterInfo<T>();
@@ -76,9 +87,23 @@ namespace System.Text.Json.Serialization
 
         internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
         {
+            if (this is JsonConverter<TTarget> conv)
+            {
+                return conv;
+            }
+
             JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(this, typeof(TTarget));
-            return new CastingConverter<TTarget, T>(this);
+
+            // Avoid layering casting converters by consulting any source converters directly.
+            return
+                SourceConverterForCastingConverter?.CreateCastingConverter<TTarget>()
+                ?? new CastingConverter<TTarget, T>(this);
         }
+
+        /// <summary>
+        /// Set if this converter is itself a casting converter.
+        /// </summary>
+        internal virtual JsonConverter? SourceConverterForCastingConverter => null;
 
         internal override Type? KeyType => null;
 
@@ -215,6 +240,20 @@ namespace System.Text.Json.Serialization
             Debug.Assert(IsInternalConverter);
             bool isContinuation = state.IsContinuation;
             bool success;
+
+            if (
+#if NETCOREAPP
+                !typeof(T).IsValueType &&
+#endif
+                CanBePolymorphic)
+            {
+                // Special case object converters since they don't
+                // require the expensive ReadStack.Push()/Pop() operations.
+                Debug.Assert(this is ObjectConverter);
+                success = OnTryRead(ref reader, typeToConvert, options, ref state, out value);
+                Debug.Assert(success);
+                return true;
+            }
 
 #if DEBUG
             // DEBUG: ensure push/pop operations preserve stack integrity

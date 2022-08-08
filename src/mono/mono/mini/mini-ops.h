@@ -1343,6 +1343,8 @@ MINI_OP(OP_X86_BSF32,              "x86_bsf32", IREG, IREG, NONE)
 MINI_OP(OP_X86_BSR32,              "x86_bsr32", IREG, IREG, NONE)
 MINI_OP(OP_X86_BSF64,              "x86_bsf64", LREG, LREG, NONE)
 MINI_OP(OP_X86_BSR64,              "x86_bsr64", LREG, LREG, NONE)
+MINI_OP(OP_X86_MOVE_R8_TO_FPSTACK,    "x86_move_r8_to_fpstack", NONE, FREG, NONE)
+MINI_OP(OP_X86_MOVE_R4_TO_FPSTACK,    "x86_move_r4_to_fpstack", NONE, FREG, NONE)
 #endif
 
 #if defined(TARGET_AMD64)
