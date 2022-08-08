@@ -321,9 +321,9 @@ public partial class Math
 
 }
 
-public class DebuggerTest
+public partial class DebuggerTest
 {
-    public static void run_all()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void run_all()
     {
         locals();
     }
