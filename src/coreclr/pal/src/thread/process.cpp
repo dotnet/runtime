@@ -2464,11 +2464,17 @@ PROCCreateCrashDump(
         int result = waitpid(childpid, &wstatus, 0);
         if (result != childpid)
         {
-            fprintf(stderr, "Problem waiting for createdump: waitpid() FAILED result %d wstatus %d errno %s (%d)\n",
+            fprintf(stderr, "Problem waiting for createdump: waitpid() FAILED result %d wstatus %08x errno %s (%d)\n",
                 result, wstatus, strerror(errno), errno);
             return false;
         }
-        return !WIFEXITED(wstatus) || WEXITSTATUS(wstatus) == 0;
+        else
+        {
+#ifdef _DEBUG
+            fprintf(stderr, "[createdump] waitpid() returned successfully (wstatus %08x)\n", wstatus);
+#endif
+            return !WIFEXITED(wstatus) || WEXITSTATUS(wstatus) == 0;
+        }
     }
     return true;
 }
