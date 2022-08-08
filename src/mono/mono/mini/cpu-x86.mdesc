@@ -683,10 +683,10 @@ x86_move_r4_to_fpstack: src1:f len:16
 iconv_to_r4_raw: dest:f src1:i len:10
 
 # R4 opcodes
-r4_conv_to_i1: dest:i src1:f len:32
-r4_conv_to_u1: dest:i src1:f len:32
-r4_conv_to_i2: dest:i src1:f len:32
-r4_conv_to_u2: dest:i src1:f len:32
+r4_conv_to_i1: dest:y src1:f len:32
+r4_conv_to_u1: dest:y src1:f len:32
+r4_conv_to_i2: dest:y src1:f len:32
+r4_conv_to_u2: dest:y src1:f len:32
 r4_conv_to_i4: dest:i src1:f len:16
 r4_conv_to_u4: dest:i src1:f len:32
 r4_conv_to_i8: dest:L src1:f len:64
