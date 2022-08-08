@@ -1619,9 +1619,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (sequencePoint.IsHidden)
                         continue;
                     if (Match(sequencePoint, request.Line, request.Column))
+                    {
                         locations.Add(new SourceLocation(method, sequencePoint));
+                        break;
+                    }
                     else if (ifNoneFoundThenFindNext && nextSeqPoint == null && sequencePoint.StartLine > request.Line)
+                    {
                         nextSeqPoint = new SourceLocation(method, sequencePoint);
+                        break;
+                    }
                 }
             }
             if (locations.Any())
