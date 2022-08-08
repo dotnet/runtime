@@ -15,17 +15,17 @@ using static System.Net.Http.Functional.Tests.TestHelper;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class InvokerConnectTestt_Http2 : ConnectTest_Http2
+    public sealed class InvokerConnectTest_Http2 : ConnectTest_Http2
     {
-        public InvokerConnectTestt_Http2(ITestOutputHelper output) : base(output) { }
+        public InvokerConnectTest_Http2(ITestOutputHelper output) : base(output) { }
 
         protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
             cws.ConnectAsync(uri, new HttpMessageInvoker(CreateSocketsHttpHandler(allowAllCertificates: true)), cancellationToken);
     }
 
-    public sealed class HttpClientConnectTestt_Http2 : ConnectTest_Http2
+    public sealed class HttpClientConnectTest_Http2 : ConnectTest_Http2
     {
-        public HttpClientConnectTestt_Http2(ITestOutputHelper output) : base(output) { }
+        public HttpClientConnectTest_Http2(ITestOutputHelper output) : base(output) { }
 
         protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
             cws.ConnectAsync(uri, new HttpClient(CreateSocketsHttpHandler(allowAllCertificates: true)), cancellationToken);

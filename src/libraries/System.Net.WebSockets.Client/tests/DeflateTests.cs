@@ -44,6 +44,7 @@ namespace System.Net.WebSockets.Client.Tests
         public DeflateTests(ITestOutputHelper output) : base(output)
         {
         }
+
         protected abstract Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken);
 
         [ConditionalTheory(nameof(WebSocketsSupported))]

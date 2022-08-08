@@ -18,6 +18,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output);
+
         protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
             cws.ConnectAsync(uri, cancellationToken);
     }
@@ -61,6 +62,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpMessageInvoker(new SocketsHttpHandler()));
+
         protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
             cws.ConnectAsync(uri, new HttpMessageInvoker(new SocketsHttpHandler()), cancellationToken);
     }
@@ -71,6 +73,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected override Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
             WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: new HttpClient(new HttpClientHandler()));
+
         protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
             cws.ConnectAsync(uri, new HttpClient(new HttpClientHandler()), cancellationToken);
     }
