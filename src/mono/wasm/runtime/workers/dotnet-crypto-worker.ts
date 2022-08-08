@@ -47,7 +47,7 @@ class ChannelWorker {
                 // Wait for signal to perform operation
                 let state;
                 do {
-                    this._wait_for_state_to_change__from(this.STATE_IDLE);
+                    this._wait_for_state_to_change_from(this.STATE_IDLE);
                     state = Atomics.load(this.comm, this.STATE_IDX);
                 } while (state !== this.STATE_REQ && state !== this.STATE_REQ_P && state !== this.STATE_SHUTDOWN && state !== this.STATE_REQ_FAILED && state !== this.STATE_RESET);
 
@@ -176,7 +176,7 @@ class ChannelWorker {
 
             // Wait for the transition to know the main thread has
             // received the response by moving onto a new state.
-            this._wait_for_state_to_change__from(state);
+            this._wait_for_state_to_change_from(state);
 
             // Done sending response.
             if (state === this.STATE_RESP) {
@@ -228,7 +228,7 @@ class ChannelWorker {
         }
     }
 
-    private _wait_for_state_to_change__from(expected_state: number) {
+    private _wait_for_state_to_change_from(expected_state: number) {
         Atomics.wait(this.comm, this.STATE_IDX, expected_state);
         this._throw_if_reset_or_shutdown();
     }
