@@ -308,7 +308,7 @@ class LibraryChannel {
                     Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
                     return true;
                 } else if (state !== this.STATE_RESP_P) {
-                    throw new Error(`Unexpectd state ${state}`);
+                    throw new Error(`Unexpected state ${state}`);
                 }
 
                 // Reset the size and transition to await state.
