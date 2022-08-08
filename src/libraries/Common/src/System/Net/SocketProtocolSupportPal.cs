@@ -12,7 +12,7 @@ namespace System.Net
 
         public static bool OSSupportsIPv6 { get; } = IsSupported(AddressFamily.InterNetworkV6) && !IsIPv6Disabled();
         public static bool OSSupportsIPv4 { get; } = IsSupported(AddressFamily.InterNetwork);
-        public static bool OSSupportsUnixDomainSockets { get; } = IsSupported(AddressFamily.Unix);
+        public static bool OSSupportsUnixDomainSockets { get; } = IsSupported(AddressFamily.Unix) && !OperatingSystem.IsTvOS() && (!OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst());
 
         private static bool IsIPv6Disabled()
         {
