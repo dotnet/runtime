@@ -42,6 +42,12 @@ namespace System.IO.Tests
                     Assert.Equal(expectedNameLength, tmpDir.Name.Length);
                 }
 
+                if (!OperatingSystem.IsWindows())
+                {
+                    UnixFileMode userRWX = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+                    Assert.Equal(userRWX, tmpDir.UnixFileMode);
+                }
+
                 // Ensure a file can be written to the directory
                 string tempFile = Path.Combine(tmpDir.FullName, "newFile");
                 using (FileStream fs = File.Create(tempFile, bufferSize: 1024, FileOptions.DeleteOnClose))
