@@ -16,7 +16,7 @@ build-all: $(WASI_SDK_CLANG)
 		-DDISABLE_SHARED_LIBS=1 \
 		-Wl,--allow-undefined \
 		$(TOP)/src/mono
-	cd $(WASI_OBJ_DIR) && ninja
+	cd $(WASI_OBJ_DIR) && PATH=$(NINJA_DIR):${PATH} ninja
 
 	mkdir -p $(WASI_BIN_DIR)
 	cp $(WASI_OBJ_DIR)/mono/mini/*.a $(WASI_OBJ_DIR)/libmono-wasi-driver.a $(WASI_BIN_DIR)
@@ -33,10 +33,19 @@ $(WASI_SDK_CLANG):
 
 .stamp-wasmtime-$(WASMTIME_VERSION):
 	@echo "** Provisioning wasmtime $(WASMTIME_VERSION) **"
-	rm -Rf $(WASMTIME_DIR)
-	wget https://github.com/bytecodealliance/wasmtime/releases/download/$(WASMTIME_VERSION)/$(WASMTIME_DIR_NAME).tar.xz -O - | tar -C `dirname $(WASMTIME_DIR)` -Jxf -
+	rm -Rf $(WASMTIME_DIR) && \
+	wget https://github.com/bytecodealliance/wasmtime/releases/download/$(WASMTIME_VERSION)/$(WASMTIME_DIR_NAME).tar.xz -O - | tar -C `dirname $(WASMTIME_DIR)` -Jxf - && \
 	touch $@
 
-provision-deps: .stamp-wasmtime-$(WASMTIME_VERSION)
+.stamp-ninja-$(NINJA_VERSION):
+	@echo "** Provisioning ninja $(NINJA_VERSION) **"
+	rm -Rf $(NINJA_DIR); \
+	mkdir $(NINJA_DIR) && \
+	wget -q https://github.com/ninja-build/ninja/releases/download/v1.11.0/ninja-linux.zip -O $(NINJA_DIR)/ninja.zip && \
+	(cd $(NINJA_DIR) && unzip -q ninja.zip && rm ninja.zip) && \
+	touch $@
+
+provision-deps: .stamp-wasmtime-$(WASMTIME_VERSION) .stamp-ninja-$(NINJA_VERSION)
 	@echo "-------------------------------------------"
 	@echo "** Installed wasmtime in $(WASMTIME_DIR)"
+	@echo "** Installed ninja in $(NINJA_DIR)"
