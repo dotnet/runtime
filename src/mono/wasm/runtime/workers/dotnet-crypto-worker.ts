@@ -3,6 +3,7 @@
 
 import { setup_proxy_console } from "../debug";
 import type { InitCryptoMessageData } from "../crypto-worker";
+import type { MonoConfig } from "../types";
 
 class FailedOrStoppedLoopError extends Error { }
 class ArgumentsError extends Error { }
@@ -45,11 +46,9 @@ class ChannelWorker {
             try {
                 // Wait for signal to perform operation
                 let state;
-                const start = new Date().valueOf();
                 do {
-                    this._wait_for_state_change_from(this.STATE_IDLE);
+                    this._wait_for_state_to_change_from(this.STATE_IDLE);
                     state = Atomics.load(this.comm, this.STATE_IDX);
-                    if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER1: Probably deadlock with state=${state}\n` + (new Error).stack);
                 } while (state !== this.STATE_REQ && state !== this.STATE_REQ_P && state !== this.STATE_SHUTDOWN && state !== this.STATE_REQ_FAILED && state !== this.STATE_RESET);
 
                 this._throw_if_reset_or_shutdown();
@@ -78,8 +77,9 @@ class ChannelWorker {
                         console.debug("MONO_WASM: caller failed, resetting worker");
                 } else {
                     console.error(`MONO_WASM: Worker failed to handle the request: ${_stringify_err(err)}`);
-                    this._change_state_locked(this.STATE_REQ_FAILED);
-                    Atomics.store(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED);
+                    this._using_lock_for_nonblocking_cb(() => {
+                        this._change_state_locked(this.STATE_REQ_FAILED);
+                    });
 
                     console.debug("MONO_WASM: set state to failed, now waiting to get RESET");
                     Atomics.wait(this.comm, this.STATE_IDX, this.STATE_REQ_FAILED);
@@ -89,9 +89,11 @@ class ChannelWorker {
                     }
                 }
 
-                Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
-                Atomics.store(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED);
-                this._change_state_locked(this.STATE_IDLE);
+                this._using_lock_for_nonblocking_cb(() => {
+                    Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
+                    Atomics.store(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED);
+                    this._change_state_locked(this.STATE_IDLE);
+                });
             }
 
             const state = Atomics.load(this.comm, this.STATE_IDX);
@@ -103,22 +105,21 @@ class ChannelWorker {
                 console.error(`MONO_WASM: -- lock is not unlocked at the top of the loop: ${lock_state}, and state: ${state}`);
         }
 
-        Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
-        this._change_state_locked(this.STATE_SHUTDOWN);
+        this._using_lock_for_nonblocking_cb(() => {
+            Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
+            this._change_state_locked(this.STATE_SHUTDOWN);
+        });
         console.debug("MONO_WASM: ******* run_message_loop ending");
     }
 
-    _read_request(): string {
+    private _read_request(): string {
         let request = "";
-        const start = new Date().valueOf();
         for (; ;) {
-            this._acquire_lock();
-            try {
+            const done = this._using_lock_for_nonblocking_cb(() => {
                 this._throw_if_reset_or_shutdown();
 
                 // Get the current state and message size
                 const state = Atomics.load(this.comm, this.STATE_IDX);
-                if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER2: Probably deadlock with state=${state}\n` + (new Error).stack);
                 const size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
 
                 const view = this.msg.subarray(0, size_to_read);
@@ -128,7 +129,9 @@ class ChannelWorker {
 
                 // The request is complete.
                 if (state === this.STATE_REQ) {
-                    break;
+                    return true;
+                } else if (state !== this.STATE_REQ_P) {
+                    throw new Error(`Unexpected state ${state}`);
                 }
 
                 // Shutdown the worker.
@@ -137,33 +140,24 @@ class ChannelWorker {
                 // Reset the size and transition to await state.
                 Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
                 this._change_state_locked(this.STATE_AWAIT);
-            } finally {
-                this._release_lock();
-            }
+            });
+            if (done) break;
 
-            // we just changed the state to AWAIT, but by the time
-            // _wait_for_state_change_from is run, main thread might have
-            // already switched to the next state
-            this._wait_for_state_change_from(this.STATE_AWAIT);
+            this._wait_for_state_to_change_from(this.STATE_AWAIT);
         }
 
         return request;
     }
 
-    _send_response(msg: string) {
+    private _send_response(msg: string) {
         if (Atomics.load(this.comm, this.STATE_IDX) !== this.STATE_REQ)
             throw new WorkerFailedError("WORKER: Invalid sync communication channel state.");
 
-        let state; // State machine variable
         const msg_len = msg.length;
         let msg_written = 0;
 
-        const start = new Date().valueOf();
         for (; ;) {
-            if ((new Date().valueOf()) - start > 1000 * 60) console.warn("WORKER3: Probably deadlock\n" + (new Error).stack);
-            this._acquire_lock();
-
-            try {
+            const state = this._using_lock_for_nonblocking_cb(() => {
                 // Write the message and return how much was written.
                 const wrote = this._write_to_msg(msg, msg_written, msg_len);
                 msg_written += wrote;
@@ -172,25 +166,28 @@ class ChannelWorker {
                 Atomics.store(this.comm, this.MSG_SIZE_IDX, wrote);
 
                 // Indicate if this was the whole message or part of it.
-                state = msg_written === msg_len ? this.STATE_RESP : this.STATE_RESP_P;
+                const state = msg_written === msg_len ? this.STATE_RESP : this.STATE_RESP_P;
 
                 // Update the state
                 this._change_state_locked(state);
-            } finally {
-                this._release_lock();
-            }
+
+                return state;
+            });
 
             // Wait for the transition to know the main thread has
             // received the response by moving onto a new state.
-            this._wait_for_state_change_from(state);
+            this._wait_for_state_to_change_from(state);
 
             // Done sending response.
-            if (state === this.STATE_RESP)
+            if (state === this.STATE_RESP) {
                 break;
+            } else if (state !== this.STATE_RESP_P) {
+                throw new Error(`Unexpected state ${state}`);
+            }
         }
     }
 
-    _write_to_msg(input: string, start: number, input_len: number) {
+    private _write_to_msg(input: string, start: number, input_len: number) {
         let mi = 0;
         let ii = start;
         while (mi < this.msg_char_len && ii < input_len) {
@@ -201,15 +198,22 @@ class ChannelWorker {
         return ii - start;
     }
 
-    _change_state_locked(newState: number) {
+    private _change_state_locked(newState: number) {
         Atomics.store(this.comm, this.STATE_IDX, newState);
     }
 
-    _acquire_lock() {
-        const start = new Date().valueOf();
+    private _using_lock_for_nonblocking_cb(cb: Function) {
+        this._acquire_lock_with_spin_wait();
+        try {
+            return cb();
+        } finally {
+            this._release_lock();
+        }
+    }
+
+    private _acquire_lock_with_spin_wait() {
         for (; ;) {
             const lockState = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED);
-            if ((new Date().valueOf()) - start > 1000 * 60) console.warn(`WORKER4: Probably deadlock during  with lockState=${lockState}\n` + (new Error).stack);
             this._throw_if_reset_or_shutdown();
 
             if (lockState === this.LOCK_UNLOCKED)
@@ -217,19 +221,19 @@ class ChannelWorker {
         }
     }
 
-    _release_lock() {
+    private _release_lock() {
         const result = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_OWNED, this.LOCK_UNLOCKED);
         if (result !== this.LOCK_OWNED) {
             throw new WorkerFailedError("CRYPTO: ChannelWorker tried to release a lock that wasn't acquired: " + result);
         }
     }
 
-    _wait_for_state_change_from(expected_state: number) {
+    private _wait_for_state_to_change_from(expected_state: number) {
         Atomics.wait(this.comm, this.STATE_IDX, expected_state);
         this._throw_if_reset_or_shutdown();
     }
 
-    _throw_if_reset_or_shutdown() {
+    private _throw_if_reset_or_shutdown() {
         const state = Atomics.load(this.comm, this.STATE_IDX);
         if (state === this.STATE_RESET || state === this.STATE_SHUTDOWN)
             throw new FailedOrStoppedLoopError();
@@ -384,13 +388,15 @@ function _stringify_err(err: any) {
 }
 
 let s_channel;
-console.log("WORKER A1");
+let config: MonoConfig = <any>null;
+
 // Initialize WebWorker
 self.addEventListener("message", (event: MessageEvent) => {
-    console.log("WORKER A2");
     const data = event.data as InitCryptoMessageData;
-    setup_proxy_console("crypto-worker", console, self.location.origin);
-    console.log("WORKER A3");
+    config = data && data.config ? JSON.parse(data.config) : {};
+    if (config.diagnosticTracing) {
+        setup_proxy_console("crypto-worker", console, self.location.origin);
+    }
     s_channel = new ChannelWorker(data.comm_buf, data.msg_buf, data.msg_char_len);
     s_channel.run_message_loop(handle_req_async);
 });
