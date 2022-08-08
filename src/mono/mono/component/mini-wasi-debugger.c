@@ -14,7 +14,7 @@ __attribute__((import_name("sock_accept")))
 int sock_accept(int fd, int fdflags, int* result_ptr);
 
 static long long
-timeInMilliseconds ()
+time_in_milliseconds ()
 {
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
@@ -36,8 +36,8 @@ wasi_transport_recv (void *buf, int len)
 		num_recv_calls++;
 		if ((res > 0 && total < len) || (res == -1 && num_recv_calls < retry_receive_message)) {
 			// Wasmtime on Windows doesn't seem to be able to sleep for short periods like 1ms so we'll have to spinlock
-			long long start = timeInMilliseconds ();
-			while ((timeInMilliseconds () - start) < (connection_wait_us/1000));
+			long long start = time_in_milliseconds ();
+			while ((time_in_milliseconds () - start) < (connection_wait_us/1000));
 		} else {
 			break;
 		}
@@ -68,13 +68,13 @@ wasi_transport_connect (const char *socket_fd)
 	bool handshake_ok = FALSE;
 	conn_fd = -1;
 	char *ptr;
+	PRINT_DEBUG_MSG (1, "Waiting for connection from client, socket fd=%s.\n", socket_fd);
+	long socket_fd_long = strtol(socket_fd, &ptr, 10);
+	if (socket_fd_long == 0) {
+		PRINT_DEBUG_MSG (1, "Invalid socket fd = %s.\n", socket_fd);
+		return;
+	}
 	while (!handshake_ok) {
-		PRINT_DEBUG_MSG (1, "Waiting for connection from client, socket fd=%s.\n", socket_fd);
-		long socket_fd_long = strtol(socket_fd, &ptr, 10);
-		if (socket_fd_long == 0) {
-			PRINT_DEBUG_MSG (1, "Invalid socked fd = %s.\n", socket_fd);
-			return;
-		}
 		int ret_accept = sock_accept (socket_fd_long, __WASI_FDFLAGS_NONBLOCK, &conn_fd);
 		if (ret_accept < 0) {
 			PRINT_DEBUG_MSG (1, "Error while accepting connection from client = %d.\n", ret_accept);
