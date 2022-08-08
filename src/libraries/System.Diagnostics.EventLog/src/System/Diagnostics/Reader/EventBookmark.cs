@@ -15,15 +15,15 @@ namespace System.Diagnostics.Eventing.Reader
     /// well as marks the location in the result set of the EventReader
     /// that the event instance was obtained from.
     /// </summary>
-    public class EventBookmark
+    public sealed class EventBookmark
     {
-        internal EventBookmark(string bookmarkText)
+        public EventBookmark(string bookmarkText)
         {
             ArgumentNullException.ThrowIfNull(bookmarkText);
 
             BookmarkText = bookmarkText;
         }
 
-        internal string BookmarkText { get; }
+        public string BookmarkText { get; }
     }
 }
