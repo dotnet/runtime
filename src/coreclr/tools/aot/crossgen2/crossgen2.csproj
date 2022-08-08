@@ -42,7 +42,7 @@
   </PropertyGroup>
 
   <Import Project="$(R2ROverridePath)" Condition="'$(R2ROverridePath)' != ''" />
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.targets"
+  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets"
           Condition="'$(NativeAotSupported)' == 'true' and '$(RunningPublish)' == 'true'" />
 
   <Target Name="RewriteRuntimePackDir"
