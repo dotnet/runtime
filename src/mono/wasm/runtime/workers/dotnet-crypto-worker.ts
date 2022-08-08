@@ -143,7 +143,7 @@ class ChannelWorker {
             });
             if (done) break;
 
-            this._wait_for_state_to_change__from(this.STATE_AWAIT);
+            this._wait_for_state_to_change_from(this.STATE_AWAIT);
         }
 
         return request;
