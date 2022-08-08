@@ -106,7 +106,7 @@ namespace System.Text.Json
             // the .NET Core 3.0 logic of forwarding to the UTF16 formatter and transcoding it back to UTF8,
             // with some additional changes to remove dependencies on Span APIs which don't exist downlevel.
 
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             return Utf8Formatter.TryFormat(value, destination, out bytesWritten);
 #else
             string utf16Text = value.ToString(JsonConstants.DoubleFormatString, CultureInfo.InvariantCulture);

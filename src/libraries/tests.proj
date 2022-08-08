@@ -56,6 +56,7 @@
 
   <!-- Samples that require a multi-threaded runtime -->
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(WasmEnableThreads)' != 'true'" >
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads\Wasm.Browser.Threads.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-mt-eventpipe\Wasm.Browser.ThreadsEP.Sample.csproj" />
   </ItemGroup>
 
@@ -485,10 +486,6 @@
                       Condition="'$(TargetOS)' == 'windows'"/>
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Functional\System.Net.Mail.Functional.Tests.csproj"
                       Condition="'$(TargetOS)' == 'windows'"/>
-
-    <!-- Timing out on Linux. GC suspension? -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent\tests\System.Collections.Concurrent.Tests.csproj"
-                      Condition="'$(TargetOS)' == 'linux' and '$(TargetArchitecture)' == 'arm64'" />
 
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http.Json\tests\FunctionalTests\System.Net.Http.Json.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Parallel\tests\System.Linq.Parallel.Tests.csproj" />
