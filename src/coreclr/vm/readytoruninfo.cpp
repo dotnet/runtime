@@ -781,7 +781,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                     LPCSTR assemblyName;
                     IfFailThrow(pNativeMDImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL));
 
-                    binder->DeclareDependencyOnMvid(assemblyName, *componentMvid, pNativeImage != NULL ? pNativeImage->GetFileName() : NULL, pModule != NULL ? pModule->GetSimpleName() : NULL);
+                    binder->DeclareDependencyOnMvid(assemblyName, *componentMvid, pNativeImage != NULL, pModule != NULL ? pModule->GetSimpleName() : pNativeImage->GetFileName());
                     manifestAssemblyCount++;
                 }
             }
