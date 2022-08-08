@@ -257,6 +257,8 @@ System.Configuration.ConfigurationManager</PackageDescription>
     <Compile Include="System\Configuration\SettingsPropertyValue.cs" />
     <Compile Include="System\Configuration\SettingsSerializeAs.cs" />
     <Compile Include="System\Configuration\NoSettingsVersionUpgradeAttribute.cs" />
+    <Compile Include="System\Diagnostics\PerfCounterSettings.cs" />
+    <Compile Include="System\Diagnostics\SystemDiagnosticsSection.cs" />
     <Compile Include="System\UriIdnScope.cs" />
     <Compile Include="$(CommonPath)System\IO\TempFileCollection.cs" Link="Common\System\IO\TempFileCollection.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
@@ -269,13 +271,13 @@ System.Configuration.ConfigurationManager</PackageDescription>
     <Compile Include="System\Diagnostics\ListenerElementsCollection.cs" />
     <Compile Include="System\Diagnostics\SourceElementsCollection.cs" />
     <Compile Include="System\Diagnostics\SwitchElementsCollection.cs" />
-    <Compile Include="System\Diagnostics\SystemDiagnosticsSection.cs" />
+    <Compile Include="System\Diagnostics\SystemDiagnosticsSection.netcoreapp.cs" />
     <Compile Include="System\Diagnostics\TraceConfiguration.cs" />
     <Compile Include="System\Diagnostics\TraceSection.cs" />
     <Compile Include="System\Diagnostics\TypedElement.cs" />
     <Compile Include="System\Diagnostics\TraceUtils.cs" />
   </ItemGroup>
-
+  
   <!-- Since this package is compatible with .NETStandard, it must also ensure its .NETFramework and .NETCoreApp behavior is compatible with its .NETStandard behavior.-->
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />

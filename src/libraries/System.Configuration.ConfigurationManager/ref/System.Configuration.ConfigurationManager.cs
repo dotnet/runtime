@@ -1578,15 +1578,22 @@ namespace System.Configuration.Provider
         public ProviderException(string message, System.Exception innerException) { }
     }
 }
-#if NET7_0_OR_GREATER
 namespace System.Diagnostics
 {
-    public static partial class TraceConfiguration
+    public sealed partial class PerfCounterSettings : System.Configuration.ConfigurationElement
     {
-        public static void Register() { }
+        public PerfCounterSettings() { }
+        public int FileMappingSize { get { throw null; } }
+        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+    }
+    public sealed partial class SystemDiagnosticsSection : System.Configuration.ConfigurationSection
+    {
+        public SystemDiagnosticsSection() { }
+        public System.Diagnostics.PerfCounterSettings PerfCounterSettings { get { throw null; } }
+        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+        protected override void InitializeDefault() { }
     }
 }
-#endif
 namespace System.Drawing.Configuration
 {
     public sealed partial class SystemDrawingSection : System.Configuration.ConfigurationSection

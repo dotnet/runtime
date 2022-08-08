@@ -32,9 +32,9 @@ namespace System.Diagnostics
 
                 Initialize();
                 SystemDiagnosticsSection configSectionSav = s_configSection;
-                if (configSectionSav != null && configSectionSav.PerfCounters != null)
+                if (configSectionSav != null && configSectionSav.PerfCounterSettings != null)
                 {
-                    int size = configSectionSav.PerfCounters.FileMappingSize;
+                    int size = configSectionSav.PerfCounterSettings.FileMappingSize;
                     if (size < SharedPerformanceCounter.MinCountersFileMappingSize)
                         size = SharedPerformanceCounter.MinCountersFileMappingSize;
 
