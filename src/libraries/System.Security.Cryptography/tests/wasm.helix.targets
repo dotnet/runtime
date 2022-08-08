@@ -5,6 +5,10 @@
   </PropertyGroup>
 
   <Target Name="_AddHelixCrypoItems">
+    <GenerateIndices NumIndices="100">
+      <Output TaskParameter="GeneratedIndices" ItemName="_Indices" />
+    </GenerateIndices>
+
     <ItemGroup>
       <!-- remove the existing item -->
       <HelixWorkItem Remove="@(HelixWorkItem)" Condition="'%(HelixWorkItem.Identity)' == '$(Scenario)-$(_CryptoProjectName)'" />
@@ -16,20 +20,28 @@
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
 
-      <HelixWorkItem Include="$(WorkItemPrefix)subtlecrypto-$(_CryptoProjectName)">
+      <HelixWorkItem Include="%(_Indices.Identity)-$(WorkItemPrefix)subtlecrypto-$(_CryptoProjectName)">
         <PayloadArchive>$(TestArchiveTestsDir)$(_CryptoProjectName).zip</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
 
-        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;WasmXHarnessArgs=%WasmXHarnessArgs% --web-server-use-cop&quot; &amp; set &quot;WasmXHarnessMonoArgs=--setenv=TEST_EXPECT_SUBTLE_CRYPTO=true&quot;</PreCommands>
-        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;WasmXHarnessArgs=$WasmXHarnessArgs --web-server-use-cop&quot; &amp;&amp; export &quot;WasmXHarnessMonoArgs=--setenv=TEST_EXPECT_SUBTLE_CRYPTO=true&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;WasmXHarnessArgs=%WasmXHarnessArgs% -v diag --web-server-use-cop&quot; &amp; set &quot;WasmXHarnessMonoArgs=--setenv=TEST_EXPECT_SUBTLE_CRYPTO=true --setenv=XHARNESS_LOG_TEST_START=true&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;WasmXHarnessArgs=$WasmXHarnessArgs -v diag --web-server-use-cop&quot; &amp;&amp; export &quot;WasmXHarnessMonoArgs=--setenv=TEST_EXPECT_SUBTLE_CRYPTO=true --setenv=XHARNESS_LOG_TEST_START=true&quot;</PreCommands>
       </HelixWorkItem>
-
-      <_CryptoHelixItem Include="@(HelixWorkItem)"
-                        Condition="$([System.String]::new('%(HelixWorkItem.Identity)').EndsWith('-$(_CryptoProjectName)'))" />
     </ItemGroup>
 
-    <Error Text="Something went wrong. Expected to have only two work items for $(_CryptoProjectName). But got @(_CryptoHelixItem)"
-           Condition="@(_CryptoHelixItem->Count()) != 2" />
   </Target>
+
+  <UsingTask TaskName="GenerateIndices" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <NumIndices ParameterType="System.Int32" Required="true" />
+      <GeneratedIndices ParameterType="System.Int32[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        GeneratedIndices = Enumerable.Range(0, NumIndices).ToArray();
+        ]]></Code>
+    </Task>
+  </UsingTask>
+
 </Project>
