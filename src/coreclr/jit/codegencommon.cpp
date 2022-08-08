@@ -2066,7 +2066,7 @@ void CodeGen::genEmitMachineCode()
 #else
     if (compiler->opts.disAsm)
     {
-        printf("\n; Total bytes of code %d\n", codeSize);
+        printf("\n; Total bytes of code %d\n\n", codeSize);
     }
 #endif
 
