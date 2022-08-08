@@ -878,6 +878,8 @@ namespace System.Net.Security.Tests
                 store.Close();
             }
 
+            _output.WriteLine("Certificates added to {0}", storeName);
+
             // make sure we can build chain. There may be some race conditions after certs being added to the store.
             int retries = 5;
             int delay = 10;
@@ -889,6 +891,7 @@ namespace System.Net.Security.Tests
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                     chain.ChainPolicy.DisableCertificateDownloads = true;
                     bool chainStatus = chain.Build(clientCertificate);
+                    _output.WriteLine("round {0}: chain.Build: finished as {1} with {2} certificates {3}", retries, chainStatus, chain.ChainElements.Count, DateTime.Now);
                     if (chainStatus && chain.ChainElements.Count >= clientChain.Count)
                     {
                         break;
