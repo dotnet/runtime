@@ -1,0 +1,19 @@
+# download 7-zip
+mkdir artifacts
+curl https://public-stevedore.unity3d.com/r/public/7za-mac-x64/e6c75fb7ffda_5bd76652986a0e3756d1cfd7e84ce056a9e1dbfc5f70f0514a001f724c0fbad2.zip --output artifacts/7za-mac-x64.zip
+unzip artifacts/7za-mac-x64.zip -d artifacts/7za-mac-x64
+# build solution
+./dotnet.sh build unity/managed.sln -c Release
+cd unity/unitygc
+mkdir release
+cd release
+cmake -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+cd ../../../
+# build subset library and core clr
+LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset clr+libs -a arm64 -c release -cross -ci -ninja /p:CrossBuild=true
+cp unity/unitygc/release/libunitygc.dylib artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/native
+cp artifacts/bin/unity-embed-host/Release/net6.0/unity-embed-host.dll artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/lib/net7.0
+cp artifacts/bin/unity-embed-host/Release/net6.0/unity-embed-host.pdb artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/lib/net7.0
+cp LICENSE.md artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/.
+artifacts/7za-mac-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/*
