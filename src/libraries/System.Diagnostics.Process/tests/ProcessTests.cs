@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.DirectoryServices.ActiveDirectory;
 using System.IO;
 using System.IO.Pipes;
@@ -1779,8 +1778,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, typeof(Process))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void RefreshResetsAllRefreshableFields()
         {

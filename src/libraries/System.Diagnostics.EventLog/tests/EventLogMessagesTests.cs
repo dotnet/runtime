@@ -50,7 +50,9 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
+        public static bool HasAssemblyFilesIsElevatedAndSupportsEventLogs => PlatformDetection.HasAssemblyFiles && Helpers.IsElevatedAndSupportsEventLogs;
+
+        [ConditionalFact(nameof(HasAssemblyFilesIsElevatedAndSupportsEventLogs))]
         public void CanReadAndWriteMessages()
         {
             string messageDllPath = Path.Combine(Path.GetDirectoryName(typeof(EventLog).Assembly.Location), "System.Diagnostics.EventLog.Messages.dll");
