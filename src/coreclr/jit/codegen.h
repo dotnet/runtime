@@ -954,8 +954,11 @@ protected:
     void genLeaInstruction(GenTreeAddrMode* lea);
     void genSetRegToCond(regNumber dstReg, GenTree* tree);
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+
+#if defined(TARGET_ARMARCH)
     void genCodeForMulLong(GenTreeOp* mul);
 #endif // TARGET_ARMARCH
 

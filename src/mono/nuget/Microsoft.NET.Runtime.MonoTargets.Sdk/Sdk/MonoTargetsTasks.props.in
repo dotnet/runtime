@@ -7,6 +7,8 @@
   <UsingTask TaskName="ILStrip" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
   <!-- RuntimeConfigParser -->
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <!-- NetTraceToMibcConverter -->
+  <UsingTask TaskName="NetTraceToMibcConverter" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
   <!-- Specific instances of JsonToItemsTaskFactory -->
   <!-- MonoRuntimeComponentManifestReadTask -->
   <UsingTask TaskName="MonoRuntimeComponentManifestReadTask" TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory" AssemblyFile="$(MonoTargetsTasksAssemblyPath)">

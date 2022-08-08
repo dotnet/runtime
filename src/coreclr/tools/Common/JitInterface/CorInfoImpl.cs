@@ -3392,14 +3392,14 @@ namespace Internal.JitInterface
 
         private bool logMsg(uint level, byte* fmt, IntPtr args)
         {
-            // Console.WriteLine(Marshal.PtrToStringAnsi((IntPtr)fmt));
+            // Console.WriteLine(Marshal.PtrToStringUTF8((IntPtr)fmt));
             return false;
         }
 
         private int doAssert(byte* szFile, int iLine, byte* szExpr)
         {
-            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szFile) + ":" + iLine);
-            Logger.LogMessage(Marshal.PtrToStringAnsi((IntPtr)szExpr));
+            Logger.LogMessage(Marshal.PtrToStringUTF8((IntPtr)szFile) + ":" + iLine);
+            Logger.LogMessage(Marshal.PtrToStringUTF8((IntPtr)szExpr));
 
             return 1;
         }

@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(ptr, Marshal.GetHINSTANCE(typeof(string).Module));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GetHINSTANCE_ModuleBuilder_ReturnsSameInstance()
         {
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.Run);

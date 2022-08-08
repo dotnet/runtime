@@ -84,7 +84,7 @@ namespace System.Threading.RateLimiting
         public override int GetAvailablePermits() => _requestCount;
 
         /// <inheritdoc/>
-        protected override RateLimitLease AcquireCore(int requestCount)
+        protected override RateLimitLease AttemptAcquireCore(int requestCount)
         {
             // These amounts of resources can never be acquired
             // Raises a PermitLimitExceeded ArgumentOutOFRangeException
@@ -118,7 +118,7 @@ namespace System.Threading.RateLimiting
         }
 
         /// <inheritdoc/>
-        protected override ValueTask<RateLimitLease> WaitAndAcquireAsyncCore(int requestCount, CancellationToken cancellationToken = default)
+        protected override ValueTask<RateLimitLease> AcquireAsyncCore(int requestCount, CancellationToken cancellationToken = default)
         {
             // These amounts of resources can never be acquired
             if (requestCount > _options.PermitLimit)

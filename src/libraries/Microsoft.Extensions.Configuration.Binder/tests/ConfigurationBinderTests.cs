@@ -491,6 +491,33 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public byte[] MyByteArray { get; set; }
         }
 
+        public enum TestSettingsEnum
+        {
+            Option1,
+            Option2,
+        }
+
+        [Fact]
+        public void EnumBindCaseInsensitiveNotThrows()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Section:Option1", "opt1"},
+                {"Section:option2", "opt2"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+            var configSection = config.GetSection("Section");
+
+            var configOptions = new Dictionary<TestSettingsEnum, string>();
+            configSection.Bind(configOptions);
+
+            Assert.Equal("opt1", configOptions[TestSettingsEnum.Option1]);
+            Assert.Equal("opt2", configOptions[TestSettingsEnum.Option2]);
+        }
+
         [Fact]
         public void CanBindIConfigurationSection()
         {

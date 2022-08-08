@@ -1211,7 +1211,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 
     var_types asgType = src->TypeGet();
 
-    if (src->gtOper == GT_CALL)
+    if (src->IsCall())
     {
         GenTreeCall* srcCall = src->AsCall();
         if (srcCall->TreatAsShouldHaveRetBufArg(this))
@@ -1280,7 +1280,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                     }
                     else
                     {
-                        srcCall->gtArgs.InsertAfter(this, &*srcCall->gtArgs.Args().begin(), newArg);
+                        srcCall->gtArgs.InsertAfter(this, srcCall->gtArgs.Args().begin().GetArg(), newArg);
                     }
 #endif
                 }
@@ -10994,6 +10994,17 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     {
         assert(returnType == TYP_UNKNOWN);
         call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
+
+        if (call->IsUnmanaged())
+        {
+            // Native ABIs do not allow retbufs to alias anything.
+            // This is allowed by the managed ABI and impAssignStructPtr will
+            // never introduce copies due to this.
+            unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Retbuf for unmanaged call"));
+            impAssignTempGen(tmpNum, call, retClsHnd, (unsigned)CHECK_SPILL_ALL);
+            return gtNewLclvNode(tmpNum, lvaGetDesc(tmpNum)->TypeGet());
+        }
+
         return call;
     }
 
@@ -19719,7 +19730,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     CORINFO_SIG_INFO        sig    = info.compMethodInfo->args;
     CORINFO_ARG_LIST_HANDLE sigArg = sig.args;
 
-    CallArg* argUse = pInlineInfo == nullptr ? nullptr : &*pInlineInfo->iciCall->AsCall()->gtArgs.Args().begin();
+    CallArg* argUse = pInlineInfo == nullptr ? nullptr : pInlineInfo->iciCall->AsCall()->gtArgs.Args().begin().GetArg();
 
     for (unsigned i = 0; i < info.compMethodInfo->args.numArgs; i++)
     {
