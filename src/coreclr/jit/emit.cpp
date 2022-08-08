@@ -1493,9 +1493,8 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     emitLastIns = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
     emitCurIGfreeNext += fullSize;
 
-    memset(id, 0, sz);
-
     assert(sz >= sizeof(void*));
+    memset(id, 0, sz);
 
     // These fields should have been zero-ed by the above
     assert(id->idReg1() == regNumber(0));
