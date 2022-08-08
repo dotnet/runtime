@@ -621,7 +621,7 @@ HRESULT CordbClass::SetJMCStatus(BOOL fIsUserCode)
 // We have to go the EE to find out if a class is a value
 // class or not.  This is because there is no flag for this, but rather
 // it depends on whether the class subclasses System.ValueType (apart
-// from System.Enum...).  Replicating all that resoultion logic
+// from System.Enum...).  Replicating all that resolution logic
 // does not seem like a good plan.
 //
 // We also accept other "evidence" that the class is or isn't a VC, in

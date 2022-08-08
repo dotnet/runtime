@@ -752,7 +752,7 @@ void EECodeManager::FixContext( ContextType     ctxType,
     /* make sure that we have an ebp stack frame */
 
     _ASSERTE(stateBuf->hdrInfoBody.ebpFrame);
-    _ASSERTE(stateBuf->hdrInfoBody.handlers); // <TODO>@TODO : This will alway be set. Remove it</TODO>
+    _ASSERTE(stateBuf->hdrInfoBody.handlers); // <TODO>@TODO : This will always be set. Remove it</TODO>
 
     TADDR      baseSP;
     GetHandlerFrameInfo(&stateBuf->hdrInfoBody, ctx->Ebp,
@@ -2877,7 +2877,7 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
                 }
             }
 
-            // For partial arg info, need to find the next higest pointer for argHigh
+            // For partial arg info, need to find the next highest pointer for argHigh
 
             if (hasPartialArgInfo)
             {
@@ -6004,7 +6004,7 @@ unsigned int EECodeManager::GetFrameSize(GCInfoToken gcInfoToken)
     DecodeGCHdrInfo(gcInfoToken, 0, &info);
 
     // currently only used by E&C callers need to know about doubleAlign
-    // in all likelyhood
+    // in all likelihood
     _ASSERTE(!info.doubleAlign);
     return info.stackSize;
 }
@@ -6043,7 +6043,7 @@ BOOL EECodeManager::IsInFilter(GCInfoToken gcInfoToken,
     /* make sure that we have an ebp stack frame */
 
     _ASSERTE(info.ebpFrame);
-    _ASSERTE(info.handlers); // <TODO> This will alway be set. Remove it</TODO>
+    _ASSERTE(info.handlers); // <TODO> This will always be set. Remove it</TODO>
 
     TADDR       baseSP;
     DWORD       nestingLevel;

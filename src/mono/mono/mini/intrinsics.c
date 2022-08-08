@@ -307,6 +307,20 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	}
 
+#ifdef TARGET_WASM
+	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "BitOperations")) {
+		if (!strcmp (cmethod->name, "PopCount") && fsig->param_count == 1 &&
+			(fsig->params [0]->type == MONO_TYPE_U4 || fsig->params [0]->type == MONO_TYPE_U8)) {
+			gboolean is_64bit = fsig->params [0]->type == MONO_TYPE_U8;
+			MONO_INST_NEW (cfg, ins, is_64bit ? OP_POPCNT64 : OP_POPCNT32);
+			ins->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			ins->sreg1 = args [0]->dreg;
+			ins->type = is_64bit ? STACK_I8 : STACK_I4;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
+	}
+#endif
+
 	return ins;
 }
 

@@ -22,7 +22,7 @@ function Uint8ToString(u8a) {
 }
 
 async function main() {
-    const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
+    const { MONO, BINDING, Module, runtimeBuildInfo } = await createDotnetRuntime(() => {
         console.log('user code in createDotnetRuntime')
         return {
             disableDotnet6Compatibility: true,
@@ -40,7 +40,7 @@ async function main() {
     try {
         const testMeaning = BINDING.bind_static_method("[Wasm.Browser.ThreadsEP.Sample] Sample.Test:TestMeaning");
         const ret = testMeaning();
-        document.getElementById("out").innerHTML = `${ret} as computed on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
+        document.getElementById("out").innerHTML = `${ret} as computed on dotnet ver ${runtimeBuildInfo.productVersion}`;
 
         console.debug(`ret: ${ret}`);
 

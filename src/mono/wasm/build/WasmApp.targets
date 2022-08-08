@@ -17,7 +17,7 @@
       - $(RunAOTCompilation) - Defaults to false.
 
       - $(WasmDebugLevel)
-                              > 0 enables debugging and sets the debug log level to debug_level
+                              > 0 enables debugging and sets the debug log level to debugLevel
                               == 0 disables debugging and enables interpreter optimizations
                               < 0 enabled debugging and disables debug logging.
 
@@ -75,7 +75,7 @@
       - @(WasmNativeAsset)        - Native files to be added to `NativeAssets` in the bundle.
 
       - @(WasmExtraConfig)        - json elements to add to `mono-config.json`
-                                    Eg. <WasmExtraConfig Include="enable_profiler" Value="true" />
+                                    Eg. <WasmExtraConfig Include="enableProfiler" Value="true" />
 
                                     - Value attribute can have a number, bool, quoted string, or json string
 

@@ -26,6 +26,14 @@ namespace System.Text.Json.Serialization
         internal abstract ConverterStrategy ConverterStrategy { get; }
 
         /// <summary>
+        /// Indicates that the converter can consume the <see cref="JsonTypeInfo.CreateObject"/> delegate.
+        /// Needed because certain collection converters cannot support arbitrary delegates.
+        /// TODO remove once https://github.com/dotnet/runtime/pull/73395/ and
+        /// https://github.com/dotnet/runtime/issues/71944 have been addressed.
+        /// </summary>
+        internal virtual bool SupportsCreateObjectDelegate => false;
+
+        /// <summary>
         /// Can direct Read or Write methods be called (for performance).
         /// </summary>
         internal bool CanUseDirectReadOrWrite { get; set; }
@@ -116,19 +124,6 @@ namespace System.Text.Json.Serialization
 
         // Whether a type (ConverterStrategy.Object) is deserialized using a parameterized constructor.
         internal virtual bool ConstructorIsParameterized { get; }
-
-        /// <summary>
-        ///  For reflection-based metadata generation, indicates whether the
-        ///  converter avails of default constructors when deserializing types.
-        /// </summary>
-        internal bool UsesDefaultConstructor =>
-            ConverterStrategy switch
-            {
-                ConverterStrategy.Object => !ConstructorIsParameterized && this is not ObjectConverter,
-                ConverterStrategy.Enumerable or
-                ConverterStrategy.Dictionary => true,
-                _ => false
-            };
 
         internal ConstructorInfo? ConstructorInfo { get; set; }
 

@@ -386,7 +386,7 @@ enum set_pause_mode_status
  in the future.
 
  +----------+--------------------+---------------------------------------+
- | Level    | Optimization Goals | Latency Charactaristics               |
+ | Level    | Optimization Goals | Latency Characteristics               |
  +==========+====================+=======================================+
  | 0        | memory footprint   | pauses can be long and more frequent  |
  +----------+--------------------+---------------------------------------+
@@ -1099,9 +1099,9 @@ struct snoop_stats_data
     size_t busy_count;
     // how many interlocked exchange operations we did
     size_t interlocked_count;
-    // numer of times parent objects stolen
+    // number of times parent objects stolen
     size_t partial_mark_parent_count;
-    // numer of times we look at a normal stolen entry,
+    // number of times we look at a normal stolen entry,
     // or the beginning/ending PM pair.
     size_t stolen_or_pm_count;
     // number of times we see 2 for the entry.
@@ -1596,17 +1596,16 @@ public:
     static
     void get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t bookkeeping_sizes[total_bookkeeping_elements]);
 
+    static
+    void set_fgm_result (failure_get_memory f, size_t s, BOOL loh_p);
+
 #ifdef USE_REGIONS
     static
     bool on_used_changed (uint8_t* left);
 
     static
     bool inplace_commit_card_table (uint8_t* from, uint8_t* to);
-#endif //USE_REGIONS
-
-    static
-    void set_fgm_result (failure_get_memory f, size_t s, BOOL loh_p);
-
+#else //USE_REGIONS
     static
     int grow_brick_card_tables (uint8_t* start,
                                 uint8_t* end,
@@ -1614,6 +1613,7 @@ public:
                                 heap_segment* new_seg,
                                 gc_heap* hp,
                                 BOOL loh_p);
+#endif //USE_REGIONS
 
     PER_HEAP_ISOLATED
     BOOL is_mark_set (uint8_t* o);
@@ -2001,11 +2001,11 @@ protected:
 #ifndef USE_REGIONS
     PER_HEAP
     heap_segment* soh_get_segment_to_expand();
-#endif //!USE_REGIONS
     PER_HEAP
     heap_segment* get_segment (size_t size, gc_oh_num oh);
     PER_HEAP_ISOLATED
     void release_segment (heap_segment* sg);
+#endif //!USE_REGIONS
     PER_HEAP_ISOLATED
     void seg_mapping_table_add_segment (heap_segment* seg, gc_heap* hp);
     PER_HEAP_ISOLATED
@@ -4040,7 +4040,10 @@ public:
     size_t last_gc_end_time_us;
 #endif //HEAP_BALANCE_INSTRUMENTATION
 
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    bool enable_special_regions_p;
+#else //USE_REGIONS
     PER_HEAP_ISOLATED
     size_t min_segment_size;
 
