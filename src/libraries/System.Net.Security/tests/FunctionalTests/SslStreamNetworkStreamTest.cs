@@ -881,8 +881,8 @@ namespace System.Net.Security.Tests
             _output.WriteLine("Certificates added to {0}", storeName);
 
             // make sure we can build chain. There may be some race conditions after certs being added to the store.
-            int retries = 5;
-            int delay = 10;
+            int retries = 10;
+            int delay = 100;
             while (retries > 0)
             {
                 using (var chain = new X509Chain())
