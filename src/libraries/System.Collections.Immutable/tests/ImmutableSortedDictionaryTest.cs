@@ -402,7 +402,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(0, dictionary.Remove(2).Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableSortedDictionary.Create<string, int>());
@@ -416,7 +416,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(dict, items);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableSortedDictionary.Create<int, int>());

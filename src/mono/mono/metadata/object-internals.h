@@ -330,7 +330,7 @@ struct _MonoStringBuilder {
 	int maxCapacity;
 };
 
-static inline int
+static inline guint
 mono_string_builder_capacity (MonoStringBuilderHandle sbh)
 {
 	MonoStringBuilder *sb = MONO_HANDLE_RAW (sbh);
@@ -836,6 +836,7 @@ struct _MonoDelegate {
 	MonoReflectionMethod *original_method_info;
 	MonoObject *data;
 	MonoBoolean method_is_virtual;
+	MonoBoolean bound;
 };
 
 typedef struct _MonoMulticastDelegate MonoMulticastDelegate;
@@ -882,7 +883,7 @@ typedef struct {
 	MonoEvent *event;
 } MonoReflectionMonoEvent;
 
-/* Safely access Systme.Reflection.MonoEvent from native code */
+/* Safely access System.Reflection.MonoEvent from native code */
 TYPED_HANDLE_DECL (MonoReflectionMonoEvent);
 
 typedef struct {

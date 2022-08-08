@@ -150,7 +150,7 @@ namespace Internal.JitInterface
                     } vlStk2;
 
                     // VLT_FPSTK -- enregisterd TYP_DOUBLE (on the FP stack)
-                    // eg. ST(3). Actually it is ST("FPstkHeigth - vpFpStk")
+                    // eg. ST(3). Actually it is ST("FPstkHeight - vpFpStk")
 
                     struct
                     {

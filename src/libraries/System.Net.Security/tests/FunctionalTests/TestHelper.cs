@@ -43,8 +43,8 @@ namespace System.Net.Security.Tests
         private static readonly X509BasicConstraintsExtension s_eeConstraints =
             new X509BasicConstraintsExtension(false, false, 0, false);
 
-        public static readonly byte[] s_ping = Encoding.UTF8.GetBytes("PING");
-        public static readonly byte[] s_pong = Encoding.UTF8.GetBytes("PONG");
+        public static readonly byte[] s_ping = "PING"u8.ToArray();
+        public static readonly byte[] s_pong = "PONG"u8.ToArray();
 
         public static bool AllowAnyServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
@@ -119,6 +119,7 @@ namespace System.Net.Security.Tests
                         {
                             store.Remove(cert);
                         }
+                        cert.Dispose();
                     }
                 }
             }
@@ -135,6 +136,7 @@ namespace System.Net.Security.Tests
                         {
                             store.Remove(cert);
                         }
+                        cert.Dispose();
                     }
                 }
             }
@@ -204,7 +206,7 @@ namespace System.Net.Security.Tests
             if (PlatformDetection.IsWindows)
             {
                 X509Certificate2 ephemeral = endEntity;
-                endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx));
+                endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx), (string?)null, X509KeyStorageFlags.Exportable);
                 ephemeral.Dispose();
             }
 

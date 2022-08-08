@@ -114,7 +114,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void InitialState()
         {
-            var json = new Utf8JsonReader(Encoding.UTF8.GetBytes("1"), isFinalBlock: true, state: default);
+            var json = new Utf8JsonReader("1"u8, isFinalBlock: true, state: default);
 
             Assert.Equal(0, json.BytesConsumed);
             Assert.Equal(0, json.TokenStartIndex);
@@ -138,7 +138,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void InitialStateSimpleCtor()
         {
-            var json = new Utf8JsonReader(Encoding.UTF8.GetBytes("1"));
+            var json = new Utf8JsonReader("1"u8);
 
             Assert.Equal(0, json.BytesConsumed);
             Assert.Equal(0, json.TokenStartIndex);
@@ -162,7 +162,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void StateRecovery()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("[1]");
+            ReadOnlySpan<byte> utf8 = "[1]"u8;
             var json = new Utf8JsonReader(utf8, isFinalBlock: false, state: default);
 
             Assert.Equal(0, json.BytesConsumed);
@@ -199,7 +199,7 @@ namespace System.Text.Json.Tests
 
             JsonReaderState state = json.CurrentState;
 
-            json = new Utf8JsonReader(utf8.AsSpan((int)json.BytesConsumed), isFinalBlock: true, state);
+            json = new Utf8JsonReader(utf8.Slice((int)json.BytesConsumed), isFinalBlock: true, state);
 
             Assert.Equal(0, json.BytesConsumed);    // Not retained
             Assert.Equal(0, json.TokenStartIndex);  // Not retained

@@ -114,17 +114,7 @@ namespace System.Collections.Specialized
             }
         }
 
-        private ListDictionary List
-        {
-            get
-            {
-                if (list == null)
-                {
-                    list = new ListDictionary(caseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
-                }
-                return list;
-            }
-        }
+        private ListDictionary List => list ??= new ListDictionary(caseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
 
         private void ChangeOver()
         {
@@ -312,10 +302,8 @@ namespace System.Collections.Specialized
             {
                 return hashtable.GetEnumerator();
             }
-            if (list == null)
-            {
-                list = new ListDictionary(caseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
-            }
+
+            list ??= new ListDictionary(caseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
             return list.GetEnumerator();
         }
 
@@ -325,10 +313,8 @@ namespace System.Collections.Specialized
             {
                 return hashtable.GetEnumerator();
             }
-            if (list == null)
-            {
-                list = new ListDictionary(caseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
-            }
+
+            list ??= new ListDictionary(caseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
             return list.GetEnumerator();
         }
 

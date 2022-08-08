@@ -100,6 +100,11 @@ CorInfoInline MyICJI::canInline(CORINFO_METHOD_HANDLE callerHnd,    /* IN  */
     return result;
 }
 
+void MyICJI::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
+                           CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    // do nothing
+}
 // Reports whether or not a method can be inlined, and why.  canInline is responsible for reporting all
 // inlining results when it returns INLINE_FAIL and INLINE_NEVER.  All other results are reported by the
 // JIT.
@@ -966,7 +971,7 @@ void MyICJI::setBoundaries(CORINFO_METHOD_HANDLE         ftn,  // [IN] method of
     freeArray(pMap); // see note in recSetBoundaries... we own this array and own destroying it.
 }
 
-// Query the EE to find out the scope of local varables.
+// Query the EE to find out the scope of local variables.
 // normally the JIT would trash variables after last use, but
 // under debugging, the JIT needs to keep them live over their
 // entire scope so that they can be inspected.
@@ -1011,6 +1016,18 @@ void MyICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of inte
     jitInstance->mc->cr->AddCall("setVars");
     jitInstance->mc->cr->recSetVars(ftn, cVars, vars);
     freeArray(vars); // See note in recSetVars... we own destroying this array
+}
+
+void MyICJI::reportRichMappings(
+    ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
+    uint32_t                          numInlineTreeNodes,
+    ICorDebugInfo::RichOffsetMapping* mappings,
+    uint32_t                          numMappings)
+{
+    jitInstance->mc->cr->AddCall("reportRichMappings");
+    // TODO: record these mappings
+    freeArray(inlineTreeNodes);
+    freeArray(mappings);
 }
 
 /*-------------------------- Misc ---------------------------------------*/
@@ -1574,13 +1591,6 @@ uint32_t MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
         jitFlags->Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
     }
     return ret;
-}
-
-bool MyICJI::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("doesFieldBelongToClass");
-    bool result = jitInstance->mc->repDoesFieldBelongToClass(fldHnd, cls);
-    return result;
 }
 
 // Runs the given function with the given parameter under an error trap

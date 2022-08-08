@@ -376,7 +376,7 @@ namespace System.Security.Cryptography.X509Certificates
         // Only use for internal purposes when the returned byte[] will not be mutated
         private byte[] GetRawCertHash()
         {
-            return _lazyCertHash ?? (_lazyCertHash = Pal!.Thumbprint);
+            return _lazyCertHash ??= Pal!.Thumbprint;
         }
 
         public virtual string GetEffectiveDateString()
@@ -458,6 +458,21 @@ namespace System.Security.Cryptography.X509Certificates
             // PAL always returns big-endian, GetSerialNumber returns little-endian
             Array.Reverse(serialNumber);
             return serialNumber;
+        }
+
+        /// <summary>
+        ///   Gets a value whose contents represent the big-endian representation of the
+        ///   certificate's serial number.
+        /// </summary>
+        /// <value>The big-endian representation of the certificate's serial number.</value>
+        public ReadOnlyMemory<byte> SerialNumberBytes
+        {
+            get
+            {
+                ThrowIfInvalid();
+
+                return GetRawSerialNumber();
+            }
         }
 
         public virtual string GetSerialNumberString()

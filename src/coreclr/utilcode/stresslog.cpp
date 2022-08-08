@@ -60,7 +60,7 @@ unsigned __int64 getTimeStamp() {
 #if defined(HOST_X86) && !defined(HOST_UNIX)
 
 /*********************************************************************************/
-/* Get the frequency cooresponding to 'getTimeStamp'.  For x86, this is the
+/* Get the frequency corresponding to 'getTimeStamp'.  For x86, this is the
    frequency of the RDTSC instruction, which is just the clock rate of the CPU.
    This can vary due to power management, so this is at best a rough approximation.
 */
@@ -108,7 +108,7 @@ unsigned __int64 getTickFrequency()
 
 
 /*********************************************************************************/
-/* Get the frequency cooresponding to 'getTimeStamp'.  For non-x86
+/* Get the frequency corresponding to 'getTimeStamp'.  For non-x86
    architectures, this is just the performance counter frequency.
 */
 unsigned __int64 getTickFrequency()
@@ -143,6 +143,30 @@ void StressLog::Leave(CRITSEC_COOKIE) {
     DecCantAllocCount();
 }
 
+void AppendPid(LPCWSTR logFilename, LPWSTR fileName, size_t fileNameLength)
+{
+    // if the string "{pid}" occurs in the logFilename,
+    // replace it by the PID of our process
+    // only the first occurrence will be replaced
+    const WCHAR* pidLit =  W("{pid}");
+    const WCHAR* pidPtr = wcsstr(logFilename, pidLit);
+    if (pidPtr != nullptr)
+    {
+        // copy the file name up to the "{pid}" occurrence
+        ptrdiff_t pidInx = pidPtr - logFilename;
+        wcsncpy_s(fileName, fileNameLength, logFilename, pidInx);
+
+        // append the string representation of the PID
+        DWORD pid = GetCurrentProcessId();
+        WCHAR pidStr[20];
+        _itow_s(pid, pidStr, ARRAY_SIZE(pidStr), 10);
+        wcscat_s(fileName, fileNameLength, pidStr);
+
+        // append the rest of the filename
+        wcscat_s(fileName, fileNameLength, logFilename + pidInx + wcslen(pidLit));
+    }
+}
+
 #ifdef MEMORY_MAPPED_STRESSLOG
 static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
 {
@@ -150,31 +174,11 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     {
         return nullptr;
     }
+
     WCHAR fileName[MAX_PATH];
+    AppendPid(logFilename, fileName, MAX_PATH);
 
-    // if the string "{pid}" occurs in the logFilename,
-    // replace it by the PID of our process
-    // only the first occurrence will be replaced
-    const WCHAR* pidLit =  W("{pid}");
-    WCHAR* pidPtr = wcsstr(logFilename, pidLit);
-    if (pidPtr != nullptr)
-    {
-        // copy the file name up to the "{pid}" occurrence
-        ptrdiff_t pidInx = pidPtr - logFilename;
-        wcsncpy_s(fileName, MAX_PATH, logFilename, pidInx);
-
-        // append the string representation of the PID
-        DWORD pid = GetCurrentProcessId();
-        WCHAR pidStr[20];
-        _itow_s(pid, pidStr, ARRAY_SIZE(pidStr), 10);
-        wcscat_s(fileName, MAX_PATH, pidStr);
-
-        // append the rest of the filename
-        wcscat_s(fileName, MAX_PATH, logFilename + pidInx + wcslen(pidLit));
-
-        logFilename = fileName;
-    }
-    HandleHolder hFile = WszCreateFile(logFilename,
+    HandleHolder hFile = WszCreateFile(fileName,
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ,
         NULL,                 // default security descriptor

@@ -100,10 +100,10 @@ namespace System.Net.Test.Common
                 // Since those tests are not set up to handle multiple retries, we instead just send back an invalid response here
                 // so that SocketsHttpHandler will not induce retry.
                 // The contents of what we send don't really matter, as long as it is interpreted by SocketsHttpHandler as an invalid response.
-                await _connectionStream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/2.0 400 Bad Request\r\n\r\n"));
+                await _connectionStream.WriteAsync("HTTP/2.0 400 Bad Request\r\n\r\n"u8.ToArray());
                 _connectionSocket.Shutdown(SocketShutdown.Send);
                 // If WinHTTP doesn't support streaming a request without a length then it will fallback
-                // to HTTP/1.1. Throwing an exception to detect this case in WinHttpHandler tests. 
+                // to HTTP/1.1. Throwing an exception to detect this case in WinHttpHandler tests.
                 throw new Exception("HTTP/1.1 request sent to HTTP/2 connection.");
             }
         }
@@ -127,6 +127,19 @@ namespace System.Net.Test.Common
         {
             byte[] writeBuffer = new byte[Frame.FrameHeaderLength + frame.Length];
             frame.WriteTo(writeBuffer);
+            await _connectionStream.WriteAsync(writeBuffer, 0, writeBuffer.Length, cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task WriteFramesAsync(Frame[] frames, CancellationToken cancellationToken = default)
+        {
+            byte[] writeBuffer = new byte[frames.Sum(frame => Frame.FrameHeaderLength + frame.Length)];
+
+            int offset = 0;
+            foreach (Frame frame in frames)
+            {
+                frame.WriteTo(writeBuffer.AsSpan(offset));
+                offset += Frame.FrameHeaderLength + frame.Length;
+            }
             await _connectionStream.WriteAsync(writeBuffer, 0, writeBuffer.Length, cancellationToken).ConfigureAwait(false);
         }
 
@@ -567,7 +580,7 @@ namespace System.Net.Test.Common
                 }
                 else if (frame == null || frame.Type == FrameType.RstStream)
                 {
-                    throw new IOException( frame == null ? "End of stream" : "Got RST");
+                    throw new IOException(frame == null ? "End of stream" : "Got RST");
                 }
 
                 Assert.Equal(FrameType.Data, frame.Type);
@@ -586,7 +599,7 @@ namespace System.Net.Test.Common
 
                         body.CopyTo(newBuffer, 0);
                         dataFrame.Data.Span.CopyTo(newBuffer.AsSpan(body.Length));
-                        body= newBuffer;
+                        body = newBuffer;
                     }
                 }
             }
@@ -838,12 +851,12 @@ namespace System.Net.Test.Common
             await SendResponseDataAsync(streamId, responseBody, isFinal).ConfigureAwait(false);
         }
 
-        public override void Dispose()
+        public override async ValueTask DisposeAsync()
         {
             // Might have been already shutdown manually via WaitForConnectionShutdownAsync which nulls the _connectionStream.
             if (_connectionStream != null)
             {
-                ShutdownIgnoringErrorsAsync(_lastStreamId).GetAwaiter().GetResult();
+                await ShutdownIgnoringErrorsAsync(_lastStreamId);
             }
         }
 
@@ -947,11 +960,11 @@ namespace System.Net.Test.Common
 
             if (string.IsNullOrEmpty(content))
             {
-                await SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
+                await SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers: headers).ConfigureAwait(false);
             }
             else
             {
-                await SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
+                await SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, headers: headers).ConfigureAwait(false);
                 await SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(content)).ConfigureAwait(false);
             }
 

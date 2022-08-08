@@ -23,6 +23,10 @@ static bool strictArmAsm;
 
 const char* emitVectorRegName(regNumber reg);
 
+void emitDispInsHelp(
+    instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
+void emitDispLargeJmp(
+    instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig);
 void emitDispInst(instruction ins);
 void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false);
 void emitDispFloatZero();
@@ -262,7 +266,7 @@ static code_t insEncodeReg_Va(regNumber reg);
 // Returns an encoding for the imm which represents the condition code.
 static code_t insEncodeCond(insCond cond);
 
-// Returns an encoding for the imm whioch represents the 'condition code'
+// Returns an encoding for the imm which represents the 'condition code'
 //  with the lowest bit inverted (marked by invert(<cond>) in the architecture manual.
 static code_t insEncodeInvertedCond(insCond cond);
 
@@ -352,6 +356,12 @@ static bool isStackRegister(regNumber reg)
 {
     return (reg == REG_ZR) || (reg == REG_FP);
 } // ZR (R31) encodes the SP register
+
+// Returns true if 'value' is a legal unsigned immediate 5 bit encoding (such as for CCMP).
+static bool isValidUimm5(ssize_t value)
+{
+    return (0 <= value) && (value <= 0x1FLL);
+};
 
 // Returns true if 'value' is a legal unsigned immediate 8 bit encoding (such as for fMOV).
 static bool isValidUimm8(ssize_t value)
@@ -484,6 +494,9 @@ static bool emitIns_valid_imm_for_alu(INT64 imm, emitAttr size);
 
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
 static bool emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr size);
+
+// true if this 'imm' can be encoded as a input operand to a ccmp instruction
+static bool emitIns_valid_imm_for_ccmp(INT64 imm);
 
 // true if 'imm' can be encoded as an offset in a ldp/stp instruction
 static bool canEncodeLoadOrStorePairOffset(INT64 imm, emitAttr size);
@@ -706,6 +719,12 @@ inline static ssize_t computeRelPageAddr(size_t dstAddr, size_t srcAddr)
 }
 
 /************************************************************************/
+/*                   Output target-independent instructions             */
+/************************************************************************/
+
+void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
+
+/************************************************************************/
 /*           The public entry points to output instructions             */
 /************************************************************************/
 
@@ -720,7 +739,8 @@ void emitIns_R_I(instruction ins,
                  emitAttr    attr,
                  regNumber   reg,
                  ssize_t     imm,
-                 insOpts opt = INS_OPTS_NONE DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+                 insOpts opt = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
+                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt = INS_OPTS_NONE);
 
@@ -734,8 +754,13 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
     emitIns_R_R(ins, attr, reg1, reg2);
 }
 
-void emitIns_R_I_I(
-    instruction ins, emitAttr attr, regNumber reg1, ssize_t imm1, ssize_t imm2, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_I_I(instruction ins,
+                   emitAttr    attr,
+                   regNumber   reg1,
+                   ssize_t     imm1,
+                   ssize_t     imm2,
+                   insOpts opt = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
+                       DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insOpts opt = INS_OPTS_NONE);
@@ -861,6 +886,8 @@ BYTE* emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t d
 BYTE* emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg);
 BYTE* emitOutputShortConstant(
     BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg, emitAttr opSize);
+BYTE* emitOutputVectorConstant(
+    BYTE* dst, ssize_t distVal, regNumber dstReg, regNumber addrReg, emitAttr opSize, emitAttr elemSize);
 
 /*****************************************************************************
  *

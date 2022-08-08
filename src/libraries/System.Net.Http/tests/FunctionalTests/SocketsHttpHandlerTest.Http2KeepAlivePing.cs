@@ -40,18 +40,14 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task KeepAlivePingDelay_Infinite_NoKeepAlivePingIsSent()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                SocketsHttpHandler handler = new SocketsHttpHandler()
-                {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(1),
-                    KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always,
-                    KeepAlivePingDelay = Timeout.InfiniteTimeSpan
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(1);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
+                handler.KeepAlivePingDelay = Timeout.InfiniteTimeSpan;
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;
@@ -71,7 +67,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Warmup the connection.
                 int streamId1 = await ReadRequestHeaderAsync();
-                await GuardConnetionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId1));
+                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId1));
 
                 Interlocked.Exchange(ref _pingCounter, 0); // reset the PING counter
                 // Request under the test scope.
@@ -85,7 +81,7 @@ namespace System.Net.Http.Functional.Tests
                 Interlocked.Exchange(ref _pingCounter, 0); // reset the counter
 
                 // Finish the response:
-                await GuardConnetionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId2));
+                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId2));
 
                 // Simulate inactive period:
                 await Task.Delay(5_000);
@@ -101,18 +97,14 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(HttpKeepAlivePingPolicy.Always)]
         [InlineData(HttpKeepAlivePingPolicy.WithActiveRequests)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task KeepAliveConfigured_KeepAlivePingsAreSentAccordingToPolicy(HttpKeepAlivePingPolicy policy)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                SocketsHttpHandler handler = new SocketsHttpHandler()
-                {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(10),
-                    KeepAlivePingPolicy = policy,
-                    KeepAlivePingDelay = TimeSpan.FromSeconds(1)
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(10);
+                handler.KeepAlivePingPolicy = policy;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;
@@ -134,7 +126,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Warmup the connection.
                 int streamId1 = await ReadRequestHeaderAsync();
-                await GuardConnetionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId1));
+                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId1));
 
                 // Request under the test scope.
                 int streamId2 = await ReadRequestHeaderAsync();
@@ -148,7 +140,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(_pingCounter > 1);
 
                 // Finish the response:
-                await GuardConnetionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId2));
+                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId2));
                 Interlocked.Exchange(ref _pingCounter, 0); // reset the PING counter
 
                 if (policy == HttpKeepAlivePingPolicy.Always)
@@ -181,18 +173,14 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task KeepAliveConfigured_NoPingResponseDuringActiveStream_RequestShouldFail()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                SocketsHttpHandler handler = new SocketsHttpHandler()
-                {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5),
-                    KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests,
-                    KeepAlivePingDelay = TimeSpan.FromSeconds(1)
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;
@@ -213,7 +201,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Warmup the connection.
                 int streamId1 = await ReadRequestHeaderAsync();
-                await GuardConnetionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId1));
+                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId1));
 
                 // Request under the test scope.
                 int streamId2 = await ReadRequestHeaderAsync();
@@ -224,7 +212,7 @@ namespace System.Net.Http.Functional.Tests
                 await Task.Delay(6_000);
 
                 // Finish the response:
-                await GuardConnetionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId2));
+                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId2));
 
                 await TerminateLoopbackConnectionAsync();
             }, NoAutoPingResponseHttp2Options).WaitAsync(TestTimeout);
@@ -232,18 +220,14 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task HttpKeepAlivePingPolicy_Always_NoPingResponseBetweenStreams_SecondRequestShouldFail()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                SocketsHttpHandler handler = new SocketsHttpHandler()
-                {
-                    KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5),
-                    KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always,
-                    KeepAlivePingDelay = TimeSpan.FromSeconds(1)
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
 
                 using HttpClient client = new HttpClient(handler);
                 client.DefaultRequestVersion = HttpVersion.Version20;
@@ -264,7 +248,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Warmup the connection.
                 int streamId1 = await ReadRequestHeaderAsync();
-                await GuardConnetionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId1));
+                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId1));
 
                 DisablePingResponse();
 
@@ -275,7 +259,7 @@ namespace System.Net.Http.Functional.Tests
                 int streamId2 = await ReadRequestHeaderAsync();
 
                 // Finish the response:
-                await GuardConnetionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId2));
+                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId2));
 
                 await TerminateLoopbackConnectionAsync();
             }, NoAutoPingResponseHttp2Options).WaitAsync(TestTimeout);
@@ -303,7 +287,7 @@ namespace System.Net.Http.Functional.Tests
 
                             if (_sendPingResponse > 0)
                             {
-                                await GuardConnetionWriteAsync(() => _connection.SendPingAckAsync(pingFrame.Data, cancellationToken), cancellationToken);
+                                await GuardConnectionWriteAsync(() => _connection.SendPingAckAsync(pingFrame.Data, cancellationToken), cancellationToken);
                             }
                         }
                     }
@@ -323,7 +307,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             _output?.WriteLine("ProcessIncomingFramesAsync finished");
-            _connection.Dispose();
+            await _connection.DisposeAsync();
         }
 
         private void DisablePingResponse() => Interlocked.Exchange(ref _sendPingResponse, 0);
@@ -341,7 +325,7 @@ namespace System.Net.Http.Functional.Tests
             await _incomingFramesTask;
         }
 
-        private async Task GuardConnetionWriteAsync(Func<Task> action, CancellationToken cancellationToken = default)
+        private async Task GuardConnectionWriteAsync(Func<Task> action, CancellationToken cancellationToken = default)
         {
             await _writeSemaphore.WaitAsync(cancellationToken);
             await action();

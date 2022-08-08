@@ -146,8 +146,39 @@ namespace Internal.Cryptography.Pal.AnyOS
                 out Exception? exception)
             {
                 exception = null;
+
+                // Windows compat: If the encrypted content is completely empty, even where it does not make sense for the
+                // mode and padding (e.g. CBC + PKCS7), produce an empty plaintext.
+                if (encryptedContent.IsEmpty)
+                {
+                    return Array.Empty<byte>();
+                }
+
+#if NET
+                try
+                {
+                    using (SymmetricAlgorithm alg = OpenAlgorithm(contentEncryptionAlgorithm))
+                    {
+                        try
+                        {
+                            alg.Key = cek;
+                        }
+                        catch (CryptographicException ce)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Cms_InvalidSymmetricKey, ce);
+                        }
+
+                        return alg.DecryptCbc(encryptedContent.Span, alg.IV);
+                    }
+                }
+                catch (CryptographicException ce)
+                {
+                    exception = ce;
+                    return null;
+                }
+#else
                 int encryptedContentLength = encryptedContent.Length;
-                byte[]? encryptedContentArray = CryptoPool.Rent(encryptedContentLength);
+                byte[] encryptedContentArray = CryptoPool.Rent(encryptedContentLength);
 
                 try
                 {
@@ -190,6 +221,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 {
                     CryptoPool.Return(encryptedContentArray, encryptedContentLength);
                 }
+#endif
             }
 
             public override void Dispose()

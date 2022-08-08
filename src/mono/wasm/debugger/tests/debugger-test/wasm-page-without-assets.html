@@ -1,21 +1,22 @@
 <!doctype html>
 <html lang="en-us">
-	<head>
-	</head>
-	<body>
+
+<head>
+</head>
+
+<body>
 	<script type='text/javascript'>
 		var App = {
-			init: function () {
-				MONO.loaded_files = null;
-			},
+			init: function () { },
 		};
-		function reload_wasm_page () {
+		function reload_wasm_page() {
 			window.location.replace("http://localhost:9400/debugger-driver.html");
 		}
 	</script>
-	<script type="text/javascript" src="debugger-main.js"></script>
+	<script type="module" src="debugger-main.js"></script>
 	<script type="text/javascript" src="other.js"></script>
-	<script async type="text/javascript" src="dotnet.js"></script>
+
 	Stuff goes here
-	</body>
+</body>
+
 </html>

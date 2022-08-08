@@ -105,7 +105,7 @@ namespace Internal.Reflection.Execution
         /// </summary>
         /// <param name="runtimeTypeHandle">Runtime handle of the type in question</param>
         /// <param name="qTypeDefinition">TypeDef handle for the type</param>
-        public sealed unsafe override bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
+        public sealed override unsafe bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition)
         {
             Debug.Assert(!RuntimeAugments.IsGenericType(runtimeTypeHandle));
             return TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(runtimeTypeHandle, out qTypeDefinition);
@@ -117,7 +117,7 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //    runtimeTypeHandle is a typedef or a generic type instance (not a constructed type such as an array)
         //
-        public sealed unsafe override bool IsReflectionBlocked(RuntimeTypeHandle runtimeTypeHandle)
+        public sealed override unsafe bool IsReflectionBlocked(RuntimeTypeHandle runtimeTypeHandle)
         {
             // For generic types, use the generic type definition
             runtimeTypeHandle = GetTypeDefinition(runtimeTypeHandle);
@@ -165,7 +165,7 @@ namespace Internal.Reflection.Execution
         /// </summary>
         /// <param name="qTypeDefinition">TypeDef handle for the type to look up</param>
         /// <param name="runtimeTypeHandle">Runtime type handle (MethodTable) for the given type</param>
-        public sealed unsafe override bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle)
+        public sealed override unsafe bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle)
         {
             return TypeLoaderEnvironment.Instance.TryGetOrCreateNamedTypeForMetadata(qTypeDefinition, out runtimeTypeHandle);
         }
@@ -182,7 +182,7 @@ namespace Internal.Reflection.Execution
         /// <param name="runtimeTypeHandle">MethodTable of the type in question</param>
         /// <param name="metadataReader">Metadata reader for the type</param>
         /// <param name="typeRefHandle">Located TypeRef handle</param>
-        public sealed unsafe override bool TryGetTypeReferenceForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeReferenceHandle typeRefHandle)
+        public sealed override unsafe bool TryGetTypeReferenceForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeReferenceHandle typeRefHandle)
         {
             return TypeLoaderEnvironment.TryGetTypeReferenceForNamedType(runtimeTypeHandle, out metadataReader, out typeRefHandle);
         }
@@ -205,7 +205,7 @@ namespace Internal.Reflection.Execution
         /// <param name="metadataReader">Metadata reader for module containing the type reference</param>
         /// <param name="typeRefHandle">TypeRef handle to look up</param>
         /// <param name="runtimeTypeHandle">Resolved MethodTable for the type reference</param>
-        public sealed unsafe override bool TryGetNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle)
+        public sealed override unsafe bool TryGetNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle)
         {
             return TypeLoaderEnvironment.TryGetNamedTypeForTypeReference(metadataReader, typeRefHandle, out runtimeTypeHandle);
         }
@@ -219,7 +219,7 @@ namespace Internal.Reflection.Execution
         //
         // This is not equivalent to calling TryGetMultiDimTypeForElementType() with a rank of 1!
         //
-        public sealed unsafe override bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
+        public sealed override unsafe bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
         {
             if (RuntimeAugments.IsGenericTypeDefinition(elementTypeHandle))
             {
@@ -228,7 +228,7 @@ namespace Internal.Reflection.Execution
             }
 
             // For non-dynamic arrays try to look up the array type in the ArrayMap blobs;
-            // attempt to dynamically create a new one if that doesn't succeeed.
+            // attempt to dynamically create a new one if that doesn't succeed.
             return TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(elementTypeHandle, false, -1, out arrayTypeHandle);
         }
 
@@ -240,7 +240,7 @@ namespace Internal.Reflection.Execution
         //
         // This is not equivalent to calling TryGetMultiDimTypeElementType() with a rank of 1!
         //
-        public sealed unsafe override bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle)
+        public sealed override unsafe bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle)
         {
             elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(arrayTypeHandle);
             return true;
@@ -256,7 +256,7 @@ namespace Internal.Reflection.Execution
         //
         // Calling this with rank 1 is not equivalent to calling TryGetArrayTypeForElementType()!
         //
-        public sealed unsafe override bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle)
+        public sealed override unsafe bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
             if (RuntimeAugments.IsGenericTypeDefinition(elementTypeHandle))
             {
@@ -279,7 +279,7 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //     targetTypeHandle is a valid RuntimeTypeHandle.
         //
-        public sealed unsafe override bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
+        public sealed override unsafe bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
         {
             return TypeLoaderEnvironment.Instance.TryGetPointerTypeForTargetType(targetTypeHandle, out pointerTypeHandle);
         }
@@ -291,7 +291,7 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //      pointerTypeHandle is a valid RuntimeTypeHandle of type pointer.
         //
-        public sealed unsafe override bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle)
+        public sealed override unsafe bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle)
         {
             targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(pointerTypeHandle);
             return true;
@@ -304,7 +304,7 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //     targetTypeHandle is a valid RuntimeTypeHandle.
         //
-        public sealed unsafe override bool TryGetByRefTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle byRefTypeHandle)
+        public sealed override unsafe bool TryGetByRefTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle byRefTypeHandle)
         {
             return TypeLoaderEnvironment.Instance.TryGetByRefTypeForTargetType(targetTypeHandle, out byRefTypeHandle);
         }
@@ -316,7 +316,7 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //      byRefTypeHandle is a valid RuntimeTypeHandle of a byref.
         //
-        public sealed unsafe override bool TryGetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle, out RuntimeTypeHandle targetTypeHandle)
+        public sealed override unsafe bool TryGetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle, out RuntimeTypeHandle targetTypeHandle)
         {
             targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(byRefTypeHandle);
             return true;
@@ -330,7 +330,7 @@ namespace Internal.Reflection.Execution
         //      runtimeTypeDefinitionHandle is a valid RuntimeTypeHandle for a generic type.
         //      genericTypeArgumentHandles is an array of valid RuntimeTypeHandles.
         //
-        public sealed unsafe override bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle)
+        public sealed override unsafe bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle)
         {
             if (TypeLoaderEnvironment.Instance.TryLookupConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out runtimeTypeHandle))
             {
@@ -387,8 +387,7 @@ namespace Internal.Reflection.Execution
 
             // If we failed to get a MethodInvokeInfo for an exact method, or a canonically equivalent method, check if there is a universal canonically
             // equivalent entry that could be used (it will be much slower, and require a calling convention converter)
-            if (methodInvokeInfo == null)
-                methodInvokeInfo = TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
+            methodInvokeInfo ??= TryGetMethodInvokeInfo(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles,
                     methodInfo, ref methodSignatureComparer, CanonicalFormKind.Universal);
 #endif
 
@@ -398,83 +397,15 @@ namespace Internal.Reflection.Execution
             return MethodInvokerWithMethodInvokeInfo.CreateMethodInvoker(declaringTypeHandle, methodHandle, methodInvokeInfo);
         }
 
-        // Get the pointers necessary to call a dynamic method invocation function
         //
-        // This is either a function pointer to call, or a function pointer and template token.
-        private unsafe void GetDynamicMethodInvokeMethodInfo(NativeFormatModuleInfo module, uint cookie, RuntimeTypeHandle[] argHandles,
-            out IntPtr dynamicInvokeMethod, out IntPtr dynamicInvokeMethodGenericDictionary)
+        // Get the pointer of a dynamic method invocation thunk
+        //
+        private static IntPtr GetDynamicMethodInvoke(NativeFormatModuleInfo module, uint cookie)
         {
-            if ((cookie & 1) == 1)
-            {
-                // If the dynamic invoke method is a generic method, we need to consult the DynamicInvokeTemplateData table to locate
-                // the matching template so that we can instantiate it. The DynamicInvokeTemplateData table starts with a single UINT
-                // with the RVA of the type that hosts all DynamicInvoke methods. The table then follows with list of [Token, FunctionPointer]
-                // pairs. The cookie parameter is an index into this table and points to a single pair.
-                byte* pBlobAsBytes;
-                uint cbBlob;
-                bool success = module.TryFindBlob((int)ReflectionMapBlob.DynamicInvokeTemplateData, out pBlobAsBytes, out cbBlob);
-                Debug.Assert(success && cbBlob > 4);
+            ExternalReferencesTable extRefs = default(ExternalReferencesTable);
+            extRefs.InitializeCommonFixupsTable(module);
 
-                byte* pNativeLayoutInfoBlob;
-                uint cbNativeLayoutInfoBlob;
-                success = module.TryFindBlob((int)ReflectionMapBlob.NativeLayoutInfo, out pNativeLayoutInfoBlob, out cbNativeLayoutInfoBlob);
-                Debug.Assert(success);
-
-                RuntimeTypeHandle declaringTypeHandle;
-                // All methods referred from this blob are contained in the same type. The first UINT in the blob is a reloc to that MethodTable
-                if (RuntimeAugments.SupportsRelativePointers)
-                {
-                    // 32bit relative relocs
-                    declaringTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)(pBlobAsBytes + *(int*)pBlobAsBytes));
-                }
-                else
-                {
-                    declaringTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle(*(IntPtr*)pBlobAsBytes);
-                }
-
-                // The index points to two entries: the token of the dynamic invoke method and the function pointer to the canonical method
-                // Now have the type loader build or locate a dictionary for this method
-                uint index = cookie >> 1;
-
-                MethodNameAndSignature nameAndSignature;
-                RuntimeSignature nameAndSigSignature;
-
-                if (RuntimeAugments.SupportsRelativePointers)
-                {
-                    nameAndSigSignature = RuntimeSignature.CreateFromNativeLayoutSignature(module.Handle, ((uint*)pBlobAsBytes)[index]);
-                }
-                else
-                {
-                    nameAndSigSignature = RuntimeSignature.CreateFromNativeLayoutSignature(module.Handle, (uint)((IntPtr*)pBlobAsBytes)[index]);
-                }
-
-                success = TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutSignature(nameAndSigSignature, out nameAndSignature);
-                Debug.Assert(success);
-
-                success = TypeLoaderEnvironment.Instance.TryGetGenericMethodDictionaryForComponents(declaringTypeHandle, argHandles, nameAndSignature, out dynamicInvokeMethodGenericDictionary);
-                Debug.Assert(success);
-
-                if (RuntimeAugments.SupportsRelativePointers)
-                {
-                    // 32bit relative relocs
-                    int* pRelPtr32 = &((int*)pBlobAsBytes)[index + 1];
-                    dynamicInvokeMethod = (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
-                }
-                else
-                {
-                    dynamicInvokeMethod = ((IntPtr*)pBlobAsBytes)[index + 1];
-                }
-            }
-            else
-            {
-                // Nongeneric DynamicInvoke method. This is used to DynamicInvoke methods that have parameters that
-                // cannot be shared (or if there are no parameters to begin with).
-                ExternalReferencesTable extRefs = default(ExternalReferencesTable);
-                extRefs.InitializeCommonFixupsTable(module);
-
-                dynamicInvokeMethod = extRefs.GetFunctionPointerFromIndex(cookie >> 1);
-                dynamicInvokeMethodGenericDictionary = IntPtr.Zero;
-            }
+            return extRefs.GetFunctionPointerFromIndex(cookie);
         }
 
 #if FEATURE_UNIVERSAL_GENERICS
@@ -491,35 +422,6 @@ namespace Internal.Reflection.Execution
                 null);
         }
 #endif
-
-        private static RuntimeTypeHandle[] GetDynamicInvokeInstantiationArguments(MethodBase reflectionMethodBase)
-        {
-            // The DynamicInvoke method is a generic method with arguments that match the arguments of the target method.
-            // Prepare the list of arguments so that we can use it to instantiate the method.
-
-            MethodParametersInfo methodParamsInfo = new MethodParametersInfo(reflectionMethodBase);
-            LowLevelList<RuntimeTypeHandle> dynamicInvokeMethodGenArguments = methodParamsInfo.ParameterTypeHandles;
-
-            // This is either a constructor ("returns" void) or an instance method
-            MethodInfo reflectionMethodInfo = reflectionMethodBase as MethodInfo;
-
-            // Only use the return type if it's not void
-            if (reflectionMethodInfo != null && reflectionMethodInfo.ReturnType != typeof(void))
-                dynamicInvokeMethodGenArguments.Add(methodParamsInfo.ReturnTypeHandle);
-
-            for (int i = 0; i < dynamicInvokeMethodGenArguments.Count; i++)
-            {
-                // We can't instantiate over pointer types, so the DynamicInvoke method compensates for it already.
-                RuntimeTypeHandle type = dynamicInvokeMethodGenArguments[i];
-                while (RuntimeAugments.IsUnmanagedPointerType(type))
-                {
-                    type = RuntimeAugments.GetRelatedParameterTypeHandle(type);
-                }
-                dynamicInvokeMethodGenArguments[i] = type;
-            }
-
-            return dynamicInvokeMethodGenArguments.ToArray();
-        }
 
         private static RuntimeTypeHandle[] GetTypeSequence(ref ExternalReferencesTable extRefs, ref NativeParser parser)
         {
@@ -566,7 +468,7 @@ namespace Internal.Reflection.Execution
         /// <param name="methodSignatureComparer">Helper structure used for comparing signatures</param>
         /// <param name="canonFormKind">Requested canon form</param>
         /// <returns>Constructed method invoke info, null on failure</returns>
-        private unsafe MethodInvokeInfo TryGetMethodInvokeInfo(
+        private static unsafe MethodInvokeInfo TryGetMethodInvokeInfo(
             RuntimeTypeHandle declaringTypeHandle,
             QMethodDefinition methodHandle,
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles,
@@ -610,7 +512,6 @@ namespace Internal.Reflection.Execution
 #endif
 
             IntPtr dynamicInvokeMethod;
-            IntPtr dynamicInvokeMethodGenericDictionary;
             if ((methodInvokeMetadata.InvokeTableFlags & InvokeTableFlags.NeedsParameterInterpretation) != 0)
             {
 #if FEATURE_UNIVERSAL_GENERICS
@@ -622,14 +523,9 @@ namespace Internal.Reflection.Execution
             }
             else
             {
-                RuntimeTypeHandle[] dynInvokeMethodArgs = GetDynamicInvokeInstantiationArguments(methodInfo);
-
-                GetDynamicMethodInvokeMethodInfo(
+                dynamicInvokeMethod = GetDynamicMethodInvoke(
                     methodInvokeMetadata.MappingTableModule,
-                    methodInvokeMetadata.DynamicInvokeCookie,
-                    dynInvokeMethodArgs,
-                    out dynamicInvokeMethod,
-                    out dynamicInvokeMethodGenericDictionary);
+                    methodInvokeMetadata.DynamicInvokeCookie);
             }
 
             IntPtr resolver = IntPtr.Zero;
@@ -644,12 +540,9 @@ namespace Internal.Reflection.Execution
                     return null;
             }
 
-            var methodInvokeInfo = new MethodInvokeInfo
+            var methodInvokeInfo = new MethodInvokeInfo(methodInfo, dynamicInvokeMethod)
             {
                 LdFtnResult = methodInvokeMetadata.MethodEntryPoint,
-                DynamicInvokeMethod = dynamicInvokeMethod,
-                DynamicInvokeGenericDictionary = dynamicInvokeMethodGenericDictionary,
-                MethodInfo = methodInfo,
                 VirtualResolveData = resolver,
             };
             return methodInvokeInfo;
@@ -892,7 +785,7 @@ namespace Internal.Reflection.Execution
 #pragma warning restore 0420
         }
 
-        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups_ExactInstantations()
+        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups_ExactInstantiations()
         {
 #pragma warning disable 0420 // GetLdFtnReverseLookups_Helper treats its first parameter as volatile by using explicit Volatile operations
             return GetLdFtnReverseLookups_Helper(ref _ldftnReverseLookup_ExactInstantiations, _computeLdFtnLookupExactInstantiations);
@@ -933,7 +826,7 @@ namespace Internal.Reflection.Execution
             else
             {
                 // Search ExactInstantiationsMap
-                foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups_ExactInstantations())
+                foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups_ExactInstantiations())
                 {
                     int startIndex;
                     int endIndex;
@@ -976,7 +869,7 @@ namespace Internal.Reflection.Execution
         internal bool TryGetMethodForStartAddress(IntPtr methodStartAddress, ref RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle)
         {
             // Search ExactInstantiationsMap
-            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups_ExactInstantations())
+            foreach (KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets> perModuleLookup in GetLdFtnReverseLookups_ExactInstantiations())
             {
                 int startIndex;
                 int endIndex;
@@ -1400,7 +1293,7 @@ namespace Internal.Reflection.Execution
         //
         // This resolves RuntimeMethodHandles for methods declared on non-generic types (declaringTypeHandle is an output of this method.)
         //
-        public sealed unsafe override bool TryGetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        public sealed override unsafe bool TryGetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
             MethodNameAndSignature nameAndSignature;
             methodHandle = default(QMethodDefinition);
@@ -1421,7 +1314,7 @@ namespace Internal.Reflection.Execution
         //
         // This resolves RuntimeFieldHandles for fields declared on non-generic types (declaringTypeHandle is an output of this method.)
         //
-        public sealed unsafe override bool TryGetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle)
+        public sealed override unsafe bool TryGetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle)
         {
             fieldHandle = default(FieldHandle);
 

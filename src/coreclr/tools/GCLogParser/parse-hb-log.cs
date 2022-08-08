@@ -123,7 +123,7 @@ namespace parse_hb_log
         static int procsPerNode = 0;
         // this is qpf / 1000 so we calculate ms instead of s.
         static UInt64 qpfAdjusted = 0;
-        // we log the current qpc so substract by this.
+        // we log the current qpc so subtract by this.
         static UInt64 qpcStart = 0;
         static Int32 totalAllocThreads = 0;
         static Dictionary<string, int> threadMapping = new Dictionary<string, int>(112);

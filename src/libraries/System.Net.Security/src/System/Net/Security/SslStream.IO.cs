@@ -24,6 +24,9 @@ namespace System.Net.Security
         private object _handshakeLock => _sslAuthenticationOptions;
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
 
+        private const int HandshakeTypeOffsetSsl2 = 2;                       // Offset of HelloType in Sslv2 and Unified frames
+        private const int HandshakeTypeOffsetTls = 5;                        // Offset of HelloType in Sslv3 and TLS frames
+
         private bool _receivedEOF;
 
         // Used by Telemetry to ensure we log connection close exactly once
@@ -36,10 +39,7 @@ namespace System.Net.Security
         {
             Debug.Assert(e != null, $"Expected non-null Exception to be passed to {nameof(SetException)}");
 
-            if (_exception == null)
-            {
-                _exception = ExceptionDispatchInfo.Capture(e);
-            }
+            _exception ??= ExceptionDispatchInfo.Capture(e);
 
             CloseContext();
         }
@@ -193,7 +193,7 @@ namespace System.Net.Security
 
                 if (nextmsg is { Length: > 0 })
                 {
-                    await TIOAdapter.WriteAsync(InnerStream, nextmsg, 0, nextmsg.Length, cancellationToken).ConfigureAwait(false);
+                    await TIOAdapter.WriteAsync(InnerStream, nextmsg, cancellationToken).ConfigureAwait(false);
                     await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                 }
 
@@ -216,7 +216,7 @@ namespace System.Net.Security
                     message = await ReceiveBlobAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
                     if (message.Size > 0)
                     {
-                        await TIOAdapter.WriteAsync(InnerStream, message.Payload!, 0, message.Size, cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(message.Payload!, 0, message.Size), cancellationToken).ConfigureAwait(false);
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                     }
                 }
@@ -261,7 +261,7 @@ namespace System.Net.Security
                     message = NextMessage(reAuthenticationData);
                     if (message.Size > 0)
                     {
-                        await TIOAdapter.WriteAsync(InnerStream, message.Payload!, 0, message.Size, cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(message.Payload!, 0, message.Size), cancellationToken).ConfigureAwait(false);
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
                         if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Log.SentFrame(this, message.Payload);
@@ -288,28 +288,25 @@ namespace System.Net.Security
                 {
                     message = await ReceiveBlobAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
 
-                    byte[]? payload = null;
-                    int size = 0;
+                    ReadOnlyMemory<byte> payload = default;
                     if (message.Size > 0)
                     {
-                        payload = message.Payload;
-                        size = message.Size;
+                        payload = new ReadOnlyMemory<byte>(message.Payload, 0, message.Size);
                     }
                     else if (message.Failed && (_lastFrame.Header.Type == TlsContentType.Handshake || _lastFrame.Header.Type == TlsContentType.ChangeCipherSpec))
                     {
                         // If we failed without OS sending out alert, inject one here to be consistent across platforms.
                         payload = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, TlsAlertDescription.ProtocolVersion);
-                        size = payload.Length;
                     }
 
-                    if (payload != null && size > 0)
+                    if (!payload.IsEmpty)
                     {
                         // If there is message send it out even if call failed. It may contain TLS Alert.
-                        await TIOAdapter.WriteAsync(InnerStream, payload!, 0, size, cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, payload, cancellationToken).ConfigureAwait(false);
                         await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
 
                         if (NetEventSource.Log.IsEnabled())
-                            NetEventSource.Log.SentFrame(this, payload);
+                            NetEventSource.Log.SentFrame(this, payload.Span);
                     }
 
                     if (message.Failed)
@@ -376,8 +373,10 @@ namespace System.Net.Security
                     }
                     break;
                 case TlsContentType.Handshake:
-                    if (!_isRenego && _buffer.EncryptedReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+#pragma warning disable CS0618
+                    if (!_isRenego && _buffer.EncryptedReadOnlySpan[_lastFrame.Header.Version == SslProtocols.Ssl2 ? HandshakeTypeOffsetSsl2 : HandshakeTypeOffsetTls] == (byte)TlsHandshakeType.ClientHello &&
                         _sslAuthenticationOptions!.IsServer) // guard against malicious endpoints. We should not see ClientHello on client.
+#pragma warning restore CS0618
                     {
                         TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
                                                                     TlsFrameHelper.ProcessingOptions.All :
@@ -445,7 +444,7 @@ namespace System.Net.Security
                     break;
                 }
 
-                frameSize = nextHeader.Length + TlsFrameHelper.HeaderSize;
+                frameSize = nextHeader.Length;
 
                 // Can process more handshake frames in single step or during TLS1.3 post-handshake auth, but we should
                 // avoid processing too much so as to preserve API boundary between handshake and I/O.
@@ -587,7 +586,7 @@ namespace System.Net.Security
                 return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_encrypt, SslStreamPal.GetException(status))));
             }
 
-            ValueTask t = TIOAdapter.WriteAsync(InnerStream, outBuffer, 0, encryptedBytes, cancellationToken);
+            ValueTask t = TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(outBuffer, 0, encryptedBytes), cancellationToken);
             if (t.IsCompletedSuccessfully)
             {
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
@@ -621,7 +620,7 @@ namespace System.Net.Security
                     }
                     else if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
                     {
-                        await TIOAdapter.WriteAsync(InnerStream, outBuffer, 0, encryptedBytes, cancellationToken).ConfigureAwait(false);
+                        await TIOAdapter.WriteAsync(InnerStream, new ReadOnlyMemory<byte>(outBuffer, 0, encryptedBytes), cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -975,7 +974,7 @@ namespace System.Net.Security
                 throw new AuthenticationException(SR.net_frame_read_size);
             }
 
-            return _lastFrame.Header.Length + TlsFrameHelper.HeaderSize;
+            return _lastFrame.Header.Length;
         }
     }
 }

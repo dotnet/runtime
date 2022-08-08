@@ -33,6 +33,7 @@ namespace ILCompiler.DependencyAnalysis
         public MethodCodeNode(MethodDesc method)
         {
             Debug.Assert(!method.IsAbstract);
+            Debug.Assert(!method.IsGenericMethodDefinition && !method.OwningType.IsGenericDefinition);
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
             _method = method;
         }

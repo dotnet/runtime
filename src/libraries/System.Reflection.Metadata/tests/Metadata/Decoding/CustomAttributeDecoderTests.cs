@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata.Tests;
@@ -12,9 +11,8 @@ namespace System.Reflection.Metadata.Decoding.Tests
 {
     public class CustomAttributeDecoderTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Type assembly name is different on .NET Framework.")]
         public void TestCustomAttributeDecoder()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(HasAttributes).GetTypeInfo().Assembly)))
@@ -340,12 +338,12 @@ namespace System.Reflection.Metadata.Decoding.Tests
         {
             public string GetSystemType()
             {
-                return "[System.Runtime]System.Type";
+                return $"[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.Type";
             }
 
             public bool IsSystemType(string type)
             {
-                return type == "[System.Runtime]System.Type"  // encountered as typeref
+                return type == $"[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.Type"  // encountered as typeref
                     || Type.GetType(type) == typeof(Type);    // encountered as serialized to reflection notation
             }
 

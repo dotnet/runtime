@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace System.Net.Test.Common
 {
 
-    internal sealed class Http3LoopbackStream : IDisposable
+    internal sealed class Http3LoopbackStream : IAsyncDisposable
     {
         private const int MaximumVarIntBytes = 8;
         private const long VarIntMax = (1L << 62) - 1;
@@ -40,12 +40,9 @@ namespace System.Net.Test.Common
             _stream = stream;
         }
 
-        public void Dispose()
-        {
-            _stream.Dispose();
-        }
+        public ValueTask DisposeAsync() => _stream.DisposeAsync();
 
-        public long StreamId => _stream.StreamId;
+        public long StreamId => _stream.Id;
 
         public async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
@@ -285,9 +282,7 @@ namespace System.Net.Test.Common
 
             if (isFinal)
             {
-                _stream.Shutdown();
-                await _stream.ShutdownCompleted().ConfigureAwait(false);
-                Dispose();
+                _stream.CompleteWrites();
             }
         }
 
@@ -379,7 +374,7 @@ namespace System.Net.Test.Common
                         }
                     }
                 }
-                catch (QuicStreamAbortedException ex) when (ex.ErrorCode == Http3LoopbackConnection.H3_REQUEST_CANCELLED)
+                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3LoopbackConnection.H3_REQUEST_CANCELLED)
                 {
                     readCanceled = true;
                 }
@@ -389,9 +384,9 @@ namespace System.Net.Test.Common
             {
                 try
                 {
-                    await _stream.WaitForWriteCompletionAsync();
+                    await _stream.WritesClosed;
                 }
-                catch (QuicStreamAbortedException ex) when (ex.ErrorCode == Http3LoopbackConnection.H3_REQUEST_CANCELLED)
+                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3LoopbackConnection.H3_REQUEST_CANCELLED)
                 {
                     writeCanceled = true;
                 }
@@ -424,11 +419,9 @@ namespace System.Net.Test.Common
             }
         }
 
-        public async Task AbortAndWaitForShutdownAsync(long errorCode)
+        public void Abort(long errorCode)
         {
-            _stream.AbortRead(errorCode);
-            _stream.AbortWrite(errorCode);
-            await _stream.ShutdownCompleted();
+            _stream.Abort(QuicAbortDirection.Both, errorCode);
         }
 
         public async Task<(long? frameType, byte[] payload)> ReadFrameAsync()

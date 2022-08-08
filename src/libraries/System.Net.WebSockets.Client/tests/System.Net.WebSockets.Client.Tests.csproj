@@ -3,6 +3,10 @@
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
+    <!--Remove once this is fixed, https://github.com/dotnet/runtime/issues/71506 -->
+    <IlcTrimMetadata>false</IlcTrimMetadata>
+    <!-- the res/xml/network_security_config.xml file comes from the System.Net.TestData package -->
+    <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
@@ -24,10 +28,9 @@
 
   <!-- Browser specific files -->
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
-    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj" ReferenceOutputAssembly="false"/>
-    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj" ReferenceOutputAssembly="false"/>
-    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs"
-             Link="Common\System\Net\WebSockets\WebSocketStream.cs" />
+    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj" ReferenceOutputAssembly="false" />
+    <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs" Link="Common\System\Net\WebSockets\WebSocketStream.cs" />
   </ItemGroup>
 
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
@@ -35,41 +38,39 @@
     <DefaultReferenceExclusion Include="System.Configuration" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs"
-             Link="Common\System\Net\Capability.Security.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
-             Link="Common\System\Net\Configuration.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
-             Link="Common\System\Net\Configuration.Certificates.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs"
-             Link="Common\System\Net\Configuration.Http.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs"
-             Link="Common\System\Net\Configuration.Security.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Configuration.WebSockets.cs"
-             Link="Common\System\Net\Configuration.WebSockets.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
-             Link="Common\System\Net\EventSourceTestLogging.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackProxyServer.cs"
-             Link="Common\System\Net\Http\LoopbackProxyServer.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.cs"
-             Link="Common\System\Net\Http\LoopbackServer.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs"
-             Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
-             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
-    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
-             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs" Link="Common\System\Net\Capability.Security.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs" Link="Common\System\Net\Configuration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs" Link="Common\System\Net\Configuration.Certificates.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs" Link="Common\System\Net\Configuration.Http.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs" Link="Common\System\Net\Configuration.Security.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.WebSockets.cs" Link="Common\System\Net\Configuration.WebSockets.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs" Link="Common\System\Net\EventSourceTestLogging.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackProxyServer.cs" Link="Common\System\Net\Http\LoopbackProxyServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.cs" Link="Common\System\Net\Http\LoopbackServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\Http2LoopbackServer.cs" Link="Common\System\Net\Http\Http2LoopbackServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\Http2LoopbackConnection.cs" Link="Common\System\Net\Http\Http2LoopbackConnection.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\Http2Frames.cs" Link="Common\System\Net\Http\Http2Frames.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\TestHelper.cs" Link="Common\System\Net\Http\TestHelper.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\QPackTestDecoder.cs" Link="Common\System\Net\Http\QPackTestDecoder.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HuffmanDecoder.cs" Link="Common\System\Net\Http\HuffmanDecoder.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HuffmanEncoder.cs" Link="Common\System\Net\Http\HuffmanEncoder.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HPackEncoder.cs" Link="Common\System\Net\Http\HPackEncoder.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\GenericLoopbackServer.cs" Link="Common\System\Net\Http\GenericLoopbackServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs" Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="AbortTest.cs" />
     <Compile Include="CancelTest.cs" />
     <Compile Include="ClientWebSocketOptionsTests.cs" />
     <Compile Include="ClientWebSocketTestBase.cs" />
     <Compile Include="ClientWebSocketUnitTest.cs" />
     <Compile Include="CloseTest.cs" />
+    <Compile Include="ConnectTest.Http2.cs" />
     <Compile Include="ConnectTest.cs" />
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="LoopbackHelper.cs" />
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="SendReceiveTest.cs" />
+    <Compile Include="SendReceiveTest.Http2.cs" />
     <Compile Include="WebSocketData.cs" />
     <Compile Include="WebSocketHelper.cs" />
     <Compile Include="DeflateTests.cs" />

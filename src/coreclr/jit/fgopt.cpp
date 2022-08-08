@@ -654,6 +654,7 @@ bool Compiler::fgRemoveDeadBlocks()
     JITDUMP("\n*************** In fgRemoveDeadBlocks()");
 
     jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
+
     worklist.push_back(fgFirstBB);
 
     // Do not remove handler blocks
@@ -713,16 +714,43 @@ bool Compiler::fgRemoveDeadBlocks()
         }
     }
 
+    // Track if there is any unreachable block. Even if it is marked with
+    // BBF_DONT_REMOVE, fgRemoveUnreachableBlocks() still removes the code
+    // inside the block. So this variable tracks if we ever found such blocks
+    // or not.
+    bool hasUnreachableBlock = false;
+
     // A block is unreachable if no path was found from
     // any of the fgFirstBB, handler, filter or BBJ_ALWAYS (Arm) blocks.
     auto isBlockRemovable = [&](BasicBlock* block) -> bool {
-        return !BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
+        bool isVisited   = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
+        bool isRemovable = (!isVisited || block->bbRefs == 0);
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+        isRemovable &=
+            !block->isBBCallAlwaysPairTail(); // can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair
+#endif
+        hasUnreachableBlock |= isRemovable;
+
+        return isRemovable;
     };
 
-    bool changed = fgRemoveUnreachableBlocks(isBlockRemovable);
+    bool     changed        = false;
+    unsigned iterationCount = 1;
+    do
+    {
+        JITDUMP("\nRemoving unreachable blocks for fgRemoveDeadBlocks iteration #%u\n", iterationCount);
+
+        // Just to be paranoid, avoid infinite loops; fall back to minopts.
+        if (iterationCount++ > 10)
+        {
+            noway_assert(!"Too many unreachable block removal loops");
+        }
+        changed = fgRemoveUnreachableBlocks(isBlockRemovable);
+    } while (changed);
 
 #ifdef DEBUG
-    if (verbose && changed)
+    if (verbose && hasUnreachableBlock)
     {
         printf("\nAfter dead block removal:\n");
         fgDispBasicBlocks(verboseTrees);
@@ -732,7 +760,7 @@ bool Compiler::fgRemoveDeadBlocks()
     fgVerifyHandlerTab();
     fgDebugCheckBBlist(false);
 #endif // DEBUG
-    return changed;
+    return hasUnreachableBlock;
 }
 
 //-------------------------------------------------------------
@@ -974,7 +1002,7 @@ void Compiler::fgComputeDoms()
     for (block = fgFirstBB->bbNext; block != nullptr; block = block->bbNext)
     {
         // If any basic block has no predecessors then we flag it as processed and temporarily
-        // mark its precedessor list to be flRoot.  This makes the flowgraph connected,
+        // mark its predecessor list to be flRoot.  This makes the flowgraph connected,
         // a precondition that is needed by the dominance algorithm to operate properly.
         if (block->bbPreds == nullptr)
         {
@@ -1023,7 +1051,7 @@ void Compiler::fgComputeDoms()
                 continue;
             }
 
-            // Pick up the first processed predecesor of the current block.
+            // Pick up the first processed predecessor of the current block.
             for (first = block->bbPreds; first != nullptr; first = first->flNext)
             {
                 if (BlockSetOps::IsMember(this, processedBlks, first->getBlock()->bbNum))
@@ -1861,6 +1889,23 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
+    // We cannot compact a block that participates in loop
+    // alignment.
+    //
+    if ((bNext->countOfInEdges() > 1) && bNext->isLoopAlign())
+    {
+        return false;
+    }
+
+    // If we are trying to compact blocks from different loops
+    // that don't do it.
+    //
+    if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (bNext->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
+        (block->bbNatLoopNum != bNext->bbNatLoopNum))
+    {
+        return false;
+    }
+
     // If there is a switch predecessor don't bother because we'd have to update the uniquesuccs as well
     // (if they are valid).
     for (BasicBlock* const predBlock : bNext->PredBlocks())
@@ -1921,8 +1966,8 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     if (bNext->countOfInEdges() > 1)
     {
         JITDUMP("Second block has multiple incoming edges\n");
-
         assert(block->isEmpty());
+
         for (BasicBlock* const predBlock : bNext->PredBlocks())
         {
             fgReplaceJumpTarget(predBlock, block, bNext);
@@ -3193,8 +3238,10 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         if (verbose)
         {
             printf("\nConverting a switch (" FMT_BB ") with only one significant clause besides a default target to a "
-                   "conditional branch\n",
+                   "conditional branch. Before:\n",
                    block->bbNum);
+
+            gtDispTree(switchTree);
         }
 #endif // DEBUG
 
@@ -3218,6 +3265,9 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         block->bbJumpDest = block->bbJumpSwt->bbsDstTab[0];
         block->bbJumpKind = BBJ_COND;
+
+        JITDUMP("After:\n");
+        DISPNODE(switchTree);
 
         return true;
     }
@@ -3295,7 +3345,7 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
                 {
                     GenTree* const op2 = tree->AsOp()->gtOp2;
 
-                    if (op2->OperIs(GT_ARR_LENGTH) || op2->OperIsConst() || op2->OperIsCompare())
+                    if (op2->OperIsArrLength() || op2->OperIsConst() || op2->OperIsCompare())
                     {
                         return true;
                     }
@@ -4075,7 +4125,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     gtReverseCond(condTree);
 
     // We need to update the following flags of the bJump block if they were set in the bDest block
-    bJump->bbFlags |= (bDest->bbFlags & (BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN));
+    bJump->bbFlags |= bDest->bbFlags & BBF_COPY_PROPAGATE;
 
     bJump->bbJumpKind = BBJ_COND;
     bJump->bbJumpDest = bDest->bbNext;
@@ -4377,7 +4427,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 {
                     if (tmpbb == bPrevPrev)
                     {
-                        /* We found an ealier predecessor */
+                        /* We found an earlier predecessor */
                         bPrevPrev = pred->getBlock();
                         break;
                     }
@@ -5991,7 +6041,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
 
                     // case (b)
                     //
-                    // Note the asymetric checks for refs == 1 and refs > 1 ensures that we
+                    // Note the asymmetric checks for refs == 1 and refs > 1 ensures that we
                     // differentiate the roles played by bDest and bNextJumpDest. We need some
                     // sense of which arrangement is preferable to avoid getting stuck in a loop
                     // reversing and re-reversing.

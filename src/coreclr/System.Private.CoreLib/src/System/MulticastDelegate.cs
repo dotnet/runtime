@@ -460,7 +460,7 @@ namespace System
         public sealed override int GetHashCode()
         {
             if (IsUnmanagedFunctionPtr())
-                return ValueType.GetHashCodeOfPtr(_methodPtr) ^ ValueType.GetHashCodeOfPtr(_methodPtrAux);
+                return RuntimeHelpers.GetHashCodeOfPtr(_methodPtr) ^ RuntimeHelpers.GetHashCodeOfPtr(_methodPtrAux);
 
             if (_invocationCount != (IntPtr)0)
             {

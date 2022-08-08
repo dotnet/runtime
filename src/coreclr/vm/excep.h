@@ -146,7 +146,6 @@ BOOL IsCOMPlusExceptionHandlerInstalled();
 #endif
 
 BOOL InstallUnhandledExceptionFilter();
-void UninstallUnhandledExceptionFilter();
 
 #if !defined(TARGET_UNIX)
 // Section naming is a strategy by itself. Ideally, we could have named the UEF section
@@ -202,7 +201,8 @@ enum
     GenerateDumpFlagsNone = 0x00,
     GenerateDumpFlagsLoggingEnabled = 0x01,
     GenerateDumpFlagsVerboseLoggingEnabled = 0x02,
-    GenerateDumpFlagsCrashReportEnabled = 0x04
+    GenerateDumpFlagsCrashReportEnabled = 0x04,
+    GenerateDumpFlagsCrashReportOnlyEnabled = 0x08
 };
 
 void InitializeCrashDump();
@@ -741,8 +741,6 @@ void CPFH_AdjustContextForThreadSuspensionRace(T_CONTEXT *pContext, Thread *pThr
 
 DWORD GetGcMarkerExceptionCode(LPVOID ip);
 bool IsGcMarker(T_CONTEXT *pContext, EXCEPTION_RECORD *pExceptionRecord);
-
-void InitSavedExceptionInfo();
 
 bool ShouldHandleManagedFault(
                         EXCEPTION_RECORD*               pExceptionRecord,

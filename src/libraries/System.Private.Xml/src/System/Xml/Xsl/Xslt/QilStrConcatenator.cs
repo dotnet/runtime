@@ -33,10 +33,7 @@ namespace System.Xml.Xsl.Xslt
 
         private void FlushBuilder()
         {
-            if (_concat == null)
-            {
-                _concat = _f.BaseFactory.Sequence();
-            }
+            _concat ??= _f.BaseFactory.Sequence();
             if (_builder.Length != 0)
             {
                 _concat.Add(_f.String(_builder.ToString()));

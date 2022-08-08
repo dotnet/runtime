@@ -165,7 +165,7 @@ namespace System.Net.Mail
         {
             get
             {
-                return (_message.Subject != null ? _message.Subject : string.Empty);
+                return _message.Subject ?? string.Empty;
             }
             set
             {
@@ -210,7 +210,7 @@ namespace System.Net.Mail
         {
             get
             {
-                return (_body != null ? _body : string.Empty);
+                return _body ?? string.Empty;
             }
 
             set
@@ -299,18 +299,9 @@ namespace System.Net.Mail
             {
                 _disposed = true;
 
-                if (_views != null)
-                {
-                    _views.Dispose();
-                }
-                if (_attachments != null)
-                {
-                    _attachments.Dispose();
-                }
-                if (_bodyView != null)
-                {
-                    _bodyView.Dispose();
-                }
+                _views?.Dispose();
+                _attachments?.Dispose();
+                _bodyView?.Dispose();
             }
         }
 

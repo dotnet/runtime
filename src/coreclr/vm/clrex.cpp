@@ -880,7 +880,7 @@ void CLRException::HandlerState::SucceedCatch()
     // At this point, we don't believe we need to do any unwinding of the ExInfo chain after an EX_CATCH. The chain
     // is unwound by CPFH_UnwindFrames1() when it detects that the exception is being caught by an unmanaged
     // catcher. EX_CATCH looks just like an unmanaged catcher now, so the unwind is already done by the time we get
-    // into the catch. That's different than before the big switch to the new exeption system, and it effects
+    // into the catch. That's different than before the big switch to the new exception system, and it effects
     // rethrows. Fixing rethrows is a work item for a little later. For now, we're simplying removing the unwind
     // from here to avoid the extra unwind, which is harmless in many cases, but is very harmful when a managed
     // filter throws an exception.
@@ -1785,6 +1785,7 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(PEAssembly *parent,
     EX_THROW_WITH_INNER(EEFileLoadException, (name, hr), pInnerException);
 }
 
+#ifdef FEATURE_COMINTEROP
 // ---------------------------------------------------------------------------
 // EEComException methods
 // ---------------------------------------------------------------------------
@@ -1873,11 +1874,9 @@ EECOMException::EECOMException(
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef FEATURE_COMINTEROP
     // Must use another path for managed IErrorInfos...
     //  note that this doesn't cover out-of-proc managed IErrorInfos.
     _ASSERTE(!bCheckInProcCCWTearOff || !IsInProcCCWTearOff(pErrInfo));
-#endif  // FEATURE_COMINTEROP
 
     m_ED.hr = hr;
     m_ED.bstrDescription = NULL;
@@ -1980,6 +1979,7 @@ OBJECTREF EECOMException::CreateThrowable()
 
     return throwable;
 }
+#endif // FEATURE_COMINTEROP
 
 // ---------------------------------------------------------------------------
 // ObjrefException methods

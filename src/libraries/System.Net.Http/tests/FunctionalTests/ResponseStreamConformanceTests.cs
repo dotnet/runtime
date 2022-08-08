@@ -20,6 +20,28 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(pair.Stream2.CanRead);
             return pair;
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72586")]
+#pragma warning disable xUnit1026 // unused parameter
+        public override Task ReadAsync_CancelPendingTask_ThrowsCancellationException(int cancellationDelay)
+        {
+            return Task.CompletedTask;
+        }
+#pragma warning restore xUnit1026
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72586")]
+#pragma warning disable xUnit1026 // unused parameter
+        public override Task ReadAsync_CancelPendingValueTask_ThrowsCancellationException(int cancellationDelay)
+        {
+            return Task.CompletedTask;
+        }
+#pragma warning restore xUnit1026
     }
 
     public sealed class Http1RawResponseStreamConformanceTests : ResponseConnectedStreamConformanceTests
@@ -33,6 +55,17 @@ namespace System.Net.Http.Functional.Tests
             Assert.True(pair.Stream2.CanRead);
             return pair;
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72586")]
+#pragma warning disable xUnit1026 // unused parameter
+        public override Task ReadAsync_CancelPendingTask_ThrowsCancellationException(int cancellationDelay)
+        {
+            return Task.CompletedTask;
+        }
+#pragma warning restore xUnit1026
     }
 
     public sealed class Http1ContentLengthResponseStreamConformanceTests : ResponseStandaloneStreamConformanceTests
@@ -54,9 +87,9 @@ namespace System.Net.Http.Functional.Tests
                 // One chunk for the whole response body
                 await responseStream.WriteAsync(Encoding.ASCII.GetBytes($"{bodyData.Length:X}\r\n"));
                 await responseStream.WriteAsync(bodyData);
-                await responseStream.WriteAsync(Encoding.ASCII.GetBytes("\r\n"));
+                await responseStream.WriteAsync("\r\n"u8.ToArray());
             }
-            await responseStream.WriteAsync(Encoding.ASCII.GetBytes("0\r\n\r\n"));
+            await responseStream.WriteAsync("0\r\n\r\n"u8.ToArray());
         }
     }
 
@@ -70,9 +103,9 @@ namespace System.Net.Http.Functional.Tests
                 // One chunk per byte of the response body
                 await responseStream.WriteAsync(Encoding.ASCII.GetBytes($"1\r\n"));
                 await responseStream.WriteAsync(bodyData.AsMemory(i, 1));
-                await responseStream.WriteAsync(Encoding.ASCII.GetBytes("\r\n"));
+                await responseStream.WriteAsync("\r\n"u8.ToArray());
             }
-            await responseStream.WriteAsync(Encoding.ASCII.GetBytes("0\r\n\r\n"));
+            await responseStream.WriteAsync("0\r\n\r\n"u8.ToArray());
         }
     }
 

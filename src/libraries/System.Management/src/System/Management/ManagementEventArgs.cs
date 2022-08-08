@@ -67,7 +67,7 @@ namespace System.Management
         /// Constructor.
         /// </summary>
         /// <param name="context">The operation context which is echoed back
-        /// from the operation which triggerred the event.</param>
+        /// from the operation which triggered the event.</param>
         /// <param name="wmiObject">The newly arrived WmiObject.</param>
         internal ObjectReadyEventArgs(object context, ManagementBaseObject wmiObject) : base(context)
         {
@@ -251,7 +251,7 @@ namespace System.Management
         {
             get
             {
-                return (null != message) ? message : string.Empty;
+                return message ?? string.Empty;
             }
         }
     }

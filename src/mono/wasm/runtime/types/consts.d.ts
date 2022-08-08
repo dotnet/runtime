@@ -3,3 +3,14 @@ declare module "consts:*" {
     const constant: any;
     export default constant;
 }
+
+declare module "consts:monoWasmThreads" {
+    const constant: boolean;
+    export default constant;
+}
+
+/* if true, include mock impplementations of diagnostics sockets */
+declare module "consts:monoDiagnosticsMock" {
+    const constant: boolean;
+    export default constant;
+}

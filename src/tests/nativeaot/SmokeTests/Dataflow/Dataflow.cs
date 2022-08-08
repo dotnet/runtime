@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 649 // 'blah' is never assgined to
+#pragma warning disable 649 // 'blah' is never assigned to
 #pragma warning disable 169 // 'blah' is never used
 #pragma warning disable 436 // conflicting type
 
@@ -27,6 +27,7 @@ class Program
         TestDynamicDependencyWithGenerics.Run();
         TestObjectGetTypeDataflow.Run();
         TestMarshalIntrinsics.Run();
+        TestCompilerGeneratedCode.Run();
 
         return 100;
     }
@@ -108,8 +109,8 @@ class Program
             Assert.NotNull(typeof(TestType1).GetMethod(nameof(TestType1.TestMethod)));
             Assert.Equal(1, typeof(TestType1).CountMethods());
 
-            //Assert.NotNull(typeof(TestType1).GetField(nameof(TestType1.TestField)));
-            //Assert.Equal(1, typeof(TestType1).CountFields());
+            Assert.NotNull(typeof(TestType1).GetField(nameof(TestType1.TestField)));
+            Assert.Equal(1, typeof(TestType1).CountFields());
 
             Assert.NotNull(typeof(TestType2).GetProperty(nameof(TestType2.TestProperty)));
             Assert.NotNull(typeof(TestType2).GetProperty(nameof(TestType2.TestProperty)).GetGetMethod());
@@ -389,7 +390,10 @@ class Program
             Assert.Equal(1, typeof(TypeWithSpecificMethodKept).CountMethods());
             Assert.Equal(1, typeof(TypeWithSpecificOverloadKept).CountMethods());
             Assert.Equal(2, typeof(TypeWithAllOverloadsKept).CountMethods());
-            Assert.Equal(2, typeof(TestDynamicDependency).CountMethods());
+
+            // We only expect DependentMethod. We specifically don't expect to see the Run method (current method).
+            Assert.Equal(1, typeof(TestDynamicDependency).CountMethods());
+
             Assert.Equal(1, typeof(TypeWithPublicPropertiesKept).CountProperties());
         }
     }
@@ -587,7 +591,7 @@ class Program
                 Justification = "That's the point")]
             static void SanityTest()
             {
-                // Sanity check that instrinsic detection is necessary
+                // Sanity check that intrinsic detection is necessary
                 bool thrown = false;
                 try
                 {
@@ -601,6 +605,57 @@ class Program
                 if (!thrown)
                     throw new Exception();
             }
+        }
+    }
+
+    class TestCompilerGeneratedCode
+    {
+        private static void ReflectionInLambda()
+        {
+            var func = () => {
+                Type helpersType = Type.GetType(nameof(Helpers));
+                Assert.NotNull(helpersType);
+            };
+
+            func();
+        }
+
+        private static void ReflectionInLocalFunction()
+        {
+            func();
+
+            void func()
+            {
+                Type helpersType = Type.GetType(nameof(Helpers));
+                Assert.NotNull(helpersType);
+            };
+        }
+
+        private static async void ReflectionInAsync()
+        {
+            await System.Threading.Tasks.Task.Delay(100);
+            Type helpersType = Type.GetType(nameof(Helpers));
+            Assert.NotNull(helpersType);
+        }
+
+        private static async void ReflectionInLambdaAsync()
+        {
+            await System.Threading.Tasks.Task.Delay(100);
+
+            var func = () => {
+                Type helpersType = Type.GetType(nameof(Helpers));
+                Assert.NotNull(helpersType);
+            };
+
+            func();
+        }
+
+        public static void Run()
+        {
+            ReflectionInLambda();
+            ReflectionInLocalFunction();
+            ReflectionInAsync();
+            ReflectionInLambdaAsync();
         }
     }
 }

@@ -46,7 +46,7 @@ namespace System.Data.Common
             + "(?<![\"']))"                                            // unquoted value must not stop with " or '
             + ")(\\s*)(;|[\u0000\\s]*$)"                                // whitespace after value up to semicolon or end-of-line
             + ")*"                                                      // repeat the key-value pair
-            + "[\\s;]*[\u0000\\s]*"                                     // traling whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
+            + "[\\s;]*[\u0000\\s]*"                                     // trailing whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
         ;
 
         private const string ConnectionStringPatternOdbc =              // may not contain embedded null except trailing last value
@@ -66,7 +66,7 @@ namespace System.Data.Common
 
             + ")(\\s*)(;|[\u0000\\s]*$)"                               // whitespace after value up to semicolon or end-of-line
             + ")*"                                                      // repeat the key-value pair
-            + "[\\s;]*[\u0000\\s]*"                                     // traling whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
+            + "[\\s;]*[\u0000\\s]*"                                     // trailing whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
         ;
 
         private static readonly Regex ConnectionStringRegex = new Regex(ConnectionStringPattern, RegexOptions.ExplicitCapture | RegexOptions.Compiled);
@@ -128,7 +128,7 @@ namespace System.Data.Common
         {
             UseOdbcRules = useOdbcRules;
             _parsetable = new Hashtable();
-            _usersConnectionString = ((null != connectionString) ? connectionString : "");
+            _usersConnectionString = connectionString ?? "";
 
             // first pass on parsing, initial syntax check
             if (0 < _usersConnectionString.Length)
@@ -151,7 +151,7 @@ namespace System.Data.Common
             {
                 ReplacePasswordPwd(out connectionString, false);
             }
-            return ((null != connectionString) ? connectionString : "");
+            return connectionString ?? "";
         }
 
         internal bool HasPersistablePassword
@@ -307,8 +307,7 @@ namespace System.Data.Common
 
         public string? ConvertValueToString(string keyName, string? defaultValue)
         {
-            string? value = (string?)_parsetable[keyName];
-            return ((null != value) ? value : defaultValue);
+            return (string?)_parsetable[keyName] ?? defaultValue;
         }
 
         private static bool CompareInsensitiveInvariant(string strvalue, string strconst)
@@ -408,7 +407,7 @@ namespace System.Data.Common
                 //    continue;
                 //}
 
-                // There is a set of keywords we explictly do NOT want to expand |DataDirectory| on
+                // There is a set of keywords we explicitly do NOT want to expand |DataDirectory| on
                 if (UseOdbcRules)
                 {
                     switch (current.Name)
@@ -525,7 +524,7 @@ namespace System.Data.Common
             return buffer.ToString(index, count - index);
         }
 
-        // transistion states used for parsing
+        // transition states used for parsing
         private enum ParserState
         {
             NothingYet = 1,   //start point

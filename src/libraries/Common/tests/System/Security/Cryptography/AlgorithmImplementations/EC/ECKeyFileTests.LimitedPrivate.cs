@@ -83,7 +83,7 @@ PFzVQfJ396S+yx4IIC4=";
 
             ReadWriteBase64EncryptedPkcs8(
                 base64,
-                Encoding.UTF8.GetBytes("qwerty"),
+                "qwerty"u8.ToArray(),
                 new PbeParameters(
                     PbeEncryptionAlgorithm.Aes256Cbc,
                     HashAlgorithmName.SHA1,

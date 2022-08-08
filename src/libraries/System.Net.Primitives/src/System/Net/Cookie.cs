@@ -41,8 +41,7 @@ namespace System.Net
 
         internal static readonly char[] PortSplitDelimiters = new char[] { ' ', ',', '\"' };
         // Space (' ') should be reserved as well per RFCs, but major web browsers support it and some web sites use it - so we support it too
-        internal static readonly char[] ReservedToName = new char[] { '\t', '\r', '\n', '=', ';', ',' };
-        internal static readonly char[] ReservedToValue = new char[] { ';', ',' };
+        internal const string ReservedToName = "\t\r\n=;,";
 
         private string m_comment = string.Empty; // Do not rename (binary serialization)
         private Uri? m_commentUri; // Do not rename (binary serialization)
@@ -200,7 +199,7 @@ namespace System.Net
             }
             set
             {
-                if (value == true)
+                if (value)
                 {
                     m_expires = DateTime.Now;
                 }
@@ -229,7 +228,7 @@ namespace System.Net
             {
                 if (string.IsNullOrEmpty(value) || !InternalSetName(value))
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", value == null ? "<null>" : value));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", value ?? "<null>"));
                 }
             }
         }
@@ -239,7 +238,7 @@ namespace System.Net
                 || value.StartsWith('$')
                 || value.StartsWith(' ')
                 || value.EndsWith(' ')
-                || value.IndexOfAny(ReservedToName) >= 0)
+                || value.AsSpan().IndexOfAny(ReservedToName) >= 0)
             {
                 m_name = string.Empty;
                 return false;
@@ -347,29 +346,29 @@ namespace System.Net
                 m_name.StartsWith('$') ||
                 m_name.StartsWith(' ') ||
                 m_name.EndsWith(' ') ||
-                m_name.IndexOfAny(ReservedToName) >= 0)
+                m_name.AsSpan().IndexOfAny(ReservedToName) >= 0)
             {
                 if (shouldThrow)
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", m_name == null ? "<null>" : m_name));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", m_name ?? "<null>"));
                 }
                 return false;
             }
 
             // Check the value
             if (m_value == null ||
-                (!(m_value.Length > 2 && m_value.StartsWith('\"') && m_value.EndsWith('\"')) && m_value.IndexOfAny(ReservedToValue) >= 0))
+                (!(m_value.Length > 2 && m_value.StartsWith('\"') && m_value.EndsWith('\"')) && m_value.AsSpan().IndexOfAny(';', ',') >= 0))
             {
                 if (shouldThrow)
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Value", m_value == null ? "<null>" : m_value));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Value", m_value ?? "<null>"));
                 }
                 return false;
             }
 
             // Check Comment syntax
             if (Comment != null && !(Comment.Length > 2 && Comment.StartsWith('\"') && Comment.EndsWith('\"'))
-                && (Comment.IndexOfAny(ReservedToValue) >= 0))
+                && (Comment.AsSpan().IndexOfAny(';', ',') >= 0))
             {
                 if (shouldThrow)
                 {
@@ -380,7 +379,7 @@ namespace System.Net
 
             // Check Path syntax
             if (Path != null && !(Path.Length > 2 && Path.StartsWith('\"') && Path.EndsWith('\"'))
-                && (Path.IndexOfAny(ReservedToValue) >= 0))
+                && (Path.AsSpan().IndexOfAny(';', ',') != -1))
             {
                 if (shouldThrow)
                 {
@@ -392,7 +391,7 @@ namespace System.Net
             // Check/set domain
             //
             // If domain is implicit => assume a) uri is valid, b) just set domain to uri hostname.
-            if (setDefault && m_domain_implicit == true)
+            if (setDefault && m_domain_implicit)
             {
                 m_domain = host;
             }
@@ -413,7 +412,7 @@ namespace System.Net
                     {
                         if (shouldThrow)
                         {
-                            throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, domain == null ? "<null>" : domain));
+                            throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, domain ?? "<null>"));
                         }
                         return false;
                     }
@@ -491,7 +490,7 @@ namespace System.Net
             }
 
             // Check/Set Path
-            if (setDefault && m_path_implicit == true)
+            if (setDefault && m_path_implicit)
             {
                 // This code assumes that the URI path is always valid and contains at least one '/'.
                 switch (m_cookieVariant)

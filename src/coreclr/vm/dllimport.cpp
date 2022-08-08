@@ -991,7 +991,7 @@ public:
         }
         else
         {
-            // Forward interop. Use StubTarget siganture
+            // Forward interop. Use StubTarget signature
             PCCOR_SIGNATURE pCallTargetSig = GetStubTargetMethodSig();
             DWORD           cCallTargetSig = GetStubTargetMethodSigLength();
 
@@ -1010,7 +1010,7 @@ public:
 
         strILStubCode.AppendPrintf("// Code size\t%d (0x%04x)\n", cbCode, cbCode);
         strILStubCode.AppendPrintf(".maxstack %d \n", maxStack);
-        strILStubCode.AppendPrintf(".locals %s\n", strLocalSig.GetUTF8NoConvert());
+        strILStubCode.AppendPrintf(".locals %s\n", strLocalSig.GetUTF8());
 
         m_slIL.LogILStub(jitFlags, &strILStubCode);
 
@@ -3366,7 +3366,7 @@ BOOL NDirect::MarshalingRequired(
 
             default:
             {
-                if (CorTypeInfo::IsPrimitiveType(type) || type == ELEMENT_TYPE_FNPTR)
+                if (CorTypeInfo::IsPrimitiveType(type) || type == ELEMENT_TYPE_PTR || type == ELEMENT_TYPE_FNPTR)
                 {
 
                     if (i > 0)
@@ -4119,7 +4119,8 @@ namespace
         //
         for (int i = 0; i < pParams->m_nParamTokens; ++i)
         {
-            memcpy(pBlobParams, paramInfos[i].pvNativeType, paramInfos[i].cbNativeType);
+            if (paramInfos[i].cbNativeType > 0)
+                memcpy(pBlobParams, paramInfos[i].pvNativeType, paramInfos[i].cbNativeType);
             pBlobParams += paramInfos[i].cbNativeType;
         }
 
@@ -4628,8 +4629,9 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
         //
         // Find method using name + signature
         //
-        StackScratchBuffer buffer;
-        LPCUTF8 szMethodNameUTF8 = methodName.GetUTF8(buffer);
+        StackSString buffer;
+        buffer.SetAndConvertToUTF8(methodName);
+        LPCUTF8 szMethodNameUTF8 = buffer.GetUTF8();
         pStubMD = MemberLoader::FindMethod(stubClassType.GetMethodTable(),
             szMethodNameUTF8,
             pStubSig,
@@ -5455,7 +5457,7 @@ namespace
             void* pvTarget = (void*)QCallResolveDllImport(pMD->GetEntrypointName());
 #ifdef _DEBUG
             CONSISTENCY_CHECK_MSGF(pvTarget != nullptr,
-                ("%s::%s is not registered using DllImportentry macro in qcallentrypoints.cpp",
+                ("%s::%s is not registered using DllImportEntry macro in qcallentrypoints.cpp",
                 pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 #endif
             pMD->SetNDirectTarget(pvTarget);

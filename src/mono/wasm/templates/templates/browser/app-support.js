@@ -3,6 +3,7 @@
 // -*- mode: js; js-indent-level: 4; -*-
 //
 "use strict";
+import createDotnetRuntime from './dotnet.js'
 
 const is_browser = typeof window != "undefined";
 if (!is_browser)
@@ -54,9 +55,12 @@ function set_exit_code(exit_code, reason) {
             console.error(reason);
         else
             console.error(JSON.stringify(reason));
+
+        if (is_browser && document.getElementById("out"))
+            document.getElementById("out").innerHTML = `error: ${reason}`;
     }
 
-    if (forward_console)  {
+    if (runArgs && runArgs.forwardConsole) {
         const stop_when_ws_buffer_empty = () => {
             if (consoleWebSocket.bufferedAmount == 0) {
                 // tell xharness WasmTestMessagesProcessor we are done.
@@ -78,8 +82,8 @@ function stringify_as_error_with_stack(err) {
         return "";
 
     // FIXME:
-    if (App && App.INTERNAL)
-        return App.INTERNAL.mono_wasm_stringify_as_error_with_stack(err);
+    if (App && App.runtime && App.runtime.INTERNAL)
+        return App.runtime.INTERNAL.mono_wasm_stringify_as_error_with_stack(err);
 
     if (err.stack)
         return err.stack;
@@ -92,28 +96,20 @@ function stringify_as_error_with_stack(err) {
 
 let runArgs = {};
 let consoleWebSocket;
-let is_debugging = false;
-let forward_console = false;
 
 function initRunArgs() {
     // set defaults
     runArgs.applicationArguments = runArgs.applicationArguments === undefined ? [] : runArgs.applicationArguments;
     runArgs.workingDirectory = runArgs.workingDirectory === undefined ? '/' : runArgs.workingDirectory;
-    runArgs.environment_variables = runArgs.environment_variables === undefined ? {} : runArgs.environment_variables;
+    runArgs.environmentVariables = runArgs.environmentVariables === undefined ? {} : runArgs.environmentVariables;
     runArgs.runtimeArgs = runArgs.runtimeArgs === undefined ? [] : runArgs.runtimeArgs;
-    runArgs.enableGC = runArgs.enableGC === undefined ? true : runArgs.enableGC;
     runArgs.diagnosticTracing = runArgs.diagnosticTracing === undefined ? false : runArgs.diagnosticTracing;
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? false : runArgs.forwardConsole;
 }
 
 function applyArguments() {
-    initRunArgs();
-
-    is_debugging = runArgs.debugging === true;
-    forward_console = runArgs.forwardConsole === true;
-
-    if (forward_console) {
+    if (!!runArgs.forwardConsole) {
         const methods = ["debug", "trace", "warn", "info", "error"];
         for (let m of methods) {
             if (typeof (console[m]) !== "function") {
@@ -149,95 +145,68 @@ function applyArguments() {
     }
 }
 
-let toAbsoluteUrl = function(possiblyRelativeUrl) { return possiblyRelativeUrl; }
-const anchorTagForAbsoluteUrlConversions = document.createElement('a');
-toAbsoluteUrl = function toAbsoluteUrl(possiblyRelativeUrl) {
-   anchorTagForAbsoluteUrlConversions.href = possiblyRelativeUrl;
-   return anchorTagForAbsoluteUrlConversions.href;
+App.run = async function run(main) {
+    try {
+        const argsResponse = await fetch('./runArgs.json')
+        if (!argsResponse.ok) {
+            console.debug(`could not load ./runArgs.json: ${argsResponse.status}. Ignoring`);
+        } else {
+            runArgs = await argsResponse.json();
+            console.debug(`runArgs: ${JSON.stringify(runArgs)}`);
+        }
+        initRunArgs();
+        applyArguments();
+
+        const runtime = await createDotnetRuntime(({ Module, INTERNAL }) => ({
+            disableDotnet6Compatibility: true,
+            config: null,
+            configSrc: "./mono-config.json",
+            onConfigLoaded: (config) => {
+                if (!config) {
+                    const err = new Error("Could not find ./mono-config.json. Cancelling run");
+                    set_exit_code(1);
+                    throw err;
+                }
+                // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
+                for (let variable in runArgs.environmentVariables) {
+                    config.environmentVariables[variable] = runArgs.environmentVariables[variable];
+                }
+                config.diagnosticTracing = !!runArgs.diagnosticTracing;
+                if (!!runArgs.debugging) {
+                    if (config.debugLevel == 0)
+                        config.debugLevel = -1;
+
+                    config.waitForDebugger = -1;
+                }
+            },
+            onDotnetReady: async () => {
+                let wds = Module.FS.stat(runArgs.workingDirectory);
+                if (wds === undefined || !Module.FS.isDir(wds.mode)) {
+                    set_exit_code(1, `Could not find working directory ${runArgs.working_dir}`);
+                    return;
+                }
+
+                Module.FS.chdir(runArgs.workingDirectory);
+
+                if (runArgs.runtimeArgs.length > 0)
+                    INTERNAL.mono_wasm_set_runtime_options(runArgs.runtimeArgs);
+            },
+            onAbort: (error) => {
+                set_exit_code(1, error);
+            },
+        }));
+        App.runtime = runtime;
+        App.runArgs = runArgs;
+        App.main = main;
+        if (App.main) {
+            let exit_code = await App.main(runArgs.applicationArguments);
+            set_exit_code(exit_code ?? 0);
+        }
+        else {
+            set_exit_code(1, "WASM ERROR: no App.main defined");
+        }
+    }
+    catch (err) {
+        set_exit_code(2, err);
+    }
 }
-
-let loadDotnetPromise = import('/dotnet.js');
-let argsPromise = fetch('/runArgs.json')
-                    .then(async (response) => {
-                        if (!response.ok) {
-                            console.debug(`could not load /args.json: ${response.status}. Ignoring`);
-                        } else {
-                            runArgs = await response.json();
-                            console.debug(`runArgs: ${JSON.stringify(runArgs)}`);
-                        }
-                    })
-                    .catch(error => console.error(`Failed to load args: ${stringify_as_error_with_stack(error)}`));
-
-Promise.all([ argsPromise, loadDotnetPromise ]).then(async ([ _, { default: createDotnetRuntime } ]) => {
-    applyArguments();
-
-    return createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
-        disableDotnet6Compatibility: true,
-        config: null,
-        configSrc: "./mono-config.json",
-        locateFile: (path, prefix) => {
-            return toAbsoluteUrl(prefix + path);
-        },
-        onConfigLoaded: (config) => {
-            if (!Module.config) {
-                const err = new Error("Could not find ./mono-config.json. Cancelling run");
-                set_exit_code(1);
-                throw err;
-            }
-            // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-            for (let variable in runArgs.runtimeArgs) {
-                config.environment_variables[variable] = runArgs.runtimeArgs[variable];
-            }
-            config.diagnostic_tracing = !!runArgs.diagnosticTracing;
-            if (is_debugging) {
-                if (config.debug_level == 0)
-                    config.debug_level = -1;
-
-                config.wait_for_debugger = -1;
-            }
-        },
-        preRun: () => {
-            if (!runArgs.enableGC) {
-                INTERNAL.mono_wasm_enable_on_demand_gc(0);
-            }
-        },
-        onDotnetReady: () => {
-            let wds = Module.FS.stat(runArgs.workingDirectory);
-            if (wds === undefined || !Module.FS.isDir(wds.mode)) {
-                set_exit_code(1, `Could not find working directory ${runArgs.working_dir}`);
-                return;
-            }
-
-            Module.FS.chdir(runArgs.workingDirectory);
-
-            if (runArgs.runtimeArgs.length > 0)
-                INTERNAL.mono_wasm_set_runtime_options(runArgs.runtimeArgs);
-
-            console.info("Initializing.....");
-            Object.assign(App, { MONO, INTERNAL, BINDING, Module, runArgs });
-
-            try {
-                if (App.init)
-                {
-                    let ret = App.init();
-                    Promise.resolve(ret).then(function (code) { set_exit_code(code ?? 0); });
-                }
-                else
-                {
-                    console.log("WASM ERROR: no App.init defined");
-                    set_exit_code(1, "WASM ERROR: no App.init defined");
-                }
-            } catch (err) {
-                console.log(`WASM ERROR ${err}`);
-                if (is_browser && document.getElementById("out"))
-                    document.getElementById("out").innerHTML = `error: ${err}`;
-                set_exit_code(1, err);
-            }
-        },
-        onAbort: (error) => {
-            set_exit_code(1, stringify_as_error_with_stack(new Error()));
-        },
-    }));
-}).catch(function (err) {
-    set_exit_code(1, "failed to load the dotnet.js file.\n" + stringify_as_error_with_stack(err));
-});

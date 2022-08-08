@@ -392,7 +392,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private static int SingleToInt32Bits(float value)
         {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             return BitConverter.SingleToInt32Bits(value);
 #else
             return Unsafe.As<float, int>(ref value);
@@ -464,7 +464,7 @@ namespace System.Text.Json.Serialization.Tests
             string json;
             char fillChar = 'x';
 
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             json = string.Create(stringLength, fillChar, (chars, fillChar) =>
             {
                 chars.Fill(fillChar);
@@ -670,8 +670,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("\\u0032\\u0034\\u003A\\u0030\\u0030\\u003A\\u0030\\u0030")]
         [InlineData("00:60:00")]
         [InlineData("00:00:60")]
+        [InlineData("-00:00:00")]
         [InlineData("00:00:00.00000009")]
         [InlineData("900000000.00:00:00")]
+        [InlineData("1.00:00:00")]
+        [InlineData("0.00:00:00")]
         [InlineData("1:00:00")] // 'g' Format
         [InlineData("1:2:00:00")] // 'g' Format
         [InlineData("+00:00:00")]

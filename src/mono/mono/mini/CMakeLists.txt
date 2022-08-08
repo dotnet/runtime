@@ -209,6 +209,13 @@ set(arm_sources
     tramp-arm-gsharedvt.c
     cpu-arm.h)
 
+set(riscv64_sources
+    mini-riscv.c
+    mini-riscv.h
+    exceptions-riscv.c
+    tramp-riscv.c
+    cpu-riscv64.h)
+
 set(s390x_sources
     mini-s390x.c
     mini-s390x.h
@@ -222,6 +229,13 @@ set(wasm_sources
     exceptions-wasm.c
     cpu-wasm.h)
 
+set(powerpc64_sources
+    mini-ppc.c
+    mini-ppc.h
+    exceptions-ppc.c
+    tramp-ppc.c
+    cpu-ppc64.h)
+
 if(TARGET_AMD64)
 set(arch_sources ${amd64_sources})
 elseif(TARGET_X86)
@@ -230,10 +244,14 @@ elseif(TARGET_ARM64)
 set(arch_sources ${arm64_sources})
 elseif(TARGET_ARM)
 set(arch_sources ${arm_sources})
+elseif(TARGET_RISCV64)
+set(arch_sources ${riscv64_sources})
 elseif(TARGET_S390X)
 set(arch_sources ${s390x_sources})
 elseif(TARGET_WASM)
 set(arch_sources ${wasm_sources})
+elseif(TARGET_POWERPC64)
+set(arch_sources ${powerpc64_sources})
 endif()
 
 set(darwin_sources
@@ -280,6 +298,12 @@ if(ENABLE_INTERP_LIB)
 add_library(mono-ee-interp STATIC "${interp_sources}")
 target_link_libraries(mono-ee-interp monoapi)
 install(TARGETS mono-ee-interp LIBRARY)
+if(HOST_WASM AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+# Always optimize the interpreter, even in Debug builds.  Unoptimized interp_exec_method and
+# generate_code are so big that some browsers overflow the stack with even a few recursive
+# invocations (e.g. during .cctor initialization)
+target_compile_options(mono-ee-interp PRIVATE -O1)
+endif()
 endif()
 
 if(ENABLE_LLVM)
@@ -467,6 +491,13 @@ add_custom_command(
 )
 
 add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-riscv64.h
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_RISCV64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-riscv64.h riscv64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-riscv64.mdesc
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-riscv64.mdesc
+  VERBATIM
+)
+
+add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-s390x.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_S390X ${CMAKE_CURRENT_SOURCE_DIR} cpu-s390x.h s390x_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-s390x.mdesc
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-s390x.mdesc
@@ -477,6 +508,12 @@ add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-wasm.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_WASM ${CMAKE_CURRENT_SOURCE_DIR} cpu-wasm.h wasm_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-wasm.mdesc
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-wasm.mdesc
+  VERBATIM
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-ppc64.h
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_POWERPC64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-ppc64.h ppc64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-ppc64.mdesc
   VERBATIM
 )
 

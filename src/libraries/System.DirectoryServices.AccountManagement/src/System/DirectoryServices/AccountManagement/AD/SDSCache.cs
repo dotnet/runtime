@@ -171,8 +171,8 @@ namespace System.DirectoryServices.AccountManagement
                                 contextName,
                                 null,
                                 contextOptions,
-                                (credentials != null ? credentials.UserName : null),
-                                (credentials != null ? credentials.Password : null)
+                                credentials?.UserName,
+                                credentials?.Password
                                 );
 
                 lock (_tableLock)
@@ -188,7 +188,7 @@ namespace System.DirectoryServices.AccountManagement
                     // opposite order and the other thread woke up before we inserted the PrincipalContext, it would
                     // just block as soon as it tries to acquire the tableLock that we're currently holding.)
                     bool f = placeHolder.contextReadyEvent.Set();
-                    Debug.Assert(f == true);
+                    Debug.Assert(f);
                 }
 
                 return ctx;

@@ -135,9 +135,6 @@
   <data name="EnvironmentNameChangeNotSupoprted" xml:space="preserve">
     <value>The environment name changed from "{0}" to "{1}". Changing host configuration is not supported.</value>
   </data>
-  <data name="HostAbortedExceptionMessage" xml:space="preserve">
-    <value>The host was aborted.</value>
-  </data>
   <data name="IHostApplicationLifetimeReplacementNotSupported" xml:space="preserve">
     <value>Replacing IHostApplicationLifetime is not supported.</value>
   </data>

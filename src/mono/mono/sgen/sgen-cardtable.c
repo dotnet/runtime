@@ -297,9 +297,8 @@ sgen_card_table_find_address_with_cards (char *cards_start, guint8 *cards, char 
 static void
 update_mod_union (guint8 *dest, guint8 *start_card, size_t num_cards)
 {
-	int i;
 	/* Marking from another thread can happen while we mark here */
-	for (i = 0; i < num_cards; ++i) {
+	for (gsize i = 0; i < num_cards; ++i) {
 		if (start_card [i])
 			dest [i] = 1;
 	}

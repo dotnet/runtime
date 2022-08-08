@@ -20,7 +20,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerOptionCollection Options
         {
-            get => _options ?? (_options = new DesignerOptionCollection(this, null, string.Empty, null));
+            get => _options ??= new DesignerOptionCollection(this, null, string.Empty, null);
         }
 
         /// <summary>
@@ -132,10 +132,7 @@ namespace System.ComponentModel.Design
                 if (Parent != null)
                 {
                     parent!._properties = null;
-                    if (Parent._children == null)
-                    {
-                        Parent._children = new ArrayList(1);
-                    }
+                    Parent._children ??= new ArrayList(1);
                     Parent._children.Add(this);
                 }
             }
@@ -264,10 +261,7 @@ namespace System.ComponentModel.Design
                 if (_children == null)
                 {
                     _service.PopulateOptionCollection(this);
-                    if (_children == null)
-                    {
-                        _children = new ArrayList(1);
-                    }
+                    _children ??= new ArrayList(1);
                 }
             }
 

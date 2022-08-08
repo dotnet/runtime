@@ -428,6 +428,7 @@ namespace System.Numerics
         /// <param name="value2">The second vector.</param>
         /// <returns>The minimized vector.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Min(Vector3 value1, Vector3 value2)
         {
             return new Vector3(

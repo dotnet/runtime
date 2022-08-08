@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+using System.Collections;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Collections;
-
     internal sealed class Stylesheet
     {
         private readonly ArrayList _imports = new ArrayList();
@@ -148,11 +148,7 @@ namespace System.Xml.Xsl.XsltOld
         internal void AddAttributeSet(AttributeSetAction attributeSet)
         {
             Debug.Assert(attributeSet.Name != null);
-            if (_attributeSetTable == null)
-            {
-                _attributeSetTable = new Hashtable();
-            }
-            Debug.Assert(_attributeSetTable != null);
+            _attributeSetTable ??= new Hashtable();
 
             if (_attributeSetTable.ContainsKey(attributeSet.Name) == false)
             {
@@ -190,16 +186,8 @@ namespace System.Xml.Xsl.XsltOld
 
             if (template.MatchKey != Compiler.InvalidQueryKey)
             {
-                if (_modeManagers == null)
-                {
-                    _modeManagers = new Hashtable();
-                }
-                Debug.Assert(_modeManagers != null);
-
-                if (mode == null)
-                {
-                    mode = XmlQualifiedName.Empty;
-                }
+                _modeManagers ??= new Hashtable();
+                mode ??= XmlQualifiedName.Empty;
 
                 TemplateManager? manager = (TemplateManager?)_modeManagers[mode];
 
@@ -314,12 +302,7 @@ namespace System.Xml.Xsl.XsltOld
             // If unsuccessful, search in imported documents from backwards
             //
 
-            if (action == null)
-            {
-                action = FindTemplateImports(processor, navigator, mode);
-            }
-
-            return action;
+            return action ?? FindTemplateImports(processor, navigator, mode);
         }
 
         internal TemplateAction? FindTemplateImports(Processor processor, XPathNavigator navigator, XmlQualifiedName mode)
@@ -374,10 +357,7 @@ namespace System.Xml.Xsl.XsltOld
             // If unsuccessful, search in imported documents from backwards
             //
 
-            if (action == null)
-            {
-                action = FindTemplateImports(processor, navigator);
-            }
+            action ??= FindTemplateImports(processor, navigator);
 
             return action;
         }

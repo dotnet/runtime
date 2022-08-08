@@ -11,6 +11,10 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
@@ -60,6 +64,36 @@ namespace System.Drawing
 
         public delegate bool DrawImageAbort(IntPtr callbackdata);
 
+#if NET7_0_OR_GREATER
+        [CustomMarshaller(typeof(DrawImageAbort), MarshalMode.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
+        internal static class DrawImageAbortMarshaller
+        {
+            internal unsafe struct KeepAliveMarshaller
+            {
+                private delegate Interop.BOOL DrawImageAbortNative(IntPtr callbackdata);
+                private DrawImageAbortNative? _managed;
+                private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
+                public void FromManaged(DrawImageAbort? managed)
+                {
+                    _managed = managed is null ? null : data => managed(data) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                    _nativeFunction = _managed is null ? null : (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+                }
+
+                public delegate* unmanaged<IntPtr, Interop.BOOL> ToUnmanaged()
+                {
+                    return _nativeFunction;
+                }
+
+                public void OnInvoked()
+                {
+                    GC.KeepAlive(_managed);
+                }
+
+                public void Free() { }
+            }
+        }
+#endif
+
         /// <summary>
         /// Callback for EnumerateMetafile methods.
         /// This method can then call Metafile.PlayRecord to play the record that was just enumerated.
@@ -75,7 +109,43 @@ namespace System.Drawing
             int flags,
             int dataSize,
             IntPtr data,
-            PlayRecordCallback callbackData);
+            PlayRecordCallback? callbackData);
+
+#if NET7_0_OR_GREATER
+        [CustomMarshaller(typeof(EnumerateMetafileProc), MarshalMode.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
+        internal static class EnumerateMetafileProcMarshaller
+        {
+            internal unsafe struct KeepAliveMarshaller
+            {
+                private delegate Interop.BOOL EnumerateMetafileProcNative(
+                    EmfPlusRecordType recordType,
+                    int flags,
+                    int dataSize,
+                    IntPtr data,
+                    IntPtr callbackData);
+                private EnumerateMetafileProcNative? _managed;
+                private delegate* unmanaged<IntPtr, Interop.BOOL> _nativeFunction;
+                public void FromManaged(EnumerateMetafileProc? managed)
+                {
+                    _managed = managed is null ? null : (recordType, flags, dataSize, data, callbackData) =>
+                        managed(recordType, flags, dataSize, data, callbackData == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer<PlayRecordCallback>(callbackData)) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                    _nativeFunction = _managed is null ? null : (delegate* unmanaged<IntPtr, Interop.BOOL>)Marshal.GetFunctionPointerForDelegate(_managed);
+                }
+
+                public delegate* unmanaged<IntPtr, Interop.BOOL> ToUnmanaged()
+                {
+                    return _nativeFunction;
+                }
+
+                public void OnInvoked()
+                {
+                    GC.KeepAlive(_managed);
+                }
+
+                public void Free() {}
+            }
+        }
+#endif
 
         /// <summary>
         /// Constructor to initialize this object from a native GDI+ Graphics pointer.
@@ -360,7 +430,7 @@ namespace System.Drawing
             }
             set
             {
-                // Libgdiplus doesn't perform argument validation, so do this here for compatability.
+                // Libgdiplus doesn't perform argument validation, so do this here for compatibility.
                 if (value <= 0 || value > 1000000032)
                     throw new ArgumentException(SR.GdiplusInvalidParameter);
 
@@ -771,7 +841,7 @@ namespace System.Drawing
             ArgumentNullException.ThrowIfNull(matrix);
 
             // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
-            // with the libgdiplus backend. Simulate a nop for compatability with GDI+.
+            // with the libgdiplus backend. Simulate a nop for compatibility with GDI+.
             if (matrix.NativeMatrix == IntPtr.Zero)
                 return;
 

@@ -84,6 +84,8 @@ namespace Internal.JitInterface
         CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases
                                            // has been taken care of by the inlined check
 
+        CORINFO_HELP_ISINSTANCEOF_EXCEPTION,
+
         CORINFO_HELP_BOX,               // Fast box helper. Only possible exception is OutOfMemory
         CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>
         CORINFO_HELP_UNBOX,
@@ -91,7 +93,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_GETREFANY,         // Extract the byref from a TypedReference, checking that it is the expected type
 
         CORINFO_HELP_ARRADDR_ST,        // assign to element of object array with type-checking
-        CORINFO_HELP_LDELEMA_REF,       // does a precise type comparision and returns address
+        CORINFO_HELP_LDELEMA_REF,       // does a precise type comparison and returns address
 
         /* Exceptions */
 
@@ -271,6 +273,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_THROW_NOT_IMPLEMENTED,             // throw NotImplementedException
         CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED,      // throw PlatformNotSupportedException
         CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED,          // throw TypeNotSupportedException
+        CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION, // throw AmbiguousResolutionException for failed static virtual method resolution
 
         CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
         CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
@@ -285,9 +288,14 @@ namespace Internal.JitInterface
         CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
         CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
+        CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
+
         CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
         CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
-        CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
+        CORINFO_HELP_DELEGATEPROFILE32,         // Update 32-bit method profile for a delegate call site
+        CORINFO_HELP_DELEGATEPROFILE64,         // Update 64-bit method profile for a delegate call site
+        CORINFO_HELP_VTABLEPROFILE32,           // Update 32-bit method profile for a vtable call site
+        CORINFO_HELP_VTABLEPROFILE64,           // Update 64-bit method profile for a vtable call site
 
         CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
         CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer

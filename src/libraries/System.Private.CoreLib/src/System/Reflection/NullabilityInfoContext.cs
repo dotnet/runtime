@@ -325,7 +325,14 @@ namespace System.Reflection
         private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, NullableAttributeStateParser parser)
         {
             int index = 0;
-            return GetNullabilityInfo(memberInfo, type, parser, ref index);
+            NullabilityInfo nullability = GetNullabilityInfo(memberInfo, type, parser, ref index);
+
+            if (!type.IsValueType && nullability.ReadState != NullabilityState.Unknown)
+            {
+                TryLoadGenericMetaTypeNullability(memberInfo, nullability);
+            }
+
+            return nullability;
         }
 
         private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, NullableAttributeStateParser parser, ref int index)
@@ -379,14 +386,7 @@ namespace System.Reflection
                 }
             }
 
-            NullabilityInfo nullability = new NullabilityInfo(type, state, state, elementState, genericArgumentsState);
-
-            if (!type.IsValueType && state != NullabilityState.Unknown)
-            {
-                TryLoadGenericMetaTypeNullability(memberInfo, nullability);
-            }
-
-            return nullability;
+            return new NullabilityInfo(type, state, state, elementState, genericArgumentsState);
         }
 
         private static NullableAttributeStateParser CreateParser(IList<CustomAttributeData> customAttributes)

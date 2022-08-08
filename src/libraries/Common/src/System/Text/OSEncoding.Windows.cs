@@ -178,17 +178,7 @@ namespace System.Text
             return (int)charCount;
         }
 
-        public override string EncodingName
-        {
-            get
-            {
-                if (_encodingName == null)
-                {
-                    _encodingName = "Codepage - " + _codePage.ToString();
-                }
-                return _encodingName;
-            }
-        }
+        public override string EncodingName => _encodingName ??= $"Codepage - {_codePage}";
 
         public override string WebName
         {

@@ -1,0 +1,6 @@
+<Project>
+  <!-- Change AfterTargets back to 'UpdateTargetingAndRuntimePack' when reenabling pack injection -->
+  <Target Name="PrintRuntimePackLocation" AfterTargets="ResolveFrameworkReferences">
+    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
+  </Target>
+</Project>

@@ -86,7 +86,7 @@ public:
         } CONTRACTL_END;
 
         DWORD spinCount = 0;
-        while(FastInterlockExchange(&m_lock, 0) != -1)
+        while(InterlockedExchange(&m_lock, 0) != -1)
         {
             GCX_PREEMP();
             __SwitchToThread(0, spinCount++);
@@ -1112,7 +1112,7 @@ extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
         break;
     default:
         // It should be some member of the enumeration.
-        _ASSERTE_ALL_BUILDS(__FILE__, false);
+        _ASSERTE_ALL_BUILDS(false);
         break;
     }
 #endif // FEATURE_COUNT_GC_WRITE_BARRIERS

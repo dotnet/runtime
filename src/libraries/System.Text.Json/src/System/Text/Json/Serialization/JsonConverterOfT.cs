@@ -14,13 +14,26 @@ namespace System.Text.Json.Serialization
     public abstract partial class JsonConverter<T> : JsonConverter
     {
         /// <summary>
-        /// When overidden, constructs a new <see cref="JsonConverter{T}"/> instance.
+        /// When overridden, constructs a new <see cref="JsonConverter{T}"/> instance.
         /// </summary>
-        protected internal JsonConverter()
+        protected internal JsonConverter() : this(initialize: true)
+        { }
+
+        internal JsonConverter(bool initialize)
         {
             IsValueType = typeof(T).IsValueType;
             IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
 
+            // Initialize uses abstract members, in order for them to be initialized correctly
+            // without throwing we might need to delay call to Initialize
+            if (initialize)
+            {
+                Initialize();
+            }
+        }
+
+        private protected void Initialize()
+        {
             if (HandleNull)
             {
                 HandleNullOnRead = true;
@@ -54,15 +67,30 @@ namespace System.Text.Json.Serialization
 
         internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Value;
 
-        internal sealed override JsonPropertyInfo CreateJsonPropertyInfo()
-        {
-            return new JsonPropertyInfo<T>();
-        }
-
-        internal override sealed JsonParameterInfo CreateJsonParameterInfo()
+        internal sealed override JsonParameterInfo CreateJsonParameterInfo()
         {
             return new JsonParameterInfo<T>();
         }
+
+        internal sealed override JsonConverter<TTarget> CreateCastingConverter<TTarget>()
+        {
+            if (this is JsonConverter<TTarget> conv)
+            {
+                return conv;
+            }
+
+            JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(this, typeof(TTarget));
+
+            // Avoid layering casting converters by consulting any source converters directly.
+            return
+                SourceConverterForCastingConverter?.CreateCastingConverter<TTarget>()
+                ?? new CastingConverter<TTarget, T>(this);
+        }
+
+        /// <summary>
+        /// Set if this converter is itself a casting converter.
+        /// </summary>
+        internal virtual JsonConverter? SourceConverterForCastingConverter => null;
 
         internal override Type? KeyType => null;
 
@@ -200,6 +228,20 @@ namespace System.Text.Json.Serialization
             bool isContinuation = state.IsContinuation;
             bool success;
 
+            if (
+#if NETCOREAPP
+                !typeof(T).IsValueType &&
+#endif
+                CanBePolymorphic)
+            {
+                // Special case object converters since they don't
+                // require the expensive ReadStack.Push()/Pop() operations.
+                Debug.Assert(this is ObjectConverter);
+                success = OnTryRead(ref reader, typeToConvert, options, ref state, out value);
+                Debug.Assert(success);
+                return true;
+            }
+
 #if DEBUG
             // DEBUG: ensure push/pop operations preserve stack integrity
             JsonTypeInfo originalJsonTypeInfo = state.Current.JsonTypeInfo;
@@ -246,14 +288,14 @@ namespace System.Text.Json.Serialization
             return success;
         }
 
-        internal override sealed bool OnTryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
+        internal sealed override bool OnTryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
         {
             bool success = OnTryRead(ref reader, TypeToConvert, options, ref state, out T? typedValue);
             value = typedValue;
             return success;
         }
 
-        internal override sealed bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
+        internal sealed override bool TryReadAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, out object? value)
         {
             bool success = TryRead(ref reader, TypeToConvert, options, ref state, out T? typedValue);
             value = typedValue;
@@ -318,7 +360,7 @@ namespace System.Text.Json.Serialization
                 state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted)
             {
                 JsonTypeInfo jsonTypeInfo = state.PeekNestedJsonTypeInfo();
-                Debug.Assert(jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.TypeToConvert == TypeToConvert);
+                Debug.Assert(jsonTypeInfo.Converter.TypeToConvert == TypeToConvert);
 
                 bool canBePolymorphic = CanBePolymorphic || jsonTypeInfo.PolymorphicTypeResolver is not null;
                 JsonConverter? polymorphicConverter = canBePolymorphic ?
@@ -528,7 +570,11 @@ namespace System.Text.Json.Serialization
         /// <remarks>Method should be overridden in custom converters of types used in deserialized dictionary keys.</remarks>
         public virtual T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (!IsInternalConverter && options.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
+            if (!IsInternalConverter &&
+                options.SerializerContext is null && // For consistency do not return any default converters for
+                                                     // options instances linked to a JsonSerializerContext,
+                                                     // even if the default converters might have been rooted.
+                DefaultJsonTypeInfoResolver.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
             {
                 // .NET 5 backward compatibility: hardcode the default converter for primitive key serialization.
                 Debug.Assert(defaultConverter.IsInternalConverter && defaultConverter is JsonConverter<T>);
@@ -562,7 +608,11 @@ namespace System.Text.Json.Serialization
         /// <remarks>Method should be overridden in custom converters of types used in serialized dictionary keys.</remarks>
         public virtual void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
-            if (!IsInternalConverter && options.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
+            if (!IsInternalConverter &&
+                options.SerializerContext is null && // For consistency do not return any default converters for
+                                                     // options instances linked to a JsonSerializerContext,
+                                                     // even if the default converters might have been rooted.
+                DefaultJsonTypeInfoResolver.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
             {
                 // .NET 5 backward compatibility: hardcode the default converter for primitive key serialization.
                 Debug.Assert(defaultConverter.IsInternalConverter && defaultConverter is JsonConverter<T>);

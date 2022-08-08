@@ -14,7 +14,7 @@ To manage the dependencies, you can install them via terminal or using Android S
 
 OpenJDK can be installed on Linux (Ubuntu) using `apt-get`:
 ```bash
-sudo apt-get install openjdk-8 zip unzip
+sudo apt-get install openjdk-8-jdk zip unzip
 ```
 
 Android SDK and NDK can be automatically installed via the following script:

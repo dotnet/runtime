@@ -20,6 +20,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             string skid = e.SubjectKeyIdentifier;
             Assert.Null(skid);
+
+            Assert.Throws<CryptographicException>(() => e.SubjectKeyIdentifierBytes);
         }
 
         [Theory]
@@ -55,6 +57,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             string skid = e.SubjectKeyIdentifier;
             Assert.Equal("01020304", skid);
+
+            AssertExtensions.SequenceEqual(sk, e.SubjectKeyIdentifierBytes.Span);
         }
 
         [Fact]
@@ -69,6 +73,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             e = new X509SubjectKeyIdentifierExtension(new AsnEncodedData(rawData), false);
             string skid = e.SubjectKeyIdentifier;
             Assert.Equal("01ABCD", skid);
+            Assert.Equal(skid, Convert.ToHexString(e.SubjectKeyIdentifierBytes.Span));
+
+            ReadOnlyMemory<byte> ski1 = e.SubjectKeyIdentifierBytes;
+            ReadOnlyMemory<byte> ski2 = e.SubjectKeyIdentifierBytes;
+            Assert.True(ski1.Span == ski2.Span, "Two calls to SubjectKeyIdentifierBytes return the same buffer");
         }
 
         [Fact]
@@ -89,6 +98,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             e = new X509SubjectKeyIdentifierExtension(new AsnEncodedData(rawData), false);
             string skid = e.SubjectKeyIdentifier;
             Assert.Equal("5971A65A334DDA980780FF841EBE87F9723241F2", skid);
+            Assert.Equal(skid, Convert.ToHexString(e.SubjectKeyIdentifierBytes.Span));
         }
 
         [Fact]
@@ -134,8 +144,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             ext = new X509SubjectKeyIdentifierExtension(new AsnEncodedData(rawData), false);
             string skid = ext.SubjectKeyIdentifier;
             Assert.Equal("5971A65A334DDA980780FF841EBE87F9723241F2", skid);
+            Assert.Equal(skid, Convert.ToHexString(ext.SubjectKeyIdentifierBytes.Span));
         }
-        
+
         private static void EncodeDecode(
             byte[] certBytes,
             X509SubjectKeyIdentifierHashAlgorithm algorithm,
@@ -158,6 +169,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             ext = new X509SubjectKeyIdentifierExtension(new AsnEncodedData(rawData), critical);
             Assert.Equal(expectedIdentifier, ext.SubjectKeyIdentifier);
+            Assert.Equal(expectedIdentifier, Convert.ToHexString(ext.SubjectKeyIdentifierBytes.Span));
+
+            ReadOnlyMemory<byte> ski1 = ext.SubjectKeyIdentifierBytes;
+            ReadOnlyMemory<byte> ski2 = ext.SubjectKeyIdentifierBytes;
+            Assert.True(ski1.Span == ski2.Span, "Two calls to SubjectKeyIdentifierBytes return the same buffer");
         }
     }
 }

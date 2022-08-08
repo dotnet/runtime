@@ -7,8 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Data.Odbc
 {
     internal abstract class OdbcHandle : SafeHandle
@@ -167,9 +165,9 @@ namespace System.Data.Odbc
             // If we ended up getting released, then we have to release
             // our reference on our parent.
             OdbcHandle? parentHandle = _parentHandle;
-            _parentHandle = null;
-            if (null != parentHandle)
+            if (parentHandle != null)
             {
+                _parentHandle = null;
                 parentHandle.DangerousRelease();
             }
             return true;

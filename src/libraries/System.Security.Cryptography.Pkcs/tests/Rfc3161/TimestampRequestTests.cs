@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static void BuildExpectedRequest_FromData(bool viaSpan)
         {
             Rfc3161TimestampRequest request = Rfc3161TimestampRequest.CreateFromData(
-                System.Text.Encoding.ASCII.GetBytes("Hello, world!!"),
+                "Hello, world!!"u8,
                 HashAlgorithmName.SHA256,
                 requestSignerCertificates: true);
 

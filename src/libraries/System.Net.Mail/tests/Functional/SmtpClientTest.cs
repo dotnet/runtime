@@ -15,6 +15,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Systen.Net.Mail.Tests;
+using System.Net.Test.Common;
 using Xunit;
 
 namespace System.Net.Mail.Tests
@@ -24,11 +25,13 @@ namespace System.Net.Mail.Tests
     {
         private SmtpClient _smtp;
 
+        public static bool IsNtlmInstalled => Capability.IsNtlmInstalled();
+
         private SmtpClient Smtp
         {
             get
             {
-                return _smtp ?? (_smtp = new SmtpClient());
+                return _smtp ??= new SmtpClient();
             }
         }
 
@@ -455,6 +458,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73447", TestPlatforms.AnyUnix)]
         public async Task SendMailAsync_CanBeCanceled_CancellationToken()
         {
             using var server = new LoopbackSmtpServer();
@@ -522,6 +526,56 @@ namespace System.Net.Mail.Tests
             // There is a latency between send/receive.
             quitReceived.Wait(TimeSpan.FromSeconds(30));
             Assert.True(quitMessageReceived, "QUIT message not received");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task TestMultipleMailDelivery(bool asyncSend)
+        {
+            using var server = new LoopbackSmtpServer();
+            using SmtpClient client = server.CreateClient();
+            client.Timeout = 10000;
+            client.Credentials = new NetworkCredential("foo", "bar");
+            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
+
+            for (var i = 0; i < 5; i++)
+            {
+                if (asyncSend)
+                {
+                    using var cts = new CancellationTokenSource(10000);
+                    await client.SendMailAsync(msg, cts.Token);
+                }
+                else
+                {
+                    client.Send(msg);
+                }
+
+                Assert.Equal("<foo@example.com>", server.MailFrom);
+                Assert.Equal("<bar@example.com>", server.MailTo);
+                Assert.Equal("hello", server.Message.Subject);
+                Assert.Equal("howdydoo", server.Message.Body);
+                Assert.Equal(GetClientDomain(), server.ClientDomain);
+                Assert.Equal("foo", server.Username);
+                Assert.Equal("bar", server.Password);
+                Assert.Equal("LOGIN", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        [ConditionalFact(nameof(IsNtlmInstalled))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst)]
+        public void TestGssapiAuthentication()
+        {
+            using var server = new LoopbackSmtpServer();
+            server.AdvertiseGssapiAuthSupport = true;
+            server.ExpectedGssapiCredential = new NetworkCredential("foo", "bar");
+            using SmtpClient client = server.CreateClient();
+            client.Credentials = server.ExpectedGssapiCredential;
+            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
+
+            client.Send(msg);
+
+            Assert.Equal("GSSAPI", server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
         }
     }
 }

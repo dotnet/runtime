@@ -15,9 +15,6 @@ namespace System.Numerics
           ITrigonometricFunctions<TSelf>
         where TSelf : IFloatingPointIeee754<TSelf>
     {
-        /// <summary>Gets the mathematical constant <c>e</c>.</summary>
-        static abstract TSelf E { get; }
-
         /// <summary>Gets the smallest value such that can be added to <c>0</c> that does not result in <c>0</c>.</summary>
         static abstract TSelf Epsilon { get; }
 
@@ -30,18 +27,26 @@ namespace System.Numerics
         /// <summary>Gets a value that represents negative <c>zero</c>.</summary>
         static abstract TSelf NegativeZero { get; }
 
-        /// <summary>Gets the mathematical constant <c>pi</c>.</summary>
-        static abstract TSelf Pi { get; }
-
         /// <summary>Gets a value that represents positive <c>infinity</c>.</summary>
         static abstract TSelf PositiveInfinity { get; }
 
-        /// <summary>Gets the mathematical constant <c>tau</c>.</summary>
-        static abstract TSelf Tau { get; }
+        /// <summary>Computes the arc-tangent for the quotient of two values.</summary>
+        /// <param name="y">The y-coordinate of a point.</param>
+        /// <param name="x">The x-coordinate of a point.</param>
+        /// <returns>The arc-tangent of <paramref name="y" /> divided-by <paramref name="x" />.</returns>
+        /// <remarks>This computes <c>arctan(y / x)</c> in the interval <c>[-π, +π]</c> radians.</remarks>
+        static abstract TSelf Atan2(TSelf y, TSelf x);
 
-        /// <summary>Decrements a value to the smallest value that compares less than a given value.</summary>
+        /// <summary>Computes the arc-tangent for the quotient of two values and divides the result by <c>pi</c>.</summary>
+        /// <param name="y">The y-coordinate of a point.</param>
+        /// <param name="x">The x-coordinate of a point.</param>
+        /// <returns>The arc-tangent of <paramref name="y" /> divided-by <paramref name="x" />, divided by <c>pi</c>.</returns>
+        /// <remarks>This computes <c>arctan(y / x) / π</c> in the interval <c>[-1, +1]</c>.</remarks>
+        static abstract TSelf Atan2Pi(TSelf y, TSelf x);
+
+        /// <summary>Decrements a value to the largest value that compares less than a given value.</summary>
         /// <param name="x">The value to be bitwise decremented.</param>
-        /// <returns>The smallest value that compares less than <paramref name="x" />.</returns>
+        /// <returns>The largest value that compares less than <paramref name="x" />.</returns>
         static abstract TSelf BitDecrement(TSelf x);
 
         /// <summary>Increments a value to the smallest value that compares greater than a given value.</summary>
@@ -70,12 +75,12 @@ namespace System.Numerics
         /// <summary>Computes an estimate of the reciprocal of a value.</summary>
         /// <param name="x">The value whose estimate of the reciprocal is to be computed.</param>
         /// <returns>An estimate of the reciprocal of <paramref name="x" />.</returns>
-        static abstract TSelf ReciprocalEstimate(TSelf x);
+        static virtual TSelf ReciprocalEstimate(TSelf x) => TSelf.One / x;
 
         /// <summary>Computes an estimate of the reciprocal square root of a value.</summary>
         /// <param name="x">The value whose estimate of the reciprocal square root is to be computed.</param>
         /// <returns>An estimate of the reciprocal square root of <paramref name="x" />.</returns>
-        static abstract TSelf ReciprocalSqrtEstimate(TSelf x);
+        static virtual TSelf ReciprocalSqrtEstimate(TSelf x) => TSelf.One / TSelf.Sqrt(x);
 
         /// <summary>Computes the product of a value and its base-radix raised to the specified power.</summary>
         /// <param name="x">The value which base-radix raised to the power of <paramref name="n" /> multiplies.</param>

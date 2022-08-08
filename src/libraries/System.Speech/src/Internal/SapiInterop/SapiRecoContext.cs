@@ -74,7 +74,7 @@ namespace System.Speech.Internal.SapiInterop
 
         internal void DisposeEventNotify(EventNotify eventNotify)
         {
-            _proxy.Invoke2(delegate { eventNotify.Dispose(); });
+            _proxy.Invoke2(eventNotify.Dispose);
         }
 
         internal void SetGrammarOptions(SPGRAMMAROPTIONS options)
