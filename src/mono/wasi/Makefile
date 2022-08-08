@@ -2,7 +2,7 @@ include Makefile.variable
 
 all: build-all
 
-build-all: $(WASI_SDK_CLANG) .stamp-wasmtime-$(WASMTIME_VERSION)
+build-all: $(WASI_SDK_CLANG)
 	mkdir -p $(WASI_OBJ_DIR)
 	cd $(WASI_OBJ_DIR) && \
 	cmake -G Ninja \

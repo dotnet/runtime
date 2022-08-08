@@ -394,7 +394,7 @@
       *** Building WASI ***
       "
       Importance="High" />
-    <Exec Command="make -C $(MonoProjectRoot)/wasi" StandardErrorImportance="High" StandardOutputImportance="High" />
+    <Exec Command="make -C $(MonoProjectRoot)/wasi provision-deps all" StandardErrorImportance="High" StandardOutputImportance="High" />
 
     <Message Text="
       *** Running WASI sample ***
