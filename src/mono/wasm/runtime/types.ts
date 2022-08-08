@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import "node/buffer"; // we use the Buffer type to type some of Emscripten's APIs
-import { JavaScriptExports } from "./managed-exports";
-import { BINDINGType, MONOType } from "./net6-legacy/exports-legacy";
 import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./types/emscripten";
 
 export type GCHandle = {
@@ -66,31 +63,27 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
 }
 
 export type MonoConfig = {
-    isError?: false,
-    assembly_root?: string, // the subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
+    assemblyRootFolder?: string, // the subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
     assets?: AssetEntry[], // a list of assets to load along with the runtime. each asset is a dictionary-style Object with the following properties:
 
     /**
-     * Either this or enable_debugging needs to be set
-     * debug_level > 0 enables debugging and sets the debug log level to debug_level
-     * debug_level == 0 disables debugging and enables interpreter optimizations
-     * debug_level < 0 enabled debugging and disables debug logging.
+     * debugLevel > 0 enables debugging and sets the debug log level to debugLevel
+     * debugLevel == 0 disables debugging and enables interpreter optimizations
+     * debugLevel < 0 enabled debugging and disables debug logging.
      */
-    debug_level?: number,
-    enable_debugging?: number, // Either this or debug_level needs to be set
-    globalization_mode?: GlobalizationMode, // configures the runtime's globalization mode
-    diagnostic_tracing?: boolean // enables diagnostic log messages during startup
-    remote_sources?: string[], // additional search locations for assets. Sources will be checked in sequential order until the asset is found. The string "./" indicates to load from the application directory (as with the files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates that asset loads can be attempted from a remote server. Sources must end with a "/".
-    max_parallel_downloads?: number, // we are throttling parallel downloads in order to avoid net::ERR_INSUFFICIENT_RESOURCES on chrome
-    environment_variables?: {
+    debugLevel?: number,
+    maxParallelDownloads?: number, // we are throttling parallel downloads in order to avoid net::ERR_INSUFFICIENT_RESOURCES on chrome
+    globalizationMode?: GlobalizationMode, // configures the runtime's globalization mode
+    diagnosticTracing?: boolean // enables diagnostic log messages during startup
+    remoteSources?: string[], // additional search locations for assets. Sources will be checked in sequential order until the asset is found. The string "./" indicates to load from the application directory (as with the files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates that asset loads can be attempted from a remote server. Sources must end with a "/".
+    environmentVariables?: {
         [i: string]: string;
     }, // dictionary-style Object containing environment variables
-    runtime_options?: string[], // array of runtime options as strings
-    aot_profiler_options?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
-    coverage_profiler_options?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
-    diagnostic_options?: DiagnosticOptions, // dictionary-style Object. If omitted, diagnostics will not be initialized.
-    ignore_pdb_load_errors?: boolean,
-    wait_for_debugger?: number
+    runtimeOptions?: string[], // array of runtime options as strings
+    aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
+    coverageProfilerOptions?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
+    ignorePdbLoadErrors?: boolean,
+    waitForDebugger?: number
 };
 
 export type MonoConfigError = {
@@ -108,10 +101,10 @@ export interface ResourceRequest {
 
 // Types of assets that can be in the mono-config.js/mono-config.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
 export interface AssetEntry extends ResourceRequest {
-    virtual_path?: string, // if specified, overrides the path of the asset in the virtual filesystem and similar data structures once loaded.
+    virtualPath?: string, // if specified, overrides the path of the asset in the virtual filesystem and similar data structures once loaded.
     culture?: string,
-    load_remote?: boolean, // if true, an attempt will be made to load the asset from each location in @args.remote_sources.
-    is_optional?: boolean // if true, any failure to load this asset will be ignored.
+    loadRemote?: boolean, // if true, an attempt will be made to load the asset from each location in @args.remoteSources.
+    isOptional?: boolean // if true, any failure to load this asset will be ignored.
     buffer?: ArrayBuffer // if provided, we don't have to fetch it
     pending?: LoadingResource // if provided, we don't have to start fetching it
 }
@@ -126,40 +119,21 @@ export type AssetBehaviours =
     | "dotnetwasm"; // the binary of the dotnet runtime
 
 export type RuntimeHelpers = {
-    get_call_sig_ref: MonoMethod;
-    complete_task_method: MonoMethod;
-    create_task_method: MonoMethod;
-    call_delegate: MonoMethod;
     runtime_interop_module: MonoAssembly;
     runtime_interop_namespace: string;
     runtime_interop_exports_classname: string;
     runtime_interop_exports_class: MonoClass;
-    runtime_legacy_exports_classname: string;
-    runtime_legacy_exports_class: MonoClass;
 
-    _box_buffer_size: number;
-    _unbox_buffer_size: number;
-
-    _box_buffer: VoidPtr;
-    _unbox_buffer: VoidPtr;
     _i52_error_scratch_buffer: Int32Ptr;
-    _box_root: any;
-    // A WasmRoot that is guaranteed to contain 0
-    _null_root: any;
-    _class_int32: MonoClass;
-    _class_uint32: MonoClass;
-    _class_double: MonoClass;
-    _class_boolean: MonoClass;
     mono_wasm_load_runtime_done: boolean;
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
 
     loaded_files: string[];
-    max_parallel_downloads: number;
+    maxParallelDownloads: number;
     config: MonoConfig;
-    diagnostic_tracing: boolean;
-    enable_debugging: number;
-    wait_for_debugger?: number;
+    diagnosticTracing: boolean;
+    waitForDebugger?: number;
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     scriptDirectory?: string
     requirePromise: Promise<Function>
@@ -169,8 +143,6 @@ export type RuntimeHelpers = {
     javaScriptExports: JavaScriptExports,
 }
 
-export const wasm_type_symbol = Symbol.for("wasm type");
-
 export type GlobalizationMode =
     "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
     "invariant" | //  operate in invariant globalization mode.
@@ -178,13 +150,13 @@ export type GlobalizationMode =
 
 
 export type AOTProfilerOptions = {
-    write_at?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
-    send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpAotProfileData' (DumpAotProfileData stores the data into INTERNAL.aot_profile_data.)
+    writeAt?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
+    sendTo?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpAotProfileData' (DumpAotProfileData stores the data into INTERNAL.aotProfileData.)
 }
 
 export type CoverageProfilerOptions = {
-    write_at?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
-    send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
+    writeAt?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
+    sendTo?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
 }
 
 /// Options to configure EventPipe sessions that will be created and started at runtime startup
@@ -208,7 +180,7 @@ export interface EventPipeSessionOptions {
 
 /// Options to configure the diagnostic server
 export type DiagnosticServerOptions = {
-    connect_url: string, // websocket URL to connect to.
+    connectUrl: string, // websocket URL to connect to.
     suspend: string | boolean, // if true, the server will suspend the app when it starts until a diagnostic tool tells the runtime to resume.
 }
 // how we extended emscripten Module
@@ -222,9 +194,9 @@ export type DotnetModuleConfig = {
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
 
-    imports?: DotnetModuleConfigImports;
+    imports?: any;
     exports?: string[];
-    downloadResource?: (request: ResourceRequest) => LoadingResource
+    downloadResource?: (request: ResourceRequest) => LoadingResource | undefined
 } & Partial<EmscriptenModule>
 
 export type DotnetModuleConfigImports = {
@@ -331,8 +303,7 @@ export type EarlyExports = {
     binding: any,
     internal: any,
     module: any,
-    marshaled_exports: any,
-    marshaled_imports: any
+    marshaled_imports: any,
 };
 export type EarlyReplacements = {
     fetch: any,
@@ -369,18 +340,73 @@ export function notThenable<T>(x: T | PromiseLike<T>): x is T {
 /// Primarily intended for debugging purposes.
 export type EventPipeSessionID = bigint;
 
-// this represents visibility in the javascript
-// like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts
-export interface DotnetPublicAPI {
-    MONO: MONOType,
-    BINDING: BINDINGType,
-    INTERNAL: any,
-    EXPORTS: any,
-    IMPORTS: any,
-    Module: EmscriptenModule,
-    RuntimeId: number,
-    RuntimeBuildInfo: {
-        ProductVersion: string,
-        Configuration: string,
-    }
+// in all the exported internals methods, we use the same data structures for stack frame as normal full blow interop
+// see src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.cs
+export interface JavaScriptExports {
+    // the marshaled signature is: void ReleaseJSOwnedObjectByGCHandle(GCHandle gcHandle)
+    release_js_owned_object_by_gc_handle(gc_handle: GCHandle): void;
+
+    // the marshaled signature is: GCHandle CreateTaskCallback()
+    create_task_callback(): GCHandle;
+
+    // the marshaled signature is: void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
+    complete_task(holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs): void;
+
+    // the marshaled signature is: TRes? CallDelegate<T1,T2,T3TRes>(GCHandle callback, T1? arg1, T2? arg2, T3? arg3)
+    call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any,
+        res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs): any;
+
+    // the marshaled signature is: Task<int>? CallEntrypoint(MonoMethod* entrypointPtr, string[] args)
+    call_entry_point(entry_point: MonoMethod, args?: string[]): Promise<number>;
+}
+
+export type MarshalerToJs = (arg: JSMarshalerArgument, sig?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs) => any;
+export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, sig?: JSMarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs) => void;
+
+export interface JSMarshalerArguments extends NativePointer {
+    __brand: "JSMarshalerArguments"
+}
+
+export interface JSFunctionSignature extends NativePointer {
+    __brand: "JSFunctionSignatures"
+}
+
+export interface JSMarshalerType extends NativePointer {
+    __brand: "JSMarshalerType"
+}
+
+export interface JSMarshalerArgument extends NativePointer {
+    __brand: "JSMarshalerArgument"
+}
+
+export type MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
+export type NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
+
+export interface WasmRoot<T extends MonoObject> {
+    get_address(): MonoObjectRef;
+    get_address_32(): number;
+    get address(): MonoObjectRef;
+    get(): T;
+    set(value: T): T;
+    get value(): T;
+    set value(value: T);
+    copy_from_address(source: MonoObjectRef): void;
+    copy_to_address(destination: MonoObjectRef): void;
+    copy_from(source: WasmRoot<T>): void;
+    copy_to(destination: WasmRoot<T>): void;
+    valueOf(): T;
+    clear(): void;
+    release(): void;
+    toString(): string;
+}
+
+export interface WasmRootBuffer {
+    get_address(index: number): MonoObjectRef
+    get_address_32(index: number): number
+    get(index: number): ManagedPointer
+    set(index: number, value: ManagedPointer): ManagedPointer
+    copy_value_from_address(index: number, sourceAddress: MonoObjectRef): void
+    clear(): void;
+    release(): void;
+    toString(): string;
 }

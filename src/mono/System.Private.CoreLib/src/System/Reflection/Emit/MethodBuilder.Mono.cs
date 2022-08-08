@@ -161,7 +161,12 @@ namespace System.Reflection.Emit
 
         public override Type? DeclaringType
         {
-            get { return type; }
+            get
+            {
+                if (type.is_hidden_global_type)
+                    return null;
+                return type;
+            }
         }
 
         public override string Name

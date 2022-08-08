@@ -129,6 +129,21 @@ namespace System
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
+
+#if NETCOREAPP
+        public static bool IsBuiltInComEnabled => SupportsComInterop
+                                            && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
+                                                ? isEnabled
+                                                : true);
+#else
+        public static bool IsBuiltInComEnabled => SupportsComInterop;
+#endif
+
+        // Automation refers to OLE Automation support. Automation support here means the OS
+        // and runtime provide support for the following: IDispatch, STA apartments, etc. This
+        // is typically available whenever COM support is enabled, but Windows Nano Server is an exception.
+        public static bool IsBuiltInComEnabledWithOSAutomationSupport => IsBuiltInComEnabled && IsNotWindowsNanoServer;
+
         public static bool SupportsSsl3 => GetSsl3Support();
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
@@ -153,7 +168,7 @@ namespace System
         public static bool IsNotIntMaxValueArrayIndexSupported => s_largeArrayIsNotSupported.Value;
 
         public static bool IsAssemblyLoadingSupported => !IsNativeAot;
-        public static bool IsNonBundledAssemblyLoadingSupported => !IsAssemblyLoadingSupported && !IsMonoAOT;
+        public static bool IsNonBundledAssemblyLoadingSupported => IsAssemblyLoadingSupported && !IsMonoAOT;
         public static bool IsMethodBodySupported => !IsNativeAot;
         public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);

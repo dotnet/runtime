@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
-    <WasmExtraConfig Include="environment_variables" Value='
+    <WasmExtraConfig Include="environmentVariables" Value='
 {
   "DOTNET_EnableEventPipe": "1",
   "DOTNET_EventPipeOutputPath": "/trace.nettrace"

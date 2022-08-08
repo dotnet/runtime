@@ -586,35 +586,39 @@ void emitter::emitIns(instruction ins)
 }
 
 /*****************************************************************************
+ *  emitter::emitIns_S_R() and emitter::emitIns_R_S():
  *
  *  Add an Load/Store instruction(s): base+offset and base-addr-computing if needed.
  *  For referencing a stack-based local variable and a register
  *
  *  Special notes for LoongArch64:
  *    The parameter `offs` has special info.
- *    The real value of `offs` is positive.
- *    If the `offs` is negative which its real value abs(offs),
- *    the negative `offs` is special for optimizing the large offset which >2047.
- *    when offs >2047 we can't encode one instruction to load/store the data,
- *    if there are several load/store at this case, you have to repeat the similar
- *    large offs with redundant instructions and maybe eat up the `SC_IG_BUFFER_SIZE`.
  *
- *    Optimize the following:
+ *    (1) The real value of `offs` is positive. `offs` = `offs`.
+ *
+ *    (2) If the `offs` is negtive, `offs` = -(offs),
+ *        the negtive `offs` is special for optimizing the large offset which >2047.
+ *        when offs >2047 we can't encode one instruction to load/store the data,
+ *        if there are several load/store at this case, you have to repeat the similar
+ *        large offs with reduntant instructions and maybe eat up the `SC_IG_BUFFER_SIZE`.
+ *
+ *    Before optimizing the following instructions:
  *      lu12i.w  x0, 0x0
  *      ori  x0, x0, 0x9ac
  *      add.d  x0, x0, fp
  *      fst.s  fa0, x0, 0
  *
- *    For the offs within range [0,0x7ff], using one instruction:
- *      ori  x0, x0, offs
- *    For the offs within range [0x1000,0xffffffff], using two instruction
- *      lu12i.w  x0, offs-hi-20bits
- *      ori  x0, x0, offs-low-12bits
+ *    After optimized the instructions:
+ *      For the offs within range [0,0x7ff], using one instruction:
+ *        ori  x0, x0, offs
+ *      For the offs within range [0x1000,0xffffffff], using two instruction
+ *        lu12i.w  x0, offs-hi-20bits
+ *        ori  x0, x0, offs-low-12bits
  *
- *    Store/Load the data:
- *      fstx.s  fa0, x0, fp
+ *      Then Store/Load the data:
+ *        fstx.s  fa0, x0, fp
  *
- *    If the store/load are repeated,
+ *    If storing/loading the second field of a struct,
  *      addi_d  x0,x0,sizeof(type)
  *      fstx.s  fa0, x0, fp
  *
@@ -671,7 +675,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         assert(isValidSimm20(imm2 >> 12));
         emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_RA, imm2 >> 12);
 
-        emitIns_R_R_R(INS_add_d, attr, REG_RA, REG_RA, reg2);
+        emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_RA, REG_RA, reg2);
 
         imm2 = imm2 & 0x7ff;
         imm  = imm3 ? imm2 - imm3 : imm2;
@@ -792,7 +796,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             assert(isValidSimm20(imm2 >> 12));
             emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_RA, imm2 >> 12);
 
-            emitIns_R_R_R(INS_add_d, attr, REG_RA, REG_RA, reg2);
+            emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_RA, REG_RA, reg2);
 
             imm2 = imm2 & 0x7ff;
             imm3 = imm3 ? imm2 - imm3 : imm2;
@@ -2566,6 +2570,8 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         assert((addr & 3) == 0);
 
         dst += 4;
+        emitGCregDeadUpd(REG_T2, dst);
+
 #ifdef DEBUG
         code = emitInsCode(INS_pcaddu18i);
         assert((code | (14)) == 0x1e00000e);
@@ -2596,6 +2602,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
         emitOutput_Instr(dst, code);
         dst += 4;
+        emitGCregDeadUpd(REG_T2, dst);
 
         code = emitInsCode(INS_ori);
         code |= (code_t)REG_T2;
@@ -2620,24 +2627,14 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
     dst += 4;
 
-    // update volatile regs within emitThisGCrefRegs and emitThisByrefRegs.
-    if (gcrefRegs != emitThisGCrefRegs)
-    {
-        emitUpdateLiveGCregs(GCT_GCREF, gcrefRegs, dst);
-    }
-    if (byrefRegs != emitThisByrefRegs)
-    {
-        emitUpdateLiveGCregs(GCT_BYREF, byrefRegs, dst);
-    }
-
     // If the method returns a GC ref, mark INTRET (A0) appropriately.
     if (id->idGCref() == GCT_GCREF)
     {
-        gcrefRegs = emitThisGCrefRegs | RBM_INTRET;
+        gcrefRegs |= RBM_INTRET;
     }
     else if (id->idGCref() == GCT_BYREF)
     {
-        byrefRegs = emitThisByrefRegs | RBM_INTRET;
+        byrefRegs |= RBM_INTRET;
     }
 
     // If is a multi-register return method is called, mark INTRET_1 (A1) appropriately
@@ -3146,7 +3143,7 @@ AGAIN:
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*       dstRW  = *dp + writeableOffset;
-    BYTE*       dstRW2 = dstRW; // addr for updating gc info if needed.
+    BYTE*       dstRW2 = dstRW + 4; // addr for updating gc info if needed.
     code_t      code   = 0;
     instruction ins;
     size_t      sz; // = emitSizeOfInsDsc(id);
@@ -3178,7 +3175,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             *(code_t*)dstRW = 0x1c000000 | (code_t)reg1;
 
-            dstRW2 = dstRW;
             dstRW += 4;
 
 #ifdef DEBUG
@@ -3202,20 +3198,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 *(code_t*)dstRW = 0x28c00000 | (code_t)reg1 | (code_t)(reg1 << 5);
             }
 
-            if (id->idGCref() != GCT_NONE)
-            {
-                emitGCregLiveUpd(id->idGCref(), reg1, dstRW);
-            }
-            else
-            {
-                emitGCregDeadUpd(reg1, dstRW);
-            }
-
             dstRW += 4;
 
-            emitRecordRelocation(dstRW2 - writeableOffset, id->idAddr()->iiaAddr, IMAGE_REL_LOONGARCH64_PC);
-
-            dstRW2 += 4;
+            emitRecordRelocation(dstRW - 8 - writeableOffset, id->idAddr()->iiaAddr, IMAGE_REL_LOONGARCH64_PC);
 
             sz = sizeof(instrDesc);
         }
@@ -3224,7 +3209,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             ssize_t   imm  = (ssize_t)(id->idAddr()->iiaAddr);
             regNumber reg1 = id->idReg1();
-            dstRW2 += 4;
 
             switch (id->idCodeSize())
             {
@@ -3406,7 +3390,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     *(code_t*)dstRW = code;
                 }
                 dstRW += 4;
-                dstRW2 = dstRW;
             }
             else
             {
@@ -3431,7 +3414,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code |= (code_t)(imm & 0xfff) << 10;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
-                    dstRW2 = dstRW;
 
                     ins  = INS_lu32i_d;
                     code = emitInsCode(INS_lu32i_d);
@@ -3470,7 +3452,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                     *(code_t*)dstRW = code;
                     dstRW += 4;
-                    dstRW2 = dstRW;
                 }
             }
 
@@ -3510,7 +3491,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code            = 0x1c000000;
                 *(code_t*)dstRW = code | (code_t)reg1 | ((imm & 0xfffff000) >> 7);
                 dstRW += 4;
-                dstRW2 = dstRW;
 #ifdef DEBUG
                 code = emitInsCode(INS_pcaddu12i);
                 assert(code == 0x1c000000);
@@ -3538,7 +3518,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code |= (code_t)(imm & 0xfff) << 10;
                 *(code_t*)dstRW = code;
                 dstRW += 4;
-                dstRW2 = dstRW;
 
                 ins  = INS_lu32i_d;
                 code = emitInsCode(INS_lu32i_d);
@@ -3760,16 +3739,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 sz = sizeof(instrDesc);
             }
             dstRW += emitOutputCall(ig, *dp, id, 0);
-            ins = INS_nop;
+
+            dstRW2 = dstRW;
+            ins    = INS_nop;
             break;
 
         // case INS_OPTS_NONE:
         default:
             *(code_t*)dstRW = id->idAddr()->iiaGetInstrEncode();
             dstRW += 4;
-            dstRW2 = dstRW;
-            ins    = id->idIns();
-            sz     = emitSizeOfInsDsc(id);
+            ins = id->idIns();
+            sz  = emitSizeOfInsDsc(id);
             break;
     }
 
