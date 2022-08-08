@@ -54,7 +54,7 @@ namespace System.Formats.Tar
             entry._header._aTime = info.LastAccessTimeUtc;
             entry._header._cTime = info.LastWriteTimeUtc; // There is no "change time" property
 
-            entry.Mode = TarHelpers.DefaultWindowsMode;
+            entry.Mode = DefaultWindowsMode;
 
             if (entry.EntryType == TarEntryType.SymbolicLink)
             {
