@@ -10247,3 +10247,14 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 // `fgDebugCheckLoopTable()` is called.
 #endif // DEBUG
 }
+
+ValueNum Compiler::optConservativeNormalVN(GenTree* tree)
+{
+    if (optLocalAssertionProp)
+    {
+        return ValueNumStore::NoVN;
+    }
+
+    assert(vnStore != nullptr);
+    return vnStore->VNConservativeNormalValue(tree->gtVNPair);
+}
