@@ -281,6 +281,12 @@ mono_wasm_setenv (const char *name, const char *value)
 	monoeg_g_setenv (strdup (name), strdup (value), 1);
 }
 
+EMSCRIPTEN_KEEPALIVE char *
+mono_wasm_getenv (const char *name)
+{
+	return monoeg_g_getenv (name); // JS must free
+}
+
 static void *sysglobal_native_handle;
 
 static void*
