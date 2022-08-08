@@ -206,9 +206,9 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>60d6419820e9937b87d6c9d04c36200bcc350b86</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App.Runtime.win-x64" Version="7.0.0-rc.1.22381.5">
+    <Dependency Name="Microsoft.NETCore.App.Runtime.win-x64" Version="7.0.0-rc.1.22407.4">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>508fef51e841aa16ffed1aae32bf4793a2cea363</Sha>
+      <Sha>0c5ca95fec9b6e2cc5e757ad36d0b094f81a59a6</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.DotNetHost" Version="7.0.0-rc.1.22381.5">
       <Uri>https://github.com/dotnet/runtime</Uri>
@@ -218,21 +218,21 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>508fef51e841aa16ffed1aae32bf4793a2cea363</Sha>
     </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="7.0.0-rc.1.22381.5">
+    <Dependency Name="runtime.native.System.IO.Ports" Version="7.0.0-rc.1.22407.4">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>508fef51e841aa16ffed1aae32bf4793a2cea363</Sha>
+      <Sha>0c5ca95fec9b6e2cc5e757ad36d0b094f81a59a6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.ILAsm" Version="7.0.0-rc.1.22381.5">
+    <Dependency Name="Microsoft.NETCore.ILAsm" Version="7.0.0-rc.1.22407.4">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>508fef51e841aa16ffed1aae32bf4793a2cea363</Sha>
+      <Sha>0c5ca95fec9b6e2cc5e757ad36d0b094f81a59a6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="7.0.0-rc.1.22381.5">
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="7.0.0-rc.1.22407.4">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>508fef51e841aa16ffed1aae32bf4793a2cea363</Sha>
+      <Sha>0c5ca95fec9b6e2cc5e757ad36d0b094f81a59a6</Sha>
     </Dependency>
-    <Dependency Name="System.Text.Json" Version="7.0.0-rc.1.22381.5">
+    <Dependency Name="System.Text.Json" Version="7.0.0-rc.1.22407.4">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>508fef51e841aa16ffed1aae32bf4793a2cea363</Sha>
+      <Sha>0c5ca95fec9b6e2cc5e757ad36d0b094f81a59a6</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22377.1">
       <Uri>https://github.com/dotnet/linker</Uri>
