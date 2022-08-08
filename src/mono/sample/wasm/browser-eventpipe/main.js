@@ -86,7 +86,6 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
 
 async function main() {
     const { MONO, Module, getAssemblyExports } = await createDotnetRuntime({
-        disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
     });
     globalThis.__Module = Module;

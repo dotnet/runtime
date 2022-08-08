@@ -19,7 +19,6 @@ namespace Sample
         }
 
         [JSExport]
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static int TestMeaning()
         {
             return 128;

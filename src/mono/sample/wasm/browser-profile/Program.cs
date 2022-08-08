@@ -15,14 +15,12 @@ namespace Sample
         }
 
         [JSExport]
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static int TestMeaning()
         {
             return 42;
         }
 
         [JSExport]
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void StopProfile(){}
     }
 }

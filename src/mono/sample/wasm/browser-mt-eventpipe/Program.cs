@@ -18,7 +18,6 @@ namespace Sample
         }
 
         [JSExport]
-        [MethodImpl(MethodImplOptions.NoInlining)]
         [SupportedOSPlatform("browser")] // ask the analyzer to warn if we use APIs not supported on browser-wasm
         public static int TestMeaning()
         {
