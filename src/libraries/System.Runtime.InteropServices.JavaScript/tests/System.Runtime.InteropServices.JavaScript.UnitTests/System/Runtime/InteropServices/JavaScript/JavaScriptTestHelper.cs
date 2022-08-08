@@ -918,6 +918,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
         #endregion JSObject
 
+        [JSImport("setup", "JavaScriptTestHelper")]
+        internal static partial Task Setup();
+
         static JSObject _module;
         public static async Task InitializeAsync()
         {
@@ -925,6 +928,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 // Log("JavaScriptTestHelper.mjs importing");
                 _module = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+                await Setup();
                 // Log("JavaScriptTestHelper.mjs imported");
             }
         }

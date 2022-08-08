@@ -210,7 +210,7 @@ namespace System.Text.Json
         {
             try
             {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                 return s_utf8Encoding.GetString(utf8Unescaped);
 #else
                 if (utf8Unescaped.IsEmpty)
@@ -241,7 +241,7 @@ namespace System.Text.Json
         {
             try
             {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                 return s_utf8Encoding.GetChars(utf8Unescaped, destination);
 #else
                 if (utf8Unescaped.IsEmpty)
@@ -279,7 +279,7 @@ namespace System.Text.Json
         {
             try
             {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                 s_utf8Encoding.GetCharCount(utf8Buffer);
 #else
                 if (utf8Buffer.IsEmpty)
@@ -310,7 +310,7 @@ namespace System.Text.Json
         {
             try
             {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                 return s_utf8Encoding.GetByteCount(text);
 #else
                 if (text.IsEmpty)
@@ -341,7 +341,7 @@ namespace System.Text.Json
         {
             try
             {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                 return s_utf8Encoding.GetBytes(text, dest);
 #else
                 if (text.IsEmpty)
@@ -372,7 +372,7 @@ namespace System.Text.Json
 
         internal static string GetTextFromUtf8(ReadOnlySpan<byte> utf8Text)
         {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             return s_utf8Encoding.GetString(utf8Text);
 #else
             if (utf8Text.IsEmpty)
@@ -521,7 +521,7 @@ namespace System.Text.Json
                                 + JsonConstants.UnicodePlane01StartValue;
                         }
 
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                         var rune = new Rune(scalar);
                         bool success = rune.TryEncodeToUtf8(destination.Slice(written), out int bytesWritten);
 #else
@@ -594,7 +594,7 @@ namespace System.Text.Json
             return false;
         }
 
-#if !BUILDING_INBOX_LIBRARY
+#if !NETCOREAPP
         /// <summary>
         /// Copies the UTF-8 code unit representation of this scalar to an output buffer.
         /// The buffer must be large enough to hold the required number of <see cref="byte"/>s.

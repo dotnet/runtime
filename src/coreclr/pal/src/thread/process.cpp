@@ -2344,6 +2344,11 @@ PROCBuildCreateDumpCommandLine(
         argv.push_back("--crashreport");
     }
 
+    if (flags & GenerateDumpFlagsCrashReportOnlyEnabled)
+    {
+        argv.push_back("--crashreportonly");
+    }
+
     if (g_running_in_exe)
     {
         argv.push_back("--singlefile");
@@ -2519,11 +2524,17 @@ PROCAbortInitialize()
         {
             flags |= GenerateDumpFlagsVerboseLoggingEnabled;
         }
-        CLRConfigNoCache enabldReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
+        CLRConfigNoCache enabledReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
         val = 0;
-        if (enabldReportCfg.IsSet() && enabldReportCfg.TryAsInteger(10, val) && val == 1)
+        if (enabledReportCfg.IsSet() && enabledReportCfg.TryAsInteger(10, val) && val == 1)
         {
             flags |= GenerateDumpFlagsCrashReportEnabled;
+        }
+        CLRConfigNoCache enabledReportOnlyCfg = CLRConfigNoCache::Get("EnableCrashReportOnly", /*noprefix*/ false, &getenv);
+        val = 0;
+        if (enabledReportOnlyCfg.IsSet() && enabledReportOnlyCfg.TryAsInteger(10, val) && val == 1)
+        {
+            flags |= GenerateDumpFlagsCrashReportOnlyEnabled;
         }
 
         char* program = nullptr;

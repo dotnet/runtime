@@ -26,24 +26,24 @@ export function mono_wasm_get_icudt_name(culture: string): string {
 }
 
 // Performs setup for globalization.
-// @globalization_mode is one of "icu", "invariant", or "auto".
+// @globalizationMode is one of "icu", "invariant", or "auto".
 // "auto" will use "icu" if any ICU data archives have been loaded,
 //  otherwise "invariant".
 export function mono_wasm_globalization_init(): void {
     const config = Module.config as MonoConfig;
     let invariantMode = false;
-    if (!config.globalization_mode)
-        config.globalization_mode = "auto";
-    if (config.globalization_mode === "invariant")
+    if (!config.globalizationMode)
+        config.globalizationMode = "auto";
+    if (config.globalizationMode === "invariant")
         invariantMode = true;
 
     if (!invariantMode) {
         if (num_icu_assets_loaded_successfully > 0) {
-            if (runtimeHelpers.diagnostic_tracing) {
+            if (runtimeHelpers.diagnosticTracing) {
                 console.debug("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
             }
-        } else if (config.globalization_mode !== "icu") {
-            if (runtimeHelpers.diagnostic_tracing) {
+        } else if (config.globalizationMode !== "icu") {
+            if (runtimeHelpers.diagnosticTracing) {
                 console.debug("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
             }
             invariantMode = true;
