@@ -236,7 +236,6 @@ namespace System.Net.Http
 
         private bool CheckKeepAliveTimeoutExceeded()
         {
-            // We only honor a Keep-Alive timeout on HTTP/1.0 responses.
             // If _keepAliveTimeoutSeconds is 0, no timeout has been set.
             return _keepAliveTimeoutSeconds != 0 &&
                 GetIdleTicks(Environment.TickCount64) >= _keepAliveTimeoutSeconds * 1000;
@@ -663,11 +662,6 @@ namespace System.Net.Http
                         break;
                     }
                     ParseHeaderNameValue(this, line.Span, response, isFromTrailer: false);
-                }
-
-                if (response.Version.Minor == 0)
-                {
-                    ProcessHttp10KeepAliveHeader(response);
                 }
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
@@ -1124,47 +1118,53 @@ namespace System.Net.Http
             }
             else
             {
-                // Request headers returned on the response must be treated as custom headers.
                 string headerValue = connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
+
+                if (descriptor.Equals(KnownHeaders.KeepAlive))
+                {
+                    connection.ProcessKeepAliveHeader(headerValue);
+                }
+
+                // Request headers returned on the response must be treated as custom headers.
                 response.Headers.TryAddWithoutValidation(
                     (descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor,
                     headerValue);
             }
         }
 
-        private void ProcessHttp10KeepAliveHeader(HttpResponseMessage response)
+        private void ProcessKeepAliveHeader(string keepAlive)
         {
-            if (response.Headers.NonValidated.TryGetValues(KnownHeaders.KeepAlive.Name, out HeaderStringValues keepAliveValues))
-            {
-                string keepAlive = keepAliveValues.ToString();
-                var parsedValues = new UnvalidatedObjectCollection<NameValueHeaderValue>();
+            var parsedValues = new UnvalidatedObjectCollection<NameValueHeaderValue>();
 
-                if (NameValueHeaderValue.GetNameValueListLength(keepAlive, 0, ',', parsedValues) == keepAlive.Length)
+            if (NameValueHeaderValue.GetNameValueListLength(keepAlive, 0, ',', parsedValues) == keepAlive.Length)
+            {
+                foreach (NameValueHeaderValue nameValue in parsedValues)
                 {
-                    foreach (NameValueHeaderValue nameValue in parsedValues)
+                    if (string.Equals(nameValue.Name, "timeout", StringComparison.OrdinalIgnoreCase))
                     {
-                        if (string.Equals(nameValue.Name, "timeout", StringComparison.OrdinalIgnoreCase))
+                        if (!string.IsNullOrEmpty(nameValue.Value) &&
+                            HeaderUtilities.TryParseInt32(nameValue.Value, out int timeout) &&
+                            timeout >= 0)
                         {
-                            if (!string.IsNullOrEmpty(nameValue.Value) &&
-                                HeaderUtilities.TryParseInt32(nameValue.Value, out int timeout) &&
-                                timeout >= 0)
-                            {
-                                if (timeout == 0)
-                                {
-                                    _connectionClose = true;
-                                }
-                                else
-                                {
-                                    _keepAliveTimeoutSeconds = timeout;
-                                }
-                            }
-                        }
-                        else if (string.Equals(nameValue.Name, "max", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (nameValue.Value == "0")
+                            // Some servers are very strict with closing the connection exactly at the timeout.
+                            // Avoid using the connection if it is about to exceed the timeout to avoid resulting request failures.
+                            const int OffsetSeconds = 1;
+
+                            if (timeout <= OffsetSeconds)
                             {
                                 _connectionClose = true;
                             }
+                            else
+                            {
+                                _keepAliveTimeoutSeconds = timeout - OffsetSeconds;
+                            }
+                        }
+                    }
+                    else if (string.Equals(nameValue.Name, "max", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (nameValue.Value == "0")
+                        {
+                            _connectionClose = true;
                         }
                     }
                 }
