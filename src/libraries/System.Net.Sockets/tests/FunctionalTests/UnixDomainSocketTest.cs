@@ -24,7 +24,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_Success()
         {
             string path = null;
@@ -117,7 +117,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public void Socket_SendReceive_Success()
         {
             string path = GetRandomNonExistingFilePath();
@@ -149,7 +149,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public void Socket_SendReceive_Clone_Success()
         {
             string path = GetRandomNonExistingFilePath();
@@ -194,7 +194,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public async Task Socket_SendReceiveAsync_Success()
         {
             string path = GetRandomNonExistingFilePath();
@@ -231,7 +231,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(500, 18, 21)]
         [InlineData(500, 21, 18)]
         [InlineData(5, 128000, 64000)]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public async Task Socket_SendReceiveAsync_PropagateToStream_Success(int iterations, int writeBufferSize, int readBufferSize)
         {
             var writeBuffer = new byte[writeBufferSize * iterations];
@@ -287,7 +287,7 @@ namespace System.Net.Sockets.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26189", TestPlatforms.Windows)]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public async Task ConcurrentSendReceive(bool forceNonBlocking)
         {
             using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -330,7 +330,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public async Task ConcurrentSendReceiveAsync()
         {
             using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -385,7 +385,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public void UnixDomainSocketEndPoint_RemoteEndPointEqualsBindAddress(bool abstractAddress)
         {
             string serverAddress;
@@ -465,7 +465,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public void UnixDomainSocketEndPoint_RelativePathDeletesFile()
         {
             if (!Socket.OSSupportsUnixDomainSockets)

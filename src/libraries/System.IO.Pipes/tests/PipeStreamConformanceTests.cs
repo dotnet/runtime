@@ -119,7 +119,7 @@ namespace System.IO.Pipes.Tests
             select new object[] { serverOption, clientOption, asyncServerOps, asyncClientOps };
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task ClonedServer_ActsAsOriginalServer()
         {
@@ -159,7 +159,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task ClonedClient_ActsAsOriginalClient()
         {
@@ -198,7 +198,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task ConnectOnAlreadyConnectedClient_Throws_InvalidOperationException()
         {
@@ -210,7 +210,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task WaitForConnectionOnAlreadyConnectedServer_Throws_InvalidOperationException()
         {
@@ -224,7 +224,7 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(100)]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task CancelTokenOn_ServerWaitForConnectionAsync_Throws_OperationCanceledException(int cancellationDelay)
         {
@@ -282,7 +282,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task OperationsOnDisconnectedServer()
         {
@@ -320,7 +320,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task OperationsOnDisconnectedClient()
         {
@@ -366,7 +366,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task Windows_OperationsOnNamedServerWithDisposedClient()
         {
@@ -391,7 +391,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public void OperationsOnUnconnectedServer()
         {
@@ -428,7 +428,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public void OperationsOnUnconnectedClient()
         {
@@ -461,7 +461,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task DisposedServerPipe_Throws_ObjectDisposedException()
         {
@@ -475,7 +475,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task DisposedClientPipe_Throws_ObjectDisposedException()
         {
@@ -489,7 +489,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task ReadAsync_DisconnectDuringRead_Returns0()
         {
@@ -502,7 +502,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // Unix named pipes are on sockets, where small writes with an empty buffer will succeed immediately
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         [Fact]
         public async Task WriteAsync_DisconnectDuringWrite_Throws()
@@ -516,7 +516,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task Server_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
@@ -619,7 +619,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task Client_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
@@ -722,7 +722,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task TwoServerInstances_OnceDisposed_Throws()
         {
