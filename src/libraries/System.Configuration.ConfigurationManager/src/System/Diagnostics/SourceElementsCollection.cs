@@ -78,7 +78,7 @@ namespace System.Diagnostics
         }
 
         // Our optional attributes implementation is little convoluted as there is
-        // no such firsclass mechanism from the config system. We basically cache
+        // no such first class mechanism from the config system. We basically cache
         // any "unrecognized" attribute here and serialize it out later.
         protected override bool OnDeserializeUnrecognizedAttribute(string name, string value)
         {

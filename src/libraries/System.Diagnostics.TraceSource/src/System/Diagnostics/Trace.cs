@@ -163,6 +163,7 @@ namespace System.Diagnostics
         ///  Occurs when a <see cref="TraceSource"/> needs to be refreshed from configuration.
         /// </summary>
         public static event EventHandler? Refreshing;
+
         internal static void OnRefreshing()
         {
             Refreshing?.Invoke(null, EventArgs.Empty);

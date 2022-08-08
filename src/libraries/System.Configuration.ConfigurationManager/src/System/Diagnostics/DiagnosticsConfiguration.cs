@@ -18,14 +18,7 @@ namespace System.Diagnostics
             {
                 Initialize();
                 SystemDiagnosticsSection configSectionSav = s_configSection;
-                if (configSectionSav != null)
-                {
-                    return configSectionSav.Switches;
-                }
-                else
-                {
-                    return null;
-                }
+                return configSectionSav?.Switches;
             }
         }
 
@@ -100,12 +93,7 @@ namespace System.Diagnostics
             {
                 Initialize();
                 SystemDiagnosticsSection configSectionSav = s_configSection;
-                if (configSectionSav != null)
-                {
-                    return configSectionSav.SharedListeners;
-                }
-
-                return null;
+                return configSectionSav?.SharedListeners;
             }
         }
 
@@ -115,12 +103,7 @@ namespace System.Diagnostics
             {
                 Initialize();
                 SystemDiagnosticsSection configSectionSav = s_configSection;
-                if (configSectionSav != null && configSectionSav.Sources != null)
-                {
-                    return configSectionSav.Sources;
-                }
-
-                return null;
+                return configSectionSav?.Sources;
             }
         }
 
@@ -135,8 +118,7 @@ namespace System.Diagnostics
 
         private static SystemDiagnosticsSection GetConfigSection()
         {
-            SystemDiagnosticsSection s_configSection = (SystemDiagnosticsSection)PrivilegedConfigurationManager.GetSection("system.diagnostics");
-            return s_configSection;
+            return s_configSection ??= (SystemDiagnosticsSection)PrivilegedConfigurationManager.GetSection("system.diagnostics");
         }
 
         internal static bool IsInitializing() => s_initState == InitState.Initializing;
@@ -147,17 +129,11 @@ namespace System.Diagnostics
 
         internal static void Initialize()
         {
-            // Initialize() is also called by other components outside of Trace (such as PerformanceCounter)
-            // as a result using one lock for this critical section and another for Trace API critical sections
-            // (such as Trace.WriteLine) could potentially lead to deadlock between 2 threads that are
-            // executing these critical sections (and consequently obtaining the 2 locks) in the reverse order.
-            // Using the same lock for DiagnosticsConfiguration as well as TraceInternal avoids this issue.
-            // Sequential locks on TraceInternal.critSec by the same thread is a non issue for this critical section.
+            // Ported from https://referencesource.microsoft.com/#System/compmod/system/diagnostics/DiagnosticsConfiguration.cs,188
+            // This port removed the lock on TraceInternal.critSec since that is now in a separate assembly and TraceInternal
+            // is internal and because GetConfigSection() is not locked elsewhere such as for connection strings.
 
-            // TODO -- determine if locking here is still important
-            // lock (TraceInternal.critSec) {
-
-            // because some of the code used to load config also uses diagnostics
+            // Because some of the code used to load config also uses diagnostics
             // we can't block them while we initialize from config. Therefore we just
             // return immediately and they just use the default values.
             if (s_initState != InitState.NotInitialized ||

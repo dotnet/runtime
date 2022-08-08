@@ -289,7 +289,7 @@ namespace System.Diagnostics
                 // though it may not be strictly necessary at present.
                 lock (critSec)
                 {
-                    // prevent re-entrance
+                    // Prevent re-entrance.
                     if (s_settingsInitializing)
                     {
                         return;

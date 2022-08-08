@@ -189,6 +189,7 @@ namespace System.Diagnostics
         ///  Occurs when a <see cref="Switch"/> needs to be initialized.
         /// </summary>
         public static event EventHandler<InitializingSwitchEventArgs>? Initializing;
+
         internal void OnInitializing()
         {
             Initializing?.Invoke(null, new InitializingSwitchEventArgs(this));

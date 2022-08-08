@@ -500,6 +500,7 @@ namespace System.Diagnostics
         ///  Occurs when a <see cref="TraceSource"/> needs to be initialized.
         /// </summary>
         public static event EventHandler<InitializingTraceSourceEventArgs>? Initializing;
+
         internal void OnInitializing(InitializingTraceSourceEventArgs e)
         {
             Initializing?.Invoke(this, e);
