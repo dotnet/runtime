@@ -231,9 +231,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_56953/Runtime_56953/*">
             <Issue>https://github.com/dotnet/runtime/issues/67870</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Generics/GenericsTest/*">
-            <Issue>https://github.com/dotnet/runtime/issues/60036</Issue>
-        </ExcludeList>
         <!-- Arm64 does not support Vector256 -->
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256/**">
             <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
