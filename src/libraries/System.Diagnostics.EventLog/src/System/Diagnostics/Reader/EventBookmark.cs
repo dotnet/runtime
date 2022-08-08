@@ -17,6 +17,10 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     public sealed class EventBookmark
     {
+        /// <summary>
+        /// Creates a bookmark that identifies an event in a channel.
+        /// </summary>
+        /// <param name="bookmarkText">An XML string that represents the bookmark.</param>
         public EventBookmark(string bookmarkText)
         {
             ArgumentNullException.ThrowIfNull(bookmarkText);
@@ -24,6 +28,9 @@ namespace System.Diagnostics.Eventing.Reader
             BookmarkText = bookmarkText;
         }
 
+        /// <summary>
+        /// Gets the XML string that represents the bookmark.
+        /// </summary>
         public string BookmarkText { get; }
     }
 }
