@@ -1903,7 +1903,7 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
     }
 
     Compiler::lvaPromotionType promotionType = DUMMY_INIT(Compiler::PROMOTION_TYPE_NONE);
-    if (varTypeIsStruct(lvType))
+    if (varTypeIsPromotable(lvType))
     {
         promotionType = comp->lvaGetPromotionType(this);
     }
