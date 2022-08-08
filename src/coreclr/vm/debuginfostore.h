@@ -62,7 +62,6 @@ typedef BYTE* (*FP_IDS_NEW)(void * pData, size_t cBytes);
 //-----------------------------------------------------------------------------
 class CompressDebugInfo
 {
-public:
     // Compress incoming data and write it to the provided NibbleWriter.
     static void CompressBoundaries(
         IN ULONG32                       cMap,
@@ -76,6 +75,14 @@ public:
         IN OUT NibbleWriter * pBuffer
     );
 
+    static void CompressRichDebugInfo(
+        IN ULONG32                           cInlineTree,
+        IN ICorDebugInfo::InlineTreeNode*    pInlineTree,
+        IN ULONG32                           cRichOffsetMappings,
+        IN ICorDebugInfo::RichOffsetMapping* pRichOffsetMappings,
+        IN OUT NibbleWriter*                 pWriter);
+
+public:
     // Stores the result in LoaderHeap
     static PTR_BYTE CompressBoundariesAndVars(
         IN ICorDebugInfo::OffsetMapping * pOffsetMapping,
@@ -91,7 +98,6 @@ public:
         IN LoaderHeap     * pLoaderHeap
     );
 
-public:
     // Uncompress data supplied by Compress functions.
     static void RestoreBoundariesAndVars(
         IN FP_IDS_NEW fpNew, IN void * pNewData,

@@ -3244,4 +3244,9 @@ public:
 //
 #define IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL   0x14
 
+/**********************************************************************************/
+#ifdef TARGET_64BIT
+#define USE_PER_FRAME_PINVOKE_INIT
+#endif
+
 #endif // _COR_INFO_H_
