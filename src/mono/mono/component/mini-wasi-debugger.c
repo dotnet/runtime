@@ -34,10 +34,10 @@ wasi_transport_recv (void *buf, int len)
 		if (res > 0)
 			total += res;
 		num_recv_calls++;
-		if ((res > 0 && total < len) || (res == -1 && num_recv_calls  < retry_receive_message)) {
+		if ((res > 0 && total < len) || (res == -1 && num_recv_calls < retry_receive_message)) {
 			// Wasmtime on Windows doesn't seem to be able to sleep for short periods like 1ms so we'll have to spinlock
 			long long start = timeInMilliseconds ();
-			while (timeInMilliseconds () < start + (connection_wait_us/1000));
+			while ((timeInMilliseconds () - start) < (connection_wait_us/1000));
 		} else {
 			break;
 		}
