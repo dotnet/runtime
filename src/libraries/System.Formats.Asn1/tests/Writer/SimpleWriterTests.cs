@@ -25,7 +25,6 @@ namespace System.Formats.Asn1.Tests.Writer
         }
 
         [Theory]
-        [InlineData(0)]
         [InlineData(-1)]
         [InlineData(int.MinValue)]
         public static void ValidateInitialCapacity(int initialCapacity)
@@ -156,14 +155,6 @@ namespace System.Formats.Asn1.Tests.Writer
         }
 
         [Fact]
-        public static void InitialCapacity_LazyInit()
-        {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, initialCapacity: 8);
-            byte[]? buffer = PeekRawBuffer(writer);
-            Assert.Null(buffer);
-        }
-
-        [Fact]
         public static void InitialCapacity_ExactCapacity()
         {
             ReadOnlySpan<byte> value = new byte[] { 0x04, 0x06, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 };
@@ -183,6 +174,15 @@ namespace System.Formats.Asn1.Tests.Writer
             writer.WriteEncodedValue(value);
             buffer = PeekRawBuffer(writer);
             Assert.Equal(8, buffer?.Length);
+        }
+
+        [Fact]
+        public static void InitialCapacity_ZeroHasNoInitialCapacity()
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, initialCapacity: 0);
+
+            byte[]? buffer = PeekRawBuffer(writer);
+            Assert.Null(buffer);
         }
 
         [Fact]

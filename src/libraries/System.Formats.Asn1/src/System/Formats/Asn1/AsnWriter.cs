@@ -20,7 +20,6 @@ namespace System.Formats.Asn1
         private byte[] _buffer = null!;
         private int _offset;
         private Stack<StackFrame>? _nestingStack;
-        private readonly int? _initialCapacity;
 
         /// <summary>
         ///   Gets the encoding rules in use by this writer.
@@ -57,14 +56,21 @@ namespace System.Formats.Asn1
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <para><paramref name="ruleSet"/> is not defined.</para>
         ///   <para> -or- </para>
-        ///   <para><paramref name="initialCapacity"/> is not a positive number.</para>
+        ///   <para><paramref name="initialCapacity"/> is a negative number.</para>
         /// </exception>
+        /// <remarks>
+        ///   Specifying <paramref name="initialCapacity" /> with a value of zero behaves as if no initial capacity were
+        ///   specified.
+        /// </remarks>
         public AsnWriter(AsnEncodingRules ruleSet, int initialCapacity) : this(ruleSet)
         {
-            if (initialCapacity <= 0)
-                throw new ArgumentOutOfRangeException(nameof(initialCapacity), SR.ArgumentOutOfRange_NeedPosNum);
+            if (initialCapacity < 0)
+                throw new ArgumentOutOfRangeException(nameof(initialCapacity), SR.ArgumentOutOfRange_NeedNonNegNum);
 
-            _initialCapacity = initialCapacity;
+            if (initialCapacity > 0)
+            {
+                _buffer = new byte[initialCapacity];
+            }
         }
 
         /// <summary>
@@ -276,21 +282,13 @@ namespace System.Formats.Asn1
 
                 _buffer = newBytes;
 #else
-                if (_initialCapacity is int initialCapacity && _buffer is null && initialCapacity >= pendingCount)
-                {
-                    Debug.Assert(_offset == 0);
-                    _buffer = new byte[initialCapacity];
-                }
-                else
-                {
-                    const int BlockSize = 1024;
-                    // Make sure we don't run into a lot of "grow a little" by asking in 1k steps.
-                    int blocks = checked(_offset + pendingCount + (BlockSize - 1)) / BlockSize;
-                    byte[]? oldBytes = _buffer;
-                    Array.Resize(ref _buffer, BlockSize * blocks);
+                const int BlockSize = 1024;
+                // Make sure we don't run into a lot of "grow a little" by asking in 1k steps.
+                int blocks = checked(_offset + pendingCount + (BlockSize - 1)) / BlockSize;
+                byte[]? oldBytes = _buffer;
+                Array.Resize(ref _buffer, BlockSize * blocks);
 
-                    oldBytes?.AsSpan(0, _offset).Clear();
-                }
+                oldBytes?.AsSpan(0, _offset).Clear();
 #endif
 
 #if DEBUG
