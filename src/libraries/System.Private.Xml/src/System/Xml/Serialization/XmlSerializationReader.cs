@@ -4274,7 +4274,15 @@ namespace System.Xml.Serialization
                         {
                             WriteSourceBegin(member.ArraySource);
                             TypeDesc td = ((NullableMapping)e.Mapping).BaseMapping!.TypeDesc!;
-                            Writer.Write(RaCodeGen.GetStringForCreateInstance(e.Mapping.TypeDesc.CSharpName, e.Mapping.TypeDesc.UseReflection, false, true, $"({td.CSharpName}){checkTypeSource}"));
+                            if (e.Mapping.TypeDesc.CSharpName == "System.Xml.Linq.XElement")
+                            {
+                                Writer.Write(
+                                    "(System.Xml.Serialization.IXmlSerializable)System.Activator.CreateInstance(typeof(global::System.Xml.Linq.XElement), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.CreateInstance | System.Reflection.BindingFlags.NonPublic, null, new object[0], null)");
+                            }
+                            else
+                            {
+                                Writer.Write(RaCodeGen.GetStringForCreateInstance(e.Mapping.TypeDesc.CSharpName, e.Mapping.TypeDesc.UseReflection, false, true, $"({td.CSharpName}){checkTypeSource}"));
+                            }
                         }
                         else
                         {
