@@ -19,6 +19,12 @@
   &lt;ItemGroup&gt;
     &lt;DotNetCliToolReference Include="$(PackageId)" Version="$(PackageVersion)" /&gt;
   &lt;/ItemGroup&gt;
+  &lt;PropertyGroup&gt;
+    &lt;AddSerializers&gt;False&lt;/AddSerializers&gt;
+  &lt;/PropertyGroup&gt;
+  &lt;ItemGroup Condition="%24(AddSerializers)==True"&gt;
+    &lt;BuildOutputInPackage Include="%24(OutputPath)%2A.XmlSerializers.dll" /&gt;
+  &lt;/ItemGroup&gt;
 &lt;/Project&gt;
       </PropsFileContents>
     </PropertyGroup>
