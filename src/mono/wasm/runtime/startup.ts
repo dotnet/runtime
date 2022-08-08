@@ -244,7 +244,6 @@ function mono_wasm_pre_init_essential(): void {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_essential");
 
     // init_polyfills() is already called from export.ts
-    init_crypto();
     init_c_exports();
     cwraps_internal(INTERNAL);
     cwraps_mono_api(MONO);
@@ -259,6 +258,7 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
 
     await init_polyfills_async();
+    init_crypto();
 
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
 }
