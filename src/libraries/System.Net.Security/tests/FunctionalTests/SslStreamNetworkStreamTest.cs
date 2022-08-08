@@ -921,7 +921,7 @@ namespace System.Net.Security.Tests
 
                 // We may get completed chain from OS even if client sent less.
                 // As minimum, it should send more than the leaf cert
-                Assert.True(chain.ChainPolicy.ExtraStore.Count > clientChain.Count - 1);
+                Assert.True(chain.ChainPolicy.ExtraStore.Count >= clientChain.Count - 1);
                 Assert.Contains(clientChain[0], chain.ChainPolicy.ExtraStore);
                 return true;
             };
