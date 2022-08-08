@@ -47,7 +47,7 @@ class ChannelWorker {
                 // Wait for signal to perform operation
                 let state;
                 do {
-                    this._wait_for_state_to_change__from(this.STATE_IDLE);
+                    this._wait_for_state_to_change_from(this.STATE_IDLE);
                     state = Atomics.load(this.comm, this.STATE_IDX);
                 } while (state !== this.STATE_REQ && state !== this.STATE_REQ_P && state !== this.STATE_SHUTDOWN && state !== this.STATE_REQ_FAILED && state !== this.STATE_RESET);
 
@@ -77,7 +77,7 @@ class ChannelWorker {
                         console.debug("MONO_WASM: caller failed, resetting worker");
                 } else {
                     console.error(`MONO_WASM: Worker failed to handle the request: ${_stringify_err(err)}`);
-                    this.using_lock(() => {
+                    this._using_lock_for_nonblocking_cb(() => {
                         this._change_state_locked(this.STATE_REQ_FAILED);
                     });
 
@@ -89,7 +89,7 @@ class ChannelWorker {
                     }
                 }
 
-                this.using_lock(() => {
+                this._using_lock_for_nonblocking_cb(() => {
                     Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
                     Atomics.store(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED);
                     this._change_state_locked(this.STATE_IDLE);
@@ -105,7 +105,7 @@ class ChannelWorker {
                 console.error(`MONO_WASM: -- lock is not unlocked at the top of the loop: ${lock_state}, and state: ${state}`);
         }
 
-        this.using_lock(() => {
+        this._using_lock_for_nonblocking_cb(() => {
             Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
             this._change_state_locked(this.STATE_SHUTDOWN);
         });
@@ -115,7 +115,7 @@ class ChannelWorker {
     private _read_request(): string {
         let request = "";
         for (; ;) {
-            const done = this.using_lock(() => {
+            const done = this._using_lock_for_nonblocking_cb(() => {
                 this._throw_if_reset_or_shutdown();
 
                 // Get the current state and message size
@@ -143,7 +143,7 @@ class ChannelWorker {
             });
             if (done) break;
 
-            this._wait_for_state_to_change__from(this.STATE_AWAIT);
+            this._wait_for_state_to_change_from(this.STATE_AWAIT);
         }
 
         return request;
@@ -157,7 +157,7 @@ class ChannelWorker {
         let msg_written = 0;
 
         for (; ;) {
-            const state = this.using_lock(() => {
+            const state = this._using_lock_for_nonblocking_cb(() => {
                 // Write the message and return how much was written.
                 const wrote = this._write_to_msg(msg, msg_written, msg_len);
                 msg_written += wrote;
@@ -176,7 +176,7 @@ class ChannelWorker {
 
             // Wait for the transition to know the main thread has
             // received the response by moving onto a new state.
-            this._wait_for_state_to_change__from(state);
+            this._wait_for_state_to_change_from(state);
 
             // Done sending response.
             if (state === this.STATE_RESP) {
@@ -202,16 +202,16 @@ class ChannelWorker {
         Atomics.store(this.comm, this.STATE_IDX, newState);
     }
 
-    private using_lock(cb: Function) {
+    private _using_lock_for_nonblocking_cb(cb: Function) {
+        this._acquire_lock_with_spin_wait();
         try {
-            this._acquire_lock();
             return cb();
         } finally {
             this._release_lock();
         }
     }
 
-    private _acquire_lock() {
+    private _acquire_lock_with_spin_wait() {
         for (; ;) {
             const lockState = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED);
             this._throw_if_reset_or_shutdown();
@@ -228,7 +228,7 @@ class ChannelWorker {
         }
     }
 
-    private _wait_for_state_to_change__from(expected_state: number) {
+    private _wait_for_state_to_change_from(expected_state: number) {
         Atomics.wait(this.comm, this.STATE_IDX, expected_state);
         this._throw_if_reset_or_shutdown();
     }

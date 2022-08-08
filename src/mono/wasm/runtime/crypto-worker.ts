@@ -219,7 +219,7 @@ class LibraryChannel {
         if (state !== this.STATE_IDLE)
             throw new Error(`OWNER: Invalid sync communication channel state: ${state}`);
 
-        this.using_lock(() => {
+        this._using_lock_for_nonblocking_cb(() => {
             Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
             this._change_state_locked(this.STATE_SHUTDOWN);
         });
@@ -238,7 +238,7 @@ class LibraryChannel {
             return;
         }
 
-        this.using_lock(() => {
+        this._using_lock_for_nonblocking_cb(() => {
             Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
             this._change_state_locked(this.STATE_RESET);
         });
@@ -252,7 +252,7 @@ class LibraryChannel {
         let msg_written = 0;
 
         for (; ;) {
-            this.using_lock(() => {
+            this._using_lock_for_nonblocking_cb(() => {
                 // Write the message and return how much was written.
                 const wrote = this.write_to_msg(msg, msg_written, msg_len);
                 msg_written += wrote;
@@ -296,7 +296,7 @@ class LibraryChannel {
         for (; ;) {
             this.wait_for_state_change_to(state => state == this.STATE_RESP || state == this.STATE_RESP_P, "read_response");
             let state;
-            const done = this.using_lock(() => {
+            const done = this._using_lock_for_nonblocking_cb(() => {
                 const size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
 
                 // Append the latest part of the message.
@@ -308,7 +308,7 @@ class LibraryChannel {
                     Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
                     return true;
                 } else if (state !== this.STATE_RESP_P) {
-                    throw new Error(`Unexpectd state ${state}`);
+                    throw new Error(`Unexpected state ${state}`);
                 }
 
                 // Reset the size and transition to await state.
@@ -324,7 +324,7 @@ class LibraryChannel {
 
         // Reset the communication channel's state and let the
         // webworker know we are done.
-        this.using_lock(() => {
+        this._using_lock_for_nonblocking_cb(() => {
             this._change_state_locked(this.STATE_IDLE);
         });
         Atomics.notify(this.comm, this.STATE_IDX);
@@ -340,7 +340,7 @@ class LibraryChannel {
         // Wait for webworker
         //  - Atomics.wait() is not permissible on the main thread.
         for (; ;) {
-            const done = this.using_lock(() => {
+            const done = this._using_lock_for_nonblocking_cb(() => {
                 const state = Atomics.load(this.comm, this.STATE_IDX);
                 if (state == this.STATE_REQ_FAILED)
                     throw new OperationFailedError(`Worker failed during ${msg} with state=${state}`);
@@ -358,16 +358,17 @@ class LibraryChannel {
         return String.fromCharCode.apply(null, slicedMessage);
     }
 
-    private using_lock(cb: Function) {
+    // Make sure to never call any blocking code in the callback
+    private _using_lock_for_nonblocking_cb(cb: Function) {
         try {
-            this._acquire_lock();
+            this._acquire_lock_with_spin_wait();
             return cb();
         } finally {
             this._release_lock();
         }
     }
 
-    private _acquire_lock() {
+    private _acquire_lock_with_spin_wait() {
         for (; ;) {
             const lock_state = Atomics.compareExchange(this.comm, this.LOCK_IDX, this.LOCK_UNLOCKED, this.LOCK_OWNED);
 
