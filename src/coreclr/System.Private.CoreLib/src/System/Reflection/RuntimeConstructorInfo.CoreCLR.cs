@@ -73,7 +73,8 @@ namespace System.Reflection
         RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => new RuntimeMethodHandleInternal(m_handle);
 
         internal override bool CacheEquals(object? o) =>
-            o is RuntimeConstructorInfo m && m.m_handle == m_handle;
+            o is RuntimeConstructorInfo m && m.m_handle == m_handle &&
+            ReferenceEquals(m_declaringType, m.m_declaringType);
 
         internal Signature Signature
         {
