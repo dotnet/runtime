@@ -58,9 +58,21 @@ namespace System.IO
                     return new OperationCanceledException();
                 case Interop.Errors.ERROR_INVALID_PARAMETER:
                 default:
+                    string msg = string.IsNullOrEmpty(path)
+                        ? GetPInvokeErrorMessage(errorCode)
+                        : $"{GetPInvokeErrorMessage(errorCode)} : '{path}'";
                     return new IOException(
-                        string.IsNullOrEmpty(path) ? GetMessage(errorCode) : $"{GetMessage(errorCode)} : '{path}'",
+                        msg,
                         MakeHRFromErrorCode(errorCode));
+            }
+
+            static string GetPInvokeErrorMessage(int errorCode)
+            {
+#if NET7_0_OR_GREATER
+                return Marshal.GetPInvokeErrorMessage(errorCode);
+#else
+                return Interop.Kernel32.GetMessage(errorCode);
+#endif
             }
         }
 
@@ -90,10 +102,5 @@ namespace System.IO
 
             return hr;
         }
-
-        /// <summary>
-        /// Returns a string message for the specified Win32 error code.
-        /// </summary>
-        internal static string GetMessage(int errorCode) => Interop.Kernel32.GetMessage(errorCode);
     }
 }

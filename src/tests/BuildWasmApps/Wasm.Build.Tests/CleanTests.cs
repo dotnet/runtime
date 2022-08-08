@@ -45,7 +45,7 @@ public class CleanTests : NativeRebuildTestsBase
                 .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
                 .EnsureSuccessful();
 
-        AssertEmptyOrNonExistantDirectory(relinkDir);
+        AssertEmptyOrNonExistentDirectory(relinkDir);
     }
 
     [Theory]
@@ -92,9 +92,9 @@ public class CleanTests : NativeRebuildTestsBase
                 .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
                 .EnsureSuccessful();
 
-        AssertEmptyOrNonExistantDirectory(relinkDir);
+        AssertEmptyOrNonExistentDirectory(relinkDir);
     }
-    private void AssertEmptyOrNonExistantDirectory(string dirPath)
+    private void AssertEmptyOrNonExistentDirectory(string dirPath)
     {
         _testOutput.WriteLine($"dirPath: {dirPath}");
         if (!Directory.Exists(dirPath))

@@ -236,7 +236,7 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidANSIString);
             return newString;
 #else
-            return Encoding.UTF8.GetString(pb, numBytes);
+            return CreateStringFromEncoding(pb, numBytes, Encoding.UTF8);
 #endif
         }
 
@@ -328,7 +328,7 @@ namespace System
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="handler">The interpolated string.</param>
         /// <returns>The string that results for formatting the interpolated string using the specified format provider.</returns>
-        public static string Create(IFormatProvider? provider, [InterpolatedStringHandlerArgument("provider")] ref DefaultInterpolatedStringHandler handler) =>
+        public static string Create(IFormatProvider? provider, [InterpolatedStringHandlerArgument(nameof(provider))] ref DefaultInterpolatedStringHandler handler) =>
             handler.ToStringAndClear();
 
         /// <summary>Creates a new string by using the specified provider to control the formatting of the specified interpolated string.</summary>
@@ -419,7 +419,7 @@ namespace System
         {
             if ((uint)Length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._reference.Value, ref _firstChar, (uint)Length);
+                Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
             }
             else
             {
@@ -436,7 +436,7 @@ namespace System
             bool retVal = false;
             if ((uint)Length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._reference.Value, ref _firstChar, (uint)Length);
+                Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
                 retVal = true;
             }
             return retVal;

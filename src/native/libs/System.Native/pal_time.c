@@ -53,6 +53,33 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
     return result;
 }
 
+int32_t SystemNative_FUTimens(intptr_t fd, TimeSpec* times)
+{
+    int32_t result;
+
+#if HAVE_FUTIMENS
+    struct timespec updatedTimes[2];
+    updatedTimes[0].tv_sec = (time_t)times[0].tv_sec;
+    updatedTimes[0].tv_nsec = (long)times[0].tv_nsec;
+    updatedTimes[1].tv_sec = (time_t)times[1].tv_sec;
+    updatedTimes[1].tv_nsec = (long)times[1].tv_nsec;
+
+    while (CheckInterrupted(result = futimens(ToFileDescriptor(fd), updatedTimes)));
+#else
+    // Fallback on unsupported platforms (e.g. iOS, tvOS, watchOS)
+    // to futimes (lower precision)
+    struct timeval updatedTimes[2];
+    updatedTimes[0].tv_sec = (long)times[0].tv_sec;
+    updatedTimes[0].tv_usec = (int)times[0].tv_nsec / 1000;
+    updatedTimes[1].tv_sec = (long)times[1].tv_sec;
+    updatedTimes[1].tv_usec = (int)times[1].tv_nsec / 1000;
+
+    while (CheckInterrupted(result = futimes(ToFileDescriptor(fd), updatedTimes)));
+#endif
+
+    return result;
+}
+
 uint64_t SystemNative_GetTimestamp()
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP

@@ -256,10 +256,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (_isBound)
             {
-                if (_classEntry == null)
-                {
-                    _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
-                }
+                _classEntry ??= _schemaClass.GetSchemaClassDirectoryEntry();
 
                 try
                 {
@@ -275,16 +272,13 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-#pragma warning disable CS8765 // Nullability doesn't match overriden member
+#pragma warning disable CS8765 // Nullability doesn't match overridden member
         protected override void OnInsertComplete(int index, object value)
 #pragma warning restore CS8765
         {
             if (_isBound)
             {
-                if (_classEntry == null)
-                {
-                    _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
-                }
+                _classEntry ??= _schemaClass.GetSchemaClassDirectoryEntry();
 
                 try
                 {
@@ -297,16 +291,13 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-#pragma warning disable CS8765 // Nullability doesn't match overriden member
+#pragma warning disable CS8765 // Nullability doesn't match overridden member
         protected override void OnRemoveComplete(int index, object value)
 #pragma warning restore CS8765
         {
             if (_isBound)
             {
-                if (_classEntry == null)
-                {
-                    _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
-                }
+                _classEntry ??= _schemaClass.GetSchemaClassDirectoryEntry();
 
                 // because this collection can contain values from the superior classes,
                 // these values would not exist in the classEntry
@@ -332,7 +323,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-#pragma warning disable CS8765 // Nullability doesn't match overriden member
+#pragma warning disable CS8765 // Nullability doesn't match overridden member
         protected override void OnSetComplete(int index, object oldValue, object newValue)
 #pragma warning restore CS8765
         {

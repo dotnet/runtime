@@ -1339,17 +1339,7 @@ namespace System
             {
                 // Per the method's documentation, we'll short-circuit the search for separators.
                 // But we still need to post-process the results based on the caller-provided flags.
-
-                string candidate = this;
-                if (((options & StringSplitOptions.TrimEntries) != 0) && (count > 0))
-                {
-                    candidate = candidate.Trim();
-                }
-                if (((options & StringSplitOptions.RemoveEmptyEntries) != 0) && (candidate.Length == 0))
-                {
-                    count = 0;
-                }
-                return (count == 0) ? Array.Empty<string>() : new string[] { candidate };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             if (separators.IsEmpty)
@@ -1422,17 +1412,7 @@ namespace System
             {
                 // Per the method's documentation, we'll short-circuit the search for separators.
                 // But we still need to post-process the results based on the caller-provided flags.
-
-                string candidate = this;
-                if (((options & StringSplitOptions.TrimEntries) != 0) && (count > 0))
-                {
-                    candidate = candidate.Trim();
-                }
-                if (((options & StringSplitOptions.RemoveEmptyEntries) != 0) && (candidate.Length == 0))
-                {
-                    count = 0;
-                }
-                return (count == 0) ? Array.Empty<string>() : new string[] { candidate };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             if (singleSeparator)
@@ -1458,7 +1438,7 @@ namespace System
             // Handle the special case of no replaces.
             if (sepList.Length == 0)
             {
-                return new string[] { this };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             string[] result = (options != StringSplitOptions.None)
@@ -1471,6 +1451,28 @@ namespace System
             return result;
         }
 
+        private string[] CreateSplitArrayOfThisAsSoleValue(StringSplitOptions options, int count)
+        {
+            Debug.Assert(count >= 0);
+
+            if (count != 0)
+            {
+                string candidate = this;
+
+                if ((options & StringSplitOptions.TrimEntries) != 0)
+                {
+                    candidate = candidate.Trim();
+                }
+
+                if ((options & StringSplitOptions.RemoveEmptyEntries) == 0 || candidate.Length != 0)
+                {
+                    return new string[] { candidate };
+                }
+            }
+
+            return Array.Empty<string>();
+        }
+
         private string[] SplitInternal(string separator, int count, StringSplitOptions options)
         {
             var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
@@ -1480,14 +1482,7 @@ namespace System
             if (sepList.Length == 0)
             {
                 // there are no separators so sepListBuilder did not rent an array from pool and there is no need to dispose it
-                string candidate = this;
-                if ((options & StringSplitOptions.TrimEntries) != 0)
-                {
-                    candidate = candidate.Trim();
-                }
-                return ((candidate.Length == 0) && ((options & StringSplitOptions.RemoveEmptyEntries) != 0))
-                    ? Array.Empty<string>()
-                    : new string[] { candidate };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             string[] result = (options != StringSplitOptions.None)

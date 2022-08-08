@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
@@ -22,6 +24,14 @@ namespace System.Text.Json.Serialization
         public abstract bool CanConvert(Type typeToConvert);
 
         internal abstract ConverterStrategy ConverterStrategy { get; }
+
+        /// <summary>
+        /// Indicates that the converter can consume the <see cref="JsonTypeInfo.CreateObject"/> delegate.
+        /// Needed because certain collection converters cannot support arbitrary delegates.
+        /// TODO remove once https://github.com/dotnet/runtime/pull/73395/ and
+        /// https://github.com/dotnet/runtime/issues/71944 have been addressed.
+        /// </summary>
+        internal virtual bool SupportsCreateObjectDelegate => false;
 
         /// <summary>
         /// Can direct Read or Write methods be called (for performance).
@@ -47,14 +57,6 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
         /// </summary>
-        internal virtual object CreateObject(JsonSerializerOptions options)
-        {
-            throw new InvalidOperationException(SR.NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty);
-        }
-
-        /// <summary>
-        /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
-        /// </summary>
         internal virtual void ReadElementAndSetProperty(
             object obj,
             string propertyName,
@@ -62,12 +64,30 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref ReadStack state)
         {
-            throw new InvalidOperationException(SR.NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty);
+            Debug.Fail("Should not be reachable.");
+
+            throw new InvalidOperationException();
         }
 
-        internal abstract JsonPropertyInfo CreateJsonPropertyInfo();
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal virtual JsonTypeInfo CreateReflectionJsonTypeInfo(JsonSerializerOptions options)
+        {
+            Debug.Fail("Should not be reachable.");
+
+            throw new InvalidOperationException();
+        }
+
+        internal virtual JsonTypeInfo CreateCustomJsonTypeInfo(JsonSerializerOptions options)
+        {
+            Debug.Fail("Should not be reachable.");
+
+            throw new InvalidOperationException();
+        }
 
         internal abstract JsonParameterInfo CreateJsonParameterInfo();
+
+        internal abstract JsonConverter<TTarget> CreateCastingConverter<TTarget>();
 
         internal abstract Type? ElementType { get; }
 

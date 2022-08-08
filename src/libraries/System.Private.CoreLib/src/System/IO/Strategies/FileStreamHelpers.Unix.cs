@@ -13,8 +13,8 @@ namespace System.IO.Strategies
             new UnixFileStreamStrategy(handle, access);
 #pragma warning restore IDE0060
 
-        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize) =>
-            new UnixFileStreamStrategy(path, mode, access, share, options, preallocationSize);
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode) =>
+            new UnixFileStreamStrategy(path, mode, access, share, options, preallocationSize, unixCreateMode);
 
         internal static long CheckFileCall(long result, string? path, bool ignoreNotSupported = false)
         {

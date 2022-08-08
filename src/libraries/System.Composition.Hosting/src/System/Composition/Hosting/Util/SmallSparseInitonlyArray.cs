@@ -19,8 +19,7 @@ namespace System.Composition.Hosting.Util
 
         public void Add(int index, object value)
         {
-            if (_elements == null)
-                _elements = new Element[ElementsCapacity];
+            _elements ??= new Element[ElementsCapacity];
 
             var newElement = new Element { Index = index, Value = value };
 
@@ -53,8 +52,7 @@ namespace System.Composition.Hosting.Util
                 }
             }
 
-            if (_overflow == null)
-                _overflow = new SmallSparseInitonlyArray();
+            _overflow ??= new SmallSparseInitonlyArray();
 
             _overflow.Add(index, value);
         }

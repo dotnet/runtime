@@ -98,8 +98,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             return new PublicKey(
                 ecPublicKey,
-                new AsnEncodedData(ecPublicKey, curveOidEncoded),
-                new AsnEncodedData(ecPublicKey, uncompressedPoint));
+                new AsnEncodedData(ecPublicKey, curveOidEncoded, skipCopy: true),
+                new AsnEncodedData(ecPublicKey, uncompressedPoint, skipCopy: true));
         }
     }
 }

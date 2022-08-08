@@ -1902,7 +1902,7 @@ int GetRandomInt(int maxVal)
     return g_random.Next(maxVal);
 }
 
-// These wrap the SString:L:CompareCaseInsenstive function in a way that makes it
+// These wrap the SString:L:CompareCaseInsensitive function in a way that makes it
 // easy to fix code that uses _stricmp. _stricmp should be avoided as it uses the current
 // C-runtime locale rather than the invariance culture.
 //
@@ -1979,23 +1979,6 @@ BOOL COMCharacter::nativeIsWhiteSpace(WCHAR c)
     return((GetCharacterInfoHelper(c, CT_CTYPE1) & C1_SPACE)!=0);
 #else // !TARGET_UNIX
     return iswspace(c);
-#endif // !TARGET_UNIX
-}
-
-/*================================nativeIsDigit=================================
-**The locally available version of IsDigit.  Designed to be called by other
-**native methods.  The work is mostly done by GetCharacterInfoHelper
-**Args:  c -- the character to check.
-**Returns: true if c is whitespace, false otherwise.
-**Exceptions:  Only those thrown by GetCharacterInfoHelper.
-==============================================================================*/
-BOOL COMCharacter::nativeIsDigit(WCHAR c)
-{
-    WRAPPER_NO_CONTRACT;
-#ifndef TARGET_UNIX
-    return((GetCharacterInfoHelper(c, CT_CTYPE1) & C1_DIGIT)!=0);
-#else // !TARGET_UNIX
-    return iswdigit(c);
 #endif // !TARGET_UNIX
 }
 

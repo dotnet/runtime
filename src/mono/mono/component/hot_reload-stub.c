@@ -39,7 +39,7 @@ static void
 hot_reload_stub_cleanup_on_close (MonoImage *image);
 
 static void
-hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int idx);
+hot_reload_stub_effective_table_slow (const MonoTableInfo **t, uint32_t idx);
 
 static void
 hot_reload_stub_close_except_pools_all (MonoImage *base_image);
@@ -62,7 +62,7 @@ hot_reload_stub_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx);
 static gboolean
 hot_reload_stub_has_modified_rows (const MonoTableInfo *table);
 
-static int
+static guint32
 hot_reload_stub_table_num_rows_slow (MonoImage *image, int table_index);
 
 static uint32_t
@@ -104,6 +104,12 @@ hot_reload_stub_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *it
 static uint32_t
 hot_reload_get_num_fields_added (MonoClass *klass);
 
+static uint32_t
+hot_reload_get_num_methods_added (MonoClass *klass);
+
+static const char *
+hot_reload_get_capabilities (void);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
 	&hot_reload_stub_set_fastpath_data,
@@ -134,7 +140,9 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_get_typedef_skeleton_events,
 	&hot_reload_stub_added_methods_iter,
 	&hot_reload_stub_added_fields_iter,
-	&hot_reload_get_num_fields_added
+	&hot_reload_get_num_fields_added,
+	&hot_reload_get_num_methods_added,
+	&hot_reload_get_capabilities
 };
 
 static bool
@@ -187,7 +195,7 @@ hot_reload_stub_cleanup_on_close (MonoImage *image)
 }
 
 void
-hot_reload_stub_effective_table_slow (const MonoTableInfo **t, int idx)
+hot_reload_stub_effective_table_slow (const MonoTableInfo **t, uint32_t idx)
 {
 	g_assert_not_reached ();
 }
@@ -238,7 +246,7 @@ hot_reload_stub_has_modified_rows (const MonoTableInfo *table)
 	return FALSE;
 }
 
-static int
+static guint32
 hot_reload_stub_table_num_rows_slow (MonoImage *image, int table_index)
 {
 	g_assert_not_reached (); /* should always take the fast path */
@@ -323,6 +331,17 @@ hot_reload_get_num_fields_added (MonoClass *klass)
 	return 0;
 }
 
+static uint32_t
+hot_reload_get_num_methods_added (MonoClass *klass)
+{
+	return 0;
+}
+
+static const char *
+hot_reload_get_capabilities (void)
+{
+	return "";
+}
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentHotReload *

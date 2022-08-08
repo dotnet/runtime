@@ -24,10 +24,7 @@ namespace System.Transactions
         {
             ArgumentNullException.ThrowIfNull(transaction);
 
-            if (transaction.Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(transaction.Disposed, transaction);
 
             if (transaction._complete)
             {
@@ -104,7 +101,7 @@ namespace System.Transactions
 
             // Extract the transaction guid from the propagation token to see if we already have a
             // transaction object for the transaction.
-            // In a cookie, the transaction guid is preceeded by a signature guid.
+            // In a cookie, the transaction guid is preceded by a signature guid.
             var txId = new Guid(cookie.AsSpan(16, 16));
 
             // First check to see if there is a promoted LTM transaction with the same ID.  If there
@@ -170,7 +167,7 @@ namespace System.Transactions
 
             // Extract the transaction guid from the propagation token to see if we already have a
             // transaction object for the transaction.
-            // In a propagation token, the transaction guid is preceeded by two version DWORDs.
+            // In a propagation token, the transaction guid is preceded by two version DWORDs.
             var txId = new Guid(propagationToken.AsSpan(8, 16));
 
             // First check to see if there is a promoted LTM transaction with the same ID.  If there is, just return that.

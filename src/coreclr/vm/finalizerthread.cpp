@@ -281,8 +281,11 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
                 GenAnalysis::EnableGenerationalAwareSession();
 #endif
             }
+
             // Writing an empty file to indicate completion
-            fclose(fopen(GENAWARE_COMPLETION_FILE_NAME,"w+"));
+            WCHAR outputPath[MAX_PATH];
+            AppendPid(GENAWARE_COMPLETION_FILE_NAME, outputPath, MAX_PATH);
+            fclose(_wfopen(outputPath, W("w+")));
         }
 
         if (!bPriorityBoosted)
@@ -319,7 +322,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
                 GetFinalizerThread()->EnablePreemptiveGC();
                 __SwitchToThread (0, ++dwSwitchCount);
                 GetFinalizerThread()->DisablePreemptiveGC();
-                // If no GCs happended, then we assume we are quiescent
+                // If no GCs happened, then we assume we are quiescent
                 GetFinalizerThread()->m_GCOnTransitionsOK = TRUE;
             } while (GCHeapUtilities::GetGCHeap()->CollectionCount(0) - last_gc_count > 0);
         }
@@ -473,7 +476,7 @@ void FinalizerThread::SignalFinalizationDone(BOOL fFinalizer)
 
     if (fFinalizer)
     {
-        FastInterlockAnd((DWORD*)&g_FinalizerWaiterStatus, ~FWS_WaitInterrupt);
+        InterlockedAnd((LONG*)&g_FinalizerWaiterStatus, ~FWS_WaitInterrupt);
     }
     hEventFinalizerDone->Set();
 }

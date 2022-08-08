@@ -28,6 +28,7 @@
 #include "eeconfig.h"
 #include "vars.hpp"
 #include "generics.h"
+#include "corinfo.h"
 
 #include "asmconstants.h"
 #include "virtualcallstub.h"
@@ -257,7 +258,7 @@ GetClrSEHRecordServicingStackPointer(Thread *pThread,
 // state of the EH chain is correct.
 //
 // For x86, check that we do INSTALL_COMPLUS_EXCEPTION_HANDLER before calling managed code.  This check should be
-// done for all managed code sites, not just transistions. But this will catch most problem cases.
+// done for all managed code sites, not just transitions. But this will catch most problem cases.
 void VerifyValidTransitionFromManagedCode(Thread *pThread, CrawlFrame *pCF)
 {
     WRAPPER_NO_CONTRACT;
@@ -638,18 +639,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
     EXCEPTION_DISPOSITION retval;
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
     Thread *pThread = GetThread();
-
-#ifdef _DEBUG
-    static int breakOnSO = -1;
-
-    if (breakOnSO == -1)
-        breakOnSO = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BreakOnSO);
-
-    if (breakOnSO != 0 && exceptionCode == STATUS_STACK_OVERFLOW)
-    {
-        DebugBreak();   // ASSERTing will overwrite the guard region
-    }
-#endif
 
     // We always want to be in co-operative mode when we run this function and whenever we return
     // from it, want to go to pre-emptive mode because are returning to OS.
@@ -1235,8 +1224,6 @@ void InitializeExceptionHandling()
 {
     WRAPPER_NO_CONTRACT;
 
-    InitSavedExceptionInfo();
-
     CLRAddVectoredHandlers();
 
     // Initialize the lock used for synchronizing access to the stacktrace in the exception object
@@ -1584,7 +1571,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!DebugIsEECxxException(pExceptionRecord) && "EE C++ Exception leaked into managed code!");
 
-    STRESS_LOG5(LF_EH, LL_INFO100, "In COMPlusFrameHander EH code = %x  flag = %x EIP = %x with ESP = %x, pEstablisherFrame = 0x%p\n",
+    STRESS_LOG5(LF_EH, LL_INFO100, "In COMPlusFrameHandler EH code = %x  flag = %x EIP = %x with ESP = %x, pEstablisherFrame = 0x%p\n",
         pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionFlags,
         pContext ? GetIP(pContext) : 0, pContext ? GetSP(pContext) : 0, pEstablisherFrame);
 
@@ -1658,7 +1645,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 
             // Switch to preemp mode since we are returning back to the OS.
             // We will do the quick switch since we are short of stack
-            FastInterlockAnd (&pThread->m_fPreemptiveGCDisabled, 0);
+            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
 
             return ExceptionContinueSearch;
         }
@@ -1710,7 +1697,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 
             // Switch to preemp mode since we are returning back to the OS.
             // We will do the quick switch since we are short of stack
-            FastInterlockAnd(&pThread->m_fPreemptiveGCDisabled, 0);
+            InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
 
             return ExceptionContinueSearch;
         }
@@ -2984,6 +2971,8 @@ void ResumeAtJitEH(CrawlFrame* pCf,
         // Check that the InlinedCallFrame is in the method with the exception handler. There can be other
         // InlinedCallFrame somewhere up the call chain that is not related to the current exception
         // handling.
+        
+        // See the usages for USE_PER_FRAME_PINVOKE_INIT for more information.
 
 #ifdef DEBUG
         TADDR handlerFrameSP = pCf->GetRegisterSet()->SP;
@@ -2996,10 +2985,22 @@ void ResumeAtJitEH(CrawlFrame* pCf,
                                                                      NULL /* StackwalkCacheUnwindInfo* */);
         _ASSERTE(unwindSuccess);
 
-        if (((TADDR)pThread->m_pFrame < pCf->GetRegisterSet()->SP) && ExecutionManager::IsReadyToRunCode(((InlinedCallFrame*)pThread->m_pFrame)->m_pCallerReturnAddress))
+        if (((TADDR)pThread->m_pFrame < pCf->GetRegisterSet()->SP))
         {
-            _ASSERTE((TADDR)pThread->m_pFrame >= handlerFrameSP);
-            pThread->m_pFrame->Pop(pThread);
+            TADDR returnAddress = ((InlinedCallFrame*)pThread->m_pFrame)->m_pCallerReturnAddress;
+#ifdef USE_PER_FRAME_PINVOKE_INIT
+            // If we're setting up the frame for each P/Invoke for the given platform,
+            // then we do this for all P/Invokes except ones in IL stubs.
+            if (!ExecutionManager::GetCodeMethodDesc(returnAddress)->IsILStub())
+#else
+            // If we aren't setting up the frame for each P/Invoke (instead setting up once per method),
+            // then ReadyToRun code is the only code using the per-P/Invoke logic.
+            if (ExecutionManager::IsReadyToRunCode(returnAddress))
+#endif
+            {
+                _ASSERTE((TADDR)pThread->m_pFrame >= handlerFrameSP);
+                pThread->m_pFrame->Pop(pThread);
+            }
         }
     }
 
@@ -3284,7 +3285,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusNestedExceptionHandler)
         // previous exception is overridden -- and needs to be unwound.
 
         // The preceding is ALMOST true.  There is one more case, where we use setjmp/longjmp
-        // from withing a nested handler.  We won't have a nested exception in that case -- just
+        // from within a nested handler.  We won't have a nested exception in that case -- just
         // the unwind.
 
         Thread* pThread = GetThread();

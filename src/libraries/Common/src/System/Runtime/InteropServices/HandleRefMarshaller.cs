@@ -1,22 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
-    [CustomTypeMarshaller(typeof(HandleRef), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-    internal struct HandleRefMarshaller
+    [CustomMarshaller(typeof(HandleRef), MarshalMode.ManagedToUnmanagedIn, typeof(KeepAliveMarshaller))]
+    internal static class HandleRefMarshaller
     {
-        private HandleRef _handle;
-
-        public HandleRefMarshaller(HandleRef handle)
+        internal struct KeepAliveMarshaller
         {
-            _handle = handle;
+            private HandleRef _handle;
+
+            public void FromManaged(HandleRef handle)
+            {
+                _handle = handle;
+            }
+
+            public IntPtr ToUnmanaged() => _handle.Handle;
+
+            public void OnInvoked() => GC.KeepAlive(_handle.Wrapper);
+
+            public void Free() { }
         }
-
-        public IntPtr ToNativeValue() => _handle.Handle;
-
-        public void FreeNative() => GC.KeepAlive(_handle.Wrapper);
     }
 }

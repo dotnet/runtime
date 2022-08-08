@@ -100,6 +100,17 @@ static int FindICULibs()
     libicuuc = LoadLibraryExW(L"icu.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (libicuuc == NULL)
     {
+        // On Windows Server 2019, the ICU library is installed as icuuc.dll and icuin.dll. Try to load these.
+        libicuuc = LoadLibraryExW(L"icuuc.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (libicuuc != NULL)
+        {
+            libicui18n = LoadLibraryExW(L"icuin.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+            if (libicui18n != NULL)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 

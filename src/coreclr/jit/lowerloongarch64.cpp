@@ -417,6 +417,60 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
+// LowerPutArgStkOrSplit: Lower a GT_PUTARG_STK/GT_PUTARG_SPLIT.
+//
+// Arguments:
+//    putArgNode - The node to lower
+//
+void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
+{
+    GenTree* src = putArgNode->Data();
+
+    if (src->TypeIs(TYP_STRUCT))
+    {
+        // STRUCT args (FIELD_LIST / OBJ) will always be contained.
+        MakeSrcContained(putArgNode, src);
+
+        // Currently, codegen does not support LCL_VAR/LCL_FLD sources, so we morph them to OBJs.
+        // TODO-ADDR: support the local nodes in codegen and remove this code.
+        if (src->OperIsLocalRead())
+        {
+            unsigned     lclNum  = src->AsLclVarCommon()->GetLclNum();
+            ClassLayout* layout  = nullptr;
+            GenTree*     lclAddr = nullptr;
+
+            if (src->OperIs(GT_LCL_VAR))
+            {
+                layout  = comp->lvaGetDesc(lclNum)->GetLayout();
+                lclAddr = comp->gtNewLclVarAddrNode(lclNum);
+
+                comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+            }
+            else
+            {
+                layout  = src->AsLclFld()->GetLayout();
+                lclAddr = comp->gtNewLclFldAddrNode(lclNum, src->AsLclFld()->GetLclOffs());
+            }
+
+            src->ChangeOper(GT_OBJ);
+            src->AsObj()->SetAddr(lclAddr);
+            src->AsObj()->SetLayout(layout);
+            src->AsObj()->gtBlkOpKind     = GenTreeBlk::BlkOpKindInvalid;
+            src->AsObj()->gtBlkOpGcUnsafe = false;
+
+            BlockRange().InsertBefore(src, lclAddr);
+        }
+
+        // Codegen supports containment of local addresses under OBJs.
+        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIs(GT_LCL_VAR_ADDR))
+        {
+            // TODO-LOONGARCH64-CQ: support containment of LCL_FLD_ADDR too.
+            MakeSrcContained(src, src->AsObj()->Addr());
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // LowerCast: Lower GT_CAST(srcType, DstType) nodes.
 //
 // Arguments:

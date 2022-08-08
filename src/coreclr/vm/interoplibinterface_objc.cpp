@@ -42,7 +42,7 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     // while they are being set.
     {
         GCX_COOP();
-        if (FastInterlockCompareExchange((LONG*)&g_ReferenceTrackerInitialized, TRUE, FALSE) == FALSE)
+        if (InterlockedCompareExchange((LONG*)&g_ReferenceTrackerInitialized, TRUE, FALSE) == FALSE)
         {
             g_BeginEndCallback = beginEndCallback;
             g_IsReferencedCallback = isReferencedCallback;
@@ -164,10 +164,10 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
     BEGIN_QCALL;
 
     _ASSERTE(msgSendFunction >= 0 && msgSendFunction < ARRAY_SIZE(s_msgSendOverrides));
-    success = FastInterlockCompareExchangePointer(&s_msgSendOverrides[msgSendFunction], fptr, NULL) == NULL;
+    success = InterlockedCompareExchangeT(&s_msgSendOverrides[msgSendFunction], fptr, NULL) == NULL;
 
     // Set P/Invoke override callback if we haven't already
-    if (success && FALSE == FastInterlockCompareExchange((LONG*)&s_msgSendOverridden, TRUE, FALSE))
+    if (success && FALSE == InterlockedCompareExchange((LONG*)&s_msgSendOverridden, TRUE, FALSE))
         PInvokeOverride::SetPInvokeOverride(&MessageSendPInvokeOverride, PInvokeOverride::Source::ObjectiveCInterop);
 
     END_QCALL;

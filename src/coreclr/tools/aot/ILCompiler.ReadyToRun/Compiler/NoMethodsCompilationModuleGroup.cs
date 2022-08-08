@@ -25,15 +25,10 @@ namespace ILCompiler
             return false;
         }
 
-        public override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)
-        {
-            return;
-        }
-
         public override ReadyToRunFlags GetReadyToRunFlags()
         {
             // Partial by definition.
-            return ReadyToRunFlags.READYTORUN_FLAG_Partial;
+            return base.GetReadyToRunFlags() | ReadyToRunFlags.READYTORUN_FLAG_Partial;
         }
     }
 }

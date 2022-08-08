@@ -296,12 +296,12 @@ void trace_hostpolicy_entrypoint_invocation(const pal::string_t& entryPointName)
 }
 
 //
-// Loads and initilizes the hostpolicy.
+// Loads and initializes the hostpolicy.
 //
 // If hostpolicy is already initialized, the library will not be
 // reinitialized.
 //
-SHARED_API int HOSTPOLICY_CALLTYPE corehost_load(host_interface_t* init)
+SHARED_API int HOSTPOLICY_CALLTYPE corehost_load(const host_interface_t* init)
 {
     assert(init != nullptr);
     std::lock_guard<std::mutex> lock{ g_init_lock };
@@ -654,7 +654,7 @@ namespace
 //      [out] if initialization is successful, populated with a contract for performing operations on hostpolicy
 //
 // Return value:
-//    Success                            - Initialization was succesful
+//    Success                            - Initialization was successful
 //    Success_HostAlreadyInitialized     - Request is compatible with already initialized hostpolicy
 //    Success_DifferentRuntimeProperties - Request has runtime properties that differ from already initialized hostpolicy
 //
@@ -903,7 +903,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     // TODO Review: Since we're only passing the one component framework, the resolver will not consider
     // frameworks from the app for probing paths. So potential references to paths inside frameworks will not resolve.
 
-    // The RID graph still has to come from the actuall root framework, so take that from the g_init.fx_definitions
+    // The RID graph still has to come from the actual root framework, so take that from the g_init.fx_definitions
     // which are the frameworks for the app.
     deps_resolver_t resolver(
         args,

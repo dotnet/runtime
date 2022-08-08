@@ -352,10 +352,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
 
-                if (Disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Transaction));
-                }
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 TransactionInformation? txInfo = _internalTransaction._transactionInformation;
                 if (txInfo == null)
@@ -387,10 +384,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
 
-                if (Disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Transaction));
-                }
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 if (etwLog.IsEnabled())
                 {
@@ -422,10 +416,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
 
-                if (Disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Transaction));
-                }
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 lock (_internalTransaction)
                 {
@@ -461,10 +452,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             // We always make a copy of the promotedToken stored in the internal transaction.
             byte[] internalPromotedToken;
@@ -490,10 +478,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (resourceManagerIdentifier == Guid.Empty)
             {
@@ -541,10 +526,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (resourceManagerIdentifier == Guid.Empty)
             {
@@ -587,10 +569,7 @@ namespace System.Transactions
                 etwLog.TransactionRollback(this, "Transaction");
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             lock (_internalTransaction)
             {
@@ -614,10 +593,7 @@ namespace System.Transactions
                 etwLog.TransactionRollback(this, "Transaction");
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             lock (_internalTransaction)
             {
@@ -642,10 +618,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
@@ -684,10 +657,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             ArgumentNullException.ThrowIfNull(singlePhaseNotification);
 
@@ -725,10 +695,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (_complete)
             {
@@ -776,10 +743,7 @@ namespace System.Transactions
                 throw new ArgumentOutOfRangeException(nameof(cloneOption));
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (_complete)
             {
@@ -826,10 +790,7 @@ namespace System.Transactions
         {
             add
             {
-                if (Disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Transaction));
-                }
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 lock (_internalTransaction)
                 {
@@ -894,10 +855,7 @@ namespace System.Transactions
             //    etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             //}
 
-            //if (Disposed)
-            //{
-            //    throw new ObjectDisposedException(nameof(Transaction));
-            //}
+            //ObjectDisposedException.ThrowIf(Disposed, this);
 
             //if (serializationInfo == null)
             //{
@@ -969,10 +927,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             ArgumentNullException.ThrowIfNull(promotableSinglePhaseNotification);
 
@@ -1013,10 +968,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (resourceManagerIdentifier == Guid.Empty)
             {
@@ -1060,10 +1012,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             ArgumentNullException.ThrowIfNull(promotableNotification);
 
@@ -1141,7 +1090,7 @@ namespace System.Transactions
         private static readonly AsyncLocal<ContextKey?> s_currentTransaction = new AsyncLocal<ContextKey?>();
 
         // ConditionalWeakTable is used to automatically remove the entries that are no longer referenced. This will help prevent leaks in async nested TransactionScope
-        // usage and when child nested scopes are not syncronized properly.
+        // usage and when child nested scopes are not synchronized properly.
         private static readonly ConditionalWeakTable<ContextKey, ContextData> s_contextDataTable = new ConditionalWeakTable<ContextKey, ContextData>();
 
         //
@@ -1217,17 +1166,7 @@ namespace System.Transactions
         [AllowNull]
         internal static ContextData TLSCurrentData
         {
-            get
-            {
-                ContextData? data = t_staticData;
-                if (data == null)
-                {
-                    data = new ContextData(false);
-                    t_staticData = data;
-                }
-
-                return data;
-            }
+            get => t_staticData ??= new ContextData(false);
             set
             {
                 if (value == null && t_staticData != null)

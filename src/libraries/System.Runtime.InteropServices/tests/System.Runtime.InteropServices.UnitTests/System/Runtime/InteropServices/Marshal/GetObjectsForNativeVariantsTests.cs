@@ -56,8 +56,7 @@ namespace System.Runtime.InteropServices.Tests
             [FieldOffset(0)] public decimal m_decimal;
         }
 #pragma warning disable 618
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void SByteType()
         {
             Variant v = new Variant();
@@ -78,8 +77,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void ByteType()
         {
             Variant v = new Variant();
@@ -100,8 +98,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void DoubleType()
         {
             Variant v = new Variant();
@@ -122,8 +119,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void ShortType()
         {
             Variant v = new Variant();
@@ -144,8 +140,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void UshortType()
         {
             Variant v = new Variant();
@@ -166,8 +161,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void IntType()
         {
             Variant v = new Variant();
@@ -188,8 +182,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void UIntType()
         {
             Variant v = new Variant();
@@ -210,8 +203,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void LongType()
         {
             Variant v = new Variant();
@@ -232,8 +224,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void ULongType()
         {
             Variant v = new Variant();
@@ -254,8 +245,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void FloatType()
         {
             Variant v = new Variant();
@@ -284,16 +274,14 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetObjectsForNativeVariants<int>(IntPtr.Zero, 10));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public static void GetObjectsForNativeVariants_ZeroPointer_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("aSrcNativeVariant", () => Marshal.GetObjectsForNativeVariants(IntPtr.Zero, 10));
             AssertExtensions.Throws<ArgumentNullException>("aSrcNativeVariant", () => Marshal.GetObjectsForNativeVariants<int>(IntPtr.Zero, 10));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public static void GetObjectsForNativeVariants_NegativeCount_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("cVars", () => Marshal.GetObjectsForNativeVariants((IntPtr)1, -1));

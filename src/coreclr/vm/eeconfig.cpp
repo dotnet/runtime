@@ -237,6 +237,14 @@ HRESULT EEConfig::Init()
     tieredCompilation_DeleteCallCountingStubsAfter = 0;
 #endif
 
+#if defined(FEATURE_PGO)
+    fTieredPGO = false;
+#endif
+
+#if defined(FEATURE_READYTORUN)
+    fReadyToRun = false;
+#endif
+
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
     dwOSR_HitLimit = 10;
     dwOSR_CounterBump = 5000;
@@ -472,8 +480,11 @@ HRESULT EEConfig::sync()
     }
 
     pReadyToRunExcludeList = NULL;
+
 #if defined(FEATURE_READYTORUN)
-    if (ReadyToRunInfo::IsReadyToRunEnabled())
+    fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
+
+    if (fReadyToRun)
     {
         NewArrayHolder<WCHAR> wszReadyToRunExcludeList;
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunExcludeList, &wszReadyToRunExcludeList));
@@ -687,6 +698,10 @@ HRESULT EEConfig::sync()
 #endif
 
     dwSleepOnExit = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_SleepOnExit);
+
+#if defined(FEATURE_PGO)
+    fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
+#endif
 
 #if defined(FEATURE_TIERED_COMPILATION)
     fTieredCompilation = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredCompilation"), CLRConfig::EXTERNAL_TieredCompilation);

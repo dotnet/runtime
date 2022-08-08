@@ -90,7 +90,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                 {
                     string ns = namespaceHandle.ToNamespaceName(reader);
                     if (ns.Length != 0)
-                        ns = ns + ".";
+                        ns += ".";
                     ns = ns.ToLowerInvariant();
 
                     NamespaceDefinition namespaceDefinition = namespaceHandle.GetNamespaceDefinition(reader);

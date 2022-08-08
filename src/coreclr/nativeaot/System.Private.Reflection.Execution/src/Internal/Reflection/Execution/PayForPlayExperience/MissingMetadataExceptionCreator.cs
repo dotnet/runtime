@@ -99,16 +99,13 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     return type.ToDisplayStringIfAvailable(null);
             }
 
-            if (pertainant is MemberInfo)
+            if (pertainant is MemberInfo memberInfo)
             {
-                MemberInfo memberInfo = (MemberInfo)pertainant;
-
                 StringBuilder friendlyName = new StringBuilder(memberInfo.DeclaringType.ToDisplayStringIfAvailable(null));
                 friendlyName.Append('.');
                 friendlyName.Append(memberInfo.Name);
-                if (pertainant is MethodBase)
+                if (pertainant is MethodBase method)
                 {
-                    MethodBase method = (MethodBase)pertainant;
                     bool first;
 
                     // write out generic parameters
@@ -249,7 +246,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     {
                         genericParameterOffsets.Add(s.Length);
                         if (genericArgCount > 0)
-                            s = s + ",";
+                            s += ",";
                     }
                     s += "]";
                 }
@@ -283,7 +280,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             // Similarly, if we found too few, add them at the end.
             while (genericTypeArguments.Length > genericParameterOffsets.Count)
             {
-                genericTypeDefinitionString = genericTypeDefinitionString + ",";
+                genericTypeDefinitionString += ",";
                 genericParameterOffsets.Add(genericTypeDefinitionString.Length);
             }
 

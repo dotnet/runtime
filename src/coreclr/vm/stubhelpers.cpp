@@ -219,14 +219,6 @@ FORCEINLINE static SOleTlsData *GetOrCreateOleTlsData()
     return pOleTlsData;
 }
 
-FORCEINLINE static void *GetCOMIPFromRCW_GetTargetNoInterception(IUnknown *pUnk, ComPlusCallInfo *pComInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    LPVOID *lpVtbl = *(LPVOID **)pUnk;
-    return lpVtbl[pComInfo->m_cachedComSlot];
-}
-
 FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache(RCW *pRCW, MethodTable * pItfMT)
 {
     LIMITED_METHOD_CONTRACT;
@@ -243,35 +235,6 @@ FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache(RCW *pRCW, 
             if (pRCW->m_aInterfaceEntries[i].m_pMT == pItfMT)
             {
                 return pRCW->m_aInterfaceEntries[i].m_pUnknown;
-            }
-        }
-    }
-
-    return NULL;
-}
-
-// Like GetCOMIPFromRCW_GetIUnknownFromRCWCache but also computes the target. This is a couple of instructions
-// faster than GetCOMIPFromRCW_GetIUnknownFromRCWCache + GetCOMIPFromRCW_GetTargetNoInterception.
-FORCEINLINE static IUnknown *GetCOMIPFromRCW_GetIUnknownFromRCWCache_NoInterception(RCW *pRCW, ComPlusCallInfo *pComInfo, void **ppTarget)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // The code in this helper is the "fast path" that used to be generated directly
-    // to compiled ML stubs. The idea is to aim for an efficient RCW cache hit.
-    SOleTlsData *pOleTlsData = GetOrCreateOleTlsData();
-    MethodTable *pItfMT = pComInfo->m_pInterfaceMT;
-
-    // test for free-threaded after testing for context match to optimize for apartment-bound objects
-    if (pOleTlsData->pCurrentCtx == pRCW->GetWrapperCtxCookie() || pRCW->IsFreeThreaded())
-    {
-        for (int i = 0; i < INTERFACE_ENTRY_CACHE_SIZE; i++)
-        {
-            if (pRCW->m_aInterfaceEntries[i].m_pMT == pItfMT)
-            {
-                IUnknown *pUnk = pRCW->m_aInterfaceEntries[i].m_pUnknown;
-                _ASSERTE(pUnk != NULL);
-                *ppTarget = GetCOMIPFromRCW_GetTargetNoInterception(pUnk, pComInfo);
-                return pUnk;
             }
         }
     }

@@ -38,7 +38,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         /// <summary>
         /// Parse the metadata that describes parameters, and for each parameter for which there is specific metadata
-        /// construct a RuntimeParameterInfo and fill in the VirtualRuntimeParamterInfoArray. Do remember to use contextMethod
+        /// construct a RuntimeParameterInfo and fill in the VirtualRuntimeParameterInfoArray. Do remember to use contextMethod
         /// instead of using the one internal to the RuntimeMethodCommon, as the runtime may pass in a subtly different context.
         /// </summary>
         void FillInMetadataDescribedParameters(ref VirtualRuntimeParameterInfoArray result, QSignatureTypeHandle[] parameterTypes, MethodBase contextMethod, TypeContext typeContext);

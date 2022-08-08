@@ -298,7 +298,7 @@ Empirical studies have shown that most finallys are small. Thus to
 avoid excessive code growth, a crude size estimate is formed by
 counting the number of statements in the blocks that make up the
 finally. Any finally larger that 15 statements is not cloned. In our
-study this disqualifed about 0.5% of all finallys from cloning.
+study this disqualified about 0.5% of all finallys from cloning.
 
 ### EH Nesting Considerations
 
@@ -378,7 +378,7 @@ integrity of the handler table.
 
 ### Finally Cloning (Sketch)
 
-Skip over all methods, if the runtime suports thread abort. More on
+Skip over all methods, if the runtime supports thread abort. More on
 this below.
 
 Skip over methods that have no EH, are compiled with min opts, or
@@ -416,7 +416,7 @@ blocks. Clear the finally target bit and any GT_END_LFIN from the
 continuation.
 
 If all call finallys are converted, modify the region to be try/fault
-(interally EH_HANDLER_FAULT_WAS_FINALLY, so we can distinguish it
+(internally EH_HANDLER_FAULT_WAS_FINALLY, so we can distinguish it
 later from "organic" try/faults).  Otherwise leave it as a
 try/finally.
 

@@ -2747,7 +2747,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
         // contains stack trace info.
         //
         // Note: we use SafeSetLastThrownObject, which will try to set the throwable and if there are any problems,
-        // it will set the throwable to something appropiate (like OOM exception) and return the new
+        // it will set the throwable to something appropriate (like OOM exception) and return the new
         // exception. Thus, the user's exception object can be replaced here.
         pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
 
@@ -2855,7 +2855,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
 
     _ASSERTE(IsException(throwable->GetMethodTable()));
 
-    // This may look a bit odd, but there is an explaination.  The rethrow boolean
+    // This may look a bit odd, but there is an explanation.  The rethrow boolean
     //  means that an actual RaiseException(EXCEPTION_COMPLUS,...) is being re-thrown,
     //  and that the exception context saved on the Thread object should replace
     //  the exception context from the upcoming RaiseException().  There is logic
@@ -3795,7 +3795,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
             g_pDebugInterface->PreJitAttach(TRUE, FALSE, FALSE);
         }
 
-        // Let unhandled excpetions except stack overflow go to the OS
+        // Let unhandled exceptions except stack overflow go to the OS
         if (tore.IsUnhandledException() && !fSOException)
         {
             return EXCEPTION_CONTINUE_SEARCH;
@@ -3807,7 +3807,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
         else
         {
             BOOL fWatsonAlreadyLaunched = FALSE;
-            if (FastInterlockCompareExchange(&g_watsonAlreadyLaunched, 1, 0) != 0)
+            if (InterlockedCompareExchange(&g_watsonAlreadyLaunched, 1, 0) != 0)
             {
                 fWatsonAlreadyLaunched = TRUE;
             }
@@ -3817,7 +3817,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
             {
                 // EEPolicy::HandleFatalStackOverflow pushes a FaultingExceptionFrame on the stack after SO
                 // exception.   Our hijack code runs in the exception context, and overwrites the stack space
-                // after SO excpetion, so we need to pop up this frame before invoking RaiseFailFast.
+                // after SO exception, so we need to pop up this frame before invoking RaiseFailFast.
                 // This cumbersome code should be removed once SO synchronization is moved to be completely
                 // out-of-process.
                 if (fSOException && pThread && pThread->GetFrame() != FRAME_TOP)
@@ -6188,7 +6188,12 @@ bool IsGcMarker(CONTEXT* pContext, EXCEPTION_RECORD *pExceptionRecord)
 
         if (exceptionCode == STATUS_CLR_GCCOVER_CODE)
         {
-            if (OnGcCoverageInterrupt(pContext))
+            // GCStress processing can disturb last error, so preserve it.
+            BOOL res;
+            BEGIN_PRESERVE_LAST_ERROR;
+            res = OnGcCoverageInterrupt(pContext);
+            END_PRESERVE_LAST_ERROR;
+            if (res)
             {
                 return true;
             }
@@ -6582,66 +6587,6 @@ struct SavedExceptionInfo
     }
 };
 
-SavedExceptionInfo g_SavedExceptionInfo;  // Globals are guaranteed zero-init;
-
-void InitSavedExceptionInfo()
-{
-    g_SavedExceptionInfo.Init();
-}
-
-EXTERN_C VOID FixContextForFaultingExceptionFrame (
-        EXCEPTION_RECORD* pExceptionRecord,
-        CONTEXT *pContextRecord)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // don't copy parm args as have already supplied them on the throw
-    memcpy((void*) pExceptionRecord,
-           (void*) &g_SavedExceptionInfo.m_ExceptionRecord,
-           offsetof(EXCEPTION_RECORD, ExceptionInformation)
-          );
-
-    ReplaceExceptionContextRecord(pContextRecord, &g_SavedExceptionInfo.m_ExceptionContext);
-
-    g_SavedExceptionInfo.Leave();
-
-    GetThread()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
-}
-
-EXTERN_C VOID __fastcall
-LinkFrameAndThrow(FaultingExceptionFrame* pFrame)
-{
-    WRAPPER_NO_CONTRACT;
-
-    *(TADDR*)pFrame = FaultingExceptionFrame::GetMethodFrameVPtr();
-    *pFrame->GetGSCookiePtr() = GetProcessGSCookie();
-
-    pFrame->InitAndLink(&g_SavedExceptionInfo.m_ExceptionContext);
-
-    GetThread()->SetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
-
-    ULONG       argcount = g_SavedExceptionInfo.m_ExceptionRecord.NumberParameters;
-    ULONG       flags    = g_SavedExceptionInfo.m_ExceptionRecord.ExceptionFlags;
-    ULONG       code     = g_SavedExceptionInfo.m_ExceptionRecord.ExceptionCode;
-    ULONG_PTR*  args     = &g_SavedExceptionInfo.m_ExceptionRecord.ExceptionInformation[0];
-
-    RaiseException(code, flags, argcount, args);
-}
-
-void SetNakedThrowHelperArgRegistersInContext(CONTEXT* pContext)
-{
-#if defined(TARGET_AMD64)
-    pContext->Rcx = (UINT_PTR)GetIP(pContext);
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
-    // Save the original IP in LR
-    pContext->Lr = (DWORD)GetIP(pContext);
-#else
-    PORTABILITY_WARNING("NakedThrowHelper argument not defined");
-#endif
-}
-
-EXTERN_C VOID STDCALL NakedThrowHelper(VOID);
-
 void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
                         CONTEXT*                        pContext,
                         EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
@@ -6650,37 +6595,16 @@ void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
     WRAPPER_NO_CONTRACT;
 
     // Ok.  Now we have a brand new fault in jitted code.
-    if (!Thread::UseContextBasedThreadRedirection())
-    {
-        // Once this code path gets enough bake time, perhaps this path could always be used instead of the alternative path to
-        // redirect the thread
-        FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
-        FaultingExceptionFrame *frame = &frameWithCookie;
-    #if defined(FEATURE_EH_FUNCLETS)
-        *frame->GetGSCookiePtr() = GetProcessGSCookie();
-    #endif // FEATURE_EH_FUNCLETS
-        frame->InitAndLink(pContext);
+    FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
+    FaultingExceptionFrame *frame = &frameWithCookie;
+#if defined(FEATURE_EH_FUNCLETS)
+    *frame->GetGSCookiePtr() = GetProcessGSCookie();
+#endif // FEATURE_EH_FUNCLETS
+    frame->InitAndLink(pContext);
 
-        SEHException exception(pExceptionRecord);
-        OBJECTREF managedException = CLRException::GetThrowableFromException(&exception);
-        RaiseTheExceptionInternalOnly(managedException, FALSE);
-    }
-    else
-    {
-        g_SavedExceptionInfo.Enter();
-        g_SavedExceptionInfo.SaveExceptionRecord(pExceptionRecord);
-        g_SavedExceptionInfo.SaveContext(pContext);
-
-        SetNakedThrowHelperArgRegistersInContext(pContext);
-
-        SetIP(pContext, GetEEFuncEntryPoint(NakedThrowHelper));
-    }
-}
-
-#else // USE_FEF && !TARGET_UNIX
-
-void InitSavedExceptionInfo()
-{
+    SEHException exception(pExceptionRecord);
+    OBJECTREF managedException = CLRException::GetThrowableFromException(&exception);
+    RaiseTheExceptionInternalOnly(managedException, FALSE);
 }
 
 #endif // USE_FEF && !TARGET_UNIX
@@ -7008,12 +6932,6 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
 
     if (action == VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION)
     {
-        //
-        // If the exception context was unwound by Phase3 then
-        // we'll jump here to save the managed context and resume execution at
-        // NakedThrowHelper.  This needs to be done outside of any holder's
-        // scope, because HandleManagedFault may not return.
-        //
         HandleManagedFault(pExceptionInfo->ExceptionRecord,
                            pExceptionInfo->ContextRecord,
                            NULL, // establisher frame (x86 only)
@@ -7174,9 +7092,12 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
     // NOTE: this is effectively ifdef (TARGET_AMD64 || TARGET_ARM), and does not actually trigger
     // a GC.  This will redirect the exception context to a stub which will
     // push a frame and cause GC.
-    if (IsGcMarker(pContext, pExceptionRecord))
+    if (Thread::UseRedirectForGcStress())
     {
-        return VEH_CONTINUE_EXECUTION;;
+        if (IsGcMarker(pContext, pExceptionRecord))
+        {
+            return VEH_CONTINUE_EXECUTION;;
+        }
     }
 #endif // USE_REDIRECT_FOR_GCSTRESS
 
@@ -7247,11 +7168,10 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                     //
 #if defined(_DEBUG)
                     const char * pStack = "<stack not available>";
-                    StackScratchBuffer buffer;
                     SString sStack;
                     if (GetStackTraceAtContext(sStack, pContext))
                     {
-                        pStack = sStack.GetANSI(buffer);
+                        pStack = sStack.GetUTF8();
                     }
 
                     DWORD tid = GetCurrentThreadId();
@@ -7844,7 +7764,7 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
     //
     // @todo: we'd rather use UnwindFrameChain, but there is a concern: some of the ExceptionUnwind methods on some
     // of the Frame types do a great deal of work; load classes, throw exceptions, etc. We need to decide on some
-    // policy here. Do we want to let such funcitons throw, etc.? Right now, we believe that there are no such
+    // policy here. Do we want to let such functions throw, etc.? Right now, we believe that there are no such
     // frames on the stack to be unwound, so the SetFrame is alright (see the first comment above.) At the very
     // least, we should add some way to assert that.
     pThread->SetFrame(pEntryFrame);
@@ -8326,7 +8246,7 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT)
 
         if (name != NULL && strcmp(name, "get_StackTrace") == 0)
         {
-            // see if the slot is overriden by pMT
+            // see if the slot is overridden by pMT
             MethodDesc *pDerivedMD = pMT->GetMethodDescForSlot(slot);
             return (pDerivedMD != pMD);
         }
@@ -8984,7 +8904,7 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
 
     gc.oPreAllocThrowable = oPreAllocThrowable;
 
-    // Start walking the list to find the tracker correponding
+    // Start walking the list to find the tracker corresponding
     // to the preallocated exception object.
     while (pEHTracker != NULL)
     {
@@ -10641,7 +10561,7 @@ PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEH
 
     BOOL fFoundTracker = FALSE;
 
-    // Start walking the list to find the tracker correponding
+    // Start walking the list to find the tracker corresponding
     // to the exception object.
     while (pEHTracker != NULL)
     {

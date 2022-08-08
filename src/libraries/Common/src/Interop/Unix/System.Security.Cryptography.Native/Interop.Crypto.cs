@@ -73,13 +73,13 @@ internal static partial class Interop
             byte usedDefault;
             IntPtr ptr = GetX509RootStorePath_private(&usedDefault);
             defaultPath = (usedDefault != 0);
-            return Marshal.PtrToStringAnsi(ptr);
+            return Marshal.PtrToStringUTF8(ptr);
         }
 
         internal static unsafe string? GetX509RootStoreFile()
         {
             byte unused;
-            return Marshal.PtrToStringAnsi(GetX509RootStoreFile_private(&unused));
+            return Marshal.PtrToStringUTF8(GetX509RootStoreFile_private(&unused));
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStorePath")]
@@ -107,25 +107,25 @@ internal static partial class Interop
 
         internal static byte[] GetAsn1StringBytes(IntPtr asn1)
         {
-            return GetDynamicBuffer((ptr, buf, i) => GetAsn1StringBytes(ptr, buf, i), asn1);
+            return GetDynamicBuffer(GetAsn1StringBytes, asn1);
         }
 
         internal static byte[] GetX509Thumbprint(SafeX509Handle x509)
         {
-            return GetDynamicBuffer((handle, buf, i) => GetX509Thumbprint(handle, buf, i), x509);
+            return GetDynamicBuffer(GetX509Thumbprint, x509);
         }
 
         internal static X500DistinguishedName LoadX500Name(IntPtr namePtr)
         {
             CheckValidOpenSslHandle(namePtr);
 
-            byte[] buf = GetDynamicBuffer((ptr, buf1, i) => GetX509NameRawBytes(ptr, buf1, i), namePtr);
+            byte[] buf = GetDynamicBuffer(GetX509NameRawBytes, namePtr);
             return new X500DistinguishedName(buf);
         }
 
         internal static byte[] GetX509PublicKeyParameterBytes(SafeX509Handle x509)
         {
-            return GetDynamicBuffer((handle, buf, i) => GetX509PublicKeyParameterBytes(handle, buf, i), x509);
+            return GetDynamicBuffer(GetX509PublicKeyParameterBytes, x509);
         }
 
         internal static void X509StoreSetVerifyTime(SafeX509StoreHandle ctx, DateTime verifyTime)

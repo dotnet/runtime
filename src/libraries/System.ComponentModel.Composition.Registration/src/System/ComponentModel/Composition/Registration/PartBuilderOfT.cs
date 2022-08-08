@@ -126,10 +126,7 @@ namespace System.ComponentModel.Composition.Registration
                                 var lambdaExpression = (LambdaExpression)parameter;
                                 Delegate importDelegate = lambdaExpression.Compile();
 
-                                if (_importBuilders == null)
-                                {
-                                    _importBuilders = new Dictionary<ParameterInfo, Action<ImportBuilder>>();
-                                }
+                                _importBuilders ??= new Dictionary<ParameterInfo, Action<ImportBuilder>>();
 
                                 _importBuilders.Add(parameterInfos[index], (Action<ImportBuilder>)importDelegate);
                                 ++index;

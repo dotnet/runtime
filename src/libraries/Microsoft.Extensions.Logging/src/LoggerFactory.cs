@@ -195,10 +195,7 @@ namespace Microsoft.Extensions.Logging
 
             if (provider is ISupportExternalScope supportsExternalScope)
             {
-                if (_scopeProvider == null)
-                {
-                    _scopeProvider = new LoggerFactoryScopeProvider(_factoryOptions.ActivityTrackingOptions);
-                }
+                _scopeProvider ??= new LoggerFactoryScopeProvider(_factoryOptions.ActivityTrackingOptions);
 
                 supportsExternalScope.SetScopeProvider(_scopeProvider);
             }

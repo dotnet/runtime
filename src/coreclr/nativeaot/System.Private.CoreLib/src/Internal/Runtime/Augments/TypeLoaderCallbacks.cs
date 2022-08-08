@@ -17,7 +17,7 @@ namespace Internal.Runtime.Augments
     {
         public abstract TypeManagerHandle GetModuleForMetadataReader(MetadataReader reader);
         public abstract bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
-        public abstract int GetThreadStaticsSizeForDynamicType(int index, out int numTlsCells);
+        public abstract IntPtr GetThreadStaticGCDescForDynamicType(TypeManagerHandle handle, int index);
         public abstract IntPtr GenericLookupFromContextAndSignature(IntPtr context, IntPtr signature, out IntPtr auxResult);
         public abstract bool GetRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgs);
         public abstract RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, string methodName, RuntimeSignature methodSignature, RuntimeTypeHandle[] genericMethodArgs);

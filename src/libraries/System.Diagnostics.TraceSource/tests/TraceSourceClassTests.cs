@@ -11,7 +11,7 @@ namespace System.Diagnostics.TraceSourceTests
     public sealed class TraceSourceClassTests
     {
         [Fact]
-        public void ConstrutorExceptionTest()
+        public void ConstructorExceptionTest()
         {
             Assert.Throws<ArgumentNullException>(() => new TraceSource(null));
             AssertExtensions.Throws<ArgumentException>("name", null, () => new TraceSource(""));

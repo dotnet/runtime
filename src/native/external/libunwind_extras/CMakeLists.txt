@@ -1,5 +1,3 @@
-# This is a custom file written for .NET Core's build system
-# It overwrites the one found in upstream
 project(unwind)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -9,10 +7,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_definitions(-DHAVE___THREAD=0)
 
 add_definitions(-D_GNU_SOURCE)
-
 add_definitions(-DPACKAGE_STRING="")
 add_definitions(-DPACKAGE_BUGREPORT="")
-
 
 if(CLR_CMAKE_HOST_UNIX)
     if (CLR_CMAKE_HOST_ARCH_AMD64)
@@ -29,6 +25,10 @@ if(CLR_CMAKE_HOST_UNIX)
       set(arch s390x)
     elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
       set(arch loongarch64)
+    elseif(CLR_CMAKE_HOST_ARCH_RISCV64)
+      set(arch riscv64)
+    elseif(CLR_CMAKE_HOST_ARCH_POWERPC64)
+      set(arch ppc64le)
     endif ()
 
     # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
@@ -73,6 +73,8 @@ if(CLR_CMAKE_HOST_UNIX)
         add_compile_options(-Wno-incompatible-pointer-types)
     elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
         ###TODO: maybe add options for LOONGARCH64
+    elseif(CLR_CMAKE_HOST_ARCH_RISCV64)
+        ###TODO: maybe add options for RISCV64
     endif()
 
     if (CLR_CMAKE_HOST_OSX)
@@ -89,24 +91,19 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_HOST_WIN32)
     if (CLR_CMAKE_TARGET_ARCH_AMD64)
-      set(TARGET_AMD64 1)
       set(arch x86_64)
       add_definitions(-D__x86_64__)
       add_definitions(-D__amd64__)
     elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
-      set(TARGET_AARCH64 1)
       set(arch aarch64)
       add_definitions(-D__aarch64__)
     elseif(CLR_CMAKE_TARGET_ARCH_ARM)
-      set(TARGET_ARM 1)
       set(arch arm)
       add_definitions(-D__arm__)
     elseif(CLR_CMAKE_TARGET_ARCH_ARMV6)
-      set(TARGET_ARM 1)
       set(arch arm)
       add_definitions(-D__arm__)
     elseif(CLR_CMAKE_TARGET_ARCH_S390X)
-      set(TARGET_S390X 1)
       set(arch s390x)
       add_definitions(-D__s390x__)
     else ()
@@ -136,7 +133,8 @@ if(CLR_CMAKE_HOST_WIN32)
     include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include)
 
     # files for cross os compilation
-    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/win)
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote)
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/win)
 
     add_definitions(-D_CRT_DECLARE_NONSTDC_NAMES)
 
@@ -149,6 +147,9 @@ if(CLR_CMAKE_HOST_WIN32)
     add_compile_options(-wd4311) # pointer truncation from 'unw_word_t *' to 'long'
     add_compile_options(-wd4475) # 'fprintf' : length modifier 'L' cannot be used
     add_compile_options(-wd4477) # fprintf argument type
+elseif(CLR_CMAKE_HOST_OSX)
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote)
+    include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/mac)
 endif (CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARMV6)
@@ -161,16 +162,9 @@ endif()
 include(configure.cmake)
 include(${CLR_SRC_NATIVE_DIR}/external/libunwind.cmake)
 
-set(LIBUNWIND_SOURCES
-  ${LIBUNWIND_SOURCES}
-  ${CMAKE_CURRENT_LIST_DIR}/oop/_OOP_find_proc_info.c)
-
 if(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_HOST_OSX)
-        include_directories(${CMAKE_CURRENT_LIST_DIR}/mac)
-        add_library(libunwind_dac OBJECT
-          ${CMAKE_CURRENT_LIST_DIR}/mac/missing-functions.c
-          ${LIBUNWIND_SOURCES})
+        add_library(libunwind_dac OBJECT ${LIBUNWIND_SOURCES})
     else()
         add_library(libunwind OBJECT ${LIBUNWIND_SOURCES})
     endif(CLR_CMAKE_HOST_OSX)

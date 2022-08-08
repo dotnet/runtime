@@ -776,9 +776,9 @@ namespace System.Data.Common
         // : DbMetaDataFactory
         //
 
-        internal static Exception AmbigousCollectionName(string collectionName)
+        internal static Exception AmbiguousCollectionName(string collectionName)
         {
-            return Argument(SR.GetString(SR.MDF_AmbigousCollectionName, collectionName));
+            return Argument(SR.GetString(SR.MDF_AmbiguousCollectionName, collectionName));
         }
 
         internal static Exception CollectionNameIsNotUnique(string collectionName)
@@ -1099,7 +1099,7 @@ namespace System.Data.Common
             {
                 using (RegistryKey? key = Registry.ClassesRoot.OpenSubKey(subkey, false))
                 {
-                    return ((null != key) ? key.GetValue(queryvalue) : null);
+                    return key?.GetValue(queryvalue);
                 }
             }
             catch (SecurityException e)
@@ -1117,7 +1117,7 @@ namespace System.Data.Common
             {
                 using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(subkey, false))
                 {
-                    return ((null != key) ? key.GetValue(queryvalue) : null);
+                    return key?.GetValue(queryvalue);
                 }
             }
             catch (SecurityException e)

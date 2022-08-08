@@ -140,8 +140,7 @@ namespace System.Runtime.Serialization.Json
 
         internal override void ReadAttributes(XmlReaderDelegator xmlReader)
         {
-            if (attributes == null)
-                attributes = new Attributes();
+            attributes ??= new Attributes();
             attributes.Reset();
 
             if (xmlReader.MoveToAttribute(JsonGlobals.typeString) && xmlReader.Value == JsonGlobals.nullString)

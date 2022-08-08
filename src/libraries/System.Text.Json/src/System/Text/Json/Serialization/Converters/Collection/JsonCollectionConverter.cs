@@ -14,6 +14,7 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal abstract class JsonCollectionConverter<TCollection, TElement> : JsonResumableConverter<TCollection>
     {
+        internal override bool SupportsCreateObjectDelegate => true;
         internal sealed override ConverterStrategy ConverterStrategy => ConverterStrategy.Enumerable;
         internal override Type ElementType => typeof(TElement);
 
@@ -41,7 +42,7 @@ namespace System.Text.Json.Serialization
                 }
             }
 
-            state.Current.ReturnValue = typeInfo.CreateObject()!;
+            state.Current.ReturnValue = typeInfo.CreateObject();
             Debug.Assert(state.Current.ReturnValue is TCollection);
         }
 
@@ -49,18 +50,13 @@ namespace System.Text.Json.Serialization
 
         protected static JsonConverter<TElement> GetElementConverter(JsonTypeInfo elementTypeInfo)
         {
-            JsonConverter<TElement> converter = (JsonConverter<TElement>)elementTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
-            Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
-
-            return converter;
+            return ((JsonTypeInfo<TElement>)elementTypeInfo).EffectiveConverter;
         }
 
         protected static JsonConverter<TElement> GetElementConverter(ref WriteStack state)
         {
-            JsonConverter<TElement> converter = (JsonConverter<TElement>)state.Current.JsonPropertyInfo!.ConverterBase;
-            Debug.Assert(converter != null); // It should not be possible to have a null converter at this point.
-
-            return converter;
+            Debug.Assert(state.Current.JsonPropertyInfo != null);
+            return (JsonConverter<TElement>)state.Current.JsonPropertyInfo.EffectiveConverter;
         }
 
         internal override bool OnTryRead(

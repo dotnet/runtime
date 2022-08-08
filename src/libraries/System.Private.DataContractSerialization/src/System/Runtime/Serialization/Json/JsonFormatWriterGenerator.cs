@@ -2,19 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Security;
 using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-    using System.Reflection.Emit;
-    using System.Security;
-    using System.Xml;
-
     internal delegate void JsonFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, ClassDataContract dataContract, XmlDictionaryString[]? memberNames);
     internal delegate void JsonFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, CollectionDataContract dataContract);
 
@@ -277,8 +274,8 @@ namespace System.Runtime.Serialization.Json
                         {
                             WriteStartElement(nameLocal: null, nameIndex: i + _childElementIndex);
                         }
-                        if (memberValue == null)
-                            memberValue = LoadMemberValue(member);
+
+                        memberValue ??= LoadMemberValue(member);
                         WriteValue(memberValue);
                         WriteEndElement();
                     }
@@ -393,10 +390,8 @@ namespace System.Runtime.Serialization.Json
                     {
                         if (enumeratorType.IsInterface)
                         {
-                            if (moveNextMethod == null)
-                                moveNextMethod = JsonFormatGeneratorStatics.MoveNextMethod;
-                            if (getCurrentMethod == null)
-                                getCurrentMethod = JsonFormatGeneratorStatics.GetCurrentMethod;
+                            moveNextMethod ??= JsonFormatGeneratorStatics.MoveNextMethod;
+                            getCurrentMethod ??= JsonFormatGeneratorStatics.GetCurrentMethod;
                         }
                         else
                         {
@@ -416,10 +411,9 @@ namespace System.Runtime.Serialization.Json
                                     }
                                 }
                             }
-                            if (moveNextMethod == null)
-                                moveNextMethod = CollectionDataContract.GetTargetMethodWithName(Globals.MoveNextMethodName, enumeratorType, ienumeratorInterface)!;
-                            if (getCurrentMethod == null)
-                                getCurrentMethod = CollectionDataContract.GetTargetMethodWithName(Globals.GetCurrentMethodName, enumeratorType, ienumeratorInterface)!;
+
+                            moveNextMethod ??= CollectionDataContract.GetTargetMethodWithName(Globals.MoveNextMethodName, enumeratorType, ienumeratorInterface)!;
+                            getCurrentMethod ??= CollectionDataContract.GetTargetMethodWithName(Globals.GetCurrentMethodName, enumeratorType, ienumeratorInterface)!;
                         }
                     }
                     Type elementType = getCurrentMethod.ReturnType;

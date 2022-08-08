@@ -22,7 +22,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Since MoveNext() saved off the current value for us, this is largely trivial.
 
-                if (_endReached == true || _enumerator == null)
+                if (_endReached || _enumerator == null)
                 {
                     // Either we're at the end or before the beginning
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "TrackedCollectionEnumerator", "Current: bad position, endReached={0}", _endReached);

@@ -24,7 +24,7 @@
 static gboolean
 mono_bb_is_fall_through (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	return  bb->next_bb && bb->next_bb->region == bb->region && /*fall throught between regions is not really interesting or useful*/
+	return  bb->next_bb && bb->next_bb->region == bb->region && /*fallthrough between regions is not really interesting or useful*/
 			(bb->last_ins == NULL || !MONO_IS_BRANCH_OP (bb->last_ins)); /*and the last op can't be a branch too*/
 }
 
@@ -41,7 +41,6 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
 	MonoClass *exclass;
-	int i;
 
 	if (!(cfg->opt & MONO_OPT_EXCEPTION))
 		return NULL;
@@ -51,7 +50,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 
 	exclass = mono_class_load_from_name (mono_get_corlib (), "System", exname);
 	/* search for the handler */
-	for (i = 0; i < header->num_clauses; ++i) {
+	for (guint i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if (MONO_OFFSET_IN_CLAUSE (clause, bb->real_offset)) {
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE && clause->data.catch_class && mono_class_is_assignable_from_internal (clause->data.catch_class, exclass)) {

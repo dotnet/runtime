@@ -146,8 +146,6 @@ bool GCToOSInterface::Initialize()
         uintptr_t pmask, smask;
         if (!!::GetProcessAffinityMask(::GetCurrentProcess(), (PDWORD_PTR)&pmask, (PDWORD_PTR)&smask))
         {
-            pmask &= smask;
-
             for (size_t i = 0; i < 8 * sizeof(uintptr_t); i++)
             {
                 if ((pmask & ((uintptr_t)1 << i)) != 0)
@@ -169,7 +167,7 @@ void GCToOSInterface::Shutdown()
 }
 
 // Get numeric id of the current thread if possible on the
-// current platform. It is indended for logging purposes only.
+// current platform. It is intended for logging purposes only.
 // Return:
 //  Numeric id of the current thread or 0 if the
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
@@ -588,6 +586,7 @@ SYSTEM_LOGICAL_PROCESSOR_INFORMATION *IsGLPISupported( PDWORD nEntries )
 size_t GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cache_size = 0;
+    size_t cache_level = 0;
     DWORD nEntries = 0;
 
     // Try to use GetLogicalProcessorInformation API and get a valid pointer to the SLPI array if successful.  Returns NULL
@@ -610,7 +609,11 @@ size_t GetLogicalProcessorCacheSizeFromOS()
         {
             if (pslpi[i].Relationship == RelationCache)
             {
-                last_cache_size = max(last_cache_size, pslpi[i].Cache.Size);
+                if (last_cache_size < pslpi[i].Cache.Size)
+                {
+                    last_cache_size = pslpi[i].Cache.Size;
+                    cache_level = pslpi[i].Cache.Level;
+                }
             }
         }
         cache_size = last_cache_size;
@@ -619,6 +622,39 @@ size_t GetLogicalProcessorCacheSizeFromOS()
 Exit:
     if(pslpi)
         delete[] pslpi;  // release the memory allocated for the SLPI array.
+
+#if defined(TARGET_ARM64)
+    if (cache_level != 3)
+    {
+        uint32_t totalCPUCount = GCToOSInterface::GetTotalProcessorCount();
+
+        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
+        // from most of the machines.
+        // Hence, just use the following heuristics at best depending on the CPU count
+        // 1 ~ 4   :  4 MB
+        // 5 ~ 16  :  8 MB
+        // 17 ~ 64 : 16 MB
+        // 65+     : 32 MB
+        if (totalCPUCount < 5)
+        {
+            cache_size = 4;
+        }
+        else if (totalCPUCount < 17)
+        {
+            cache_size = 8;
+        }
+        else if (totalCPUCount < 65)
+        {
+            cache_size = 16;
+        }
+        else
+        {
+            cache_size = 32;
+        }
+
+        cache_size *= (1024 * 1024);
+    }
+#endif // TARGET_ARM64
 
     return cache_size;
 }
@@ -646,15 +682,10 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 
     maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
 
-#if defined(TARGET_ARM64)
-    // Bigger gen0 size helps arm64 targets
-    maxSize = maxTrueSize * 3;
-#endif
-
     s_maxSize = maxSize;
     s_maxTrueSize = maxTrueSize;
 
-    //    printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
+    // printf("GetCacheSizePerLogicalCpu returns %zu, adjusted size %zu\n", maxSize, maxTrueSize);
     return trueSize ? maxTrueSize : maxSize;
 }
 
@@ -1246,7 +1277,7 @@ void CLRCriticalSection::Leave()
     LeaveCriticalSection(&m_cs);
 }
 
-// An implementatino of GCEvent that delegates to
+// An implementation of GCEvent that delegates to
 // a CLREvent, which in turn delegates to the PAL. This event
 // is also host-aware.
 class GCEvent::Impl

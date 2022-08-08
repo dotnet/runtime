@@ -117,8 +117,8 @@ namespace System.Runtime.Serialization
                 dictionaryWriter.WriteStartAttribute(prefix, localName, namespaceUri);
             else
                 writer.WriteStartAttribute(prefix,
-                    (localName == null ? null : localName.Value)!,
-                    (namespaceUri == null ? null : namespaceUri.Value));
+                    localName?.Value!,
+                    namespaceUri?.Value);
         }
 
         internal void WriteAttributeString(string? prefix, string localName, string? ns, string value)
@@ -230,7 +230,7 @@ namespace System.Runtime.Serialization
             if (dictionaryWriter != null)
                 dictionaryWriter.WriteStartElement(prefix, localName, namespaceUri);
             else
-                writer.WriteStartElement(prefix, (localName == null ? null : localName.Value)!, (namespaceUri == null ? null : namespaceUri.Value));
+                writer.WriteStartElement(prefix, localName?.Value!, namespaceUri?.Value);
             depth++;
             _prefixes = 1;
         }
@@ -240,7 +240,7 @@ namespace System.Runtime.Serialization
             if (dictionaryWriter != null)
                 dictionaryWriter.WriteStartElement(null, localName, namespaceUri);
             else
-                writer.WriteStartElement(null, (localName == null ? null : localName.Value)!, (namespaceUri == null ? null : namespaceUri.Value));
+                writer.WriteStartElement(null, localName?.Value!, namespaceUri?.Value);
         }
 
         internal void WriteEndElementPrimitive()

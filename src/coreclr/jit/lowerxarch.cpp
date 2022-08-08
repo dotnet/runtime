@@ -463,17 +463,26 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 }
 
 //------------------------------------------------------------------------
+// LowerPutArgStkOrSplit: Lower a GT_PUTARG_STK/GT_PUTARG_SPLIT.
+//
+// Arguments:
+//    putArgNode - The node of interest
+//
+void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
+{
+    assert(putArgNode->OperIs(GT_PUTARG_STK)); // No split args on XArch.
+    LowerPutArgStk(putArgNode);
+}
+
+//------------------------------------------------------------------------
 // LowerPutArgStk: Lower a GT_PUTARG_STK.
 //
 // Arguments:
-//    tree      - The node of interest
-//
-// Return Value:
-//    None.
+//    putArgStk - The node of interest
 //
 void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 {
-    GenTree* src        = putArgStk->gtGetOp1();
+    GenTree* src        = putArgStk->Data();
     bool     srcIsLocal = src->OperIsLocalRead();
 
     if (src->OperIs(GT_FIELD_LIST))
@@ -544,9 +553,11 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
     if (src->TypeIs(TYP_STRUCT))
     {
-        ClassLayout* layout  = src->AsObj()->GetLayout();
+        assert(src->OperIs(GT_OBJ) || src->OperIsLocalRead());
+
+        ClassLayout* layout  = src->GetLayout(comp);
         var_types    regType = layout->GetRegisterType();
-        srcIsLocal |= src->AsObj()->Addr()->OperIsLocalAddr();
+        srcIsLocal |= src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr();
 
         if (regType == TYP_UNDEF)
         {
@@ -594,14 +605,25 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 #endif // !TARGET_X86
             }
 
-            // Always mark the OBJ and ADDR as contained trees by the putarg_stk. The codegen will deal with this tree.
-            MakeSrcContained(putArgStk, src);
             if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
             {
-                // If the source address is the address of a lclVar, make the source address contained to avoid
-                // unnecessary copies.
-                MakeSrcContained(putArgStk, src->AsObj()->Addr());
+                // TODO-ADDR: always perform this transformation in local morph and delete this code.
+                GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
+                BlockRange().Remove(lclAddrNode);
+
+                src->ChangeOper(GT_LCL_FLD);
+                src->AsLclFld()->SetLclNum(lclAddrNode->GetLclNum());
+                src->AsLclFld()->SetLclOffs(lclAddrNode->GetLclOffs());
+                src->AsLclFld()->SetLayout(layout);
             }
+            else if (src->OperIs(GT_LCL_VAR))
+            {
+                comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum()
+                                                   DEBUGARG(DoNotEnregisterReason::IsStructArg));
+            }
+
+            // Always mark the OBJ/LCL_VAR/LCL_FLD as contained trees.
+            MakeSrcContained(putArgStk, src);
         }
         else
         {
@@ -613,9 +635,13 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
                 regType = TYP_INT;
             }
 
-            src->SetOper(GT_IND);
             src->ChangeType(regType);
-            LowerIndir(src->AsIndir());
+
+            if (src->OperIs(GT_OBJ))
+            {
+                src->SetOper(GT_IND);
+                LowerIndir(src->AsIndir());
+            }
         }
     }
 
@@ -718,7 +744,7 @@ void Lowering::LowerCast(GenTree* tree)
     }
 
     // We should never see the following casts as they are expected to be lowered
-    // apropriately or converted into helper calls by front-end.
+    // appropriately or converted into helper calls by front-end.
     //   srcType = float/double                    castToType = * and overflow detecting cast
     //       Reason: must be converted to a helper call
     //   srcType = float/double,                   castToType = ulong
@@ -3753,7 +3779,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
         case TYP_USHORT:
         case TYP_UINT:
         {
-            node->gtType = TYP_UINT;
+            node->gtType = TYP_INT;
             node->SetSimdBaseJitType(CORINFO_TYPE_UINT);
             node->ChangeHWIntrinsicId(NI_SSE2_ConvertToUInt32);
             break;
@@ -4705,22 +4731,6 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
             MakeSrcContained(call, ctrlExpr);
         }
     }
-
-    for (CallArg& arg : call->gtArgs.EarlyArgs())
-    {
-        if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
-        {
-            LowerPutArgStk(arg.GetEarlyNode()->AsPutArgStk());
-        }
-    }
-
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        if (arg.GetLateNode()->OperIs(GT_PUTARG_STK))
-        {
-            LowerPutArgStk(arg.GetLateNode()->AsPutArgStk());
-        }
-    }
 }
 
 //------------------------------------------------------------------------
@@ -5360,12 +5370,12 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
             indirOpSource->ClearContained();
         }
         indirSrc->AsOp()->gtOp2->ClearRegOptional();
-        JITDUMP("Lower succesfully detected an assignment of the form: *addrMode BinOp= source\n");
+        JITDUMP("Lower successfully detected an assignment of the form: *addrMode BinOp= source\n");
     }
     else
     {
         assert(GenTree::OperIsUnary(oper));
-        JITDUMP("Lower succesfully detected an assignment of the form: *addrMode = UnaryOp(*addrMode)\n");
+        JITDUMP("Lower successfully detected an assignment of the form: *addrMode = UnaryOp(*addrMode)\n");
     }
     DISPTREERANGE(BlockRange(), storeInd);
 

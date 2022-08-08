@@ -26,7 +26,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </exception>
         /// <remarks>
         ///     <para>
-        ///         The <see cref="AggregateExportProvider"/> will consult the providers in the order they have been specfied when
+        ///         The <see cref="AggregateExportProvider"/> will consult the providers in the order they have been specified when
         ///         executing <see cref="ExportProvider.GetExports(ImportDefinition,AtomicComposition)"/>.
         ///     </para>
         ///     <para>
@@ -71,7 +71,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <param name="providers">The prioritized list of export providers. The providers are consulted in order in which they are supplied.</param>
         /// <remarks>
         ///     <para>
-        ///         The <see cref="AggregateExportProvider"/> will consult the providers in the order they have been specfied when
+        ///         The <see cref="AggregateExportProvider"/> will consult the providers in the order they have been specified when
         ///         executing <see cref="ExportProvider.GetExports(ImportDefinition,AtomicComposition)"/>.
         ///     </para>
         ///     <para>
@@ -80,7 +80,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     </para>
         /// </remarks>
         public AggregateExportProvider(IEnumerable<ExportProvider>? providers)
-            : this((providers != null) ? providers.AsArray() : null)
+            : this(providers?.AsArray())
         {
         }
 

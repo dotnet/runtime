@@ -4,7 +4,7 @@ function(clr_unknown_arch)
     elseif(CLR_CROSS_COMPONENTS_BUILD)
         message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     else()
-        message(FATAL_ERROR "Only AMD64, ARMV6, ARM64, LOONGARCH64 and ARM are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
     endif()
 endfunction()
 
@@ -167,6 +167,10 @@ function(find_unwind_libs UnwindLibs)
       find_library(UNWIND_ARCH NAMES unwind-loongarch64)
     endif()
 
+    if(CLR_CMAKE_HOST_ARCH_RISCV64)
+      find_library(UNWIND_ARCH NAMES unwind-riscv64)
+    endif()
+
     if(CLR_CMAKE_HOST_ARCH_AMD64)
       find_library(UNWIND_ARCH NAMES unwind-x86_64)
     endif()
@@ -204,7 +208,8 @@ endfunction(find_unwind_libs)
 function(convert_to_absolute_path RetSources)
     set(Sources ${ARGN})
     foreach(Source IN LISTS Sources)
-        list(APPEND AbsolutePathSources ${CMAKE_CURRENT_SOURCE_DIR}/${Source})
+      get_filename_component(AbsolutePathSource ${Source} ABSOLUTE BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+      list(APPEND AbsolutePathSources ${AbsolutePathSource})
     endforeach()
     set(${RetSources} ${AbsolutePathSources} PARENT_SCOPE)
 endfunction(convert_to_absolute_path)
@@ -427,7 +432,7 @@ function(strip_symbols targetName outputFilename)
         POST_BUILD
         VERBATIM
         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-        COMMAND ${CMAKE_OBJCOPY} --strip-unneeded ${strip_source_file}
+        COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )

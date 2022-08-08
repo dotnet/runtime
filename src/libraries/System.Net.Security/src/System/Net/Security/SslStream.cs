@@ -816,14 +816,11 @@ namespace System.Net.Security
             }
 
             // Local function to make the check method more inline friendly.
-            static void ThrowExceptional(ExceptionDispatchInfo e)
+            void ThrowExceptional(ExceptionDispatchInfo e)
             {
                 // If the stored exception just indicates disposal, throw a new ODE rather than the stored one,
                 // so as to not continually build onto the shared exception's stack.
-                if (ReferenceEquals(e, s_disposedSentinel))
-                {
-                    throw new ObjectDisposedException(nameof(SslStream));
-                }
+                ObjectDisposedException.ThrowIf(ReferenceEquals(e, s_disposedSentinel), this);
 
                 // Throw the stored exception.
                 e.Throw();

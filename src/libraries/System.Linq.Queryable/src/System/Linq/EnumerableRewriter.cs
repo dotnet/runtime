@@ -11,6 +11,8 @@ using System.Reflection;
 
 namespace System.Linq
 {
+    [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
+    [RequiresDynamicCode("Requires MakeGenericType")]
     internal sealed class EnumerableRewriter : ExpressionVisitor
     {
         // We must ensure that if a LabelTarget is rewritten that it is always rewritten to the same new target
@@ -19,13 +21,10 @@ namespace System.Linq
         // Finding equivalent types can be relatively expensive, and hitting with the same types repeatedly is quite likely.
         private Dictionary<Type, Type>? _equivalentTypeCache;
 
-        [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
         public EnumerableRewriter()
         {
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
             Expression? obj = Visit(m.Object);
@@ -171,17 +170,14 @@ namespace System.Linq
         private Type GetEquivalentType(Type type)
         {
             Type? equiv;
-            if (_equivalentTypeCache == null)
-            {
-                // Pre-loading with the non-generic IQueryable and IEnumerable not only covers this case
-                // without any reflection-based introspection, but also means the slightly different
-                // code needed to catch this case can be omitted safely.
-                _equivalentTypeCache = new Dictionary<Type, Type>
+            // Pre-loading with the non-generic IQueryable and IEnumerable not only covers this case
+            // without any reflection-based introspection, but also means the slightly different
+            // code needed to catch this case can be omitted safely.
+            _equivalentTypeCache ??= new Dictionary<Type, Type>
                     {
                         { typeof(IQueryable), typeof(IEnumerable) },
                         { typeof(IEnumerable), typeof(IEnumerable) }
                     };
-            }
             if (!_equivalentTypeCache.TryGetValue(type, out equiv))
             {
                 Type pubType = GetPublicType(type);
@@ -199,38 +195,26 @@ namespace System.Linq
                 }
                 if (equiv == null)
                 {
-                    equiv = GetEquivalentTypeToEnumerables(pubType);
-
-                    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-                        Justification = "The enumerable interface type (IOrderedQueryable<>, IOrderedEnumerable<>, IQueryable<> and IEnumerable<>) " +
-                            "is kept since it's directly referenced here" +
-                            "and so it will also be preserved in all places where it's implemented." +
-                            "The GetInterfaces may return less after trimming but it will include" +
-                            "the enumerable interface type if it was there before trimming, which is enough for this" +
-                            "method to work.")]
-                    static Type GetEquivalentTypeToEnumerables(Type sourceType)
+                    var interfacesWithInfo = pubType.GetInterfaces();
+                    var singleTypeGenInterfacesWithGetType = interfacesWithInfo
+                        .Where(i => i.IsGenericType && i.GenericTypeArguments.Length == 1)
+                        .Select(i => new { Info = i, GenType = i.GetGenericTypeDefinition() })
+                        .ToArray();
+                    Type? typeArg = singleTypeGenInterfacesWithGetType
+                        .Where(i => i.GenType == typeof(IOrderedQueryable<>) || i.GenType == typeof(IOrderedEnumerable<>))
+                        .Select(i => i.Info.GenericTypeArguments[0])
+                        .Distinct()
+                        .SingleOrDefault();
+                    if (typeArg != null)
+                        equiv = typeof(IOrderedEnumerable<>).MakeGenericType(typeArg);
+                    else
                     {
-                        var interfacesWithInfo = sourceType.GetInterfaces();
-                        var singleTypeGenInterfacesWithGetType = interfacesWithInfo
-                            .Where(i => i.IsGenericType && i.GenericTypeArguments.Length == 1)
-                            .Select(i => new { Info = i, GenType = i.GetGenericTypeDefinition() })
-                            .ToArray();
-                        Type? typeArg = singleTypeGenInterfacesWithGetType
-                            .Where(i => i.GenType == typeof(IOrderedQueryable<>) || i.GenType == typeof(IOrderedEnumerable<>))
+                        typeArg = singleTypeGenInterfacesWithGetType
+                            .Where(i => i.GenType == typeof(IQueryable<>) || i.GenType == typeof(IEnumerable<>))
                             .Select(i => i.Info.GenericTypeArguments[0])
                             .Distinct()
-                            .SingleOrDefault();
-                        if (typeArg != null)
-                            return typeof(IOrderedEnumerable<>).MakeGenericType(typeArg);
-                        else
-                        {
-                            typeArg = singleTypeGenInterfacesWithGetType
-                                .Where(i => i.GenType == typeof(IQueryable<>) || i.GenType == typeof(IEnumerable<>))
-                                .Select(i => i.Info.GenericTypeArguments[0])
-                                .Distinct()
-                                .Single();
-                            return typeof(IEnumerable<>).MakeGenericType(typeArg);
-                        }
+                            .Single();
+                        equiv = typeof(IEnumerable<>).MakeGenericType(typeArg);
                     }
                 }
                 _equivalentTypeCache.Add(type, equiv);
@@ -278,9 +262,7 @@ namespace System.Linq
                 "This is safe because all Queryable methods have a DynamicDependency to the corresponding Enumerable method.")]
             static MethodInfo[] GetEnumerableStaticMethods(Type type) =>
                 type.GetMethods(BindingFlags.Public | BindingFlags.Static);
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-                Justification = "Enumerable methods don't have trim annotations.")]
+            [RequiresDynamicCodeAttribute("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
             MethodInfo ApplyTypeArgs(MethodInfo methodInfo) => typeArgs == null ? methodInfo : methodInfo.MakeGenericMethod(typeArgs);
 
             // In certain cases, there might be ambiguities when resolving matching overloads, for example between
@@ -338,6 +320,7 @@ namespace System.Linq
         }
 
         [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
+        [RequiresDynamicCode("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
         private static MethodInfo FindMethod(Type type, string name, ReadOnlyCollection<Expression> args, Type[]? typeArgs)
         {
             using (IEnumerator<MethodInfo> en = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).Where(m => m.Name == name).GetEnumerator())
@@ -375,9 +358,7 @@ namespace System.Linq
                     return false;
 
                 mParams = GetConstrutedGenericParameters(m, typeArgs);
-
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-                    Justification = "MakeGenericMethod is only called to get the parameter types, which are only used to make a 'match' decision. The generic method is not invoked.")]
+                [RequiresDynamicCodeAttribute("Calls System.Reflection.MethodInfo.MakeGenericMethod(params Type[])")]
                 static ParameterInfo[] GetConstrutedGenericParameters(MethodInfo method, Type[] genericTypes) =>
                     method.MakeGenericMethod(genericTypes).GetParameters();
             }
@@ -405,6 +386,7 @@ namespace System.Linq
             return true;
         }
 
+        [RequiresDynamicCode("Calls System.Type.MakeArrayType()")]
         private static Type StripExpression(Type type)
         {
             bool isArray = type.IsArray;
@@ -463,9 +445,14 @@ namespace System.Linq
         {
             LabelTarget? newTarget;
             if (_targetCache == null)
+            {
                 _targetCache = new Dictionary<LabelTarget, LabelTarget>();
+            }
             else if (_targetCache.TryGetValue(node!, out newTarget))
+            {
                 return newTarget;
+            }
+
             Type type = node!.Type;
             if (!typeof(IQueryable).IsAssignableFrom(type))
                 newTarget = base.VisitLabelTarget(node);

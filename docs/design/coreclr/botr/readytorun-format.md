@@ -7,6 +7,7 @@ Revisions:
 * 4.1 - [Tomas Rylek](https://github.com/trylek) - 2020
 * 5.3 - [Tomas Rylek](https://github.com/trylek) - 2021
 * 5.4 - [David Wrighton](https://github.com/davidwrighton) - 2021
+* 6.3 - [David Wrighton](https://github.com/davidwrighton) - 2022
 
 # Introduction
 
@@ -124,12 +125,16 @@ struct READYTORUN_CORE_HEADER
 
 ### READYTORUN_CORE_HEADER::Flags
 
-| Flag                                    |      Value | Description
-|:----------------------------------------|-----------:|:-----------
-| READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE | 0x00000001 | Set if the original IL image was platform neutral. The platform neutrality is part of assembly name. This flag can be used to reconstruct the full original assembly name.
-| READYTORUN_FLAG_COMPOSITE               | 0x00000002 | The image represents a composite R2R file resulting from a combined compilation of a larger number of input MSIL assemblies.
-| READYTORUN_FLAG_EMBEDDED_MSIL           | 0x00000004 | Input MSIL is embedded in the R2R image.
-| READYTORUN_FLAG_COMPONENT               | 0x00000008 | This is a component assembly of a composite R2R image
+| Flag                                       |      Value | Description
+|:-------------------------------------------|-----------:|:-----------
+| READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE    | 0x00000001 | Set if the original IL image was platform neutral. The platform neutrality is part of assembly name. This flag can be used to reconstruct the full original assembly name.
+| READYTORUN_FLAG_COMPOSITE                  | 0x00000002 | The image represents a composite R2R file resulting from a combined compilation of a larger number of input MSIL assemblies.
+| READYTORUN_FLAG_PARTIAL                    | 0x00000004 |
+| READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS    | 0x00000008 | PInvoke stubs compiled into image are non-shareable (no secret parameter)
+| READYTORUN_FLAG_EMBEDDED_MSIL              | 0x00000010 | Input MSIL is embedded in the R2R image.
+| READYTORUN_FLAG_COMPONENT                  | 0x00000020 | This is a component assembly of a composite R2R image
+| READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE | 0x00000040 | This R2R module has multiple modules within its version bubble (For versions before version 6.3, all modules are assumed to possibly have this characteristic)
+| READYTORUN_FLAG_UNRELATED_R2R_CODE         | 0x00000080 | This R2R module has code in it that would not be naturally encoded into this module
 
 ## READYTORUN_SECTION
 
@@ -173,6 +178,7 @@ The following section types are defined and described later in this document:
 | OwnerCompositeExecutable  |   116 | Image (added in V4.1)
 | PgoInstrumentationData    |   117 | Image (added in V5.2)
 | ManifestAssemblyMvids     |   118 | Image (added in V5.3)
+| CrossModuleInlineInfo     |   119 | Image (added in V6.3)
 
 ## ReadyToRunSectionType.CompilerIdentifier
 
@@ -203,13 +209,19 @@ struct READYTORUN_IMPORT_SECTION
 
 | ReadyToRunImportSectionFlags           | Value  | Description
 |:---------------------------------------|-------:|:-----------
-| READYTORUN_IMPORT_SECTION_FLAGS_EAGER  | 0x0001 | Set if the slots in the section have to be initialized at image load time. It is used to avoid lazy initialization when it cannot be done or when it would have undesirable reliability or performance effects (unexpected failure or GC trigger points, overhead of lazy initialization).
+| ReadyToRunImportSectionFlags::None     | 0x0000  | None
+| ReadyToRunImportSectionFlags::Eager    | 0x0001 | Set if the slots in the section have to be initialized at image load time. It is used to avoid lazy initialization when it cannot be done or when it would have undesirable reliability or performance effects (unexpected failure or GC trigger points, overhead of lazy initialization).
+| ReadyToRunImportSectionFlags::PCode    | 0x0004  | Section contains pointers to code
+
 
 ### READYTORUN_IMPORT_SECTIONS::Type
 
-| ReadyToRunImportSectionType            | Value  | Description
-|:---------------------------------------|-------:|:-----------
-| READYTORUN_IMPORT_SECTION_TYPE_UNKNOWN | 0      | The type of slots in this section is unspecified.
+| ReadyToRunImportSectionType                 | Value  | Description
+|:--------------------------------------------|-------:|:-----------
+| ReadyToRunImportSectionType::Unknown      | 0      | The type of slots in this section is unspecified.
+| ReadyToRunImportSectionType::StubDispatch | 2      | The type of slots in this section rely on stubs for dispatch.
+| ReadyToRunImportSectionType::StringHandle | 3      | The type of slots in this section hold strings
+| ReadyToRunImportSectionType::ILBodyFixups | 7      | The type of slots in this section represent cross module IL bodies
 
 *Future*: The section type can be used to group slots of the same type together. For example, all virtual
 stub dispatch slots may be grouped together to simplify resetting of virtual stub dispatch cells into their
@@ -263,7 +275,9 @@ fixup kind, the rest of the signature varies based on the fixup kind.
 | READYTORUN_FIXUP_Verify_FieldOffset      | 0x31 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
 | READYTORUN_FIXUP_Verify_TypeLayout       | 0x32 | Generate a runtime check to ensure that the field offset matches between compile and runtime. Unlike CheckFieldOffset, this will generate a runtime exception on failure instead of silently dropping the method
 | READYTORUN_FIXUP_Check_VirtualFunctionOverride | 0x33 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, code will not be used. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
-| READYTORUN_FIXUP_Verify_VirtualFunctionOverride | 0x33 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
+| READYTORUN_FIXUP_Verify_VirtualFunctionOverride | 0x34 | Generate a runtime check to ensure that virtual function resolution has equivalent behavior at runtime as at compile time. If not equivalent, generate runtime failure. See [Virtual override signatures](virtual-override-signatures) for details of the signature used.
+| READYTORUN_FIXUP_Check_IL_Body           |  0x35 | Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. See[IL Body signatures](il-body-signatures) for details.
+| READYTORUN_FIXUP_Verify_IL_Body          |  0x36 | Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. See[IL Body signatures](il-body-signatures) for details.
 | READYTORUN_FIXUP_ModuleOverride          |  0x80 | When or-ed to the fixup ID, the fixup byte in the signature is followed by an encoded uint with assemblyref index, either within the MSIL metadata of the master context module for the signature or within the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the input MSIL).
 
 #### Method Signatures
@@ -297,13 +311,16 @@ additional data determined by the flags.
 
 #### Virtual override signatures
 
-ECMA 335 does not have a natural encoding for describing an overriden method. These signatures are encoded as a ReadyToRunVirtualFunctionOverrideFlags byte, followed by a method signature representing the declaration method, a type signature representing the type which is being devirtualized, and (optionally) a method signature indicating the implementation method.
+ECMA 335 does not have a natural encoding for describing an overridden method. These signatures are encoded as a ReadyToRunVirtualFunctionOverrideFlags byte, followed by a method signature representing the declaration method, a type signature representing the type which is being devirtualized, and (optionally) a method signature indicating the implementation method.
 
 | ReadyToRunVirtualFunctionOverrideFlags                | Value | Description
 |:------------------------------------------------------|------:|:-----------
 | READYTORUN_VIRTUAL_OVERRIDE_None                      |  0x00 | No flags are set
-| READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverriden  |  0x01 | If set, then the virtual function has an implementation, which is encoded in the optional method implementation signature.
+| READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverridden  |  0x01 | If set, then the virtual function has an implementation, which is encoded in the optional method implementation signature.
 
+#### IL Body signatures
+
+ECMA 335 does not define a format that can represent the exact implementation of a method by itself. This signature holds all of the IL of the method, the EH table, the locals table, and each token (other than type references) in those tables is replaced with an index into a local stream of signatures. Those signatures are simply verbatim copies of the needed metadata to describe MemberRefs, TypeSpecs, MethodSpecs, StandaloneSignatures and strings. All of that is bundled into a large byte array. In addition, a series of TypeSignatures follows which allow the type references to be resolved, as well as a methodreference to the uninstantiated method. Assuming all of this matches with the data that is present at runtime, the fixup is considered to be satisfied. See ReadyToRunStandaloneMetadata.cs for the exact details of the format.
 
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 
@@ -487,6 +504,14 @@ composite R2R images. It represents all generics needed by all assemblies within
 executable. As mentioned elsewhere in this document, CoreCLR runtime requires changes to
 properly look up methods stored in this section in the composite R2R case.
 
+**Note:** Generic methods and non-generic methods on generic types are encoded into this table
+and the runtime is expected to lookup into this table in potentially multiple modules. First the
+runtime is expected to lookup into this table for the module which defines the method, then it is
+expected to use the "alternate" generics location which is defined as the module which is NOT the
+defining module which is the defining module of one of the generic arguments to the method. This
+alternate lookup is not currently a deeply nested algorithm. If that lookup fails, then lookup
+will proceed to every module which specified `READYTORUN_FLAG_UNRELATED_R2R_CODE` as a flag.
+
 ## ReadyToRunSectionType.InliningInfo (v2.1+)
 
 **TODO**: document inlining info encoding
@@ -495,7 +520,7 @@ properly look up methods stored in this section in the composite R2R case.
 
 **TODO**: document profile data encoding
 
-## ReadyToRunSectionType.ManifestMetadata (v2.3+)
+## ReadyToRunSectionType.ManifestMetadata (v2.3+ with changes for v6.3+)
 
 Manifest metadata is an [ECMA-335] metadata blob containing extra reference assemblies within
 the version bubble introduced by inlining on top of assembly references stored in the input MSIL.
@@ -504,11 +529,15 @@ translate module override indices in signatures to the actual reference modules 
 the `READYTORUN_FIXUP_ModuleOverride` bit flag on the signature fixup byte or the
 `ELEMENT_TYPE_MODULE_ZAPSIG` COR element type).
 
-**Note:** It doesn't make sense to store references to assemblies external to the version bubble
-in the manifest metadata as there's no guarantee that their metadata token values remain
-constant; thus we cannot encode signatures relative to them.
+**Note:** It doesn't make sense to use references to assemblies external to the version bubble
+in the manifest metadata via the `READYTORUN_FIXUP_ModuleOverride` or `ELEMENT_TYPE_MODULE_ZAPSIG` concept
+as there's no guarantee that their metadata token values remain constant; thus we cannot encode signatures relative to them.
+However, as of R2R version 6.3, the native manifest metadata may contain tokens to be further resolved to actual
+implementation assemblies.
 
 The module override index translation algorithm is as follows (**ILAR** = *the number of `AssemblyRef` rows in the input MSIL*):
+
+For R2R version 6.2 and below
 
 | Module override index (*i*) | Reference assembly
 |:----------------------------|:------------------
@@ -517,6 +546,16 @@ The module override index translation algorithm is as follows (**ILAR** = *the n
 | *i* > **ILAR**              | *i* - **ILAR** - 1 is the zero-based index into the `AssemblyRef` table in the manifest metadata
 
 **Note:** This means that the entry corresponding to *i* = **ILAR** + 1 is actually undefined as it corresponds to the `NULL` entry (ROWID #0) in the manifest metadata AssemblyRef table. The first meaningful index into the manifest metadata, *i* = **ILAR** + 2, corresponding to ROWID #1, is historically filled in by Crossgen with the input assembly info but this shouldn't be depended upon, in fact the input assembly is useless in the manifest metadata as the module override to it can be encoded by using the special index 0.
+
+For R2R version 6.3 and above
+| Module override index (*i*) | Reference assembly
+|:----------------------------|:------------------
+| *i* = 0                     | Global context - assembly containing the signature
+| 1 <= *i* <= **ILAR**        | *i* is the index into the MSIL `AssemblyRef` table
+| *i* = **ILAR** + 1          | *i* is the index which refers to the Manifest metadata itself
+| *i* > **ILAR** + 1          | *i* - **ILAR** - 2 is the zero-based index into the `AssemblyRef` table in the manifest metadata
+
+In addition, a ModuleRef within the module which refers to `System.Private.CoreLib` may be used to serve as the *ResolutionContext* of a *TypeRef* within the manifest metadata. This will always refer to the module which contains the `System.Object` type.
 
 ## ReadyToRunSectionType.AttributePresence (v3.1+)
 
@@ -578,6 +617,33 @@ Number of assemblies stored in the manifest metadata is equal to the number of M
 MVID records are used at runtime to verify that the assemblies loaded match those referenced by the
 manifest metadata representing the versioning bubble.
 
+## ReadyToRunSectionType.CrossModuleInlineInfo (v6.3+)
+The inlining information section captures what methods got inlined into other methods. It consists of a single _Native Format Hashtable_ (described below).
+
+The entries in the hashtable are lists of inliners for each inlinee. One entry in the hashtable corresponds to one inlinee. The hashtable is hashed with the version resilient hashcode of the uninstantiated methoddef inlinee.
+
+The entry of the hashtable is a counted sequence of compressed unsigned integers which begins with an InlineeIndex which combines a 30 bit index with 2 bits of flags which how the sequence of inliners shall be parsed and what table is to be indexed into to find the inlinee.
+
+* InlineeIndex
+  * Index with 2 flags field in lowest 2 bits to define the inlinee
+    - If (flags & 1) == 0 then index is a MethodDef RID, and if the module is a composite image, a module index of the method follows
+    - If (flags & 1) == 1, then index is an index into the ILBody import section
+    - If (flags & 2) == 0 then inliner list is:
+      - Inliner RID deltas - See definition below
+    - if (flags & 2) == 2 then what follows is:
+      - count of delta encoded indices into the ILBody import section
+      - the sequence of delta encoded indices into the first import section with a type of READYTORUN_IMPORT_SECTION_TYPE_ILBODYFIXUPS
+      - Inliner RID deltas - See definition below
+
+* Inliner RID deltas (for multi-module version bubble images specified by the module having the READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE flag set)
+  - a sequence of inliner RID deltas with flag in the lowest bit
+  - if flag is set, the inliner RID is followed by a module ID
+  - otherwise the module is the same as the module of the inlinee method
+* Inliner RID deltas (for single module version bubble images)
+  - a sequence of inliner RID deltas
+
+This section may be included in addition to a InliningInfo2 section.
+
 # Native Format
 
 Native format is set of encoding patterns that allow persisting type system data in a binary format that is
@@ -636,11 +702,11 @@ To see this in action, we can take a look at the following example, with these o
 | R      | 0x1234   |
 | S      | 0x1238   |
 
-Suppose we decided to have only two buckets, then only the least signficant digit will be used to index the table, the whole hash table will look like this:
+Suppose we decided to have only two buckets, then only the least significant digit will be used to index the table, the whole hash table will look like this:
 
 | Part    | Offset | Content  | Meaning                                                                                                                                                                                   |
 |:--------|:-------|:--------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Header  | 0      | 0x04     | This is the header, the least signficant bit is `00`, therefore the table cell is just one byte. The most significant six bit represents 1, which means the number of buckets is 2^1 = 2. |
+| Header  | 0      | 0x04     | This is the header, the least significant bit is `00`, therefore the table cell is just one byte. The most significant six bit represents 1, which means the number of buckets is 2^1 = 2. |
 | Table   | 1      | 0x08     | This is the representation of the unsigned integer 4, which correspond to the offset of the bucket correspond to hash code `0`.                                                           |
 | Table   | 2      | 0x14     | This is the representation of the unsigned integer 10, which correspond to the offset of the bucket correspond to hash code `1`.                                                          |
 | Table   | 3      | 0x18     | This is the representation of the unsigned integer 12, which correspond to the offset of the end of the whole hash table.                                                                 |
@@ -731,6 +797,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GenericGcTlsBase          = 0x66,
     READYTORUN_HELPER_GenericNonGcTlsBase       = 0x67,
     READYTORUN_HELPER_VirtualFuncPtr            = 0x68,
+    READYTORUN_HELPER_IsInstanceOfException     = 0x69,
 
     // Long mul/div/shift ops
     READYTORUN_HELPER_LMul                      = 0xC0,
@@ -769,7 +836,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_FltRound                  = 0xE3,
 
 #ifndef _TARGET_X86_
-    // Personality rountines
+    // Personality routines
     READYTORUN_HELPER_PersonalityRoutine        = 0xF0,
     READYTORUN_HELPER_PersonalityRoutineFilterFunclet = 0xF1,
 #endif

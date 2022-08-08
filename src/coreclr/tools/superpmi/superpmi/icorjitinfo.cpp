@@ -971,7 +971,7 @@ void MyICJI::setBoundaries(CORINFO_METHOD_HANDLE         ftn,  // [IN] method of
     freeArray(pMap); // see note in recSetBoundaries... we own this array and own destroying it.
 }
 
-// Query the EE to find out the scope of local varables.
+// Query the EE to find out the scope of local variables.
 // normally the JIT would trash variables after last use, but
 // under debugging, the JIT needs to keep them live over their
 // entire scope so that they can be inspected.
@@ -1016,6 +1016,18 @@ void MyICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of inte
     jitInstance->mc->cr->AddCall("setVars");
     jitInstance->mc->cr->recSetVars(ftn, cVars, vars);
     freeArray(vars); // See note in recSetVars... we own destroying this array
+}
+
+void MyICJI::reportRichMappings(
+    ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
+    uint32_t                          numInlineTreeNodes,
+    ICorDebugInfo::RichOffsetMapping* mappings,
+    uint32_t                          numMappings)
+{
+    jitInstance->mc->cr->AddCall("reportRichMappings");
+    // TODO: record these mappings
+    freeArray(inlineTreeNodes);
+    freeArray(mappings);
 }
 
 /*-------------------------- Misc ---------------------------------------*/

@@ -55,7 +55,6 @@ FCFuncStart(gDependentHandleFuncs)
 FCFuncEnd()
 
 FCFuncStart(gEnumFuncs)
-    FCFuncElement("InternalGetUnderlyingType",  ReflectionEnum::InternalGetEnumUnderlyingType)
     FCFuncElement("InternalGetCorElementType",  ReflectionEnum::InternalGetCorElementType)
     FCFuncElement("InternalBoxEnum", ReflectionEnum::InternalBoxEnum)
 FCFuncEnd()
@@ -103,7 +102,6 @@ FCFuncStart(gEnvironmentFuncs)
     FCFuncElement("get_TickCount64", SystemNative::GetTickCount64)
     FCFuncElement("set_ExitCode", SystemNative::SetExitCode)
     FCFuncElement("get_ExitCode", SystemNative::GetExitCode)
-    FCFuncElement("GetCommandLineArgsNative", SystemNative::GetCommandLineArgs)
 
     FCFuncElementSig("FailFast", &gsig_SM_Str_RetVoid, SystemNative::FailFast)
     FCFuncElementSig("FailFast", &gsig_SM_Str_Exception_RetVoid, SystemNative::FailFastWithException)
@@ -124,7 +122,6 @@ FCFuncStart(gTypedReferenceFuncs)
 FCFuncEnd()
 
 FCFuncStart(gSystem_Type)
-    FCFuncElement("GetTypeFromHandle", RuntimeTypeHandle::GetTypeFromHandle)
     FCFuncElement("GetTypeFromHandleUnsafe", RuntimeTypeHandle::GetRuntimeType)
 FCFuncEnd()
 
@@ -173,7 +170,6 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("AllocateComObject", RuntimeTypeHandle::AllocateComObject)
 #endif // FEATURE_COMINTEROP
     FCFuncElement("CompareCanonicalHandles", RuntimeTypeHandle::CompareCanonicalHandles)
-    FCFuncElement("GetValueInternal", RuntimeTypeHandle::GetValueInternal)
     FCFuncElement("IsEquivalentTo", RuntimeTypeHandle::IsEquivalentTo)
 FCFuncEnd()
 
@@ -369,9 +365,7 @@ FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
     FCFuncElement("InternalGetCurrentThread", GetThread)
-#undef Sleep
     FCFuncElement("SleepInternal", ThreadNative::Sleep)
-#define Sleep(a) Dont_Use_Sleep(a)
     FCFuncElement("Initialize", ThreadNative::Initialize)
     FCFuncElement("SpinWaitInternal", ThreadNative::SpinWait)
     FCFuncElement("GetCurrentThreadNative", ThreadNative::GetCurrentThread)

@@ -53,7 +53,7 @@ mono_ppc_create_ftnptr (guint8 *code)
 static guint32
 branch_for_target_reachable (guint8 *branch, guint8 *target)
 {
-	gint diff = target - branch;
+	gint64 diff = target - branch;
 	g_assert ((diff & 3) == 0);
 	if (diff >= 0) {
 		if (diff <= 33554431)

@@ -33,15 +33,7 @@ namespace System.Runtime.Serialization
             get { return _schemas; }
         }
 
-        private XmlDocument XmlDoc
-        {
-            get
-            {
-                if (_xmlDoc == null)
-                    _xmlDoc = new XmlDocument();
-                return _xmlDoc;
-            }
-        }
+        private XmlDocument XmlDoc => _xmlDoc ??= new XmlDocument();
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void Export()
@@ -90,9 +82,8 @@ namespace System.Runtime.Serialization
             {
                 XmlSchema schema = GetSchema(dataContract.StableName.Namespace);
 
-                if (dataContract is ClassDataContract)
+                if (dataContract is ClassDataContract classDataContract)
                 {
-                    ClassDataContract classDataContract = (ClassDataContract)dataContract;
                     if (classDataContract.IsISerializable)
                         ExportISerializableDataContract(classDataContract, schema);
                     else
@@ -655,9 +646,7 @@ namespace System.Runtime.Serialization
                                 {
                                     if ((object)schemaItem == (object)providerXsdType)
                                     {
-                                        typeNs = schema.TargetNamespace;
-                                        if (typeNs == null)
-                                            typeNs = string.Empty;
+                                        typeNs = schema.TargetNamespace ?? string.Empty;
                                         break;
                                     }
                                 }
@@ -858,103 +847,31 @@ namespace System.Runtime.Serialization
         }
 
         private static XmlQualifiedName? s_anytypeQualifiedName;
-        internal static XmlQualifiedName AnytypeQualifiedName
-        {
-            get
-            {
-                if (s_anytypeQualifiedName == null)
-                    s_anytypeQualifiedName = new XmlQualifiedName(Globals.AnyTypeLocalName, Globals.SchemaNamespace);
-                return s_anytypeQualifiedName;
-            }
-        }
+        internal static XmlQualifiedName AnytypeQualifiedName => s_anytypeQualifiedName ??= new XmlQualifiedName(Globals.AnyTypeLocalName, Globals.SchemaNamespace);
 
         private static XmlQualifiedName? s_stringQualifiedName;
-        internal static XmlQualifiedName StringQualifiedName
-        {
-            get
-            {
-                if (s_stringQualifiedName == null)
-                    s_stringQualifiedName = new XmlQualifiedName(Globals.StringLocalName, Globals.SchemaNamespace);
-                return s_stringQualifiedName;
-            }
-        }
+        internal static XmlQualifiedName StringQualifiedName => s_stringQualifiedName ??= new XmlQualifiedName(Globals.StringLocalName, Globals.SchemaNamespace);
 
         private static XmlQualifiedName? s_defaultEnumBaseTypeName;
-        internal static XmlQualifiedName DefaultEnumBaseTypeName
-        {
-            get
-            {
-                if (s_defaultEnumBaseTypeName == null)
-                    s_defaultEnumBaseTypeName = new XmlQualifiedName(Globals.IntLocalName, Globals.SchemaNamespace);
-                return s_defaultEnumBaseTypeName;
-            }
-        }
+        internal static XmlQualifiedName DefaultEnumBaseTypeName => s_defaultEnumBaseTypeName ??= new XmlQualifiedName(Globals.IntLocalName, Globals.SchemaNamespace);
 
         private static XmlQualifiedName? s_enumerationValueAnnotationName;
-        internal static XmlQualifiedName EnumerationValueAnnotationName
-        {
-            get
-            {
-                if (s_enumerationValueAnnotationName == null)
-                    s_enumerationValueAnnotationName = new XmlQualifiedName(Globals.EnumerationValueLocalName, Globals.SerializationNamespace);
-                return s_enumerationValueAnnotationName;
-            }
-        }
+        internal static XmlQualifiedName EnumerationValueAnnotationName => s_enumerationValueAnnotationName ??= new XmlQualifiedName(Globals.EnumerationValueLocalName, Globals.SerializationNamespace);
 
         private static XmlQualifiedName? s_surrogateDataAnnotationName;
-        internal static XmlQualifiedName SurrogateDataAnnotationName
-        {
-            get
-            {
-                if (s_surrogateDataAnnotationName == null)
-                    s_surrogateDataAnnotationName = new XmlQualifiedName(Globals.SurrogateDataLocalName, Globals.SerializationNamespace);
-                return s_surrogateDataAnnotationName;
-            }
-        }
+        internal static XmlQualifiedName SurrogateDataAnnotationName => s_surrogateDataAnnotationName ??= new XmlQualifiedName(Globals.SurrogateDataLocalName, Globals.SerializationNamespace);
 
         private static XmlQualifiedName? s_defaultValueAnnotation;
-        internal static XmlQualifiedName DefaultValueAnnotation
-        {
-            get
-            {
-                if (s_defaultValueAnnotation == null)
-                    s_defaultValueAnnotation = new XmlQualifiedName(Globals.DefaultValueLocalName, Globals.SerializationNamespace);
-                return s_defaultValueAnnotation;
-            }
-        }
+        internal static XmlQualifiedName DefaultValueAnnotation => s_defaultValueAnnotation ??= new XmlQualifiedName(Globals.DefaultValueLocalName, Globals.SerializationNamespace);
 
         private static XmlQualifiedName? s_actualTypeAnnotationName;
-        internal static XmlQualifiedName ActualTypeAnnotationName
-        {
-            get
-            {
-                if (s_actualTypeAnnotationName == null)
-                    s_actualTypeAnnotationName = new XmlQualifiedName(Globals.ActualTypeLocalName, Globals.SerializationNamespace);
-                return s_actualTypeAnnotationName;
-            }
-        }
+        internal static XmlQualifiedName ActualTypeAnnotationName => s_actualTypeAnnotationName ??= new XmlQualifiedName(Globals.ActualTypeLocalName, Globals.SerializationNamespace);
 
         private static XmlQualifiedName? s_isDictionaryAnnotationName;
-        internal static XmlQualifiedName IsDictionaryAnnotationName
-        {
-            get
-            {
-                if (s_isDictionaryAnnotationName == null)
-                    s_isDictionaryAnnotationName = new XmlQualifiedName(Globals.IsDictionaryLocalName, Globals.SerializationNamespace);
-                return s_isDictionaryAnnotationName;
-            }
-        }
+        internal static XmlQualifiedName IsDictionaryAnnotationName => s_isDictionaryAnnotationName ??= new XmlQualifiedName(Globals.IsDictionaryLocalName, Globals.SerializationNamespace);
 
         private static XmlQualifiedName? s_isValueTypeName;
-        internal static XmlQualifiedName IsValueTypeName
-        {
-            get
-            {
-                if (s_isValueTypeName == null)
-                    s_isValueTypeName = new XmlQualifiedName(Globals.IsValueTypeLocalName, Globals.SerializationNamespace);
-                return s_isValueTypeName;
-            }
-        }
+        internal static XmlQualifiedName IsValueTypeName => s_isValueTypeName ??= new XmlQualifiedName(Globals.IsValueTypeLocalName, Globals.SerializationNamespace);
 
         // Property is not stored in a local because XmlSchemaAttribute is mutable.
         // The schema export process should not expose objects that may be modified later.

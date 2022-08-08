@@ -1484,11 +1484,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            if (sb == null)
-                            {
-                                sb = new StringBuilder();
-                                sb.Append(value);
-                            }
+                            sb ??= new StringBuilder().Append(value);
                             sb.Append(Value);
                         }
                         break;

@@ -1148,15 +1148,7 @@ namespace System.Xml.XPath
         {
         }
 
-        public static XmlEmptyNavigator Singleton
-        {
-            get
-            {
-                if (XmlEmptyNavigator.s_singleton == null)
-                    XmlEmptyNavigator.s_singleton = new XmlEmptyNavigator();
-                return XmlEmptyNavigator.s_singleton;
-            }
-        }
+        public static XmlEmptyNavigator Singleton => XmlEmptyNavigator.s_singleton ??= new XmlEmptyNavigator();
 
         //-----------------------------------------------
         // XmlReader

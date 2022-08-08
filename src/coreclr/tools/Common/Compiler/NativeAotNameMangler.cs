@@ -89,7 +89,7 @@ namespace ILCompiler
             string sanitizedName = (sb != null) ? sb.ToString() : s;
 
             // The character sequences denoting generic instantiations, arrays, byrefs, or pointers must be
-            // restricted to that use only. Replace them if they happened to be used in any identifiers in 
+            // restricted to that use only. Replace them if they happened to be used in any identifiers in
             // the compilation input.
             return _mangleForCplusPlus
                 ? sanitizedName.Replace(EnterNameScopeSequence, "_AA_").Replace(ExitNameScopeSequence, "_VV_")
@@ -132,7 +132,7 @@ namespace ILCompiler
 
                     hash = _sha256.ComputeHash(GetBytesFromString(literal));
                 }
-                                
+
                 mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");
             }
 
@@ -199,7 +199,7 @@ namespace ILCompiler
 
                 string assemblyName = ((EcmaAssembly)ecmaType.EcmaModule).GetName().Name;
                 bool isSystemPrivate = assemblyName.StartsWith("System.Private.");
-                
+
                 // Abbreviate System.Private to S.P. This might conflict with user defined assembly names,
                 // but we already have a problem due to running SanitizeName without disambiguating the result
                 // This problem needs a better fix.
@@ -286,11 +286,11 @@ namespace ILCompiler
             switch (type.Category)
             {
                 case TypeFlags.Array:
-                    mangledName = "__MDArray" + 
-                                  EnterNameScopeSequence + 
-                                  GetMangledTypeName(((ArrayType)type).ElementType) + 
-                                  DelimitNameScopeSequence + 
-                                  ((ArrayType)type).Rank.ToStringInvariant() + 
+                    mangledName = "__MDArray" +
+                                  EnterNameScopeSequence +
+                                  GetMangledTypeName(((ArrayType)type).ElementType) +
+                                  DelimitNameScopeSequence +
+                                  ((ArrayType)type).Rank.ToStringInvariant() +
                                   ExitNameScopeSequence;
                     break;
                 case TypeFlags.SzArray:
@@ -301,6 +301,23 @@ namespace ILCompiler
                     break;
                 case TypeFlags.Pointer:
                     mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + NestMangledName("Pointer");
+                    break;
+                case TypeFlags.FunctionPointer:
+                    // TODO: need to also encode calling convention (or all modopts?)
+                    var fnPtrType = (FunctionPointerType)type;
+                    mangledName = "__FnPtr" + EnterNameScopeSequence;
+                    mangledName += GetMangledTypeName(fnPtrType.Signature.ReturnType);
+
+                    mangledName += EnterNameScopeSequence;
+                    for (int i = 0; i < fnPtrType.Signature.Length; i++)
+                    {
+                        if (i != 0)
+                            mangledName += DelimitNameScopeSequence;
+                        mangledName += GetMangledTypeName(fnPtrType.Signature[i]);
+                    }
+                    mangledName += ExitNameScopeSequence;
+
+                    mangledName += ExitNameScopeSequence;
                     break;
                 default:
                     // Case of a generic type. If `type' is a type definition we use the type name
@@ -450,19 +467,19 @@ namespace ILCompiler
             return sb.ToUtf8String();
         }
 
-        private Utf8String GetPrefixMangledMethodName(IPrefixMangledMethod prefixMangledMetod)
+        private Utf8String GetPrefixMangledMethodName(IPrefixMangledMethod prefixMangledMethod)
         {
             Utf8StringBuilder sb = new Utf8StringBuilder();
-            sb.Append(EnterNameScopeSequence).Append(prefixMangledMetod.Prefix).Append(ExitNameScopeSequence);
+            sb.Append(EnterNameScopeSequence).Append(prefixMangledMethod.Prefix).Append(ExitNameScopeSequence);
 
             if (_mangleForCplusPlus)
             {
-                string name = GetMangledMethodName(prefixMangledMetod.BaseMethod).ToString().Replace("::", "_");
+                string name = GetMangledMethodName(prefixMangledMethod.BaseMethod).ToString().Replace("::", "_");
                 sb.Append(name);
             }
             else
             {
-                sb.Append(GetMangledMethodName(prefixMangledMetod.BaseMethod));
+                sb.Append(GetMangledMethodName(prefixMangledMethod.BaseMethod));
             }
 
             return sb.ToUtf8String();
