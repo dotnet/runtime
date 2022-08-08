@@ -1869,7 +1869,7 @@ namespace System.Text
 
             if (oldValue.Length > count)
             {
-                return;
+                return this;
             }
 
             newValue ??= string.Empty;
