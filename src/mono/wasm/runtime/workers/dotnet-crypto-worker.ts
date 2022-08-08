@@ -394,9 +394,9 @@ let config: MonoConfig = <any>null;
 self.addEventListener("message", (event: MessageEvent) => {
     const data = event.data as InitCryptoMessageData;
     config = data && data.config ? JSON.parse(data.config) : {};
-    if (config.diagnosticTracing) {
-        setup_proxy_console("crypto-worker", console, self.location.origin);
-    }
+    // if (config.diagnosticTracing) {
+    setup_proxy_console("crypto-worker", console, self.location.origin);
+    // }
     s_channel = new ChannelWorker(data.comm_buf, data.msg_buf, data.msg_char_len);
     s_channel.run_message_loop(handle_req_async);
 });
