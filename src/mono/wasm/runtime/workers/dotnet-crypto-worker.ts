@@ -3,7 +3,7 @@
 
 import { setup_proxy_console } from "../debug";
 import type { InitCryptoMessageData } from "../crypto-worker";
-import type { MonoConfig } from "../types";
+// import type { MonoConfig } from "../types";
 
 class FailedOrStoppedLoopError extends Error { }
 class ArgumentsError extends Error { }
@@ -130,12 +130,14 @@ class ChannelWorker {
                 // The request is complete.
                 if (state === this.STATE_REQ) {
                     return true;
-                } else if (state !== this.STATE_REQ_P) {
-                    throw new Error(`Unexpected state ${state}`);
                 }
 
                 // Shutdown the worker.
                 this._throw_if_reset_or_shutdown();
+
+                if (state !== this.STATE_REQ_P) {
+                    throw new Error(`Expected STATE_REQ_P state, but found ${state}`);
+                }
 
                 // Reset the size and transition to await state.
                 Atomics.store(this.comm, this.MSG_SIZE_IDX, 0);
@@ -182,7 +184,7 @@ class ChannelWorker {
             if (state === this.STATE_RESP) {
                 break;
             } else if (state !== this.STATE_RESP_P) {
-                throw new Error(`Unexpected state ${state}`);
+                throw new Error(`Expected STATE_RESP_P but found ${state}`);
             }
         }
     }
@@ -388,12 +390,12 @@ function _stringify_err(err: any) {
 }
 
 let s_channel;
-let config: MonoConfig = <any>null;
+// let config: MonoConfig = <any>null;
 
 // Initialize WebWorker
 self.addEventListener("message", (event: MessageEvent) => {
     const data = event.data as InitCryptoMessageData;
-    config = data && data.config ? JSON.parse(data.config) : {};
+    // config = data && data.config ? JSON.parse(data.config) : {};
     // if (config.diagnosticTracing) {
     setup_proxy_console("crypto-worker", console, self.location.origin);
     // }

@@ -272,9 +272,6 @@ class LibraryChannel {
             if (state === this.STATE_REQ) {
                 break;
             }
-            else if (state !== this.STATE_REQ_P) {
-                throw new Error(`Unexpected state ${state}`);
-            }
 
             this.wait_for_state_change_to(state => state == this.STATE_AWAIT, "send_request");
         }
