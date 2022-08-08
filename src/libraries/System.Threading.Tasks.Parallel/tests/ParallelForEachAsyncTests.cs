@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
