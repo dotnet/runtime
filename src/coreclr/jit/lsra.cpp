@@ -9538,15 +9538,10 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
         if (mode == LSRA_DUMP_REFPOS)
         {
             bool printedBlockHeader = false;
+            bool continueLoop       = true;
             // We should find the boundary RefPositions in the order of exposed uses, dummy defs, and the blocks
-            for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
+            for (; currentRefPosition != refPositions.end() && continueLoop; ++currentRefPosition)
             {
-                if (currentRefPosition->refType != RefTypeExpUse && currentRefPosition->refType != RefTypeDummyDef &&
-                    !(currentRefPosition->refType == RefTypeBB && !printedBlockHeader))
-                {
-                    break;
-                }
-
                 Interval* interval = nullptr;
                 if (currentRefPosition->isIntervalRef())
                 {
@@ -9565,12 +9560,17 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                         printf("  Dummy def of V%02u at #%d\n", interval->varNum, currentRefPosition->rpNum);
                         break;
                     case RefTypeBB:
+                        if (printedBlockHeader)
+                        {
+                            continueLoop = false;
+                            break;
+                        }
                         block->dspBlockHeader(compiler);
                         printedBlockHeader = true;
                         printf("=====\n");
                         break;
                     default:
-                        printf("Unexpected RefPosition type at #%d\n", currentRefPosition->rpNum);
+                        continueLoop = false;
                         break;
                 }
             }
@@ -9625,11 +9625,10 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 // and combining the fixed regs with their associated def or use
                 bool         killPrinted        = false;
                 RefPosition* lastFixedRegRefPos = nullptr;
-                for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
+                bool         continueLoop       = true;
+                for (; currentRefPosition != refPositions.end() && continueLoop; ++currentRefPosition)
                 {
-                    if (!(currentRefPosition->refType == RefTypeUse || currentRefPosition->refType == RefTypeFixedReg ||
-                          currentRefPosition->refType == RefTypeKill || currentRefPosition->refType == RefTypeDef) ||
-                        !(currentRefPosition->nodeLocation == tree->gtSeqNum ||
+                    if (!(currentRefPosition->nodeLocation == tree->gtSeqNum ||
                           currentRefPosition->nodeLocation == tree->gtSeqNum + 1))
                     {
                         break;
@@ -9712,7 +9711,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                             lastFixedRegRefPos = currentRefPosition;
                             break;
                         default:
-                            printf("Unexpected RefPosition type at #%d\n", currentRefPosition->rpNum);
+                            continueLoop = false;
                             break;
                     }
                 }
