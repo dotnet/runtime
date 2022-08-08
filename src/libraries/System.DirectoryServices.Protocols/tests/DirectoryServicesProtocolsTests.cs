@@ -83,9 +83,16 @@ namespace System.DirectoryServices.Protocols.Tests
             using LdapConnection connection = GetConnection();
 
             var searchRequest = new SearchRequest(LdapConfiguration.Configuration.SearchDn, "(objectClass=*)", SearchScope.Subtree);
-            searchRequest.TimeLimit = TimeSpan.FromSeconds(timeLimit);
-            _ = (SearchResponse)connection.SendRequest(searchRequest);
-            // Shall succeed
+            if (timeLimit < 0)
+            {
+                Assert.Throws<ArgumentException>(() => searchRequest.TimeLimit = TimeSpan.FromSeconds(timeLimit));
+            }
+            else
+            {
+                searchRequest.TimeLimit = TimeSpan.FromSeconds(timeLimit);
+                _ = (SearchResponse)connection.SendRequest(searchRequest);
+                // Shall succeed
+            }
         }
 
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
