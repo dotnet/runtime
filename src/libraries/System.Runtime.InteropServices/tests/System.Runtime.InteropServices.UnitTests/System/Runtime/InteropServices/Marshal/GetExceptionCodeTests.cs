@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(0, Marshal.GetExceptionCode());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [InlineData(-1)]
         [InlineData(10)]
         public void GetExceptionCode_ComExceptionInsideCatch_ReturnsExpected(int errorCode)

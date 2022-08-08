@@ -11,11 +11,10 @@ namespace System.Security.Cryptography.X509Certificates
     internal static partial class X500NameEncoder
     {
         private const string OidTagPrefix = "OID.";
-
-        private static readonly List<char> s_useSemicolonSeparators = new List<char>(1) { ';' };
-        private static readonly List<char> s_useCommaSeparators = new List<char>(1) { ',' };
-        private static readonly List<char> s_useNewlineSeparators = new List<char>(2) { '\r', '\n' };
-        private static readonly List<char> s_defaultSeparators = new List<char>(2) { ',', ';' };
+        private const string UseSemicolonSeparators = ";";
+        private const string UseCommaSeparators = ",";
+        private const string UseNewlineSeparators = "\r\n";
+        private const string DefaultSeparators = ",;";
 
         internal static string X500DistinguishedNameDecode(
             byte[] encodedName,
@@ -72,31 +71,31 @@ namespace System.Security.Cryptography.X509Certificates
             bool noQuotes = (flags & X500DistinguishedNameFlags.DoNotUseQuotes) == X500DistinguishedNameFlags.DoNotUseQuotes;
             bool forceUtf8Encoding = (flags & X500DistinguishedNameFlags.ForceUTF8Encoding) == X500DistinguishedNameFlags.ForceUTF8Encoding;
 
-            List<char> dnSeparators;
+            string dnSeparators;
 
             // This rank ordering is based off of testing against the Windows implementation.
             if ((flags & X500DistinguishedNameFlags.UseSemicolons) == X500DistinguishedNameFlags.UseSemicolons)
             {
                 // Just semicolon.
-                dnSeparators = s_useSemicolonSeparators;
+                dnSeparators = UseSemicolonSeparators;
             }
             else if ((flags & X500DistinguishedNameFlags.UseCommas) == X500DistinguishedNameFlags.UseCommas)
             {
                 // Just comma
-                dnSeparators = s_useCommaSeparators;
+                dnSeparators = UseCommaSeparators;
             }
             else if ((flags & X500DistinguishedNameFlags.UseNewLines) == X500DistinguishedNameFlags.UseNewLines)
             {
                 // CR or LF.  Not "and".  Whichever is first was the separator, the later one is trimmed as whitespace.
-                dnSeparators = s_useNewlineSeparators;
+                dnSeparators = UseNewlineSeparators;
             }
             else
             {
                 // Comma or semicolon, but not CR or LF.
-                dnSeparators = s_defaultSeparators;
+                dnSeparators = DefaultSeparators;
             }
 
-            Debug.Assert(dnSeparators.Count != 0);
+            Debug.Assert(dnSeparators.Length != 0);
 
             List<byte[]> encodedSets = ParseDistinguishedName(stringForm, dnSeparators, noQuotes, forceUtf8Encoding);
 
@@ -178,7 +177,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static List<byte[]> ParseDistinguishedName(
             string stringForm,
-            List<char> dnSeparators,
+            string dnSeparators,
             bool noQuotes,
             bool forceUtf8Encoding)
         {

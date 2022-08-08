@@ -3067,7 +3067,7 @@ mini_get_rgctx_access_for_method (MonoMethod *method)
  * @parts: debug flag
  *
  * Returns: a MonoCompile* pointer. Caller must check the exception_type
- * field in the returned struct to see if compilation succeded.
+ * field in the returned struct to see if compilation succeeded.
  */
 MonoCompile*
 mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts, int aot_method_index)

@@ -58,7 +58,7 @@ namespace System.Data.Common
                 + ")" // although the spec does not allow {} embedded within a value, the retail code does.
                 + ")(\\s*)(;|[\u0000\\s]*$)"                               // whitespace after value up to semicolon or end-of-line
                 + ")*"                                                     // repeat the key-value pair
-                + "[\\s;]*[\u0000\\s]*"                                    // traling whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
+                + "[\\s;]*[\u0000\\s]*"                                    // trailing whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
             ;
 
         private static readonly Regex s_connectionStringRegex = new Regex(ConnectionStringPattern, RegexOptions.ExplicitCapture | RegexOptions.Compiled);

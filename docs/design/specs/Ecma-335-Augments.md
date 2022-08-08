@@ -987,6 +987,10 @@ https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 ### I.8.9.2
 - Insert at the end of the first paragraph “An unmanaged pointer type cannot point to a managed pointer.”
 
+### II.14.4.2
+- Replace the sentence "Managed pointers (&) can point to an instance of a value type, a field of an object, a field of a value type, an element of an array, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)." with  "Managed pointers (&) can point to a local variable, a method argument, a field of an object or a value type, an element of an array, a static field, the address computed by adding the address of a field and the `sizeof` of the type of that field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)."
+- Replace the sentence "Managed pointers cannot be null, and they shall be reported to the garbage collector even if they do not point to managed memory." with "Managed pointers shall be reported to the garbage collector. All managed pointers must point to a location explicitly allocated on either the managed or native heap as described above, or to stack allocated memory, or to null. A null managed pointer must not be dereferenced."
+
 Changes to signatures:
 ### II.23.2.10
 - Remove special case for TYPEDBYREF
@@ -996,6 +1000,12 @@ Changes to signatures:
 
 ### II.23.2.12
 - Add TYPEDBYREF as a form of Type
+
+### III.1.1.5.2
+- Replace "Managed pointers (&) can point to a local variable, a method argument, a field of an object, a field of a value type, an element of an array, a static field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)." with "Managed pointers (&) can point to a local variable, a method argument, a field of an object, a field of a value type, an element of an array, a static field, the address computed by adding the address of a field and the `sizeof` of the type of that field, or the address where an element just past the end of an array would be stored (for pointer indexes into managed arrays)."
+- Remove the sentence "Managed pointers cannot be null."
+- Add a bullet point
+  - Managed pointers which point at null, the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
 
 ## Rules for IL Rewriters
 

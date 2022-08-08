@@ -32,6 +32,7 @@ namespace System.Security.Cryptography
         private static volatile Oid? s_authorityKeyIdentifierOid;
         private static volatile Oid? s_authorityInformationAccessOid;
         private static volatile Oid? s_crlNumberOid;
+        private static volatile Oid? s_crlDistributionPointOid;
         private static volatile Oid? s_commonNameOid;
         private static volatile Oid? s_countryOrRegionOid;
         private static volatile Oid? s_localityNameOid;
@@ -66,6 +67,7 @@ namespace System.Security.Cryptography
         internal static Oid SubjectAltNameOid => s_subjectAltNameOid ??= InitializeOid(SubjectAltName);
         internal static Oid AuthorityInformationAccessOid => s_authorityInformationAccessOid ??= InitializeOid(AuthorityInformationAccess);
         internal static Oid CrlNumberOid => s_crlNumberOid ??= InitializeOid(CrlNumber);
+        internal static Oid CrlDistributionPointsOid => s_crlDistributionPointOid ??= InitializeOid(CrlDistributionPoints);
 
         internal static Oid CommonNameOid => s_commonNameOid ??= InitializeOid(CommonName);
         internal static Oid CountryOrRegionNameOid => s_countryOrRegionOid ??= InitializeOid(CountryOrRegionName);
