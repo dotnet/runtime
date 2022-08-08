@@ -1481,19 +1481,19 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     // Make sure we have enough space for the new instruction.
     // `igInsCnt` is currently a byte, so we can't have more than 255 instructions in a single insGroup.
 
-    sz += m_debugInfoSize;
+    size_t fullSize = sz + m_debugInfoSize;
 
-    if ((emitCurIGfreeNext + sz >= emitCurIGfreeEndp) || emitForceNewIG || (emitCurIGinsCnt >= 255))
+    if ((emitCurIGfreeNext + fullSize >= emitCurIGfreeEndp) || emitForceNewIG || (emitCurIGinsCnt >= 255))
     {
         emitNxtIG(true);
     }
 
     /* Grab the space for the instruction */
 
-    memset(emitCurIGfreeNext, 0, sz);
-
     emitLastIns = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
-    emitCurIGfreeNext += sz;
+    emitCurIGfreeNext += fullSize;
+
+    memset(id, 0, sz);
 
     assert(sz >= sizeof(void*));
 
@@ -1519,7 +1519,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     {
         instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
         info->idNum              = emitInsCount;
-        info->idSize             = sz - m_debugInfoSize;
+        info->idSize             = sz;
         info->idVarRefOffs       = 0;
         info->idMemCookie        = 0;
         info->idFlags            = GTF_EMPTY;
