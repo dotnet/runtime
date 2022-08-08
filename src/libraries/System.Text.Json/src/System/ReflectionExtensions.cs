@@ -91,15 +91,19 @@ namespace System.Text.Json.Reflection
         /// <summary>
         /// Polyfill for BindingFlags.DoNotWrapExceptions
         /// </summary>
-        public static object? InvokeNoWrapExceptions(this MethodInfo methodInfo, object? obj, object?[] parameters)
+        public static object? CreateInstanceNoWrapExceptions(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)] this Type type,
+            Type[] parameterTypes,
+            object?[] parameters)
         {
+            ConstructorInfo ctorInfo = type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, parameterTypes, null)!;
 #if NETCOREAPP
-            return methodInfo.Invoke(obj, BindingFlags.DoNotWrapExceptions, null, parameters, null);
+            return ctorInfo.Invoke(BindingFlags.DoNotWrapExceptions, null, parameters, null);
 #else
             object? result = null;
             try
             {
-                result = methodInfo.Invoke(obj, parameters);
+                result = ctorInfo.Invoke(parameters);
             }
             catch (TargetInvocationException ex)
             {
