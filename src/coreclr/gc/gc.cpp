@@ -23540,21 +23540,31 @@ void gc_heap::save_post_plug_info (uint8_t* last_pinned_plug, uint8_t* last_obje
     }
 }
 
+// enable on processors known to have a useful prefetch instruction
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64)
 #define PREFETCH
+#endif
+
 #ifdef PREFETCH
 inline void Prefetch(void* addr)
 {
-#ifdef TARGET_AMD64
+#ifdef TARGET_WINDOWS
+
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 
 #ifndef _MM_HINT_T0
 #define _MM_HINT_T0 1
 #endif
     _mm_prefetch((const char*)addr, _MM_HINT_T0);
-#elif defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+#elif defined(TARGET_ARM64)
     __prefetch((const char*)addr);
-#else
+#endif //defined(TARGET_AMD64) || defined(TARGET_X86)
+
+#elif defined(TARGET_UNIX) || defined(TARGET_OSX)
+    __builtin_prefetch(addr);
+#else //!(TARGET_WINDOWS || TARGET_UNIX || TARGET_OSX)
     UNREFERENCED_PARAMETER(addr);
-#endif
+#endif //TARGET_WINDOWS
 }
 #else //PREFETCH
 inline void Prefetch (void* addr)
@@ -25678,6 +25688,8 @@ void gc_heap::scan_dependent_handles (int condemned_gen_number, ScanContext *sc,
         // objects now appear to be promoted and we should set the flag.
         if (process_mark_overflow(condemned_gen_number))
             fUnscannedPromotions = true;
+
+        drain_mark_queue();
 
         // Perform the scan and set the flag if any promotions resulted.
         if (GCScan::GcDhReScan(sc))
