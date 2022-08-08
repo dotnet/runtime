@@ -8700,14 +8700,13 @@ void emitter::emitIns_Call(EmitCallType          callType,
                    VarSetOps::ToString(emitComp, ((instrDescCGCA*)id)->idcGCvars));
         }
     }
-    id->idDebugOnlyInfo()->idCallSig   = sigInfo;
-    id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
-#else
-    if (emitComp->opts.disAsm)
+#endif
+
+    if (m_debugInfoSize > 0)
     {
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
         id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
     }
-#endif
 
 #ifdef LATE_DISASM
     if (addr != nullptr)

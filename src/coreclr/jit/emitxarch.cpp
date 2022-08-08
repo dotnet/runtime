@@ -4368,14 +4368,10 @@ void emitter::emitIns_IJ(emitAttr attr, regNumber reg, unsigned base)
     id->idAddr()->iiaAddrMode.amIndxReg = reg;
     id->idAddr()->iiaAddrMode.amScale   = emitter::OPSZP;
 
-#ifdef DEBUG
-    id->idDebugOnlyInfo()->idMemCookie = base;
-#else
-    if (emitComp->opts.disAsm)
+    if (m_debugInfoSize > 0)
     {
         id->idDebugOnlyInfo()->idMemCookie = base;
     }
-#endif
 
     id->idCodeSize(sz);
 
