@@ -8428,43 +8428,41 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
         return true;
     }
 
-#ifdef USE_PER_FRAME_PINVOKE_INIT
-    // For platforms that use per-P/Invoke InlinedCallFrame initialization,
-    // we can't inline P/Invokes inside of try blocks where we can resume execution in the same function.
-    // The runtime can correctly unwind out of an InlinedCallFrame and out of managed code. However,
-    // it cannot correctly unwind out of an InlinedCallFrame and stop at that frame without also unwinding
-    // at least one managed frame. In particular, the runtime struggles to restore non-volatile registers
-    // from the top-most unmanaged call before the InlinedCallFrame. As a result, the runtime does not support
-    // re-entering the same method frame as the InlinedCallFrame after an exception in unmanaged code.
+#ifdef TARGET_64BIT
+    // On 64-bit platforms, we disable pinvoke inlining inside of try regions.
+    // Note that this could be needed on other architectures too, but we
+    // haven't done enough investigation to know for sure at this point.
+    //
+    // Here is the comment from JIT64 explaining why:
+    //   [VSWhidbey: 611015] - because the jitted code links in the
+    //   Frame (instead of the stub) we rely on the Frame not being
+    //   'active' until inside the stub.  This normally happens by the
+    //   stub setting the return address pointer in the Frame object
+    //   inside the stub.  On a normal return, the return address
+    //   pointer is zeroed out so the Frame can be safely re-used, but
+    //   if an exception occurs, nobody zeros out the return address
+    //   pointer.  Thus if we re-used the Frame object, it would go
+    //   'active' as soon as we link it into the Frame chain.
+    //
+    //   Technically we only need to disable PInvoke inlining if we're
+    //   in a handler or if we're in a try body with a catch or
+    //   filter/except where other non-handler code in this method
+    //   might run and try to re-use the dirty Frame object.
+    //
+    //   A desktop test case where this seems to matter is
+    //   jit\jit64\ebvts\mcpp\sources2\ijw\__clrcall\vector_ctor_dtor.02\deldtor_clr.exe
     if (block->hasTryIndex())
     {
         // This does not apply to the raw pinvoke call that is inside the pinvoke
         // ILStub. In this case, we have to inline the raw pinvoke call into the stub,
         // otherwise we would end up with a stub that recursively calls itself, and end
         // up with a stack overflow.
-        // This works correctly because the runtime never emits a catch block in a managed-to-native
-        // IL stub. If the runtime ever emits a catch block into a managed-to-native stub when using
-        // P/Invoke helpers, this condition will need to be revisited.
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
         {
             return true;
         }
 
-        // Check if this block's try block or any containing try blocks have catch handlers.
-        // If any of the containing try blocks have catch handlers,
-        // we cannot inline a P/Invoke for reasons above. If the handler is a fault or finally handler,
-        // we can inline a P/Invoke into this block in the try since the code will not resume execution
-        // in the same method after throwing an exception if only fault or finally handlers are executed.
-        for (unsigned int ehIndex = block->getTryIndex(); ehIndex != EHblkDsc::NO_ENCLOSING_INDEX;
-             ehIndex              = ehGetEnclosingTryIndex(ehIndex))
-        {
-            if (ehGetDsc(ehIndex)->HasCatchHandler())
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return false;
     }
 #endif // TARGET_64BIT
 
