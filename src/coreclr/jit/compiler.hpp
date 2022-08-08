@@ -1950,7 +1950,7 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
         }
     }
 
-    if (varTypeIsStruct(lvType) && propagate)
+    if (varTypeIsPromotable(lvType) && propagate)
     {
         // For promoted struct locals, increment lvRefCnt on its field locals as well.
         if (promotionType == Compiler::PROMOTION_TYPE_INDEPENDENT ||
