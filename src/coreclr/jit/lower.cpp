@@ -4281,6 +4281,7 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 // Return Value:
 //    none
 //
+// See the usages for USE_PER_FRAME_PINVOKE_INIT for more information.
 void Lowering::InsertPInvokeMethodProlog()
 {
     noway_assert(comp->info.compUnmanagedCallCountWithGCTransition);
@@ -4377,13 +4378,16 @@ void Lowering::InsertPInvokeMethodProlog()
     // --------------------------------------------------------
     // On 32-bit targets, CORINFO_HELP_INIT_PINVOKE_FRAME initializes the PInvoke frame and then pushes it onto
     // the current thread's Frame stack. On 64-bit targets, it only initializes the PInvoke frame.
+    // As a result, don't push the frame onto the frame stack here for any 64-bit targets
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_64BIT
+#ifdef USE_PER_FRAME_PINVOKE_INIT
+    // For IL stubs, we push the frame once even when we're doing per-pinvoke init.
     if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
+#endif // USE_PER_FRAME_PINVOKE_INIT
     {
-        // Push a frame - if we are NOT in an IL stub, this is done right before the call
-        // The init routine sets InlinedCallFrame's m_pNext, so we just set the thead's top-of-stack
+        // Push a frame. The init routine sets InlinedCallFrame's m_pNext, so we just set the thread's top-of-stack
         GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
         firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
         ContainCheckStoreIndir(frameUpd->AsStoreInd());
@@ -4443,9 +4447,10 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     // this in the epilog for IL stubs; for non-IL stubs the frame is popped after every PInvoke call.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef TARGET_64BIT
+#ifdef USE_PER_FRAME_PINVOKE_INIT
+    // For IL stubs, we push the frame once even when we're doing per-pinvoke init
     if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
-#endif // TARGET_64BIT
+#endif // USE_PER_FRAME_PINVOKE_INIT
     {
         GenTree* frameUpd = CreateFrameLinkUpdate(PopFrame);
         returnBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
@@ -4601,7 +4606,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     // contains PInvokes; on 64-bit targets this is necessary in non-stubs.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef TARGET_64BIT
+#ifdef USE_PER_FRAME_PINVOKE_INIT
     if (!comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
     {
         // Set the TCB's frame to be the one we just created.
@@ -4613,7 +4618,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, frameUpd));
         ContainCheckStoreIndir(frameUpd->AsStoreInd());
     }
-#endif // TARGET_64BIT
+#endif // USE_PER_FRAME_PINVOKE_INIT
 
     // IMPORTANT **** This instruction must be the last real instruction ****
     // It changes the thread's state to Preemptive mode
@@ -4679,7 +4684,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     // this happens after every PInvoke call in non-stubs. 32-bit targets instead mark the frame as inactive.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef TARGET_64BIT
+#ifdef USE_PER_FRAME_PINVOKE_INIT
     if (!comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
     {
         tree = CreateFrameLinkUpdate(PopFrame);
@@ -4703,7 +4708,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 
     BlockRange().InsertBefore(insertionPoint, constantZero, storeCallSiteTracker);
     ContainCheckStoreLoc(storeCallSiteTracker);
-#endif // TARGET_64BIT
+#endif // USE_PER_FRAME_PINVOKE_INIT
 }
 
 //------------------------------------------------------------------------

@@ -17,6 +17,7 @@ import { export_linker } from "./exports-linker";
 import { init_polyfills } from "./polyfills";
 import { EmscriptenModule, NativePointer } from "./types/emscripten";
 import { export_api } from "./export-api";
+import { set_legacy_exports } from "./net6-legacy/imports";
 
 export const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
 export let __linker_exports: any = null;
@@ -37,6 +38,7 @@ function initializeImportsAndExports(
 
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
     set_imports_exports(imports, exports);
+    set_legacy_exports(exports);
     init_polyfills(replacements);
 
     // here we merge methods from the local objects into exported objects
@@ -168,7 +170,7 @@ export function get_dotnet_instance(): DotnetPublicAPI {
     return exportedAPI;
 }
 
-export interface APIType {
+export type APIType = {
     runMain: (mainAssemblyName: string, args: string[]) => Promise<number>,
     runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<void>,
     setEnvironmentVariable: (name: string, value: string) => void,
@@ -218,5 +220,5 @@ export type DotnetPublicAPI = {
     runtimeBuildInfo: {
         productVersion: string,
         buildConfiguration: string,
-    } & APIType
-}
+    }
+} & APIType

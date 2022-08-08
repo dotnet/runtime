@@ -26,7 +26,7 @@ export function initialize_marshalers_to_js(): void {
         cs_to_js_marshalers.set(MarshalerType.Byte, _marshal_byte_to_js);
         cs_to_js_marshalers.set(MarshalerType.Char, _marshal_char_to_js);
         cs_to_js_marshalers.set(MarshalerType.Int16, _marshal_int16_to_js);
-        cs_to_js_marshalers.set(MarshalerType.Int32, _marshal_int32_to_js);
+        cs_to_js_marshalers.set(MarshalerType.Int32, marshal_int32_to_js);
         cs_to_js_marshalers.set(MarshalerType.Int52, _marshal_int52_to_js);
         cs_to_js_marshalers.set(MarshalerType.BigInt64, _marshal_bigint64_to_js);
         cs_to_js_marshalers.set(MarshalerType.Single, _marshal_float_to_js);
@@ -39,7 +39,7 @@ export function initialize_marshalers_to_js(): void {
         cs_to_js_marshalers.set(MarshalerType.Object, _marshal_cs_object_to_js);
         cs_to_js_marshalers.set(MarshalerType.DateTime, _marshal_datetime_to_js);
         cs_to_js_marshalers.set(MarshalerType.DateTimeOffset, _marshal_datetime_to_js);
-        cs_to_js_marshalers.set(MarshalerType.Task, _marshal_task_to_js);
+        cs_to_js_marshalers.set(MarshalerType.Task, marshal_task_to_js);
         cs_to_js_marshalers.set(MarshalerType.Action, _marshal_delegate_to_js);
         cs_to_js_marshalers.set(MarshalerType.Function, _marshal_delegate_to_js);
         cs_to_js_marshalers.set(MarshalerType.None, _marshal_null_to_js);
@@ -174,7 +174,7 @@ function _marshal_int16_to_js(arg: JSMarshalerArgument): number | null {
     return get_arg_i16(arg);
 }
 
-function _marshal_int32_to_js(arg: JSMarshalerArgument): number | null {
+export function marshal_int32_to_js(arg: JSMarshalerArgument): number | null {
     const type = get_arg_type(arg);
     if (type == MarshalerType.None) {
         return null;
@@ -246,7 +246,7 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, 
         // this will create new Function for the C# delegate
         result = (arg1_js: any, arg2_js: any, arg3_js: any): any => {
             // arg numbers are shifted by one, the real first is a gc handle of the callback
-            return runtimeHelpers.javaScriptExports._call_delegate(gc_handle, arg1_js, arg2_js, arg3_js, res_converter, arg1_converter, arg2_converter, arg3_converter);
+            return runtimeHelpers.javaScriptExports.call_delegate(gc_handle, arg1_js, arg2_js, arg3_js, res_converter, arg1_converter, arg2_converter, arg3_converter);
         };
         setup_managed_proxy(result, gc_handle);
     }
@@ -254,7 +254,7 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, 
     return result;
 }
 
-function _marshal_task_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, res_converter?: MarshalerToJs): Promise<any> | null {
+export function marshal_task_to_js(arg: JSMarshalerArgument, _?: JSMarshalerType, res_converter?: MarshalerToJs): Promise<any> | null {
     const type = get_arg_type(arg);
     if (type === MarshalerType.None) {
         return null;

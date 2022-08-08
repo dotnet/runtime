@@ -2660,7 +2660,9 @@ bool          gc_heap::use_large_pages_p = 0;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
 size_t        gc_heap::last_gc_end_time_us = 0;
 #endif //HEAP_BALANCE_INSTRUMENTATION
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+bool          gc_heap::enable_special_regions_p = false;
+#else //USE_REGIONS
 size_t        gc_heap::min_segment_size = 0;
 size_t        gc_heap::min_uoh_segment_size = 0;
 #endif //!USE_REGIONS
@@ -5622,7 +5624,6 @@ gc_heap::soh_get_segment_to_expand()
     dprintf (GTC_LOG, ("(gen%d)creating new segment %Ix", settings.condemned_generation, result));
     return result;
 }
-#endif //!USE_REGIONS
 
 //returns 0 in case of allocation failure
 heap_segment*
@@ -5768,6 +5769,7 @@ void gc_heap::release_segment (heap_segment* sg)
     FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem(sg));
     virtual_free (sg, (uint8_t*)heap_segment_reserved (sg)-(uint8_t*)sg, sg);
 }
+#endif //!USE_REGIONS
 
 heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
 #ifdef MULTIPLE_HEAPS
@@ -8886,6 +8888,7 @@ void gc_heap::set_fgm_result (failure_get_memory f, size_t s, BOOL loh_p)
 #endif //MULTIPLE_HEAPS
 }
 
+#ifndef USE_REGIONS
 //returns 0 for success, -1 otherwise
 // We are doing all the decommitting here because we want to make sure we have
 // enough memory to do so - if we do this during copy_brick_card_table and
@@ -9195,6 +9198,7 @@ fail:
 
     return 0;
 }
+#endif //!USE_REGIONS
 
 //copy all of the arrays managed by the card table for a page aligned range
 void gc_heap::copy_brick_card_range (uint8_t* la, uint32_t* old_card_table,
@@ -11146,7 +11150,6 @@ void gc_heap::clear_region_info (heap_segment* region)
 }
 
 // Note that returning a region to free does not decommit.
-// REGIONS PERF TODO: should decommit if needed.
 void gc_heap::return_free_region (heap_segment* region)
 {
     gc_oh_num oh = heap_segment_oh (region);
@@ -22684,17 +22687,20 @@ heap_segment* gc_heap::unlink_first_rw_region (int gen_idx)
     assert (!heap_segment_read_only_p (region));
     dprintf (REGIONS_LOG, ("unlink_first_rw_region on heap: %d gen: %d region: %Ix", heap_number, gen_idx, heap_segment_mem (region)));
 
-#ifdef _DEBUG
-    int old_oh = heap_segment_oh (region);
-    int old_heap = heap_segment_heap (region)->heap_number;
-    dprintf(3, ("commit-accounting:  from %d to temp [%Ix, %Ix) for heap %d", old_oh, get_region_start (region), heap_segment_committed (region), old_heap));
+#if defined(_DEBUG) && defined(HOST_64BIT)
+    if (heap_hard_limit_oh[soh])
+    {
+        int old_oh = heap_segment_oh (region);
+        int old_heap = heap_segment_heap (region)->heap_number;
+        dprintf(3, ("commit-accounting:  from %d to temp [%Ix, %Ix) for heap %d", old_oh, get_region_start (region), heap_segment_committed (region), old_heap));
 
-    size_t committed = heap_segment_committed (region) - get_region_start (region);
-    check_commit_cs.Enter();
-    assert (g_heaps[old_heap]->committed_by_oh_per_heap[old_oh] >= committed);
-    g_heaps[old_heap]->committed_by_oh_per_heap[old_oh] -= committed;
-    check_commit_cs.Leave();
-#endif // _DEBUG
+        size_t committed = heap_segment_committed (region) - get_region_start (region);
+        check_commit_cs.Enter();
+        assert (g_heaps[old_heap]->committed_by_oh_per_heap[old_oh] >= committed);
+        g_heaps[old_heap]->committed_by_oh_per_heap[old_oh] -= committed;
+        check_commit_cs.Leave();
+    }
+#endif // _DEBUG && HOST_64BIT
 
     set_heap_for_contained_basic_regions (region, nullptr);
 
@@ -22718,17 +22724,20 @@ void gc_heap::thread_rw_region_front (int gen_idx, heap_segment* region)
     }
     dprintf (REGIONS_LOG, ("thread_rw_region_front on heap: %d gen: %d region: %Ix", heap_number, gen_idx, heap_segment_mem (region)));
 
-#ifdef _DEBUG
-    int new_oh = gen_to_oh (gen_idx);
-    int new_heap = this->heap_number;
-    dprintf(3, ("commit-accounting:  from temp to %d [%Ix, %Ix) for heap %d", new_oh, get_region_start (region), heap_segment_committed (region), new_heap));
+#if defined(_DEBUG) && defined(HOST_64BIT)
+    if (heap_hard_limit_oh[soh])
+    {
+        int new_oh = gen_to_oh (gen_idx);
+        int new_heap = this->heap_number;
+        dprintf(3, ("commit-accounting:  from temp to %d [%Ix, %Ix) for heap %d", new_oh, get_region_start (region), heap_segment_committed (region), new_heap));
 
-    size_t committed = heap_segment_committed (region) - get_region_start (region);
-    check_commit_cs.Enter();
-    assert (heap_segment_heap (region) == nullptr);
-    g_heaps[new_heap]->committed_by_oh_per_heap[new_oh] += committed;
-    check_commit_cs.Leave();
-#endif // _DEBUG
+        size_t committed = heap_segment_committed (region) - get_region_start (region);
+        check_commit_cs.Enter();
+        assert (heap_segment_heap (region) == nullptr);
+        g_heaps[new_heap]->committed_by_oh_per_heap[new_oh] += committed;
+        check_commit_cs.Leave();
+    }
+#endif // _DEBUG && HOST_64BIT
 
     set_heap_for_contained_basic_regions (region, this);
 }
@@ -30798,6 +30807,11 @@ void gc_heap::update_start_tail_regions (generation* gen,
 inline
 bool gc_heap::should_sweep_in_plan (heap_segment* region)
 {
+    if (!enable_special_regions_p)
+    {
+        return false;
+    }
+
     if (settings.reason == reason_induced_aggressive)
     {
         return false;
@@ -44083,6 +44097,7 @@ HRESULT GCHeap::Initialize()
     {
         gc_heap::total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&gc_heap::is_restricted_physical_mem);
     }
+    gc_heap::heap_hard_limit_oh[soh] = 0;
 #ifdef HOST_64BIT
     gc_heap::heap_hard_limit = (size_t)GCConfig::GetGCHeapHardLimit();
     gc_heap::heap_hard_limit_oh[soh] = (size_t)GCConfig::GetGCHeapHardLimitSOH();
@@ -44328,6 +44343,7 @@ HRESULT GCHeap::Initialize()
     GCConfig::SetHeapCount(static_cast<int64_t>(nhp));
 
 #ifdef USE_REGIONS
+    gc_heap::enable_special_regions_p = (bool)GCConfig::GetGCEnableSpecialRegions();
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
     if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * 19) > gc_heap::regions_range))
     {

@@ -22,13 +22,38 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
+    public class CertificateSetup : IDisposable
+    {
+        public readonly X509Certificate2 serverCert;
+        public readonly X509Certificate2Collection serverChain;
+
+        public CertificateSetup()
+        {
+            System.Net.Security.Tests.TestHelper.CleanupCertificates(nameof(MsQuicTests));
+            (serverCert, serverChain) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost", nameof(MsQuicTests), longChain: true);
+        }
+
+        public void Dispose()
+        {
+            serverCert.Dispose();
+            foreach (var c in serverChain)
+            {
+                c.Dispose();
+            }
+        }
+    }
+
     [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
-    public class MsQuicTests : QuicTestBase
+    public class MsQuicTests : QuicTestBase, IClassFixture<CertificateSetup>
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
+        readonly CertificateSetup _certificates;
 
-        public MsQuicTests(ITestOutputHelper output) : base(output) { }
+        public MsQuicTests(ITestOutputHelper output, CertificateSetup setup) : base(output)
+        {
+            _certificates = setup;
+        }
 
         [Fact]
         public async Task ConnectWithCertificateChain()
@@ -102,6 +127,66 @@ namespace System.Net.Quic.Tests
                 certificate.Dispose();
             }
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectWithUntrustedCaWithCustomTrust_OK(bool usePartialChain)
+        {
+            int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
+
+            X509Certificate2Collection serverChain;
+            if (usePartialChain)
+            {
+                // give first few certificates without root CA
+                serverChain = new X509Certificate2Collection();
+                for (int i = 0; i < split; i++)
+                {
+                    serverChain.Add(_certificates.serverChain[i]);
+                }
+            }
+            else
+            {
+                serverChain = _certificates.serverChain;
+            }
+
+            var listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ConnectionOptionsCallback = (_, _, _) =>
+            {
+                var serverOptions = CreateQuicServerOptions();
+                serverOptions.ServerAuthenticationOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, serverChain);
+                serverOptions.ServerAuthenticationOptions.RemoteCertificateValidationCallback = null;
+                return ValueTask.FromResult(serverOptions);
+            };
+
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            var clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            var clientSslOptions = clientOptions.ClientAuthenticationOptions;
+            clientSslOptions.TargetHost = "localhost";
+            clientSslOptions.RemoteCertificateValidationCallback = null;
+            clientSslOptions.CertificateChainPolicy = new X509ChainPolicy()
+            {
+                RevocationMode = X509RevocationMode.NoCheck,
+                TrustMode = X509ChainTrustMode.CustomRootTrust
+            };
+            clientSslOptions.CertificateChainPolicy.CustomTrustStore.Add(_certificates.serverChain[_certificates.serverChain.Count - 1]);
+            // Add only one CA to verify that peer did send intermediate CA cert.
+            // In case of partial chain, we need to make missing certs available.
+            if (usePartialChain)
+            {
+                for (int i = split; i < _certificates.serverChain.Count - 1; i++)
+                {
+                    clientSslOptions.CertificateChainPolicy.ExtraStore.Add(_certificates.serverChain[i]);
+                }
+            }
+
+            // should connect successfully
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listener);
+            await clientConnection.DisposeAsync();
+            await serverConnection.DisposeAsync();
+        }
+
 
         [ConditionalFact]
         public async Task UntrustedClientCertificateFails()
@@ -241,11 +326,14 @@ namespace System.Net.Quic.Tests
             await clientConnection.DisposeAsync();
             await serverConnection.DisposeAsync();
 
-            // This should fail when callback return null.
+            // This should fail because server connection options callback returns null.
             clientOptions.ClientAuthenticationOptions.TargetHost = "foobar3";
             Task clientTask = CreateQuicConnection(clientOptions).AsTask();
 
-            await Assert.ThrowsAsync<QuicException>(() => clientTask);
+            // TODO: the exception may change if we implement https://github.com/dotnet/runtime/issues/73152 to make server close
+            // connections with CONNECTION_REFUSED in such cases
+            var authEx = await Assert.ThrowsAsync<AuthenticationException>(() => clientTask);
+            Assert.Contains("UserCanceled", authEx.Message);
             Assert.Equal(clientOptions.ClientAuthenticationOptions.TargetHost, receivedHostName);
             await Assert.ThrowsAsync<ArgumentException>(async () => await listener.AcceptConnectionAsync());
 
@@ -1080,6 +1168,16 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(0, received);
                     Assert.True(serverStream.ReadsClosed.IsCompletedSuccessfully);
                 });
+        }
+
+        [Fact]
+        public async Task IncompatibleAlpn_ThrowsAuthenticationException()
+        {
+            await using QuicListener listener = await CreateQuicListener();
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.ClientAuthenticationOptions.ApplicationProtocols[0] = new SslApplicationProtocol("someprotocol");
+
+            await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateQuicConnection(clientOptions)).WaitAsync(TimeSpan.FromSeconds(30));
         }
     }
 }

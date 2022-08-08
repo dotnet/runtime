@@ -27,13 +27,14 @@ function saveProfile(aotProfileData) {
     // Remove anchor from body
     document.body.removeChild(a);
 }
-
+let enableProfiler = false
 try {
-    const { MONO, INTERNAL, getAssemblyExports: getAssemblyExports } = await createDotnetRuntime({
+    const { INTERNAL, getAssemblyExports: getAssemblyExports } = await createDotnetRuntime({
         configSrc: "./mono-config.json",
         disableDotnet6Compatibility: true,
         onConfigLoaded: (config) => {
             if (config.enableProfiler) {
+                enableProfiler = true;
                 config.aotProfilerOptions = {
                     writeAt: "Sample.Test::StopProfile",
                     sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
@@ -50,7 +51,7 @@ try {
     document.getElementById("out").innerHTML = ret;
     console.debug(`ret: ${ret}`);
 
-    if (MONO.config.enableProfiler) {
+    if (enableProfiler) {
         stopProfile();
         saveProfile(INTERNAL.aotProfileData);
     }

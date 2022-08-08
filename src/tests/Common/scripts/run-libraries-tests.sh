@@ -2,8 +2,8 @@
 
 usage()
 {
-    echo "Runs .NET CoreFX tests on FreeBSD, Linux, NetBSD or OSX"
-    echo "usage: run-corefx-tests [options]"
+    echo "Runs .NET runtime libraries tests on FreeBSD, Linux, NetBSD or OSX"
+    echo "usage: run-libraries-tests [options]"
     echo
     echo "Input sources:"
     echo "    --runtime <location>              Location of root of the binaries directory"
@@ -18,7 +18,7 @@ usage()
     echo "                                      default: Debug"
     echo "    --os <os>                         OS to run (FreeBSD, Linux, NetBSD, OSX, SunOS)"
     echo "                                      default: detect current OS"
-    echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64)"
+    echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64, loongarch64, riscv64)"
     echo "                                      default: detect current architecture"
     echo
     echo "Execution options:"
@@ -117,8 +117,16 @@ case $CPUName in
         __Arch=armel
         ;;
 
-    aarch64)
+    aarch64|arm64)
         __Arch=arm64
+        ;;
+
+    loongarch64)
+        __Arch=loongarch64
+        ;;
+
+    riscv64)
+        __Arch=riscv64
         ;;
 
     *)

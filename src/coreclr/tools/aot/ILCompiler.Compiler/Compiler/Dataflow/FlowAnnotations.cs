@@ -311,16 +311,18 @@ namespace ILLink.Shared.TrimAnalysis
                     TypeDesc baseType = key.BaseType;
                     while (baseType != null)
                     {
-                        TypeDefinition baseTypeDef = reader.GetTypeDefinition(((EcmaType)baseType.GetTypeDefinition()).Handle);
-                        typeAnnotation |= GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, baseTypeDef.GetCustomAttributes());
+                        var ecmaBaseType = (EcmaType)baseType.GetTypeDefinition();
+                        TypeDefinition baseTypeDef = ecmaBaseType.MetadataReader.GetTypeDefinition(ecmaBaseType.Handle);
+                        typeAnnotation |= GetMemberTypesForDynamicallyAccessedMembersAttribute(ecmaBaseType.MetadataReader, baseTypeDef.GetCustomAttributes());
                         baseType = baseType.BaseType;
                     }
 
                     // And inherit them from interfaces
                     foreach (DefType runtimeInterface in key.RuntimeInterfaces)
                     {
-                        TypeDefinition interfaceTypeDef = reader.GetTypeDefinition(((EcmaType)runtimeInterface.GetTypeDefinition()).Handle);
-                        typeAnnotation |= GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, interfaceTypeDef.GetCustomAttributes());
+                        var ecmaInterface = (EcmaType)runtimeInterface.GetTypeDefinition();
+                        TypeDefinition interfaceTypeDef = ecmaInterface.MetadataReader.GetTypeDefinition(ecmaInterface.Handle);
+                        typeAnnotation |= GetMemberTypesForDynamicallyAccessedMembersAttribute(ecmaInterface.MetadataReader, interfaceTypeDef.GetCustomAttributes());
                     }
                 }
                 catch (TypeSystemException)

@@ -285,7 +285,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 options.ClientAuthenticationOptions.TargetHost,
                 certificateRequired: true,
                 options.ClientAuthenticationOptions.CertificateRevocationCheckMode,
-                options.ClientAuthenticationOptions.RemoteCertificateValidationCallback);
+                options.ClientAuthenticationOptions.RemoteCertificateValidationCallback,
+                options.ClientAuthenticationOptions.CertificateChainPolicy?.Clone());
             _configuration = MsQuicConfiguration.Create(options);
 
             IntPtr targetHostPtr = Marshal.StringToCoTaskMemUTF8(options.ClientAuthenticationOptions.TargetHost ?? host ?? address?.ToString());
@@ -327,7 +328,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 targetHost: null,
                 options.ServerAuthenticationOptions.ClientCertificateRequired,
                 options.ServerAuthenticationOptions.CertificateRevocationCheckMode,
-                options.ServerAuthenticationOptions.RemoteCertificateValidationCallback);
+                options.ServerAuthenticationOptions.RemoteCertificateValidationCallback,
+                options.ServerAuthenticationOptions.CertificateChainPolicy?.Clone());
             _configuration = MsQuicConfiguration.Create(options, targetHost);
 
             unsafe
