@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata.Tests;
 using System.Reflection.PortableExecutable;
@@ -15,9 +12,81 @@ namespace System.Reflection.Metadata.Decoding.Tests
 {
     public class CustomAttributeDecoderTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestCustomAttributeDecoder()
+        {
+            using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(HasAttributes).GetTypeInfo().Assembly)))
+            using (var peReader = new PEReader(stream))
+            {
+                MetadataReader reader = peReader.GetMetadataReader();
+                var provider = new CustomAttributeTypeProvider();
+                TypeDefinitionHandle typeDefHandle = TestMetadataResolver.FindTestType(reader, typeof(HasAttributes));
+
+                int i = 0;
+                foreach (CustomAttributeHandle attributeHandle in reader.GetCustomAttributes(typeDefHandle))
+                {
+                    CustomAttribute attribute = reader.GetCustomAttribute(attributeHandle);
+                    CustomAttributeValue<string> value = attribute.DecodeValue(provider);
+
+                    switch (i++)
+                    {
+                        case 0:
+                            Assert.Empty(value.FixedArguments);
+                            Assert.Empty(value.NamedArguments);
+                            break;
+
+                        case 1:
+                            Assert.Equal(3, value.FixedArguments.Length);
+
+                            Assert.Equal("string", value.FixedArguments[0].Type);
+                            Assert.Equal("0", value.FixedArguments[0].Value);
+
+                            Assert.Equal("int32", value.FixedArguments[1].Type);
+                            Assert.Equal(1, value.FixedArguments[1].Value);
+
+                            Assert.Equal("float64", value.FixedArguments[2].Type);
+                            Assert.Equal(2.0, value.FixedArguments[2].Value);
+
+                            Assert.Empty(value.NamedArguments);
+                            break;
+
+                        case 2:
+                            Assert.Equal(3, value.NamedArguments.Length);
+
+                            Assert.Equal(CustomAttributeNamedArgumentKind.Field, value.NamedArguments[0].Kind);
+                            Assert.Equal("StringField", value.NamedArguments[0].Name);
+                            Assert.Equal("string", value.NamedArguments[0].Type);
+                            Assert.Equal("0", value.NamedArguments[0].Value);
+
+                            Assert.Equal(CustomAttributeNamedArgumentKind.Field, value.NamedArguments[1].Kind);
+                            Assert.Equal("Int32Field", value.NamedArguments[1].Name);
+                            Assert.Equal("int32", value.NamedArguments[1].Type);
+                            Assert.Equal(1, value.NamedArguments[1].Value);
+
+                            Assert.Equal(CustomAttributeNamedArgumentKind.Property, value.NamedArguments[2].Kind);
+                            Assert.Equal("SByteEnumArrayProperty", value.NamedArguments[2].Name);
+                            Assert.Equal(typeof(SByteEnum).FullName + "[]", value.NamedArguments[2].Type);
+
+                            var array = (ImmutableArray<CustomAttributeTypedArgument<string>>)(value.NamedArguments[2].Value);
+                            Assert.Equal(1, array.Length);
+                            Assert.Equal(typeof(SByteEnum).FullName, array[0].Type);
+                            Assert.Equal((sbyte)SByteEnum.Value, array[0].Value);
+                            break;
+
+                        default:
+                            // TODO: https://github.com/dotnet/runtime/issues/73593
+                            // This method only tests first 3 attriubtes because the complete test 'TestCustomAttributeDecoderUsingReflection' fails on mono
+                            // Leaving this hard coded test only for mono, until the issue fixed on mono
+                            break;
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73593", TestRuntimes.Mono)]
+        public void TestCustomAttributeDecoderUsingReflection()
         {
             Type type = typeof(HasAttributes);
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(type.GetTypeInfo().Assembly)))
@@ -128,9 +197,8 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Type assembly name is different on .NET Framework.")]
         public void TestCustomAttributeDecoderGenericUsingReflection()
         {
             Type type = typeof(HasGenericAttributes);
@@ -177,9 +245,8 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Type assembly name is different on .NET Framework.")]
         public void TestCustomAttributeDecoderGenericArray()
         {
             Type type = typeof(HasGenericArrayAttributes);
@@ -319,7 +386,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
         [Test(UInt64Enum.Value)]*/
         [Test(new string[] { })]
         [Test(new string[] { "x", "y", "z", null })]
-        //[Test(new Int32Enum[] { Int32Enum.Value })] TODO: https://github.com/dotnet/runtime/issues/16552
+        // [Test(new Int32Enum[] { Int32Enum.Value })] TODO: https://github.com/dotnet/runtime/issues/16552
 
         // same single fixed arguments as above, typed as object
         [Test((object)("string"))]
@@ -337,8 +404,8 @@ namespace System.Reflection.Metadata.Decoding.Tests
         [Test((object)(true))]
         [Test((object)(false))]
         [Test((object)(typeof(string)))]
-        [Test((object)(SByteEnum.Value))] 
-        [Test((object)(Int16Enum.Value))]   
+        [Test((object)(SByteEnum.Value))]
+        [Test((object)(Int16Enum.Value))]
         [Test((object)(Int32Enum.Value))]
         [Test((object)(Int64Enum.Value))]
         [Test((object)(ByteEnum.Value))]
@@ -590,7 +657,6 @@ namespace System.Reflection.Metadata.Decoding.Tests
                     return "uint64";
 
                 default:
-                    Debug.Assert(false);
                     throw new ArgumentOutOfRangeException(nameof(type));
             }
         }
