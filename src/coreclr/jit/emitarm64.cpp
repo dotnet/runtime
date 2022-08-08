@@ -8705,7 +8705,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     if (m_debugInfoSize > 0)
     {
         INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
-        id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
+        id->idDebugOnlyInfo()->idMemCookie       = (size_t)methHnd; // method token
     }
 
 #ifdef LATE_DISASM
