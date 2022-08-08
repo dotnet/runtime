@@ -120,6 +120,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task ClonedServer_ActsAsOriginalServer()
         {
             byte[] msg1 = new byte[] { 5, 7, 9, 10 };
@@ -159,6 +160,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task ClonedClient_ActsAsOriginalClient()
         {
             byte[] msg1 = new byte[] { 5, 7, 9, 10 };
@@ -197,6 +199,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task ConnectOnAlreadyConnectedClient_Throws_InvalidOperationException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -208,6 +211,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task WaitForConnectionOnAlreadyConnectedServer_Throws_InvalidOperationException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -221,6 +225,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(0)]
         [InlineData(100)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task CancelTokenOn_ServerWaitForConnectionAsync_Throws_OperationCanceledException(int cancellationDelay)
         {
             (NamedPipeServerStream server, NamedPipeClientStream client) = CreateServerAndClientStreams();
@@ -278,6 +283,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task OperationsOnDisconnectedServer()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -315,6 +321,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task OperationsOnDisconnectedClient()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -360,6 +367,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task Windows_OperationsOnNamedServerWithDisposedClient()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -384,6 +392,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public void OperationsOnUnconnectedServer()
         {
             (NamedPipeServerStream server, NamedPipeClientStream client) = CreateServerAndClientStreams();
@@ -420,6 +429,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public void OperationsOnUnconnectedClient()
         {
             (NamedPipeServerStream server, NamedPipeClientStream client) = CreateServerAndClientStreams();
@@ -452,6 +462,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task DisposedServerPipe_Throws_ObjectDisposedException()
         {
             (NamedPipeServerStream server, NamedPipeClientStream client) = CreateServerAndClientStreams();
@@ -465,6 +476,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task DisposedClientPipe_Throws_ObjectDisposedException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -478,6 +490,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task ReadAsync_DisconnectDuringRead_Returns0()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -490,6 +503,7 @@ namespace System.IO.Pipes.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)] // Unix named pipes are on sockets, where small writes with an empty buffer will succeed immediately
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         [Fact]
         public async Task WriteAsync_DisconnectDuringWrite_Throws()
         {
@@ -503,6 +517,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task Server_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -605,6 +620,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task Client_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -707,6 +723,7 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task TwoServerInstances_OnceDisposed_Throws()
         {
             if ((Options & PipeOptions.Asynchronous) == 0)
