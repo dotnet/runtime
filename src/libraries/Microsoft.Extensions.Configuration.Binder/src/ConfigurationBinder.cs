@@ -579,7 +579,7 @@ namespace Microsoft.Extensions.Configuration
                     object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key, true) :
                         keyTypeIsInteger ? Convert.ChangeType(child.Key, keyType) :
                         child.Key;
-                        
+
                     var valueBindingPoint = new BindingPoint(
                         initialValueProvider: () =>
                         {
