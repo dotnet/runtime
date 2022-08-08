@@ -31,6 +31,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task ConnectToNonExistentServer_Throws_TimeoutException()
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
@@ -46,6 +47,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task CancelConnectToNonExistentServer_Throws_OperationCanceledException()
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
@@ -620,6 +622,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public void ClientConnect_Throws_Timeout_When_Pipe_Not_Found()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
@@ -631,6 +634,7 @@ namespace System.IO.Pipes.Tests
 
         [Theory]
         [MemberData(nameof(GetCancellationTokens))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task ClientConnectAsync_Throws_Timeout_When_Pipe_Not_Found(CancellationToken cancellationToken)
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();

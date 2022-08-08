@@ -24,6 +24,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public void OSSupportsUnixDomainSockets_ReturnsCorrectValue()
         {
             Assert.Equal(PlatformSupportsUnixDomainSockets, Socket.OSSupportsUnixDomainSockets);
@@ -86,6 +87,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_NotServer()
         {
             string path = GetRandomNonExistingFilePath();
@@ -382,6 +384,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public void UnixDomainSocketEndPoint_InvalidPaths_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => new UnixDomainSocketEndPoint(null));
@@ -450,6 +453,7 @@ namespace System.Net.Sockets.Tests
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Linux)] // Don't support abstract socket addresses.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public void UnixDomainSocketEndPoint_UsingAbstractSocketAddressOnUnsupported_Throws()
         {
             // An abstract socket address starts with a zero byte.
@@ -519,6 +523,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public void AbstractPathEquality()
         {
             string abstractPath = '\0' + Guid.NewGuid().ToString();
@@ -534,6 +539,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public void FilePathEquality()
         {
             string path1 = "relative" + Path.DirectorySeparatorChar + "path";

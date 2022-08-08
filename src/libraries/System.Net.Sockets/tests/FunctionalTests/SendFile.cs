@@ -236,6 +236,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73536", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task SendFileGetsCanceledByDispose()
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens
