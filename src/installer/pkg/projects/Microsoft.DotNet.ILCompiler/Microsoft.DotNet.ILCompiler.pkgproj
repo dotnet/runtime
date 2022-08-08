@@ -22,6 +22,7 @@
       <File Include="$(CoreCLRILCompilerDir)netstandard\*" TargetPath="tools/netstandard" />
       <File Include="sdk\Sdk.props" TargetPath="Sdk" />
       <File Include="$(MSBuildThisFileDirectory)\..\..\..\..\native\libs\System.Globalization.Native\*" TargetPath="source_code/libs/System.Globalization.Native"/>
+      <File Include="$(MSBuildThisFileDirectory)\..\..\..\..\native\libs\System.Globalization.Native\static-build\*" TargetPath="source_code/libs/System.Globalization.Native/static-build"/>
       <File Include="$(MSBuildThisFileDirectory)\..\..\..\..\native\minipal\*" TargetPath="source_code/minipal"/>
       <File Include="$(MSBuildThisFileDirectory)\..\..\..\..\native\libs\Common\*" TargetPath="source_code/libs/Common"/>
     </ItemGroup>

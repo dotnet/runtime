@@ -2,21 +2,21 @@ cmake_minimum_required(VERSION 3.6)
 
 project(System.Globalization.Native.User.Machine.Build C)
 
-include(configure.cmake)
-
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux") # Only Linux for now
 
+configure_file(../config.h.in config.h)
+
 set(NATIVEGLOBALIZATION_SOURCES
-  pal_calendarData.c
-  pal_casing.c
-  pal_collation.c
-  pal_idna.c
-  pal_locale.c
-  pal_localeNumberData.c
-  pal_localeStringData.c
-  pal_normalization.c
-  pal_icushim_static.c
-  pal_timeZoneInfo.c
+  ../pal_calendarData.c
+  ../pal_casing.c
+  ../pal_collation.c
+  ../pal_idna.c
+  ../pal_locale.c
+  ../pal_localeNumberData.c
+  ../pal_localeStringData.c
+  ../pal_normalization.c
+  ../pal_icushim_static.c
+  ../pal_timeZoneInfo.c
 )
 
 add_library(System.Globalization.Native-Static
@@ -36,10 +36,12 @@ add_compile_options(-Wno-documentation-unknown-command)
 add_compile_options(-Wno-extra-semi-stmt)
 add_compile_options(-Wno-unknown-warning-option)
 
-add_definitions(-D_GNU_SOURCE -g -fPIC -DBUILDENV_DEBUG=1 -DDEBUG -DDISABLE_CONTRACTS -DHOST_64BIT -DHOST_AMD64 -DHOST_UNIX -DPALEXPORT=EXTERN_C -DTARGET_64BIT -DTARGET_AMD64 -DTARGET_LINUX -DTARGET_UNIX -DURTBLDENV_FRIENDLY=Debug -D_DBG -D_DEBUG -D_FILE_OFFSET_BITS=64 -DSTATIC_ICU -DSTATIC_SHIM_COMPILE)
+add_definitions(-D_GNU_SOURCE -g -fPIC -DHOST_64BIT -DHOST_AMD64 -DHOST_UNIX -DPALEXPORT=EXTERN_C -DTARGET_64BIT -DTARGET_AMD64 -DTARGET_LINUX -DTARGET_UNIX -D_FILE_OFFSET_BITS=64 -DSTATIC_ICU -DSTATIC_SHIM_COMPILE)
 
 target_compile_options(System.Globalization.Native-Static PUBLIC -std=gnu99 -Wno-declaration-after-statement -D_GNU_SOURCE -g -fPIC -O0 -g -Wall -fno-omit-frame-pointer -fms-extensions -fwrapv -fstack-protector-strong)
 
-target_include_directories (System.Globalization.Native-Static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../Common ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../../ ${CMAKE_CURRENT_SOURCE_DIR}/build)
+target_include_directories (System.Globalization.Native-Static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../../ ${CMAKE_CURRENT_SOURCE_DIR}/../../../libs/Common ${CMAKE_CURRENT_BINARY_DIR})
 
+else()
+  message( FATAL_ERROR "Static builds are supported only on Linux" )
 endif()
