@@ -544,18 +544,11 @@ namespace System.Net.Sockets.Tests
 
         private static string GetRandomNonExistingFilePath()
         {
-            // ensure we have room for at least one random character appended to the UDS path
-            FieldInfo fi = typeof(UnixDomainSocketEndPoint).GetField("s_nativePathLength", BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.NotNull(fi);
-            int maxNativeSize = (int)fi.GetValue(null);
-            int remainingUDSPathChars = Math.Min(32, maxNativeSize - Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()).Length);
-            Assert.True(remainingUDSPathChars > 0, "Path to UDS on this platform is too long.");
-
             string result;
             do
             {
                 // get random name and append random number of characters to get variable name length.
-                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + new string('A', Random.Shared.Next(0, remainingUDSPathChars)));
+                result = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + new string('A', Random.Shared.Next(1, 32)));
             }
             while (File.Exists(result));
 
