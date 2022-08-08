@@ -1083,7 +1083,7 @@ FCIMPL2(void, MarshalNative::GetNativeVariantForObjectNative, Object* ObjUNSAFE,
         COMPlusThrowArgumentException(W("obj"), W("Argument_NeedNonGenericObject"));
     }
 
-    // intialize the output variant
+    // initialize the output variant
     SafeVariantInit((VARIANT*)pDestNativeVariant);
     OleVariant::MarshalOleVariantForObject(&Obj, (VARIANT*)pDestNativeVariant);
 

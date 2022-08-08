@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            value = JavaScriptExports.CreateCSOwnedProxy(slot.JSHandle);
+            value = JSHostImplementation.CreateCSOwnedProxy(slot.JSHandle);
         }
 
         /// <summary>

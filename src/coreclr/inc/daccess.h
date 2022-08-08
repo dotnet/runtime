@@ -252,7 +252,7 @@
 // even though in target address terms one is embedded in the other.
 // The assumption of data stability means that this won't cause
 // a problem, but care must be taken with the address arithmetic,
-// as layed out in rules #2 and #3.
+// as laid out in rules #2 and #3.
 //
 // 4.  Global address references cannot be used.  Any reference to a
 //     global piece of code or data, such as a function address, global
@@ -1808,7 +1808,7 @@ typedef DPTR(PTR_VOID) PTR_PTR_VOID;
 // const-correctness. However, if we wanted to support true void* / const void*
 // behavior, we could probably build the follow functionality by templating
 // __VoidPtr:
-//  * A PTR_VOID would be implicitly convertable to PTR_CVOID
+//  * A PTR_VOID would be implicitly convertible to PTR_CVOID
 //  * An explicit coercion (ideally const_cast) would be required to convert a
 //      PTR_CVOID to a PTR_VOID
 //  * Similarily, an explicit coercion would be required to convert a cost PTR
@@ -2266,7 +2266,7 @@ public: name(int dummy) : base(dummy) {}
 //      TADDR <- ?PTR(Src)     - Get TADDR of PTR object (DPtr etc.)
 //      TADDR <- Src *         - Get TADDR of dac host object instance
 //
-// Note that there is no direct convertion to other host-pointer types (because we don't
+// Note that there is no direct conversion to other host-pointer types (because we don't
 // know if you want a DPTR or VPTR etc.).  However, due to the implicit DAC conversions,
 // you can just use dac_cast<PTR_Foo> and assign that to a Foo*.
 //
@@ -2292,7 +2292,7 @@ public: name(int dummy) : base(dummy) {}
 //             dac_cast<PTR_AppDomain>(pBD)
 //             dac_cast<PTR_BaseDomain>(pAD)
 //
-// Example comparsions of some old and new syntax, where
+// Example comparisons of some old and new syntax, where
 //    h is a host pointer, such as "Foo *h;"
 //    p is a DPTR, such as "PTR_Foo p;"
 //

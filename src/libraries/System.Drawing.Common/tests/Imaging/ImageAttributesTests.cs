@@ -391,7 +391,7 @@ namespace System.Drawing.Imaging.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(SetColorMatrices_Flags_TestData))]
-        public void SetColorMatrices_ColorMatrixGrayMatrixFlags_Success(ColorMatrixFlag flag, Color grayShade, Color expecedGrayShade)
+        public void SetColorMatrices_ColorMatrixGrayMatrixFlags_Success(ColorMatrixFlag flag, Color grayShade, Color expectedGrayShade)
         {
             using (var brush = new SolidBrush(_actualGreen))
             using (var bitmap = new Bitmap(_rectangle.Width, _rectangle.Height))
@@ -403,7 +403,7 @@ namespace System.Drawing.Imaging.Tests
                 bitmap.SetPixel(1, 1, grayShade);
                 graphics.DrawImage(bitmap, _rectangle, _rectangle.X, _rectangle.Y, _rectangle.Width, _rectangle.Height, GraphicsUnit.Pixel, imageAttr);
                 Assert.Equal(_expectedRed, bitmap.GetPixel(0, 0));
-                Assert.Equal(expecedGrayShade, bitmap.GetPixel(1, 1));
+                Assert.Equal(expectedGrayShade, bitmap.GetPixel(1, 1));
             }
         }
 
@@ -420,7 +420,7 @@ namespace System.Drawing.Imaging.Tests
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(SetColorMatrices_FlagsTypes_TestData))]
         public void SetColorMatrices_ColorMatrixGrayMatrixFlagsTypes_Success
-            (ColorMatrixFlag flag, ColorAdjustType type, Color grayShade, Color expecedGrayShade)
+            (ColorMatrixFlag flag, ColorAdjustType type, Color grayShade, Color expectedGrayShade)
         {
             using (var brush = new SolidBrush(_actualGreen))
             using (var bitmap = new Bitmap(_rectangle.Width, _rectangle.Height))
@@ -432,7 +432,7 @@ namespace System.Drawing.Imaging.Tests
                 bitmap.SetPixel(1, 1, grayShade);
                 graphics.DrawImage(bitmap, _rectangle, _rectangle.X, _rectangle.Y, _rectangle.Width, _rectangle.Height, GraphicsUnit.Pixel, imageAttr);
                 Assert.Equal(_expectedRed, bitmap.GetPixel(0, 0));
-                Assert.Equal(expecedGrayShade, bitmap.GetPixel(1, 1));
+                Assert.Equal(expectedGrayShade, bitmap.GetPixel(1, 1));
             }
         }
 

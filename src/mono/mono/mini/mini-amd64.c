@@ -672,7 +672,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	}
 
 	if (pass_on_stack) {
-		/* Allways pass in memory */
+		/* Always pass in memory */
 		ainfo->offset = GINT32_TO_INT16 (*stack_size);
 		*stack_size += ALIGN_TO (size, 8);
 		ainfo->storage = is_return ? ArgValuetypeAddrInIReg : ArgOnStack;
@@ -983,7 +983,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 #endif
 
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
-			/* We allways pass the sig cookie on the stack for simplicity */
+			/* We always pass the sig cookie on the stack for simplicity */
 			/*
 			 * Prevent implicit arguments + the sig cookie from being passed
 			 * in registers.
@@ -1622,7 +1622,7 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 
 	if (cfg->method->save_lmf)
 		/* The register is already saved */
-		/* substract 1 for the invisible store in the prolog */
+		/* subtract 1 for the invisible store in the prolog */
 		return (ins->opcode == OP_ARG) ? 0 : 1;
 	else
 		/* push+pop */
@@ -2167,7 +2167,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 
 			if ((t->type == MONO_TYPE_GENERICINST) && !cfg->full_aot && !sig->pinvoke) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
-				if (m_class_is_simd_type (klass)) {
+				if (MONO_CLASS_IS_SIMD (cfg, klass)) {
 					linfo->args [i].storage = LLVMArgVtypeInSIMDReg;
 					break;
 				}
@@ -4140,7 +4140,7 @@ mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 		 * Under Windows, it is necessary to allocate one page at a time,
 		 * "touching" stack after each successful sub-allocation. This is
 		 * because of the way stack growth is implemented - there is a
-		 * guard page before the lowest stack page that is currently commited.
+		 * guard page before the lowest stack page that is currently committed.
 		 * Stack normally grows sequentially so OS traps access to the
 		 * guard page and commits more pages when needed.
 		 */
@@ -6703,7 +6703,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			guint64 shifted_nursery_start = nursery_start >> nursery_shift;
 
 			/*If either point to the stack we can simply avoid the WB. This happens due to
-			 * optimizations revealing a stack store that was not visible when op_cardtable was emited.
+			 * optimizations revealing a stack store that was not visible when op_cardtable was emitted.
 			 */
 			if (ins->sreg1 == AMD64_RSP || ins->sreg2 == AMD64_RSP)
 				continue;

@@ -25,10 +25,10 @@ namespace DebuggerTests
                     "MethodBody1", "StaticMethod1");
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 12, 16, "StaticMethod1");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 12, 16, "ApplyUpdateReferencedAssembly.MethodBody1.StaticMethod1");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "b", 15);
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 12, 12, "StaticMethod1");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 12, 12, "ApplyUpdateReferencedAssembly.MethodBody1.StaticMethod1");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             await CheckBool(locals, "c", true);
         }
@@ -43,10 +43,10 @@ namespace DebuggerTests
                     "MethodBody2", "StaticMethod1");
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, "StaticMethod1");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, "ApplyUpdateReferencedAssembly.MethodBody2.StaticMethod1");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, "StaticMethod1");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, "ApplyUpdateReferencedAssembly.MethodBody2.StaticMethod1");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
         }
@@ -64,22 +64,22 @@ namespace DebuggerTests
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, "StaticMethod3");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "b", 15);
 
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, "StaticMethod3");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             await CheckBool(locals, "c", true);
 
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 31, 12, "StaticMethod3",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 31, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "d", 10);
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 32, 12, "StaticMethod3",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 32, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "d", 10);
@@ -87,7 +87,7 @@ namespace DebuggerTests
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 33, 8, "StaticMethod3",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 33, 8, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "d", 10);
@@ -111,24 +111,16 @@ namespace DebuggerTests
                     "MethodBody4", "StaticMethod4");
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 12, "StaticMethod4");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 12, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 39, 12, "StaticMethod4",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 39, 12, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 40, 12, "StaticMethod4",
-            locals_fn: async (locals) =>
-                {
-                    CheckNumber(locals, "a", 10);
-                    CheckNumber(locals, "b", 20);
-                    await Task.CompletedTask;
-                }
-            );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 41, 12, "StaticMethod4",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 40, 12, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
@@ -136,7 +128,7 @@ namespace DebuggerTests
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 42, 12, "StaticMethod4",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 41, 12, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
@@ -144,7 +136,7 @@ namespace DebuggerTests
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 43, 8, "StaticMethod4",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 42, 12, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
@@ -152,7 +144,15 @@ namespace DebuggerTests
                     await Task.CompletedTask;
                 }
             );
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 8, "StaticMethod4");
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 43, 8, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4",
+            locals_fn: async (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                    CheckNumber(locals, "b", 20);
+                    await Task.CompletedTask;
+                }
+            );
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 8, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
         }
 
@@ -172,7 +172,7 @@ namespace DebuggerTests
                     asm_file_hot_reload, "MethodBody1", "StaticMethod1", 1);
 
             JToken top_frame = pause_location["callFrames"]?[0];
-            AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody1.StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 12, 16, scripts, top_frame["location"]);
 
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -181,7 +181,7 @@ namespace DebuggerTests
                     asm_file_hot_reload, "MethodBody1", "StaticMethod1", 2);
 
             top_frame = pause_location["callFrames"]?[0];
-            AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody1.StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 12, 12, scripts, top_frame["location"]);
 
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -204,7 +204,7 @@ namespace DebuggerTests
                     asm_file_hot_reload, "MethodBody2", "StaticMethod1", 1);
 
             JToken top_frame = pause_location["callFrames"]?[0];
-            AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody2.StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, scripts, top_frame["location"]);
 
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -213,7 +213,7 @@ namespace DebuggerTests
                     asm_file_hot_reload, "MethodBody2", "StaticMethod1", 2);
 
             top_frame = pause_location["callFrames"]?[0];
-            AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody2.StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, scripts, top_frame["location"]);
         }
 
@@ -237,7 +237,7 @@ namespace DebuggerTests
                     asm_file_hot_reload, "MethodBody3", "StaticMethod3", 1);
 
             JToken top_frame = pause_location["callFrames"]?[0];
-            AssertEqual("StaticMethod3", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, scripts, top_frame["location"]);
 
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -248,20 +248,20 @@ namespace DebuggerTests
                     asm_file_hot_reload, "MethodBody3", "StaticMethod3", 2);
 
             top_frame = pause_location["callFrames"]?[0];
-            AssertEqual("StaticMethod3", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, scripts, top_frame["location"]);
 
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             await CheckBool(locals, "c", true);
 
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 31, 12, "StaticMethod3",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 31, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "d", 10);
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 32, 12, "StaticMethod3",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 32, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "d", 10);
@@ -269,7 +269,7 @@ namespace DebuggerTests
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 33, 8, "StaticMethod3",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 33, 8, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "d", 10);
@@ -296,22 +296,14 @@ namespace DebuggerTests
             pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
                     asm_file_hot_reload, "MethodBody4", "StaticMethod4", 1);
 
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 39, 12, "StaticMethod4",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 39, 12, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 40, 12, "StaticMethod4",
-            locals_fn: async (locals) =>
-                {
-                    CheckNumber(locals, "a", 10);
-                    CheckNumber(locals, "b", 20);
-                    await Task.CompletedTask;
-                }
-            );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 41, 12, "StaticMethod4",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 40, 12, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
@@ -319,7 +311,7 @@ namespace DebuggerTests
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 42, 12, "StaticMethod4",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 41, 12, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
@@ -327,7 +319,15 @@ namespace DebuggerTests
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 43, 8, "StaticMethod4",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 42, 12, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4",
+            locals_fn: async (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                    CheckNumber(locals, "b", 20);
+                    await Task.CompletedTask;
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 43, 8, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
@@ -359,7 +359,7 @@ namespace DebuggerTests
                     });
 
             JToken top_frame = pause_location["callFrames"]?[0];
-            AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody5.StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 49, 12, scripts, top_frame["location"]);
         }
 
@@ -385,7 +385,7 @@ namespace DebuggerTests
                     rebindBeforeUpdates : true);
 
             JToken top_frame = pause_location["callFrames"]?[0];
-            AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody5.StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 50, 12, scripts, top_frame["location"]);
         }
 
@@ -407,7 +407,7 @@ namespace DebuggerTests
                     asm_file_hot_reload, "MethodBody5", "StaticMethod1", 1);
 
             JToken top_frame = pause_location["callFrames"]?[0];
-            AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody5.StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 48, 12, scripts, top_frame["location"]);
         }
 
@@ -430,9 +430,9 @@ namespace DebuggerTests
                     asm_file_hot_reload, "MethodBody6", "NewMethodStatic", 1);
 
             JToken top_frame = pause_location["callFrames"]?[0];
-            AssertEqual("NewMethodStatic", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody6.NewMethodStatic", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 59, 12, scripts, top_frame["location"]);
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 60, 12, "NewMethodStatic",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 60, 12, "ApplyUpdateReferencedAssembly.MethodBody6.NewMethodStatic",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 20);
@@ -460,10 +460,10 @@ namespace DebuggerTests
                     asm_file_hot_reload, "MethodBody6", "NewMethodStatic", 1);
 
             JToken top_frame = pause_location["callFrames"]?[0];
-            AssertEqual("NewMethodStatic", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody6.NewMethodStatic", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 59, 12, scripts, top_frame["location"]);
 
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 61, 12, "NewMethodStatic",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 61, 12, "ApplyUpdateReferencedAssembly.MethodBody6.NewMethodStatic",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "i", 20);
@@ -496,10 +496,10 @@ namespace DebuggerTests
                     asm_file_hot_reload, "MethodBody7", "StaticMethod1", 1);
 
             JToken top_frame = pause_location["callFrames"]?[0];
-            AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody7.StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 73, 12, scripts, top_frame["location"]);
 
-            pause_location = await StepAndCheck(StepKind.Resume, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 83, 12, "InstanceMethod",
+            pause_location = await StepAndCheck(StepKind.Resume, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 83, 12, "ApplyUpdateReferencedAssembly.MethodBody7.InstanceMethod",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "aLocal", 50);
@@ -520,7 +520,7 @@ namespace DebuggerTests
                     asm_file_hot_reload, "MethodBody8", "StaticMethod1", 2);
 
             top_frame = pause_location["callFrames"]?[0];
-            AssertEqual("InstanceMethod", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody8.InstanceMethod", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 102, 12, scripts, top_frame["location"]);
 
             await EvaluateOnCallFrameAndCheck(pause_location["callFrames"]?[0]["callFrameId"].Value<string>(),

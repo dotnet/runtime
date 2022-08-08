@@ -175,7 +175,6 @@
       System.Xml.XPath.XDocument;
     </NetCoreAppLibrary>
     <NetCoreAppLibraryNoReference>
-      System.Net.Quic;
       System.Private.CoreLib;
       System.Private.DataContractSerialization;
       System.Private.Uri;
@@ -226,6 +225,7 @@
       System.Diagnostics.EventLog;
       System.IO.Pipelines;
       System.Security.Cryptography.Xml;
+      System.Threading.RateLimiting;
     </AspNetCoreAppLibrary>
     <WindowsDesktopCoreAppLibrary>
       Microsoft.Win32.Registry.AccessControl;

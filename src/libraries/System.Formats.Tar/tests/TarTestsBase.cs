@@ -101,6 +101,10 @@ namespace System.Formats.Tar.Tests
         }
         protected static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
 
+        protected static bool IsUnixButNotSuperUser => !PlatformDetection.IsWindows && !PlatformDetection.IsSuperUser;
+
+        protected static bool IsNotLinuxBionic => !PlatformDetection.IsLinuxBionic;
+
         protected static string GetTestCaseUnarchivedFolderPath(string testCaseName) =>
             Path.Join(Directory.GetCurrentDirectory(), "unarchived", testCaseName);
 

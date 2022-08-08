@@ -221,7 +221,7 @@ RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* t
 //       on the defRefPosition, we leave the register requirements on the defRefPosition as-is, and set
 //       the useRefPosition to the def registers, for similar reasons to case #3.
 //    5. If both the defRefPosition and the useRefPosition specify single registers, but both have conflicts,
-//       We set the candiates on defRefPosition to be all regs of the appropriate type, and since they are
+//       We set the candidates on defRefPosition to be all regs of the appropriate type, and since they are
 //       single registers, codegen can insert the copy.
 //    6. Finally, if the RefPositions specify disjoint subsets of the registers (or the use is fixed but
 //       has a conflict), we must insert a copy.  The copy will be inserted before the use if the
@@ -3492,7 +3492,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
     // Second, use source registers.
 
-    if (op1->IsMultiRegNode() && (op1->GetMultiRegCount(compiler) > 1))
+    if (op1->IsMultiRegNode())
     {
         // This is the case where the source produces multiple registers.
         // This must be a store lclvar.
@@ -3644,13 +3644,7 @@ int LinearScan::BuildReturn(GenTree* tree)
 #ifdef TARGET_ARM64
         if (varTypeIsSIMD(tree) && !op1->IsMultiRegLclVar())
         {
-            useCandidates = allSIMDRegs();
-            if (op1->OperGet() == GT_LCL_VAR)
-            {
-                assert(op1->TypeGet() != TYP_SIMD32);
-                useCandidates = RBM_DOUBLERET;
-            }
-            BuildUse(op1, useCandidates);
+            BuildUse(op1, RBM_DOUBLERET);
             return 1;
         }
 #endif // TARGET_ARM64
@@ -3775,7 +3769,7 @@ bool LinearScan::supportsSpecialPutArg()
 #if defined(DEBUG) && defined(TARGET_X86)
     // On x86, `LSRA_LIMIT_CALLER` is too restrictive to allow the use of special put args: this stress mode
     // leaves only three registers allocatable--eax, ecx, and edx--of which the latter two are also used for the
-    // first two integral arguments to a call. This can leave us with too few registers to succesfully allocate in
+    // first two integral arguments to a call. This can leave us with too few registers to successfully allocate in
     // situations like the following:
     //
     //     t1026 =    lclVar    ref    V52 tmp35        u:3 REG NA <l:$3a1, c:$98d>

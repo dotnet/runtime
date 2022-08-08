@@ -756,7 +756,7 @@ CorUnix::InternalCreateProcess(
 
     if (NO_ERROR != palError)
     {
-        ERROR("Unable to allocate object for new proccess\n");
+        ERROR("Unable to allocate object for new process\n");
         goto InternalCreateProcessExit;
     }
 
@@ -983,7 +983,7 @@ CorUnix::InternalCreateProcess(
         pobjFileErr = NULL;
     }
 
-    /* fill PROCESS_INFORMATION strucutre */
+    /* fill PROCESS_INFORMATION structure */
     lpProcessInformation->hProcess = hProcess;
     lpProcessInformation->hThread = hDummyThread;
     lpProcessInformation->dwProcessId = processId;
@@ -2344,6 +2344,11 @@ PROCBuildCreateDumpCommandLine(
         argv.push_back("--crashreport");
     }
 
+    if (flags & GenerateDumpFlagsCrashReportOnlyEnabled)
+    {
+        argv.push_back("--crashreportonly");
+    }
+
     if (g_running_in_exe)
     {
         argv.push_back("--singlefile");
@@ -2459,7 +2464,7 @@ PROCCreateCrashDump(
         int result = waitpid(childpid, &wstatus, 0);
         if (result != childpid)
         {
-            ERROR("PROCCreateCrashDump: waitpid() FAILED result %d wstatus %d errno %s (%d)\n",
+            fprintf(stderr, "Problem waiting for createdump: waitpid() FAILED result %d wstatus %d errno %s (%d)\n",
                 result, wstatus, strerror(errno), errno);
             return false;
         }
@@ -2519,11 +2524,17 @@ PROCAbortInitialize()
         {
             flags |= GenerateDumpFlagsVerboseLoggingEnabled;
         }
-        CLRConfigNoCache enabldReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
+        CLRConfigNoCache enabledReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
         val = 0;
-        if (enabldReportCfg.IsSet() && enabldReportCfg.TryAsInteger(10, val) && val == 1)
+        if (enabledReportCfg.IsSet() && enabledReportCfg.TryAsInteger(10, val) && val == 1)
         {
             flags |= GenerateDumpFlagsCrashReportEnabled;
+        }
+        CLRConfigNoCache enabledReportOnlyCfg = CLRConfigNoCache::Get("EnableCrashReportOnly", /*noprefix*/ false, &getenv);
+        val = 0;
+        if (enabledReportOnlyCfg.IsSet() && enabledReportOnlyCfg.TryAsInteger(10, val) && val == 1)
+        {
+            flags |= GenerateDumpFlagsCrashReportOnlyEnabled;
         }
 
         char* program = nullptr;
@@ -3816,7 +3827,7 @@ Abstract:
 
 Parameters:
     IN  lpCommandLine: second parameter from CreateProcessW (an unicode string)
-    IN  lpAppPath: cannonical name of the application to launched
+    IN  lpAppPath: canonical name of the application to launched
     OUT lppArgv: array of arguments to be passed to the new process
 
 Return:
@@ -3874,7 +3885,7 @@ buildArgv(
 
     pChar = lpAsciiCmdLine;
 
-    /* put the cannonical name of the application as the first parameter */
+    /* put the canonical name of the application as the first parameter */
     if ((strcpy_s(lpAsciiCmdLine, iLength, "\"") != SAFECRT_SUCCESS) ||
         (strcat_s(lpAsciiCmdLine, iLength, lpAppPath) != SAFECRT_SUCCESS) ||
         (strcat_s(lpAsciiCmdLine, iLength,  "\"") != SAFECRT_SUCCESS) ||

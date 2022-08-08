@@ -65,7 +65,7 @@
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
   <String Id="ResourcesHeader">리소스</String>
   <String Id="DocumentationLink">&lt;A HREF="https://aka.ms/dotnet-docs"&gt;설명서&lt;/A&gt;</String>
-  <String Id="RelaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;릴리스 정보&lt;/A&gt;</String>
+  <String Id="ReleaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;릴리스 정보&lt;/A&gt;</String>
   <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;자습서&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;.NET 원격 분석&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;개인정보처리방침&lt;/A&gt;</String>

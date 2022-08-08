@@ -161,7 +161,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         // This is used to specify the EncryptedKey elements that should be considered
-        // when an EncyptedData references an EncryptedKey using a CarriedKeyName and Recipient
+        // when an EncryptedData references an EncryptedKey using a CarriedKeyName and Recipient
         public string Recipient
         {
             get => _recipient ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
@@ -699,7 +699,7 @@ namespace System.Security.Cryptography.Xml
                 symmetricAlgorithm.Mode = _mode;
                 symmetricAlgorithm.Padding = _padding;
 
-                ICryptoTransform enc = symmetricAlgorithm.CreateEncryptor();
+                using ICryptoTransform enc = symmetricAlgorithm.CreateEncryptor();
                 cipher = enc.TransformFinalBlock(plaintext, 0, plaintext.Length);
             }
             finally
@@ -777,7 +777,7 @@ namespace System.Security.Cryptography.Xml
                 symmetricAlgorithm.Mode = _mode;
                 symmetricAlgorithm.Padding = _padding;
 
-                ICryptoTransform dec = symmetricAlgorithm.CreateDecryptor();
+                using ICryptoTransform dec = symmetricAlgorithm.CreateDecryptor();
                 output = dec.TransformFinalBlock(cipherValue, lengthIV, cipherValue.Length - lengthIV);
             }
             finally

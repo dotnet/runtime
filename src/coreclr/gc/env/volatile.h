@@ -302,7 +302,7 @@ private:
 
 public:
     //
-    // Default constructor.  Results in an unitialized value!
+    // Default constructor.  Results in an uninitialized value!
     //
     inline Volatile()
     {

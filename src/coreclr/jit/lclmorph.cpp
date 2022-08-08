@@ -201,7 +201,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         //
         // Return Value:
         //    `true` if the value was consumed. `false` if the input value
-        //    cannot be consumed because it is itsef a location or because
+        //    cannot be consumed because it is itself a location or because
         //    the offset overflowed. In this case the caller is expected
         //    to escape the input value.
         //
@@ -246,7 +246,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         //
         // Return Value:
         //    `true` if the value was consumed. `false` if the input value
-        //    cannot be consumed because it is itsef a location. In this
+        //    cannot be consumed because it is itself a location. In this
         //    case the caller is expected to escape the input value.
         //
         // Notes:
@@ -512,7 +512,7 @@ public:
                         // TODO-1stClassStructs: this block is a temporary workaround to keep diffs small,
                         // having `doNotEnreg` affect block init and copy transformations that affect many methods.
                         // I have a change that introduces more precise and effective solution for that, but it would
-                        // be merged separatly.
+                        // be merged separately.
                         GenTreeLclVar* lclVar = retVal->AsLclVar();
                         unsigned       lclNum = lclVar->GetLclNum();
                         if (!m_compiler->compMethodReturnsMultiRegRegTypeAlternate() &&
@@ -646,7 +646,7 @@ private:
         // is 32 bits we will quirk the size to 64 bits. Some PInvoke signatures incorrectly specify
         // a ByRef to an INT32 when they actually write a SIZE_T or INT64. There are cases where
         // overwriting these extra 4 bytes corrupts some data (such as a saved register) that leads
-        // to A/V. Wheras previously the JIT64 codegen did not lead to an A/V.
+        // to A/V. Whereas previously the JIT64 codegen did not lead to an A/V.
         if (!varDsc->lvIsParam && !varDsc->lvIsStructField && (genActualType(varDsc->TypeGet()) == TYP_INT))
         {
             // TODO-Cleanup: This should simply check if the user is a call node, not if a call ancestor exists.
@@ -978,7 +978,7 @@ private:
             // TODO-ADDR: Skip integral/floating point variables for now, they're more
             // complicated to transform. We can always turn an indirect access of such
             // a variable into a LCL_FLD but that blocks enregistration so we need to
-            // detect those case where we can use LCL_VAR instead, perhaps in conjuction
+            // detect those case where we can use LCL_VAR instead, perhaps in conjunction
             // with CAST and/or BITCAST.
             // Also skip SIMD variables for now, fgMorphFieldAssignToSimdSetElement and
             // others need to be updated to recognize LCL_FLDs.
@@ -1079,7 +1079,7 @@ private:
     // Notes:
     //    This does not do anything if the field access does not denote
     //    involved a promoted struct local.
-    //    If the GT_LCL_FLD offset does not have a coresponding promoted struct
+    //    If the GT_LCL_FLD offset does not have a corresponding promoted struct
     //    field then no transformation is done and struct local's enregistration
     //    is disabled.
     //

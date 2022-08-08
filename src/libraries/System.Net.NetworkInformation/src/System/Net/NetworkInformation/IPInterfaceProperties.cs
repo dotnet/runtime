@@ -16,6 +16,10 @@ namespace System.Net.NetworkInformation
         /// Gets a bool value that indicates whether this interface is configured to send name resolution queries to a Domain Name System (DNS) server.
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract bool IsDnsEnabled { get; }
 
         /// <summary>
@@ -27,7 +31,7 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets a bool value that indicates whether this interface is configured to automatically register its IP address information with the Domain Name System (DNS).
         /// </summary>
-        [UnsupportedOSPlatform("android")]
+        [SupportedOSPlatform("windows")]
         public abstract bool IsDynamicDnsEnabled { get; }
 
         /// <summary>
@@ -43,7 +47,7 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// The address identifies multiple computers. Packets sent to an anycast address are sent to one of the computers identified by the address.
         /// </summary>
-        [UnsupportedOSPlatform("android")]
+        [SupportedOSPlatform("windows")]
         public abstract IPAddressInformationCollection AnycastAddresses { get; }
 
         /// <summary>
@@ -62,12 +66,20 @@ namespace System.Net.NetworkInformation
         /// Gets the addresses for Dynamic Host Configuration Protocol (DHCP) servers.
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract IPAddressCollection DhcpServerAddresses { get; }
 
         /// <summary>
         /// Gets the list of Wins Servers registered with this interface
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract IPAddressCollection WinsServersAddresses { get; }
 
         /// <summary>

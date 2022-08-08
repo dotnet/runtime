@@ -10,11 +10,11 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Version, EntryPoint = "GetFileVersionInfoExW", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool GetFileVersionInfoEx(
+        internal static unsafe partial bool GetFileVersionInfoEx(
                     uint dwFlags,
                     string lpwstrFilename,
                     uint dwHandle,
                     uint dwLen,
-                    IntPtr lpData);
+                    void* lpData);
     }
 }

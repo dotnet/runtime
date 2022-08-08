@@ -1495,7 +1495,7 @@ start_debugger_thread (MonoError *error)
 	thread = mono_thread_create_internal ((MonoThreadStart)debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
 	return_if_nok (error);
 
-	/* Is it possible for the thread to be dead alreay ? */
+	/* Is it possible for the thread to be dead already ? */
 	debugger_thread_handle = mono_threads_open_thread_handle (thread->handle);
 	g_assert (debugger_thread_handle);
 
@@ -4069,7 +4069,7 @@ jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 
 	// only send typeload from AOTed classes if has .cctor when .cctor emits jit_end
 	// to avoid deadlock while trying to set a breakpoint in a class that was not fully initialized
-	if (jinfo->from_aot && m_class_has_cctor(method->klass) && (!(method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) || strcmp (method->name, ".cctor")))
+	if (jinfo && jinfo->from_aot && m_class_has_cctor(method->klass) && (!(method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) || strcmp (method->name, ".cctor")))
 	{
 		return;
 	}
@@ -5195,6 +5195,17 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 				continue;
 			if (mono_field_is_deleted (f))
 				continue;
+
+			if (mono_vtype_get_field_addr (addr, f) == addr && mono_class_from_mono_type_internal (t) == mono_class_from_mono_type_internal (f->type) && !boxed_vtype) //to avoid infinite recursion 
+			{
+				gssize val = *(gssize*)addr;
+				buffer_add_byte (buf, MONO_TYPE_PTR);
+				buffer_add_long (buf, val);
+				if (CHECK_PROTOCOL_VERSION(2, 46))
+					buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (t));
+				continue;
+			}
+
 			buffer_add_value_full (buf, f->type, mono_vtype_get_field_addr (addr, f), domain, FALSE, parent_vtypes, len_fixed_array != 1 ? len_fixed_array : isFixedSizeArray(f));
 		}
 
@@ -8858,6 +8869,73 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			buffer_add_byte(buf, FALSE);
 		break;
 	}
+	case MDBGPROT_CMD_METHOD_GET_PRETTY_NAME: {
+		MonoType *type = m_class_get_byval_arg (method->klass);
+		buffer_add_int (buf, type->type);
+		if (type->type == MONO_TYPE_GENERICINST)
+		{
+			MonoGenericContext *context;
+			GString *res;
+			res = g_string_new ("");
+			mono_type_get_desc (res, m_class_get_byval_arg (type->data.generic_class->container_class), TRUE);
+			buffer_add_string (buf, (g_string_free (res, FALSE)));
+			context = &type->data.generic_class->context;
+			if (context->class_inst)
+				buffer_add_int (buf, context->class_inst->type_argc);
+			else
+				buffer_add_int (buf, 0);
+
+			if (context->method_inst)
+				buffer_add_int (buf, context->method_inst->type_argc);
+			else
+				buffer_add_int (buf, 0);
+
+			if (context->class_inst) {
+				for (guint i = 0; i < context->class_inst->type_argc; ++i) {
+					res = g_string_new ("");
+					mono_type_get_desc (res, context->class_inst->type_argv [i], FALSE);
+					buffer_add_string (buf, (g_string_free (res, FALSE)));
+				}
+			}
+			if (context->method_inst) {
+				for (guint i = 0; i < context->method_inst->type_argc; ++i) {
+					res = g_string_new ("");
+					mono_type_get_desc (res, context->method_inst->type_argv [i], FALSE);
+					buffer_add_string (buf, (g_string_free (res, FALSE)));
+				}
+			}
+		}
+		else if (type->type == MONO_TYPE_CLASS)
+		{
+			GString *res;
+			MonoClass *klass = method->klass;
+			int i = -1;
+			while (klass)
+			{
+				klass = m_class_get_nested_in (klass);
+				i++;
+			}
+			buffer_add_int (buf, i);
+			klass = method->klass;
+			while (klass)
+			{
+				res = g_string_new ("");
+				if (strlen(m_class_get_name_space (klass)) > 0) {
+					g_string_append (res, m_class_get_name_space (klass));
+					g_string_append_c (res, '.');
+				}
+				g_string_append (res, m_class_get_name (klass));
+				buffer_add_string (buf, (g_string_free (res, FALSE)));
+				klass = m_class_get_nested_in (klass);
+			}
+			buffer_add_string (buf, method->name);
+		}
+		else
+		{
+			buffer_add_string (buf, mono_method_full_name (method, TRUE));
+		}
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -9398,6 +9476,9 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	err = get_object (objid, (MonoObject**)&arr);
 	if (err != ERR_NONE)
 		return err;
+
+	if (m_class_get_rank (arr->obj.vtable->klass) == 0)
+		return ERR_INVALID_OBJECT;
 
 	switch (command) {
 	case CMD_ARRAY_REF_GET_TYPE: {

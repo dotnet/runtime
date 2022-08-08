@@ -82,6 +82,9 @@ ThreadStore * ThreadStore::Create(RuntimeInstance * pRuntimeInstance)
     if (NULL == pNewThreadStore)
         return NULL;
 
+    if (!PalRegisterHijackCallback(Thread::HijackCallback))
+        return NULL;
+
     pNewThreadStore->m_pRuntimeInstance = pRuntimeInstance;
 
     pNewThreadStore.SuppressRelease();
@@ -215,6 +218,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 
     bool keepWaiting;
     YieldProcessorNormalizationInfo normalizationInfo;
+    int waitCycles = 1;
     do
     {
         keepWaiting = false;
@@ -228,14 +232,6 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
                 // We drive all threads to preemptive mode by hijacking them with return-address hijack.
                 keepWaiting = true;
                 pTargetThread->Hijack();
-            }
-            else if (pTargetThread->DangerousCrossThreadIsHijacked())
-            {
-                // Once a thread is safely in preemptive mode, we must wait until it is also
-                // unhijacked.  This is done because, otherwise, we might race on into the
-                // stackwalk and find the hijack still on the stack, which will cause the
-                // stackwalking code to crash.
-                keepWaiting = true;
             }
         }
         END_FOREACH_THREAD
@@ -251,7 +247,15 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
                 // too long (we probably don't need a 15ms wait here).  Instead, we'll just burn some
                 // cycles.
     	        // @TODO: need tuning for spin
-                YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, 10000);
+                // @TODO: need tuning for this whole loop as well.
+                //        we are likley too aggressive with interruptions which may result in longer pauses.
+                YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, waitCycles);
+
+                // simplistic linear backoff for now
+                // we could be catching threads in restartable sequences such as LL/SC style interlocked on ARM64
+                // and forcing them to restart.
+                // if interrupt mechanism is fast, eagerness could be hurting our overall progress.
+                waitCycles += 10000;
             }
         }
 

@@ -35,6 +35,7 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets the number of incoming packets with an unknown protocol.
         /// </summary>
+        [UnsupportedOSPlatform("linux")]
         public abstract long IncomingUnknownProtocolPackets { get; }
 
         /// <summary>
@@ -45,6 +46,7 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets the number of non-unicast packets sent on the interface.
         /// </summary>
+        [UnsupportedOSPlatform("linux")]
         public abstract long NonUnicastPacketsSent { get; }
 
         /// <summary>
