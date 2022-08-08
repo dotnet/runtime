@@ -6,7 +6,10 @@ BIN_DIR=WasiConsoleApp/bin/Debug/net7.0
 all: console.wasm $(BIN_DIR)/WasiConsoleApp.dll
 
 run: all
-	PATH=$(WASMTIME_DIR):${PATH} wasmtime --dir=. console.wasm
+	@(which wasmtime || PATH=$(WASMTIME_DIR):${PATH} which wasmtime); \
+	test "$$?" -ne 0 \
+		&& echo "wasmtime not found. Either install that yourself, or use 'make provision-deps' to install one." \
+		|| PATH=$(WASMTIME_DIR):${PATH} wasmtime --dir=. console.wasm
 
 run-wasmer: all
 	wasmer --dir=. console.wasm
