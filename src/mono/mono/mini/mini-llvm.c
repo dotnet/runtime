@@ -9687,7 +9687,7 @@ MONO_RESTORE_WARNING
 #if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_XEQUAL: {
 			LLVMTypeRef t;
-			LLVMValueRef cmp, mask [MAX_VECTOR_ELEMS], shuffle;
+			LLVMValueRef cmp;
 			int nelems;
 
 #if defined(TARGET_WASM)
@@ -9739,7 +9739,25 @@ MONO_RESTORE_WARNING
 
 			t = LLVMVectorType (elemt, nelems);
 			cmp = LLVMBuildSExt (builder, cmp, t, "");
-			// cmp is a <nelems x elemt> vector, each element is either 0xff... or 0
+			// cmp is a <nelems x i1> vector, each element is either 0xff... or 0
+
+			LLVMValueRef first_elem;
+
+			if (!strcmp(cfg->method->name, "IndexOf"))
+				printf("~~~%s\n", mono_method_get_full_name(cfg->method));
+#ifdef TARGET_ARM64
+			// MinAcross
+			LLVMTypeRef arg_t = LLVMTypeOf (cmp);
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (arg_t);
+			if (ins->inst_c0)
+				first_elem = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_SMINV, ovr_tag, &cmp, "");
+			else
+				first_elem = call_overloaded_intrins (ctx, INTRINS_AARCH64_ADV_SIMD_UMINV, ovr_tag, &cmp, "");
+			if (elemt == i1_t || elemt == i2_t)
+				// @llvm.aarch64.neon.sminv.i32.v8i16(<8 x i16>) ought to return an i16, but doesn't in LLVM 9.
+				first_elem = LLVMBuildTrunc (builder, first_elem, elemt, "");
+#else
+			LLVMValueRef mask [MAX_VECTOR_ELEMS], shuffle;
 			int half = nelems / 2;
 			while (half >= 1) {
 				// AND the top and bottom halfes into the bottom half
@@ -9752,7 +9770,8 @@ MONO_RESTORE_WARNING
 				half = half / 2;
 			}
 			// Extract [0]
-			LLVMValueRef first_elem = LLVMBuildExtractElement (builder, cmp, const_int32 (0), "");
+			first_elem = LLVMBuildExtractElement (builder, cmp, const_int32 (0), "");
+#endif
 			// convert to 0/1
 			LLVMValueRef cmp_zero = LLVMBuildICmp (builder, LLVMIntNE, first_elem, LLVMConstInt (elemt, 0, FALSE), "");
 			values [ins->dreg] = LLVMBuildZExt (builder, cmp_zero, LLVMInt8Type (), "");
@@ -13620,7 +13639,7 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		g_hash_table_destroy (specializable);
 	}
 
-#if 0
+#if 1
 	{
 		char *verifier_err;
 

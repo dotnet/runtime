@@ -477,15 +477,17 @@ emit_xcompare_for_intrinsic (MonoCompile *cfg, MonoClass *klass, int intrinsic_i
 }
 
 static MonoInst*
-emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
+emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum etype, MonoInst *arg1, MonoInst *arg2)
 {
-	return emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
+	MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
+	ins->inst_c0 = type_enum_is_unsigned (etype);
+	return ins;
 }
 
 static MonoInst*
-emit_not_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
+emit_not_xequal (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum etype, MonoInst *arg1, MonoInst *arg2)
 {
-	MonoInst *ins = emit_xequal (cfg, klass, arg1, arg2);
+	MonoInst *ins = emit_xequal (cfg, klass, etype, arg1, arg2);
 	int sreg = ins->dreg;
 	int dreg = alloc_ireg (cfg);
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sreg, 0);
@@ -1174,12 +1176,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			case SN_Equals:
 				return emit_xcompare (cfg, klass, arg0_type, args [0], args [1]);
 			case SN_EqualsAll:
-				return emit_xequal (cfg, klass, args [0], args [1]);
+				return emit_xequal (cfg, klass, arg0_type, args [0], args [1]);
 			case SN_EqualsAny: {
 				MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 				MonoInst *cmp_eq = emit_xcompare (cfg, arg_class, arg0_type, args [0], args [1]);
 				MonoInst *zero = emit_xzero (cfg, arg_class);
-				return emit_not_xequal (cfg, arg_class, cmp_eq, zero);
+				return emit_not_xequal (cfg, arg_class, arg0_type, cmp_eq, zero);
 			}
 			default: g_assert_not_reached ();
 		}
@@ -1241,18 +1243,18 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			if (type_enum_is_float (arg0_type)) {
 				MonoInst *zero = emit_xzero (cfg, arg_class);
 				MonoInst *inverted_cmp = emit_xcompare (cfg, klass, arg0_type, cmp, zero);
-				return emit_xequal (cfg, klass, inverted_cmp, zero);
+				return emit_xequal (cfg, klass, arg0_type, inverted_cmp, zero);
 			}
 
 			MonoInst *ones = emit_xones (cfg, arg_class);
-			return emit_xequal (cfg, klass, cmp, ones);
+			return emit_xequal (cfg, klass, arg0_type, cmp, ones);
 		}
 		case SN_GreaterThanAny:
 		case SN_GreaterThanOrEqualAny:
 		case SN_LessThanAny:
 		case SN_LessThanOrEqualAny: {
 			MonoInst *zero = emit_xzero (cfg, arg_class);
-			return emit_not_xequal (cfg, klass, cmp, zero);
+			return emit_not_xequal (cfg, klass, arg0_type, cmp, zero);
 		}
 		default:
 			g_assert_not_reached ();
@@ -1538,8 +1540,8 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (fsig->param_count != 2 )
 			return NULL;
 		switch (id) {
-			case SN_op_Equality: return emit_xequal (cfg, klass, args [0], args [1]);
-			case SN_op_Inequality: return emit_not_xequal (cfg, klass, args [0], args [1]);
+			case SN_op_Equality: return emit_xequal (cfg, klass, arg0_type, args [0], args [1]);
+			case SN_op_Inequality: return emit_not_xequal (cfg, klass, arg0_type, args [0], args [1]);
 			default: g_assert_not_reached ();
 		}
 	case SN_op_OnesComplement:
@@ -2073,9 +2075,10 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		g_assert (fsig->param_count == 2 && fsig->ret->type == MONO_TYPE_BOOLEAN &&
 				  mono_metadata_type_equal (fsig->params [0], type) &&
 				  mono_metadata_type_equal (fsig->params [1], type));
+		MonoTypeEnum arg0_type = get_underlying_type (fsig->params [0]);
 		switch (id) {
-			case SN_op_Equality: return emit_xequal (cfg, klass, args [0], args [1]);
-			case SN_op_Inequality: return emit_not_xequal (cfg, klass, args [0], args [1]);
+			case SN_op_Equality: return emit_xequal (cfg, klass, arg0_type, args [0], args [1]);
+			case SN_op_Inequality: return emit_not_xequal (cfg, klass, arg0_type, args [0], args [1]);
 			default: g_assert_not_reached ();
 		}
 	case SN_GreaterThan:
