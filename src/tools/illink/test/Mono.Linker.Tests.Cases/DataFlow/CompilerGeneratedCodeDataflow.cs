@@ -95,7 +95,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void Test ()
 			{
-				FlowAcrossYieldReturn ();
+				FlowAcrossYieldReturn ().GetEnumerator ().MoveNext (); // Has to call MoveNext otherwise AOT will actually remove it
 				NoFlowAcrossYieldReturn ();
 				NoFlowAcrossYieldReturn ();
 				UseParameterBeforeYieldReturn ();
