@@ -1986,10 +1986,10 @@ namespace System
 
         public static void Reverse(ref char buf, nuint length)
         {
+            ref short bufShort = ref Unsafe.As<char, short>(ref buf);
             if (Avx2.IsSupported && (nuint)Vector256<short>.Count * 2 <= length)
             {
-                ref short bufShort = ref Unsafe.As<char, short>(ref buf);
-                nuint numElements = (nuint)Vector256<byte>.Count;
+                nuint numElements = (nuint)Vector256<short>.Count;
                 nuint numIters = (length / numElements) / 2;
                 for (nuint i = 0; i < numIters; i++)
                 {
@@ -2007,27 +2007,23 @@ namespace System
                     //     +---------------------------------------------------------------+
                     //         Shuffle --->
                     //     +---------------------------------------------------------------+
-                    //     | H | G | F | E | D | C | B | A | P | O | N | M | L | K | J | I |
-                    //     +---------------------------------------------------------------+
-                    //         Permute --->
-                    //     +---------------------------------------------------------------+
                     //     | P | O | N | M | L | K | J | I | H | G | F | E | D | C | B | A |
                     //     +---------------------------------------------------------------+
-                    tempFirst = Vector256.Shuffle(tempFirst, Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8));
-                    tempLast = Vector256.Shuffle(tempLast, Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8));
+                    tempFirst = Vector256.Shuffle(tempFirst, Vector256.Create(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+                    tempLast = Vector256.Shuffle(tempLast, Vector256.Create(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
                     // Store the reversed vectors
                     tempLast.StoreUnsafe(ref bufShort, firstOffset);
                     tempFirst.StoreUnsafe(ref bufShort, lastOffset);
                 }
                 bufShort = ref Unsafe.Add(ref bufShort, numIters * numElements);
-                length -= numIters * (nuint)Vector256<short>.Count * 2;
+                length -= numIters * numElements * 2;
                 // Store any remaining values one-by-one
                 buf = ref Unsafe.As<short, char>(ref bufShort);
             }
-            else if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && (nuint)Vector128<short>.Count * 2 <= length)
+            else
+            if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && (nuint)Vector128<short>.Count * 2 <= length)
             {
-                ref short bufShort = ref Unsafe.As<char, short>(ref buf);
                 nuint numElements = (nuint)Vector128<short>.Count;
                 nuint numIters = (length / numElements) / 2;
                 for (nuint i = 0; i < numIters; i++)
