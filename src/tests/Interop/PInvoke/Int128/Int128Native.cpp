@@ -19,6 +19,12 @@
 
 static Int128 Int128Value = { };
 
+struct StructWithInt128
+{
+    int64_t messUpPadding;
+    Int128 value;
+};
+
 extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE GetInt128(uint64_t upper, uint64_t lower)
 {
     Int128 result;
@@ -61,6 +67,190 @@ extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE AddInt128(Int128 lhs, Int128 rhs)
 
     return result;
 }
+
+extern "C" DLL_EXPORT StructWithInt128 STDMETHODCALLTYPE AddStructWithInt128(StructWithInt128 lhs, StructWithInt128 rhs)
+{
+    StructWithInt128 result = {};
+    result.messUpPadding = lhs.messUpPadding;
+
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result.value = lhs.value + rhs.value;
+#else
+    result.value.lower = lhs.value.lower + rhs.value.lower;
+    uint64_t carry = (result.value.lower < lhs.value.lower) ? 1 : 0;
+    result.value.upper = lhs.value.upper + rhs.value.upper + carry;
+#endif
+
+    return result;
+}
+
+extern "C" DLL_EXPORT StructWithInt128 STDMETHODCALLTYPE AddStructWithInt128_1(int64_t dummy1, StructWithInt128 lhs, StructWithInt128 rhs)
+{
+    StructWithInt128 result = {};
+    result.messUpPadding = lhs.messUpPadding;
+
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result.value = lhs.value + rhs.value;
+#else
+    result.value.lower = lhs.value.lower + rhs.value.lower;
+    uint64_t carry = (result.value.lower < lhs.value.lower) ? 1 : 0;
+    result.value.upper = lhs.value.upper + rhs.value.upper + carry;
+#endif
+
+    return result;
+}
+
+extern "C" DLL_EXPORT StructWithInt128 STDMETHODCALLTYPE AddStructWithInt128_9(int64_t dummy1, int64_t dummy2, int64_t dummy3, int64_t dummy4, int64_t dummy5, int64_t dummy6, int64_t dummy7, int64_t dummy8, int64_t dummy9, StructWithInt128 lhs, StructWithInt128 rhs)
+{
+    StructWithInt128 result = {};
+    result.messUpPadding = lhs.messUpPadding;
+
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result.value = lhs.value + rhs.value;
+#else
+    result.value.lower = lhs.value.lower + rhs.value.lower;
+    uint64_t carry = (result.value.lower < lhs.value.lower) ? 1 : 0;
+    result.value.upper = lhs.value.upper + rhs.value.upper + carry;
+#endif
+
+    return result;
+}
+
+extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE AddInt128_1(int64_t dummy1, Int128 lhs, Int128 rhs)
+{
+    Int128 result;
+
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result = lhs + rhs;
+#else
+    result.lower = lhs.lower + rhs.lower;
+    uint64_t carry = (result.lower < lhs.lower) ? 1 : 0;
+    result.upper = lhs.upper + rhs.upper + carry;
+#endif
+
+    return result;
+}
+
+extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE AddInt128_2(int64_t dummy1, int64_t dummy2, Int128 lhs, Int128 rhs)
+{
+    Int128 result;
+
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result = lhs + rhs;
+#else
+    result.lower = lhs.lower + rhs.lower;
+    uint64_t carry = (result.lower < lhs.lower) ? 1 : 0;
+    result.upper = lhs.upper + rhs.upper + carry;
+#endif
+
+    return result;
+}
+
+extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE AddInt128_3(int64_t dummy1, int64_t dummy2, int64_t dummy3, Int128 lhs, Int128 rhs)
+{
+    Int128 result;
+
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result = lhs + rhs;
+#else
+    result.lower = lhs.lower + rhs.lower;
+    uint64_t carry = (result.lower < lhs.lower) ? 1 : 0;
+    result.upper = lhs.upper + rhs.upper + carry;
+#endif
+
+    return result;
+}
+
+extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE AddInt128_4(int64_t dummy1, int64_t dummy2, int64_t dummy3, int64_t dummy4, Int128 lhs, Int128 rhs)
+{
+    Int128 result;
+
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result = lhs + rhs;
+#else
+    result.lower = lhs.lower + rhs.lower;
+    uint64_t carry = (result.lower < lhs.lower) ? 1 : 0;
+    result.upper = lhs.upper + rhs.upper + carry;
+#endif
+
+    return result;
+}
+
+extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE AddInt128_5(int64_t dummy1, int64_t dummy2, int64_t dummy3, int64_t dummy4, int64_t dummy5, Int128 lhs, Int128 rhs)
+{
+    Int128 result;
+
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result = lhs + rhs;
+#else
+    result.lower = lhs.lower + rhs.lower;
+    uint64_t carry = (result.lower < lhs.lower) ? 1 : 0;
+    result.upper = lhs.upper + rhs.upper + carry;
+#endif
+
+    return result;
+}
+
+extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE AddInt128_6(int64_t dummy1, int64_t dummy2, int64_t dummy3, int64_t dummy4, int64_t dummy5, int64_t dummy6, Int128 lhs, Int128 rhs)
+{
+    Int128 result;
+
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result = lhs + rhs;
+#else
+    result.lower = lhs.lower + rhs.lower;
+    uint64_t carry = (result.lower < lhs.lower) ? 1 : 0;
+    result.upper = lhs.upper + rhs.upper + carry;
+#endif
+
+    return result;
+}
+
+extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE AddInt128_7(int64_t dummy1, int64_t dummy2, int64_t dummy3, int64_t dummy4, int64_t dummy5, int64_t dummy6, int64_t dummy7, Int128 lhs, Int128 rhs)
+{
+    Int128 result;
+
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result = lhs + rhs;
+#else
+    result.lower = lhs.lower + rhs.lower;
+    uint64_t carry = (result.lower < lhs.lower) ? 1 : 0;
+    result.upper = lhs.upper + rhs.upper + carry;
+#endif
+
+    return result;
+}
+
+extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE AddInt128_8(int64_t dummy1, int64_t dummy2, int64_t dummy3, int64_t dummy4, int64_t dummy5, int64_t dummy6, int64_t dummy7, int64_t dummy8, Int128 lhs, Int128 rhs)
+{
+    Int128 result;
+
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result = lhs + rhs;
+#else
+    result.lower = lhs.lower + rhs.lower;
+    uint64_t carry = (result.lower < lhs.lower) ? 1 : 0;
+    result.upper = lhs.upper + rhs.upper + carry;
+#endif
+
+    return result;
+}
+
+extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE AddInt128_9(int64_t dummy1, int64_t dummy2, int64_t dummy3, int64_t dummy4, int64_t dummy5, int64_t dummy6, int64_t dummy7, int64_t dummy8, int64_t dummy9, Int128 lhs, Int128 rhs)
+{
+    Int128 result;
+
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result = lhs + rhs;
+#else
+    result.lower = lhs.lower + rhs.lower;
+    uint64_t carry = (result.lower < lhs.lower) ? 1 : 0;
+    result.upper = lhs.upper + rhs.upper + carry;
+#endif
+
+    return result;
+}
+
 
 extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE AddInt128s(const Int128* pValues, uint32_t count)
 {
