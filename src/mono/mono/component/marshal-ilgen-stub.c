@@ -20,6 +20,7 @@ stub_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 static void 
 mono_component_marshal_ilgen_stub_init(void)
 {
+	printf("!!!naricc_debug!!! mono_component_marshal_ilgen_stub_init\n");
 	g_assert_not_reached();
 }
 
@@ -38,5 +39,6 @@ static MonoComponentMarshalILgen component_func_table = {
 MonoComponentMarshalILgen*
 mono_component_marshal_ilgen_init (void) 
 {
+	g_warning("!!!naricc_debug!!!: stub mono_component_marshal_ilgen_init\n");
 	return &component_func_table;
 }
