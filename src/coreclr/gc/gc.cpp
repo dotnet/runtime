@@ -12853,8 +12853,30 @@ void gc_heap::distribute_free_regions()
         }
     }
 #else //MULTIPLE_HEAPS
-    while (decommit_step())
+    // we want to limit the amount of decommit we do per time to indirectly
+    // limit the amount of time spent in recommit and page faults
+    dynamic_data* dd0 = dynamic_data_of (0);
+    size_t ephemeral_elapsed = (size_t)((dd_time_clock (dd0) - gc_last_ephemeral_decommit_time) / 1000);
+    gc_last_ephemeral_decommit_time = dd_time_clock (dd0);
+
+    // we divide the elapsed time since the last GC by the decommit time step
+    // to arrive at the number of decommit steps to do
+    // we limit the elapsed time to 10 seconds to avoid spending too much time decommitting
+    size_t max_decommit_steps = min (ephemeral_elapsed, (10*1000)) / DECOMMIT_TIME_STEP_MILLISECONDS;
+
+    size_t decommit_steps = 0;
+    while (decommit_step() && decommit_steps < max_decommit_steps)
     {
+        decommit_steps++;
+    }
+    // transfer any remaining regions on the decommit list back to the free list
+    for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
+    {
+        if (global_regions_to_decommit[kind].get_num_free_regions() != 0)
+        {
+            gc_heap* hp = pGenGCHeap;
+            hp->free_regions[kind].transfer_regions (&global_regions_to_decommit[kind]);
+        }
     }
 #endif //MULTIPLE_HEAPS
 #endif //USE_REGIONS
