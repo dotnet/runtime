@@ -16,7 +16,7 @@
 				this.method_with_structs = App.runtime.BINDING.bind_static_method("[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalStructs");
 				this.run_all = App.runtime.BINDING.bind_static_method("[debugger-test] DebuggerTest:run_all");
 				this.static_method_table = {};
-				console.log ("ready");
+				console.debug ("#debugger-app-ready#");
 			},
 		};
 		function invoke_static_method (method_name, ...args) {

@@ -28,7 +28,7 @@ namespace DebuggerTests
         ConcurrentDictionary<string, Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>> eventListeners = new ();
 
         public const string PAUSE = "pause";
-        public const string READY = "ready";
+        public const string APP_READY = "app-ready";
         public CancellationToken Token { get; }
         public InspectorClient Client { get; }
         public DebuggerProxyBase? Proxy { get; }
@@ -36,6 +36,8 @@ namespace DebuggerTests
 
         private CancellationTokenSource _cancellationTokenSource;
         private Exception? _isFailingWithException;
+        private bool _gotRuntimeReady = false;
+        private bool _gotAppReady = false;
 
         protected static Lazy<ILoggerFactory> s_loggerFactory = new(() =>
             LoggerFactory.Create(builder =>
@@ -201,7 +203,7 @@ namespace DebuggerTests
                     NotifyOf(PAUSE, args);
                     break;
                 case "Mono.runtimeReady":
-                    NotifyOf(READY, args);
+                    _gotRuntimeReady = true;
                     break;
                 case "Runtime.consoleAPICalled":
                 {
@@ -214,6 +216,15 @@ namespace DebuggerTests
                         case "warn": _logger.LogWarning(line); break;
                         case "trace": _logger.LogTrace(line); break;
                         default: _logger.LogInformation(line); break;
+                    }
+
+                    if (!_gotAppReady && line == "console.debug: #debugger-app-ready#")
+                    {
+                        if (!_gotRuntimeReady)
+                            throw new Exception("BUG: Got debugger-app-ready but not Mono.runtimeReady");
+
+                        _gotAppReady = true;
+                        NotifyOf(APP_READY, args);
                     }
 
                     if (DetectAndFailOnAssertions &&
@@ -307,8 +318,8 @@ namespace DebuggerTests
 
                 var init_cmds = getInitCmds(Client, _cancellationTokenSource.Token);
 
-                Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(READY)));
-                init_cmds.Add((READY, readyTask));
+                Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(APP_READY)));
+                init_cmds.Add((APP_READY, readyTask));
 
                 _logger.LogInformation("waiting for the runtime to be ready");
                 while (!_cancellationTokenSource.IsCancellationRequested && init_cmds.Count > 0)

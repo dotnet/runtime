@@ -230,7 +230,6 @@ namespace DebuggerTests
             return await insp.WaitFor(what);
         }
 
-
         public async Task WaitForScriptParsedEventsAsync(params string[] paths)
         {
             object llock = new();

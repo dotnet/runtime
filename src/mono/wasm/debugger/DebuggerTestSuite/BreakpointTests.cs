@@ -510,7 +510,7 @@ namespace DebuggerTests
                 expression = "window.setTimeout(function() { reload_wasm_page(); }, 1);"
             });
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            await insp.WaitFor(Inspector.READY);
+            await insp.WaitFor(Inspector.APP_READY);
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
@@ -785,14 +785,14 @@ namespace DebuggerTests
                 expression = "window.setTimeout(function() { load_wasm_page_without_assets(); }, 1);"
             });
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            await insp.WaitFor(Inspector.READY);
+            await insp.WaitFor(Inspector.APP_READY);
 
             run_method = JObject.FromObject(new
             {
                 expression = "window.setTimeout(function() { reload_wasm_page(); }, 1);"
             });
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            await insp.WaitFor(Inspector.READY);
+            await insp.WaitFor(Inspector.APP_READY);
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_add(); }, 1);",
