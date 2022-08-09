@@ -73,7 +73,7 @@ internal static partial class Interop
 
             if (bytesNeeded < StackCapacity)
             {
-                return Marshal.PtrToStringAnsi((IntPtr)bufStack, bytesNeeded);
+                return Marshal.PtrToStringUTF8((IntPtr)bufStack, bytesNeeded);
             }
 
             // bytesNeeded does not count the \0 which will be written on the end (based on OpenSSL 1.0.1f),
@@ -99,7 +99,7 @@ internal static partial class Interop
                     throw new CryptographicException();
                 }
 
-                return Marshal.PtrToStringAnsi((IntPtr)buf, bytesNeeded);
+                return Marshal.PtrToStringUTF8((IntPtr)buf, bytesNeeded);
             }
         }
     }

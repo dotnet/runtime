@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import { mono_assert } from "./types";
 
 class OperationFailedError extends Error { }
@@ -112,11 +112,13 @@ export function init_crypto(): void {
             channel: chan,
             worker: worker,
         };
-        worker.postMessage({
+        const messageData: InitCryptoMessageData = {
+            config: JSON.stringify(runtimeHelpers.config),
             comm_buf: chan.get_comm_buffer(),
             msg_buf: chan.get_msg_buffer(),
             msg_char_len: chan.get_msg_len()
-        });
+        };
+        worker.postMessage(messageData);
         worker.onerror = event => {
             console.warn(`MONO_WASM: Error in Crypto WebWorker. Cryptography digest calls will fallback to managed implementation. Error: ${event.message}`);
             mono_wasm_crypto = null;
@@ -202,9 +204,10 @@ class LibraryChannel {
 
     public send_msg(msg: string): string {
         try {
-            // const state = Atomics.load(this.comm, this.STATE_IDX);
-            // if (state !== this.STATE_IDLE) console.debug(`MONO_WASM_ENCRYPT_DECRYPT: send_msg, waiting for idle now, ${state}`);
-            this.wait_for_state(pstate => pstate == this.STATE_IDLE, "waiting");
+            let state = Atomics.load(this.comm, this.STATE_IDX);
+            // FIXME: this console write is possibly serializing the access and prevents a deadlock
+            if (state !== this.STATE_IDLE) console.debug(`MONO_WASM_ENCRYPT_DECRYPT: send_msg, waiting for idle now, ${state}`);
+            state = this.wait_for_state(pstate => pstate == this.STATE_IDLE, "waiting");
 
             this.send_request(msg);
             return this.read_response();
@@ -213,13 +216,14 @@ class LibraryChannel {
             throw err;
         }
         finally {
-            // const state = Atomics.load(this.comm, this.STATE_IDX);
-            // if (state !== this.STATE_IDLE) console.debug(`MONO_WASM_ENCRYPT_DECRYPT: state at end of send_msg: ${state}`);
+            const state = Atomics.load(this.comm, this.STATE_IDX);
+            // FIXME: this console write is possibly serializing the access and prevents a deadlock
+            if (state !== this.STATE_IDLE) console.debug(`MONO_WASM_ENCRYPT_DECRYPT: state at end of send_msg: ${state}`);
         }
     }
 
     public shutdown(): void {
-        // console.debug("MONO_WASM_ENCRYPT_DECRYPT: Shutting down crypto");
+        console.debug("MONO_WASM_ENCRYPT_DECRYPT: Shutting down crypto");
         const state = Atomics.load(this.comm, this.STATE_IDX);
         if (state !== this.STATE_IDLE)
             throw new Error(`OWNER: Invalid sync communication channel state: ${state}`);
@@ -230,15 +234,14 @@ class LibraryChannel {
         Atomics.notify(this.comm, this.STATE_IDX);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private reset(reason: string): void {
-        // console.debug(`MONO_WASM_ENCRYPT_DECRYPT: reset: ${reason}`);
+        console.debug(`MONO_WASM_ENCRYPT_DECRYPT: reset: ${reason}`);
         const state = Atomics.load(this.comm, this.STATE_IDX);
         if (state === this.STATE_SHUTDOWN)
             return;
 
         if (state === this.STATE_RESET || state === this.STATE_IDLE) {
-            // console.debug(`MONO_WASM_ENCRYPT_DECRYPT: state is already RESET or idle: ${state}`);
+            console.debug(`MONO_WASM_ENCRYPT_DECRYPT: state is already RESET or idle: ${state}`);
             return;
         }
 
@@ -385,4 +388,11 @@ class LibraryChannel {
         }
         return new LibraryChannel(msg_char_len);
     }
+}
+
+export type InitCryptoMessageData = {
+    config: string,// serialized to avoid passing non-clonable objects
+    comm_buf: SharedArrayBuffer,
+    msg_buf: SharedArrayBuffer,
+    msg_char_len: number
 }

@@ -18,6 +18,7 @@ namespace System.Text.Json.Serialization.Converters
             ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
         }
 
+        internal override bool SupportsCreateObjectDelegate => false;
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
             if (!_isDeserializable)
