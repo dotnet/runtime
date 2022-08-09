@@ -543,9 +543,11 @@ public sealed partial class QuicStream
                 (shutdownByApp: true, closedRemotely: true) => ThrowHelper.GetConnectionAbortedException((long)data.ConnectionErrorCode),
                 // It's local shutdown by app, this side called QuicConnection.CloseAsync, throw QuicError.OperationAborted.
                 (shutdownByApp: true, closedRemotely: false) => ThrowHelper.GetOperationAbortedException(),
-                // TODO: we should propagate transport error code
+                // It's remote shutdown by transport, we received a CONNECTION_CLOSE frame with a QUIC transport error code
+                // TODO: we should propagate the transport error code
                 // https://github.com/dotnet/runtime/issues/72666
                 (shutdownByApp: false, closedRemotely: true) => ThrowHelper.GetExceptionForMsQuicStatus(data.ConnectionCloseStatus, $"Shutdown by transport {data.ConnectionErrorCode}"),
+                // It's local shutdown by transport, due to some timeout
                 // TODO: we should propagate transport error code
                 // https://github.com/dotnet/runtime/issues/72666
                 (shutdownByApp: false, closedRemotely: false) => ThrowHelper.GetExceptionForMsQuicStatus(data.ConnectionCloseStatus),
