@@ -698,25 +698,6 @@ namespace System.Net.Quic.Tests
             await serverConnection.DisposeAsync();
         }
 
-
-        [Fact]
-        [OuterLoop("May take several seconds")]
-        public async Task SetListenerTimeoutWorksWithSmallTimeout()
-        {
-            var listenerOptions = new QuicListenerOptions()
-            {
-                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
-                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
-            };
-
-            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
-            await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverConnection.AcceptInboundStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
-
-            await serverConnection.DisposeAsync();
-            await clientConnection.DisposeAsync();
-        }
-
         [Theory]
         [MemberData(nameof(WriteData))]
         public async Task WriteTests(int[][] writes)
@@ -1178,6 +1159,44 @@ namespace System.Net.Quic.Tests
             clientOptions.ClientAuthenticationOptions.ApplicationProtocols[0] = new SslApplicationProtocol("someprotocol");
 
             await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateQuicConnection(clientOptions)).WaitAsync(TimeSpan.FromSeconds(30));
+        }
+
+        [Fact]
+        [OuterLoop("May take several seconds")]
+        public async Task IdleTimeout_ThrowsQuicException()
+        {
+            QuicListenerOptions listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var serverOptions = CreateQuicServerOptions();
+                    serverOptions.MaxInboundBidirectionalStreams = 1;
+                    serverOptions.MaxInboundUnidirectionalStreams = 1;
+                    serverOptions.IdleTimeout = TimeSpan.FromSeconds(1);
+                    return ValueTask.FromResult(serverOptions);
+                }
+            };
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
+
+            await using (clientConnection)
+            await using (serverConnection)
+            {
+                using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                await clientStream.WriteAsync(new byte[1]);
+                using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+                await serverStream.ReadAsync(new byte[1]);
+
+                ValueTask<QuicStream> acceptTask = serverConnection.AcceptInboundStreamAsync();
+
+                // read attempts should block until idle timeout
+                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.ReadAsync(new byte[10])).WaitAsync(TimeSpan.FromSeconds(10));
+
+                // write and accept should throw as well
+                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.WriteAsync(new byte[10])).WaitAsync(TimeSpan.FromSeconds(10));
+                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask).WaitAsync(TimeSpan.FromSeconds(10));
+            }
         }
     }
 }

@@ -890,6 +890,12 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
+    public static void Xml_XmlAttributes_CtorWithNullArgument()
+    {
+        Assert.Throws<ArgumentNullException>(() => new XmlAttributes(default(ICustomAttributeProvider)));
+    }
+
+    [Fact]
     public static void Xml_ArrayOfXmlNodeProperty()
     {
         var obj = new TypeWithXmlNodeArrayProperty()
