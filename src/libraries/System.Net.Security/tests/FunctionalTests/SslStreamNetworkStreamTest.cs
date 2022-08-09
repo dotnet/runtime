@@ -921,7 +921,7 @@ namespace System.Net.Security.Tests
 
                 using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
                 {
-                    store.Open(OpenFlags.Read);
+                    store.Open(OpenFlags.ReadWrite);
                     foreach (X509Certificate2 cert in store.Certificates)
                     {
                         _output.WriteLine(cert.Subject);
