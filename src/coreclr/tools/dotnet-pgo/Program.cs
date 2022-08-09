@@ -1416,7 +1416,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         bool failedDueToNonloadableModule = false;
                         try
                         {
-                             method = idParser.ResolveMethodID(e.MethodID, out failedDueToNonloadableModule, commandLineOptions.VerboseWarnings);
+                            method = idParser.ResolveMethodID(e.MethodID, out failedDueToNonloadableModule, commandLineOptions.VerboseWarnings);
                         }
                         catch (Exception exception)
                         {
