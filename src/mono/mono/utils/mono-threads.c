@@ -1616,7 +1616,9 @@ mono_thread_info_is_async_context (void)
 void
 mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
+#ifndef HOST_WASI
 	guint8 *current = (guint8 *)&stsize;
+#endif	
 	mono_threads_platform_get_stack_bounds (staddr, stsize);
 	if (!*staddr)
 		return;
@@ -2173,11 +2175,3 @@ mono_thread_info_get_tools_data (void)
 
 	return info ? info->tools_data : NULL;
 }
-
-#if !defined(HOST_WASM) || defined (HOST_WASI)
-gboolean
-mono_threads_platform_stw_defer_initial_suspend (MonoThreadInfo *info)
-{
-	return FALSE;
-}
-#endif

@@ -98,14 +98,14 @@ event_pipe_wait_for_session_signal (
 	EventPipeSessionID session_id,
 	uint32_t timeout);
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM)  && !defined(HOST_WASI)
 static void
 mono_wasm_event_pipe_init (void);
 #endif
 
 static MonoComponentEventPipe fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &event_pipe_available },
-#ifndef HOST_WASM
+#if !defined(HOST_WASM) || defined(HOST_WASI)
 	&ep_init,
 #else
 	&mono_wasm_event_pipe_init,

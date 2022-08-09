@@ -254,7 +254,7 @@ int32_t SystemNative_Stat2(const char* path, FileStatus* output)
 	// Never fail when looking for the root directory. Even if the WASI host isn't giving us filesystem access
 	// (which is the default), we need the root directory to appear to exist, otherwise things like ASP.NET Core
 	// will fail by default, whether or not it needs to read anything from the filesystem.
-	if (ret != 0 && path[0] == '/' && path[1] == NULL) {
+	if (ret != 0 && path[0] == '/' && path[1] == 0) {
 		output->Mode = 0x4000; // Dir
 		return 0;
 	}
@@ -670,6 +670,7 @@ mono_wasm_string_get_utf8 (MonoString *str)
 	return mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
 }
 
+MonoString *
 mono_wasm_string_from_js (const char *str)
 {
 	if (str)
