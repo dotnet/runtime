@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
 {
     public class CustomAttributeDecoderTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles), nameof(PlatformDetection.IsMonoRuntime))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestCustomAttributeDecoder()
         {
@@ -84,7 +84,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73593", TestRuntimes.Mono)]
         public void TestCustomAttributeDecoderUsingReflection()
         {
@@ -197,7 +197,8 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-        [Fact]
+#if NETCOREAPP // Generic attribute is not supported on .NET Framework.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestCustomAttributeDecoderGenericUsingReflection()
         {
@@ -245,7 +246,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestCustomAttributeDecoderGenericArray()
         {
@@ -340,6 +341,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
             public V Value { get; set; }
             public K[] ArrayProperty { get; set; }
         }
+#endif
 
         // no arguments
         [Test]
@@ -592,7 +594,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
         private string TypeToString(Type type)
         {
             if (type == typeof(Type))
-                return "[System.Runtime]System.Type";
+                return $"[{MetadataReaderTestHelpers.RuntimeAssemblyName}]System.Type";
 
             if (type.IsArray)
             {
