@@ -11230,6 +11230,9 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         ThrowHR(E_UNEXPECTED);
     }
 
+    // TODO: Ideally we would use ICorDebugMutableDataTarget::SetThreadContext however this API currently only handles the legacy context.
+    // We should combine the following code with the shared implementation
+
     // The initialize call should fail but return contextSize
     contextSize = 0;
     DWORD contextFlags = pContext->ContextFlags;
