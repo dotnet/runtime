@@ -224,7 +224,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
 
     <!-- Enable serialization discovery for compat in < 7.0 -->
-    <PropertyGroup Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '7.0')">
+    <PropertyGroup Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '7.0'))">
       <_ExtraTrimmerArgs>--enable-serialization-discovery $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
     </PropertyGroup>
 
