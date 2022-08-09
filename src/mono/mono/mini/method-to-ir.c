@@ -9570,8 +9570,7 @@ calli_end:
 			guint32 callvirt_proc_token;
 			if (next_ip < end &&
 				(callvirt_ip = il_read_callvirt (next_ip, end, &callvirt_proc_token)) && 
-				ip_in_bb (cfg, cfg->cbb, callvirt_ip) ) 
-			{
+				ip_in_bb (cfg, cfg->cbb, callvirt_ip) ) {
 				MonoMethod* iface_method;
 				MonoMethodSignature* iface_method_sig;
 
@@ -9581,8 +9580,8 @@ calli_end:
 					(iface_method_sig = mono_method_signature_internal (iface_method)) && // callee signture is healthy
 					iface_method_sig->hasthis && 
 					iface_method_sig->param_count == 0 && // the callee has no args (other than this)
-					iface_method_sig->has_type_parameters == 0) // and no type params, apparently virtual generic methods require special handling
-				{
+					iface_method_sig->has_type_parameters == 0) { // and no type params, apparently virtual generic methods require special handling
+					
 					if (!m_class_is_inited (iface_method->klass)) {
 						if (!mono_class_init_internal (iface_method->klass))
 							TYPE_LOAD_ERROR (iface_method->klass);
