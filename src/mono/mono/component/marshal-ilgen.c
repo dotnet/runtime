@@ -54,7 +54,6 @@ static MonoComponentMarshalILgen component_func_table = {
 MonoComponentMarshalILgen*
 mono_component_marshal_ilgen_init (void) 
 {
-	g_warning("!!!naricc_debug!!! mono_component_marshal_ilgen_init\n");
 	return &component_func_table;
 }
 
