@@ -37,4 +37,5 @@ static MonoComponentMarshalILgen component_func_table = {
 MonoComponentMarshalILgen*
 mono_component_marshal_ilgen_init (void) 
 {
+	return &component_func_table;
 }
