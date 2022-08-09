@@ -46,9 +46,9 @@ internal static partial class Interop
     }
 
     /// <summary>
-    /// Throws an exception using the last error info (errno).
+    /// Throws an IOException using the last error info (errno).
     /// </summary>
-    internal static void ThrowExceptionForLastError()
+    internal static void ThrowIOExceptionForLastError()
     {
         ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path: null, isDirectory: false);
     }
