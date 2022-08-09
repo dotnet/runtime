@@ -19,23 +19,20 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public InvokerConnectTest_Http2(ITestOutputHelper output) : base(output) { }
 
-        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
-            cws.ConnectAsync(uri, new HttpMessageInvoker(CreateSocketsHttpHandler(allowAllCertificates: true)), cancellationToken);
+        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
     }
 
     public sealed class HttpClientConnectTest_Http2 : ConnectTest_Http2
     {
         public HttpClientConnectTest_Http2(ITestOutputHelper output) : base(output) { }
 
-        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
-            cws.ConnectAsync(uri, new HttpClient(CreateSocketsHttpHandler(allowAllCertificates: true)), cancellationToken);
+        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
     }
 
-    public abstract class ConnectTest_Http2 : ClientWebSocketTestBase
+    public class ConnectTest_Http2 : ClientWebSocketTestBase
     {
         public ConnectTest_Http2(ITestOutputHelper output) : base(output) { }
 
-        protected abstract Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken);
 
         [Theory]
         [InlineData(false)]

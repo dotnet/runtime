@@ -14,38 +14,26 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class InternalHandlerDeflateTests : DeflateTests
-    {
-        public InternalHandlerDeflateTests(ITestOutputHelper output) : base(output) { }
-
-        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
-            cws.ConnectAsync(uri, cancellationToken);
-    }
-
     public sealed class InvokerDeflateTests : DeflateTests
     {
         public InvokerDeflateTests(ITestOutputHelper output) : base(output) { }
 
-        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
-            cws.ConnectAsync(uri, new HttpMessageInvoker(new SocketsHttpHandler()), cancellationToken);
+        protected override HttpMessageInvoker? GetInvoker() => new HttpMessageInvoker(new SocketsHttpHandler());
     }
 
     public sealed class HttpClientDeflateTests : DeflateTests
     {
         public HttpClientDeflateTests(ITestOutputHelper output) : base(output) { }
 
-        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
-            cws.ConnectAsync(uri, new HttpClient(new HttpClientHandler()), cancellationToken);
+        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
     }
 
     [PlatformSpecific(~TestPlatforms.Browser)]
-    public abstract class DeflateTests : ClientWebSocketTestBase
+    public class DeflateTests : ClientWebSocketTestBase
     {
         public DeflateTests(ITestOutputHelper output) : base(output)
         {
         }
-
-        protected abstract Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken);
 
         [ConditionalTheory(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]

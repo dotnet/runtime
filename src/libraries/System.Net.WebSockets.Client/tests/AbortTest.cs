@@ -12,35 +12,24 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class InternalHandlerAbortTest : AbortTest
-    {
-        public InternalHandlerAbortTest(ITestOutputHelper output) : base(output) { }
-
-        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
-            cws.ConnectAsync(uri, cancellationToken);
-    }
-
     public sealed class InvokerAbortTest : AbortTest
     {
         public InvokerAbortTest(ITestOutputHelper output) : base(output) { }
 
-        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
-            cws.ConnectAsync(uri, new HttpMessageInvoker(new SocketsHttpHandler()), cancellationToken);
+        protected override HttpMessageInvoker? GetInvoker() => new HttpMessageInvoker(new SocketsHttpHandler());
     }
 
     public sealed class HttpClientAbortTest : AbortTest
     {
         public HttpClientAbortTest(ITestOutputHelper output) : base(output) { }
 
-        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
-            cws.ConnectAsync(uri, new HttpClient(new HttpClientHandler()), cancellationToken);
+        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
     }
 
-    public abstract class AbortTest : ClientWebSocketTestBase
+    public class AbortTest : ClientWebSocketTestBase
     {
         public AbortTest(ITestOutputHelper output) : base(output) { }
 
-        protected abstract Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken);
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]

@@ -14,45 +14,22 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class InternalHandlerConnectTest : ConnectTest
-    {
-        public InternalHandlerConnectTest(ITestOutputHelper output) : base(output) { }
-
-        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
-            cws.ConnectAsync(uri, cancellationToken);
-
-        protected override Task TestEcho(Uri uri, WebSocketMessageType type, int timeOutMilliseconds, ITestOutputHelper output) =>
-            WebSocketHelper.TestEcho(uri, type, timeOutMilliseconds, output);
-    }
-
     public sealed class InvokerConnectTest : ConnectTest
     {
         public InvokerConnectTest(ITestOutputHelper output) : base(output) { }
-
-        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
-            cws.ConnectAsync(uri, new HttpMessageInvoker(new SocketsHttpHandler()), cancellationToken);
-
-        protected override Task TestEcho(Uri uri, WebSocketMessageType type, int timeOutMilliseconds, ITestOutputHelper output) =>
-            WebSocketHelper.TestEcho(uri, WebSocketMessageType.Text, TimeOutMilliseconds, _output, new HttpMessageInvoker(new SocketsHttpHandler()));
+        protected override HttpMessageInvoker? GetInvoker() => new HttpMessageInvoker(new SocketsHttpHandler());
     }
 
     public sealed class HttpClientConnectTest : ConnectTest
     {
         public HttpClientConnectTest(ITestOutputHelper output) : base(output) { }
 
-        protected override Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
-            cws.ConnectAsync(uri, new HttpClient(new HttpClientHandler()), cancellationToken);
-
-        protected override Task TestEcho(Uri uri, WebSocketMessageType type, int timeOutMilliseconds, ITestOutputHelper output) =>
-            WebSocketHelper.TestEcho(uri, WebSocketMessageType.Text, TimeOutMilliseconds, _output, new HttpClient(new HttpClientHandler()));
+        protected override HttpMessageInvoker? GetInvoker() => new HttpClient(new HttpClientHandler());
     }
 
-    public abstract class ConnectTest : ClientWebSocketTestBase
+    public class ConnectTest : ClientWebSocketTestBase
     {
         public ConnectTest(ITestOutputHelper output) : base(output) { }
-
-        protected abstract Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken);
-        protected abstract Task TestEcho(Uri uri, WebSocketMessageType type, int timeOutMilliseconds, ITestOutputHelper output);
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1895")]
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
