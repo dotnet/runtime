@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
@@ -127,11 +126,6 @@ namespace System.Threading.Tasks.Tests
         [InlineData(128)]
         public async Task Dop_WorkersCreatedRespectingLimitAndTaskScheduler_Sync(int dop)
         {
-            if (PlatformDetection.IsAndroid && dop == -1)
-            {
-                throw new SkipTestException("https://github.com/dotnet/runtime/issues/50566");
-            }
-
             static IEnumerable<int> IterateUntilSet(StrongBox<bool> box)
             {
                 int counter = 0;
@@ -146,7 +140,7 @@ namespace System.Threading.Tasks.Tests
             int activeWorkers = 0;
             var block = new TaskCompletionSource();
 
-            const int MaxSchedulerLimit = 2;
+            const int MaxSchedulerLimit = Math.Min(2, Environment.ProcessorCount);
 
             Task t = Parallel.ForEachAsync(IterateUntilSet(box), new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new MaxConcurrencyLevelPassthroughTaskScheduler(MaxSchedulerLimit) }, async (item, cancellationToken) =>
             {
