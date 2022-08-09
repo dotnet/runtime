@@ -28,13 +28,13 @@ build-all: $(WASI_SDK_CLANG)
 $(WASI_SDK_CLANG):
 	mkdir -p $(WASI_OBJ_DIR)
 	cd $(WASI_OBJ_DIR) && \
-		wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WASI_SDK_VERSION)/wasi-sdk-$(WASI_SDK_VERSION).0-linux.tar.gz && \
+		wget -q https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WASI_SDK_VERSION)/wasi-sdk-$(WASI_SDK_VERSION).0-linux.tar.gz && \
 		tar xf wasi-sdk-*.tar.gz
 
 .stamp-wasmtime-$(WASMTIME_VERSION):
 	@echo "** Provisioning wasmtime $(WASMTIME_VERSION) **"
 	rm -Rf $(WASMTIME_DIR) && \
-	wget https://github.com/bytecodealliance/wasmtime/releases/download/$(WASMTIME_VERSION)/$(WASMTIME_DIR_NAME).tar.xz -O - | tar -C `dirname $(WASMTIME_DIR)` -Jxf - && \
+	wget -q https://github.com/bytecodealliance/wasmtime/releases/download/$(WASMTIME_VERSION)/$(WASMTIME_DIR_NAME).tar.xz -O - | tar -C `dirname $(WASMTIME_DIR)` -Jxf - && \
 	touch $@
 
 .stamp-ninja-$(NINJA_VERSION):

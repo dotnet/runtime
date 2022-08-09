@@ -18,6 +18,7 @@ console.wasm: main.c
 	$(WASI_SDK_CLANG) main.c -o console.wasm $(COMPILE_FLAGS) $(LINK_FLAGS)
 
 $(BIN_DIR)/WasiConsoleApp.dll: WasiConsoleApp/*.csproj WasiConsoleApp/*.cs
+	find $(BROWSER_WASM_RUNTIME_PATH) -type f
 	cd WasiConsoleApp && $(DOTNET_ROOT)/dotnet build -c Debug
 	touch $(BIN_DIR)/*.dll
 	cp -R $(BROWSER_WASM_RUNTIME_PATH) $(BIN_DIR)/runtime
