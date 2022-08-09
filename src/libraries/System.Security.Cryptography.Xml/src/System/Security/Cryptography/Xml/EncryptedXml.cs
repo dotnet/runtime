@@ -161,7 +161,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         // This is used to specify the EncryptedKey elements that should be considered
-        // when an EncyptedData references an EncryptedKey using a CarriedKeyName and Recipient
+        // when an EncryptedData references an EncryptedKey using a CarriedKeyName and Recipient
         public string Recipient
         {
             get => _recipient ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty

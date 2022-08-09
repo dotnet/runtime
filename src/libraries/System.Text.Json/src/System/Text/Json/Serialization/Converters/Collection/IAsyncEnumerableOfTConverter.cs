@@ -27,6 +27,7 @@ namespace System.Text.Json.Serialization.Converters
             ((BufferedAsyncEnumerable)state.Current.ReturnValue!)._buffer.Add(value);
         }
 
+        internal override bool SupportsCreateObjectDelegate => false;
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             state.Current.ReturnValue = new BufferedAsyncEnumerable();

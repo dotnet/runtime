@@ -1002,7 +1002,7 @@ void Compiler::fgComputeDoms()
     for (block = fgFirstBB->bbNext; block != nullptr; block = block->bbNext)
     {
         // If any basic block has no predecessors then we flag it as processed and temporarily
-        // mark its precedessor list to be flRoot.  This makes the flowgraph connected,
+        // mark its predecessor list to be flRoot.  This makes the flowgraph connected,
         // a precondition that is needed by the dominance algorithm to operate properly.
         if (block->bbPreds == nullptr)
         {
@@ -1051,7 +1051,7 @@ void Compiler::fgComputeDoms()
                 continue;
             }
 
-            // Pick up the first processed predecesor of the current block.
+            // Pick up the first processed predecessor of the current block.
             for (first = block->bbPreds; first != nullptr; first = first->flNext)
             {
                 if (BlockSetOps::IsMember(this, processedBlks, first->getBlock()->bbNum))
@@ -4125,7 +4125,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     gtReverseCond(condTree);
 
     // We need to update the following flags of the bJump block if they were set in the bDest block
-    bJump->bbFlags |= (bDest->bbFlags & (BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN));
+    bJump->bbFlags |= bDest->bbFlags & BBF_COPY_PROPAGATE;
 
     bJump->bbJumpKind = BBJ_COND;
     bJump->bbJumpDest = bDest->bbNext;
@@ -4427,7 +4427,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 {
                     if (tmpbb == bPrevPrev)
                     {
-                        /* We found an ealier predecessor */
+                        /* We found an earlier predecessor */
                         bPrevPrev = pred->getBlock();
                         break;
                     }
@@ -6041,7 +6041,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
 
                     // case (b)
                     //
-                    // Note the asymetric checks for refs == 1 and refs > 1 ensures that we
+                    // Note the asymmetric checks for refs == 1 and refs > 1 ensures that we
                     // differentiate the roles played by bDest and bNextJumpDest. We need some
                     // sense of which arrangement is preferable to avoid getting stuck in a loop
                     // reversing and re-reversing.

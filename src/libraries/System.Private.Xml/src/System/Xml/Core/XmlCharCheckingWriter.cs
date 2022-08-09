@@ -379,7 +379,7 @@ namespace System.Xml
             }
         }
 
-        [return: NotNullIfNotNull("str")]
+        [return: NotNullIfNotNull(nameof(str))]
         private string? ReplaceNewLines(string? str)
         {
             if (str == null)

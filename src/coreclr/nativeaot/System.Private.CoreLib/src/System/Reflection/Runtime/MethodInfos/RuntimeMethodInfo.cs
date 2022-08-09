@@ -113,7 +113,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
             MethodInfo method = this;
 
-            // For compat: Remove any instantation on generic methods.
+            // For compat: Remove any instantiation on generic methods.
             if (method.IsConstructedGenericMethod)
                 method = method.GetGenericMethodDefinition();
 
@@ -163,7 +163,6 @@ namespace System.Reflection.Runtime.MethodInfos
         [DebuggerGuidedStepThroughAttribute]
         public sealed override object? Invoke(object? obj, BindingFlags invokeAttr, Binder binder, object?[]? parameters, CultureInfo culture)
         {
-            parameters ??= Array.Empty<object>();
             MethodInvoker methodInvoker = this.MethodInvoker;
             object? result = methodInvoker.Invoke(obj, parameters, binder, invokeAttr, culture);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
@@ -297,19 +296,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                MethodInvoker methodInvoker = _lazyMethodInvoker;
-                if (methodInvoker == null)
-                {
-                    if (ReturnType.IsByRef)
-                    {
-                        // The invoker is going to dereference and box (for structs) the result of the invocation
-                        // on behalf of the caller. Can't box byref-like types and can't box void.
-                        if (ReturnType.GetElementType().IsByRefLike || ReturnType.GetElementType() == typeof(void))
-                            throw new NotSupportedException();
-                    }
-                    methodInvoker = _lazyMethodInvoker = this.UncachedMethodInvoker;
-                }
-                return methodInvoker;
+                return _lazyMethodInvoker ??= UncachedMethodInvoker;
             }
         }
 

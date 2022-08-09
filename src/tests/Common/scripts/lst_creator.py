@@ -284,7 +284,7 @@ def parse_lst_file(lst_file):
 def main(args):
     """ Main method
     Args:
-        args ([str]): the arugments passed to the program.
+        args ([str]): the arguments passed to the program.
 
     """
 

@@ -4574,9 +4574,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			MONO_VARINFO (cfg, ins->inst_c0)->live_range_end = code - cfg->native_code;
 			break;
 		}
-		case OP_GC_SAFE_POINT:
+		case OP_GC_SAFE_POINT: {
+			guint8 *br;
+			ppc_ldr (code, ppc_r0, 0, ins->sreg1);
+			ppc_cmpi (code, 0, 0, ppc_r0, 0);
+			br = code;
+			ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID,
+			     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_threads_state_poll));
+			if ((FORCE_INDIR_CALL || cfg->method->dynamic) && !cfg->compile_aot) {
+				ppc_load_func (code, PPC_CALL_REG, 0);
+				ppc_mtlr (code, PPC_CALL_REG);
+				ppc_blrl (code);
+			} else {
+				ppc_bl (code, 0);
+			}
+			ppc_patch (br, code);
 			break;
-
+		}
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();

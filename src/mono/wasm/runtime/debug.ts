@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
+import Configuration from "consts:configuration";
+import { INTERNAL, Module, runtimeHelpers } from "./imports";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
-const commands_received : any = new Map<number, CommandResponse>();
+import { MONO } from "./net6-legacy/imports";
+const commands_received: any = new Map<number, CommandResponse>();
 const wasm_func_map = new Map<number, string>();
-commands_received.remove = function (key: number) : CommandResponse { const value = this.get(key); this.delete(key); return value;};
+commands_received.remove = function (key: number): CommandResponse { const value = this.get(key); this.delete(key); return value; };
 let _call_function_res_cache: any = {};
 let _next_call_function_res_id = 0;
 let _debugger_buffer_len = -1;
@@ -15,7 +17,7 @@ let _debugger_buffer: VoidPtr;
 let _assembly_name_str: string; //keep this variable, it's used by BrowserDebugProxy
 let _entrypoint_method_token: number; //keep this variable, it's used by BrowserDebugProxy
 
-const regexes:any[] = [];
+const regexes: any[] = [];
 
 // V8
 //   at <anonymous>:wasm-function[1900]:0x83f63
@@ -33,7 +35,7 @@ regexes.push(/(?<replaceSection>[a-z]+:\/\/[^ )]*:wasm-function\[(?<funcNum>\d+)
 regexes.push(/(?<replaceSection><[^ >]+>[.:]wasm-function\[(?<funcNum>[0-9]+)\])/);
 
 export function mono_wasm_runtime_ready(): void {
-    runtimeHelpers.mono_wasm_runtime_is_ready = true;
+    INTERNAL.mono_wasm_runtime_is_ready = runtimeHelpers.mono_wasm_runtime_is_ready = true;
 
     // FIXME: where should this go?
     _next_call_function_res_id = 0;
@@ -66,7 +68,7 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
         }
     };
     if (commands_received.has(id))
-        console.warn("Addind an id that already exists in commands_received");
+        console.warn(`MONO_WASM: Adding an id (${id}) that already exists in commands_received`);
     commands_received.set(id, buffer_obj);
 }
 
@@ -149,7 +151,7 @@ export function mono_wasm_get_loaded_files(): string[] {
 export function mono_wasm_wait_for_debugger(): Promise<void> {
     return new Promise<void>((resolve) => {
         const interval = setInterval(() => {
-            if (runtimeHelpers.wait_for_debugger != 1) {
+            if (runtimeHelpers.waitForDebugger != 1) {
                 return;
             }
             clearInterval(interval);
@@ -159,8 +161,8 @@ export function mono_wasm_wait_for_debugger(): Promise<void> {
 }
 
 export function mono_wasm_debugger_attached(): void {
-    if (runtimeHelpers.wait_for_debugger == -1)
-        runtimeHelpers.wait_for_debugger = 1;
+    if (runtimeHelpers.waitForDebugger == -1)
+        runtimeHelpers.waitForDebugger = 1;
     cwraps.mono_wasm_set_is_debugger_attached(true);
 }
 
@@ -168,7 +170,7 @@ export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entr
     //keep these assignments, these values are used by BrowserDebugProxy
     _assembly_name_str = Module.UTF8ToString(assembly_name).concat(".dll");
     _entrypoint_method_token = entrypoint_method_token;
-    //keep this console.assert, otherwise optimization will remove the assigments
+    //keep this console.assert, otherwise optimization will remove the assignments
     console.assert(true, `Adding an entrypoint breakpoint ${_assembly_name_str} at method token  ${_entrypoint_method_token}`);
     // eslint-disable-next-line no-debugger
     debugger;
@@ -178,7 +180,7 @@ function _create_proxy_from_object_id(objectId: string, details: any) {
     if (objectId.startsWith("dotnet:array:")) {
         let ret: Array<any>;
         if (details.items === undefined) {
-            ret = details.map ((p: any) => p.value);
+            ret = details.map((p: any) => p.value);
             return ret;
         }
         if (details.dimensionsDetails === undefined || details.dimensionsDetails.length === 1) {
@@ -363,27 +365,34 @@ export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): voi
         return;
     }
 
-    console.debug(`Debugger.Debug: ${message}`);
+    if (Configuration === "Debug") {
+        console.debug(`MONO_WASM: Debugger.Debug: ${message}`);
+    }
 }
 
 function _readSymbolMapFile(filename: string): void {
     try {
-        const res = Module.FS_readFile(filename, {flags: "r", encoding: "utf8"});
+        const res = Module.FS_readFile(filename, { flags: "r", encoding: "utf8" });
         res.split(/[\r\n]/).forEach((line: string) => {
-            const parts:string[] = line.split(/:/);
+            const parts: string[] = line.split(/:/);
             if (parts.length < 2)
                 return;
 
             parts[1] = parts.splice(1).join(":");
             wasm_func_map.set(Number(parts[0]), parts[1]);
         });
-
-        console.debug(`Loaded ${wasm_func_map.size} symbols`);
-    } catch (error:any) {
-        if (error.errno == 44) // NOENT
-            console.debug(`Could not find symbols file ${filename}. Ignoring.`);
-        else
-            console.log(`Error loading symbol file ${filename}: ${JSON.stringify(error)}`);
+        if (Configuration === "Debug") {
+            console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
+        }
+    } catch (error: any) {
+        if (error.errno == 44) {// NOENT
+            if (Configuration === "Debug") {
+                console.debug(`MONO_WASM: Could not find symbols file ${filename}. Ignoring.`);
+            }
+        }
+        else {
+            console.log(`MONO_WASM: Error loading symbol file ${filename}: ${JSON.stringify(error)}`);
+        }
         return;
     }
 }
@@ -395,11 +404,10 @@ export function mono_wasm_symbolicate_string(message: string): string {
 
         const origMessage = message;
 
-        for (let i = 0; i < regexes.length; i ++)
-        {
+        for (let i = 0; i < regexes.length; i++) {
             const newRaw = message.replace(new RegExp(regexes[i], "g"), (substring, ...args) => {
                 const groups = args.find(arg => {
-                    return typeof(arg) == "object" && arg.replaceSection !== undefined;
+                    return typeof (arg) == "object" && arg.replaceSection !== undefined;
                 });
 
                 if (groups === undefined)
@@ -421,7 +429,7 @@ export function mono_wasm_symbolicate_string(message: string): string {
 
         return origMessage;
     } catch (error) {
-        console.debug(`failed to symbolicate: ${error}`);
+        console.debug(`MONO_WASM: failed to symbolicate: ${error}`);
         return message;
     }
 }
@@ -472,7 +480,7 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
     }
 }
 
-export function setup_proxy_console(id: string, originalConsole: Console, origin: string): void {
+export function setup_proxy_console(id: string, console: any, origin: string): void {
     function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
         return function (...args: any[]) {
             try {
@@ -506,11 +514,14 @@ export function setup_proxy_console(id: string, originalConsole: Console, origin
         };
     }
 
-    const originalConsoleObj : any = originalConsole;
+    const originalConsole = {
+        log: console.log,
+        error: console.error
+    };
     const methods = ["debug", "trace", "warn", "info", "error"];
     for (const m of methods) {
-        if (typeof (originalConsoleObj[m]) !== "function") {
-            originalConsoleObj[m] = proxyConsoleMethod(`console.${m}: `, originalConsole.log, false);
+        if (typeof (console[m]) !== "function") {
+            console[m] = proxyConsoleMethod(`console.${m}: `, originalConsole.log, false);
         }
     }
 
@@ -538,7 +549,7 @@ export function setup_proxy_console(id: string, originalConsole: Console, origin
 
     // redirect output early, so that when emscripten starts it's already redirected
     for (const m of ["log", ...methods])
-        originalConsoleObj[m] = proxyConsoleMethod(`console.${m}`, send, true);
+        console[m] = proxyConsoleMethod(`console.${m}`, send, true);
 }
 
 type CallDetails = {

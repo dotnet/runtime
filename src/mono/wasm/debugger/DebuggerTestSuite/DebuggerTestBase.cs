@@ -272,6 +272,11 @@ namespace DebuggerTests
             Assert.Equal(expected_loc_str, loc_str);
         }
 
+        internal virtual void CheckLocationLine(JToken location, int line)
+        {
+            Assert.Equal(location["lineNumber"].Value<int>(), line);
+        }
+
         internal void CheckNumber<T>(JToken locals, string name, T value)
         {
             foreach (var l in locals)
@@ -924,7 +929,7 @@ namespace DebuggerTests
                 locals = new JArray(locals.Union(locals_internal));
             if (locals_private != null)
                 locals = new JArray(locals.Union(locals_private));
-            // FIXME: Should be done when generating the list in dotnet.cjs.lib.js, but not sure yet
+            // FIXME: Should be done when generating the list in dotnet.es6.lib.js, but not sure yet
             //        whether to remove it, and how to do it correctly.
             if (locals is JArray)
             {
@@ -982,7 +987,7 @@ namespace DebuggerTests
             var locals_internal = frame_props.Value["internalProperties"];
             var locals_private = frame_props.Value["privateProperties"];
 
-            // FIXME: Should be done when generating the list in dotnet.cjs.lib.js, but not sure yet
+            // FIXME: Should be done when generating the list in dotnet.es6.lib.js, but not sure yet
             //        whether to remove it, and how to do it correctly.
             if (locals is JArray)
             {

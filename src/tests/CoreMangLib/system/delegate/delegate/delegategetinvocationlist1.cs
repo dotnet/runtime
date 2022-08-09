@@ -204,7 +204,7 @@ namespace DelegateTest
         }
 
     }
-    //create testclass for provding test method and test target.
+    //create testclass for providing test method and test target.
     class TestClass
     {
         public bool StartWork_Bool()

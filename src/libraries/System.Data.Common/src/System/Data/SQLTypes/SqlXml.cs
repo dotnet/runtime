@@ -259,9 +259,9 @@ namespace System.Data.SqlTypes
     } // SqlXml
 
     // two purposes for this class
-    // 1) keep its internal position so one reader positions on the orginial stream
+    // 1) keep its internal position so one reader positions on the original stream
     //    will not interface with the other
-    // 2) when xmlreader calls close, do not close the orginial stream
+    // 2) when xmlreader calls close, do not close the original stream
     //
     internal sealed class SqlXmlStreamWrapper : Stream
     {

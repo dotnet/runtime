@@ -2893,7 +2893,7 @@ mono_gc_add_memory_pressure (gint64 value)
 void
 sgen_client_degraded_allocation (void)
 {
-	//The WASM target aways triggers degrated allocation before collecting. So no point in printing the warning as it will just confuse users
+	//The WASM target always triggers degrated allocation before collecting. So no point in printing the warning as it will just confuse users
 #ifndef HOST_WASM
 	static gint32 last_major_gc_warned = -1;
 	static gint32 num_degraded = 0;

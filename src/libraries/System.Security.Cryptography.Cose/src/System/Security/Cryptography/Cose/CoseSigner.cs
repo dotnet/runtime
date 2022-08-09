@@ -83,11 +83,11 @@ namespace System.Security.Cryptography.Cose
                 string exMsg;
                 if (_keyType == KeyType.RSA)
                 {
-                    exMsg = SR.Format(SR.Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyHashAlgorithmAndPadding, alg.Value, _keyType, HashAlgorithm.Name, RSASignaturePadding);
+                    exMsg = SR.Format(SR.Sign1SignCoseAlgorithmDoesNotMatchSpecifiedKeyHashAlgorithmAndPadding, alg.Value, _keyType, HashAlgorithm.Name, RSASignaturePadding);
                 }
                 else
                 {
-                    exMsg = SR.Format(SR.Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, _keyType, HashAlgorithm.Name);
+                    exMsg = SR.Format(SR.Sign1SignCoseAlgorithmDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, _keyType, HashAlgorithm.Name);
                 }
 
                 throw new CryptographicException(exMsg);
