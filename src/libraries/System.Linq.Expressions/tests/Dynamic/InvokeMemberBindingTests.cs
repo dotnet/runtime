@@ -406,7 +406,7 @@ namespace System.Dynamic.Tests
             public OutAction OutDelegate;
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55071", typeof(PlatformDetection), nameof(PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly))]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/55071", typeof(PlatformDetection), nameof(PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly))]
         [Fact]
         public void InvokeFuncMember()
         {
