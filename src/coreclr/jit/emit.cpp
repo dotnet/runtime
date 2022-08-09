@@ -3931,7 +3931,7 @@ void emitter::emitDispJumpList()
 //
 void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize)
 {
-    assert(idSize == emitSizeOfInsDsc(id));
+    assert(idSize == emitSizeOfInsDsc(*id));
     char* idData = reinterpret_cast<char*>(*id);
     *id          = reinterpret_cast<instrDesc*>(idData + idSize + m_debugInfoSize);
 }
@@ -3947,7 +3947,7 @@ void emitter::emitAdvanceInstrDesc(instrDesc** id, size_t idSize)
 // Returns:
 //   A pointer to the first instrDesc.
 //
-instrDesc* emitter::emitFirstInstrDesc(BYTE* idData)
+emitter::instrDesc* emitter::emitFirstInstrDesc(BYTE* idData)
 {
     return reinterpret_cast<instrDesc*>(idData + m_debugInfoSize);
 }
@@ -4273,14 +4273,10 @@ void emitter::emitRemoveJumpToNextInst()
 #ifdef DEBUG
                 unsigned instructionCount = jmpGroup->igInsCnt;
                 assert(instructionCount > 0);
-                instrDesc* id = nullptr;
+                instrDesc* id = emitFirstInstrDesc(jmpGroup->igData);
+                for (unsigned i = 0; i < instructionCount - 1; i++)
                 {
-                    id = emitFirstInstrDesc(jmpGroup->igData);
-                    while (instructionCount > 0)
-                    {
-                        emitAdvanceInstrDesc(&id, emitSizeOfInsDsc(id));
-                        instructionCount -= 1;
-                    }
+                    emitAdvanceInstrDesc(&id, emitSizeOfInsDsc(id));
                 }
                 assert(id != nullptr);
                 if (jmp != id)
