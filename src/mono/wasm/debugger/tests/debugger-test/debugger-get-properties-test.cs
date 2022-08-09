@@ -136,12 +136,19 @@ namespace DebuggerTests.GetPropertiesTests
         public virtual string BaseBase_PropertyForVOH => "BaseBase#BaseBase_PropertyForVOH";
         public virtual string BaseBase_PropertyForVHO => "BaseBase#BaseBase_PropertyForVHO";
         // public virtual string BaseBase_PropertyForVOO => "BaseBase#BaseBase_PropertyForVOO"; // FixMe: Issue #69788
+        public virtual string BaseBase_AutoPropertyForVOH { get; set; }
+        public virtual string BaseBase_AutoPropertyForVHO { get; set; }
+        // public virtual string BaseBase_AutoPropertyForVOO { get; set; } // FixMe: Issue #69788
 
         public BaseBaseClass2()
         {
             BaseBase_AutoPropertyForHidingWithField = 15;
             BaseBase_AutoPropertyForHidingWithProperty = "BaseBase#BaseBase_AutoPropertyForHidingWithProperty";
             BaseBase_AutoPropertyForHidingWithAutoProperty = "BaseBase#BaseBase_AutoPropertyForHidingWithAutoProperty";
+
+            BaseBase_AutoPropertyForVOH = "BaseBase#BaseBase_AutoPropertyForVOH";
+            BaseBase_AutoPropertyForVHO = "BaseBase#BaseBase_AutoPropertyForVHO";
+            // BaseBase_AutoPropertyForVOO = "BaseBase#BaseBase_AutoPropertyForVOO"; // FixMe: Issue #69788
         }
     }
 
@@ -181,6 +188,9 @@ namespace DebuggerTests.GetPropertiesTests
         public override string BaseBase_PropertyForVOH => "Base#BaseBase_PropertyForVOH";
         public new virtual string BaseBase_PropertyForVHO => "Base#BaseBase_PropertyForVHO";
         // public override string BaseBase_PropertyForVOO => "BaseBase#BaseBase_PropertyForVOO"; // FixMe: Issue #69788
+        public override string BaseBase_AutoPropertyForVOH { get; set; }
+        public new virtual string BaseBase_AutoPropertyForVHO { get; set; }
+        // public override string BaseBase_AutoPropertyForVOO { get; set; }// FixMe: Issue #69788
 
         public BaseClass2()
         {
@@ -190,6 +200,10 @@ namespace DebuggerTests.GetPropertiesTests
             BaseBase_AutoPropertyForHidingWithAutoProperty = "Base#BaseBase_AutoPropertyForHidingWithAutoProperty";
             Base_AutoPropertyForOverridingWithProperty = new (2134, 5, 7, 1, 9, 2);
             Base_AutoPropertyForOverridingWithAutoProperty = new (2144, 5, 7, 1, 9, 2);
+
+            BaseBase_AutoPropertyForVOH = "Base#BaseBase_AutoPropertyForVOH";
+            BaseBase_AutoPropertyForVHO = "Base#BaseBase_AutoPropertyForVHO";
+            // BaseBase_AutoPropertyForVOO = "Base#BaseBase_AutoPropertyForVOO"; // FixMe: Issue #69788
         }
     }
 
@@ -212,12 +226,19 @@ namespace DebuggerTests.GetPropertiesTests
         public new string BaseBase_PropertyForVOH => "Derived#BaseBase_PropertyForVOH";
         public override string BaseBase_PropertyForVHO => "Derived#BaseBase_PropertyForVHO";
         // public override string BaseBase_PropertyForVOO => "Derived#BaseBase_PropertyForVOO"; // FixMe: Issue #69788
+        public new string BaseBase_AutoPropertyForVOH { get; set; }
+        public override string BaseBase_AutoPropertyForVHO { get; set; }
+        // public override string BaseBase_AutoPropertyForVOO { get; set; } // FixMe: Issue #69788
 
         public DerivedClass2()
         {
             Base_PropertyForOverridingWithAutoProperty = new (2022, 7, 6, 5, 4, 3);
             Base_AutoPropertyForOverridingWithAutoProperty = new (2023, 7, 6, 5, 4, 3);
             BaseBase_FieldForHidingWithAutoProperty = "Derived#BaseBase_FieldForHidingWithAutoProperty";
+
+            BaseBase_AutoPropertyForVOH = "Derived#BaseBase_AutoPropertyForVOH";
+            BaseBase_AutoPropertyForVHO = "Derived#BaseBase_AutoPropertyForVHO";
+            // BaseBase_AutoPropertyForVOO = "Derived#BaseBase_AutoPropertyForVOO"; // FixMe: Issue #69788
         }
 
         public static void run()

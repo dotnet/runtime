@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
+using System.Net.Http;
+using System.Net.WebSockets.Client.Tests;
 
 namespace System.Net.WebSockets.Client.Tests
 {
@@ -104,6 +106,17 @@ namespace System.Net.WebSockets.Client.Tests
                 }
             }
         }
+
+        protected virtual HttpMessageInvoker? GetInvoker() => null;
+
+        protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: GetInvoker());
+
+        protected Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
+            cws.ConnectAsync(uri, GetInvoker(), cancellationToken);
+
+        protected Task TestEcho(Uri uri, WebSocketMessageType type, int timeOutMilliseconds, ITestOutputHelper output) =>
+            WebSocketHelper.TestEcho(uri, WebSocketMessageType.Text, TimeOutMilliseconds, _output, GetInvoker());
 
         public static bool WebSocketsSupported { get { return WebSocketHelper.WebSocketsSupported; } }
     }

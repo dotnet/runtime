@@ -4,82 +4,19 @@
 import monoWasmThreads from "consts:monoWasmThreads";
 import type {
     DiagnosticOptions,
-    EventPipeSessionOptions,
-} from "../types";
+} from "./shared/types";
 import { is_nullish } from "../types";
 import type { VoidPtr } from "../types/emscripten";
 import { getController, startDiagnosticServer } from "./browser/controller";
 import * as memory from "../memory";
 
-export type { ProviderConfiguration } from "./browser/session-options-builder";
-import {
-    eventLevel, EventLevel,
-    SessionOptionsBuilder,
-} from "./browser/session-options-builder";
-import { EventPipeSession, makeEventPipeSession } from "./browser/file-session";
-
-export interface Diagnostics {
-    eventLevel: EventLevel;
-    SessionOptionsBuilder: typeof SessionOptionsBuilder;
-
-    createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
-    getStartupSessions(): (EventPipeSession | null)[];
-}
-
-let startup_session_configs: EventPipeSessionOptions[] = [];
-let startup_sessions: (EventPipeSession | null)[] | null = null;
 
 // called from C on the main thread
 export function mono_wasm_event_pipe_early_startup_callback(): void {
     if (monoWasmThreads) {
-        if (startup_session_configs === null || startup_session_configs.length == 0) {
-            return;
-        }
-        console.debug("MONO_WASM: diagnostics: setting startup sessions based on startup session configs", startup_session_configs);
-        startup_sessions = startup_session_configs.map(config => createAndStartEventPipeSession(config));
-        startup_session_configs = [];
+        return;
     }
 }
-
-
-function createAndStartEventPipeSession(options: (EventPipeSessionOptions)): EventPipeSession | null {
-    const session = makeEventPipeSession(options);
-    if (session === null) {
-        return null;
-    }
-    session.start();
-
-    return session;
-}
-
-function getDiagnostics(): Diagnostics {
-    if (monoWasmThreads) {
-        return {
-            /// An enumeration of the level (higher value means more detail):
-            /// LogAlways: 0,
-            /// Critical: 1,
-            /// Error: 2,
-            /// Warning: 3,
-            /// Informational: 4,
-            /// Verbose: 5,
-            eventLevel: eventLevel,
-            /// A builder for creating an EventPipeSessionOptions instance.
-            SessionOptionsBuilder: SessionOptionsBuilder,
-            /// Creates a new EventPipe session that will collect trace events from the runtime and managed libraries.
-            /// Use the options to control the kinds of events to be collected.
-            /// Multiple sessions may be created and started at the same time.
-            createEventPipeSession: makeEventPipeSession,
-            getStartupSessions(): (EventPipeSession | null)[] {
-                return Array.from(startup_sessions || []);
-            },
-        };
-    } else {
-        return undefined as unknown as Diagnostics;
-    }
-}
-
-/// APIs for working with .NET diagnostics from JavaScript.
-export const diagnostics: Diagnostics = getDiagnostics();
 
 // Initialization flow
 ///   * The runtime calls configure_diagnostics with options from MonoConfig
@@ -96,21 +33,16 @@ let diagnosticsServerEnabled = false;
 
 let diagnosticsInitialized = false;
 
-export async function mono_wasm_init_diagnostics(opts: "env" | DiagnosticOptions): Promise<void> {
+export async function mono_wasm_init_diagnostics(): Promise<void> {
     if (diagnosticsInitialized)
         return;
     if (!monoWasmThreads) {
-        console.warn("MONO_WASM: ignoring diagnostics options because this runtime does not support diagnostics", opts);
+        console.warn("MONO_WASM: ignoring diagnostics options because this runtime does not support diagnostics");
         return;
     } else {
-        let options: DiagnosticOptions | null;
-        if (opts === "env") {
-            options = diagnostic_options_from_environment();
-            if (!options)
-                return;
-        } else {
-            options = opts;
-        }
+        const options = diagnostic_options_from_environment();
+        if (!options)
+            return;
         diagnosticsInitialized = true;
         if (!is_nullish(options?.server)) {
             if (options.server.connectUrl === undefined || typeof (options.server.connectUrl) !== "string") {
@@ -126,8 +58,6 @@ export async function mono_wasm_init_diagnostics(opts: "env" | DiagnosticOptions
                 }
             }
         }
-        const sessions = options?.sessions ?? [];
-        startup_session_configs.push(...sessions);
     }
 }
 
@@ -221,4 +151,3 @@ export function mono_wasm_diagnostic_server_on_runtime_server_init(out_options: 
     }
 }
 
-export default diagnostics;
