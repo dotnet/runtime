@@ -56,6 +56,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Warnings
 		}
 
 		[Fact]
+		public Task DetectRedundantSuppressionsSingleWarn ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task SuppressWarningsInAssembly ()
 		{
 			return RunTest (allowMissingWarnings: true);
