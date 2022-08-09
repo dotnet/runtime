@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json.Reflection;
@@ -56,7 +55,7 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         internal JsonPropertyInfo CreatePropertyUsingReflection(Type propertyType)
         {
-            JsonPropertyInfo? jsonPropertyInfo;
+            JsonPropertyInfo jsonPropertyInfo;
 
             if (Options.TryGetTypeInfoCached(propertyType, out JsonTypeInfo? jsonTypeInfo))
             {
@@ -69,9 +68,10 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // Metadata for `propertyType` has not been registered yet.
                 // Use reflection to instantiate the correct JsonPropertyInfo<T>
-                s_createJsonPropertyInfo ??= typeof(JsonTypeInfo).GetMethod(nameof(CreateJsonPropertyInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
-                jsonPropertyInfo = (JsonPropertyInfo)s_createJsonPropertyInfo.MakeGenericMethod(propertyType)
-                    .InvokeNoWrapExceptions(null, new object[] { this, Options })!;
+                Type propertyInfoType = typeof(JsonPropertyInfo<>).MakeGenericType(propertyType);
+                jsonPropertyInfo = (JsonPropertyInfo)propertyInfoType.CreateInstanceNoWrapExceptions(
+                    parameterTypes: new Type[] { typeof(Type), typeof(JsonTypeInfo), typeof(JsonSerializerOptions) },
+                    parameters: new object[] { Type, this, Options })!;
             }
 
             Debug.Assert(jsonPropertyInfo.PropertyType == propertyType);
@@ -82,11 +82,6 @@ namespace System.Text.Json.Serialization.Metadata
         /// Creates a JsonPropertyInfo whose property type matches the type of this JsonTypeInfo instance.
         /// </summary>
         private protected abstract JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options);
-
-        private static JsonPropertyInfo CreateJsonPropertyInfo<T>(JsonTypeInfo declaringTypeInfo, JsonSerializerOptions options)
-            => new JsonPropertyInfo<T>(declaringTypeInfo.Type, declaringTypeInfo, options);
-
-        private static MethodInfo? s_createJsonPropertyInfo;
 
         // AggressiveInlining used although a large method it is only called from one location and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

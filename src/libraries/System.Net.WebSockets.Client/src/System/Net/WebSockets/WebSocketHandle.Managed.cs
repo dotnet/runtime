@@ -109,7 +109,10 @@ namespace System.Net.WebSockets
 
                         using (linkedCancellation)
                         {
-                            response = await invoker.SendAsync(request, externalAndAbortCancellation.Token).ConfigureAwait(false);
+                            Task<HttpResponseMessage> sendTask = invoker is HttpClient client
+                                ? client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, externalAndAbortCancellation.Token)
+                                : invoker.SendAsync(request, externalAndAbortCancellation.Token);
+                            response = await sendTask.ConfigureAwait(false);
                             externalAndAbortCancellation.Token.ThrowIfCancellationRequested(); // poll in case sends/receives in request/response didn't observe cancellation
                         }
 

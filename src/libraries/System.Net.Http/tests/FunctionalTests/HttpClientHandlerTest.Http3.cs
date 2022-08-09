@@ -1557,6 +1557,45 @@ namespace System.Net.Http.Functional.Tests
             await connection.DisposeAsync();
         }
 
+        [Fact]
+        public async Task ServerSendsTrailingHeaders_Success()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+
+                await using Http3LoopbackStream requestStream = await connection.AcceptRequestStreamAsync();
+
+                await requestStream.ReadRequestDataAsync();
+                await requestStream.SendResponseAsync(isFinal: false);
+                await requestStream.SendResponseHeadersAsync(null, new[] { new HttpHeaderData("MyHeader", "MyValue") });
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                using HttpResponseMessage response = await client.SendAsync(request);
+
+                (string key, IEnumerable<string> value) = Assert.Single(response.TrailingHeaders);
+                Assert.Equal("MyHeader", key);
+                Assert.Equal("MyValue", Assert.Single(value));
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+
+        }
+
         private static async Task<QuicException> AssertThrowsQuicExceptionAsync(QuicError expectedError, Func<Task> testCode)
         {
             QuicException ex = await Assert.ThrowsAsync<QuicException>(testCode);
