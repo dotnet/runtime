@@ -11,8 +11,11 @@
 
 using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.XPath;
 using Test.Cryptography;
@@ -1586,6 +1589,128 @@ namespace System.Security.Cryptography.Xml.Tests
 ";
             SignedXml sign = GetSignedXml(xml);
             Assert.Throws<FormatException>(() => sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("no clue"))));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void VerifyXmlResolver(bool provideResolver)
+        {
+            HttpListener listener;
+            int port = 9000;
+
+            while (true)
+            {
+                listener = new HttpListener();
+                listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+                listener.IgnoreWriteExceptions = true;
+
+                try
+                {
+                    listener.Start();
+                    break;
+                }
+                catch
+                {
+                }
+
+                port++;
+
+                if (port > 10000)
+                {
+                    throw new InvalidOperationException("Could not find an open port");
+                }
+            }
+
+            string xml = $@"<!DOCTYPE foo [<!ENTITY xxe SYSTEM ""http://127.0.0.1:{port}/"" >]>
+<ExampleDoc>Example doc to be signed.&xxe;<Signature xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+    <SignedInfo>
+      <CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" />
+      <SignatureMethod Algorithm=""http://www.w3.org/2001/04/xmldsig-more#hmac-sha256"" />
+      <Reference URI="""">
+        <Transforms>
+          <Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature"" />
+        </Transforms>
+        <DigestMethod Algorithm=""http://www.w3.org/2001/04/xmlenc#sha256"" />
+        <DigestValue>CLUSJx4H4EwydAT/CtNWYu/l6R8uZe0tO2rlM/o0iM4=</DigestValue>
+      </Reference>
+    </SignedInfo>
+    <SignatureValue>o0IAVyovNUYKs5CCIRpZVy6noLpdJBp8LwWrqzzhKPg=</SignatureValue>
+  </Signature>
+</ExampleDoc>";
+
+            bool listenerContacted = false;
+            CancellationTokenSource tokenSource = new CancellationTokenSource();
+            Task listenerTask = ProcessRequests(listener, req => listenerContacted = true, tokenSource.Token);
+
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            SignedXml signedXml = new SignedXml(doc);
+            signedXml.LoadXml((XmlElement)doc.GetElementsByTagName("Signature")[0]);
+
+            try
+            {
+                using (HMAC key = new HMACSHA256(Encoding.UTF8.GetBytes("sample")))
+                {
+                    if (provideResolver)
+                    {
+                        signedXml.Resolver = new XmlUrlResolver();
+                        Assert.True(signedXml.CheckSignature(key), "signedXml.CheckSignature(key)");
+                        Assert.True(listenerContacted, "listenerContacted");
+                    }
+                    else
+                    {
+                        XmlException ex = Assert.Throws<XmlException>(() => signedXml.CheckSignature(key));
+                        Assert.IsType<SecurityException>(ex.InnerException);
+                        Assert.False(listenerContacted, "listenerContacted");
+                    }
+                }
+            }
+            finally
+            {
+                tokenSource.Cancel();
+
+                try
+                {
+                    listener.Stop();
+                }
+                catch
+                {
+                }
+
+                ((IDisposable)listener).Dispose();
+            }
+
+            static async Task ProcessRequests(
+                HttpListener listener,
+                Action<HttpListenerRequest> requestReceived,
+                CancellationToken cancellationToken)
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    HttpListenerContext ctx;
+
+                    try
+                    {
+                        ctx = await listener.GetContextAsync();
+                    }
+                    catch
+                    {
+                        break;
+                    }
+
+                    HttpListenerRequest req = ctx.Request;
+                    requestReceived(req);
+
+                    using (HttpListenerResponse resp = ctx.Response)
+                    {
+                        resp.ContentType = "text/plain";
+                        resp.ContentEncoding = Encoding.UTF8;
+                        resp.ContentLength64 = 0;
+                    }
+                }
+            }
         }
 
         [Fact]
