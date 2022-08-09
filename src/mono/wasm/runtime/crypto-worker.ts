@@ -316,10 +316,11 @@ class LibraryChannel {
                 this._change_state_locked(this.STATE_AWAIT);
                 return false;
             });
-            if (done) break;
 
             // Notify webworker
             Atomics.notify(this.comm, this.STATE_IDX);
+
+            if (done) break;
         }
 
         // Reset the communication channel's state and let the
