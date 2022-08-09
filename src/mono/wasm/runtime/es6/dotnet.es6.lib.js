@@ -34,7 +34,7 @@ if (ENVIRONMENT_IS_NODE) {
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
     { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_imports: IMPORTS },
-    __dotnet_replacements);
+    __dotnet_replacements, __callbackAPI);
 updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
 var fetch = __dotnet_replacements.fetch;
 _scriptDir = __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory;

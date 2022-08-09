@@ -32,6 +32,7 @@ function initializeImportsAndExports(
     imports: EarlyImports,
     exports: EarlyExports,
     replacements: EarlyReplacements,
+    callbackAPI: any
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -60,6 +61,7 @@ function initializeImportsAndExports(
         },
         ...API,
     };
+    Object.assign(callbackAPI, API);
     if (exports.module.__undefinedConfig) {
         module.disableDotnet6Compatibility = true;
         module.configSrc = "./mono-config.json";
