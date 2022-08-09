@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
 using ILCompiler.Logging;
 using ILLink.Shared;
 using Internal.IL;
@@ -111,7 +110,6 @@ namespace ILCompiler.Dataflow
                         while (reader.HasNext)
                         {
                             ILOpcode opcode = reader.ReadILOpcode();
-                            MethodDesc? lambdaOrLocalFunction;
                             switch (opcode)
                             {
                                 case ILOpcode.ldftn:
@@ -119,49 +117,78 @@ namespace ILCompiler.Dataflow
                                 case ILOpcode.call:
                                 case ILOpcode.callvirt:
                                 case ILOpcode.newobj:
-                                    lambdaOrLocalFunction = methodBody.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as MethodDesc;
+                                    {
+                                        MethodDesc? referencedMethod = methodBody.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as MethodDesc;
+                                        if (referencedMethod == null)
+                                            continue;
+
+                                        referencedMethod = referencedMethod.GetTypicalMethodDefinition();
+
+                                        if (referencedMethod.IsConstructor &&
+                                            referencedMethod.OwningType is MetadataType generatedType &&
+                                            // Don't consider calls in the same type, like inside a static constructor
+                                            method.OwningType != generatedType &&
+                                            CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
+                                        {
+                                            Debug.Assert(generatedType.IsTypeDefinition);
+
+                                            // fill in null for now, attribute providers will be filled in later
+                                            _generatedTypeToTypeArgumentInfo ??= new Dictionary<MetadataType, TypeArgumentInfo>();
+
+                                            if (!_generatedTypeToTypeArgumentInfo.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
+                                            {
+                                                var alreadyAssociatedMethod = _generatedTypeToTypeArgumentInfo[generatedType].CreatingMethod;
+                                                logger?.LogWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
+                                            }
+                                            continue;
+                                        }
+
+                                        if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(referencedMethod.Name))
+                                            continue;
+
+                                        if (isStateMachineMember)
+                                        {
+                                            callGraph.TrackCall((MetadataType)method.OwningType, referencedMethod);
+                                        }
+                                        else
+                                        {
+                                            callGraph.TrackCall(method, referencedMethod);
+                                        }
+                                    }
+                                    break;
+
+                                case ILOpcode.stsfld:
+                                    {
+                                        // Same as above, but stsfld instead of a call to the constructor
+                                        FieldDesc? field = methodBody.GetObject(reader.ReadILToken()) as FieldDesc;
+                                        if (field == null)
+                                            continue;
+
+                                        field = field.GetTypicalFieldDefinition();
+
+                                        if (field.OwningType is MetadataType generatedType &&
+                                            // Don't consider field accesses in the same type, like inside a static constructor
+                                            method.OwningType != generatedType &&
+                                            CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
+                                        {
+                                            Debug.Assert(generatedType.IsTypeDefinition);
+
+                                            _generatedTypeToTypeArgumentInfo ??= new Dictionary<MetadataType, TypeArgumentInfo>();
+
+                                            if (!_generatedTypeToTypeArgumentInfo.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
+                                            {
+                                                // It's expected that there may be multiple methods associated with the same static closure environment.
+                                                // All of these methods will substitute the same type arguments into the closure environment
+                                                // (if it is generic). Don't warn.
+                                            }
+                                            continue;
+                                        }
+                                    }
                                     break;
 
                                 default:
-                                    lambdaOrLocalFunction = null;
                                     reader.Skip(opcode);
                                     break;
-                            }
-
-                            if (lambdaOrLocalFunction == null)
-                                continue;
-
-                            lambdaOrLocalFunction = lambdaOrLocalFunction.GetTypicalMethodDefinition();
-
-                            if (lambdaOrLocalFunction.IsConstructor &&
-                                lambdaOrLocalFunction.OwningType is MetadataType generatedType &&
-                                // Don't consider calls in the same type, like inside a static constructor
-                                method.OwningType != generatedType &&
-                                CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
-                            {
-                                Debug.Assert(generatedType.IsTypeDefinition);
-
-                                // fill in null for now, attribute providers will be filled in later
-                                _generatedTypeToTypeArgumentInfo ??= new Dictionary<MetadataType, TypeArgumentInfo>();
-
-                                if (!_generatedTypeToTypeArgumentInfo.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
-                                {
-                                    var alreadyAssociatedMethod = _generatedTypeToTypeArgumentInfo[generatedType].CreatingMethod;
-                                    logger?.LogWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
-                                }
-                                continue;
-                            }
-
-                            if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(lambdaOrLocalFunction.Name))
-                                continue;
-
-                            if (isStateMachineMember)
-                            {
-                                callGraph.TrackCall((MetadataType)method.OwningType, lambdaOrLocalFunction);
-                            }
-                            else
-                            {
-                                callGraph.TrackCall(method, lambdaOrLocalFunction);
                             }
                         }
                     }
@@ -284,15 +311,7 @@ namespace ILCompiler.Dataflow
                     Debug.Assert(CompilerGeneratedNames.IsGeneratedType(generatedType.Name));
                     Debug.Assert(generatedType == generatedType.GetTypeDefinition());
 
-                    if (_generatedTypeToTypeArgumentInfo?.TryGetValue(generatedType, out var typeInfo) != true)
-                    {
-                        // This can happen for static (non-capturing) closure environments, where more than
-                        // nested function can map to the same closure environment. Since the current functionality
-                        // is based on a one-to-one relationship between environments (types) and methods, this is
-                        // not supported.
-                        return;
-                    }
-
+                    var typeInfo = _generatedTypeToTypeArgumentInfo[generatedType];
                     if (typeInfo.OriginalAttributes is not null)
                     {
                         return;
@@ -337,10 +356,13 @@ namespace ILCompiler.Dataflow
                                 {
                                     owningType = (MetadataType)owningType.GetTypeDefinition();
                                     MapGeneratedTypeTypeParameters(owningType);
-                                    if (_generatedTypeToTypeArgumentInfo.TryGetValue(owningType, out var owningInfo) &&
-                                        owningInfo.OriginalAttributes is { } owningAttrs)
+                                    if (_generatedTypeToTypeArgumentInfo[owningType].OriginalAttributes is { } owningAttrs)
                                     {
                                         userAttrs = owningAttrs[param.Index];
+                                    }
+                                    else
+                                    {
+                                        Debug.Assert(false, "This should be impossible in valid code");
                                     }
                                 }
                             }
@@ -352,26 +374,66 @@ namespace ILCompiler.Dataflow
                     _generatedTypeToTypeArgumentInfo[generatedType] = typeInfo with { OriginalAttributes = typeArgs };
                 }
 
-                MetadataType? ScanForInit(MetadataType stateMachineType, MethodIL body)
+                MetadataType? ScanForInit(MetadataType compilerGeneratedType, MethodIL body)
                 {
                     ILReader reader = new ILReader(body.GetILBytes());
                     while (reader.HasNext)
                     {
                         ILOpcode opcode = reader.ReadILOpcode();
+                        bool handled = false;
+                        MethodDesc? methodOperand = null;
                         switch (opcode)
                         {
-                            case ILOpcode.initobj:
                             case ILOpcode.newobj:
-                                if (body.GetObject(reader.ReadILToken()) is MethodDesc { OwningType: MetadataType owningType }
-                                    && stateMachineType == owningType.GetTypeDefinition())
                                 {
-                                    return owningType;
+                                    methodOperand = body.GetObject(reader.ReadILToken()) as MethodDesc;
+                                    if (methodOperand is MethodDesc { OwningType: MetadataType owningType }
+                                        && compilerGeneratedType == owningType.GetTypeDefinition())
+                                    {
+                                        return owningType;
+                                    }
+                                    handled = true;
+                                }
+                                break;
+
+                            case ILOpcode.ldftn:
+                            case ILOpcode.ldtoken:
+                            case ILOpcode.call:
+                            case ILOpcode.callvirt:
+                                methodOperand = body.GetObject(reader.ReadILToken()) as MethodDesc;
+                                break;
+
+                            case ILOpcode.stsfld:
+                                {
+                                    if (body.GetObject(reader.ReadILToken()) is FieldDesc { OwningType: MetadataType owningType }
+                                        && compilerGeneratedType == owningType.GetTypeDefinition())
+                                    {
+                                        return owningType;
+                                    }
+                                    handled = true;
                                 }
                                 break;
 
                             default:
                                 reader.Skip(opcode);
                                 break;
+                        }
+
+                        // Also look for type substitutions into generic methods
+                        // (such as AsyncTaskMethodBuilder::Start<TStateMachine>).
+                        if (!handled && methodOperand is not null)
+                        {
+                            if (methodOperand != methodOperand.GetMethodDefinition())
+                            {
+                                foreach (var tr in methodOperand.Instantiation)
+                                {
+                                    if (tr is MetadataType && tr != tr.GetTypeDefinition()
+                                        && compilerGeneratedType == tr.GetTypeDefinition())
+                                    {
+                                        return tr as MetadataType;
+                                    }
+                                }
+                            }
                         }
                     }
                     return null;

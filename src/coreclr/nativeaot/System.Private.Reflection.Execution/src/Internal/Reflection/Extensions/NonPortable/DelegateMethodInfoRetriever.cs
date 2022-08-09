@@ -63,10 +63,8 @@ namespace Internal.Reflection.Extensions.NonPortable
                         callTryGetMethod = false;
                         methodHandle = QMethodDefinition.FromObjectAndInt(resolver->Reader, resolver->Handle);
 
-                        RuntimeTypeHandle declaringTypeHandleIgnored;
-                        MethodNameAndSignature nameAndSignatureIgnored;
-                        if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(resolver->GVMMethodHandle, out declaringTypeHandleIgnored, out nameAndSignatureIgnored, out genericMethodTypeArgumentHandles))
-                            throw new MissingRuntimeArtifactException(SR.DelegateGetMethodInfo_NoInstantiation);
+                        if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(resolver->GVMMethodHandle, out _, out _, out genericMethodTypeArgumentHandles))
+                            throw new MissingMetadataException(SR.DelegateGetMethodInfo_NoInstantiation);
                     }
                 }
             }
@@ -79,9 +77,9 @@ namespace Internal.Reflection.Extensions.NonPortable
 
                     string methodDisplayString = RuntimeAugments.TryGetMethodDisplayStringFromIp(ip);
                     if (methodDisplayString == null)
-                        throw new MissingRuntimeArtifactException(SR.DelegateGetMethodInfo_NoDynamic);
+                        throw new MissingMetadataException(SR.DelegateGetMethodInfo_NoDynamic);
                     else
-                        throw new MissingRuntimeArtifactException(SR.Format(SR.DelegateGetMethodInfo_NoDynamic_WithDisplayString, methodDisplayString));
+                        throw new MissingMetadataException(SR.Format(SR.DelegateGetMethodInfo_NoDynamic_WithDisplayString, methodDisplayString));
                 }
             }
             MethodBase methodBase = ReflectionCoreExecution.ExecutionDomain.GetMethod(typeOfFirstParameterIfInstanceDelegate, methodHandle, genericMethodTypeArgumentHandles);

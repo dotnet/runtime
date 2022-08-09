@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
 import { mono_assert, CharPtrNull, DotnetModule, MonoConfig, MonoConfigError, LoadingResource, AssetEntry, ResourceRequest } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
@@ -25,6 +26,7 @@ import { cwraps_internal } from "./exports-internal";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { DotnetPublicAPI } from "./export-types";
 import { BINDING, MONO } from "./net6-legacy/imports";
+import { mono_wasm_init_diagnostics } from "./diagnostics";
 
 let all_assets_loaded_in_memory: Promise<void> | null = null;
 const loaded_files: { url: string, file: string }[] = [];
@@ -130,8 +132,8 @@ function preInit(isCustomStartup: boolean, userPreInit: (() => void)[]) {
         abort_startup(err, true);
         throw err;
     }
-    // this will start immediately but return on first await. 
-    // It will block our `preRun` by afterPreInit promise 
+    // this will start immediately but return on first await.
+    // It will block our `preRun` by afterPreInit promise
     // It will block emscripten `userOnRuntimeInitialized` by pending addRunDependency("mono_pre_init")
     (async () => {
         try {
@@ -196,7 +198,7 @@ async function onRuntimeInitializedAsync(isCustomStartup: boolean, userOnRuntime
             _print_error("MONO_WASM: user callback onRuntimeInitialized() failed", err);
             throw err;
         }
-        // finish 
+        // finish
         await mono_wasm_after_user_runtime_initialized();
     } catch (err) {
         _print_error("MONO_WASM: onRuntimeInitializedAsync() failed", err);
@@ -325,6 +327,10 @@ async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
                     console.warn(`MONO_WASM: The exported symbol ${exportName} could not be found in the emscripten module`);
                 }
             }
+        }
+        // for Blazor, init diagnostics after their "onRuntimeInitalized" sets env variables, but before their postRun callback (which calls mono_wasm_load_runtime)
+        if (MonoWasmThreads) {
+            await mono_wasm_init_diagnostics();
         }
 
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: Initializing mono runtime");
@@ -532,8 +538,10 @@ async function _apply_configuration_from_args() {
 
     if (config.coverageProfilerOptions)
         mono_wasm_init_coverage_profiler(config.coverageProfilerOptions);
-
-    // FIXME await mono_wasm_init_diagnostics(config.diagnosticOptions);
+    // for non-Blazor, init diagnostics after environment variables are set
+    if (MonoWasmThreads) {
+        await mono_wasm_init_diagnostics();
+    }
 }
 
 export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): void {
