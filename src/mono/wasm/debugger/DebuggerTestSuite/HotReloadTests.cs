@@ -22,7 +22,7 @@ namespace DebuggerTests
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
                     Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
-                    "MethodBody1", "StaticMethod1");
+                    "MethodBody1", "StaticMethod1", expectBpResolvedEvent: false);
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
             pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 12, 16, "ApplyUpdateReferencedAssembly.MethodBody1.StaticMethod1");
@@ -40,7 +40,7 @@ namespace DebuggerTests
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
                     Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
-                    "MethodBody2", "StaticMethod1");
+                    "MethodBody2", "StaticMethod1", expectBpResolvedEvent: false);
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
             pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, "ApplyUpdateReferencedAssembly.MethodBody2.StaticMethod1");
@@ -60,7 +60,7 @@ namespace DebuggerTests
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
                     Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
-                    "MethodBody3", "StaticMethod3");
+                    "MethodBody3", "StaticMethod3", expectBpResolvedEvent: false);
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
@@ -108,7 +108,7 @@ namespace DebuggerTests
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
                     Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
-                    "MethodBody4", "StaticMethod4");
+                    "MethodBody4", "StaticMethod4", expectBpResolvedEvent: true);
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 12, "ApplyUpdateReferencedAssembly.MethodBody4.StaticMethod4");

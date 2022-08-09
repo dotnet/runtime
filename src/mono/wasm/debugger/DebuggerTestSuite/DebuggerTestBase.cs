@@ -1397,7 +1397,7 @@ namespace DebuggerTests
             return await WaitFor(Inspector.PAUSE);
         }
 
-        internal async Task<JObject> LoadAssemblyAndTestHotReload(string asm_file, string pdb_file, string asm_file_hot_reload, string class_name, string method_name)
+        internal async Task<JObject> LoadAssemblyAndTestHotReload(string asm_file, string pdb_file, string asm_file_hot_reload, string class_name, string method_name, bool expectBpResolvedEvent)
         {
             byte[] bytes = File.ReadAllBytes(asm_file);
             string asm_base64 = Convert.ToBase64String(bytes);
@@ -1432,9 +1432,11 @@ namespace DebuggerTests
                 expression
             });
 
-            Task scriptParsedTask = WaitForScriptParsedEventsAsync("MethodBody0.cs", "MethodBody1.cs");
+            Task eventTask = expectBpResolvedEvent
+                                ? WaitForBreakpointResolvedEvent()
+                                : WaitForScriptParsedEventsAsync("MethodBody0.cs", "MethodBody1.cs");
             (await cli.SendCommand("Runtime.evaluate", load_assemblies, token)).AssertOk();
-            await scriptParsedTask;
+            await eventTask;
 
             var run_method = JObject.FromObject(new
             {
