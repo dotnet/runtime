@@ -2171,7 +2171,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
 
     VARSET_TP computedLive(VarSetOps::MakeCopy(compiler, block->bbLiveOut));
 
-    bool                       foundDiff       = false;
+    bool                       foundDiff          = false;
     RefPositionReverseIterator currentRefPosition = refPositions.rbegin();
     for (; currentRefPosition->refType != RefTypeBB; currentRefPosition++)
     {
@@ -4612,7 +4612,7 @@ void LinearScan::allocateRegisters()
 
     for (RefPosition& currentRefPosition : refPositions)
     {
-        RefPosition* nextRefPosition    = currentRefPosition.nextRefPosition;
+        RefPosition* nextRefPosition = currentRefPosition.nextRefPosition;
 
         // TODO: Can we combine this with the freeing of registers below? It might
         // mess with the dump, since this was previously being done before the call below
@@ -5214,7 +5214,7 @@ void LinearScan::allocateRegisters()
 
                 if (keepAssignment == false)
                 {
-                    RegRecord* physRegRecord               = getRegisterRecord(currentInterval->physReg);
+                    RegRecord* physRegRecord              = getRegisterRecord(currentInterval->physReg);
                     currentRefPosition.registerAssignment = allRegs(currentInterval->registerType);
                     currentRefPosition.isFixedRegRef      = false;
                     unassignPhysRegNoSpill(physRegRecord);
@@ -5255,7 +5255,7 @@ void LinearScan::allocateRegisters()
                     clearConstantReg(assignedRegister, currentInterval->registerType);
                 }
                 currentRefPosition.moveReg = true;
-                assignedRegister            = REG_NA;
+                assignedRegister           = REG_NA;
                 currentRefPosition.registerAssignment &= ~assignedRegBit;
                 setIntervalAsSplit(currentInterval);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_MOVE_REG, currentInterval, assignedRegister));
@@ -5418,7 +5418,7 @@ void LinearScan::allocateRegisters()
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
                 currentRefPosition.registerAssignment = RBM_NONE;
                 currentRefPosition.reload             = false;
-                currentInterval->isActive              = false;
+                currentInterval->isActive             = false;
                 setIntervalAsSpilled(currentInterval);
             }
 #ifdef DEBUG
@@ -10390,10 +10390,10 @@ void LinearScan::verifyFinalAllocation()
     LsraLocation currentLocation             = MinLocation;
     for (RefPosition& currentRefPosition : refPositions)
     {
-        Interval*    interval           = nullptr;
-        RegRecord*   regRecord          = nullptr;
-        regNumber    regNum             = REG_NA;
-        activeRefPosition               = &currentRefPosition;
+        Interval*  interval  = nullptr;
+        RegRecord* regRecord = nullptr;
+        regNumber  regNum    = REG_NA;
+        activeRefPosition    = &currentRefPosition;
 
         if (currentRefPosition.refType != RefTypeBB)
         {
