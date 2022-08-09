@@ -37,11 +37,13 @@ namespace System.Security.Cryptography.Cose
         /// <summary>
         /// Gets the protected header parameters associated to this message.
         /// </summary>
+        /// <value>A collection of protected header parameters associated to this message.</value>
         public CoseHeaderMap ProtectedHeaders => _protectedHeaders;
 
         /// <summary>
         /// Gets the unprotected header parameters associated to this message.
         /// </summary>
+        /// <value>A collection of unprotected header parameters associated to this message.</value>
         public CoseHeaderMap UnprotectedHeaders => _unprotectedHeaders;
 
         internal CoseMessage(CoseHeaderMap protectedHeader, CoseHeaderMap unprotectedHeader, byte[]? content, byte[] encodedProtectedHeader, bool isTagged)
@@ -56,6 +58,7 @@ namespace System.Security.Cryptography.Cose
         /// <summary>
         /// Gets the content of this message or <see langword="null"/> if the content was detached from the message.
         /// </summary>
+        /// <value>A region of memory that contains the content of this message or <see langword="null"/> if the content was detached from the message.</value>
         // Sign and MAC also refer to the content as payload.
         // Encrypt also refers to the content as cyphertext.
         public ReadOnlyMemory<byte>? Content
@@ -77,11 +80,10 @@ namespace System.Security.Cryptography.Cose
         /// <summary>
         /// Decodes a CBOR payload as a COSE_Sign1 message.
         /// </summary>
-        /// <param name="cborPayload">The sequence of CBOR-encoded bytes to decode.</param>
-        /// <returns>A <see cref="CoseSign1Message"/> representation of <paramref name="cborPayload"/>.</returns>
+        /// <param name="cborPayload">The sequence of bytes to decode.</param>
+        /// <returns>The decoded message.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="cborPayload"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentException"><paramref name="cborPayload"/> contains trailing data after COSE_Sign1 was complete.</exception>
-        /// <exception cref="CryptographicException">Decodification failed, see the inner exception for more details.</exception>
+        /// <exception cref="CryptographicException"><paramref name="cborPayload"/> could not be decoded as a COSE_Sign1 message.</exception>
         public static CoseSign1Message DecodeSign1(byte[] cborPayload)
         {
             if (cborPayload is null)
@@ -94,9 +96,8 @@ namespace System.Security.Cryptography.Cose
         /// Decodes a CBOR payload as a COSE_Sign1 message.
         /// </summary>
         /// <param name="cborPayload">The sequence of CBOR-encoded bytes to decode.</param>
-        /// <returns>A <see cref="CoseSign1Message"/> representation of <paramref name="cborPayload"/>.</returns>
-        /// <exception cref="ArgumentException"><paramref name="cborPayload"/> contains trailing data after COSE_Sign1 was complete.</exception>
-        /// <exception cref="CryptographicException">Decodification failed, see the inner exception for more details.</exception>
+        /// <returns>The decoded message.</returns>
+        /// <exception cref="CryptographicException"><paramref name="cborPayload"/> could not be decoded as a COSE_Sign1 message.</exception>
         public static CoseSign1Message DecodeSign1(ReadOnlySpan<byte> cborPayload)
         {
             unsafe
@@ -133,7 +134,10 @@ namespace System.Security.Cryptography.Cose
                 var unprotectedHeader = new CoseHeaderMap();
                 DecodeUnprotectedBucket(reader, unprotectedHeader);
 
-                ThrowIfDuplicateLabels(protectedHeader, unprotectedHeader);
+                if (ContainDuplicateLabels(protectedHeader, unprotectedHeader))
+                {
+                    throw new CryptographicException(SR.Sign1SignHeaderDuplicateLabels);
+                }
 
                 byte[]? payload = DecodePayload(reader);
                 byte[] signature = DecodeSignature(reader);
@@ -141,7 +145,7 @@ namespace System.Security.Cryptography.Cose
 
                 if (reader.BytesRemaining != 0)
                 {
-                    throw new ArgumentException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeMessageContainedTrailingData));
+                    throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeMessageContainedTrailingData));
                 }
 
                 return new CoseSign1Message(protectedHeader, unprotectedHeader, payload, signature, protectedHeaderAsBstr, tag.HasValue);
@@ -155,11 +159,10 @@ namespace System.Security.Cryptography.Cose
         /// <summary>
         /// Decodes a CBOR payload as a COSE_Sign message.
         /// </summary>
-        /// <param name="cborPayload">The sequence of CBOR-encoded bytes to decode.</param>
-        /// <returns>A <see cref="CoseMultiSignMessage"/> representation of <paramref name="cborPayload"/>.</returns>
+        /// <param name="cborPayload">The sequence of bytes to decode.</param>
+        /// <returns>The decoded message.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="cborPayload"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentException"><paramref name="cborPayload"/> contains trailing data after COSE_Sign was complete.</exception>
-        /// <exception cref="CryptographicException">Decodification failed, see the inner exception for more details.</exception>
+        /// <exception cref="CryptographicException"><paramref name="cborPayload"/> could not be decoded as a COSE_Sign message.</exception>
         public static CoseMultiSignMessage DecodeMultiSign(byte[] cborPayload)
         {
             if (cborPayload is null)
@@ -171,10 +174,9 @@ namespace System.Security.Cryptography.Cose
         /// <summary>
         /// Decodes a CBOR payload as a COSE_Sign message.
         /// </summary>
-        /// <param name="cborPayload">The sequence of CBOR-encoded bytes to decode.</param>
-        /// <returns>A <see cref="CoseMultiSignMessage"/> representation of <paramref name="cborPayload"/>.</returns>
-        /// <exception cref="ArgumentException"><paramref name="cborPayload"/> contains trailing data after COSE_Sign was complete.</exception>
-        /// <exception cref="CryptographicException">Decodification failed, see the inner exception for more details.</exception>
+        /// <param name="cborPayload">The sequence of bytes to decode.</param>
+        /// <returns>The decoded message.</returns>
+        /// <exception cref="CryptographicException"><paramref name="cborPayload"/> could not be decoded as a COSE_Sign message.</exception>
         public static CoseMultiSignMessage DecodeMultiSign(ReadOnlySpan<byte> cborPayload)
         {
             unsafe
@@ -211,7 +213,10 @@ namespace System.Security.Cryptography.Cose
                 var unprotectedHeaders = new CoseHeaderMap();
                 DecodeUnprotectedBucket(reader, unprotectedHeaders);
 
-                ThrowIfDuplicateLabels(protectedHeaders, unprotectedHeaders);
+                if (ContainDuplicateLabels(protectedHeaders, unprotectedHeaders))
+                {
+                    throw new CryptographicException(SR.Sign1SignHeaderDuplicateLabels);
+                }
 
                 byte[]? payload = DecodePayload(reader);
                 List<CoseSignature> signatures = DecodeCoseSignaturesArray(reader, encodedProtectedHeaders);
@@ -220,7 +225,7 @@ namespace System.Security.Cryptography.Cose
 
                 if (reader.BytesRemaining != 0)
                 {
-                    throw new ArgumentException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeMessageContainedTrailingData));
+                    throw new CryptographicException(SR.Format(SR.DecodeErrorWhileDecoding, SR.DecodeMessageContainedTrailingData));
                 }
 
                 return new CoseMultiSignMessage(protectedHeaders, unprotectedHeaders, payload, signatures, encodedProtectedHeaders, tag.HasValue);
@@ -250,7 +255,12 @@ namespace System.Security.Cryptography.Cose
 
             var protectedHeaderReader = new CborReader(protectedHeaderAsBstr);
             DecodeBucket(protectedHeaderReader, headerParameters);
-            ThrowIfMissingCriticalHeaders(headerParameters);
+
+            if (MissingCriticalHeaders(headerParameters, out string? labelName))
+            {
+                throw new CryptographicException(SR.Format(SR.CriticalHeaderMissing, labelName));
+            }
+
             headerParameters.IsReadOnly = true;
 
             if (protectedHeaderReader.BytesRemaining != 0)
@@ -329,7 +339,10 @@ namespace System.Security.Cryptography.Cose
                 var unprotectedHeaders = new CoseHeaderMap();
                 DecodeUnprotectedBucket(reader, unprotectedHeaders);
 
-                ThrowIfDuplicateLabels(protectedHeaders, unprotectedHeaders);
+                if (ContainDuplicateLabels(protectedHeaders, unprotectedHeaders))
+                {
+                    throw new CryptographicException(SR.Sign1SignHeaderDuplicateLabels);
+                }
 
                 byte[] signatureBytes = DecodeSignature(reader);
 
@@ -473,28 +486,31 @@ namespace System.Security.Cryptography.Cose
         }
 
         // Validate duplicate labels https://datatracker.ietf.org/doc/html/rfc8152#section-3.
-        internal static void ThrowIfDuplicateLabels(CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders)
+        internal static bool ContainDuplicateLabels(CoseHeaderMap? protectedHeaders, CoseHeaderMap? unprotectedHeaders)
         {
             if (protectedHeaders == null || unprotectedHeaders == null)
             {
-                return;
+                return false;
             }
 
             foreach (KeyValuePair<CoseHeaderLabel, CoseHeaderValue> kvp in protectedHeaders)
             {
                 if (unprotectedHeaders.ContainsKey(kvp.Key))
                 {
-                    throw new CryptographicException(SR.Sign1SignHeaderDuplicateLabels);
+                    return true;
                 }
             }
+
+            return false;
         }
 
-        internal static void ThrowIfMissingCriticalHeaders(CoseHeaderMap? protectedHeders)
+        internal static bool MissingCriticalHeaders(CoseHeaderMap? protectedHeders, out string? labelName)
         {
             if (protectedHeders == null ||
                 !protectedHeders.TryGetValue(CoseHeaderLabel.CriticalHeaders, out CoseHeaderValue critHeaderValue))
             {
-                return;
+                labelName = null;
+                return false;
             }
 
             var reader = new CborReader(critHeaderValue.EncodedValue);
@@ -512,16 +528,20 @@ namespace System.Security.Cryptography.Cose
 
                 if (!protectedHeders.ContainsKey(label))
                 {
-                    throw new CryptographicException(SR.Format(SR.CriticalHeaderMissing, label.LabelName));
+                    labelName = label.LabelName;
+                    return true;
                 }
             }
+
+            labelName = null;
+            return false;
         }
 
         /// <summary>
         /// Encodes this <see cref="CoseMessage"/> as CBOR.
         /// </summary>
         /// <returns>The message encoded as CBOR.</returns>
-        /// <exception cref="CryptographicException">Protected and unprotected buckets contain duplicate labels.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="ProtectedHeaders" /> and <see cref="UnprotectedHeaders" /> collections have one or more labels in common.</exception>
         public byte[] Encode()
         {
             byte[] buffer = new byte[GetEncodedLength()];
@@ -538,7 +558,7 @@ namespace System.Security.Cryptography.Cose
         /// <returns>The number of bytes written to <paramref name="destination" />.</returns>
         /// <remarks>Use <see cref="GetEncodedLength()"/> to determine how many bytes result in encoding this message.</remarks>
         /// <exception cref="ArgumentException"><paramref name="destination"/> is too small to hold the value.</exception>
-        /// <exception cref="CryptographicException">Protected and unprotected buckets contain duplicate labels.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="ProtectedHeaders" /> and <see cref="UnprotectedHeaders" /> collections have one or more labels in common.</exception>
         /// <seealso cref="GetEncodedLength()"/>
         public int Encode(Span<byte> destination)
         {
@@ -551,13 +571,13 @@ namespace System.Security.Cryptography.Cose
         }
 
         /// <summary>
-        /// When overriden in a derived class, encodes this <see cref="CoseMessage"/> as CBOR.
+        /// When overriden in a derived class, attempts to encode this message into the specified buffer.
         /// </summary>
         /// <param name="destination">The buffer in which to write the encoded value.</param>
-        /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination" />.</param>
+        /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination" />. This parameter is treated as uninitialized.</param>
         /// <returns><see langword="true" /> if <paramref name="destination" /> had sufficient length to receive the value; otherwise, <see langword="false" />.</returns>
         /// <remarks>Use <see cref="GetEncodedLength()"/> to determine how many bytes result in encoding this message.</remarks>
-        /// <exception cref="CryptographicException">Protected and unprotected buckets contain duplicate labels.</exception>
+        /// <exception cref="InvalidOperationException">The <see cref="ProtectedHeaders" /> and <see cref="UnprotectedHeaders" /> collections have one or more labels in common.</exception>
         /// <seealso cref="GetEncodedLength()"/>
         public abstract bool TryEncode(Span<byte> destination, out int bytesWritten);
 

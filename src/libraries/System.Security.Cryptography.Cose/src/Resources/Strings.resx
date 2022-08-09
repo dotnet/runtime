@@ -130,10 +130,10 @@
     <value>Content was included in the message (embedded message) and yet another content was provided for verification.</value>
   </data>
   <data name="CoseHeaderMapArgumentCoseHeaderValueIncorrect" xml:space="preserve">
-    <value>Not a valid CBOR encoded value on CoseHeaderValue on header '{0}', see inner exception for details.</value>
+    <value>Not a valid CBOR-encoded value on CoseHeaderValue on header '{0}', see inner exception for details.</value>
   </data>
   <data name="CoseHeaderMapCborEncodedValueNotValid" xml:space="preserve">
-    <value>Not a valid CBOR encoded value, it must be a single value with no trailing data.</value>
+    <value>Not a valid CBOR-encoded value, it must be a single value with no trailing data.</value>
   </data>
   <data name="CoseHeaderMapDecodedMapIsReadOnlyCannotSetValue" xml:space="preserve">
     <value>Decoded map is read only, headers cannot be added nor deleted.</value>
@@ -142,7 +142,7 @@
     <value>Header '{0}' does not accept the specified value.</value>
   </data>
   <data name="CoseHeaderValueErrorWhileDecoding" xml:space="preserve">
-    <value>Error while decoding CBOR encoded value, see inner exception for details.</value>
+    <value>Error while decoding CBOR-encoded value, see inner exception for details.</value>
   </data>
   <data name="CoseSignerRSAKeyNeedsPadding" xml:space="preserve">
     <value>RSA key needs a signature padding.</value>
