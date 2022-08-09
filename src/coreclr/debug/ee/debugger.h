@@ -1751,9 +1751,13 @@ extern "C" void __stdcall SignalHijackCompleteFlare(void);
 extern "C" void __stdcall ExceptionNotForRuntimeFlare(void);
 extern "C" void __stdcall NotifyRightSideOfSyncCompleteFlare(void);
 extern "C" void __stdcall NotifySecondChanceReadyForDataFlare(void);
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
 extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, TADDR Rip, TADDR Rsp);
+#else
+#error Platform not supported
 #endif
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 /* ------------------------------------------------------------------------ *
  * Debugger class

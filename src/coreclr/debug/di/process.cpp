@@ -11155,11 +11155,12 @@ void CordbProcess::FilterClrNotification(
     }
 }
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 {
     LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded\n"));
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
     HandleHolder hThread = OpenThread(
         THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME,
         FALSE, // thread handle is not inheritable.
@@ -11302,8 +11303,11 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         LOG((LF_CORDB, LL_INFO10000, "RS HandleSetThreadContextNeeded - Unexpected result from SetThreadContext\n"));
         ThrowHR(HRESULT_FROM_WIN32(lastError));
     }
-}
+#else
+    #error Platform not supported
 #endif
+}
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 //
 // If the thread has an unhandled managed exception, hijack it.
@@ -11528,7 +11532,7 @@ HRESULT CordbProcess::Filter(
 
             // holder will invoke DeleteIPCEventHelper(pManagedEvent).
         }
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
         else if (dwFirstChance && pRecord->ExceptionCode == STATUS_BREAKPOINT && pRecord->ExceptionAddress == m_runtimeOffsets.m_setThreadContextNeededAddr)
         {
             // this is a request to set the thread context out of process

@@ -829,20 +829,22 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     // and return because we are potentially writing new vars onto the stack.
     pCurThread->SetFilterContext( NULL );
 
-#if defined(TARGET_X86)
-    ResumeAtJit(pContext, oldSP);
-#elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     if (g_pDebugInterface->IsOutOfProcessSetContextEnabled())
     {
         g_pDebugInterface->SendSetThreadContextNeeded(pContext);
     }
     else
     {
-        ClrRestoreNonvolatileContext(pContext);
-    }
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
+#if defined(TARGET_X86)
+    ResumeAtJit(pContext, oldSP);
 #else
     ClrRestoreNonvolatileContext(pContext);
 #endif
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    }
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
     // At this point we shouldn't have failed, so this is genuinely erroneous.
     LOG((LF_ENC, LL_ERROR, "**Error** EnCModule::ResumeInUpdatedFunction returned from ResumeAtJit"));

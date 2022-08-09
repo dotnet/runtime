@@ -972,7 +972,7 @@ Debugger::Debugger()
     // and comment the changes
     m_mdDataStructureVersion = 1;
     m_fOutOfProcessSetContextEnabled =
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64) && !defined(DACCESS_COMPILE)
+#if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
         Thread::AreCetShadowStacksEnabled() || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_OutOfProcessSetContext) != 0;
 #else
         FALSE;
@@ -5558,7 +5558,7 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
         }
     }
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64) && !defined(DACCESS_COMPILE)
+#if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
     if (retVal && fIsVEH)
     {
         SendSetThreadContextNeeded(context);
@@ -13654,7 +13654,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     if (pFcd->action == HIJACK_ACTION_EXIT_HANDLED)
     {
         SPEW(fprintf(stderr, "0x%x D::FCHF: exiting with CONTINUE_EXECUTION\n", tid));
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64) && !defined(DACCESS_COMPILE)
+#if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
         if (fIsVEH)
         {
             SendSetThreadContextNeeded(pContext);
@@ -16654,7 +16654,7 @@ void Debugger::StartCanaryThread()
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 void Debugger::SendSetThreadContextNeeded(CONTEXT *context)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -16663,6 +16663,7 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context)
     if (!m_fOutOfProcessSetContextEnabled)
         return;
 
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
     DWORD contextFlags = context->ContextFlags;
     DWORD contextSize = 0;
 
@@ -16715,6 +16716,9 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context)
     {
     }
     EX_END_CATCH(SwallowAllExceptions);
+#else
+    #error Platform not supported
+#endif
 
     LOG((LF_CORDB, LL_INFO10000, "D::SSTCN SetThreadContextNeededFlare returned\n"));
     _ASSERTE(!"We failed to SetThreadContext from out of process!");
@@ -16727,14 +16731,14 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
 #else
 void Debugger::SendSetThreadContextNeeded(CONTEXT* context)
 {
-    _ASSERTE(!"SendSetThreadContextNeeded is not supported on this platform");
+    _ASSERTE(!"SendSetThreadContextNeeded is not enabled on this platform");
 }
 
 BOOL Debugger::IsOutOfProcessSetContextEnabled()
 {
     return FALSE;
 }
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 #endif // DACCESS_COMPILE
 
 #endif //DEBUGGING_SUPPORTED

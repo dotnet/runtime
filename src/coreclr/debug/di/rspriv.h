@@ -3280,7 +3280,7 @@ public:
 #endif
     }
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     void HandleSetThreadContextNeeded(DWORD dwThreadId);
 #endif
 

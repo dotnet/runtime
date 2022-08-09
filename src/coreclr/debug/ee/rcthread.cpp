@@ -486,8 +486,12 @@ HRESULT DebuggerRCThread::SetupRuntimeOffsets(DebuggerIPCControlBlock * pDebugge
     pDebuggerRuntimeOffsets->m_debuggerWordTLSIndex = g_debuggerWordTLSIndex;
 #endif // FEATURE_INTEROP_DEBUGGING
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+#ifdef TARGET_WINDOWS
     pDebuggerRuntimeOffsets->m_setThreadContextNeededAddr = (void*) SetThreadContextNeededFlare;
+#else
+    #error Platform not supported
+#endif
 #else
     pDebuggerRuntimeOffsets->m_setThreadContextNeededAddr = NULL;
 #endif
