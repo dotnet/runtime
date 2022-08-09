@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<!--  Licensed to the .NET Foundation under one or more agreements. -->
+<!-- The .NET Foundation licenses this file to you under the MIT license. -->
+<html>
+
+<head>
+    <title>Wasm Browser Sample</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="modulepreload" href="./main.js" />
+    <link rel="modulepreload" href="./dotnet.js" />
+</head>
+
+<body>
+    <h3 id="header">Wasm Browser Threading Sample</h3>
+    <div>
+        <label for="inputN">N:</label> <input type="number" id="inputN" value="29" disabled />
+    </div>
+    This calculation will take a long time: <span id="out"></span>
+    <div>
+        Progress: <span id="progressElement" style="font-size: 500%"> </span>
+    </div>
+    <script type='module' src="./main.js"></script>
+</body>
+
+</html>

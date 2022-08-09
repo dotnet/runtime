@@ -1,16 +1,19 @@
 import { App } from './app-support.mjs'
 
-App.main = async function (applicationArguments) {
-
-    App.IMPORTS.node = {
-        process : {
-            version: () => globalThis.process.version
+async function main(applicationArguments) {
+    App.runtime.setModuleImports("main.mjs", {
+        node: {
+            process: {
+                version: () => globalThis.process.version
+            }
         }
-    };
+    });
 
-    const exports = await App.MONO.mono_wasm_get_assembly_exports("console.0.dll");
+    const exports = await App.runtime.getAssemblyExports("console.0.dll");
     const text = exports.MyClass.Greeting();
     console.log(text);
 
-    return await App.MONO.mono_run_main("console.0.dll", applicationArguments);
+    return await App.runtime.runMain("console.0.dll", applicationArguments);
 }
+
+App.run(main);

@@ -73,13 +73,13 @@ internal static partial class Interop
             byte usedDefault;
             IntPtr ptr = GetX509RootStorePath_private(&usedDefault);
             defaultPath = (usedDefault != 0);
-            return Marshal.PtrToStringAnsi(ptr);
+            return Marshal.PtrToStringUTF8(ptr);
         }
 
         internal static unsafe string? GetX509RootStoreFile()
         {
             byte unused;
-            return Marshal.PtrToStringAnsi(GetX509RootStoreFile_private(&unused));
+            return Marshal.PtrToStringUTF8(GetX509RootStoreFile_private(&unused));
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509RootStorePath")]
