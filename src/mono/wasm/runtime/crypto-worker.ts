@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Module, runtimeHelpers } from "./imports";
+import { resolve_asset_path } from "./startup";
 import { mono_assert } from "./types";
 
 class OperationFailedError extends Error { }
@@ -107,7 +108,10 @@ export function init_crypto(): void {
         console.debug("MONO_WASM: Initializing Crypto WebWorker");
 
         const chan = LibraryChannel.create(1024); // 1024 is the buffer size in char units.
-        const worker = new Worker("dotnet-crypto-worker.js");
+
+        const asset = resolve_asset_path("js-module-crypto");
+        mono_assert(asset && asset.resolvedUrl, "Can't find js-module-crypto");
+        const worker = new Worker(asset.resolvedUrl);
         mono_wasm_crypto = {
             channel: chan,
             worker: worker,
