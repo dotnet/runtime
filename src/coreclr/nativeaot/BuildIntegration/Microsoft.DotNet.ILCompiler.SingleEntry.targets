@@ -37,6 +37,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- If called via package instead of the SDK, Update the runtime package version to match the build package-->
     <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" Condition="@(PackageReference->'%(Identity)')=='Microsoft.DotNet.ILCompiler'">
         <ILCompilerPackVersion> @(PackageReference->'%(Version)')</ILCompilerPackVersion>
     </KnownILCompilerPack>
@@ -54,6 +55,6 @@
 
   </Target>
 
-  <Import Project="$(MSBuildThisFileDirectory)\Microsoft.NETCore.Native.targets" Condition="'$(TestNativeAot)' != 'true'"/>
+  <Import Project="$(MSBuildThisFileDirectory)\Microsoft.NETCore.Native.targets"/>
 
 </Project>
