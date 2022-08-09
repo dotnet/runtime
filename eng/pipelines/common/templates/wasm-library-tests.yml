@@ -54,7 +54,7 @@ jobs:
         additionalSteps:
           - ${{ if eq(parameters.buildAndRunWasi, true) }}:
             - script: >-
-                make -C src/mono/wasi provision-deps all && \
+                make -C src/mono/wasi provision-deps all &&
                 make -C src/mono/wasi/sample/console run
               name: build_wasi
               displayName: Build Wasi, and run a sample
