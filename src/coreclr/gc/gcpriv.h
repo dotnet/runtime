@@ -1225,7 +1225,7 @@ public:
     uint8_t *queue_mark(uint8_t *o);
     uint8_t *queue_mark(uint8_t *o, int condemned_gen);
 
-    uint8_t* drain();
+    uint8_t* get_next_marked();
 
     ~mark_queue_t();
 };

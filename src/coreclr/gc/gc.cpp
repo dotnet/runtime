@@ -23696,7 +23696,7 @@ uint8_t *mark_queue_t::queue_mark(uint8_t *o, int condemned_gen)
 
 // retrieve a newly marked object from the queue
 // returns nullptr if there is no such object
-uint8_t* mark_queue_t::drain()
+uint8_t* mark_queue_t::get_next_marked()
 {
     size_t slot_index = curr_slot_index;
     size_t empty_slot_count = 0;
@@ -24387,7 +24387,7 @@ void gc_heap::drain_mark_queue ()
 #endif //MULTIPLE_HEAPS
 
     uint8_t* o;
-    while ((o = mark_queue.drain()) != nullptr)
+    while ((o = mark_queue.get_next_marked()) != nullptr)
     {
         m_boundary (o);
         size_t s = size (o);
