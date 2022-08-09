@@ -1239,6 +1239,8 @@ class gc_heap
 
     friend void PopulateDacVars(GcDacVars *gcDacVars);
 
+    friend class relocate_queue;
+
 #ifdef MULTIPLE_HEAPS
     typedef void (gc_heap::* card_fn) (uint8_t**, int);
 #define call_fn(this_arg,fn) (this_arg->*fn)
@@ -2964,6 +2966,7 @@ protected:
         uint8_t* last_plug;
         BOOL is_shortened;
         mark* pinned_plug_entry;
+        relocate_queue *reloc_queue;
     };
 
     PER_HEAP
@@ -2977,7 +2980,7 @@ protected:
     void check_demotion_helper (uint8_t** pval, uint8_t* parent_obj);
 
     PER_HEAP
-    void relocate_survivor_helper (uint8_t* plug, uint8_t* plug_end);
+    void relocate_survivor_helper (relocate_queue* reloc_queue, uint8_t* plug, uint8_t* plug_end);
 
     PER_HEAP
     void verify_pins_with_post_plug_info (const char* msg);
@@ -2988,10 +2991,10 @@ protected:
 #endif //COLLECTIBLE_CLASS
 
     PER_HEAP
-    void relocate_shortened_survivor_helper (uint8_t* plug, uint8_t* plug_end, mark* pinned_plug_entry);
+    void relocate_shortened_survivor_helper (relocate_queue* reloc_queue, uint8_t* plug, uint8_t* plug_end, mark* pinned_plug_entry);
 
     PER_HEAP
-    void relocate_obj_helper (uint8_t* x, size_t s);
+    void relocate_obj_helper (relocate_queue* reloc_queue, uint8_t* x, size_t s);
 
     PER_HEAP
     void reloc_ref_in_shortened_obj (uint8_t** address_to_set_card, uint8_t** address_to_reloc);
@@ -3003,7 +3006,8 @@ protected:
     void relocate_shortened_obj_helper (uint8_t* x, size_t s, uint8_t* end, mark* pinned_plug_entry, BOOL is_pinned);
 
     PER_HEAP
-    void relocate_survivors_in_plug (uint8_t* plug, uint8_t* plug_end,
+    void relocate_survivors_in_plug (relocate_queue *reloc_queue,
+                                     uint8_t* plug, uint8_t* plug_end,
                                      BOOL check_last_object_p,
                                      mark* pinned_plug_entry);
     PER_HEAP
@@ -5492,8 +5496,15 @@ struct plug
 class pair
 {
 public:
-    short left;
-    short right;
+    union
+    {
+        struct
+        {
+            short left;
+            short right;
+        };
+        short child[2];
+    };
 };
 
 //Note that these encode the fact that plug_skew is a multiple of uint8_t*.

@@ -26365,6 +26365,12 @@ short node_right_child(uint8_t* node)
 }
 
 inline
+short node_child(uint8_t* node, int child_index)
+{
+    return child_from_short(((plug_and_pair*)node)[-1].m_pair.child[child_index]);
+}
+
+inline
 void set_node_right_child(uint8_t* node, ptrdiff_t val)
 {
     assert (val > -(ptrdiff_t)brick_size);
@@ -31610,6 +31616,294 @@ bool gc_heap::frozen_object_p (Object* obj)
 }
 #endif // FEATURE_BASICFREEZE
 
+class relocate_queue
+{
+    struct relocate_slot
+    {
+        enum state : uint8_t
+        {
+            EMPTY,
+            TREE_SEARCH,
+        };
+        state       s;
+        int8_t      parent_gen;
+        int         candidate_offset;
+        uint8_t**   addr_to_relocate;
+        uint8_t*    tree;
+    };
+
+    static const size_t  slot_count = 16;
+    relocate_slot slot_table[slot_count];
+    gc_heap*      heap;
+    relocate_slot*curr_slot;
+
+#ifdef TRACE_GC
+    size_t        num_relocations;          // how many times queue_reloc was called
+    size_t        num_tree_searches;        // how many times we decided to search the tree
+    size_t        num_tree_search_steps;    // how many steps the tree search took
+#endif //TRACE_GC
+
+    FORCEINLINE
+    void check_if_card_needed(int parent_gen, uint8_t* new_child_addr, uint8_t** addr_to_set_card)
+    {
+#ifdef USE_REGIONS
+        if (parent_gen >= soh_gen1)
+        {
+            int child_object_plan_gen = gc_heap::get_region_plan_gen_num (new_child_addr);
+
+            if (child_object_plan_gen < parent_gen)
+            {
+                heap->set_card (heap->card_of ((uint8_t*)addr_to_set_card));
+            }
+
+            dprintf (3, ("SCS %d, %d", child_object_plan_gen, parent_gen));
+        }
+        else
+        {
+            bool child_obj_demoted_p = heap->is_region_demoted (new_child_addr);
+
+            if (child_obj_demoted_p)
+            {
+                heap->set_card (heap->card_of ((uint8_t*)addr_to_set_card));
+            }
+
+            int child_object_plan_gen = heap->get_region_plan_gen_num (new_child_addr);
+            dprintf (3, ("SC %d (%s)", child_object_plan_gen, (child_obj_demoted_p ? "D" : "ND")));
+        }
+#else
+        assert(!"NYI - segments");
+#endif
+    }
+
+    FORCEINLINE
+    relocate_slot::state run(relocate_slot* slot)
+    {
+        uint8_t* new_child_addr;
+        assert(slot->s == relocate_slot::TREE_SEARCH);
+        uint8_t* tree = slot->tree;
+        uint8_t* candidate = tree + slot->candidate_offset;
+        uint8_t* old_child_addr = *slot->addr_to_relocate;
+#ifdef TRACE_GC
+        num_tree_search_steps++;
+#endif // TRACE_GC
+        if (tree != old_child_addr)
+        {
+            int right = tree < old_child_addr;
+            int cn = node_child(tree, right);
+            candidate = right ? tree : candidate;
+            if (!cn)
+            {
+                goto found;
+            }
+
+            tree = tree + cn;
+            assert((((size_t)tree) & (sizeof(tree)-1)) == 0);
+            Prefetch (&((plug_and_pair*)tree)[-1].m_pair.left);
+            slot->tree = tree;
+            assert((int)(candidate - tree) == (candidate - tree));
+            slot->candidate_offset = (int)(candidate - tree);
+            return relocate_slot::TREE_SEARCH;
+        }
+    found:
+        candidate = (old_child_addr < candidate) ? tree : candidate;
+        candidate = (tree <= old_child_addr) ? tree : candidate;
+        if (candidate <= old_child_addr)
+        {
+            new_child_addr = old_child_addr + node_relocation_distance (candidate);
+        }
+        else
+        {
+            if (node_left_p (candidate))
+            {
+                dprintf(3,(" L: %Ix", (size_t)candidate));
+                new_child_addr = (old_child_addr +
+                                    (node_relocation_distance (candidate) +
+                                        node_gap_size (candidate)));
+            }
+            else
+            {
+                size_t  brick = heap->brick_of (candidate);
+                brick = brick - 1;
+                int brick_entry = heap->brick_table [ brick ];
+                while (brick_entry < 0)
+                {
+                    brick = (brick + brick_entry);
+                    brick_entry =  heap->brick_table [ brick ];
+                }
+                slot->tree = heap->brick_address (brick) + brick_entry-1;
+                assert((((size_t)slot->tree) & (sizeof(slot->tree)-1)) == 0);
+                slot->candidate_offset = 0;
+                Prefetch (&((plug_and_pair*)slot->tree)[-1].m_pair.left);
+                return relocate_slot::TREE_SEARCH;
+            }
+        }
+#ifdef _DEBUG
+        {
+            uint8_t* child_addr = *slot->addr_to_relocate;
+#ifdef MULTIPLE_HEAPS
+            int thread = heap->heap_number;
+#endif // MULTIPLE_HEAPS
+            heap->relocate_address(&child_addr THREAD_NUMBER_ARG);
+            assert(new_child_addr == child_addr);
+
+            if (new_child_addr != child_addr)
+            {
+                GCToOSInterface::DebugBreak();
+            }
+        }
+#endif //_DEBUG
+        dprintf (4, (ThreadStressLog::gcRelocateReferenceMsg(), slot->addr_to_relocate, old_child_addr, new_child_addr));
+        *slot->addr_to_relocate = new_child_addr;
+        check_if_card_needed(slot->parent_gen, new_child_addr, slot->addr_to_relocate);
+        return (slot->s = relocate_slot::EMPTY);
+    }
+public:
+    relocate_queue(gc_heap* _heap) : heap(_heap)
+    {
+#ifdef TRACE_GC
+        num_relocations = 0;
+        num_tree_searches = 0;
+        num_tree_search_steps = 0;
+#endif
+        for (size_t slot = 0; slot < slot_count; slot++)
+        {
+            slot_table[slot].s = relocate_slot::EMPTY;
+        }
+        curr_slot = slot_table;
+    }
+
+    ~relocate_queue()
+    {
+        bool done;
+        do
+        {
+            done = true;
+            for (size_t i = 0; i < slot_count; i++)
+            {
+                if (slot_table[i].s != relocate_slot::EMPTY)
+                {
+                    run(&slot_table[i]);
+                    done = false;
+                }
+            }
+        }
+        while (!done);
+        dprintf(1, ("~relocate_queue: %Id relocs %Id searches %Id steps", num_relocations, num_tree_searches, num_tree_search_steps));
+    }
+
+    FORCEINLINE
+    void queue_reloc(uint8_t** addr_to_relocate, int8_t parent_gen, uint8_t **addr_to_set_card)
+    {
+        assert(addr_to_set_card == addr_to_relocate);
+
+        uint8_t* old_child_addr = *addr_to_relocate;
+
+#ifdef TRACE_GC
+        num_relocations++;
+#endif // TRACE_GC
+
+#ifdef USE_REGIONS
+        if (!is_in_heap_range (old_child_addr))
+//        if (!gc_heap::is_in_gc_range (old_child_addr))
+        {
+            return;
+        }
+        if (!heap->should_check_brick_for_reloc (old_child_addr))
+        {
+            check_if_card_needed(parent_gen, old_child_addr, addr_to_relocate);
+            return;
+        }
+#else
+        assert(!"NYI - segments");
+#endif
+        assert(old_child_addr != 0);
+        size_t  brick = heap->brick_of (old_child_addr);
+        int     brick_entry = heap->brick_table [ brick ];
+        if (brick_entry != 0)
+        {
+            while (brick_entry < 0)
+            {
+                brick = (brick + brick_entry);
+                brick_entry =  heap->brick_table [ brick ];
+            }
+
+            uint8_t* tree = heap->brick_address (brick) + brick_entry-1;
+            assert((((size_t)tree) & (sizeof(tree)-1)) == 0);
+            Prefetch (&((plug_and_pair*)tree)[-1].m_pair.left);
+
+            relocate_slot* slot = curr_slot;
+
+            // we are guaranteed that the current slot is empty - store our values to relieve
+            // register pressure
+            assert(slot->s == relocate_slot::EMPTY);
+            slot->tree = tree;
+            slot->candidate_offset = 0;
+            slot->s = relocate_slot::TREE_SEARCH;
+            slot->parent_gen = parent_gen;
+            slot->addr_to_relocate = addr_to_relocate;
+
+            // while the prefetch is in flight, find an empty slot to store the next search
+            slot += 1;
+            while (1)
+            {
+                if (slot >= &slot_table[slot_count])
+                    slot = slot_table;
+                if (slot->s == relocate_slot::EMPTY)
+                {
+                    break;
+                }
+                if (run(slot) == relocate_slot::EMPTY)
+                {
+                    break;
+                }
+                slot += 1;
+            }
+            curr_slot = slot;
+
+#ifdef TRACE_GC
+            num_tree_searches++;
+#endif // TRACE_GC
+        }
+        else
+        {
+#ifdef FEATURE_LOH_COMPACTION
+            if (gc_heap::settings.loh_compaction)
+            {
+#ifdef USE_REGIONS
+                heap_segment* pSegment = get_region_info_for_address(old_child_addr);
+                // pSegment could be 0 for regions, see comment for is_in_condemned.
+                if (!pSegment)
+                {
+                    return;
+                }
+#else //USE_REGIONS
+                heap_segment* pSegment = seg_mapping_table_segment_of(old_child_addr);
+#endif //USE_REGIONS
+
+#ifdef MULTIPLE_HEAPS
+                if (heap_segment_heap (pSegment)->loh_compacted_p)
+#else
+                if (gc_heap::loh_compacted_p)
+#endif
+                {
+                    size_t flags = pSegment->flags;
+                    if ((flags & heap_segment_flags_loh)
+#ifdef FEATURE_BASICFREEZE
+                    && !(flags & heap_segment_flags_readonly)
+#endif
+                        )
+                    {
+                        uint8_t* new_child_addr = old_child_addr + loh_node_relocation_distance (old_child_addr);
+                        dprintf (4, (ThreadStressLog::gcRelocateReferenceMsg(), addr_to_relocate, old_child_addr, new_child_addr));
+                        *addr_to_relocate = new_child_addr;
+                    }
+                }
+            }
+#endif //FEATURE_LOH_COMPACTION
+        }
+    }
+};
+
 void gc_heap::relocate_address (uint8_t** pold_address THREAD_NUMBER_DCL)
 {
     uint8_t* old_address = *pold_address;
@@ -31805,13 +32099,21 @@ gc_heap::reloc_survivor_helper (uint8_t** pval)
 }
 
 inline void
-gc_heap::relocate_obj_helper (uint8_t* x, size_t s)
+gc_heap::relocate_obj_helper (relocate_queue* reloc_queue, uint8_t* x, size_t s)
 {
     THREAD_FROM_HEAP;
+    check_class_object_demotion (x);
     if (contain_pointers (x))
     {
         dprintf (3, ("o$%Ix$", (size_t)x));
 
+#define USE_RELOC_QUEUE
+#ifdef USE_RELOC_QUEUE
+        go_through_object_nostart (method_table(x), x, s, pval,
+                            {
+                                reloc_queue->queue_reloc(pval, 0, pval);
+                            });
+#else //USE_RELOC_QUEUE
         go_through_object_nostart (method_table(x), x, s, pval,
                             {
                                 uint8_t* child = *pval;
@@ -31821,9 +32123,8 @@ gc_heap::relocate_obj_helper (uint8_t* x, size_t s)
                                     dprintf (3, ("%Ix->%Ix->%Ix", (uint8_t*)pval, child, *pval));
                                 }
                             });
-
+#endif //USE_RELOC_QUEUE
     }
-    check_class_object_demotion (x);
 }
 
 inline
@@ -31933,7 +32234,7 @@ void gc_heap::relocate_shortened_obj_helper (uint8_t* x, size_t s, uint8_t* end,
     check_class_object_demotion (x);
 }
 
-void gc_heap::relocate_survivor_helper (uint8_t* plug, uint8_t* plug_end)
+void gc_heap::relocate_survivor_helper (relocate_queue* reloc_queue, uint8_t* plug, uint8_t* plug_end)
 {
     uint8_t*  x = plug;
     while (x < plug_end)
@@ -31941,7 +32242,7 @@ void gc_heap::relocate_survivor_helper (uint8_t* plug, uint8_t* plug_end)
         size_t s = size (x);
         uint8_t* next_obj = x + Align (s);
         Prefetch (next_obj);
-        relocate_obj_helper (x, s);
+        relocate_obj_helper (reloc_queue, x, s);
         assert (s > 0);
         x = next_obj;
     }
@@ -32020,7 +32321,7 @@ gc_heap::unconditional_set_card_collectible (uint8_t* obj)
 }
 #endif //COLLECTIBLE_CLASS
 
-void gc_heap::relocate_shortened_survivor_helper (uint8_t* plug, uint8_t* plug_end, mark* pinned_plug_entry)
+void gc_heap::relocate_shortened_survivor_helper (relocate_queue* reloc_queue, uint8_t* plug, uint8_t* plug_end, mark* pinned_plug_entry)
 {
     uint8_t*  x = plug;
     uint8_t* p_plug = pinned_plug (pinned_plug_entry);
@@ -32097,7 +32398,7 @@ void gc_heap::relocate_shortened_survivor_helper (uint8_t* plug, uint8_t* plug_e
         }
         else
         {
-            relocate_obj_helper (x, s);
+            relocate_obj_helper (reloc_queue, x, s);
         }
 
         assert (s > 0);
@@ -32107,7 +32408,8 @@ void gc_heap::relocate_shortened_survivor_helper (uint8_t* plug, uint8_t* plug_e
     verify_pins_with_post_plug_info("end reloc short surv");
 }
 
-void gc_heap::relocate_survivors_in_plug (uint8_t* plug, uint8_t* plug_end,
+void gc_heap::relocate_survivors_in_plug (relocate_queue *reloc_queue,
+                                          uint8_t* plug, uint8_t* plug_end,
                                           BOOL check_last_object_p,
                                           mark* pinned_plug_entry)
 {
@@ -32117,11 +32419,11 @@ void gc_heap::relocate_survivors_in_plug (uint8_t* plug, uint8_t* plug_end,
 
     if (check_last_object_p)
     {
-        relocate_shortened_survivor_helper (plug, plug_end, pinned_plug_entry);
+        relocate_shortened_survivor_helper (reloc_queue, plug, plug_end, pinned_plug_entry);
     }
     else
     {
-        relocate_survivor_helper (plug, plug_end);
+        relocate_survivor_helper (reloc_queue, plug, plug_end);
     }
 }
 
@@ -32135,9 +32437,17 @@ void gc_heap::relocate_survivors_in_brick (uint8_t* tree, relocate_args* args)
         (tree + node_right_child (tree)),
         node_gap_size (tree)));
 
+    if (node_right_child (tree))
+    {
+        uint8_t* right = tree + node_right_child (tree);
+        Prefetch (&((plug_and_pair*)right)[-1].m_pair.left);
+    }
+
     if (node_left_child (tree))
     {
-        relocate_survivors_in_brick (tree + node_left_child (tree), args);
+        uint8_t* left = tree + node_left_child (tree);
+        Prefetch (&((plug_and_pair*)left)[-1].m_pair.left);
+        relocate_survivors_in_brick (left, args);
     }
     {
         uint8_t*  plug = tree;
@@ -32163,7 +32473,8 @@ void gc_heap::relocate_survivors_in_brick (uint8_t* tree, relocate_args* args)
             BOOL check_last_object_p = (args->is_shortened || has_pre_plug_info_p);
 
             {
-                relocate_survivors_in_plug (args->last_plug, last_plug_end, check_last_object_p, args->pinned_plug_entry);
+                Prefetch (args->last_plug);
+                relocate_survivors_in_plug (args->reloc_queue, args->last_plug, last_plug_end, check_last_object_p, args->pinned_plug_entry);
             }
         }
         else
@@ -32222,6 +32533,8 @@ void gc_heap::relocate_survivors (int condemned_gen_number,
     assert (first_condemned_address == generation_allocation_start (generation_of (condemned_gen_number)));
 #endif //!USE_REGIONS
 
+    relocate_queue reloc_queue(__this);
+
     for (int i = condemned_gen_number; i >= stop_gen_idx; i--)
     {
         generation* condemned_gen = generation_of (i);
@@ -32243,6 +32556,7 @@ void gc_heap::relocate_survivors (int condemned_gen_number,
         args.is_shortened = FALSE;
         args.pinned_plug_entry = 0;
         args.last_plug = 0;
+        args.reloc_queue = &reloc_queue;
 
         while (1)
         {
@@ -32252,7 +32566,9 @@ void gc_heap::relocate_survivors (int condemned_gen_number,
                 {
                     {
                         assert (!(args.is_shortened));
-                        relocate_survivors_in_plug (args.last_plug,
+                        Prefetch (args.last_plug);
+                        relocate_survivors_in_plug (args.reloc_queue,
+                                                    args.last_plug,
                                                     heap_segment_allocated (current_heap_segment),
                                                     args.is_shortened,
                                                     args.pinned_plug_entry);
@@ -32287,9 +32603,9 @@ void gc_heap::relocate_survivors (int condemned_gen_number,
 
                 if (brick_entry >= 0)
                 {
-                    relocate_survivors_in_brick (brick_address (current_brick) +
-                                                brick_entry -1,
-                                                &args);
+                    uint8_t* tree = brick_address (current_brick) + brick_entry -1;
+                    Prefetch (tree);
+                    relocate_survivors_in_brick (tree, &args);
                 }
             }
             current_brick++;
